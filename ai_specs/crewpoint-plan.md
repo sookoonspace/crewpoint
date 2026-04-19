@@ -73,21 +73,21 @@ Full MVP of CrewPoint — collaborative event management app with offline-first 
 ### Phase 4: Firebase Init & Auth Feature
 
 - **Goal**: Firebase per-flavor init + full auth flow (Google, Apple, Email/Password)
-- [ ] `lib/app/core/services/firebase_service.dart` — Firebase init per flavor
-- [ ] `lib/app/features/auth/domain/models/app_user.dart` — User domain model
-- [ ] `lib/app/features/auth/domain/models/auth_failure.dart` — Typed auth failures
-- [ ] `lib/app/features/auth/data/firebase_auth_service.dart` — Implements `IAuthService`: Google, Apple, Email/Password sign-in/up
-- [ ] `lib/app/features/auth/data/auth_repository.dart` — Catches exceptions, returns typed failures
-- [ ] `lib/app/features/auth/application/auth_provider.dart` — Riverpod providers for auth state
-- [ ] `lib/app/features/auth/presentation/auth_gate_screen.dart` — Social + email auth UI
-- [ ] `lib/app/features/auth/presentation/widgets/social_auth_buttons.dart` — Google/Apple buttons
-- [ ] `lib/app/features/auth/presentation/widgets/email_auth_form.dart` — Email/password form
-- [ ] `lib/app/core/services/secure_storage_service.dart` — `flutter_secure_storage` wrapper for session tokens
-- [ ] TDD: auth repository returns typed failure on invalid credentials
-- [ ] TDD: auth repository returns AppUser on successful sign-in
-- [ ] TDD: auth provider emits loading → authenticated states
-- [ ] TDD: auth provider emits loading → error on failure
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `lib/app/core/services/firebase_service.dart` — Firebase init per flavor
+- [x] `lib/app/features/auth/domain/models/app_user.dart` — User domain model
+- [x] `lib/app/features/auth/domain/models/auth_failure.dart` — Typed auth failures
+- [x] `lib/app/features/auth/data/firebase_auth_service.dart` — Implements `IAuthService`: Google, Apple, Email/Password sign-in/up
+- [x] `lib/app/features/auth/data/auth_repository.dart` — Catches exceptions, returns typed failures
+- [x] `lib/app/features/auth/application/auth_provider.dart` — Riverpod providers for auth state
+- [x] `lib/app/features/auth/presentation/auth_gate_screen.dart` — Social + email auth UI
+- [x] `lib/app/features/auth/presentation/widgets/social_auth_buttons.dart` — Google/Apple buttons
+- [x] `lib/app/features/auth/presentation/widgets/email_auth_form.dart` — Email/password form
+- [x] `lib/app/core/services/secure_storage_service.dart` — `flutter_secure_storage` wrapper for session tokens
+- [x] TDD: auth repository returns typed failure on invalid credentials
+- [x] TDD: auth repository returns AppUser on successful sign-in
+- [x] TDD: auth provider emits loading → authenticated states
+- [x] TDD: auth provider emits loading → error on failure
+- [x] Verify: `flutter analyze` && `flutter test`
 
 ### Phase 5: Onboarding & App Shell (Router)
 

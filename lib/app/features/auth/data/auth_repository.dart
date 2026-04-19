@@ -1,0 +1,173 @@
+import 'dart:developer';
+
+import 'package:crewpoint_app/app/core/services/i_auth_service.dart';
+import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
+import 'package:crewpoint_app/app/features/auth/domain/models/auth_failure.dart';
+
+/// Repository wrapping [IAuthService] with typed error handling.
+class AuthRepository {
+  const AuthRepository({required IAuthService authService})
+    : _authService = authService;
+
+  final IAuthService _authService;
+
+  Stream<AppUser?> get authStateChanges => _authService.authStateChanges.map(
+    (user) => user != null
+        ? AppUser(
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            photoUrl: user.photoUrl,
+          )
+        : null,
+  );
+
+  AppUser? get currentUser {
+    final user = _authService.currentUser;
+    if (user == null) return null;
+    return AppUser(
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      photoUrl: user.photoUrl,
+    );
+  }
+
+  Future<({AppUser? user, AuthFailure? failure})> signInWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final result = await _authService.signInWithEmail(
+        email: email,
+        password: password,
+      );
+      return switch (result) {
+        AuthSuccess(:final user) => (
+          user: AppUser(
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            photoUrl: user.photoUrl,
+          ),
+          failure: null,
+        ),
+        AuthResultFailure(:final message) => (
+          user: null,
+          failure: AuthFailure(type: AuthFailureType.unknown, message: message),
+        ),
+      };
+    } catch (e, st) {
+      log('signInWithEmail failed', error: e, stackTrace: st, name: 'auth');
+      return (
+        user: null,
+        failure: const AuthFailure(
+          type: AuthFailureType.unknown,
+          message: 'An unexpected error occurred.',
+        ),
+      );
+    }
+  }
+
+  Future<({AppUser? user, AuthFailure? failure})> signUpWithEmail({
+    required String email,
+    required String password,
+    required String displayName,
+  }) async {
+    try {
+      final result = await _authService.signUpWithEmail(
+        email: email,
+        password: password,
+        displayName: displayName,
+      );
+      return switch (result) {
+        AuthSuccess(:final user) => (
+          user: AppUser(
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            photoUrl: user.photoUrl,
+          ),
+          failure: null,
+        ),
+        AuthResultFailure(:final message) => (
+          user: null,
+          failure: AuthFailure(type: AuthFailureType.unknown, message: message),
+        ),
+      };
+    } catch (e, st) {
+      log('signUpWithEmail failed', error: e, stackTrace: st, name: 'auth');
+      return (
+        user: null,
+        failure: const AuthFailure(
+          type: AuthFailureType.unknown,
+          message: 'An unexpected error occurred.',
+        ),
+      );
+    }
+  }
+
+  Future<({AppUser? user, AuthFailure? failure})> signInWithGoogle() async {
+    try {
+      final result = await _authService.signInWithGoogle();
+      return switch (result) {
+        AuthSuccess(:final user) => (
+          user: AppUser(
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            photoUrl: user.photoUrl,
+          ),
+          failure: null,
+        ),
+        AuthResultFailure(:final message) => (
+          user: null,
+          failure: AuthFailure(type: AuthFailureType.unknown, message: message),
+        ),
+      };
+    } catch (e, st) {
+      log('signInWithGoogle failed', error: e, stackTrace: st, name: 'auth');
+      return (
+        user: null,
+        failure: const AuthFailure(
+          type: AuthFailureType.unknown,
+          message: 'An unexpected error occurred.',
+        ),
+      );
+    }
+  }
+
+  Future<({AppUser? user, AuthFailure? failure})> signInWithApple() async {
+    try {
+      final result = await _authService.signInWithApple();
+      return switch (result) {
+        AuthSuccess(:final user) => (
+          user: AppUser(
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            photoUrl: user.photoUrl,
+          ),
+          failure: null,
+        ),
+        AuthResultFailure(:final message) => (
+          user: null,
+          failure: AuthFailure(type: AuthFailureType.unknown, message: message),
+        ),
+      };
+    } catch (e, st) {
+      log('signInWithApple failed', error: e, stackTrace: st, name: 'auth');
+      return (
+        user: null,
+        failure: const AuthFailure(
+          type: AuthFailureType.unknown,
+          message: 'An unexpected error occurred.',
+        ),
+      );
+    }
+  }
+
+  Future<void> signOut() => _authService.signOut();
+
+  Future<void> deleteAccount() => _authService.deleteAccount();
+}

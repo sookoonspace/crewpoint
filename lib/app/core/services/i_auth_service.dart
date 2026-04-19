@@ -50,7 +50,7 @@ class AuthSuccess extends AuthResult {
   final AuthUser user;
 }
 
-class AuthFailure extends AuthResult {
-  const AuthFailure(this.message);
+class AuthResultFailure extends AuthResult {
+  const AuthResultFailure(this.message);
   final String message;
 }
