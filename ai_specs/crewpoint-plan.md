@@ -92,15 +92,15 @@ Full MVP of CrewPoint — collaborative event management app with offline-first 
 ### Phase 5: Onboarding & App Shell (Router)
 
 - **Goal**: Carousel onboarding → auth gate → main shell with bottom nav
-- [ ] `lib/app/features/onboarding/presentation/onboarding_screen.dart` — 3-page carousel with Lottie slots + "Data Collection Opt-In" toggle (default OFF)
-- [ ] `lib/app/features/onboarding/application/onboarding_provider.dart` — Track completion state, persist to secure storage
-- [ ] `lib/app/core/router/app_router.dart` — `go_router` config: onboarding → auth → main shell
-- [ ] `lib/app/core/router/app_shell.dart` — `StatefulShellRoute` with bottom nav (Dashboard, Tasks, Chat, Budget, Profile)
-- [ ] `lib/main.dart` — Replace counter app: `ProviderScope` → `MaterialApp.router` with theme + router
-- [ ] TDD: onboarding provider — first launch shows onboarding, subsequent launches skip
-- [ ] TDD: router redirects unauthenticated user to auth gate
-- [ ] TDD: router redirects authenticated user past auth gate to dashboard
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `lib/app/features/onboarding/presentation/onboarding_screen.dart` — 3-page carousel with Lottie slots + "Data Collection Opt-In" toggle (default OFF)
+- [x] `lib/app/features/onboarding/application/onboarding_provider.dart` — Track completion state, persist to secure storage
+- [x] `lib/app/core/router/app_router.dart` — `go_router` config: onboarding → auth → main shell
+- [x] `lib/app/core/router/app_shell.dart` — `StatefulShellRoute` with bottom nav (Dashboard, Tasks, Chat, Budget, Profile)
+- [x] `lib/main.dart` — Replace counter app: `ProviderScope` → `MaterialApp.router` with theme + router
+- [x] TDD: onboarding provider — first launch shows onboarding, subsequent launches skip
+- [x] TDD: router redirects unauthenticated user to auth gate
+- [x] TDD: router redirects authenticated user past auth gate to dashboard
+- [x] Verify: `flutter analyze` && `flutter test`
 
 ### Phase 6: Dashboard & Event Management
 
