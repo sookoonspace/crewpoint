@@ -166,18 +166,18 @@ Full MVP of CrewPoint — collaborative event management app with offline-first 
 ### Phase 10: Profile, Privacy, Sync & Polish
 
 - **Goal**: User profile, privacy dashboard, account deletion, Drift↔Firestore sync engine
-- [ ] `lib/app/features/profile/presentation/profile_screen.dart` — User info display + edit
-- [ ] `lib/app/features/profile/presentation/privacy_dashboard_screen.dart` — List all dependencies used
-- [ ] `lib/app/features/profile/presentation/widgets/delete_account_dialog.dart` — Multi-step dialog with password confirmation → local + remote data erasure
-- [ ] `lib/app/features/profile/application/profile_provider.dart` — Profile state management
-- [ ] `lib/app/core/services/sync_engine.dart` — Implements `ISyncService`: background Drift↔Firestore bidirectional sync
-- [ ] `lib/app/core/services/sync_engine.dart` — Conflict resolution strategy (last-write-wins with timestamps)
-- [ ] Phase 2 stubs: TODO in `IChatService` for E2EE, map tab UI shell in dashboard for live location (TODO in `ILocationService`), TODO in app lifecycle for biometric lock
-- [ ] TDD: sync engine uploads local Drift changes to Firestore
-- [ ] TDD: sync engine downloads Firestore changes to Drift
-- [ ] TDD: account deletion clears all local Drift tables
-- [ ] TDD: app launches with cached Drift data when offline (offline-first verification)
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `lib/app/features/profile/presentation/profile_screen.dart` — User info display + edit
+- [x] `lib/app/features/profile/presentation/privacy_dashboard_screen.dart` — List all dependencies used
+- [x] `lib/app/features/profile/presentation/widgets/delete_account_dialog.dart` — Multi-step dialog with password confirmation → local + remote data erasure
+- [x] `lib/app/features/profile/application/profile_provider.dart` — Profile state management
+- [x] `lib/app/core/services/sync_engine.dart` — Implements `ISyncService`: background Drift↔Firestore bidirectional sync
+- [x] `lib/app/core/services/sync_engine.dart` — Conflict resolution strategy (last-write-wins with timestamps)
+- [x] Phase 2 stubs: TODO in `IChatService` for E2EE, map tab UI shell in dashboard for live location (TODO in `ILocationService`), TODO in app lifecycle for biometric lock
+- [x] TDD: sync engine uploads local Drift changes to Firestore
+- [x] TDD: sync engine downloads Firestore changes to Drift
+- [x] TDD: account deletion clears all local Drift tables
+- [x] TDD: app launches with cached Drift data when offline (offline-first verification)
+- [x] Verify: `flutter analyze` && `flutter test`
 
 ## Risks / Out of scope
 
