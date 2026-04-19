@@ -54,21 +54,21 @@ Full MVP of CrewPoint — collaborative event management app with offline-first 
 ### Phase 3: Drift Database & Service Interfaces
 
 - **Goal**: Offline-first local DB as single source of truth; abstract service interfaces for all third-party deps
-- [ ] `lib/app/core/services/i_chat_service.dart` — Abstract `IChatService` with TODO for E2EE swap
-- [ ] `lib/app/core/services/i_location_service.dart` — Abstract `ILocationService` with TODO for Phase 2
-- [ ] `lib/app/core/services/i_auth_service.dart` — Abstract `IAuthService`
-- [ ] `lib/app/core/services/i_sync_service.dart` — Abstract `ISyncService`
-- [ ] `lib/app/core/database/app_database.dart` — Drift DB with tables: `Events`, `Tasks`, `Users`, `ChatMessages`, `Expenses`
-- [ ] `lib/app/core/database/connection/native.dart` — Platform-specific Drift connection (mobile + desktop)
-- [ ] `lib/app/core/database/connection/web.dart` — Web connection
-- [ ] `lib/app/core/database/daos/events_dao.dart` — CRUD operations for events
-- [ ] `lib/app/core/database/daos/tasks_dao.dart` — CRUD operations for tasks
-- [ ] `lib/app/core/database/daos/users_dao.dart` — CRUD operations for users
-- [ ] TDD: happy path — insert event into Drift, retrieve it by ID
-- [ ] TDD: happy path — insert task with event FK, query tasks by event
-- [ ] TDD: edge case — query empty table returns empty list
-- [ ] TDD: error — insert duplicate primary key throws/handles gracefully
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `lib/app/core/services/i_chat_service.dart` — Abstract `IChatService` with TODO for E2EE swap
+- [x] `lib/app/core/services/i_location_service.dart` — Abstract `ILocationService` with TODO for Phase 2
+- [x] `lib/app/core/services/i_auth_service.dart` — Abstract `IAuthService`
+- [x] `lib/app/core/services/i_sync_service.dart` — Abstract `ISyncService`
+- [x] `lib/app/core/database/app_database.dart` — Drift DB with tables: `Events`, `Tasks`, `Users`, `ChatMessages`, `Expenses`
+- [x] `lib/app/core/database/connection/native.dart` — Platform-specific Drift connection (mobile + desktop)
+- [x] `lib/app/core/database/connection/web.dart` — Web connection
+- [x] `lib/app/core/database/daos/events_dao.dart` — CRUD operations for events
+- [x] `lib/app/core/database/daos/tasks_dao.dart` — CRUD operations for tasks
+- [x] `lib/app/core/database/daos/users_dao.dart` — CRUD operations for users
+- [x] TDD: happy path — insert event into Drift, retrieve it by ID
+- [x] TDD: happy path — insert task with event FK, query tasks by event
+- [x] TDD: edge case — query empty table returns empty list
+- [x] TDD: error — insert duplicate primary key throws/handles gracefully
+- [x] Verify: `flutter analyze` && `flutter test`
 
 ### Phase 4: Firebase Init & Auth Feature
 

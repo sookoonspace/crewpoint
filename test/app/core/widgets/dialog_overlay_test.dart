@@ -9,7 +9,7 @@ void main() {
         home: Builder(
           builder: (context) => Scaffold(
             body: ElevatedButton(
-              onPressed: () => DialogOverlay.show(
+              onPressed: () => DialogOverlay.show<void>(
                 context: context,
                 title: 'Confirm',
                 content: const Text('Are you sure?'),
@@ -34,7 +34,7 @@ void main() {
         home: Builder(
           builder: (context) => Scaffold(
             body: ElevatedButton(
-              onPressed: () => DialogOverlay.show(
+              onPressed: () => DialogOverlay.show<void>(
                 context: context,
                 title: 'Test',
                 content: const Text('Content'),
