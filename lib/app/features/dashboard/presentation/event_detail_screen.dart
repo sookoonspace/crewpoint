@@ -1,0 +1,89 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
+
+class EventDetailScreen extends StatelessWidget {
+  const EventDetailScreen({super.key, required this.event});
+
+  final EventModel event;
+
+  @override
+  Widget build(BuildContext context) {
+    final dateFormat = DateFormat.yMMMMd();
+    return Scaffold(
+      appBar: AppBar(title: Text(event.title)),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          crossAxisAlignment: .start,
+          spacing: AppSpacing.lg,
+          children: [
+            if (event.description != null)
+              Text(
+                event.description!,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            _DetailRow(
+              icon: Icons.calendar_today,
+              label: 'Start',
+              value: dateFormat.format(event.startDate),
+            ),
+            if (event.endDate != null)
+              _DetailRow(
+                icon: Icons.calendar_month,
+                label: 'End',
+                value: dateFormat.format(event.endDate!),
+              ),
+            if (event.location != null)
+              _DetailRow(
+                icon: Icons.location_on,
+                label: 'Location',
+                value: event.location!,
+              ),
+            _DetailRow(
+              icon: Icons.flag,
+              label: 'Status',
+              value: event.status.name,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      spacing: AppSpacing.md,
+      children: [
+        Icon(icon, size: 20, color: AppColors.mediumGrey),
+        Column(
+          crossAxisAlignment: .start,
+          children: [
+            Text(
+              label,
+              style: Theme.of(
+                context,
+              ).textTheme.labelSmall?.copyWith(color: AppColors.mediumGrey),
+            ),
+            Text(value, style: Theme.of(context).textTheme.bodyMedium),
+          ],
+        ),
+      ],
+    );
+  }
+}

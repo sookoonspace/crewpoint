@@ -105,17 +105,17 @@ Full MVP of CrewPoint — collaborative event management app with offline-first 
 ### Phase 6: Dashboard & Event Management
 
 - **Goal**: Dashboard home screen + event CRUD
-- [ ] `lib/app/features/dashboard/domain/models/event.dart` — Event domain model
-- [ ] `lib/app/features/dashboard/data/event_repository.dart` — CRUD via Drift DAO, error handling
-- [ ] `lib/app/features/dashboard/application/dashboard_provider.dart` — Events list provider (from Drift stream)
-- [ ] `lib/app/features/dashboard/presentation/dashboard_screen.dart` — Event list with create FAB
-- [ ] `lib/app/features/dashboard/presentation/event_detail_screen.dart` — Event detail view
-- [ ] `lib/app/features/dashboard/presentation/widgets/event_card.dart` — Event list tile
-- [ ] `lib/app/features/dashboard/presentation/create_event_screen.dart` — Event creation form
-- [ ] TDD: event repository saves event to Drift and retrieves it
-- [ ] TDD: dashboard provider streams events reactively on insert
-- [ ] TDD: edge case — dashboard shows empty state when no events
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `lib/app/features/dashboard/domain/models/event.dart` — Event domain model
+- [x] `lib/app/features/dashboard/data/event_repository.dart` — CRUD via Drift DAO, error handling
+- [x] `lib/app/features/dashboard/application/dashboard_provider.dart` — Events list provider (from Drift stream)
+- [x] `lib/app/features/dashboard/presentation/dashboard_screen.dart` — Event list with create FAB
+- [x] `lib/app/features/dashboard/presentation/event_detail_screen.dart` — Event detail view
+- [x] `lib/app/features/dashboard/presentation/widgets/event_card.dart` — Event list tile
+- [x] `lib/app/features/dashboard/presentation/create_event_screen.dart` — Event creation form
+- [x] TDD: event repository saves event to Drift and retrieves it
+- [x] TDD: dashboard provider streams events reactively on insert
+- [x] TDD: edge case — dashboard shows empty state when no events
+- [x] Verify: `flutter analyze` && `flutter test`
 
 ### Phase 7: Task Management
 
