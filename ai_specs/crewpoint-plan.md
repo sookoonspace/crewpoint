@@ -23,18 +23,18 @@ Full MVP of CrewPoint — collaborative event management app with offline-first 
 ### Phase 1: Project Foundation & Strict Analysis
 
 - **Goal**: Establish directory skeleton, strict linting, dependencies, and build flavors
-- [ ] `analysis_options.yaml` — Replace with strict config: `always_use_package_imports`, `prefer_const_constructors`, `avoid_print`, and recommended Flutter lints
-- [ ] `pubspec.yaml` — Add all Phase 1 deps: `flutter_riverpod`, `go_router`, `firebase_core`, `firebase_auth`, `cloud_firestore`, `drift`, `sqlite3_flutter_libs`, `envied`, `flutter_secure_storage`, `google_fonts`, `lottie`, `google_sign_in`, `sign_in_with_apple`, `image_picker`
-- [ ] `pubspec.yaml` — Add dev deps: `envied_generator`, `build_runner`, `drift_dev`
-- [ ] `lib/app/core/constants/app_colors.dart` — Charcoal, sage green, terracotta palette tokens
-- [ ] `lib/app/core/constants/app_spacing.dart` — Spacing scale (4, 8, 12, 16, 24, 32, 48)
-- [ ] `lib/app/core/constants/app_radius.dart` — Border radius tokens
-- [ ] `lib/app/core/constants/app_typography.dart` — Poppins headings, Inter body via `google_fonts`
-- [ ] Create directory skeleton: `lib/app/core/services/`, `lib/app/features/auth/`, `lib/app/features/onboarding/`, `lib/app/features/dashboard/`, `lib/app/features/tasks/`, `lib/app/features/chat/`, `lib/app/features/budget/`, `lib/app/features/profile/` — each with `domain/`, `data/`, `presentation/`, `application/` subdirs
-- [ ] `.env.dev`, `.env.stg`, `.env.prod` — Template env files with placeholder keys
-- [ ] `lib/app/core/env/env.dart` — `envied` config class for build-time secrets
-- [ ] Configure three build flavors (`dev`, `stg`, `prod`) with distinct app IDs (`space.sookoon.crewpoint.{dev,stg,app}`) — native iOS/Android config
-- [ ] Verify: `flutter analyze` with zero warnings
+- [x] `analysis_options.yaml` — Replace with strict config: `always_use_package_imports`, `prefer_const_constructors`, `avoid_print`, and recommended Flutter lints
+- [x] `pubspec.yaml` — Add all Phase 1 deps: `flutter_riverpod`, `go_router`, `firebase_core`, `firebase_auth`, `cloud_firestore`, `drift`, `sqlite3_flutter_libs`, `envied`, `flutter_secure_storage`, `google_fonts`, `lottie`, `google_sign_in`, `sign_in_with_apple`, `image_picker`
+- [x] `pubspec.yaml` — Add dev deps: `envied_generator`, `build_runner`, `drift_dev`
+- [x] `lib/app/core/constants/app_colors.dart` — Charcoal, sage green, terracotta palette tokens
+- [x] `lib/app/core/constants/app_spacing.dart` — Spacing scale (4, 8, 12, 16, 24, 32, 48)
+- [x] `lib/app/core/constants/app_radius.dart` — Border radius tokens
+- [x] `lib/app/core/constants/app_typography.dart` — Poppins headings, Inter body via `google_fonts`
+- [x] Create directory skeleton: `lib/app/core/services/`, `lib/app/features/auth/`, `lib/app/features/onboarding/`, `lib/app/features/dashboard/`, `lib/app/features/tasks/`, `lib/app/features/chat/`, `lib/app/features/budget/`, `lib/app/features/profile/` — each with `domain/`, `data/`, `presentation/`, `application/` subdirs
+- [x] `.env.dev`, `.env.stg`, `.env.prod` — Template env files with placeholder keys
+- [x] `lib/app/core/env/env.dart` — `envied` config class for build-time secrets
+- [x] Configure three build flavors (`dev`, `stg`, `prod`) with distinct app IDs (`space.sookoon.crewpoint.{dev,stg,app}`) — native iOS/Android config
+- [x] Verify: `flutter analyze` with zero warnings
 
 ### Phase 2: Design System & Core Widgets
 
