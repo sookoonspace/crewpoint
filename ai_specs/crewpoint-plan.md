@@ -120,19 +120,19 @@ Full MVP of CrewPoint — collaborative event management app with offline-first 
 ### Phase 7: Task Management
 
 - **Goal**: Tasks within events — status tracking, assignees, checklists, file attachments
-- [ ] `lib/app/features/tasks/domain/models/task.dart` — Task model with status enum, assignee, checklist items
-- [ ] `lib/app/features/tasks/domain/models/task_attachment.dart` — Attachment model (file path, type)
-- [ ] `lib/app/features/tasks/data/task_repository.dart` — CRUD via Drift DAO, filter by event/status/assignee
-- [ ] `lib/app/features/tasks/application/task_provider.dart` — Task list + filter providers
-- [ ] `lib/app/features/tasks/presentation/task_list_screen.dart` — Filtered task list per event
-- [ ] `lib/app/features/tasks/presentation/task_detail_screen.dart` — Task detail with checklist + attachments
-- [ ] `lib/app/features/tasks/presentation/widgets/task_tile.dart` — Task row with status chip
-- [ ] `lib/app/features/tasks/presentation/create_task_screen.dart` — Task creation form
-- [ ] TDD: task repository creates task linked to event, retrieves by event ID
-- [ ] TDD: task status transitions (todo → in_progress → done)
-- [ ] TDD: checklist item toggle updates task in Drift
-- [ ] TDD: filter provider returns only tasks matching selected status
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `lib/app/features/tasks/domain/models/task.dart` — Task model with status enum, assignee, checklist items
+- [x] `lib/app/features/tasks/domain/models/task_attachment.dart` — Attachment model (file path, type)
+- [x] `lib/app/features/tasks/data/task_repository.dart` — CRUD via Drift DAO, filter by event/status/assignee
+- [x] `lib/app/features/tasks/application/task_provider.dart` — Task list + filter providers
+- [x] `lib/app/features/tasks/presentation/task_list_screen.dart` — Filtered task list per event
+- [x] `lib/app/features/tasks/presentation/task_detail_screen.dart` — Task detail with checklist + attachments
+- [x] `lib/app/features/tasks/presentation/widgets/task_tile.dart` — Task row with status chip
+- [x] `lib/app/features/tasks/presentation/create_task_screen.dart` — Task creation form
+- [x] TDD: task repository creates task linked to event, retrieves by event ID
+- [x] TDD: task status transitions (todo → in_progress → done)
+- [x] TDD: checklist item toggle updates task in Drift
+- [x] TDD: filter provider returns only tasks matching selected status
+- [x] Verify: `flutter analyze` && `flutter test`
 
 ### Phase 8: Group Chat
 
