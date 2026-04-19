@@ -137,17 +137,17 @@ Full MVP of CrewPoint — collaborative event management app with offline-first 
 ### Phase 8: Group Chat
 
 - **Goal**: Real-time Firestore chat per event, critical alerts
-- [ ] `lib/app/features/chat/data/firestore_chat_service.dart` — Implements `IChatService` via Firestore listeners (TODO comment for E2EE)
-- [ ] `lib/app/features/chat/domain/models/chat_message.dart` — Message model (text, sender, timestamp, priority flag)
-- [ ] `lib/app/features/chat/data/chat_repository.dart` — Send/receive messages, cache to Drift
-- [ ] `lib/app/features/chat/application/chat_provider.dart` — Stream provider for messages per event
-- [ ] `lib/app/features/chat/presentation/chat_screen.dart` — Message list + input bar
-- [ ] `lib/app/features/chat/presentation/widgets/message_bubble.dart` — Chat bubble widget
-- [ ] `lib/app/features/chat/presentation/widgets/critical_alert_modal.dart` — Predefined alert list + custom text modal
-- [ ] TDD: chat repository sends message and appears in stream
-- [ ] TDD: chat repository caches received messages to Drift
-- [ ] TDD: critical alert modal sends high-priority message
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `lib/app/features/chat/data/firestore_chat_service.dart` — Implements `IChatService` via Firestore listeners (TODO comment for E2EE)
+- [x] `lib/app/features/chat/domain/models/chat_message.dart` — Message model (text, sender, timestamp, priority flag)
+- [x] `lib/app/features/chat/data/chat_repository.dart` — Send/receive messages, cache to Drift
+- [x] `lib/app/features/chat/application/chat_provider.dart` — Stream provider for messages per event
+- [x] `lib/app/features/chat/presentation/chat_screen.dart` — Message list + input bar
+- [x] `lib/app/features/chat/presentation/widgets/message_bubble.dart` — Chat bubble widget
+- [x] `lib/app/features/chat/presentation/widgets/critical_alert_modal.dart` — Predefined alert list + custom text modal
+- [x] TDD: chat repository sends message and appears in stream
+- [x] TDD: chat repository caches received messages to Drift
+- [x] TDD: critical alert modal sends high-priority message
+- [x] Verify: `flutter analyze` && `flutter test`
 
 ### Phase 9: Expense & Budget Tracking
 
