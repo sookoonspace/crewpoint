@@ -152,16 +152,16 @@ Full MVP of CrewPoint — collaborative event management app with offline-first 
 ### Phase 9: Expense & Budget Tracking
 
 - **Goal**: Expense modal with receipt upload, donation toggle, split calculation
-- [ ] `lib/app/features/budget/domain/models/expense.dart` — Expense model (amount, payer, receipt path, isDonation, splits)
-- [ ] `lib/app/features/budget/data/expense_repository.dart` — CRUD via Drift, split calculation logic
-- [ ] `lib/app/features/budget/application/budget_provider.dart` — Expense list + totals per event
-- [ ] `lib/app/features/budget/presentation/budget_screen.dart` — Expense list with totals summary
-- [ ] `lib/app/features/budget/presentation/widgets/expense_modal.dart` — Add expense: amount, receipt upload (`image_picker`), "Donate" toggle, dynamic split
-- [ ] `lib/app/features/budget/presentation/widgets/expense_tile.dart` — Expense row
-- [ ] TDD: split calculation — 3 members, $90 expense → $30 each
-- [ ] TDD: donation toggle excludes payer from split
-- [ ] TDD: expense repository persists and retrieves by event
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `lib/app/features/budget/domain/models/expense.dart` — Expense model (amount, payer, receipt path, isDonation, splits)
+- [x] `lib/app/features/budget/data/expense_repository.dart` — CRUD via Drift, split calculation logic
+- [x] `lib/app/features/budget/application/budget_provider.dart` — Expense list + totals per event
+- [x] `lib/app/features/budget/presentation/budget_screen.dart` — Expense list with totals summary
+- [x] `lib/app/features/budget/presentation/widgets/expense_modal.dart` — Add expense: amount, receipt upload (`image_picker`), "Donate" toggle, dynamic split
+- [x] `lib/app/features/budget/presentation/widgets/expense_tile.dart` — Expense row
+- [x] TDD: split calculation — 3 members, $90 expense → $30 each
+- [x] TDD: donation toggle excludes payer from split
+- [x] TDD: expense repository persists and retrieves by event
+- [x] Verify: `flutter analyze` && `flutter test`
 
 ### Phase 10: Profile, Privacy, Sync & Polish
 
