@@ -39,17 +39,17 @@ Full MVP of CrewPoint — collaborative event management app with offline-first 
 ### Phase 2: Design System & Core Widgets
 
 - **Goal**: Tokenized themes + reusable widget library
-- [ ] `lib/app/core/theme/app_theme.dart` — Full Light and Dark `ThemeData` using palette tokens, Poppins/Inter typography
-- [ ] `lib/app/core/widgets/primary_button.dart` — `PrimaryButton` widget using constants
-- [ ] `lib/app/core/widgets/destructive_button.dart` — `DestructiveButton` (terracotta)
-- [ ] `lib/app/core/widgets/custom_text_field.dart` — `CustomTextField` with consistent styling
-- [ ] `lib/app/core/widgets/dialog_overlay.dart` — `DialogOverlay` modal component
-- [ ] `lib/app/core/widgets/loading_animation.dart` — Lottie-based loading widget (placeholder asset path)
-- [ ] TDD: PrimaryButton renders with correct color from AppColors
-- [ ] TDD: DestructiveButton uses terracotta color token
-- [ ] TDD: CustomTextField displays hint text and handles input
-- [ ] TDD: DialogOverlay shows/hides with correct content
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `lib/app/core/theme/app_theme.dart` — Full Light and Dark `ThemeData` using palette tokens, Poppins/Inter typography
+- [x] `lib/app/core/widgets/primary_button.dart` — `PrimaryButton` widget using constants
+- [x] `lib/app/core/widgets/destructive_button.dart` — `DestructiveButton` (terracotta)
+- [x] `lib/app/core/widgets/custom_text_field.dart` — `CustomTextField` with consistent styling
+- [x] `lib/app/core/widgets/dialog_overlay.dart` — `DialogOverlay` modal component
+- [x] `lib/app/core/widgets/loading_animation.dart` — Lottie-based loading widget (placeholder asset path)
+- [x] TDD: PrimaryButton renders with correct color from AppColors
+- [x] TDD: DestructiveButton uses terracotta color token
+- [x] TDD: CustomTextField displays hint text and handles input
+- [x] TDD: DialogOverlay shows/hides with correct content
+- [x] Verify: `flutter analyze` && `flutter test`
 
 ### Phase 3: Drift Database & Service Interfaces
 
