@@ -39,14 +39,14 @@ Replace manual Firebase config (envied placeholders + plist/json copying) with `
 ### Phase 2: Firestore Security Rules Hardening
 
 - **Goal**: Enforce ownership, membership, and per-collection access control
-- [ ] `ai_specs/setup-guide.md` — Replace Section 6 (Firestore Security Rules) with hardened rules:
+- [x] `ai_specs/setup-guide.md` — Replace Section 6 (Firestore Security Rules) with hardened rules:
   - **Events**: `create` only if `request.auth.uid == request.resource.data.creatorId`; `update/delete` only if `request.auth.uid == resource.data.creatorId`; `read` only if user is creator or in `members` array
   - **Messages**: `read/write` only if user is member of parent event; `create` requires `senderId == request.auth.uid`; `delete` only own messages
   - **Expenses**: `read` only if member of parent event; `create` requires `payerId == request.auth.uid`; `delete` only by creator or payer
   - **Users**: `read` if authenticated; `write` only own document (already correct)
-- [ ] `firestore.rules` — Create rules file at project root for version control
-- [ ] `firebase.json` — Create config pointing to `firestore.rules` for CLI deploy
-- [ ] Verify: review rules against spec requirements (no automated test for rules)
+- [x] `firestore.rules` — Create rules file at project root for version control
+- [x] `firebase.json` — Create config pointing to `firestore.rules` for CLI deploy
+- [x] Verify: review rules against spec requirements (no automated test for rules)
 
 ## Risks / Out of scope
 

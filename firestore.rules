@@ -1,0 +1,71 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: check if user is a member of an event
+    function isEventMember(eventId) {
+      let event = get(/databases/$(database)/documents/events/$(eventId));
+      return request.auth.uid == event.data.creatorId
+          || request.auth.uid in event.data.members;
+    }
+
+    // Events collection
+    match /events/{eventId} {
+      // Read: only creator or members
+      allow read: if request.auth != null
+        && (resource.data.creatorId == request.auth.uid
+            || request.auth.uid in resource.data.members);
+
+      // Create: must set yourself as creator
+      allow create: if request.auth != null
+        && request.resource.data.creatorId == request.auth.uid;
+
+      // Update/Delete: only the creator
+      allow update, delete: if request.auth != null
+        && resource.data.creatorId == request.auth.uid;
+
+      // Messages subcollection
+      match /messages/{messageId} {
+        // Read: only event members
+        allow read: if request.auth != null && isEventMember(eventId);
+
+        // Create: must be event member and set own senderId
+        allow create: if request.auth != null
+          && isEventMember(eventId)
+          && request.resource.data.senderId == request.auth.uid;
+
+        // Delete: only own messages
+        allow delete: if request.auth != null
+          && resource.data.senderId == request.auth.uid;
+
+        // No direct updates to messages
+        allow update: if false;
+      }
+
+      // Expenses subcollection
+      match /expenses/{expenseId} {
+        // Read: only event members
+        allow read: if request.auth != null && isEventMember(eventId);
+
+        // Create: must be event member and set own payerId
+        allow create: if request.auth != null
+          && isEventMember(eventId)
+          && request.resource.data.payerId == request.auth.uid;
+
+        // Delete: only the payer or event creator
+        allow delete: if request.auth != null
+          && (resource.data.payerId == request.auth.uid
+              || get(/databases/$(database)/documents/events/$(eventId)).data.creatorId == request.auth.uid);
+
+        // No direct updates (delete and re-create)
+        allow update: if false;
+      }
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.uid == userId;
+    }
+  }
+}
