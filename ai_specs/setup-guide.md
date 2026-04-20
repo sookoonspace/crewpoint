@@ -4,7 +4,7 @@ Step-by-step instructions to get the app running on device after code implementa
 
 ---
 
-## 1. Firebase Project Setup
+## 1. Firebase Project Setup (FlutterFire CLI)
 
 ### 1.1 Create Firebase Projects
 
@@ -15,57 +15,73 @@ Step-by-step instructions to get the app running on device after code implementa
    - `crewpoint-prod`
 3. In each project, enable:
    - **Authentication** → Sign-in methods: Email/Password, Google, Apple
-   - **Cloud Firestore** → Start in test mode (secure later)
+   - **Cloud Firestore** → Start in test mode (secure with rules in Section 6)
    - **Storage** (for receipt uploads)
 
-### 1.2 Register Android Apps
+### 1.2 Install FlutterFire CLI
 
-For each project, register an Android app:
+```bash
+# Install Firebase CLI (if not already installed)
+# See: https://firebase.google.com/docs/cli#install_the_firebase_cli
 
-| Flavor | Package Name |
-|--------|-------------|
-| dev | `space.sookoon.crewpoint.dev` |
-| stg | `space.sookoon.crewpoint.stg` |
-| prod | `space.sookoon.crewpoint.app` |
+# Install FlutterFire CLI
+dart pub global activate flutterfire_cli
 
-1. Download `google-services.json` for each
-2. Place them in flavor-specific directories:
-
-```
-android/app/src/dev/google-services.json
-android/app/src/stg/google-services.json
-android/app/src/prod/google-services.json
+# Login to Firebase
+firebase login
 ```
 
-3. Add the Google Services plugin to Android build:
+### 1.3 Configure Each Flavor
 
-**`android/build.gradle.kts`** — add to plugins block:
-```kotlin
-id("com.google.gms.google-services") version "4.4.2" apply false
+Run `flutterfire configure` once per flavor. This auto-generates:
+- `google-services.json` (Android)
+- `GoogleService-Info.plist` (iOS)
+- A Dart file with `FirebaseOptions` for each platform
+
+```bash
+# Development
+flutterfire configure \
+  --project=crewpoint-dev \
+  --out=lib/firebase_options_dev.dart \
+  --platforms=android,ios,web \
+  --android-package-name=space.sookoon.crewpoint.dev \
+  --ios-bundle-id=space.sookoon.crewpoint.dev
+
+# Staging
+flutterfire configure \
+  --project=crewpoint-stg \
+  --out=lib/firebase_options_stg.dart \
+  --platforms=android,ios,web \
+  --android-package-name=space.sookoon.crewpoint.stg \
+  --ios-bundle-id=space.sookoon.crewpoint.stg
+
+# Production
+flutterfire configure \
+  --project=crewpoint-prod \
+  --out=lib/firebase_options_prod.dart \
+  --platforms=android,ios,web \
+  --android-package-name=space.sookoon.crewpoint.app \
+  --ios-bundle-id=space.sookoon.crewpoint.app
 ```
 
-**`android/app/build.gradle.kts`** — add to plugins block:
-```kotlin
-id("com.google.gms.google-services")
+**What this does automatically:**
+- Creates/updates `android/app/google-services.json`
+- Creates/updates `ios/Runner/GoogleService-Info.plist`
+- Generates the Dart options file (e.g., `lib/firebase_options_dev.dart`)
+- Adds required Gradle plugins to `android/build.gradle.kts` and `android/app/build.gradle.kts`
+
+### 1.4 Commit or Gitignore Generated Files
+
+**Option A — Commit** (recommended for small teams):
+```bash
+git add lib/firebase_options_*.dart
+git commit -m "chore: add firebase options for all flavors"
 ```
 
-### 1.3 Register iOS Apps
-
-For each project, register an iOS app:
-
-| Flavor | Bundle ID |
-|--------|-----------|
-| dev | `space.sookoon.crewpoint.dev` |
-| stg | `space.sookoon.crewpoint.stg` |
-| prod | `space.sookoon.crewpoint.app` |
-
-1. Download `GoogleService-Info.plist` for each
-2. Place them (we'll reference in Xcode build phases):
-
+**Option B — Gitignore and regenerate in CI** (recommended for open-source/sensitive projects):
 ```
-ios/config/dev/GoogleService-Info.plist
-ios/config/stg/GoogleService-Info.plist
-ios/config/prod/GoogleService-Info.plist
+# .gitignore
+lib/firebase_options_*.dart
 ```
 
 ---
@@ -141,75 +157,44 @@ For each scheme:
    - **Archive** → Info → Build Configuration → `Release-{flavor}`
 4. Mark all schemes as **Shared** (check the "Shared" checkbox)
 
-### 2.4 Add GoogleService-Info.plist Copy Phase
-
-Add a **Run Script** build phase to copy the correct plist per flavor:
-
-1. Select **Runner** target → **Build Phases**
-2. Click **+** → **New Run Script Phase**
-3. Name it "Copy GoogleService-Info.plist"
-4. Move it **above** "Copy Bundle Resources"
-5. Paste this script:
-
-```bash
-# Determine flavor from bundle identifier
-PLIST_SOURCE=""
-if [[ "${PRODUCT_BUNDLE_IDENTIFIER}" == *".dev" ]]; then
-  PLIST_SOURCE="${PROJECT_DIR}/config/dev/GoogleService-Info.plist"
-elif [[ "${PRODUCT_BUNDLE_IDENTIFIER}" == *".stg" ]]; then
-  PLIST_SOURCE="${PROJECT_DIR}/config/stg/GoogleService-Info.plist"
-else
-  PLIST_SOURCE="${PROJECT_DIR}/config/prod/GoogleService-Info.plist"
-fi
-
-cp "${PLIST_SOURCE}" "${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/GoogleService-Info.plist"
-```
-
-### 2.5 Configure Apple Sign-In
+### 2.4 Configure Apple Sign-In
 
 1. In the Apple Developer Portal, create App IDs for all 3 bundle identifiers
 2. Enable **Sign in with Apple** capability for each
 3. In Xcode: **Runner** target → **Signing & Capabilities** → **+ Capability** → **Sign in with Apple**
 
+> **Note**: The `GoogleService-Info.plist` copy phase is **not needed** when using `flutterfire configure` — it places the plist in the correct location automatically.
+
 ---
 
 ## 3. Environment Variables & Envied Setup
 
-### 3.1 Populate .env Files
+### 3.1 About Firebase Config
 
-Get the values from Firebase Console → Project Settings → General:
+Firebase configuration keys are **no longer stored in `.env` files**. They are auto-generated by `flutterfire configure` into `lib/firebase_options_{flavor}.dart` (see Section 1.3).
 
-**`.env.dev`**:
-```
-FIREBASE_API_KEY=AIza...your-dev-key
-FIREBASE_APP_ID=1:123456789:ios:abc123
-FIREBASE_MESSAGING_SENDER_ID=123456789
-FIREBASE_PROJECT_ID=crewpoint-dev
-```
+The `Env` class and `.env` files are reserved for **non-Firebase secrets** (e.g., third-party API keys added in the future).
 
-Repeat for `.env.stg` and `.env.prod` with their respective values.
+### 3.2 Adding Future Non-Firebase Secrets
 
-### 3.2 Activate Envied
+If you need non-Firebase secrets later:
 
-1. Copy the appropriate `.env.{flavor}` to `.env`:
-   ```bash
-   cp .env.dev .env
+1. Add keys to `.env`:
+   ```
+   MAPS_API_KEY=your-key-here
+   SENTRY_DSN=https://...
    ```
 
-2. Uncomment the envied code in `lib/app/core/env/env.dart`:
-   - Remove the placeholder `Env` class
-   - Uncomment the `@Envied` annotated class
+2. Update `lib/app/core/env/env.dart` with `@Envied` annotations
 
-3. Generate the obfuscated Dart file:
+3. Generate:
    ```bash
    dart run build_runner build -d
    ```
 
-4. Verify `lib/app/core/env/env.g.dart` was created
+### 3.3 Per-Flavor Env Switching (if needed)
 
-### 3.3 Per-Flavor Env Switching
-
-For CI or local development, create a script:
+Only required if you add non-Firebase secrets that differ per flavor:
 
 **`scripts/switch_env.sh`**:
 ```bash
@@ -276,25 +261,77 @@ flutter build ios --flavor prod
 
 ## 6. Firestore Security Rules
 
-Deploy these rules to each Firebase project:
+Deploy these rules to each Firebase project. Rules enforce:
+- **Events**: only creator can modify; only members can read
+- **Messages**: only event members can read/write; sender identity verified
+- **Expenses**: only event members can read; only payer can create
+- **Users**: any authenticated user can read; only own document writable
 
 ```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Helper: check if user is a member of an event
+    function isEventMember(eventId) {
+      let event = get(/databases/$(database)/documents/events/$(eventId));
+      return request.auth.uid == event.data.creatorId
+          || request.auth.uid in event.data.members;
+    }
+
     // Events collection
     match /events/{eventId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
-      
+      // Read: only creator or members
+      allow read: if request.auth != null
+        && (resource.data.creatorId == request.auth.uid
+            || request.auth.uid in resource.data.members);
+
+      // Create: must set yourself as creator
+      allow create: if request.auth != null
+        && request.resource.data.creatorId == request.auth.uid;
+
+      // Update/Delete: only the creator
+      allow update, delete: if request.auth != null
+        && resource.data.creatorId == request.auth.uid;
+
       // Messages subcollection
       match /messages/{messageId} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null 
+        // Read: only event members
+        allow read: if request.auth != null && isEventMember(eventId);
+
+        // Create: must be event member and set own senderId
+        allow create: if request.auth != null
+          && isEventMember(eventId)
           && request.resource.data.senderId == request.auth.uid;
+
+        // Delete: only own messages
+        allow delete: if request.auth != null
+          && resource.data.senderId == request.auth.uid;
+
+        // No direct updates to messages
+        allow update: if false;
+      }
+
+      // Expenses subcollection
+      match /expenses/{expenseId} {
+        // Read: only event members
+        allow read: if request.auth != null && isEventMember(eventId);
+
+        // Create: must be event member and set own payerId
+        allow create: if request.auth != null
+          && isEventMember(eventId)
+          && request.resource.data.payerId == request.auth.uid;
+
+        // Delete: only the payer or event creator
+        allow delete: if request.auth != null
+          && (resource.data.payerId == request.auth.uid
+              || get(/databases/$(database)/documents/events/$(eventId)).data.creatorId == request.auth.uid);
+
+        // No direct updates (delete and re-create)
+        allow update: if false;
       }
     }
-    
+
     // Users collection
     match /users/{userId} {
       allow read: if request.auth != null;
@@ -304,10 +341,15 @@ service cloud.firestore {
 }
 ```
 
-Deploy via Firebase CLI:
+### Deploy Rules
+
 ```bash
 firebase deploy --only firestore:rules --project crewpoint-dev
+firebase deploy --only firestore:rules --project crewpoint-stg
+firebase deploy --only firestore:rules --project crewpoint-prod
 ```
+
+> **Important**: The `members` array field on event documents must be populated by app code when users are added to an event. Include the creator in this array when creating an event.
 
 ---
 
@@ -384,6 +426,7 @@ flutter_launcher_icons-stg:
 - [ ] Apple Sign-In works on iOS
 - [ ] Email sign-up creates user in Firebase Auth console
 - [ ] Chat messages appear in Firestore console
+- [ ] Non-member cannot read another user's event (security rules)
 - [ ] App displays cached data with airplane mode enabled (offline-first)
 - [ ] `flutter build apk --flavor prod` produces signed APK
 - [ ] `flutter build ios --flavor prod` produces archive
@@ -394,10 +437,11 @@ flutter_launcher_icons-stg:
 
 | Issue | Fix |
 |-------|-----|
-| `google-services.json` not found | Ensure file is in `android/app/src/{flavor}/` directory |
+| `flutterfire configure` fails | Run `firebase login` first; ensure project exists in console |
 | iOS build fails with bundle ID mismatch | Verify xcconfig `PRODUCT_BUNDLE_IDENTIFIER` matches scheme |
-| Envied `_Env` not found | Run `dart run build_runner build -d` after `.env` changes |
+| `DefaultFirebaseOptions` not found | Run `flutterfire configure` for the current flavor |
 | Google Sign-In cancelled immediately | Add SHA-1 to Firebase Console (Android) |
 | Apple Sign-In capability missing | Add in Xcode + Apple Developer Portal |
 | Drift migration error | Increment `schemaVersion` in `app_database.dart` |
 | Flavor not recognized by Flutter | Use exact names: `dev`, `stg`, `prod` (lowercase) |
+| Firestore permission denied | Check `members` array exists on event document |

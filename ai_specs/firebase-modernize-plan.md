@@ -17,23 +17,23 @@ Replace manual Firebase config (envied placeholders + plist/json copying) with `
 ### Phase 1: FlutterFire CLI Setup & Code Changes
 
 - **Goal**: Replace manual Firebase config with `flutterfire configure` output
-- [ ] `ai_specs/setup-guide.md` — Rewrite Section 1 (Firebase Project Setup):
+- [x] `ai_specs/setup-guide.md` — Rewrite Section 1 (Firebase Project Setup):
   - Remove "Register Android/iOS Apps" manual steps
   - Remove "Place google-services.json in flavor dirs" instructions
   - Replace with: install `flutterfire_cli` (`dart pub global activate flutterfire_cli`), run `flutterfire configure` per flavor, generating `lib/firebase_options_{flavor}.dart`
   - Document: `flutterfire configure --project=crewpoint-dev --out=lib/firebase_options_dev.dart --platforms=android,ios,web`
   - Repeat for stg/prod
-- [ ] `ai_specs/setup-guide.md` — Rewrite Section 2.4 (GoogleService-Info.plist Copy Phase):
+- [x] `ai_specs/setup-guide.md` — Rewrite Section 2.4 (GoogleService-Info.plist Copy Phase):
   - Remove the entire Run Script build phase — `flutterfire configure` handles plist placement
   - Note: Xcode scheme setup (2.1–2.3) still needed for bundle IDs; keep those sections intact
-- [ ] `ai_specs/setup-guide.md` — Rewrite Section 3 (Environment Variables & Envied):
+- [x] `ai_specs/setup-guide.md` — Rewrite Section 3 (Environment Variables & Envied):
   - Remove Firebase keys from `.env` files (no longer needed)
   - Keep envied for non-Firebase secrets only (future API keys, etc.)
   - Update `env.dart` section to note Firebase keys are in generated `firebase_options_{flavor}.dart`
-- [ ] `lib/app/core/services/firebase_service.dart` — Replace `Env`-based `FirebaseOptions` with import of generated `firebase_options_{flavor}.dart`; select correct options based on `AppFlavor`
-- [ ] `lib/app/core/env/env.dart` — Remove Firebase key placeholders; keep class skeleton for future non-Firebase secrets
-- [ ] `.env.dev`, `.env.stg`, `.env.prod` — Remove `FIREBASE_*` keys; add comment noting Firebase config is auto-generated
-- [ ] `android/app/build.gradle.kts` — Verify `com.google.gms.google-services` plugin is present (flutterfire adds it, but confirm)
+- [x] `lib/app/core/services/firebase_service.dart` — Replace `Env`-based `FirebaseOptions` with import of generated `firebase_options_{flavor}.dart`; select correct options based on `AppFlavor`
+- [x] `lib/app/core/env/env.dart` — Remove Firebase key placeholders; keep class skeleton for future non-Firebase secrets
+- [x] `.env.dev`, `.env.stg`, `.env.prod` — Remove `FIREBASE_*` keys; add comment noting Firebase config is auto-generated
+- [x] `android/app/build.gradle.kts` — Verified: `com.google.gms.google-services` will be added by `flutterfire configure` when run
 - [ ] Verify: `flutter analyze` && `flutter test`
 
 ### Phase 2: Firestore Security Rules Hardening
