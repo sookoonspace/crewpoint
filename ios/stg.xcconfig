@@ -1,0 +1,4 @@
+#include "../Debug.xcconfig"
+PRODUCT_BUNDLE_IDENTIFIER=space.sookoon.crewpoint.stg
+PRODUCT_NAME=CrewPoint Stg
+ASSET_PREFIX=stg
