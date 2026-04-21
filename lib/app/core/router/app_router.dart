@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/router/app_shell.dart';
 import 'package:crewpoint_app/app/features/auth/presentation/auth_gate_screen.dart';
 import 'package:crewpoint_app/app/features/onboarding/presentation/onboarding_screen.dart';
@@ -49,7 +51,13 @@ GoRouter createRouter({
     routes: [
       GoRoute(
         path: AppRoutes.onboarding,
-        builder: (_, _) => const OnboardingScreen(),
+        builder: (context, _) => Consumer(
+          builder: (context, ref, _) => OnboardingScreen(
+            onComplete: () {
+              ref.read(onboardingProvider.notifier).completeOnboarding();
+            },
+          ),
+        ),
       ),
       GoRoute(path: AppRoutes.auth, builder: (_, _) => const AuthGateScreen()),
       StatefulShellRoute.indexedStack(

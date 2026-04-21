@@ -1,28 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/providers.dart';
 
-class SocialAuthButtons extends StatelessWidget {
+class SocialAuthButtons extends ConsumerWidget {
   const SocialAuthButtons({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       spacing: AppSpacing.md,
       children: [
         _SocialButton(
           label: 'Continue with Google',
           icon: Icons.g_mobiledata,
-          onPressed: () {
-            // Wired up in auth provider integration
-          },
+          onPressed: () => ref.read(authProvider.notifier).signInWithGoogle(),
         ),
         _SocialButton(
           label: 'Continue with Apple',
           icon: Icons.apple,
-          onPressed: () {
-            // Wired up in auth provider integration
-          },
+          onPressed: () => ref.read(authProvider.notifier).signInWithApple(),
         ),
       ],
     );

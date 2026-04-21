@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/custom_text_field.dart';
 import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
+import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 
-class EmailAuthForm extends StatefulWidget {
+class EmailAuthForm extends ConsumerStatefulWidget {
   const EmailAuthForm({super.key});
 
   @override
-  State<EmailAuthForm> createState() => _EmailAuthFormState();
+  ConsumerState<EmailAuthForm> createState() => _EmailAuthFormState();
 }
 
-class _EmailAuthFormState extends State<EmailAuthForm> {
+class _EmailAuthFormState extends ConsumerState<EmailAuthForm> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -29,8 +33,42 @@ class _EmailAuthFormState extends State<EmailAuthForm> {
     setState(() => _isSignUp = !_isSignUp);
   }
 
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final notifier = ref.read(authProvider.notifier);
+
+    if (_isSignUp) {
+      await notifier.signUpWithEmail(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        displayName: _nameController.text.trim(),
+      );
+    } else {
+      await notifier.signInWithEmail(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+    final isLoading = authState is AuthLoading;
+
+    // Show error message if auth failed
+    ref.listen<AuthState>(authProvider, (previous, next) {
+      if (next is AuthError) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.failure.message),
+            backgroundColor: AppColors.terracotta,
+          ),
+        );
+      }
+    });
+
     return Form(
       key: _formKey,
       child: Column(
@@ -41,6 +79,7 @@ class _EmailAuthFormState extends State<EmailAuthForm> {
               hintText: 'Full Name',
               controller: _nameController,
               prefixIcon: const Icon(Icons.person_outline),
+              enabled: !isLoading,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return 'Please enter your name';
@@ -53,6 +92,7 @@ class _EmailAuthFormState extends State<EmailAuthForm> {
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             prefixIcon: const Icon(Icons.email_outlined),
+            enabled: !isLoading,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
                 return 'Please enter your email';
@@ -68,6 +108,7 @@ class _EmailAuthFormState extends State<EmailAuthForm> {
             controller: _passwordController,
             obscureText: true,
             prefixIcon: const Icon(Icons.lock_outline),
+            enabled: !isLoading,
             validator: (value) {
               if (value == null || value.length < 6) {
                 return 'Password must be at least 6 characters';
@@ -77,14 +118,11 @@ class _EmailAuthFormState extends State<EmailAuthForm> {
           ),
           PrimaryButton(
             label: _isSignUp ? 'Create Account' : 'Sign In',
-            onPressed: () {
-              if (_formKey.currentState?.validate() ?? false) {
-                // Wired up in auth provider integration
-              }
-            },
+            onPressed: isLoading ? null : _submit,
+            isLoading: isLoading,
           ),
           TextButton(
-            onPressed: _toggleMode,
+            onPressed: isLoading ? null : _toggleMode,
             child: Text(
               _isSignUp
                   ? 'Already have an account? Sign In'
