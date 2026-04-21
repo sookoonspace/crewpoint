@@ -1,24 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
+import 'package:crewpoint_app/app/core/providers.dart';
+import 'package:crewpoint_app/app/core/router/app_router.dart';
+import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 
-class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({
-    super.key,
-    this.user,
-    this.onSignOut,
-    this.onDeleteAccount,
-    this.onOpenPrivacy,
-  });
+import 'package:crewpoint_app/app/features/profile/presentation/widgets/delete_account_dialog.dart';
 
-  final AppUser? user;
-  final VoidCallback? onSignOut;
-  final VoidCallback? onDeleteAccount;
-  final VoidCallback? onOpenPrivacy;
+class ProfileScreen extends ConsumerWidget {
+  const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authProvider);
+    final user = authState is Authenticated ? authState.user : null;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Profile')),
       body: ListView(
@@ -42,14 +40,29 @@ class ProfileScreen extends StatelessWidget {
           _ProfileTile(
             icon: Icons.privacy_tip_outlined,
             label: 'Privacy Dashboard',
-            onTap: onOpenPrivacy,
+            onTap: () {
+              // Navigate to privacy dashboard
+            },
           ),
-          _ProfileTile(icon: Icons.logout, label: 'Sign Out', onTap: onSignOut),
+          _ProfileTile(
+            icon: Icons.logout,
+            label: 'Sign Out',
+            onTap: () => ref.read(authProvider.notifier).signOut(),
+          ),
           _ProfileTile(
             icon: Icons.delete_forever,
             label: 'Delete Account',
             textColor: AppColors.terracotta,
-            onTap: onDeleteAccount,
+            onTap: () => DeleteAccountDialog.show(
+              context: context,
+              onDeleted: () {
+                // Reset onboarding state and navigate out
+                ref.read(onboardingProvider.notifier).completeOnboarding();
+                if (context.mounted) {
+                  context.go(AppRoutes.auth);
+                }
+              },
+            ),
           ),
         ],
       ),

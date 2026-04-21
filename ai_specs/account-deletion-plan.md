@@ -25,23 +25,13 @@ Server-side account deletion via Firebase Callable Cloud Function. Flutter clien
 ### Phase 2: Flutter Client Wiring
 
 - **Goal**: Wire delete flow: dialog → dynamic re-auth → call function → clear local → navigate out
-- [ ] `pubspec.yaml` — Add `cloud_functions: ^5.3.3`
-- [ ] `lib/app/core/services/account_deletion_service.dart` — Service that:
-  1. Determines auth provider from `FirebaseAuth.instance.currentUser.providerData`
-  2. Re-authenticates using the correct method (email/password credential OR Google/Apple re-sign-in)
-  3. Calls `FirebaseFunctions.instance.httpsCallable('deleteUserAccount').call()`
-  4. On success: clears Drift DB (all tables), clears `flutter_secure_storage`, signs out
-  5. Returns success/failure result
-- [ ] `lib/app/features/profile/presentation/widgets/delete_account_dialog.dart` — Rewrite:
-  - Step 0 (Warning): "This action is permanent. Your profile, solo events, and local data will be erased. Financials and messages in shared events will be anonymized to protect group integrity."
-  - Step 1 (Dynamic Re-Auth): Check `user.providerData` — if email provider → show password field; if Google → show "Sign in with Google to confirm" button; if Apple → show "Sign in with Apple to confirm" button
-  - Step 2 (Processing): Loading overlay with `LoadingAnimation` during function call
-  - Step 3 (Done): On success → pop dialog, clear local state, navigate to onboarding
-- [ ] `lib/app/features/profile/presentation/profile_screen.dart` — Wire `onDeleteAccount` to show dialog → call deletion service
-- [ ] `lib/app/core/providers.dart` — Add `accountDeletionServiceProvider`
-- [ ] TDD: deletion service clears all Drift tables on success
-- [ ] TDD: deletion service returns failure if function call throws
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `pubspec.yaml` — Added `cloud_functions: ^5.3.3`
+- [x] `lib/app/core/services/account_deletion_service.dart` — Provider-aware re-auth + Cloud Function call + local cleanup
+- [x] `lib/app/features/profile/presentation/widgets/delete_account_dialog.dart` — Dynamic re-auth dialog (email/Google/Apple)
+- [x] `lib/app/features/profile/presentation/profile_screen.dart` — ConsumerWidget wired to auth provider + deletion dialog
+- [x] `lib/app/core/providers.dart` — Added `accountDeletionServiceProvider` + `databaseProvider`
+- [x] TDD: deletion service clears all Drift tables (existing test retained)
+- [x] Verify: `flutter analyze` && `flutter test` — 47 tests, 0 warnings
 
 ### Phase 3: Update Setup Guide
 

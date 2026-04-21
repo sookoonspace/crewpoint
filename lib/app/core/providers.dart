@@ -1,5 +1,8 @@
+import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:crewpoint_app/app/core/database/app_database.dart';
+import 'package:crewpoint_app/app/core/services/account_deletion_service.dart';
 import 'package:crewpoint_app/app/core/services/i_auth_service.dart';
 import 'package:crewpoint_app/app/core/services/secure_storage_service.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
@@ -33,5 +36,19 @@ final authProvider = NotifierProvider<AuthNotifier, AuthState>(
 final onboardingProvider = NotifierProvider<OnboardingNotifier, bool>(
   () => OnboardingNotifier(
     storageService: SecureStorageService(storage: const FlutterSecureStorage()),
+  ),
+);
+
+/// App database (Drift). Uses in-memory for now; swap with native connection
+/// via connection/native.dart when platform-specific init is wired.
+final databaseProvider = Provider<AppDatabase>(
+  (_) => AppDatabase(NativeDatabase.memory()),
+);
+
+/// Account deletion service.
+final accountDeletionServiceProvider = Provider<AccountDeletionService>(
+  (ref) => AccountDeletionService(
+    database: ref.watch(databaseProvider),
+    secureStorage: ref.watch(secureStorageProvider),
   ),
 );
