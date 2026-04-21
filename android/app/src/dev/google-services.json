@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "711822236757",
+    "project_id": "crewpoint-dev",
+    "storage_bucket": "crewpoint-dev.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:711822236757:android:4f2c437150bdb7038788dc",
+        "android_client_info": {
+          "package_name": "space.sookoon.crewpoint.dev"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "711822236757-mnl5oaquacbcbbicgpfa5jeq4ssehsb4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "space.sookoon.crewpoint.dev",
+            "certificate_hash": "fd71e1ee4b8eb6e94fe8b9b66e6be481aedf638a"
+          }
+        },
+        {
+          "client_id": "711822236757-n7s135t3h2n1ophkbgtf4epcghe6qoaa.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCPLYkjk6WjW0_CGT6ehsHWbj7dZyvgeuM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "711822236757-f7amic90hgc08mpg9teu3nb6q3kqfoi0.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "711822236757-2n9vt2l6mqnutpkk9247ehrjmp2voi6e.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "space.sookoon.crewpoint.dev"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

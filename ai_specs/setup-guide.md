@@ -33,49 +33,69 @@ firebase login
 
 ### 1.3 Configure Each Flavor
 
-Run `flutterfire configure` once per flavor. This auto-generates:
-- `google-services.json` (Android)
-- `GoogleService-Info.plist` (iOS)
-- A Dart file with `FirebaseOptions` for each platform
+`flutterfire configure` generates a Dart options file **and** overwrites the single native config file (`google-services.json` / `GoogleService-Info.plist`). Since each flavor needs its own native file, run configure per-platform and **move the native file** before the next run.
+
+#### Android (google-services.json)
+
+Run once per flavor, moving the file into the Gradle flavor source set each time:
 
 ```bash
-# Development
-flutterfire configure \
-  --project=crewpoint-dev \
-  --out=lib/firebase_options_dev.dart \
-  --platforms=android,ios,web \
-  --android-package-name=space.sookoon.crewpoint.dev \
-  --ios-bundle-id=space.sookoon.crewpoint.dev
+# Dev
+flutterfire configure --project=crewpoint-dev --out=lib/firebase_options_dev.dart \
+  --platforms=android --android-package-name=space.sookoon.crewpoint.dev --yes
+mv android/app/google-services.json android/app/src/dev/google-services.json
 
-# Staging
-flutterfire configure \
-  --project=crewpoint-stg \
-  --out=lib/firebase_options_stg.dart \
-  --platforms=android,ios,web \
-  --android-package-name=space.sookoon.crewpoint.stg \
-  --ios-bundle-id=space.sookoon.crewpoint.stg
+# Stg
+flutterfire configure --project=crewpoint-stg --out=lib/firebase_options_stg.dart \
+  --platforms=android --android-package-name=space.sookoon.crewpoint.stg --yes
+mv android/app/google-services.json android/app/src/stg/google-services.json
 
-# Production
-flutterfire configure \
-  --project=crewpoint-prod \
-  --out=lib/firebase_options_prod.dart \
-  --platforms=android,ios,web \
-  --android-package-name=space.sookoon.crewpoint.app \
-  --ios-bundle-id=space.sookoon.crewpoint.app
+# Prod
+flutterfire configure --project=crewpoint-prod --out=lib/firebase_options_prod.dart \
+  --platforms=android --android-package-name=space.sookoon.crewpoint.app --yes
+mv android/app/google-services.json android/app/src/prod/google-services.json
 ```
 
-**What this does automatically:**
-- Creates/updates `android/app/google-services.json`
-- Creates/updates `ios/Runner/GoogleService-Info.plist`
-- Generates the Dart options file (e.g., `lib/firebase_options_dev.dart`)
-- Adds required Gradle plugins to `android/build.gradle.kts` and `android/app/build.gradle.kts`
+Gradle's Google Services plugin automatically picks `android/app/src/{flavor}/google-services.json` — no extra config needed.
+
+#### iOS (GoogleService-Info.plist)
+
+Run once per flavor, copying the plist into a per-flavor directory:
+
+```bash
+# Dev
+flutterfire configure --project=crewpoint-dev --out=lib/firebase_options_dev.dart \
+  --platforms=ios --ios-bundle-id=space.sookoon.crewpoint.dev --yes
+cp ios/Runner/GoogleService-Info.plist ios/Runner/Firebase/dev/GoogleService-Info.plist
+
+# Stg
+flutterfire configure --project=crewpoint-stg --out=lib/firebase_options_stg.dart \
+  --platforms=ios --ios-bundle-id=space.sookoon.crewpoint.stg --yes
+cp ios/Runner/GoogleService-Info.plist ios/Runner/Firebase/stg/GoogleService-Info.plist
+
+# Prod
+flutterfire configure --project=crewpoint-prod --out=lib/firebase_options_prod.dart \
+  --platforms=ios --ios-bundle-id=space.sookoon.crewpoint.app --yes
+cp ios/Runner/GoogleService-Info.plist ios/Runner/Firebase/prod/GoogleService-Info.plist
+```
+
+The iOS plist copy phase (Section 2.4) handles selecting the right file at build time.
+
+#### Web (optional)
+
+Run once with any flavor — web doesn't have flavor-specific config files:
+
+```bash
+flutterfire configure --project=crewpoint-dev --out=lib/firebase_options_dev.dart \
+  --platforms=web --yes
+```
 
 ### 1.4 Commit or Gitignore Generated Files
 
 **Option A — Commit** (recommended for small teams):
 ```bash
-git add lib/firebase_options_*.dart
-git commit -m "chore: add firebase options for all flavors"
+git add lib/firebase_options_*.dart android/app/src/*/google-services.json ios/Runner/Firebase/
+git commit -m "chore: add firebase config for all flavors"
 ```
 
 **Option B — Gitignore and regenerate in CI** (recommended for open-source/sensitive projects):
@@ -83,6 +103,8 @@ git commit -m "chore: add firebase options for all flavors"
 # .gitignore
 lib/firebase_options_*.dart
 ```
+
+> **Caveat**: Re-running `flutterfire configure` will overwrite the Dart options files and the root-level native files. You'll need to re-do the move/copy steps above.
 
 ---
 
@@ -157,13 +179,32 @@ For each scheme:
    - **Archive** → Info → Build Configuration → `Release-{flavor}`
 4. Mark all schemes as **Shared** (check the "Shared" checkbox)
 
-### 2.4 Configure Apple Sign-In
+### 2.4 Add GoogleService-Info.plist Copy Phase
+
+Since `flutterfire configure` overwrites the single plist, we store per-flavor plists in `ios/Runner/Firebase/{flavor}/` and copy the correct one at build time.
+
+1. Select **Runner** target → **Build Phases**
+2. Click **+** → **New Run Script Phase**
+3. Name it "Copy GoogleService-Info.plist"
+4. Move it **above** "Copy Bundle Resources"
+5. Paste this script:
+
+```bash
+PLIST_DIR="${PROJECT_DIR}/Runner/Firebase"
+if [[ "${PRODUCT_BUNDLE_IDENTIFIER}" == *".dev" ]]; then
+  cp "${PLIST_DIR}/dev/GoogleService-Info.plist" "${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/GoogleService-Info.plist"
+elif [[ "${PRODUCT_BUNDLE_IDENTIFIER}" == *".stg" ]]; then
+  cp "${PLIST_DIR}/stg/GoogleService-Info.plist" "${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/GoogleService-Info.plist"
+else
+  cp "${PLIST_DIR}/prod/GoogleService-Info.plist" "${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/GoogleService-Info.plist"
+fi
+```
+
+### 2.5 Configure Apple Sign-In
 
 1. In the Apple Developer Portal, create App IDs for all 3 bundle identifiers
 2. Enable **Sign in with Apple** capability for each
 3. In Xcode: **Runner** target → **Signing & Capabilities** → **+ Capability** → **Sign in with Apple**
-
-> **Note**: The `GoogleService-Info.plist` copy phase is **not needed** when using `flutterfire configure` — it places the plist in the correct location automatically.
 
 ---
 
@@ -440,8 +481,11 @@ flutter_launcher_icons-stg:
 | `flutterfire configure` fails | Run `firebase login` first; ensure project exists in console |
 | iOS build fails with bundle ID mismatch | Verify xcconfig `PRODUCT_BUNDLE_IDENTIFIER` matches scheme |
 | `DefaultFirebaseOptions` not found | Run `flutterfire configure` for the current flavor |
+| `google-services.json` not found for flavor | Ensure file is in `android/app/src/{flavor}/google-services.json` (not `android/app/`) |
+| iOS wrong Firebase project | Verify plist copy script (Section 2.4) runs before "Copy Bundle Resources" |
 | Google Sign-In cancelled immediately | Add SHA-1 to Firebase Console (Android) |
 | Apple Sign-In capability missing | Add in Xcode + Apple Developer Portal |
 | Drift migration error | Increment `schemaVersion` in `app_database.dart` |
 | Flavor not recognized by Flutter | Use exact names: `dev`, `stg`, `prod` (lowercase) |
 | Firestore permission denied | Check `members` array exists on event document |
+| Re-ran `flutterfire configure` and lost native files | Re-do the move/copy steps from Section 1.3 |
