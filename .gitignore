@@ -51,3 +51,7 @@ app.*.map.json
 
 # Generated files
 *.g.dart
+
+# Cloud Functions build output
+functions/lib/
+functions/node_modules/

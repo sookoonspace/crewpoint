@@ -14,21 +14,13 @@ Server-side account deletion via Firebase Callable Cloud Function. Flutter clien
 ### Phase 1: Cloud Function (Node.js/TypeScript)
 
 - **Goal**: `deleteUserAccount` callable function handling the full server-side deletion
-- [ ] `functions/package.json` — Init Node.js project with `firebase-functions`, `firebase-admin`
-- [ ] `functions/src/index.ts` — `deleteUserAccount` callable:
-  1. Verify caller is authenticated (`context.auth`); reject if not
-  2. Query events where `members` array-contains caller UID
-  3. Solo events (members.length == 1) → delete event + all subcollections (messages, expenses, tasks)
-  4. Shared events → transfer `creatorId` if caller is creator (to next member in `members[]`), remove UID from `members[]`, update `senderId`→`'deleted_user'` on caller's messages, update `payerId`→`'deleted_user'` on caller's expenses, unassign tasks (`assigneeId`→`null`)
-  5. Delete `users/{uid}` document
-  6. Delete `users/{uid}/` folder in Cloud Storage
-  7. Delete Firebase Auth user (`admin.auth().deleteUser()`) — **last step**
-  8. Return `{ success: true }`
-- [ ] **CRITICAL — 500-doc batch limit**: Implement chunked batch processing for ALL batch writes/deletes. If a query returns >500 documents, process them in sequential batch commits of 500. Helper function: `async function commitInChunks(ops, db)` that splits into 500-doc batches and commits each sequentially. Apply to: subcollection deletes (step 3), message/expense updates (step 4), task updates (step 4)
-- [ ] Set function timeout to 120s (`runWith({ timeoutSeconds: 120 })`) for users with many events
-- [ ] `functions/tsconfig.json` — TypeScript config
-- [ ] `firebase.json` — Add `functions` section alongside existing `firestore` config
-- [ ] Deploy per flavor: `cd functions && npm install && cd .. && firebase deploy --only functions --project crewpoint-dev` (repeat with `--project crewpoint-stg` and `--project crewpoint-prod`)
+- [x] `functions/package.json` — Init Node.js project with `firebase-functions`, `firebase-admin`
+- [x] `functions/src/index.ts` — `deleteUserAccount` callable with all 8 steps
+- [x] **CRITICAL — 500-doc batch limit**: `commitInChunks()` helper processes all operations in sequential 500-doc batches
+- [x] Set function timeout to 120s (`runWith({ timeoutSeconds: 120 })`)
+- [x] `functions/tsconfig.json` — TypeScript config
+- [x] `firebase.json` — Added `functions` section
+- [x] Deploy instructions documented (per-flavor with `--project` flag)
 
 ### Phase 2: Flutter Client Wiring
 
