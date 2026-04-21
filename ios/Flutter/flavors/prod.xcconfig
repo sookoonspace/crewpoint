@@ -1,3 +1,5 @@
+#include "../Release.xcconfig"
+#include "../Generated.xcconfig"
 PRODUCT_BUNDLE_IDENTIFIER=space.sookoon.crewpoint.app
 PRODUCT_NAME=CrewPoint
 ASSET_PREFIX=prod
