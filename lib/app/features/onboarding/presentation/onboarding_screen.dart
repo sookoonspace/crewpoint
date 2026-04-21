@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
 
@@ -49,7 +50,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 title: 'Plan Events Together',
                 description:
                     'Assign roles, set dates, and track progress\u2014all in one place.',
-                backgroundColor: AppColors.offWhite,
+                backgroundColor: AppColors.cream,
                 iconColor: AppColors.sage,
                 textColor: AppColors.charcoal,
               ),
@@ -59,7 +60,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 description:
                     'Real-time messaging with critical alerts\nwhen it matters most.',
                 backgroundColor: AppColors.charcoal,
-                iconColor: AppColors.sageLight,
+                iconColor: AppColors.terracotta,
                 textColor: AppColors.offWhite,
               ),
               _FeaturePage(
@@ -67,8 +68,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 title: 'Split Costs Fairly',
                 description:
                     'Track expenses, upload receipts,\nand see who owes what.',
-                backgroundColor: AppColors.offWhite,
-                iconColor: AppColors.terracotta,
+                backgroundColor: AppColors.cream,
+                iconColor: AppColors.sage,
                 textColor: AppColors.charcoal,
               ),
               _PrivacyPage(),
@@ -121,19 +122,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                     const SizedBox(height: AppSpacing.lg),
 
-                    // Action button
-                    PrimaryButton(
-                      label: _currentPage == _pageCount - 1
-                          ? 'Get Started'
-                          : 'Continue',
-                      onPressed: () {
-                        if (_currentPage < _pageCount - 1) {
-                          _goToPage(_currentPage + 1);
-                        } else {
-                          widget.onComplete?.call();
-                        }
-                      },
-                    ),
+                    // Action button — terracotta on final page for conversion
+                    if (_currentPage == _pageCount - 1)
+                      _GetStartedButton(
+                        onPressed: () => widget.onComplete?.call(),
+                      )
+                    else
+                      PrimaryButton(
+                        label: 'Continue',
+                        onPressed: () => _goToPage(_currentPage + 1),
+                      ),
                   ],
                 ),
               ),
@@ -369,6 +367,34 @@ class _DataOptInToggle extends StatelessWidget {
             activeTrackColor: AppColors.sageLight.withValues(alpha: 0.4),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Terracotta "Get Started" button for the final onboarding page.
+/// Stands out against the charcoal background to drive conversion.
+class _GetStartedButton extends StatelessWidget {
+  const _GetStartedButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.terracotta,
+          foregroundColor: AppColors.white,
+          shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
+          textStyle: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        child: const Text('Get Started'),
       ),
     );
   }

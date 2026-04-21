@@ -22,6 +22,7 @@ abstract final class AppColors {
 
   // Neutrals
   static const Color white = Color(0xFFFFFFFF);
+  static const Color cream = Color(0xFFEADDCE);
   static const Color offWhite = Color(0xFFF8F9FA);
   static const Color lightGrey = Color(0xFFDFE6E9);
   static const Color mediumGrey = Color(0xFFB2BEC3);
