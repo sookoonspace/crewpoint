@@ -36,13 +36,8 @@ Server-side account deletion via Firebase Callable Cloud Function. Flutter clien
 ### Phase 3: Update Setup Guide
 
 - **Goal**: Document Cloud Function deployment steps
-- [ ] `ai_specs/setup-guide.md` — Add new section "11. Cloud Functions" covering:
-  - `firebase init functions` (if starting fresh)
-  - Environment setup (Node 18+, TypeScript)
-  - Per-flavor deploy: `firebase deploy --only functions --project crewpoint-dev`
-  - Testing locally with Firebase emulator suite (`firebase emulators:start`)
-  - Note: must deploy to all 3 projects separately
-- [ ] Verify: guide is consistent with new `firebase.json` structure
+- [x] `ai_specs/setup-guide.md` — Added Section 11: Cloud Functions (prerequisites, install, per-flavor deploy, emulator testing, logs, function reference table)
+- [x] Verify: guide is consistent with new `firebase.json` structure
 
 ## Risks / Out of scope
 

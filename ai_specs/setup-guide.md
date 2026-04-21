@@ -489,3 +489,60 @@ flutter_launcher_icons-stg:
 | Flavor not recognized by Flutter | Use exact names: `dev`, `stg`, `prod` (lowercase) |
 | Firestore permission denied | Check `members` array exists on event document |
 | Re-ran `flutterfire configure` and lost native files | Re-do the move/copy steps from Section 1.3 |
+| Cloud Function deploy fails | Run `firebase login` first; check Node 18+ installed |
+| Account deletion times out | Function has 120s timeout; for very large accounts, check logs with `firebase functions:log` |
+
+---
+
+## 11. Cloud Functions
+
+### 11.1 Prerequisites
+
+- Node.js 18+ installed
+- Firebase CLI installed and authenticated (`firebase login`)
+- `functions/` directory exists in project root with `package.json`
+
+### 11.2 Install Dependencies
+
+```bash
+cd functions
+npm install
+cd ..
+```
+
+### 11.3 Deploy Per Flavor
+
+Cloud Functions must be deployed separately to each Firebase project:
+
+```bash
+# Development
+firebase deploy --only functions --project crewpoint-dev
+
+# Staging
+firebase deploy --only functions --project crewpoint-stg
+
+# Production
+firebase deploy --only functions --project crewpoint-prod
+```
+
+### 11.4 Local Testing with Emulator
+
+```bash
+# Start the Firebase emulator suite (functions + firestore + auth)
+firebase emulators:start --project crewpoint-dev
+
+# In a separate terminal, run the Flutter app pointed at emulators
+# (requires adding emulator config to main.dart — see Firebase docs)
+```
+
+### 11.5 View Logs
+
+```bash
+firebase functions:log --project crewpoint-dev
+```
+
+### 11.6 Available Functions
+
+| Function | Trigger | Description |
+|----------|---------|-------------|
+| `deleteUserAccount` | HTTPS Callable | Server-side account deletion: anonymizes shared data, deletes solo events, clears storage, removes Auth user |
