@@ -17,115 +17,291 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _currentPage = 0;
   bool _dataOptIn = false;
 
+  static const _pageCount = 5;
+
   @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
   }
 
+  void _goToPage(int page) {
+    _pageController.animateToPage(
+      page,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                onPageChanged: (index) => setState(() => _currentPage = index),
-                children: const [
-                  _OnboardingPage(
-                    title: 'Plan Together',
-                    description:
-                        'Create events, assign tasks, and keep your crew aligned.',
-                  ),
-                  _OnboardingPage(
-                    title: 'Stay Connected',
-                    description:
-                        'Real-time chat and critical alerts keep everyone in the loop.',
-                  ),
-                  _OnboardingPage(
-                    title: 'Track Expenses',
-                    description:
-                        'Split costs fairly and keep budgets transparent.',
-                  ),
-                ],
+      body: Stack(
+        children: [
+          // Pages
+          PageView(
+            controller: _pageController,
+            onPageChanged: (index) => setState(() => _currentPage = index),
+            children: const [
+              _WelcomePage(),
+              _FeaturePage(
+                icon: Icons.calendar_month_rounded,
+                title: 'Plan Events Together',
+                description:
+                    'Assign roles, set dates, and track progress\u2014all in one place.',
+                backgroundColor: AppColors.offWhite,
+                iconColor: AppColors.sage,
+                textColor: AppColors.charcoal,
               ),
-            ),
-            _PageIndicator(currentPage: _currentPage, pageCount: 3),
-            if (_currentPage == 2) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-                child: _DataOptInToggle(
-                  value: _dataOptIn,
-                  onChanged: (value) => setState(() => _dataOptIn = value),
+              _FeaturePage(
+                icon: Icons.chat_rounded,
+                title: 'Stay in Sync',
+                description:
+                    'Real-time messaging with critical alerts\nwhen it matters most.',
+                backgroundColor: AppColors.charcoal,
+                iconColor: AppColors.sageLight,
+                textColor: AppColors.offWhite,
+              ),
+              _FeaturePage(
+                icon: Icons.account_balance_wallet_rounded,
+                title: 'Split Costs Fairly',
+                description:
+                    'Track expenses, upload receipts,\nand see who owes what.',
+                backgroundColor: AppColors.offWhite,
+                iconColor: AppColors.terracotta,
+                textColor: AppColors.charcoal,
+              ),
+              _PrivacyPage(),
+            ],
+          ),
+
+          // Skip button (pages 0-3)
+          if (_currentPage < _pageCount - 1)
+            Positioned(
+              top: MediaQuery.paddingOf(context).top + AppSpacing.md,
+              right: AppSpacing.lg,
+              child: TextButton(
+                onPressed: () => _goToPage(_pageCount - 1),
+                child: Text(
+                  'Skip',
+                  style: TextStyle(
+                    color: _currentPage == 0 || _currentPage == 2
+                        ? AppColors.mediumGrey
+                        : AppColors.darkGrey,
+                  ),
                 ),
               ),
-              const SizedBox(height: AppSpacing.lg),
-            ],
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              child: PrimaryButton(
-                label: _currentPage == 2 ? 'Get Started' : 'Next',
-                onPressed: () {
-                  if (_currentPage < 2) {
-                    _pageController.nextPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                  } else {
-                    widget.onComplete?.call();
-                  }
-                },
+            ),
+
+          // Bottom controls
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                child: Column(
+                  mainAxisSize: .min,
+                  children: [
+                    // Data opt-in (last page only)
+                    if (_currentPage == _pageCount - 1) ...[
+                      _DataOptInToggle(
+                        value: _dataOptIn,
+                        onChanged: (value) =>
+                            setState(() => _dataOptIn = value),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
+
+                    // Page indicator
+                    _PageIndicator(
+                      currentPage: _currentPage,
+                      pageCount: _pageCount,
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // Action button
+                    PrimaryButton(
+                      label: _currentPage == _pageCount - 1
+                          ? 'Get Started'
+                          : 'Continue',
+                      onPressed: () {
+                        if (_currentPage < _pageCount - 1) {
+                          _goToPage(_currentPage + 1);
+                        } else {
+                          widget.onComplete?.call();
+                        }
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _OnboardingPage extends StatelessWidget {
-  const _OnboardingPage({required this.title, required this.description});
-
-  final String title;
-  final String description;
+/// Page 1: Welcome with branding
+class _WelcomePage extends StatelessWidget {
+  const _WelcomePage();
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.xl),
+    return Container(
+      color: AppColors.charcoal,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
       child: Column(
         mainAxisAlignment: .center,
-        spacing: AppSpacing.lg,
         children: [
-          // Lottie animation placeholder
+          // App icon representation
           Container(
-            width: 200,
-            height: 200,
+            width: 120,
+            height: 120,
             decoration: BoxDecoration(
-              color: AppColors.sageLight.withValues(alpha: 0.3),
+              color: AppColors.sage,
+              borderRadius: BorderRadius.circular(28),
+            ),
+            child: const Icon(
+              Icons.hub_rounded,
+              size: 64,
+              color: AppColors.offWhite,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xxl),
+          Text(
+            'CrewPoint',
+            style: Theme.of(context).textTheme.displaySmall?.copyWith(
+              color: AppColors.offWhite,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            'Your crew, organized.',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: AppColors.sageLight,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+          // Extra space for bottom controls
+          const SizedBox(height: 160),
+        ],
+      ),
+    );
+  }
+}
+
+/// Feature pages (2-4): Icon + headline + description
+class _FeaturePage extends StatelessWidget {
+  const _FeaturePage({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.backgroundColor,
+    required this.iconColor,
+    required this.textColor,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final Color backgroundColor;
+  final Color iconColor;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: backgroundColor,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+      child: Column(
+        mainAxisAlignment: .center,
+        children: [
+          // Icon with subtle background circle
+          Container(
+            width: 140,
+            height: 140,
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 72, color: iconColor),
+          ),
+          const SizedBox(height: AppSpacing.xxl),
+          Text(
+            title,
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              color: textColor,
+              fontWeight: FontWeight.w700,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            description,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: textColor.withValues(alpha: 0.7),
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          // Extra space for bottom controls
+          const SizedBox(height: 160),
+        ],
+      ),
+    );
+  }
+}
+
+/// Page 5: Privacy + data opt-in
+class _PrivacyPage extends StatelessWidget {
+  const _PrivacyPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.charcoal,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+      child: Column(
+        mainAxisAlignment: .center,
+        children: [
+          Container(
+            width: 140,
+            height: 140,
+            decoration: BoxDecoration(
+              color: AppColors.sage.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
             child: const Icon(
-              Icons.celebration,
-              size: 80,
+              Icons.shield_rounded,
+              size: 72,
               color: AppColors.sage,
             ),
           ),
+          const SizedBox(height: AppSpacing.xxl),
           Text(
-            title,
-            style: Theme.of(context).textTheme.headlineMedium,
+            'Your Data, Your Rules',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              color: AppColors.offWhite,
+              fontWeight: FontWeight.w700,
+            ),
             textAlign: TextAlign.center,
           ),
+          const SizedBox(height: AppSpacing.md),
           Text(
-            description,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyLarge?.copyWith(color: AppColors.mediumGrey),
+            'We believe in transparency.\nYou decide what to share.',
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: AppColors.offWhite.withValues(alpha: 0.7),
+              height: 1.5,
+            ),
             textAlign: TextAlign.center,
           ),
+          // Extra space for bottom controls + toggle
+          const SizedBox(height: 200),
         ],
       ),
     );
@@ -140,23 +316,18 @@ class _PageIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-      child: Row(
-        mainAxisAlignment: .center,
-        spacing: AppSpacing.sm,
-        children: List.generate(
-          pageCount,
-          (index) => AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: index == currentPage ? 24 : 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: index == currentPage
-                  ? AppColors.sage
-                  : AppColors.lightGrey,
-              borderRadius: BorderRadius.circular(4),
-            ),
+    return Row(
+      mainAxisAlignment: .center,
+      spacing: AppSpacing.sm,
+      children: List.generate(
+        pageCount,
+        (index) => AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: index == currentPage ? 28 : 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: index == currentPage ? AppColors.sage : AppColors.darkGrey,
+            borderRadius: BorderRadius.circular(4),
           ),
         ),
       ),
@@ -172,20 +343,33 @@ class _DataOptInToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            'Allow anonymous usage data collection',
-            style: Theme.of(context).textTheme.bodyMedium,
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.charcoalLight.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Allow anonymous usage data',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.offWhite.withValues(alpha: 0.8),
+              ),
+            ),
           ),
-        ),
-        Switch(
-          value: value,
-          onChanged: onChanged,
-          activeThumbColor: AppColors.sage,
-        ),
-      ],
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: AppColors.sage,
+            activeTrackColor: AppColors.sageLight.withValues(alpha: 0.4),
+          ),
+        ],
+      ),
     );
   }
 }

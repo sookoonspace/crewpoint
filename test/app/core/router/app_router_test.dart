@@ -38,6 +38,6 @@ void main() {
     await tester.pumpWidget(MaterialApp.router(routerConfig: router));
     await tester.pumpAndSettle();
 
-    expect(find.text('Plan Together'), findsOneWidget);
+    expect(find.text('CrewPoint'), findsOneWidget);
   });
 }
