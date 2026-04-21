@@ -15,21 +15,21 @@ Generate per-flavor app icons with DEV/STG ribbon badges overlaid on the base ic
 ### Phase 1: Generate Badged Icons + Configure Launcher Icons
 
 - **Goal**: Create DEV/STG badged icons and generate all platform sizes
-- [ ] Add `flutter_launcher_icons` to dev_dependencies in `pubspec.yaml`
-- [ ] Create `scripts/generate_flavor_icons.dart` — Dart script that:
+- [x] Add `flutter_launcher_icons` to dev_dependencies in `pubspec.yaml`
+- [x] Create `scripts/generate_flavor_icons.dart` — Dart script that:
   - Loads `assets/icons/launcher_icon.png`
   - Draws a colored diagonal ribbon badge in bottom-left:
     - DEV: orange ribbon with "DEV" text
     - STG: blue ribbon with "STG" text
   - Saves to `assets/icons/launcher_icon_dev.png` and `assets/icons/launcher_icon_stg.png`
-- [ ] Run the script: `dart run scripts/generate_flavor_icons.dart`
-- [ ] Create `flutter_launcher_icons.yaml` with per-flavor config:
+- [x] Run the script: `dart run scripts/generate_flavor_icons.dart`
+- [x] Create `flutter_launcher_icons.yaml` with per-flavor config:
   - default (prod): `assets/icons/launcher_icon.png`
   - dev: `assets/icons/launcher_icon_dev.png`
   - stg: `assets/icons/launcher_icon_stg.png`
-- [ ] Run `dart run flutter_launcher_icons`
-- [ ] Verify: icons generated in `android/app/src/*/res/` and `ios/Runner/Assets.xcassets/`
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] Run `dart run flutter_launcher_icons`
+- [x] Verify: icons generated in `android/app/src/*/res/` and `ios/Runner/Assets.xcassets/`
+- [x] Verify: `flutter analyze` && `flutter test`
 
 ## Risks / Out of scope
 
