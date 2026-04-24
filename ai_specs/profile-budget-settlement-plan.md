@@ -30,19 +30,11 @@ Soften profile UI, expand user data model with payment preferences, add balance 
 ### Phase 2: Profile UI Softening
 
 - **Goal**: Gradient hero, soft avatar glow, flat cards, payment section, more breathing room
-- [ ] `lib/app/features/profile/presentation/profile_screen.dart` — Redesign hero:
-  - Charcoal→charcoalDark gradient (top-to-bottom) instead of flat color
-  - Bottom corner radius: 32 (up from 24)
-  - Avatar: sage BoxShadow glow (blur 12, spread 2) instead of hard ring
-  - +8px between name and email
-  - "Edit Profile" button: filled sage pill (not outlined)
-- [ ] `lib/app/features/profile/presentation/profile_screen.dart` — Update section cards:
-  - Elevation 0, add lightGrey border (0.5px)
-  - Icons: outlined variants, darkGrey color
-  - Add "PAYMENT" section between Settings and Account
-  - Payment card: shows method icon + handle, or "Add payment method" prompt (sage text)
-  - Danger zone spacing: xxl → xxxl
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] Profile hero: charcoal→charcoalDark gradient, radius 32, sage glow avatar, filled sage pill button
+- [x] Section cards: elevation 0, lightGrey border, outlined icons in darkGrey
+- [x] Payment section: method icon + handle display, or "Add payment method" prompt
+- [x] Danger zone: xxxl spacing above
+- [x] Verify: `flutter analyze` && `flutter test` — 47 tests, 0 warnings
 
 ### Phase 3: Balance Ledger (Pure Logic)
 

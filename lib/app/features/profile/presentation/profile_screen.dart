@@ -25,17 +25,14 @@ class ProfileScreen extends ConsumerWidget {
       backgroundColor: AppColors.cream,
       body: CustomScrollView(
         slivers: [
-          // Hero card (charcoal header)
           SliverToBoxAdapter(child: _HeroCard(user: user)),
-
-          // Content
           SliverPadding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                const SizedBox(height: AppSpacing.sm),
+                const SizedBox(height: AppSpacing.xl),
 
-                // Settings section
+                // Settings
                 const _SectionHeader(label: 'SETTINGS'),
                 const SizedBox(height: AppSpacing.sm),
                 _SectionCard(
@@ -47,7 +44,7 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                     const Divider(height: 1, indent: 56),
                     _SettingsTile(
-                      icon: Icons.notifications_outlined,
+                      icon: Icons.notifications_none_rounded,
                       label: 'Notifications',
                       onTap: () {},
                     ),
@@ -56,7 +53,14 @@ class ProfileScreen extends ConsumerWidget {
 
                 const SizedBox(height: AppSpacing.xl),
 
-                // Account section
+                // Payment
+                const _SectionHeader(label: 'PAYMENT'),
+                const SizedBox(height: AppSpacing.sm),
+                _PaymentCard(user: user),
+
+                const SizedBox(height: AppSpacing.xl),
+
+                // Account
                 const _SectionHeader(label: 'ACCOUNT'),
                 const SizedBox(height: AppSpacing.sm),
                 _SectionCard(
@@ -73,8 +77,8 @@ class ProfileScreen extends ConsumerWidget {
                   ],
                 ),
 
-                // Danger zone — isolated card
-                const SizedBox(height: AppSpacing.xxl),
+                // Danger zone
+                const SizedBox(height: AppSpacing.xxxl),
                 _DangerCard(
                   onTap: () => DeleteAccountDialog.show(
                     context: context,
@@ -89,10 +93,9 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                 ),
 
-                // App version
                 const SizedBox(height: AppSpacing.xxl),
                 const _AppVersion(),
-                const SizedBox(height: AppSpacing.lg),
+                const SizedBox(height: AppSpacing.xl),
               ]),
             ),
           ),
@@ -102,7 +105,7 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
-/// Charcoal hero card with avatar, name, email, edit button.
+/// Gradient hero with soft avatar glow.
 class _HeroCard extends StatelessWidget {
   const _HeroCard({this.user});
 
@@ -112,10 +115,14 @@ class _HeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: AppColors.charcoal,
+        gradient: LinearGradient(
+          begin: .topCenter,
+          end: .bottomCenter,
+          colors: [AppColors.charcoal, AppColors.charcoalDark],
+        ),
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(AppRadius.xxl),
-          bottomRight: Radius.circular(AppRadius.xxl),
+          bottomLeft: Radius.circular(32),
+          bottomRight: Radius.circular(32),
         ),
       ),
       child: SafeArea(
@@ -129,7 +136,6 @@ class _HeroCard extends StatelessWidget {
           ),
           child: Column(
             children: [
-              // Title bar
               Row(
                 children: [
                   Text(
@@ -140,14 +146,19 @@ class _HeroCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.xl),
+              const SizedBox(height: AppSpacing.xxl),
 
-              // Avatar with sage ring
+              // Avatar with soft sage glow
               Container(
-                padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.sage,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.sage.withValues(alpha: 0.4),
+                      blurRadius: 12,
+                      spreadRadius: 2,
+                    ),
+                  ],
                 ),
                 child: CircleAvatar(
                   radius: 52,
@@ -165,7 +176,7 @@ class _HeroCard extends StatelessWidget {
                       : _buildProfileAnimation(),
                 ),
               ),
-              const SizedBox(height: AppSpacing.lg),
+              const SizedBox(height: AppSpacing.xl),
 
               // Name
               Text(
@@ -175,7 +186,7 @@ class _HeroCard extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: AppSpacing.xs),
+              const SizedBox(height: AppSpacing.md),
 
               // Email
               Text(
@@ -184,15 +195,16 @@ class _HeroCard extends StatelessWidget {
                   context,
                 ).textTheme.bodyMedium?.copyWith(color: AppColors.sageLight),
               ),
-              const SizedBox(height: AppSpacing.lg),
+              const SizedBox(height: AppSpacing.xl),
 
-              // Edit Profile button
-              OutlinedButton(
+              // Edit Profile — filled sage pill
+              ElevatedButton(
                 onPressed: () => context.push('/profile/edit'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.offWhite,
-                  side: const BorderSide(color: AppColors.sage),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.sage,
+                  foregroundColor: AppColors.white,
                   shape: const StadiumBorder(),
+                  elevation: 0,
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.xl,
                     vertical: AppSpacing.md,
@@ -247,9 +259,15 @@ class _SectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 1,
+      elevation: 0,
       color: AppColors.white,
-      shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.borderLg,
+        side: BorderSide(
+          color: AppColors.lightGrey.withValues(alpha: 0.7),
+          width: 0.5,
+        ),
+      ),
       child: Column(mainAxisSize: .min, children: children),
     );
   }
@@ -265,11 +283,82 @@ class _SettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon, color: AppColors.charcoal),
+      leading: Icon(icon, color: AppColors.darkGrey),
       title: Text(label),
       trailing: const Icon(Icons.chevron_right, color: AppColors.mediumGrey),
       onTap: onTap,
       shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
+    );
+  }
+}
+
+/// Shows payment method + handle, or "Add payment method" prompt.
+class _PaymentCard extends StatelessWidget {
+  const _PaymentCard({this.user});
+
+  final AppUser? user;
+
+  IconData _methodIcon(String? method) => switch (method) {
+    'venmo' => Icons.payment,
+    'zelle' => Icons.account_balance,
+    'cashapp' => Icons.attach_money,
+    'paypal' => Icons.paypal_outlined,
+    'cash' => Icons.money,
+    _ => Icons.payment_outlined,
+  };
+
+  String _methodLabel(String? method) => switch (method) {
+    'venmo' => 'Venmo',
+    'zelle' => 'Zelle',
+    'cashapp' => 'Cash App',
+    'paypal' => 'PayPal',
+    'cash' => 'Cash',
+    'other' => 'Other',
+    _ => 'Payment',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final hasPayment =
+        user?.paymentMethod != null && user!.paymentMethod!.isNotEmpty;
+
+    return Card(
+      elevation: 0,
+      color: AppColors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.borderLg,
+        side: BorderSide(
+          color: AppColors.lightGrey.withValues(alpha: 0.7),
+          width: 0.5,
+        ),
+      ),
+      child: ListTile(
+        leading: Icon(
+          hasPayment
+              ? _methodIcon(user?.paymentMethod)
+              : Icons.add_circle_outline,
+          color: hasPayment ? AppColors.darkGrey : AppColors.sage,
+        ),
+        title: hasPayment
+            ? Text(
+                '${_methodLabel(user?.paymentMethod)}: ${user?.paymentHandle ?? ''}',
+              )
+            : const Text(
+                'Add payment method',
+                style: TextStyle(color: AppColors.sage),
+              ),
+        subtitle: hasPayment
+            ? null
+            : Text(
+                'Let your crew know how to pay you',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGrey),
+              ),
+        trailing: const Icon(Icons.chevron_right, color: AppColors.mediumGrey),
+        onTap: () => context.push('/profile/edit'),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
+      ),
     );
   }
 }
