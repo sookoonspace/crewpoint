@@ -64,7 +64,7 @@ users/{uid}:
 ### Phase 3: Cloud Functions Deployment Guide
 
 - **Goal**: Comprehensive, living guide for deploying and managing Cloud Functions across all 3 flavors
-- [ ] `docs/cloud-functions-guide.md` — Create with sections:
+- [x] `docs/cloud-functions-guide.md` — Created with sections:
   - **Prerequisites**: Node 22, Firebase CLI, gcloud CLI, project access
   - **First-Time Setup (per project)**: Enable Cloud Build API, grant IAM roles:
     - `{PROJECT_NUMBER}@cloudbuild.gserviceaccount.com` → `roles/cloudbuild.builds.builder`
@@ -84,7 +84,7 @@ users/{uid}:
   - **Local Testing**: `firebase emulators:start --project crewpoint-dev`; configure Flutter app to use emulators
   - **Monitoring**: `firebase functions:log --project crewpoint-dev`; Cloud Console → Logs Explorer
   - **Troubleshooting**: IAM permission errors, Node version issues, timeout tuning (default 120s), 500-doc batch limits, memory allocation
-- [ ] Verify: guide is complete, self-contained, and consistent with `firebase.json`
+- [x] Verify: guide is complete, self-contained, and consistent with `firebase.json`
 
 ## Risks / Out of scope
 
