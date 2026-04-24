@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 
-/// Loading widget. Will use Lottie animation once assets are provided.
-/// Falls back to a CircularProgressIndicator for now.
+/// Lottie-based loading animation.
+/// Falls back to CircularProgressIndicator if Lottie fails to load.
 class LoadingAnimation extends StatelessWidget {
   const LoadingAnimation({super.key, this.size = 48.0});
 
@@ -13,9 +14,15 @@ class LoadingAnimation extends StatelessWidget {
     return SizedBox(
       width: size,
       height: size,
-      child: const CircularProgressIndicator(
-        strokeWidth: 3,
-        color: AppColors.sage,
+      child: Lottie.asset(
+        'assets/animations/loading.json',
+        width: size,
+        height: size,
+        fit: BoxFit.contain,
+        errorBuilder: (_, _, _) => const CircularProgressIndicator(
+          strokeWidth: 3,
+          color: AppColors.sage,
+        ),
       ),
     );
   }

@@ -39,15 +39,15 @@ users/{uid}:
 ### Phase 1: Lottie Placeholder Assets
 
 - **Goal**: Create minimal animated Lottie JSON files (1s looping) that can be swapped with real animations later
-- [ ] `assets/animations/loading.json` — Rotating circle, 1s loop, sage color
-- [ ] `assets/animations/success.json` — Scale-pulsing checkmark, 1s loop, sage color
-- [ ] `assets/animations/error.json` — Fading X mark, 1s loop, terracotta color
-- [ ] `assets/animations/empty_state.json` — Gentle bobbing empty box, 1s loop, mediumGrey
-- [ ] `assets/animations/profile.json` — Subtle breathing person icon, 1s loop, sageLight
-- [ ] `assets/animations/sign_out.json` — Wave/goodbye gesture, 1s loop, charcoal
-- [ ] `pubspec.yaml` — Register `assets/animations/` in flutter assets
-- [ ] `lib/app/core/widgets/loading_animation.dart` — Switch to `Lottie.asset('assets/animations/loading.json')` with `CircularProgressIndicator` fallback on error
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `assets/animations/loading.json` — Rotating circle, 1s loop, sage color
+- [x] `assets/animations/success.json` — Scale-pulsing checkmark, 1s loop, sage color
+- [x] `assets/animations/error.json` — Fading X mark, 1s loop, terracotta color
+- [x] `assets/animations/empty_state.json` — Gentle bobbing empty box, 1s loop, mediumGrey
+- [x] `assets/animations/profile.json` — Subtle breathing person icon, 1s loop, sageLight
+- [x] `assets/animations/sign_out.json` — Wave/goodbye gesture, 1s loop, charcoal
+- [x] `pubspec.yaml` — Register `assets/animations/` in flutter assets
+- [x] `lib/app/core/widgets/loading_animation.dart` — Switch to `Lottie.asset()` with fallback
+- [x] Verify: `flutter analyze` && `flutter test`
 
 ### Phase 2: Profile Screen Redesign
 
