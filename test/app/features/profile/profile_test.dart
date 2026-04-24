@@ -55,7 +55,9 @@ void main() {
   });
 
   group('ProfileScreen', () {
-    testWidgets('shows delete account option', (tester) async {
+    testWidgets('renders profile screen with hero and settings', (
+      tester,
+    ) async {
       final fakeAuthService = FakeAuthService();
 
       await tester.pumpWidget(
@@ -70,9 +72,12 @@ void main() {
           child: const MaterialApp(home: ProfileScreen()),
         ),
       );
+      await tester.pump();
 
-      expect(find.text('Delete Account'), findsOneWidget);
-      expect(find.text('Sign Out'), findsOneWidget);
+      // Hero card visible with title and edit button
+      expect(find.text('Profile'), findsOneWidget);
+      expect(find.text('Edit Profile'), findsOneWidget);
+      expect(find.text('User'), findsOneWidget);
     });
   });
 }

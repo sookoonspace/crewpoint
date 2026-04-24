@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/router/app_shell.dart';
+import 'package:crewpoint_app/app/features/profile/presentation/edit_profile_screen.dart';
+import 'package:crewpoint_app/app/features/profile/presentation/profile_screen.dart';
 import 'package:crewpoint_app/app/features/auth/presentation/auth_gate_screen.dart';
 import 'package:crewpoint_app/app/features/onboarding/presentation/onboarding_screen.dart';
 
@@ -100,7 +102,13 @@ GoRouter createRouter({
             routes: [
               GoRoute(
                 path: AppRoutes.profile,
-                builder: (_, _) => const _PlaceholderScreen(title: 'Profile'),
+                builder: (_, _) => const ProfileScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'edit',
+                    builder: (_, _) => const EditProfileScreen(),
+                  ),
+                ],
               ),
             ],
           ),

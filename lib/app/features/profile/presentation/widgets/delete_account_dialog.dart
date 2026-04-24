@@ -7,6 +7,7 @@ import 'package:crewpoint_app/app/core/services/account_deletion_service.dart';
 import 'package:crewpoint_app/app/core/widgets/custom_text_field.dart';
 import 'package:crewpoint_app/app/core/widgets/destructive_button.dart';
 import 'package:crewpoint_app/app/core/widgets/loading_animation.dart';
+import 'package:lottie/lottie.dart';
 
 /// Multi-step account deletion dialog with dynamic re-authentication.
 ///
@@ -98,17 +99,21 @@ class _DeleteAccountDialogState extends ConsumerState<DeleteAccountDialog> {
       return;
     }
 
-    // Step 3: Success
+    // Step 3: Success — show Lottie briefly
     if (mounted) {
-      Navigator.of(context).pop();
-      widget.onDeleted?.call();
+      setState(() => _step = 3);
+      await Future<void>.delayed(const Duration(seconds: 2));
+      if (mounted) {
+        Navigator.of(context).pop();
+        widget.onDeleted?.call();
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: _step == 2
+      title: (_step == 2 || _step == 3)
           ? null
           : Text(
               _step == 0 ? 'Delete Account?' : 'Confirm Deletion',
@@ -124,9 +129,10 @@ class _DeleteAccountDialogState extends ConsumerState<DeleteAccountDialog> {
           errorMessage: _errorMessage,
         ),
         2 => const _ProcessingStep(),
+        3 => const _SuccessStep(),
         _ => const SizedBox.shrink(),
       },
-      actions: _step == 2
+      actions: (_step == 2 || _step == 3)
           ? null
           : [
               TextButton(
@@ -265,6 +271,37 @@ class _ProcessingStep extends StatelessWidget {
         mainAxisSize: .min,
         spacing: AppSpacing.lg,
         children: [LoadingAnimation(), Text('Deleting your account...')],
+      ),
+    );
+  }
+}
+
+class _SuccessStep extends StatelessWidget {
+  const _SuccessStep();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+      child: Column(
+        mainAxisSize: .min,
+        spacing: AppSpacing.lg,
+        children: [
+          Lottie.asset(
+            'assets/animations/success.json',
+            width: 80,
+            height: 80,
+            errorBuilder: (_, _, _) =>
+                const Icon(Icons.check_circle, size: 64, color: AppColors.sage),
+          ),
+          Text(
+            'Account deleted',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: AppColors.sage,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

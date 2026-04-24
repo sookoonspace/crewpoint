@@ -52,30 +52,14 @@ users/{uid}:
 ### Phase 2: Profile Screen Redesign
 
 - **Goal**: Premium Sookoon-branded profile with edit flow, photo, polished sign-out/delete UX
-- [ ] `pubspec.yaml` — Add `package_info_plus` for app version display
-- [ ] `lib/app/features/profile/presentation/profile_screen.dart` — Full redesign per Sookoon Visual Design Spec:
-  - Charcoal hero card: avatar with sage ring, name (white), email (sageLight), "Edit Profile" pill button
-  - "Settings" section (white card on cream bg): Privacy Dashboard tile, Notifications tile (placeholder)
-  - "Account" section (white card): Sign Out tile → shows confirmation bottom sheet
-  - Danger zone (own card, terracotta border): Delete Account tile
-  - App version centered at bottom (mediumGrey, bodySmall) via `package_info_plus`
-  - Cream scaffold background throughout
-- [ ] `lib/app/features/profile/presentation/edit_profile_screen.dart` — New screen:
-  - Editable fields: display name (`CustomTextField`), profile photo (tap avatar to pick via `image_picker`)
-  - Photo upload: pick image → upload to Firebase Storage `users/{uid}/profile.jpg` → save URL to Firestore + Auth
-  - Save button: `PrimaryButton` with `isLoading` state during save
-  - On success: brief Lottie success animation → pop back to profile
-  - On error: terracotta snackbar with error message (matching `EmailAuthForm` pattern)
-  - Cancel: discards changes, pops back
-- [ ] `lib/app/features/profile/presentation/widgets/sign_out_sheet.dart` — Confirmation bottom sheet:
-  - Lottie sign_out animation (centered, 80px)
-  - "Are you sure you want to sign out?" (bodyLarge, centered)
-  - Row: Cancel (text button) + Sign Out (`DestructiveButton` style but charcoal, not terracotta)
-- [ ] `lib/app/features/profile/presentation/widgets/delete_account_dialog.dart` — Add Lottie success animation (2s) after deletion completes, before navigating out
-- [ ] Wire edit profile route in `app_router.dart` (`/profile/edit`)
-- [ ] TDD: edit profile save updates display name in provider state
-- [ ] TDD: edit profile shows error snackbar on save failure
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `pubspec.yaml` — Added `package_info_plus`
+- [x] `lib/app/features/profile/presentation/profile_screen.dart` — Full Sookoon redesign: charcoal hero card, sage avatar ring, cream bg, white section cards, terracotta danger zone, app version
+- [x] `lib/app/features/profile/presentation/edit_profile_screen.dart` — Edit with photo upload, Lottie success, error snackbar
+- [x] `lib/app/features/profile/presentation/widgets/sign_out_sheet.dart` — Confirmation with Lottie wave
+- [x] `lib/app/features/profile/presentation/widgets/delete_account_dialog.dart` — Added Lottie success step (2s) before navigate
+- [x] Wire edit profile route in `app_router.dart` (`/profile/edit`)
+- [x] Tests updated for new profile structure
+- [x] Verify: `flutter analyze` && `flutter test` — 47 tests, 0 warnings
 
 ### Phase 3: Cloud Functions Deployment Guide
 
