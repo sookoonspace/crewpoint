@@ -62,7 +62,7 @@ users/{uid}:
 ```
 
 **Privacy notes:**
-- `paymentMethod` and `paymentHandle` are **only visible to members of shared events** — Firestore rules enforce this
+- `paymentMethod` and `paymentHandle` are readable by any authenticated user (Firestore rules operate at document level, not field level — field-level restrictions would break profile loading). These are semi-public identifiers (Venmo @handles, Zelle emails) that users choose to share.
 - On account deletion: entire document deleted; shared data anonymized per existing deletion flow
 
 ---
@@ -136,7 +136,7 @@ Friends on a trip. Anyone can pay for anything. At the end (or during), the app 
 ```dart
 class BalanceLedger {
   final Map<String, double> netBalances;    // uid → net (+ = owed, - = owes)
-  final List<Settlement> settlements;        // minimum transfers
+  final List<Settlement> settlements;        // minimum transfers (computed, not stored)
   final double totalExpenses;
 
   static BalanceLedger calculate({
@@ -145,15 +145,20 @@ class BalanceLedger {
   });
 }
 
+/// Computed in-memory only — NOT persisted to Firestore.
+/// Represents a simplified transfer needed to settle all debts.
 class Settlement {
   final String fromUserId;      // who pays
   final String toUserId;        // who receives
   final double amount;
-  bool isSettled;                // toggled when marked as paid
 }
 ```
 
+**`ExpenseModel` additions**: Add `isPayment` boolean (default false). When `isPayment == true`, the expense represents a direct settlement payment, not a group expense.
+
 **Donation handling**: If `isDonation == true`, the payer's share is excluded from splits (existing behavior). Their net balance increases by the full amount minus zero (since they don't owe themselves).
+
+**Payment handling**: If `isPayment == true`, the expense is a direct transfer from `payerId` to the single member in the split. The payer's balance decreases by `amount`, the recipient's balance increases by `amount`. No split division occurs. This is how settlements feed back into the ledger — they are just another expense that the algorithm incorporates automatically.
 
 ### 5.3 Settlement Flow (UI)
 
@@ -161,28 +166,13 @@ class Settlement {
 - Below total expenses: "Balances" section showing each member's net balance
   - Green text for positive (owed money), terracotta for negative (owes money)
   - Tap to expand → shows "Settle Up" list
-- "Settle Up" card: list of `Settlement` transfers
-  - Each row: "[Name] pays [Name] $XX.XX" + settle button
-  - Tapping "Settle" → shows payee's payment method + "Mark as Settled" button
-  - Settled items: strikethrough text, sage checkmark
+- "Settle Up" card: list of computed `Settlement` transfers
+  - Each row: "[Name] pays [Name] $XX.XX" + "Settle" button
+  - Tapping "Settle" → shows payee's payment method + "Record Payment" button
+  - "Record Payment" creates a new `ExpenseModel` with `isPayment: true`, `payerId: fromUserId`, split with `[toUserId]`. This automatically resolves the debt in the ledger.
+  - Already-settled debts disappear naturally because the payment expense zeroes out the balance
 
-**Settlement is local/Firestore state, not actual money transfer.** The app tracks intent, not transactions. This is critical for privacy — no financial APIs, no bank connections.
-
-### 5.4 Data Storage for Settlements
-
-Settlements are stored as a subcollection under the event:
-
-```
-events/{eventId}/settlements/{settlementId}:
-  fromUserId: string
-  toUserId: string
-  amount: double
-  isSettled: boolean
-  settledAt: timestamp | null
-  createdAt: timestamp
-```
-
-Settlements are **recalculated** when expenses change (add/delete). The `isSettled` flag persists — if a new expense changes the balance, unsettled amounts update but already-settled ones remain marked.
+**Settlement is NOT persisted separately.** Settlements are computed on-the-fly from the expense list. When a user "settles," it creates a payment expense — just another entry in the same expenses subcollection. This guarantees mathematical consistency regardless of future expense additions/deletions. No financial APIs, no bank connections.
 
 ---
 
@@ -201,11 +191,12 @@ Add to the existing Privacy Dashboard:
 2. Edit profile saves display name, photo, payment method, payment handle to Firestore
 3. Budget screen shows per-member net balances calculated from all event expenses
 4. Settlement list shows minimum transfers with correct amounts
-5. Settlement can be marked as settled, showing payee's payment method
+5. "Record Payment" creates a payment expense (`isPayment: true`) that resolves the debt in the ledger
 6. Donation expenses correctly excluded from payer's debt calculation
-7. User with no payment method sees "Add payment method" prompt
-8. All text passes `flutter analyze` with zero warnings
-9. Balance calculation has unit tests for: equal split, unequal expenses, donation, single payer, all settled
+7. Payment expenses correctly reduce payer's debt and increase recipient's balance
+8. User with no payment method sees "Add payment method" prompt
+9. All code passes `flutter analyze` with zero warnings
+10. Balance calculation has unit tests for: equal split, unequal expenses, donation, payment expense, single payer, mixed scenario
 
 ---
 
