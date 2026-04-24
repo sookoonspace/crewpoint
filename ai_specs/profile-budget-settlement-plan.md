@@ -39,20 +39,15 @@ Soften profile UI, expand user data model with payment preferences, add balance 
 ### Phase 3: Balance Ledger (Pure Logic)
 
 - **Goal**: Calculate net balances + simplified settlements from expenses (including payment expenses)
-- [ ] `lib/app/features/budget/domain/models/balance_ledger.dart` — New model:
-  - `BalanceLedger.calculate()` — takes expenses + memberIds, returns net balances + settlements
-  - `Settlement` — fromUserId, toUserId, amount (computed only, NOT persisted)
-  - Greedy debt simplification: match largest creditor with largest debtor iteratively
-  - Handle `isPayment` expenses: direct transfer from payer to single recipient (no split division)
-  - Handle `isDonation` expenses: payer excluded from their own split
-- [ ] TDD: 3 members, equal split — each balance is correct
-- [ ] TDD: one person pays all 3 expenses — other 2 owe them
-- [ ] TDD: donation expense — payer excluded from their own split
-- [ ] TDD: payment expense — reduces payer's debt, increases recipient's balance
-- [ ] TDD: mixed scenario — expenses + donations + payments → correct net balances
-- [ ] TDD: simplification — 4 members, mixed expenses → minimum transfers
-- [ ] TDD: empty expenses → all balances zero, no settlements
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `lib/app/features/budget/domain/models/balance_ledger.dart` — BalanceLedger + Settlement (computed only)
+- [x] TDD: 3 members equal split — correct balances
+- [x] TDD: one payer all expenses — correct creditor/debtor
+- [x] TDD: donation — payer excluded from split
+- [x] TDD: payment expense — reduces debt correctly (Splitwise model)
+- [x] TDD: mixed scenario — expenses + donations + payments
+- [x] TDD: simplification — 4 members → minimum transfers
+- [x] TDD: empty expenses → zeroes
+- [x] Verify: 54 tests, 0 warnings
 
 ### Phase 4: Budget UI — Balances + Settlement
 
