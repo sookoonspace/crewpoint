@@ -25,10 +25,21 @@ class EditProfileScreen extends ConsumerStatefulWidget {
 
 class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _nameController = TextEditingController();
+  final _paymentHandleController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   File? _pickedImage;
+  String? _selectedPaymentMethod;
   bool _isSaving = false;
   bool _showSuccess = false;
+
+  static const _paymentMethods = [
+    ('venmo', 'Venmo', Icons.payment),
+    ('zelle', 'Zelle', Icons.account_balance),
+    ('cashapp', 'Cash App', Icons.attach_money),
+    ('paypal', 'PayPal', Icons.paypal_outlined),
+    ('cash', 'Cash', Icons.money),
+    ('other', 'Other', Icons.more_horiz),
+  ];
 
   @override
   void initState() {
@@ -36,12 +47,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final authState = ref.read(authProvider);
     if (authState is Authenticated) {
       _nameController.text = authState.user.displayName ?? '';
+      _selectedPaymentMethod = authState.user.paymentMethod;
+      _paymentHandleController.text = authState.user.paymentHandle ?? '';
     }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _paymentHandleController.dispose();
     super.dispose();
   }
 
@@ -89,6 +103,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       final updateData = <String, dynamic>{
         'displayName': newName,
         'updatedAt': FieldValue.serverTimestamp(),
+        'paymentMethod': _selectedPaymentMethod,
+        'paymentHandle': _paymentHandleController.text.trim().isEmpty
+            ? null
+            : _paymentHandleController.text.trim(),
       };
       if (photoUrl != null) {
         updateData['photoUrl'] = photoUrl;
@@ -266,6 +284,65 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       }
                       return null;
                     },
+                  ),
+                ),
+              ),
+
+              // Payment method section
+              Card(
+                elevation: 1,
+                color: AppColors.white,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: AppRadius.borderLg,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Column(
+                    crossAxisAlignment: .start,
+                    spacing: AppSpacing.md,
+                    children: [
+                      Text(
+                        'Payment Method (optional)',
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(color: AppColors.darkGrey),
+                      ),
+                      DropdownButtonFormField<String>(
+                        initialValue: _selectedPaymentMethod,
+                        decoration: const InputDecoration(
+                          hintText: 'Select payment method',
+                          prefixIcon: Icon(Icons.payment_outlined),
+                        ),
+                        items: _paymentMethods
+                            .map(
+                              (m) => DropdownMenuItem(
+                                value: m.$1,
+                                child: Row(
+                                  spacing: AppSpacing.sm,
+                                  children: [
+                                    Icon(
+                                      m.$3,
+                                      size: 20,
+                                      color: AppColors.charcoal,
+                                    ),
+                                    Text(m.$2),
+                                  ],
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: _isSaving
+                            ? null
+                            : (value) => setState(
+                                () => _selectedPaymentMethod = value,
+                              ),
+                      ),
+                      CustomTextField(
+                        hintText: '@username, phone, or email',
+                        controller: _paymentHandleController,
+                        enabled: !_isSaving,
+                        prefixIcon: const Icon(Icons.alternate_email),
+                      ),
+                    ],
                   ),
                 ),
               ),

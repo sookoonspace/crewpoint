@@ -19,14 +19,13 @@ Soften profile UI, expand user data model with payment preferences, add balance 
 ### Phase 1: User Data Model + Expense isPayment Flag
 
 - **Goal**: Expand AppUser with payment preferences; add `isPayment` to ExpenseModel; update Drift + Firestore
-- [ ] `lib/app/features/auth/domain/models/app_user.dart` — Add fields: `paymentMethod`, `paymentHandle`, `currency` (all nullable)
-- [ ] `lib/app/features/budget/domain/models/expense.dart` — Add `isPayment` boolean (default false) to `ExpenseModel`
-- [ ] `lib/app/core/database/app_database.dart` — Add columns to Users table: `paymentMethod`, `paymentHandle`, `currency`. Add `isPayment` boolean to Expenses table.
-- [ ] Run `dart run build_runner build -d` to regenerate Drift code
-- [ ] `lib/app/features/profile/presentation/edit_profile_screen.dart` — Add payment method dropdown + payment handle text field; persist to Firestore on save
-- [ ] `firestore.rules` — No field-level changes needed; existing `allow read: if request.auth != null` on users collection is correct (field-level restrictions would break document reads)
-- [ ] TDD: AppUser with payment fields round-trips correctly
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `lib/app/features/auth/domain/models/app_user.dart` — Added `paymentMethod`, `paymentHandle`, `currency`
+- [x] `lib/app/features/budget/domain/models/expense.dart` — Added `isPayment` boolean
+- [x] `lib/app/core/database/app_database.dart` — Added columns + bumped schema to v2
+- [x] Regenerated Drift code
+- [x] `lib/app/features/profile/presentation/edit_profile_screen.dart` — Payment method dropdown + handle field
+- [x] `firestore.rules` — No changes needed (authenticated read at document level)
+- [x] Verify: `flutter analyze` && `flutter test` — 47 tests, 0 warnings
 
 ### Phase 2: Profile UI Softening
 

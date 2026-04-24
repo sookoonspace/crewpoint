@@ -8,6 +8,9 @@ class Users extends Table {
   TextColumn get email => text()();
   TextColumn get displayName => text().nullable()();
   TextColumn get photoUrl => text().nullable()();
+  TextColumn get paymentMethod => text().nullable()();
+  TextColumn get paymentHandle => text().nullable()();
+  TextColumn get currency => text().withDefault(const Constant('USD'))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 
@@ -74,6 +77,7 @@ class Expenses extends Table {
   TextColumn get description => text().nullable()();
   TextColumn get receiptPath => text().nullable()();
   BoolColumn get isDonation => boolean().withDefault(const Constant(false))();
+  BoolColumn get isPayment => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 
@@ -86,5 +90,5 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 }

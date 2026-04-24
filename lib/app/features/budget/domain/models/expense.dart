@@ -1,4 +1,4 @@
-/// Domain model for an expense.
+/// Domain model for an expense or payment.
 class ExpenseModel {
   const ExpenseModel({
     required this.id,
@@ -8,6 +8,7 @@ class ExpenseModel {
     this.description,
     this.receiptPath,
     this.isDonation = false,
+    this.isPayment = false,
     this.splits = const [],
     this.createdAt,
   });
@@ -19,6 +20,11 @@ class ExpenseModel {
   final String? description;
   final String? receiptPath;
   final bool isDonation;
+
+  /// When true, this expense is a settlement payment (direct transfer).
+  /// The payer pays the single member in splits directly.
+  /// This feeds back into the balance ledger automatically.
+  final bool isPayment;
   final List<ExpenseSplit> splits;
   final DateTime? createdAt;
 
