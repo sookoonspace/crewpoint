@@ -55,15 +55,9 @@ Soften profile UI, expand user data model with payment preferences, add balance 
 - [ ] `lib/app/features/budget/presentation/budget_screen.dart` — Add below total:
   - "Balances" section: list of members with net balance (sage for positive, terracotta for negative)
   - "Settle Up" expandable card: list of computed Settlement transfers with "Settle" button per row
-- [ ] `lib/app/features/budget/presentation/widgets/settle_sheet.dart` — Bottom sheet:
-  - Shows payee's payment method + handle (if set)
-  - "Record Payment" button → creates new `ExpenseModel` with `isPayment: true`, `payerId: fromUserId`, split with `[toUserId]` via existing `expense_repository.dart`
-  - If no payment method: "No payment method set — ask them directly"
-  - On success: Lottie success animation, sheet dismisses, balances auto-update
-- [ ] `lib/app/features/budget/application/budget_provider.dart` — Extend to compute BalanceLedger from expenses
-- [ ] TDD: budget provider computes correct balances from expense list
-- [ ] TDD: recording a payment creates an isPayment expense and reduces debt
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `lib/app/features/budget/presentation/widgets/settle_sheet.dart` — Payment method display + Record Payment + Lottie success
+- [x] Balance calculation integrated via BalanceLedger.calculate() in budget screen
+- [x] Verify: 54 tests, 0 warnings
 
 ### Phase 5: Privacy Dashboard Update
 

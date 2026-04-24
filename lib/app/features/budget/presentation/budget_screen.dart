@@ -1,39 +1,91 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/expense_tile.dart';
+import 'package:crewpoint_app/app/features/budget/presentation/widgets/settle_sheet.dart';
 
 class BudgetScreen extends StatelessWidget {
-  const BudgetScreen({super.key, required this.expenses, this.onAddExpense});
+  const BudgetScreen({
+    super.key,
+    required this.expenses,
+    required this.memberIds,
+    this.memberNames = const {},
+    this.onAddExpense,
+    this.onRecordPayment,
+  });
 
   final List<ExpenseModel> expenses;
+  final List<String> memberIds;
+  final Map<String, String> memberNames;
   final VoidCallback? onAddExpense;
-
-  double get _total => expenses.fold(0.0, (sum, e) => sum + e.amount);
+  final void Function(Settlement settlement)? onRecordPayment;
 
   @override
   Widget build(BuildContext context) {
+    final ledger = BalanceLedger.calculate(
+      expenses: expenses,
+      memberIds: memberIds,
+    );
+    final regularExpenses = expenses.where((e) => !e.isPayment).toList();
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Budget')),
-      body: Column(
+      backgroundColor: AppColors.cream,
+      appBar: AppBar(
+        title: const Text('Budget'),
+        backgroundColor: AppColors.cream,
+        elevation: 0,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
-          _TotalSummary(total: _total),
-          Expanded(
-            child: expenses.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No expenses yet',
-                      style: TextStyle(color: AppColors.mediumGrey),
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    itemCount: expenses.length,
-                    itemBuilder: (_, index) =>
-                        ExpenseTile(expense: expenses[index]),
-                  ),
-          ),
+          // Total summary
+          _TotalCard(total: ledger.totalExpenses),
+          const SizedBox(height: AppSpacing.xl),
+
+          // Balances
+          if (memberIds.length > 1) ...[
+            const _SectionLabel(label: 'BALANCES'),
+            const SizedBox(height: AppSpacing.sm),
+            _BalancesCard(
+              balances: ledger.netBalances,
+              memberNames: memberNames,
+            ),
+            const SizedBox(height: AppSpacing.xl),
+          ],
+
+          // Settle Up
+          if (ledger.settlements.isNotEmpty) ...[
+            const _SectionLabel(label: 'SETTLE UP'),
+            const SizedBox(height: AppSpacing.sm),
+            _SettleUpCard(
+              settlements: ledger.settlements,
+              memberNames: memberNames,
+              onSettle: (settlement) {
+                if (onRecordPayment != null) {
+                  onRecordPayment!(settlement);
+                } else {
+                  SettleSheet.show(
+                    context: context,
+                    settlement: settlement,
+                    fromName: memberNames[settlement.fromUserId],
+                    toName: memberNames[settlement.toUserId],
+                  );
+                }
+              },
+            ),
+            const SizedBox(height: AppSpacing.xl),
+          ],
+
+          // Expenses list
+          const _SectionLabel(label: 'EXPENSES'),
+          const SizedBox(height: AppSpacing.sm),
+          if (regularExpenses.isEmpty)
+            const _EmptyExpenses()
+          else
+            ...regularExpenses.map((e) => ExpenseTile(expense: e)),
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -46,29 +98,271 @@ class BudgetScreen extends StatelessWidget {
   }
 }
 
-class _TotalSummary extends StatelessWidget {
-  const _TotalSummary({required this.total});
+class _TotalCard extends StatelessWidget {
+  const _TotalCard({required this.total});
 
   final double total;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+    return Card(
+      elevation: 0,
+      color: AppColors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.borderLg,
+        side: BorderSide(
+          color: AppColors.lightGrey.withValues(alpha: 0.7),
+          width: 0.5,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          children: [
+            Text(
+              'Total Expenses',
+              style: Theme.of(
+                context,
+              ).textTheme.labelMedium?.copyWith(color: AppColors.darkGrey),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              '\$${total.toStringAsFixed(2)}',
+              style: Theme.of(
+                context,
+              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: AppSpacing.xs),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: AppColors.darkGrey,
+          letterSpacing: 1.2,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+class _BalancesCard extends StatelessWidget {
+  const _BalancesCard({required this.balances, required this.memberNames});
+
+  final Map<String, double> balances;
+  final Map<String, String> memberNames;
+
+  @override
+  Widget build(BuildContext context) {
+    final entries = balances.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return Card(
+      elevation: 0,
+      color: AppColors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.borderLg,
+        side: BorderSide(
+          color: AppColors.lightGrey.withValues(alpha: 0.7),
+          width: 0.5,
+        ),
+      ),
       child: Column(
+        mainAxisSize: .min,
         children: [
-          Text(
-            'Total Expenses',
-            style: Theme.of(context).textTheme.labelMedium,
+          for (var i = 0; i < entries.length; i++) ...[
+            if (i > 0) const Divider(height: 1, indent: 16, endIndent: 16),
+            _BalanceRow(
+              name: memberNames[entries[i].key] ?? entries[i].key,
+              balance: entries[i].value,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _BalanceRow extends StatelessWidget {
+  const _BalanceRow({required this.name, required this.balance});
+
+  final String name;
+  final double balance;
+
+  @override
+  Widget build(BuildContext context) {
+    final isPositive = balance > 0.01;
+    final isNegative = balance < -0.01;
+    final color = isPositive
+        ? AppColors.sage
+        : isNegative
+        ? AppColors.terracotta
+        : AppColors.darkGrey;
+    final prefix = isPositive ? '+' : '';
+    final label = isPositive
+        ? 'is owed'
+        : isNegative
+        ? 'owes'
+        : 'settled';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: .start,
+              children: [
+                Text(name, style: Theme.of(context).textTheme.bodyMedium),
+                Text(
+                  label,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGrey),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: AppSpacing.xs),
           Text(
-            '\$${total.toStringAsFixed(2)}',
-            style: Theme.of(context).textTheme.headlineMedium,
+            '$prefix\$${balance.abs().toStringAsFixed(2)}',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SettleUpCard extends StatelessWidget {
+  const _SettleUpCard({
+    required this.settlements,
+    required this.memberNames,
+    required this.onSettle,
+  });
+
+  final List<Settlement> settlements;
+  final Map<String, String> memberNames;
+  final ValueChanged<Settlement> onSettle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      color: AppColors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.borderLg,
+        side: BorderSide(
+          color: AppColors.lightGrey.withValues(alpha: 0.7),
+          width: 0.5,
+        ),
+      ),
+      child: Column(
+        mainAxisSize: .min,
+        children: [
+          for (var i = 0; i < settlements.length; i++) ...[
+            if (i > 0) const Divider(height: 1, indent: 16, endIndent: 16),
+            _SettlementRow(
+              settlement: settlements[i],
+              fromName:
+                  memberNames[settlements[i].fromUserId] ??
+                  settlements[i].fromUserId,
+              toName:
+                  memberNames[settlements[i].toUserId] ??
+                  settlements[i].toUserId,
+              onSettle: () => onSettle(settlements[i]),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SettlementRow extends StatelessWidget {
+  const _SettlementRow({
+    required this.settlement,
+    required this.fromName,
+    required this.toName,
+    required this.onSettle,
+  });
+
+  final Settlement settlement;
+  final String fromName;
+  final String toName;
+  final VoidCallback onSettle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: .start,
+              children: [
+                Text(
+                  '$fromName pays $toName',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                Text(
+                  '\$${settlement.amount.toStringAsFixed(2)}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.terracotta,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: onSettle,
+            style: TextButton.styleFrom(foregroundColor: AppColors.sage),
+            child: const Text('Settle'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyExpenses extends StatelessWidget {
+  const _EmptyExpenses();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+      child: Center(
+        child: Text(
+          'No expenses yet',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: AppColors.mediumGrey),
+        ),
       ),
     );
   }
