@@ -62,9 +62,8 @@ Soften profile UI, expand user data model with payment preferences, add balance 
 ### Phase 5: Privacy Dashboard Update
 
 - **Goal**: Show users exactly what data we collect and why
-- [ ] `lib/app/features/profile/presentation/privacy_dashboard_screen.dart` — Add "Data We Collect" section with field + purpose table from spec Section 2.2
-- [ ] Add note: "Your payment details (Venmo handle, etc.) are visible to other CrewPoint users to facilitate settlements"
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `lib/app/features/profile/presentation/privacy_dashboard_screen.dart` — Full redesign: Data We Collect, What We Don't Collect, Third-Party Services, payment info note
+- [x] Verify: 54 tests, 0 warnings
 
 ## Risks / Out of scope
 
