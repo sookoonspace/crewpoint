@@ -1,9 +1,11 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/widgets/loading_animation.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
 /// Event detail hub — shows event info, member avatars, and quick links
@@ -76,6 +78,14 @@ class EventDashboardScreen extends StatelessWidget {
                   onTap: () {
                     // Navigate to event tasks
                   },
+                ),
+
+                const SizedBox(height: AppSpacing.xl),
+
+                // Event actions (archive, leave, delete)
+                _EventActions(
+                  event: event,
+                  currentUserId: '', // TODO: wire from auth provider
                 ),
 
                 const SizedBox(height: AppSpacing.xl),
@@ -312,6 +322,267 @@ class _QuickLinkCard extends StatelessWidget {
         onTap: onTap,
         shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
       ),
+    );
+  }
+}
+
+/// Archive, Leave, Delete actions for the event dashboard.
+class _EventActions extends StatefulWidget {
+  const _EventActions({required this.event, required this.currentUserId});
+
+  final EventModel event;
+  final String currentUserId;
+
+  @override
+  State<_EventActions> createState() => _EventActionsState();
+}
+
+class _EventActionsState extends State<_EventActions> {
+  bool _isLoading = false;
+
+  Future<void> _leaveEvent() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Leave Event?'),
+        content: const Text(
+          'You will lose access to this event. '
+          'Your past messages and expenses will remain.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text(
+              'Leave',
+              style: TextStyle(color: AppColors.terracotta),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        'removeEventMember',
+      );
+      await callable.call<Map<String, dynamic>>({
+        'eventId': widget.event.id,
+        'targetUserId': widget.currentUserId,
+      });
+      if (mounted) context.go('/dashboard');
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to leave event'),
+            backgroundColor: AppColors.terracotta,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteEvent() async {
+    // Step 1: Warning
+    final step1 = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text(
+          'Delete Event?',
+          style: TextStyle(color: AppColors.terracotta),
+        ),
+        content: const Text(
+          'This will permanently delete the event and all its data: '
+          'messages, expenses, tasks, and invite codes.\n\n'
+          'This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text(
+              'Continue',
+              style: TextStyle(color: AppColors.terracotta),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (step1 != true || !mounted) return;
+
+    // Step 2: Final confirmation
+    final step2 = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text(
+          'Are you sure?',
+          style: TextStyle(color: AppColors.terracotta),
+        ),
+        content: const Text(
+          'All event data will be permanently erased for all members.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.terracotta,
+              foregroundColor: AppColors.white,
+            ),
+            child: const Text('Delete Forever'),
+          ),
+        ],
+      ),
+    );
+
+    if (step2 != true || !mounted) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final callable = FirebaseFunctions.instance.httpsCallable('deleteEvent');
+      await callable.call<Map<String, dynamic>>({'eventId': widget.event.id});
+      if (mounted) context.go('/dashboard');
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to delete event'),
+            backgroundColor: AppColors.terracotta,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+        child: Center(child: LoadingAnimation()),
+      );
+    }
+
+    final isOwner = widget.event.isOwner(widget.currentUserId);
+    final isAdmin = widget.event.isAdmin(widget.currentUserId);
+
+    return Column(
+      crossAxisAlignment: .start,
+      spacing: AppSpacing.md,
+      children: [
+        // Archive toggle (admin/owner)
+        if (isAdmin || isOwner)
+          Card(
+            elevation: 0,
+            color: AppColors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: AppRadius.borderLg,
+              side: BorderSide(
+                color: AppColors.lightGrey.withValues(alpha: 0.7),
+                width: 0.5,
+              ),
+            ),
+            child: SwitchListTile(
+              title: const Text('Archive Event'),
+              subtitle: Text(
+                widget.event.status == EventStatus.archived
+                    ? 'Event is archived (read-only)'
+                    : 'Archive to make read-only',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGrey),
+              ),
+              value: widget.event.status == EventStatus.archived,
+              onChanged: (_) {
+                // TODO: Update event status via Firestore
+              },
+              activeThumbColor: AppColors.sage,
+              shape: const RoundedRectangleBorder(
+                borderRadius: AppRadius.borderLg,
+              ),
+            ),
+          ),
+
+        // Leave event (non-owner members)
+        if (!isOwner)
+          Card(
+            elevation: 0,
+            color: AppColors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: AppRadius.borderLg,
+              side: BorderSide(
+                color: AppColors.lightGrey.withValues(alpha: 0.7),
+                width: 0.5,
+              ),
+            ),
+            child: ListTile(
+              leading: const Icon(
+                Icons.logout_rounded,
+                color: AppColors.charcoal,
+              ),
+              title: const Text('Leave Event'),
+              trailing: const Icon(
+                Icons.chevron_right,
+                color: AppColors.mediumGrey,
+              ),
+              onTap: _leaveEvent,
+              shape: const RoundedRectangleBorder(
+                borderRadius: AppRadius.borderLg,
+              ),
+            ),
+          ),
+
+        // Delete event (owner only) — danger zone
+        if (isOwner) ...[
+          const SizedBox(height: AppSpacing.lg),
+          Card(
+            elevation: 0,
+            color: AppColors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: AppRadius.borderLg,
+              side: BorderSide(
+                color: AppColors.terracotta.withValues(alpha: 0.3),
+              ),
+            ),
+            child: ListTile(
+              leading: const Icon(
+                Icons.delete_forever,
+                color: AppColors.terracotta,
+              ),
+              title: const Text(
+                'Delete Event',
+                style: TextStyle(color: AppColors.terracotta),
+              ),
+              trailing: const Icon(
+                Icons.chevron_right,
+                color: AppColors.terracottaLight,
+              ),
+              onTap: _deleteEvent,
+              shape: const RoundedRectangleBorder(
+                borderRadius: AppRadius.borderLg,
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

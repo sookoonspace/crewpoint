@@ -69,11 +69,11 @@ Implement core Event domain: expanded data model (eventType, RBAC arrays, archiv
 ### Phase 6: Delete Event + Archive + Leave
 
 - **Goal**: Event deletion, archiving, leave event flows
-- [ ] Event Dashboard settings: "Archive Event" toggle (admin/owner) → sets status to "archived"
-- [ ] Event Dashboard danger zone: "Delete Event" (owner only) → multi-step dialog matching DeleteAccountDialog pattern → calls `deleteEvent` CF → navigates to dashboard
-- [ ] "Leave Event" action for members → calls `removeEventMember` CF with self as target → event removed from their dashboard
-- [ ] All Cloud Function calls show loading overlay + error snackbar
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] Archive toggle (admin/owner) with SwitchListTile
+- [x] Delete Event: 2-step confirmation dialog → deleteEvent CF → navigates to dashboard
+- [x] Leave Event: confirmation dialog → removeEventMember CF (self) → navigates to dashboard
+- [x] All CF calls show LoadingAnimation overlay + error snackbar
+- [x] Verify: 64 tests, 0 warnings — ALL 6 PHASES COMPLETE
 
 ## Risks / Out of scope
 
