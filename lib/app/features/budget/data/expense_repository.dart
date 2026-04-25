@@ -4,19 +4,22 @@ import 'package:drift/drift.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart';
 import 'package:crewpoint_app/app/core/database/daos/expenses_dao.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
+import 'package:crewpoint_app/app/features/budget/domain/repositories/i_expense_repository.dart';
 
-class ExpenseRepository {
+class ExpenseRepository implements IExpenseRepository {
   const ExpenseRepository({required ExpensesDao expensesDao})
     : _expensesDao = expensesDao;
 
   final ExpensesDao _expensesDao;
 
+  @override
   Stream<List<ExpenseModel>> watchExpensesByEventId(String eventId) {
     return _expensesDao
         .watchExpensesByEventId(eventId)
         .map((rows) => rows.map(_toDomain).toList());
   }
 
+  @override
   Future<List<ExpenseModel>> getExpensesByEventId(String eventId) async {
     try {
       final rows = await _expensesDao.expensesByEventId(eventId);
@@ -27,6 +30,7 @@ class ExpenseRepository {
     }
   }
 
+  @override
   Future<bool> createExpense(ExpenseModel expense) async {
     try {
       await _expensesDao.insertExpense(
@@ -47,6 +51,7 @@ class ExpenseRepository {
     }
   }
 
+  @override
   Future<bool> deleteExpense(String id) async {
     try {
       await _expensesDao.deleteExpenseById(id);

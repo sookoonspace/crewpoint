@@ -2,14 +2,16 @@ import 'dart:developer';
 
 import 'package:crewpoint_app/app/core/services/i_chat_service.dart';
 import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
+import 'package:crewpoint_app/app/features/chat/domain/repositories/i_chat_repository.dart';
 
 /// Repository wrapping IChatService with local caching.
-class ChatRepository {
+class ChatRepository implements IChatRepository {
   const ChatRepository({required IChatService chatService})
     : _chatService = chatService;
 
   final IChatService _chatService;
 
+  @override
   Stream<List<ChatMessageModel>> watchMessages(String eventId) {
     return _chatService
         .messagesForEvent(eventId)
@@ -29,6 +31,7 @@ class ChatRepository {
         );
   }
 
+  @override
   Future<bool> sendMessage({
     required String eventId,
     required String senderId,

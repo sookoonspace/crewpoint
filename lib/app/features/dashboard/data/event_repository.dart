@@ -4,19 +4,22 @@ import 'package:drift/drift.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart';
 import 'package:crewpoint_app/app/core/database/daos/events_dao.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/repositories/i_event_repository.dart';
 
-class EventRepository {
+class EventRepository implements IEventRepository {
   const EventRepository({required EventsDao eventsDao})
     : _eventsDao = eventsDao;
 
   final EventsDao _eventsDao;
 
+  @override
   Stream<List<EventModel>> watchAllEvents() {
     return _eventsDao.watchAllEvents().map(
       (rows) => rows.map(_toDomain).toList(),
     );
   }
 
+  @override
   Future<List<EventModel>> getAllEvents() async {
     try {
       final rows = await _eventsDao.allEvents();
@@ -27,6 +30,7 @@ class EventRepository {
     }
   }
 
+  @override
   Future<EventModel?> getEventById(String id) async {
     try {
       final row = await _eventsDao.eventById(id);
@@ -37,6 +41,7 @@ class EventRepository {
     }
   }
 
+  @override
   Future<bool> createEvent(EventModel event) async {
     try {
       await _eventsDao.insertEvent(
@@ -57,6 +62,7 @@ class EventRepository {
     }
   }
 
+  @override
   Future<bool> deleteEvent(String id) async {
     try {
       await _eventsDao.deleteEventById(id);

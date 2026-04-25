@@ -3,14 +3,16 @@ import 'dart:developer';
 import 'package:crewpoint_app/app/core/services/i_auth_service.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/auth_failure.dart';
+import 'package:crewpoint_app/app/features/auth/domain/repositories/i_auth_repository.dart';
 
 /// Repository wrapping [IAuthService] with typed error handling.
-class AuthRepository {
+class AuthRepository implements IAuthRepository {
   const AuthRepository({required IAuthService authService})
     : _authService = authService;
 
   final IAuthService _authService;
 
+  @override
   Stream<AppUser?> get authStateChanges => _authService.authStateChanges.map(
     (user) => user != null
         ? AppUser(
@@ -22,6 +24,7 @@ class AuthRepository {
         : null,
   );
 
+  @override
   AppUser? get currentUser {
     final user = _authService.currentUser;
     if (user == null) return null;
@@ -33,6 +36,7 @@ class AuthRepository {
     );
   }
 
+  @override
   Future<({AppUser? user, AuthFailure? failure})> signInWithEmail({
     required String email,
     required String password,
@@ -69,6 +73,7 @@ class AuthRepository {
     }
   }
 
+  @override
   Future<({AppUser? user, AuthFailure? failure})> signUpWithEmail({
     required String email,
     required String password,
@@ -107,6 +112,7 @@ class AuthRepository {
     }
   }
 
+  @override
   Future<({AppUser? user, AuthFailure? failure})> signInWithGoogle() async {
     try {
       final result = await _authService.signInWithGoogle();
@@ -137,6 +143,7 @@ class AuthRepository {
     }
   }
 
+  @override
   Future<({AppUser? user, AuthFailure? failure})> signInWithApple() async {
     try {
       final result = await _authService.signInWithApple();
@@ -167,7 +174,9 @@ class AuthRepository {
     }
   }
 
+  @override
   Future<void> signOut() => _authService.signOut();
 
+  @override
   Future<void> deleteAccount() => _authService.deleteAccount();
 }

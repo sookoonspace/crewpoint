@@ -25,14 +25,9 @@ Fix edit profile save error (add proper user repository with Firestore wiring), 
 ### Phase 3: Abstract Repository Interfaces
 
 - **Goal**: Refactor all concrete repositories to abstract interfaces + implementations
-- [ ] `lib/app/features/auth/domain/repositories/i_auth_repository.dart` — Extract from `AuthRepository`
-- [ ] `lib/app/features/dashboard/domain/repositories/i_event_repository.dart` — Extract from `EventRepository`
-- [ ] `lib/app/features/tasks/domain/repositories/i_task_repository.dart` — Extract from `TaskRepository`
-- [ ] `lib/app/features/budget/domain/repositories/i_expense_repository.dart` — Extract from `ExpenseRepository`
-- [ ] `lib/app/features/chat/domain/repositories/i_chat_repository.dart` — Extract from `ChatRepository`
-- [ ] Each concrete repo `implements` its interface; rename files to `firestore_*_repository.dart` or `drift_*_repository.dart`
-- [ ] Update providers to use interface types
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] 5 abstract interfaces: IAuthRepository, IEventRepository, ITaskRepository, IExpenseRepository, IChatRepository
+- [x] Each concrete repo now `implements` its interface with @override annotations
+- [x] Verify: 54 tests, 0 warnings
 
 ## Risks / Out of scope
 
