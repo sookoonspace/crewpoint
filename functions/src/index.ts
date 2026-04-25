@@ -11,3 +11,5 @@ export {generateInviteCode} from "./events/generateInviteCode";
 export {joinEvent} from "./events/joinEvent";
 export {removeEventMember} from "./events/removeEventMember";
 export {deleteEvent} from "./events/deleteEvent";
+export {promoteToAdmin} from "./events/promoteToAdmin";
+export {demoteAdmin} from "./events/demoteAdmin";

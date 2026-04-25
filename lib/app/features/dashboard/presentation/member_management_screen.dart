@@ -7,7 +7,7 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
 
 /// Member management screen — shows members with roles, remove/promote actions.
-class MemberManagementScreen extends StatelessWidget {
+class MemberManagementScreen extends StatefulWidget {
   const MemberManagementScreen({
     super.key,
     required this.event,
@@ -18,7 +18,16 @@ class MemberManagementScreen extends StatelessWidget {
   final String currentUserId;
 
   @override
+  State<MemberManagementScreen> createState() => _MemberManagementScreenState();
+}
+
+class _MemberManagementScreenState extends State<MemberManagementScreen> {
+  final Set<String> _processingIds = <String>{};
+
+  @override
   Widget build(BuildContext context) {
+    final event = widget.event;
+    final currentUserId = widget.currentUserId;
     final isOwner = event.isOwner(currentUserId);
     final isAdmin = event.isAdmin(currentUserId);
 
@@ -40,6 +49,7 @@ class MemberManagementScreen extends StatelessWidget {
               (isOwner || isAdmin) &&
               !memberIsOwner &&
               memberId != currentUserId;
+          final isProcessing = _processingIds.contains(memberId);
 
           return _MemberTile(
             memberId: memberId,
@@ -56,8 +66,9 @@ class MemberManagementScreen extends StatelessWidget {
             canRemove: canRemove,
             canPromote: isOwner && !memberIsOwner,
             isAdmin: memberIsAdmin,
-            onRemove: () => _removeMember(context, memberId),
-            onToggleAdmin: () => _toggleAdmin(context, memberId, memberIsAdmin),
+            isProcessing: isProcessing,
+            onRemove: () => _removeMember(memberId),
+            onToggleAdmin: () => _toggleAdmin(memberId, memberIsAdmin),
           );
         },
       ),
@@ -73,7 +84,7 @@ class MemberManagementScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _removeMember(BuildContext context, String targetId) async {
+  Future<void> _removeMember(String targetId) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -98,18 +109,19 @@ class MemberManagementScreen extends StatelessWidget {
       ),
     );
 
-    if (confirmed != true || !context.mounted) return;
+    if (confirmed != true || !mounted) return;
 
+    setState(() => _processingIds.add(targetId));
     try {
       final callable = FirebaseFunctions.instance.httpsCallable(
         'removeEventMember',
       );
       await callable.call<Map<String, dynamic>>({
-        'eventId': event.id,
+        'eventId': widget.event.id,
         'targetUserId': targetId,
       });
 
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Member removed'),
@@ -117,8 +129,8 @@ class MemberManagementScreen extends StatelessWidget {
           ),
         );
       }
-    } catch (e) {
-      if (context.mounted) {
+    } catch (_) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Failed to remove member'),
@@ -126,26 +138,45 @@ class MemberManagementScreen extends StatelessWidget {
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _processingIds.remove(targetId));
     }
   }
 
-  Future<void> _toggleAdmin(
-    BuildContext context,
-    String targetId,
-    bool currentlyAdmin,
-  ) async {
-    // TODO: Implement promote/demote via Cloud Function
-    // For V1, this is a placeholder — promote/demote will need
-    // a new CF or direct Firestore write by owner
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            currentlyAdmin ? 'Demoted to member' : 'Promoted to admin',
-          ),
-          backgroundColor: AppColors.sage,
-        ),
+  Future<void> _toggleAdmin(String targetId, bool currentlyAdmin) async {
+    setState(() => _processingIds.add(targetId));
+    try {
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        currentlyAdmin ? 'demoteAdmin' : 'promoteToAdmin',
       );
+      await callable.call<Map<String, dynamic>>({
+        'eventId': widget.event.id,
+        'targetUserId': targetId,
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              currentlyAdmin ? 'Demoted to member' : 'Promoted to admin',
+            ),
+            backgroundColor: AppColors.sage,
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              currentlyAdmin ? 'Failed to demote admin' : 'Failed to promote',
+            ),
+            backgroundColor: AppColors.terracotta,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _processingIds.remove(targetId));
     }
   }
 }
@@ -158,6 +189,7 @@ class _MemberTile extends StatelessWidget {
     required this.canRemove,
     required this.canPromote,
     required this.isAdmin,
+    required this.isProcessing,
     this.onRemove,
     this.onToggleAdmin,
   });
@@ -168,11 +200,45 @@ class _MemberTile extends StatelessWidget {
   final bool canRemove;
   final bool canPromote;
   final bool isAdmin;
+  final bool isProcessing;
   final VoidCallback? onRemove;
   final VoidCallback? onToggleAdmin;
 
   @override
   Widget build(BuildContext context) {
+    final Widget? trailing;
+    if (isProcessing) {
+      trailing = const SizedBox(
+        width: 24,
+        height: 24,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    } else if (canRemove || canPromote) {
+      trailing = PopupMenuButton<String>(
+        itemBuilder: (_) => [
+          if (canPromote)
+            PopupMenuItem(
+              value: 'toggle_admin',
+              child: Text(isAdmin ? 'Remove Admin' : 'Make Admin'),
+            ),
+          if (canRemove)
+            const PopupMenuItem(
+              value: 'remove',
+              child: Text(
+                'Remove',
+                style: TextStyle(color: AppColors.terracotta),
+              ),
+            ),
+        ],
+        onSelected: (value) {
+          if (value == 'remove') onRemove?.call();
+          if (value == 'toggle_admin') onToggleAdmin?.call();
+        },
+      );
+    } else {
+      trailing = null;
+    }
+
     return Card(
       elevation: 0,
       color: AppColors.white,
@@ -199,29 +265,7 @@ class _MemberTile extends StatelessWidget {
             fontSize: 12,
           ),
         ),
-        trailing: (canRemove || canPromote)
-            ? PopupMenuButton<String>(
-                itemBuilder: (_) => [
-                  if (canPromote)
-                    PopupMenuItem(
-                      value: 'toggle_admin',
-                      child: Text(isAdmin ? 'Remove Admin' : 'Make Admin'),
-                    ),
-                  if (canRemove)
-                    const PopupMenuItem(
-                      value: 'remove',
-                      child: Text(
-                        'Remove',
-                        style: TextStyle(color: AppColors.terracotta),
-                      ),
-                    ),
-                ],
-                onSelected: (value) {
-                  if (value == 'remove') onRemove?.call();
-                  if (value == 'toggle_admin') onToggleAdmin?.call();
-                },
-              )
-            : null,
+        trailing: trailing,
         shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
       ),
     );

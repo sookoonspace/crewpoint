@@ -13,13 +13,13 @@ Add `promoteToAdmin` and `demoteAdmin` Cloud Functions to secure RBAC flow. Wire
 ### Phase 1: Cloud Functions + Client Wiring
 
 - **Goal**: Server-side promote/demote + wire UI
-- [ ] `functions/src/events/promoteToAdmin.ts` — caller must be creatorId; verify target in memberIds; add target to adminIds via arrayUnion
-- [ ] `functions/src/events/demoteAdmin.ts` — caller must be creatorId; verify target in adminIds; remove target from adminIds via arrayRemove (stays in memberIds)
-- [ ] `functions/src/index.ts` — export both new functions
-- [ ] `npm run build` — verify TypeScript compiles
-- [ ] `lib/app/features/dashboard/presentation/member_management_screen.dart` — replace `_toggleAdmin` TODO with CF calls (`promoteToAdmin` / `demoteAdmin`); add loading state + error snackbar
-- [ ] `docs/cloud-functions-guide.md` — add `promoteToAdmin` and `demoteAdmin` to Function Registry table
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `functions/src/events/promoteToAdmin.ts` — caller must be creatorId; verify target in memberIds; add target to adminIds via arrayUnion
+- [x] `functions/src/events/demoteAdmin.ts` — caller must be creatorId; verify target in adminIds; remove target from adminIds via arrayRemove (stays in memberIds)
+- [x] `functions/src/index.ts` — export both new functions
+- [x] `npm run build` — verify TypeScript compiles
+- [x] `lib/app/features/dashboard/presentation/member_management_screen.dart` — replace `_toggleAdmin` TODO with CF calls (`promoteToAdmin` / `demoteAdmin`); add loading state + error snackbar
+- [x] `docs/cloud-functions-guide.md` — add `promoteToAdmin` and `demoteAdmin` to Function Registry table
+- [x] Verify: `flutter analyze` && `flutter test`
 
 ## Risks / Out of scope
 

@@ -2,7 +2,7 @@
 
 Living document for deploying and managing Firebase Cloud Functions across all 3 flavors.
 
-**Last updated**: 2026-04-24
+**Last updated**: 2026-04-25
 
 ---
 
@@ -122,6 +122,8 @@ All deployed Cloud Functions, kept up-to-date as features are added.
 | Function | Trigger | Module | Description | Timeout | Added |
 |----------|---------|--------|-------------|---------|-------|
 | `deleteUserAccount` | HTTPS Callable | `account/` | Server-side account deletion: anonymizes shared data, transfers event ownership, deletes solo events, clears storage, removes Auth user | 120s | 2026-04-21 |
+| `promoteToAdmin` | HTTPS Callable | `events/` | Owner-only: promotes an event member to admin (arrayUnion into `adminIds`). Requires target to already be a member. | 30s | 2026-04-25 |
+| `demoteAdmin` | HTTPS Callable | `events/` | Owner-only: removes admin role from an event member (arrayRemove from `adminIds`). Owner cannot be demoted. | 30s | 2026-04-25 |
 
 ---
 
