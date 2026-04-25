@@ -40,13 +40,13 @@ Implement core Event domain: expanded data model (eventType, RBAC arrays, archiv
 ### Phase 3: Cloud Functions (Event Operations)
 
 - **Goal**: 4 callable Cloud Functions for event member management
-- [ ] `functions/src/events/generateInviteCode.ts` — Verify caller is admin/owner; generate 6-char code (A-Z, 2-9); check collision; save to `event_invites/{code}` with `expiresAt` (24h); invalidate existing code for event; return code
-- [ ] `functions/src/events/joinEvent.ts` — Verify code exists + not expired; check caller not already member; check 50-member limit; add caller to `memberIds`; return event summary
-- [ ] `functions/src/events/removeEventMember.ts` — Verify caller is admin/owner; verify target is not owner; remove from `memberIds` + `adminIds`
-- [ ] `functions/src/events/deleteEvent.ts` — Verify caller is creatorId; batch delete event + subcollections (messages, expenses, tasks) using `commitInChunks`
-- [ ] `functions/src/index.ts` — Export all 4 new functions
-- [ ] `npm run build` — verify TypeScript compiles
-- [ ] Deploy per flavor: `firebase deploy --only functions --project crewpoint-dev`
+- [x] `generateInviteCode.ts` — admin/owner check, 6-char code (A-Z,2-9), collision check, invalidates old, 24h TTL
+- [x] `joinEvent.ts` — code verification, expiry check, already-member check, 50-member limit, arrayUnion
+- [x] `removeEventMember.ts` — admin/owner + self-removal, owner protection, removes from both arrays
+- [x] `deleteEvent.ts` — creator check, subcollection batch delete via commitInChunks, invite code cleanup
+- [x] `index.ts` — exports all 4 new functions
+- [x] TypeScript compiles clean
+- [ ] Deploy: `firebase deploy --only functions --project crewpoint-dev` (manual step)
 
 ### Phase 4: Dashboard Wiring + Event Dashboard Screen
 

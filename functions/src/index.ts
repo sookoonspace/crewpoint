@@ -6,8 +6,8 @@ admin.initializeApp();
 // === Account Functions ===
 export {deleteUserAccount} from "./account/deleteUserAccount";
 
-// === Notification Functions ===
-// export {sendPushNotification} from "./notifications/sendPushNotification";
-
 // === Event Functions ===
-// export {onEventCreated} from "./events/onEventCreated";
+export {generateInviteCode} from "./events/generateInviteCode";
+export {joinEvent} from "./events/joinEvent";
+export {removeEventMember} from "./events/removeEventMember";
+export {deleteEvent} from "./events/deleteEvent";
