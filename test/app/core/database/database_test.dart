@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' hide isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart';
@@ -30,7 +31,7 @@ void main() {
     id: id,
     title: 'Test Event',
     creatorId: creatorId,
-    startDate: DateTime(2026, 5, 1),
+    startDate: Value(DateTime(2026, 5, 1)),
   );
 
   TasksCompanion testTask({String id = 'task-1', String eventId = 'event-1'}) =>

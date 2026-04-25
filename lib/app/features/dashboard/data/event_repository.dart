@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:drift/drift.dart';
@@ -49,10 +50,12 @@ class EventRepository implements IEventRepository {
           id: event.id,
           title: event.title,
           creatorId: event.creatorId,
-          startDate: event.startDate,
           description: Value(event.description),
+          eventType: Value(event.eventType.name),
+          startDate: Value(event.startDate),
           endDate: Value(event.endDate),
-          location: Value(event.location),
+          adminIds: Value(jsonEncode(event.adminIds)),
+          memberIds: Value(jsonEncode(event.memberIds)),
         ),
       );
       return true;
@@ -82,13 +85,24 @@ class EventRepository implements IEventRepository {
     id: row.id,
     title: row.title,
     description: row.description,
+    eventType: EventType.fromString(row.eventType),
     creatorId: row.creatorId,
     startDate: row.startDate,
     endDate: row.endDate,
-    location: row.location,
-    status: EventStatus.values.firstWhere(
-      (s) => s.name == row.status,
-      orElse: () => EventStatus.active,
-    ),
+    adminIds: _decodeStringList(row.adminIds),
+    memberIds: _decodeStringList(row.memberIds),
+    status: EventStatus.fromString(row.status),
   );
+
+  List<String> _decodeStringList(String json) {
+    try {
+      final decoded = jsonDecode(json);
+      if (decoded is List) {
+        return decoded.cast<String>();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
 }

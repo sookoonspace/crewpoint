@@ -19,15 +19,15 @@ Implement core Event domain: expanded data model (eventType, RBAC arrays, archiv
 ### Phase 1: Data Model + Drift Schema
 
 - **Goal**: Expand EventModel, update Drift, regenerate code
-- [ ] `lib/app/features/dashboard/domain/models/event.dart` — Add `eventType` (enum: trip/project/social/custom), `adminIds` (List<String>), `memberIds` (List<String>); remove `location`; update `EventStatus` to active/archived; make `startDate` nullable; add role helpers: `isOwner(uid)`, `isAdmin(uid)`, `isMember(uid)`
-- [ ] `lib/app/core/database/app_database.dart` — Add columns: `eventType` (text), `adminIds` (text), `memberIds` (text); remove `location`; bump schema version
-- [ ] Run `dart run build_runner build -d`
-- [ ] `lib/app/features/dashboard/data/event_repository.dart` — Update `_toDomain` and `createEvent` to handle new fields + JSON encode/decode arrays
-- [ ] `lib/app/features/dashboard/presentation/create_event_screen.dart` — Remove location field, add event type dropdown, make startDate nullable
-- [ ] TDD: EventModel role helpers — isOwner/isAdmin/isMember return correct booleans
-- [ ] TDD: EventStatus serialization — active/archived round-trip
-- [ ] TDD: EventModel with adminIds/memberIds round-trips through Drift
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `event.dart` — EventType enum, EventStatus (active/archived), adminIds/memberIds, role helpers, nullable startDate, removed location
+- [x] `app_database.dart` — eventType, adminIds (JSON), memberIds (JSON) columns; removed location; schema v3
+- [x] Drift code regenerated
+- [x] `event_repository.dart` — JSON encode/decode for arrays, updated _toDomain/createEvent
+- [x] `create_event_screen.dart` — Event type chips, removed location, optional startDate with clear button
+- [x] `event_detail_screen.dart` + `event_card.dart` — removed location refs, nullable startDate
+- [x] TDD: 10 tests (role helpers, EventType/EventStatus parsing, defaults)
+- [x] Fixed test files for nullable startDate (Value() wrapping)
+- [x] Verify: 64 tests, 0 warnings
 
 ### Phase 2: Firestore Rules + deleteUserAccount Update
 

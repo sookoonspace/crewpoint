@@ -23,10 +23,13 @@ class Events extends Table {
   TextColumn get id => text()();
   TextColumn get title => text().withLength(min: 1, max: 200)();
   TextColumn get description => text().nullable()();
+  TextColumn get eventType => text().withDefault(const Constant('custom'))();
   TextColumn get creatorId => text().references(Users, #id)();
-  DateTimeColumn get startDate => dateTime()();
+  DateTimeColumn get startDate => dateTime().nullable()();
   DateTimeColumn get endDate => dateTime().nullable()();
-  TextColumn get location => text().nullable()();
+  TextColumn get adminIds => text().withDefault(const Constant('[]'))(); // JSON
+  TextColumn get memberIds =>
+      text().withDefault(const Constant('[]'))(); // JSON
   TextColumn get status => text().withDefault(const Constant('active'))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
@@ -90,5 +93,5 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 }

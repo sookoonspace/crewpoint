@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart';
@@ -21,7 +22,7 @@ void main() {
         id: 'event-1',
         title: 'Test Event',
         creatorId: 'user-1',
-        startDate: DateTime(2026, 6, 1),
+        startDate: Value(DateTime(2026, 6, 1)),
       ),
     );
     repository = TaskRepository(tasksDao: TasksDao(db));

@@ -33,38 +33,23 @@ class EventCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-              Row(
-                spacing: AppSpacing.sm,
-                children: [
-                  const Icon(
-                    Icons.calendar_today,
-                    size: 14,
-                    color: AppColors.mediumGrey,
-                  ),
-                  Text(
-                    dateFormat.format(event.startDate),
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: AppColors.mediumGrey,
-                    ),
-                  ),
-                  if (event.location != null) ...[
+              if (event.startDate != null)
+                Row(
+                  spacing: AppSpacing.sm,
+                  children: [
                     const Icon(
-                      Icons.location_on,
+                      Icons.calendar_today,
                       size: 14,
                       color: AppColors.mediumGrey,
                     ),
-                    Expanded(
-                      child: Text(
-                        event.location!,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: AppColors.mediumGrey,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                    Text(
+                      dateFormat.format(event.startDate!),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: AppColors.mediumGrey,
                       ),
                     ),
                   ],
-                ],
-              ),
+                ),
             ],
           ),
         ),

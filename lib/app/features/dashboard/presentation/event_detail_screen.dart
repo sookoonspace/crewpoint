@@ -25,22 +25,17 @@ class EventDetailScreen extends StatelessWidget {
                 event.description!,
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
-            _DetailRow(
-              icon: Icons.calendar_today,
-              label: 'Start',
-              value: dateFormat.format(event.startDate),
-            ),
+            if (event.startDate != null)
+              _DetailRow(
+                icon: Icons.calendar_today,
+                label: 'Start',
+                value: dateFormat.format(event.startDate!),
+              ),
             if (event.endDate != null)
               _DetailRow(
                 icon: Icons.calendar_month,
                 label: 'End',
                 value: dateFormat.format(event.endDate!),
-              ),
-            if (event.location != null)
-              _DetailRow(
-                icon: Icons.location_on,
-                label: 'Location',
-                value: event.location!,
               ),
             _DetailRow(
               icon: Icons.flag,
