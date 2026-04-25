@@ -15,6 +15,7 @@ Benefits all users: event creators get organization tools, members get shared co
   - `firestore.rules` — uses `members` field name (spec uses `memberIds` — must align)
   - `functions/src/index.ts` — has placeholder for event functions
 - **Naming alignment**: Firestore rules currently reference `event.data.members`. Spec uses `memberIds`. Decision: use `memberIds` everywhere (Firestore + Drift + Dart) and update rules.
+- **Naming convention**: `camelCase` for all database fields (Firestore + Drift) and Dart variables. No `snake_case` mapping layer. This matches existing codebase conventions and Firestore best practices.
 </background>
 
 <user_flows>
@@ -30,12 +31,15 @@ Benefits all users: event creators get organization tools, members get shared co
 ## Primary Flow: Invite Member
 1. Owner/Admin opens Member Management screen
 2. Taps "Invite" button
-3. Add Member Sheet appears with:
-   - Auto-generated 6-character join code
-   - Share button (copies code to clipboard / share sheet)
-4. Invited user opens CrewPoint → enters join code
-5. Cloud Function `joinEvent` verifies code → adds user to `memberIds`
-6. New member sees event in their Dashboard
+3. Loading indicator while Cloud Function `generateInviteCode` executes
+4. Add Member Sheet appears with:
+   - Server-generated 6-character join code (returned from Cloud Function)
+   - Share button (copies code to clipboard / system share sheet)
+5. Invited user opens CrewPoint → enters join code (via Join Event Sheet)
+6. Cloud Function `joinEvent` verifies code → adds user to `memberIds`
+7. New member sees event in their Dashboard
+
+**Note**: Code generation happens server-side because `event_invites` collection denies all client writes. The Cloud Function generates the code, checks for collisions, saves to Firestore, and returns the code to the client.
 
 ## Primary Flow: Remove Member
 1. Owner/Admin opens Member Management screen
@@ -99,13 +103,14 @@ Benefits all users: event creators get organization tools, members get shared co
    - `delete`: must be creatorId only
    - `event_invites/{code}`: deny all client reads/writes (managed entirely by Cloud Functions via Admin SDK)
 10. Permission checks in Cloud Functions: verify caller role before executing
-11. `event_invites` TTL cleanup: either Firestore TTL policy on `expiresAt` field or scheduled Cloud Function to purge expired codes
+11. `event_invites` TTL cleanup: use **native Firestore TTL policy** on `expiresAt` field (set in Google Cloud Console → Firestore → TTL Policies). Auto-deletes expired codes for free — no scheduled Cloud Function needed.
 
 ### Cloud Functions (Server-Side)
-11. `joinEvent({joinCode})` — verifies code from `event_invites/{code}` → adds caller to event's `memberIds`
-12. `removeEventMember({eventId, targetUserId})` — caller must be admin/owner → removes target from `memberIds`/`adminIds`
-13. `deleteEvent({eventId})` — caller must be creatorId → batch delete event + subcollections (using `commitInChunks` from existing `utils/batch.ts`)
-14. `event_invites/{code}` Firestore collection: `{ eventId, createdBy, createdAt, expiresAt }` — codes expire after 24 hours
+12. `generateInviteCode({eventId})` — caller must be admin/owner → generates unique 6-char code (A-Z, 2-9), saves to `event_invites/{code}` with `expiresAt` (24h), invalidates any existing code for the event, returns code to client
+13. `joinEvent({joinCode})` — verifies code from `event_invites/{code}` (not expired) → adds caller to event's `memberIds`
+14. `removeEventMember({eventId, targetUserId})` — caller must be admin/owner → removes target from `memberIds`/`adminIds`
+15. `deleteEvent({eventId})` — caller must be creatorId → batch delete event + subcollections (using `commitInChunks` from existing `utils/batch.ts`)
+16. `event_invites/{code}` Firestore collection: `{ eventId, createdBy, createdAt, expiresAt }` — codes expire after 24 hours via native TTL
 
 ### Event Creation
 15. Generate UUID for eventId client-side
@@ -113,10 +118,12 @@ Benefits all users: event creators get organization tools, members get shared co
 17. Save to Drift first → sync to Firestore (offline-first)
 
 ### Member Invitation
-18. Generate 6-character alphanumeric join code (uppercase, no ambiguous chars: no 0/O, 1/I/L)
-19. Store in `event_invites/{code}` with 24-hour TTL
-20. Only admins/owner can generate codes
-21. Share via clipboard or system share sheet
+18. Code generation is **server-side only** via `generateInviteCode` Cloud Function — client cannot write to `event_invites`
+19. Code format: 6-character alphanumeric (uppercase, no ambiguous chars: no 0/O, 1/I/L)
+20. Stored in `event_invites/{code}` with 24-hour TTL (auto-cleaned by native Firestore TTL policy)
+21. Only admins/owner can call `generateInviteCode` (verified server-side)
+22. Generating a new code invalidates any existing code for that event
+23. Client displays returned code + share via clipboard or system share sheet
 
 ## Error Handling
 22. Invalid/expired join code → "This code is invalid or has expired"
@@ -168,6 +175,7 @@ Benefits all users: event creators get organization tools, members get shared co
 - `lib/app/features/dashboard/presentation/widgets/add_member_sheet.dart` — join code display + share
 - `lib/app/features/dashboard/presentation/widgets/join_event_sheet.dart` — 6-char code entry for invitees
 - `lib/app/features/dashboard/application/event_members_provider.dart` — member list + role management
+- `functions/src/events/generateInviteCode.ts` — server-side code generation + save to event_invites
 - `functions/src/events/joinEvent.ts` — join code verification + member addition
 - `functions/src/events/removeEventMember.ts` — member removal
 - `functions/src/events/deleteEvent.ts` — event + subcollection deletion
