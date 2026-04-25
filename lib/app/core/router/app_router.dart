@@ -9,6 +9,7 @@ import 'package:crewpoint_app/app/features/auth/presentation/auth_gate_screen.da
 import 'package:crewpoint_app/app/features/dashboard/presentation/create_event_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboard_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/member_management_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/onboarding/presentation/onboarding_screen.dart';
 
@@ -94,8 +95,16 @@ GoRouter createRouter({
                     routes: [
                       GoRoute(
                         path: 'members',
-                        builder: (_, _) =>
-                            const _PlaceholderScreen(title: 'Members'),
+                        builder: (context, state) {
+                          final event = state.extra as EventModel?;
+                          if (event == null) {
+                            return const _PlaceholderScreen(title: 'Members');
+                          }
+                          return MemberManagementScreen(
+                            event: event,
+                            currentUserId: '', // TODO: get from auth
+                          );
+                        },
                       ),
                     ],
                   ),

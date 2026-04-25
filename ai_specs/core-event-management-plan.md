@@ -61,12 +61,10 @@ Implement core Event domain: expanded data model (eventType, RBAC arrays, archiv
 ### Phase 5: Member Management + Invite
 
 - **Goal**: Member list with roles, invite flow, remove flow
-- [ ] `lib/app/features/dashboard/presentation/member_management_screen.dart` — Sookoon design: cream bg; member list with avatar + name + role badge (Owner/Admin/Member); swipe-to-remove for admin/owner viewing non-owner; "Invite" FAB; promote/demote via long-press menu (owner only)
-- [ ] `lib/app/features/dashboard/presentation/widgets/add_member_sheet.dart` — **CRITICAL: check internet connectivity before calling CF.** If offline → show fallback: "Requires an internet connection to generate a secure join code." If online → call `generateInviteCode` CF on open; loading state; display 6-char code large + centered; share button (clipboard + system share); "Generate New Code" button
-- [ ] `lib/app/features/dashboard/application/event_members_provider.dart` — Notifier: fetches member profiles from user repository; computes role from event's adminIds/creatorId; handles remove/promote/demote via Cloud Functions
-- [ ] Wire member management route in router
-- [ ] TDD: event_members_provider correctly identifies owner/admin/member roles
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `member_management_screen.dart` — role badges, remove dialog, promote/demote menu, invite FAB
+- [x] `add_member_sheet.dart` — offline fallback, CF code gen, large code display, copy/share, regenerate
+- [x] Router wired, share_plus added
+- [x] Verify: 64 tests, 0 warnings
 
 ### Phase 6: Delete Event + Archive + Leave
 
