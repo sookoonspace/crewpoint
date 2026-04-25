@@ -51,12 +51,12 @@ Implement core Event domain: expanded data model (eventType, RBAC arrays, archiv
 ### Phase 4: Dashboard Wiring + Event Dashboard Screen
 
 - **Goal**: Wire dashboard to real data; create event detail hub
-- [ ] `lib/app/features/dashboard/presentation/dashboard_screen.dart` — Convert to ConsumerWidget; watch events from provider; show "Join Event" action in app bar; pass event tap to navigate to event dashboard
-- [ ] `lib/app/features/dashboard/presentation/event_dashboard_screen.dart` — Sookoon design: charcoal gradient hero with event title/type/dates; member avatars row; quick-link cards for Chat, Budget, Tasks; settings gear icon (owner/admin only); cream bg, flat cards
-- [ ] `lib/app/features/dashboard/presentation/widgets/join_event_sheet.dart` — 6-char code input field; "Join" button with loading state; error message display; calls `joinEvent` CF
-- [ ] `lib/app/core/router/app_router.dart` — Replace dashboard placeholder with real DashboardScreen; add routes: `/dashboard/:eventId` (event dashboard), `/dashboard/:eventId/members` (member mgmt)
-- [ ] `lib/app/core/providers.dart` — Add event-related providers if needed
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `dashboard_screen.dart` — ConsumerWidget, join action in app bar, empty state with "Join with Code" button, cream bg
+- [x] `event_dashboard_screen.dart` — gradient hero, type badge, dates, member count, quick-link cards (Chat/Budget/Tasks), settings gear
+- [x] `join_event_sheet.dart` — 6-char code input, loading, error handling, calls joinEvent CF
+- [x] `app_router.dart` — replaced placeholder, added /dashboard/create, /dashboard/event/:eventId, /members routes
+- [x] Tests updated for new DashboardScreen (ConsumerWidget, no params)
+- [x] Verify: 64 tests, 0 warnings
 
 ### Phase 5: Member Management + Invite
 

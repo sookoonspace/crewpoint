@@ -6,6 +6,10 @@ import 'package:crewpoint_app/app/core/router/app_shell.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/edit_profile_screen.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/profile_screen.dart';
 import 'package:crewpoint_app/app/features/auth/presentation/auth_gate_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/create_event_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/dashboard_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboard_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/onboarding/presentation/onboarding_screen.dart';
 
 /// Route paths.
@@ -70,7 +74,32 @@ GoRouter createRouter({
             routes: [
               GoRoute(
                 path: AppRoutes.dashboard,
-                builder: (_, _) => const _PlaceholderScreen(title: 'Dashboard'),
+                builder: (_, _) => const DashboardScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'create',
+                    builder: (_, _) => const CreateEventScreen(),
+                  ),
+                  GoRoute(
+                    path: 'event/:eventId',
+                    builder: (context, state) {
+                      final event = state.extra as EventModel?;
+                      if (event == null) {
+                        return const _PlaceholderScreen(
+                          title: 'Event not found',
+                        );
+                      }
+                      return EventDashboardScreen(event: event);
+                    },
+                    routes: [
+                      GoRoute(
+                        path: 'members',
+                        builder: (_, _) =>
+                            const _PlaceholderScreen(title: 'Members'),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),
