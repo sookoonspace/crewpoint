@@ -114,6 +114,12 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
+  /// Manually refreshes the user data in state.
+  /// Use after profile edits since authStateChanges doesn't fire on profile updates.
+  void refreshUser(AppUser updatedUser) {
+    state = Authenticated(updatedUser);
+  }
+
   Future<void> signOut() async {
     await _authRepository.signOut();
     state = const Unauthenticated();

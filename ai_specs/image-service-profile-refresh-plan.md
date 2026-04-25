@@ -14,26 +14,26 @@ Fix stale profile data after edit (AuthNotifier doesn't refresh on profile updat
 ### Phase 1: Fix Profile Refresh + Reusable Image Service
 
 - **Goal**: Profile updates reflected immediately; centralized image pick/upload service
-- [ ] `lib/app/features/auth/application/auth_provider.dart` — Add `refreshUser(AppUser updatedUser)` method that updates `state = Authenticated(updatedUser)` without requiring a sign-in/sign-out event
-- [ ] `lib/app/core/services/image_service.dart` — Reusable service (abstract `IImageService`):
+- [x] `lib/app/features/auth/application/auth_provider.dart` — Add `refreshUser(AppUser updatedUser)` method that updates `state = Authenticated(updatedUser)` without requiring a sign-in/sign-out event
+- [x] `lib/app/core/services/image_service.dart` — Reusable service (abstract `IImageService`):
   - `pickFromGallery({int maxWidth, int maxHeight, int quality})` → `File?`
   - `takePhoto({int maxWidth, int maxHeight, int quality})` → `File?`
   - `uploadToStorage({required File file, required String storagePath})` → `String` (download URL)
   - Uses `image_picker` for pick/take, `firebase_storage` for upload
   - Constructor injection for testability
-- [ ] `lib/app/core/services/firebase_image_service.dart` — Concrete implementation of `IImageService`
-- [ ] `lib/app/core/providers.dart` — Add `imageServiceProvider`
-- [ ] `lib/app/features/profile/presentation/edit_profile_screen.dart` — Refactor:
+- [x] `lib/app/core/services/firebase_image_service.dart` — Concrete implementation of `IImageService`
+- [x] `lib/app/core/providers.dart` — Add `imageServiceProvider`
+- [x] `lib/app/features/profile/presentation/edit_profile_screen.dart` — Refactor:
   - Replace inline ImagePicker/Storage code with `ref.read(imageServiceProvider)`
   - After successful save: fetch updated user from `userRepositoryProvider.getUser(uid)` → call `authProvider.notifier.refreshUser(updatedUser)`
   - Pick photo: show bottom sheet with "Gallery" / "Camera" options
-- [ ] `lib/app/core/widgets/network_image_with_placeholder.dart` — Reusable widget:
+- [x] `lib/app/core/widgets/network_image_with_placeholder.dart` — Reusable widget:
   - Shows `Image.network` with loading shimmer placeholder
   - On error: shows Lottie profile animation (for avatars) or grey placeholder icon
   - Circular clip option for avatars
-- [ ] `lib/app/features/profile/presentation/profile_screen.dart` — Use `NetworkImageWithPlaceholder` for avatar instead of raw `Image.network`
-- [ ] TDD: refreshUser updates AuthNotifier state to new user data
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `lib/app/features/profile/presentation/profile_screen.dart` — Use `NetworkImageWithPlaceholder` for avatar instead of raw `Image.network`
+- [x] TDD: refreshUser updates AuthNotifier state to new user data
+- [x] Verify: `flutter analyze` && `flutter test`
 
 ## Risks / Out of scope
 

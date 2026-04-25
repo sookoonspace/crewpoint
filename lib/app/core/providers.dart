@@ -8,6 +8,8 @@ import 'package:crewpoint_app/app/core/services/secure_storage_service.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/auth/data/auth_repository.dart';
 import 'package:crewpoint_app/app/features/auth/data/firebase_auth_service.dart';
+import 'package:crewpoint_app/app/core/services/firebase_image_service.dart';
+import 'package:crewpoint_app/app/core/services/image_service.dart';
 import 'package:crewpoint_app/app/features/onboarding/application/onboarding_provider.dart';
 import 'package:crewpoint_app/app/features/profile/data/firestore_user_repository.dart';
 import 'package:crewpoint_app/app/features/profile/domain/repositories/i_user_repository.dart';
@@ -45,6 +47,11 @@ final onboardingProvider = NotifierProvider<OnboardingNotifier, bool>(
 /// via connection/native.dart when platform-specific init is wired.
 final databaseProvider = Provider<AppDatabase>(
   (_) => AppDatabase(NativeDatabase.memory()),
+);
+
+/// Image service (pick, take, upload).
+final imageServiceProvider = Provider<IImageService>(
+  (_) => FirebaseImageService(),
 );
 
 /// User profile repository (Firestore).

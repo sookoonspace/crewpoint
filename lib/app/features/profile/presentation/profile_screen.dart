@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lottie/lottie.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
+import 'package:crewpoint_app/app/core/widgets/network_image_with_placeholder.dart';
 import 'package:crewpoint_app/app/core/router/app_router.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
@@ -160,20 +160,8 @@ class _HeroCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: CircleAvatar(
-                  radius: 52,
-                  backgroundColor: AppColors.charcoalDark,
-                  child: user?.photoUrl != null
-                      ? ClipOval(
-                          child: Image.network(
-                            user!.photoUrl!,
-                            width: 104,
-                            height: 104,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => _buildProfileAnimation(),
-                          ),
-                        )
-                      : _buildProfileAnimation(),
+                child: NetworkImageWithPlaceholder.avatar(
+                  imageUrl: user?.photoUrl,
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),
@@ -216,16 +204,6 @@ class _HeroCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildProfileAnimation() {
-    return Lottie.asset(
-      'assets/animations/profile.json',
-      width: 64,
-      height: 64,
-      errorBuilder: (_, _, _) =>
-          const Icon(Icons.person, size: 48, color: AppColors.sageLight),
     );
   }
 }

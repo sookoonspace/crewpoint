@@ -2,10 +2,8 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
@@ -57,16 +55,42 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     super.dispose();
   }
 
-  Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 512,
-      maxHeight: 512,
-      imageQuality: 85,
+  void _showImagePicker() {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose from Gallery'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(fromCamera: false);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Take a Photo'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(fromCamera: true);
+              },
+            ),
+          ],
+        ),
+      ),
     );
-    if (picked != null) {
-      setState(() => _pickedImage = File(picked.path));
+  }
+
+  Future<void> _pickImage({required bool fromCamera}) async {
+    final imageService = ref.read(imageServiceProvider);
+    final file = fromCamera
+        ? await imageService.takePhoto()
+        : await imageService.pickFromGallery();
+    if (file != null) {
+      setState(() => _pickedImage = file);
     }
   }
 
@@ -82,13 +106,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       final newName = _nameController.text.trim();
       String? photoUrl;
 
-      // Upload photo if changed
+      // Upload photo if changed — via image service
       if (_pickedImage != null) {
-        final storageRef = FirebaseStorage.instance.ref().child(
-          'users/${user.uid}/profile.jpg',
+        final imageService = ref.read(imageServiceProvider);
+        photoUrl = await imageService.uploadToStorage(
+          file: _pickedImage!,
+          storagePath: 'users/${user.uid}/profile.jpg',
         );
-        await storageRef.putFile(_pickedImage!);
-        photoUrl = await storageRef.getDownloadURL();
       }
 
       // Update Firebase Auth profile
@@ -108,6 +132,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             ? null
             : _paymentHandleController.text.trim(),
       );
+
+      // Refresh auth state so profile screen shows updated data
+      final updatedUser = await repo.getUser(user.uid);
+      if (updatedUser != null) {
+        ref.read(authProvider.notifier).refreshUser(updatedUser);
+      }
 
       if (mounted) {
         setState(() {
@@ -197,7 +227,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               // Avatar (tappable)
               Center(
                 child: GestureDetector(
-                  onTap: _isSaving ? null : _pickImage,
+                  onTap: _isSaving ? null : _showImagePicker,
                   child: Stack(
                     children: [
                       Container(
