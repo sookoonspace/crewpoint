@@ -14,37 +14,13 @@ Fix edit profile save error (add proper user repository with Firestore wiring), 
 ### Phase 1: User Profile Repository + Fix Save
 
 - **Goal**: Create abstract `IUserRepository` + concrete `FirestoreUserRepository`; fix save flow
-- [ ] `lib/app/features/profile/domain/repositories/i_user_repository.dart` — Abstract interface:
-  - `Future<AppUser?> getUser(String uid)`
-  - `Future<void> saveProfile({required String uid, required String displayName, String? photoUrl, String? paymentMethod, String? paymentHandle})`
-  - `Future<void> createUserIfNotExists(String uid, String email)`
-- [ ] `lib/app/features/profile/data/firestore_user_repository.dart` — Implements `IUserRepository`:
-  - `saveProfile`: uses `set(merge: true)` with `updatedAt: serverTimestamp()`
-  - `createUserIfNotExists`: creates doc with email + displayName from auth if doc doesn't exist
-  - Error logging with `dart:developer`
-- [ ] `lib/app/core/providers.dart` — Add `userRepositoryProvider`
-- [ ] `lib/app/features/profile/presentation/edit_profile_screen.dart` — Replace direct Firestore calls with `ref.read(userRepositoryProvider).saveProfile()`; show specific error messages
-- [ ] `lib/main.dart` — After Firebase init, call `createUserIfNotExists` to ensure user doc exists on login
-- [ ] TDD: saveProfile creates/updates Firestore user doc
-- [ ] TDD: createUserIfNotExists is idempotent (no error on existing doc)
-- [ ] Verify: `flutter analyze` && `flutter test`
-
-### Phase 2: Edit Profile UI Redesign
-
-- **Goal**: Better text visibility, improved field UX on cream background
-- [ ] `lib/app/core/widgets/custom_text_field.dart` — Add optional `label` parameter; improve styling:
-  - Floating label above field (not just hint inside)
-  - `filled: true` with `AppColors.offWhite` fill for contrast on cream bg
-  - Charcoal text, darkGrey hint, sage focus border
-  - Error text in terracotta
-- [ ] `lib/app/features/profile/presentation/edit_profile_screen.dart` — Redesign:
-  - Remove card wrapper around name field (field styling handles it)
-  - Group payment fields with a section header ("Payment Info — Optional")
-  - Use labeled fields: "Display Name", "Payment Method", "Payment Handle"
-  - Show current values as labels, not just hints
-  - Ensure all text is readable on cream/white backgrounds
-  - Better spacing between sections
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `IUserRepository` abstract interface + `FirestoreUserRepository` concrete
+- [x] `userRepositoryProvider` in providers.dart
+- [x] Edit screen uses `repo.saveProfile()` instead of direct Firestore
+- [x] Better error messages (permission, network, generic)
+- [x] `CustomTextField` upgraded: label param, filled offWhite bg, charcoal text, sage focus, terracotta errors
+- [x] Edit screen redesigned: no card wrappers, section headers, labeled fields, sage glow avatar
+- [x] Verify: 54 tests, 0 warnings
 
 ### Phase 3: Abstract Repository Interfaces
 

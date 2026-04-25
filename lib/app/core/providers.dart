@@ -9,6 +9,8 @@ import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/auth/data/auth_repository.dart';
 import 'package:crewpoint_app/app/features/auth/data/firebase_auth_service.dart';
 import 'package:crewpoint_app/app/features/onboarding/application/onboarding_provider.dart';
+import 'package:crewpoint_app/app/features/profile/data/firestore_user_repository.dart';
+import 'package:crewpoint_app/app/features/profile/domain/repositories/i_user_repository.dart';
 
 /// Secure storage instance.
 final secureStorageProvider = Provider<SecureStorageService>(
@@ -43,6 +45,11 @@ final onboardingProvider = NotifierProvider<OnboardingNotifier, bool>(
 /// via connection/native.dart when platform-specific init is wired.
 final databaseProvider = Provider<AppDatabase>(
   (_) => AppDatabase(NativeDatabase.memory()),
+);
+
+/// User profile repository (Firestore).
+final userRepositoryProvider = Provider<IUserRepository>(
+  (_) => FirestoreUserRepository(),
 );
 
 /// Account deletion service.
