@@ -28,8 +28,8 @@ async function deleteEventCompletely(
 
 /**
  * Anonymizes a user's data in a shared event:
- * - Transfers creatorId if caller is creator
- * - Removes user from members array
+ * - Transfers creatorId to first admin (or first remaining member)
+ * - Removes user from memberIds and adminIds
  * - Anonymizes messages/expenses
  * - Unassigns tasks
  */
@@ -40,14 +40,21 @@ async function anonymizeUserInEvent(
 ): Promise<void> {
   const ops: BatchOperation[] = [];
 
-  const members: string[] = eventData.members || [];
-  const remainingMembers = members.filter((m: string) => m !== uid);
+  const memberIds: string[] = eventData.memberIds || [];
+  const adminIds: string[] = eventData.adminIds || [];
+  const remainingMembers = memberIds.filter((m: string) => m !== uid);
   const updateData: Record<string, unknown> = {
-    members: admin.firestore.FieldValue.arrayRemove(uid),
+    memberIds: admin.firestore.FieldValue.arrayRemove(uid),
+    adminIds: admin.firestore.FieldValue.arrayRemove(uid),
   };
 
+  // Transfer ownership if user is creator
   if (eventData.creatorId === uid && remainingMembers.length > 0) {
-    updateData.creatorId = remainingMembers[0];
+    // Prefer first admin, fallback to first remaining member
+    const remainingAdmins = adminIds.filter((a: string) => a !== uid);
+    updateData.creatorId = remainingAdmins.length > 0
+      ? remainingAdmins[0]
+      : remainingMembers[0];
   }
 
   ops.push({type: "update", ref: eventRef, data: updateData});
@@ -99,7 +106,7 @@ async function deleteUserStorage(uid: string): Promise<void> {
  *
  * Server-side account deletion:
  * 1. Solo events → hard delete
- * 2. Shared events → anonymize + transfer ownership
+ * 2. Shared events → anonymize + transfer ownership to first admin
  * 3. Delete user document
  * 4. Delete user storage files
  * 5. Delete Firebase Auth user (last)
@@ -121,7 +128,7 @@ export const deleteUserAccount = onCall(
       // Query all events where user is a member
       const eventsSnapshot = await db
         .collection("events")
-        .where("members", "array-contains", uid)
+        .where("memberIds", "array-contains", uid)
         .get();
 
       logger.info(`Found ${eventsSnapshot.size} events for user ${uid}`);
@@ -129,9 +136,9 @@ export const deleteUserAccount = onCall(
       // Process each event
       for (const eventDoc of eventsSnapshot.docs) {
         const eventData = eventDoc.data();
-        const members: string[] = eventData.members || [];
+        const memberIds: string[] = eventData.memberIds || [];
 
-        if (members.length <= 1) {
+        if (memberIds.length <= 1) {
           logger.info(`Deleting solo event ${eventDoc.id}`);
           await deleteEventCompletely(eventDoc.ref);
         } else {

@@ -5,61 +5,61 @@ service cloud.firestore {
     // Helper: check if user is a member of an event
     function isEventMember(eventId) {
       let event = get(/databases/$(database)/documents/events/$(eventId));
-      return request.auth.uid == event.data.creatorId
-          || request.auth.uid in event.data.members;
+      return request.auth.uid in event.data.memberIds;
     }
 
     // Events collection
     match /events/{eventId} {
-      // Read: only creator or members
+      // Read: only members (memberIds always includes creatorId and adminIds)
       allow read: if request.auth != null
-        && (resource.data.creatorId == request.auth.uid
-            || request.auth.uid in resource.data.members);
+        && request.auth.uid in resource.data.memberIds;
 
       // Create: must set yourself as creator
       allow create: if request.auth != null
         && request.resource.data.creatorId == request.auth.uid;
 
-      // Update/Delete: only the creator
-      allow update, delete: if request.auth != null
+      // Update: admins or creator (client writes: title, description, dates, type, status)
+      allow update: if request.auth != null
+        && (resource.data.creatorId == request.auth.uid
+            || request.auth.uid in resource.data.adminIds);
+
+      // Delete: only the creator
+      allow delete: if request.auth != null
         && resource.data.creatorId == request.auth.uid;
 
       // Messages subcollection
       match /messages/{messageId} {
-        // Read: only event members
         allow read: if request.auth != null && isEventMember(eventId);
 
-        // Create: must be event member and set own senderId
         allow create: if request.auth != null
           && isEventMember(eventId)
           && request.resource.data.senderId == request.auth.uid;
 
-        // Delete: only own messages
         allow delete: if request.auth != null
           && resource.data.senderId == request.auth.uid;
 
-        // No direct updates to messages
         allow update: if false;
       }
 
       // Expenses subcollection
       match /expenses/{expenseId} {
-        // Read: only event members
         allow read: if request.auth != null && isEventMember(eventId);
 
-        // Create: must be event member and set own payerId
         allow create: if request.auth != null
           && isEventMember(eventId)
           && request.resource.data.payerId == request.auth.uid;
 
-        // Delete: only the payer or event creator
         allow delete: if request.auth != null
           && (resource.data.payerId == request.auth.uid
               || get(/databases/$(database)/documents/events/$(eventId)).data.creatorId == request.auth.uid);
 
-        // No direct updates (delete and re-create)
         allow update: if false;
       }
+    }
+
+    // Event invites — managed entirely by Cloud Functions via Admin SDK
+    match /event_invites/{code} {
+      allow read, write: if false;
     }
 
     // Users collection

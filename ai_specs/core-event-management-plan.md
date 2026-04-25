@@ -32,10 +32,10 @@ Implement core Event domain: expanded data model (eventType, RBAC arrays, archiv
 ### Phase 2: Firestore Rules + deleteUserAccount Update
 
 - **Goal**: Align all Firestore/CF references to `memberIds` + RBAC rules
-- [ ] `firestore.rules` — Rename `members` → `memberIds` in `isEventMember` helper; update event read/update/delete rules per RBAC; add admin-level update rule (`request.auth.uid in resource.data.adminIds`); add `event_invites/{code}` deny-all rule
-- [ ] `functions/src/account/deleteUserAccount.ts` — Rename all `members` → `memberIds`; transfer ownership to first admin in `adminIds` (not first member); remove user from both `memberIds` and `adminIds`
-- [ ] `functions/src/utils/batch.ts` — Update `anonymizeUserInEvent` if it references `members`
-- [ ] Verify: `npm run build` in functions/; `flutter analyze`
+- [x] `firestore.rules` — memberIds everywhere, admin-level update, event_invites deny-all
+- [x] `deleteUserAccount.ts` — members→memberIds, adminIds removal, ownership to first admin
+- [x] `batch.ts` — no changes needed
+- [x] Verify: TypeScript compiles, flutter analyze clean
 
 ### Phase 3: Cloud Functions (Event Operations)
 
