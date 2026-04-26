@@ -7,18 +7,23 @@ class TaskTile extends StatelessWidget {
   const TaskTile({
     super.key,
     required this.task,
+    required this.canChangeStatus,
     this.onTap,
     this.onStatusChanged,
+    this.onUnauthorizedTap,
   });
 
   final TaskModel task;
+  final bool canChangeStatus;
   final VoidCallback? onTap;
   final ValueChanged<TaskStatus>? onStatusChanged;
+  final VoidCallback? onUnauthorizedTap;
 
   @override
   Widget build(BuildContext context) {
     return Card(
       child: InkWell(
+        key: Key('tasks.tile.${task.id}'),
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
@@ -27,8 +32,14 @@ class TaskTile extends StatelessWidget {
             spacing: AppSpacing.md,
             children: [
               _StatusChip(
+                key: Key('tasks.tile.${task.id}.status'),
                 status: task.status,
+                enabled: canChangeStatus,
                 onTap: () {
+                  if (!canChangeStatus) {
+                    onUnauthorizedTap?.call();
+                    return;
+                  }
                   final next = switch (task.status) {
                     TaskStatus.todo => TaskStatus.inProgress,
                     TaskStatus.inProgress => TaskStatus.done,
@@ -77,9 +88,15 @@ class TaskTile extends StatelessWidget {
 }
 
 class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.status, this.onTap});
+  const _StatusChip({
+    super.key,
+    required this.status,
+    required this.enabled,
+    this.onTap,
+  });
 
   final TaskStatus status;
+  final bool enabled;
   final VoidCallback? onTap;
 
   @override
@@ -92,7 +109,7 @@ class _StatusChip extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
-      child: Icon(icon, color: color, size: 24),
+      child: Icon(icon, color: enabled ? color : AppColors.lightGrey, size: 24),
     );
   }
 }

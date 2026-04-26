@@ -75,9 +75,10 @@ class EventDashboardScreen extends StatelessWidget {
                   label: 'Tasks',
                   subtitle: 'To-dos & assignments',
                   color: AppColors.charcoal,
-                  onTap: () {
-                    // Navigate to event tasks
-                  },
+                  onTap: () => context.push(
+                    '/dashboard/event/${event.id}/tasks',
+                    extra: event,
+                  ),
                 ),
 
                 const SizedBox(height: AppSpacing.xl),

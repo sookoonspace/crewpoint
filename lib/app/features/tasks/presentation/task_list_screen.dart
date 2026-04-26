@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/widgets/task_tile.dart';
 
@@ -8,19 +9,25 @@ class TaskListScreen extends StatelessWidget {
   const TaskListScreen({
     super.key,
     required this.tasks,
+    required this.event,
+    required this.currentUserId,
     this.selectedFilter,
     this.onFilterChanged,
     this.onTaskTap,
     this.onStatusChanged,
     this.onCreateTask,
+    this.onUnauthorizedStatusTap,
   });
 
   final List<TaskModel> tasks;
+  final EventModel event;
+  final String currentUserId;
   final TaskStatus? selectedFilter;
   final ValueChanged<TaskStatus?>? onFilterChanged;
   final ValueChanged<TaskModel>? onTaskTap;
   final void Function(TaskModel task, TaskStatus newStatus)? onStatusChanged;
   final VoidCallback? onCreateTask;
+  final VoidCallback? onUnauthorizedStatusTap;
 
   @override
   Widget build(BuildContext context) {
@@ -28,9 +35,15 @@ class TaskListScreen extends StatelessWidget {
         ? tasks
         : tasks.where((t) => t.status == selectedFilter).toList();
 
+    final isOwner = event.isOwner(currentUserId);
+    final isAdmin = event.isAdmin(currentUserId);
+
     return Scaffold(
+      backgroundColor: AppColors.cream,
       appBar: AppBar(
         title: const Text('Tasks'),
+        backgroundColor: AppColors.cream,
+        elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: _FilterBar(
@@ -41,22 +54,35 @@ class TaskListScreen extends StatelessWidget {
       ),
       body: filteredTasks.isEmpty
           ? const Center(
+              key: Key('tasks.list.empty'),
               child: Text(
-                'No tasks',
+                'No tasks yet',
                 style: TextStyle(color: AppColors.mediumGrey),
               ),
             )
           : ListView.builder(
+              key: const Key('tasks.list'),
               padding: const EdgeInsets.all(AppSpacing.lg),
               itemCount: filteredTasks.length,
-              itemBuilder: (_, index) => TaskTile(
-                task: filteredTasks[index],
-                onTap: () => onTaskTap?.call(filteredTasks[index]),
-                onStatusChanged: (status) =>
-                    onStatusChanged?.call(filteredTasks[index], status),
-              ),
+              itemBuilder: (_, index) {
+                final task = filteredTasks[index];
+                final canChange = task.canChangeStatus(
+                  isOwner: isOwner,
+                  isAdmin: isAdmin,
+                  currentUserId: currentUserId,
+                );
+                return TaskTile(
+                  task: task,
+                  canChangeStatus: canChange,
+                  onTap: () => onTaskTap?.call(task),
+                  onStatusChanged: (status) =>
+                      onStatusChanged?.call(task, status),
+                  onUnauthorizedTap: onUnauthorizedStatusTap,
+                );
+              },
             ),
       floatingActionButton: FloatingActionButton(
+        key: const Key('tasks.list.create'),
         onPressed: onCreateTask,
         backgroundColor: AppColors.sage,
         foregroundColor: AppColors.white,

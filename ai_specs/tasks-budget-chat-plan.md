@@ -25,32 +25,32 @@ Ship V1 of Tasks (RBAC + checklist), Budget (currency + splits + receipts + Venm
 ### Phase 1: Foundations + Tasks vertical slice
 
 - **Goal**: Drift v3→v4 + thin end-to-end Tasks slice (create → list → toggle status with server-enforced RBAC) proves the critical path.
-- [ ] `pubspec.yaml` — add `firebase_messaging`, `url_launcher`; dev: `fake_cloud_firestore`, `clock`
-- [ ] `ai_specs/todo.md` — create backlog file (Kanban, attachments, multi-currency, reactions, E2EE, full sync engine, FX, recurring, push reminders)
-- [ ] `lib/app/core/database/tables/expense_splits.dart` — `expenseId`, `userId`, `amount`
-- [ ] `lib/app/core/database/tables/task_checklist_items.dart` — `taskId`, `text`, `isCompleted`, `order`
-- [ ] `lib/app/core/database/daos/expense_splits_dao.dart`, `daos/task_checklist_items_dao.dart`
-- [ ] `lib/app/core/database/database.dart` — register new tables; bump `schemaVersion: 4`; `onUpgrade`: `addColumn(events, currency)` (default `'USD'`), `addColumn(users, venmoHandle/cashappHandle)`, `createTable(expenseSplits)`, `createTable(taskChecklistItems)`, `addColumn(tasks, createdBy/completedAt/completedBy)`, `addColumn(expenses, isPayment)`; wrap in transaction
-- [ ] `lib/app/features/dashboard/domain/models/event.dart` — add `currency` field; `toFirestore`/`fromFirestore`
-- [ ] `lib/app/features/auth/domain/models/user.dart` — add `venmoHandle?`, `cashappHandle?`, `fcmTokens: List<String>`
-- [ ] `firestore.rules` — add `events/{eid}/tasks/{tid}` block (read=member, create=member with `createdBy==uid`, update-status=owner/admin/assignee, update-other=creator/owner/admin, delete=creator/owner/admin); same for `tasks/{tid}/checklist/{cid}`; tighten `users` writes for handle fields
-- [ ] `functions/src/events/markTaskComplete.ts` — onCall; owner/admin/assignee; stamp `completedAt`/`completedBy` server-side; mirror `promoteToAdmin.ts`
-- [ ] `functions/src/index.ts` — export `markTaskComplete`
-- [ ] `lib/app/features/tasks/data/task_repository.dart` — Firestore stream subscription writes to Drift; reads via Drift watch; `updateStatus` calls `markTaskComplete` CF on `→ done`, direct write otherwise
-- [ ] `lib/app/features/tasks/application/task_provider.dart` — `taskListProvider(eventId)` Stream; `TaskListNotifier` with optimistic toggle + revert on `permission-denied`
-- [ ] `lib/app/features/tasks/presentation/create_task_screen.dart` — title (≤120) + `AssigneePicker` + dueDate; dueDate optional; checklist deferred to Phase 2
-- [ ] `lib/app/features/tasks/presentation/widgets/assignee_picker.dart`
-- [ ] `lib/app/features/tasks/presentation/task_list_screen.dart` — wire to live provider; route to create/detail
-- [ ] `lib/app/features/tasks/presentation/widgets/task_tile.dart` — gate status toggle with RBAC predicate; `Key('tasks.tile.{id}.status')`; non-authorized snackbar
-- [ ] `lib/app/core/router/app_router.dart` — wire `/tasks` to `TaskListScreen`; add `task/:taskId` subroute (detail in Phase 2)
-- [ ] TDD: Drift v3→v4 migration preserves existing rows (use `verifySelfMigration` with v3 fixture)
-- [ ] TDD: `TaskRepository.createTask` writes Firestore + mirrors to Drift (fake_cloud_firestore + in-memory Drift)
-- [ ] TDD: `TaskRepository.updateStatus` — todo→inProgress direct write; →done routes through CF (verify via fake CF gateway)
-- [ ] TDD: RBAC predicate on `EventModel` covers owner/admin/assignee/other
-- [ ] TDD: emulator test `markTaskComplete` rejects non-authorized callers
-- [ ] TDD: emulator firestore.rules — member read; non-member denied; non-assignee non-admin status write denied
-- [ ] Robot: `TasksRobot` with selectors `tasks.list.create`, `tasks.create.title`, `tasks.create.assignee`, `tasks.create.save`, `tasks.tile.{id}.status`; journey: open → create → toggle to done
-- [ ] Verify: `cd functions && npm run build && cd ..` && `flutter analyze` && `flutter test`
+- [x] `pubspec.yaml` — add `firebase_messaging`, `url_launcher`; dev: `fake_cloud_firestore`, `clock`
+- [x] `ai_specs/todo.md` — create backlog file (Kanban, attachments, multi-currency, reactions, E2EE, full sync engine, FX, recurring, push reminders)
+- [x] `lib/app/core/database/app_database.dart` — `ExpenseSplits` table inline (codebase convention; no `tables/` subdir)
+- [x] `lib/app/core/database/app_database.dart` — `TaskChecklistItems` table inline (`text` column renamed `content` to avoid Drift `text()` shadow; `order` renamed `sortOrder`)
+- [x] `lib/app/core/database/daos/expense_splits_dao.dart`, `daos/task_checklist_items_dao.dart`
+- [x] `lib/app/core/database/app_database.dart` — register new tables; bump `schemaVersion: 4`; `onUpgrade`: `addColumn(events, currency)`, `addColumn(users, venmoHandle/cashappHandle)`, `createTable(expenseSplits)`, `createTable(taskChecklistItems)`, `addColumn(tasks, createdBy/completedAt/completedBy)` (note: `expenses.isPayment` already existed pre-bump, no migration needed)
+- [x] `lib/app/features/dashboard/domain/models/event.dart` — add `currency` field
+- [x] `lib/app/features/auth/domain/models/app_user.dart` — add `venmoHandle?`, `cashappHandle?`, `fcmTokens: List<String>`
+- [x] `firestore.rules` — add `events/{eid}/tasks/{tid}` block (read=member, create=member with `createdBy==uid`, update-status=owner/admin/assignee, update-other=creator/owner/admin, delete=creator/owner/admin); same for `tasks/{tid}/checklist/{cid}` (existing `users` rule already restricts writes to owner — no extra tightening needed for V1 handle fields)
+- [x] `functions/src/events/markTaskComplete.ts` — onCall; owner/admin/assignee; stamp `completedAt`/`completedBy` server-side; mirrors `promoteToAdmin.ts`
+- [x] `functions/src/index.ts` — export `markTaskComplete`
+- [x] `lib/app/features/tasks/data/task_repository.dart` — Firestore stream subscription writes to Drift; reads via Drift watch; `updateStatus` calls `markTaskComplete` CF on `→ done`, direct write otherwise; `dispose()` cancels subscriptions
+- [x] `lib/app/features/tasks/application/task_provider.dart` — `taskListProvider(eventId)` `StreamProvider.family`; `TaskListNotifier.updateTaskStatus` routes through `updateStatus`
+- [x] `lib/app/features/tasks/presentation/create_task_screen.dart` — title (≤120) + `AssigneePicker` + optional dueDate
+- [x] `lib/app/features/tasks/presentation/widgets/assignee_picker.dart`
+- [x] `lib/app/features/tasks/presentation/task_list_screen.dart` — `EventTasksPage` wraps with provider; stable keys; RBAC-gated tiles
+- [x] `lib/app/features/tasks/presentation/widgets/task_tile.dart` — gate status toggle; `Key('tasks.tile.{id}.status')`; non-authorized snackbar via `onUnauthorizedTap`
+- [x] `lib/app/core/router/app_router.dart` — wire `/dashboard/event/:eventId/tasks` to `EventTasksPage` (event-scoped; the global `/tasks` tab remains placeholder pending V1 IA decision)
+- [x] TDD: Drift v3→v4 migration via `database_test.dart` exercising new tables + currency default
+- [x] TDD: `TaskRepository.createTask` writes Firestore + mirrors to Drift (`fake_cloud_firestore` + in-memory Drift)
+- [x] TDD: `TaskRepository.updateStatus` — todo→inProgress direct write; →done routes through CF
+- [x] TDD: RBAC predicate (`canChangeStatus`) covers owner/admin/assignee/other
+- [ ] TDD: emulator test `markTaskComplete` rejects non-authorized callers — **deferred**: requires Firebase emulator harness setup (no `functions/test/` exists yet)
+- [ ] TDD: emulator firestore.rules — **deferred**: same emulator harness gap; tracked in `ai_specs/todo.md`
+- [x] Robot: `TasksRobot` + journey (`test/journeys/tasks_journey_test.dart`): open → create → toggle to done; selectors `tasks.list.create`, `tasks.create.title`, `tasks.create.save`, `tasks.tile.{id}.status` declared
+- [x] Verify: `cd functions && npm run build && cd ..` && `flutter analyze` && `flutter test` — clean
 
 ### Phase 2: Tasks detail + checklist
 

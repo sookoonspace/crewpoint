@@ -85,6 +85,15 @@ class TaskRepository implements ITaskRepository {
     _firestoreSubs.remove(eventId)?.cancel();
   }
 
+  /// Cancels all live Firestore subscriptions. Call from `ref.onDispose` or
+  /// test teardown.
+  Future<void> dispose() async {
+    for (final sub in _firestoreSubs.values) {
+      await sub.cancel();
+    }
+    _firestoreSubs.clear();
+  }
+
   @override
   Future<List<TaskModel>> getTasksByEventId(String eventId) async {
     try {

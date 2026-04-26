@@ -30,3 +30,6 @@ Tracks ideas and partial implementations explicitly out of V1 scope. Promote int
 - Web platform support (CORS, FCM web push)
 - Background message archival job
 - Refactor `EventRepository` to Firestore-stream + Drift-mirror (currently Drift-only — write path doesn't reach Firestore for events)
+
+## Test Infrastructure
+- Firebase emulator harness (`functions/test/`) for Cloud Function integration tests + `firestore.rules` access-matrix tests (deferred from Phase 1 of tasks-budget-chat plan)

@@ -1,7 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart';
+import 'package:crewpoint_app/app/core/database/daos/tasks_dao.dart';
 import 'package:crewpoint_app/app/core/services/account_deletion_service.dart';
 import 'package:crewpoint_app/app/core/services/i_auth_service.dart';
 import 'package:crewpoint_app/app/core/services/secure_storage_service.dart';
@@ -13,6 +15,8 @@ import 'package:crewpoint_app/app/core/services/image_service.dart';
 import 'package:crewpoint_app/app/features/onboarding/application/onboarding_provider.dart';
 import 'package:crewpoint_app/app/features/profile/data/firestore_user_repository.dart';
 import 'package:crewpoint_app/app/features/profile/domain/repositories/i_user_repository.dart';
+import 'package:crewpoint_app/app/features/tasks/data/task_repository.dart';
+import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 
 /// Secure storage instance.
 final secureStorageProvider = Provider<SecureStorageService>(
@@ -66,3 +70,28 @@ final accountDeletionServiceProvider = Provider<AccountDeletionService>(
     secureStorage: ref.watch(secureStorageProvider),
   ),
 );
+
+/// Firestore instance.
+final firestoreProvider = Provider<FirebaseFirestore>(
+  (_) => FirebaseFirestore.instance,
+);
+
+/// Task repository (Firestore source of truth + Drift mirror).
+final taskRepositoryProvider = Provider<TaskRepository>((ref) {
+  final repo = TaskRepository(
+    tasksDao: TasksDao(ref.watch(databaseProvider)),
+    firestore: ref.watch(firestoreProvider),
+  );
+  ref.onDispose(repo.dispose);
+  return repo;
+});
+
+/// Live stream of tasks for a given event.
+final taskListProvider = StreamProvider.family<List<TaskModel>, String>((
+  ref,
+  eventId,
+) {
+  final repo = ref.watch(taskRepositoryProvider);
+  ref.onDispose(() => repo.disposeMirror(eventId));
+  return repo.watchTasksByEventId(eventId);
+});
