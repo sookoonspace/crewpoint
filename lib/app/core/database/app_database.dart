@@ -10,6 +10,8 @@ class Users extends Table {
   TextColumn get photoUrl => text().nullable()();
   TextColumn get paymentMethod => text().nullable()();
   TextColumn get paymentHandle => text().nullable()();
+  TextColumn get venmoHandle => text().nullable()();
+  TextColumn get cashappHandle => text().nullable()();
   TextColumn get currency => text().withDefault(const Constant('USD'))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
@@ -31,6 +33,7 @@ class Events extends Table {
   TextColumn get memberIds =>
       text().withDefault(const Constant('[]'))(); // JSON
   TextColumn get status => text().withDefault(const Constant('active'))();
+  TextColumn get currency => text().withDefault(const Constant('USD'))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 
@@ -45,11 +48,27 @@ class Tasks extends Table {
   TextColumn get title => text().withLength(min: 1, max: 200)();
   TextColumn get description => text().nullable()();
   TextColumn get assigneeId => text().nullable().references(Users, #id)();
+  TextColumn get createdBy => text().nullable().references(Users, #id)();
   TextColumn get status =>
-      text().withDefault(const Constant('todo'))(); // todo, in_progress, done
+      text().withDefault(const Constant('todo'))(); // todo, inProgress, done
   IntColumn get priority => integer().withDefault(const Constant(0))();
   DateTimeColumn get dueDate => dateTime().nullable()();
+  DateTimeColumn get completedAt => dateTime().nullable()();
+  TextColumn get completedBy => text().nullable().references(Users, #id)();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Task checklist items — child rows of a task.
+class TaskChecklistItems extends Table {
+  TextColumn get id => text()();
+  TextColumn get taskId => text().references(Tasks, #id)();
+  TextColumn get content => text()();
+  BoolColumn get isCompleted => boolean().withDefault(const Constant(false))();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
@@ -88,10 +107,47 @@ class Expenses extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [Users, Events, Tasks, ChatMessages, Expenses])
+/// Expense splits — per-user share of an expense.
+class ExpenseSplits extends Table {
+  TextColumn get expenseId => text().references(Expenses, #id)();
+  TextColumn get userId => text().references(Users, #id)();
+  RealColumn get amount => real()();
+
+  @override
+  Set<Column> get primaryKey => {expenseId, userId};
+}
+
+@DriftDatabase(
+  tables: [
+    Users,
+    Events,
+    Tasks,
+    TaskChecklistItems,
+    ChatMessages,
+    Expenses,
+    ExpenseSplits,
+  ],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) => m.createAll(),
+    onUpgrade: (m, from, to) async {
+      if (from < 4) {
+        await m.addColumn(events, events.currency);
+        await m.addColumn(users, users.venmoHandle);
+        await m.addColumn(users, users.cashappHandle);
+        await m.addColumn(tasks, tasks.createdBy);
+        await m.addColumn(tasks, tasks.completedAt);
+        await m.addColumn(tasks, tasks.completedBy);
+        await m.createTable(taskChecklistItems);
+        await m.createTable(expenseSplits);
+      }
+    },
+  );
 }

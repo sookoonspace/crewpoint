@@ -7,6 +7,9 @@ class AppUser {
     this.photoUrl,
     this.paymentMethod,
     this.paymentHandle,
+    this.venmoHandle,
+    this.cashappHandle,
+    this.fcmTokens = const [],
     this.currency = 'USD',
   });
 
@@ -16,5 +19,8 @@ class AppUser {
   final String? photoUrl;
   final String? paymentMethod; // venmo, zelle, cashapp, paypal, cash
   final String? paymentHandle; // @username, phone, or email
+  final String? venmoHandle;
+  final String? cashappHandle;
+  final List<String> fcmTokens;
   final String currency;
 }

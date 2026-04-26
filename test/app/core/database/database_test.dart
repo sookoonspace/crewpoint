@@ -3,6 +3,8 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart';
 import 'package:crewpoint_app/app/core/database/daos/events_dao.dart';
+import 'package:crewpoint_app/app/core/database/daos/expense_splits_dao.dart';
+import 'package:crewpoint_app/app/core/database/daos/task_checklist_items_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/tasks_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/users_dao.dart';
 
@@ -11,12 +13,16 @@ void main() {
   late EventsDao eventsDao;
   late TasksDao tasksDao;
   late UsersDao usersDao;
+  late TaskChecklistItemsDao checklistDao;
+  late ExpenseSplitsDao splitsDao;
 
   setUp(() {
     db = AppDatabase(NativeDatabase.memory());
     eventsDao = EventsDao(db);
     tasksDao = TasksDao(db);
     usersDao = UsersDao(db);
+    checklistDao = TaskChecklistItemsDao(db);
+    splitsDao = ExpenseSplitsDao(db);
   });
 
   tearDown(() => db.close());
@@ -88,6 +94,82 @@ void main() {
       final result = await usersDao.userById('user-1');
       expect(result, isNotNull);
       expect(result!.email, equals('test@example.com'));
+    });
+  });
+
+  group('Schema v4 — Events.currency', () {
+    test('Events.currency defaults to USD', () async {
+      await usersDao.insertUser(testUser());
+      await eventsDao.insertEvent(testEvent());
+
+      final row = await eventsDao.eventById('event-1');
+      expect(row!.currency, equals('USD'));
+    });
+  });
+
+  group('Schema v4 — TaskChecklistItems', () {
+    test('upsert + query by taskId returns ordered items', () async {
+      await usersDao.insertUser(testUser());
+      await eventsDao.insertEvent(testEvent());
+      await tasksDao.insertTask(testTask());
+
+      await checklistDao.upsert(
+        TaskChecklistItemsCompanion.insert(
+          id: 'item-2',
+          taskId: 'task-1',
+          content: 'Second',
+          sortOrder: const Value(2),
+        ),
+      );
+      await checklistDao.upsert(
+        TaskChecklistItemsCompanion.insert(
+          id: 'item-1',
+          taskId: 'task-1',
+          content: 'First',
+          sortOrder: const Value(1),
+        ),
+      );
+
+      final items = await checklistDao.byTaskId('task-1');
+      expect(items.map((i) => i.id).toList(), equals(['item-1', 'item-2']));
+    });
+  });
+
+  group('Schema v4 — ExpenseSplits', () {
+    test('upsert + query by expenseId', () async {
+      await usersDao.insertUser(testUser());
+      await usersDao.insertUser(testUser(id: 'user-2'));
+      await eventsDao.insertEvent(testEvent());
+
+      // Insert expense first via direct DB insert (no expenses dao used here)
+      await db
+          .into(db.expenses)
+          .insert(
+            ExpensesCompanion.insert(
+              id: 'exp-1',
+              eventId: 'event-1',
+              payerId: 'user-1',
+              amount: 30.0,
+            ),
+          );
+      await splitsDao.upsert(
+        ExpenseSplitsCompanion.insert(
+          expenseId: 'exp-1',
+          userId: 'user-1',
+          amount: 15.0,
+        ),
+      );
+      await splitsDao.upsert(
+        ExpenseSplitsCompanion.insert(
+          expenseId: 'exp-1',
+          userId: 'user-2',
+          amount: 15.0,
+        ),
+      );
+
+      final splits = await splitsDao.byExpenseId('exp-1');
+      expect(splits, hasLength(2));
+      expect(splits.map((s) => s.userId).toSet(), {'user-1', 'user-2'});
     });
   });
 }
