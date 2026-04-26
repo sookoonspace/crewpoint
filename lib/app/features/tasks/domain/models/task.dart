@@ -90,11 +90,23 @@ enum TaskStatus {
 }
 
 class ChecklistItem {
-  const ChecklistItem({required this.text, this.isCompleted = false});
+  const ChecklistItem({
+    required this.id,
+    required this.text,
+    this.isCompleted = false,
+    this.sortOrder = 0,
+  });
 
+  final String id;
   final String text;
   final bool isCompleted;
+  final int sortOrder;
 
-  ChecklistItem copyWith({bool? isCompleted}) =>
-      ChecklistItem(text: text, isCompleted: isCompleted ?? this.isCompleted);
+  ChecklistItem copyWith({String? text, bool? isCompleted, int? sortOrder}) =>
+      ChecklistItem(
+        id: id,
+        text: text ?? this.text,
+        isCompleted: isCompleted ?? this.isCompleted,
+        sortOrder: sortOrder ?? this.sortOrder,
+      );
 }

@@ -55,16 +55,16 @@ Ship V1 of Tasks (RBAC + checklist), Budget (currency + splits + receipts + Venm
 ### Phase 2: Tasks detail + checklist
 
 - **Goal**: Detail screen with edit/delete; checklist persistence end-to-end.
-- [ ] `lib/app/features/tasks/presentation/task_detail_screen.dart` — view/edit/delete (creator/admin/owner only); shows `completedBy/At` when done
-- [ ] `lib/app/features/tasks/presentation/widgets/checklist_editor.dart` — add/remove/reorder/toggle; ≤25 items × ≤120 chars
-- [ ] `lib/app/features/tasks/data/task_repository.dart` — checklist subcollection stream + Drift mirror; per-item write
-- [ ] `lib/app/features/tasks/domain/models/task.dart` — `ChecklistItem` already exists; ensure `toFirestore`/`fromFirestore`
-- [ ] `firestore.rules` — checklist rule mirrors task update-other (creator/owner/admin) + assignee may toggle `isCompleted` only
-- [ ] `lib/app/core/router/app_router.dart` — wire detail route
-- [ ] TDD: checklist toggle by assignee writes only `isCompleted`; full edit by creator
-- [ ] TDD: edge case — assignee removed from event (UI shows "no longer in event")
-- [ ] Widget: read-only state for non-authorized; delete dialog; offline-pending indicator (`SnapshotMetadata.hasPendingWrites`)
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `lib/app/features/tasks/presentation/task_detail_screen.dart` — pure presentation; status badge, due date, assignee row, completed-by/at, checklist editor; delete action gated by `canEditTask`; pending-writes indicator
+- [x] `lib/app/features/tasks/presentation/widgets/checklist_editor.dart` — add / toggle / inline-edit-text / delete; ≤25 items × ≤120 chars; reorder deferred to backlog
+- [x] `lib/app/features/tasks/data/task_repository.dart` — checklist subcollection stream + Drift mirror; `addChecklistItem`, `toggleChecklistItem` (assignee-safe), `updateChecklistItem`, `deleteChecklistItem`; `disposeChecklistMirror`
+- [x] `lib/app/features/tasks/domain/models/task.dart` — `ChecklistItem` extended with `id` + `sortOrder`; serialized at the repo boundary (not on the model)
+- [x] `firestore.rules` — checklist rules already added in Phase 1: creator/owner/admin can create/update/delete; assignee may update (rules allow assignee-targeted `isCompleted` toggle via the dedicated CF-free path)
+- [x] `lib/app/core/router/app_router.dart` — wire `/dashboard/event/:eventId/tasks/:taskId` to `EventTaskDetailPage`
+- [x] TDD: `toggleChecklistItem` patches only `isCompleted` (assignee-safe); `updateChecklistItem` patches both text and `isCompleted` (creator/admin)
+- [x] TDD: `addChecklistItem` writes Firestore subcollection doc and mirrors to Drift
+- [x] Widget: read-only state for non-authorized hides delete + add field; creator sees delete; "(no longer in event)" surfaces when `assigneeId` is missing from `event.memberIds`; pending-writes indicator behind explicit flag
+- [x] Verify: `flutter analyze` && `flutter test` — clean (77 tests)
 
 ### Phase 3: Budget — per-event currency + splits persistence + live stream
 

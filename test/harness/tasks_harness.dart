@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart';
 import 'package:crewpoint_app/app/core/database/daos/events_dao.dart';
+import 'package:crewpoint_app/app/core/database/daos/task_checklist_items_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/tasks_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/users_dao.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
@@ -62,6 +63,7 @@ class TasksHarness {
 
   TaskRepository get repository => TaskRepository(
     tasksDao: TasksDao(database),
+    checklistDao: TaskChecklistItemsDao(database),
     firestore: firestore,
     markTaskComplete: ({required eventId, required taskId}) async {
       markCompleteCalls.add({'eventId': eventId, 'taskId': taskId});

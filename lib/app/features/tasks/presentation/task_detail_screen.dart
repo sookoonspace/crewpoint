@@ -1,22 +1,61 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
+import 'package:crewpoint_app/app/features/tasks/presentation/widgets/checklist_editor.dart';
 
+/// Task detail screen — pure presentation. The parent owns mutation wiring and
+/// passes only the callbacks the current user is authorized to use.
 class TaskDetailScreen extends StatelessWidget {
   const TaskDetailScreen({
     super.key,
     required this.task,
+    required this.event,
+    required this.checklist,
+    required this.canEditTask,
+    required this.canChangeStatus,
+    this.onDelete,
     this.onChecklistToggle,
+    this.onChecklistAdd,
+    this.onChecklistEditText,
+    this.onChecklistDelete,
+    this.hasPendingWrites = false,
   });
 
   final TaskModel task;
-  final void Function(int index, bool value)? onChecklistToggle;
+  final EventModel event;
+  final List<ChecklistItem> checklist;
+  final bool canEditTask;
+  final bool canChangeStatus;
+  final VoidCallback? onDelete;
+  final void Function(ChecklistItem item, bool isCompleted)? onChecklistToggle;
+  final void Function(String id, String text)? onChecklistAdd;
+  final void Function(ChecklistItem item, String text)? onChecklistEditText;
+  final void Function(ChecklistItem item)? onChecklistDelete;
+  final bool hasPendingWrites;
+
+  bool get _assigneeStillInEvent =>
+      task.assigneeId == null || event.memberIds.contains(task.assigneeId);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(task.title)),
+      backgroundColor: AppColors.cream,
+      appBar: AppBar(
+        title: Text(task.title),
+        backgroundColor: AppColors.cream,
+        elevation: 0,
+        actions: [
+          if (canEditTask)
+            IconButton(
+              key: const Key('tasks.detail.delete'),
+              icon: const Icon(Icons.delete_outline),
+              onPressed: onDelete,
+            ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
@@ -24,10 +63,26 @@ class TaskDetailScreen extends StatelessWidget {
           spacing: AppSpacing.lg,
           children: [
             _StatusBadge(status: task.status),
-            if (task.description != null)
+            if (hasPendingWrites)
+              const Row(
+                spacing: AppSpacing.sm,
+                children: [
+                  Icon(Icons.cloud_off, size: 16, color: AppColors.mediumGrey),
+                  Text(
+                    'Will sync when online',
+                    style: TextStyle(color: AppColors.mediumGrey),
+                  ),
+                ],
+              ),
+            if (task.description != null && task.description!.isNotEmpty)
               Text(
                 task.description!,
                 style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            if (task.assigneeId != null)
+              _AssigneeRow(
+                assigneeId: task.assigneeId!,
+                stillInEvent: _assigneeStillInEvent,
               ),
             if (task.dueDate != null)
               Row(
@@ -39,34 +94,62 @@ class TaskDetailScreen extends StatelessWidget {
                     color: AppColors.mediumGrey,
                   ),
                   Text(
-                    'Due: ${task.dueDate.toString().split(' ')[0]}',
+                    'Due ${DateFormat.yMMMd().format(task.dueDate!)}',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ],
               ),
-            if (task.checklistItems.isNotEmpty) ...[
-              Text('Checklist', style: Theme.of(context).textTheme.titleMedium),
-              ...task.checklistItems.asMap().entries.map(
-                (entry) => CheckboxListTile(
-                  value: entry.value.isCompleted,
-                  onChanged: (value) =>
-                      onChecklistToggle?.call(entry.key, value ?? false),
-                  title: Text(
-                    entry.value.text,
-                    style: TextStyle(
-                      decoration: entry.value.isCompleted
-                          ? TextDecoration.lineThrough
-                          : null,
-                    ),
-                  ),
-                  controlAffinity: ListTileControlAffinity.leading,
-                  dense: true,
-                ),
+            if (task.status == TaskStatus.done && task.completedAt != null)
+              Text(
+                'Completed ${DateFormat.yMMMd().format(task.completedAt!)}'
+                '${task.completedBy != null ? ' by ${task.completedBy!.length > 8 ? task.completedBy!.substring(0, 8) : task.completedBy}' : ''}',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGrey),
               ),
-            ],
+            ChecklistEditor(
+              items: checklist,
+              onToggle: canChangeStatus ? onChecklistToggle : null,
+              onAdd: canEditTask ? onChecklistAdd : null,
+              onEditText: canEditTask ? onChecklistEditText : null,
+              onDelete: canEditTask ? onChecklistDelete : null,
+            ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _AssigneeRow extends StatelessWidget {
+  const _AssigneeRow({required this.assigneeId, required this.stillInEvent});
+
+  final String assigneeId;
+  final bool stillInEvent;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = assigneeId.length > 10
+        ? '${assigneeId.substring(0, 10)}…'
+        : assigneeId;
+    return Row(
+      spacing: AppSpacing.sm,
+      children: [
+        const Icon(Icons.person_outline, size: 16, color: AppColors.mediumGrey),
+        Text('Assigned to $label'),
+        if (!stillInEvent)
+          const Padding(
+            padding: EdgeInsets.only(left: AppSpacing.sm),
+            child: Text(
+              '(no longer in event)',
+              style: TextStyle(
+                color: AppColors.terracotta,
+                fontStyle: FontStyle.italic,
+                fontSize: 12,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

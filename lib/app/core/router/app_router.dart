@@ -12,6 +12,7 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboar
 import 'package:crewpoint_app/app/features/dashboard/presentation/member_management_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/onboarding/presentation/onboarding_screen.dart';
+import 'package:crewpoint_app/app/features/tasks/presentation/event_task_detail_page.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/event_tasks_page.dart';
 
 /// Route paths.
@@ -116,6 +117,22 @@ GoRouter createRouter({
                           }
                           return EventTasksPage(event: event);
                         },
+                        routes: [
+                          GoRoute(
+                            path: ':taskId',
+                            builder: (context, state) {
+                              final event = state.extra as EventModel?;
+                              final taskId = state.pathParameters['taskId'];
+                              if (event == null || taskId == null) {
+                                return const _PlaceholderScreen(title: 'Task');
+                              }
+                              return EventTaskDetailPage(
+                                event: event,
+                                taskId: taskId,
+                              );
+                            },
+                          ),
+                        ],
                       ),
                     ],
                   ),

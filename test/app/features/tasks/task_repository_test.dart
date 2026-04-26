@@ -4,6 +4,7 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart';
 import 'package:crewpoint_app/app/core/database/daos/events_dao.dart';
+import 'package:crewpoint_app/app/core/database/daos/task_checklist_items_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/tasks_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/users_dao.dart';
 import 'package:crewpoint_app/app/features/tasks/data/task_repository.dart';
@@ -32,6 +33,7 @@ void main() {
     markCompleteCalls.clear();
     repository = TaskRepository(
       tasksDao: TasksDao(db),
+      checklistDao: TaskChecklistItemsDao(db),
       firestore: firestore,
       markTaskComplete: ({required eventId, required taskId}) async {
         markCompleteCalls.add({'eventId': eventId, 'taskId': taskId});
@@ -156,6 +158,87 @@ void main() {
     });
   });
 
+  group('Checklist', () {
+    test(
+      'addChecklistItem writes Firestore subcollection doc and mirrors to Drift',
+      () async {
+        final ok = await repository.addChecklistItem(
+          eventId: 'event-1',
+          taskId: 'task-1',
+          id: 'item-1',
+          text: 'Step 1',
+          sortOrder: 1,
+        );
+        expect(ok, isTrue);
+
+        final remote = await firestore
+            .collection('events/event-1/tasks/task-1/checklist')
+            .doc('item-1')
+            .get();
+        expect(remote.exists, isTrue);
+        expect(remote.data()!['text'], equals('Step 1'));
+        expect(remote.data()!['isCompleted'], isFalse);
+      },
+    );
+
+    test(
+      'toggleChecklistItem only patches isCompleted (assignee-safe path)',
+      () async {
+        // Seed an item via the full add path
+        await repository.addChecklistItem(
+          eventId: 'event-1',
+          taskId: 'task-1',
+          id: 'item-1',
+          text: 'Step 1',
+        );
+
+        final ok = await repository.toggleChecklistItem(
+          eventId: 'event-1',
+          taskId: 'task-1',
+          itemId: 'item-1',
+          isCompleted: true,
+        );
+        expect(ok, isTrue);
+
+        final remote = await firestore
+            .collection('events/event-1/tasks/task-1/checklist')
+            .doc('item-1')
+            .get();
+        expect(remote.data()!['isCompleted'], isTrue);
+        // text stays the same — assignee should not be able to mutate it
+        expect(remote.data()!['text'], equals('Step 1'));
+      },
+    );
+
+    test(
+      'updateChecklistItem patches both text and isCompleted when caller is creator/admin',
+      () async {
+        await repository.addChecklistItem(
+          eventId: 'event-1',
+          taskId: 'task-1',
+          id: 'item-1',
+          text: 'Original',
+        );
+
+        final ok = await repository.updateChecklistItem(
+          eventId: 'event-1',
+          taskId: 'task-1',
+          itemId: 'item-1',
+          text: 'Edited',
+          isCompleted: true,
+        );
+        expect(ok, isTrue);
+
+        final remote = await firestore
+            .collection('events/event-1/tasks/task-1/checklist')
+            .doc('item-1')
+            .get();
+        expect(remote.data()!['text'], equals('Edited'));
+        expect(remote.data()!['isCompleted'], isTrue);
+      },
+    );
+  });
+
   group('TaskModel RBAC', () {
     test('owner, admin, or assignee can change status', () {
       const task = TaskModel(
@@ -193,6 +276,41 @@ void main() {
           isOwner: false,
           isAdmin: false,
           currentUserId: 'random',
+        ),
+        isFalse,
+      );
+    });
+
+    test('only creator/owner/admin can edit or delete', () {
+      const task = TaskModel(
+        id: 't',
+        eventId: 'e',
+        title: 'x',
+        createdBy: 'creator-1',
+        assigneeId: 'user-2',
+      );
+      expect(
+        task.canEditOrDelete(
+          isOwner: true,
+          isAdmin: false,
+          currentUserId: 'owner',
+        ),
+        isTrue,
+      );
+      expect(
+        task.canEditOrDelete(
+          isOwner: false,
+          isAdmin: false,
+          currentUserId: 'creator-1',
+        ),
+        isTrue,
+      );
+      // Assignee cannot edit/delete (only toggle status / checklist)
+      expect(
+        task.canEditOrDelete(
+          isOwner: false,
+          isAdmin: false,
+          currentUserId: 'user-2',
         ),
         isFalse,
       );

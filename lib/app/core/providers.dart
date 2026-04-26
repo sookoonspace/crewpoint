@@ -3,6 +3,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart';
+import 'package:crewpoint_app/app/core/database/daos/task_checklist_items_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/tasks_dao.dart';
 import 'package:crewpoint_app/app/core/services/account_deletion_service.dart';
 import 'package:crewpoint_app/app/core/services/i_auth_service.dart';
@@ -78,8 +79,10 @@ final firestoreProvider = Provider<FirebaseFirestore>(
 
 /// Task repository (Firestore source of truth + Drift mirror).
 final taskRepositoryProvider = Provider<TaskRepository>((ref) {
+  final db = ref.watch(databaseProvider);
   final repo = TaskRepository(
-    tasksDao: TasksDao(ref.watch(databaseProvider)),
+    tasksDao: TasksDao(db),
+    checklistDao: TaskChecklistItemsDao(db),
     firestore: ref.watch(firestoreProvider),
   );
   ref.onDispose(repo.dispose);
@@ -95,3 +98,15 @@ final taskListProvider = StreamProvider.family<List<TaskModel>, String>((
   ref.onDispose(() => repo.disposeMirror(eventId));
   return repo.watchTasksByEventId(eventId);
 });
+
+/// Live stream of checklist items for a given (eventId, taskId) pair.
+/// Family key is `'$eventId/$taskId'` for stable equality.
+final taskChecklistProvider =
+    StreamProvider.family<
+      List<ChecklistItem>,
+      ({String eventId, String taskId})
+    >((ref, key) {
+      final repo = ref.watch(taskRepositoryProvider);
+      ref.onDispose(() => repo.disposeChecklistMirror(key.eventId, key.taskId));
+      return repo.watchChecklist(key.eventId, key.taskId);
+    });
