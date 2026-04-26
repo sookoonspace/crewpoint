@@ -41,6 +41,51 @@ service cloud.firestore {
         allow update: if false;
       }
 
+      // Tasks subcollection
+      match /tasks/{taskId} {
+        function eventDoc() {
+          return get(/databases/$(database)/documents/events/$(eventId)).data;
+        }
+
+        allow read: if request.auth != null && isEventMember(eventId);
+
+        // Create: any event member; must set themselves as createdBy
+        allow create: if request.auth != null
+          && isEventMember(eventId)
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.eventId == eventId;
+
+        // Update: owner, admins, or the assignee
+        // (status changes routed through markTaskComplete CF for ->done)
+        allow update: if request.auth != null
+          && (eventDoc().creatorId == request.auth.uid
+              || request.auth.uid in eventDoc().adminIds
+              || resource.data.assigneeId == request.auth.uid);
+
+        // Delete: only creator/owner/admin
+        allow delete: if request.auth != null
+          && (resource.data.createdBy == request.auth.uid
+              || eventDoc().creatorId == request.auth.uid
+              || request.auth.uid in eventDoc().adminIds);
+
+        // Checklist items subcollection
+        match /checklist/{itemId} {
+          allow read: if request.auth != null && isEventMember(eventId);
+
+          allow create, delete: if request.auth != null
+            && (get(/databases/$(database)/documents/events/$(eventId)/tasks/$(taskId)).data.createdBy == request.auth.uid
+                || eventDoc().creatorId == request.auth.uid
+                || request.auth.uid in eventDoc().adminIds);
+
+          // Update: same as create/delete OR the assignee toggling completion
+          allow update: if request.auth != null
+            && (get(/databases/$(database)/documents/events/$(eventId)/tasks/$(taskId)).data.createdBy == request.auth.uid
+                || eventDoc().creatorId == request.auth.uid
+                || request.auth.uid in eventDoc().adminIds
+                || get(/databases/$(database)/documents/events/$(eventId)/tasks/$(taskId)).data.assigneeId == request.auth.uid);
+        }
+      }
+
       // Expenses subcollection
       match /expenses/{expenseId} {
         allow read: if request.auth != null && isEventMember(eventId);

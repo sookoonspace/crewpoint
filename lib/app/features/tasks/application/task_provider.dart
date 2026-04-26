@@ -29,7 +29,11 @@ class TaskListNotifier extends Notifier<List<TaskModel>> {
   Future<bool> createTask(TaskModel task) => _taskRepository.createTask(task);
 
   Future<bool> updateTaskStatus(TaskModel task, TaskStatus newStatus) =>
-      _taskRepository.updateTask(task.copyWith(status: newStatus));
+      _taskRepository.updateStatus(
+        eventId: task.eventId,
+        taskId: task.id,
+        newStatus: newStatus,
+      );
 
   Future<bool> deleteTask(String id) => _taskRepository.deleteTask(id);
 }

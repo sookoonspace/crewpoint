@@ -1,16 +1,19 @@
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart';
+import 'package:crewpoint_app/app/core/database/daos/events_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/tasks_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/users_dao.dart';
-import 'package:crewpoint_app/app/core/database/daos/events_dao.dart';
 import 'package:crewpoint_app/app/features/tasks/data/task_repository.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 
 void main() {
   late AppDatabase db;
+  late FakeFirebaseFirestore firestore;
   late TaskRepository repository;
+  final markCompleteCalls = <Map<String, String>>[];
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
@@ -25,86 +28,174 @@ void main() {
         startDate: Value(DateTime(2026, 6, 1)),
       ),
     );
-    repository = TaskRepository(tasksDao: TasksDao(db));
+    firestore = FakeFirebaseFirestore();
+    markCompleteCalls.clear();
+    repository = TaskRepository(
+      tasksDao: TasksDao(db),
+      firestore: firestore,
+      markTaskComplete: ({required eventId, required taskId}) async {
+        markCompleteCalls.add({'eventId': eventId, 'taskId': taskId});
+        // Simulate the CF effect by writing directly to Firestore
+        await firestore
+            .collection('events')
+            .doc(eventId)
+            .collection('tasks')
+            .doc(taskId)
+            .update({'status': 'done', 'completedBy': 'user-1'});
+      },
+    );
   });
 
   tearDown(() => db.close());
 
-  test('creates task linked to event and retrieves by event ID', () async {
-    const task = TaskModel(
-      id: 'task-1',
-      eventId: 'event-1',
-      title: 'Buy supplies',
-    );
-
-    final created = await repository.createTask(task);
-    expect(created, isTrue);
-
-    final tasks = await repository.getTasksByEventId('event-1');
-    expect(tasks, hasLength(1));
-    expect(tasks.first.title, equals('Buy supplies'));
-    expect(tasks.first.eventId, equals('event-1'));
-  });
-
-  test('status transitions todo -> inProgress -> done', () async {
-    const task = TaskModel(
-      id: 'task-1',
-      eventId: 'event-1',
-      title: 'Setup venue',
-    );
-    await repository.createTask(task);
-
-    // todo -> inProgress
-    await repository.updateTask(task.copyWith(status: TaskStatus.inProgress));
-    var tasks = await repository.getTasksByEventId('event-1');
-    expect(tasks.first.status, equals(TaskStatus.inProgress));
-
-    // inProgress -> done
-    await repository.updateTask(task.copyWith(status: TaskStatus.done));
-    tasks = await repository.getTasksByEventId('event-1');
-    expect(tasks.first.status, equals(TaskStatus.done));
-  });
-
-  test('filter returns only matching status', () async {
-    await repository.createTask(
-      const TaskModel(id: 't1', eventId: 'event-1', title: 'A'),
-    );
-    await repository.createTask(
-      const TaskModel(
-        id: 't2',
+  group('createTask', () {
+    test('writes Firestore document AND mirrors to Drift', () async {
+      const task = TaskModel(
+        id: 'task-1',
         eventId: 'event-1',
-        title: 'B',
-        status: TaskStatus.done,
-      ),
-    );
+        title: 'Buy supplies',
+        createdBy: 'user-1',
+      );
 
-    final all = await repository.getTasksByEventId('event-1');
-    expect(all, hasLength(2));
+      final ok = await repository.createTask(task);
+      expect(ok, isTrue);
 
-    final todoOnly = all.where((t) => t.status == TaskStatus.todo).toList();
-    expect(todoOnly, hasLength(1));
-    expect(todoOnly.first.title, equals('A'));
+      // Firestore got the doc
+      final remote = await firestore
+          .collection('events')
+          .doc('event-1')
+          .collection('tasks')
+          .doc('task-1')
+          .get();
+      expect(remote.exists, isTrue);
+      expect(remote.data()!['title'], equals('Buy supplies'));
+      expect(remote.data()!['createdBy'], equals('user-1'));
+      expect(remote.data()!['status'], equals('todo'));
+
+      // Drift mirror happened
+      final local = await repository.getTasksByEventId('event-1');
+      expect(local, hasLength(1));
+      expect(local.first.title, equals('Buy supplies'));
+    });
   });
 
-  test('checklist item toggle via copyWith', () {
-    const task = TaskModel(
-      id: 'task-1',
-      eventId: 'event-1',
-      title: 'With checklist',
-      checklistItems: [
-        ChecklistItem(text: 'Step 1'),
-        ChecklistItem(text: 'Step 2'),
-      ],
+  group('updateStatus', () {
+    test(
+      'routes through markTaskComplete CF when transitioning to done',
+      () async {
+        const task = TaskModel(
+          id: 'task-1',
+          eventId: 'event-1',
+          title: 'Setup venue',
+          createdBy: 'user-1',
+        );
+        await repository.createTask(task);
+
+        final ok = await repository.updateStatus(
+          eventId: 'event-1',
+          taskId: 'task-1',
+          newStatus: TaskStatus.done,
+        );
+        expect(ok, isTrue);
+        expect(markCompleteCalls, hasLength(1));
+        expect(markCompleteCalls.first['taskId'], equals('task-1'));
+      },
     );
 
-    final updated = task.copyWith(
-      checklistItems: [
-        task.checklistItems[0].copyWith(isCompleted: true),
-        task.checklistItems[1],
-      ],
-    );
+    test(
+      'writes Firestore directly when transitioning to inProgress',
+      () async {
+        const task = TaskModel(
+          id: 'task-1',
+          eventId: 'event-1',
+          title: 'Setup venue',
+          createdBy: 'user-1',
+        );
+        await repository.createTask(task);
 
-    expect(updated.checklistItems[0].isCompleted, isTrue);
-    expect(updated.checklistItems[1].isCompleted, isFalse);
+        final ok = await repository.updateStatus(
+          eventId: 'event-1',
+          taskId: 'task-1',
+          newStatus: TaskStatus.inProgress,
+        );
+        expect(ok, isTrue);
+        expect(markCompleteCalls, isEmpty);
+
+        final remote = await firestore
+            .collection('events')
+            .doc('event-1')
+            .collection('tasks')
+            .doc('task-1')
+            .get();
+        expect(remote.data()!['status'], equals('inProgress'));
+      },
+    );
+  });
+
+  group('Firestore mirror', () {
+    test('subscribed stream mirrors Firestore snapshots into Drift', () async {
+      // Simulate a remote write (e.g., from another client / Cloud Function)
+      await firestore
+          .collection('events')
+          .doc('event-1')
+          .collection('tasks')
+          .doc('remote-1')
+          .set({
+            'eventId': 'event-1',
+            'title': 'From server',
+            'createdBy': 'user-2',
+            'status': 'todo',
+            'priority': 0,
+          });
+
+      final stream = repository.watchTasksByEventId('event-1');
+      // Wait for first emission containing the remote task
+      final tasks = await stream.firstWhere((list) => list.isNotEmpty);
+      expect(tasks.first.title, equals('From server'));
+      expect(tasks.first.id, equals('remote-1'));
+    });
+  });
+
+  group('TaskModel RBAC', () {
+    test('owner, admin, or assignee can change status', () {
+      const task = TaskModel(
+        id: 't',
+        eventId: 'e',
+        title: 'x',
+        assigneeId: 'user-2',
+      );
+      expect(
+        task.canChangeStatus(
+          isOwner: true,
+          isAdmin: false,
+          currentUserId: 'owner',
+        ),
+        isTrue,
+      );
+      expect(
+        task.canChangeStatus(
+          isOwner: false,
+          isAdmin: true,
+          currentUserId: 'admin',
+        ),
+        isTrue,
+      );
+      expect(
+        task.canChangeStatus(
+          isOwner: false,
+          isAdmin: false,
+          currentUserId: 'user-2',
+        ),
+        isTrue,
+      );
+      expect(
+        task.canChangeStatus(
+          isOwner: false,
+          isAdmin: false,
+          currentUserId: 'random',
+        ),
+        isFalse,
+      );
+    });
   });
 }

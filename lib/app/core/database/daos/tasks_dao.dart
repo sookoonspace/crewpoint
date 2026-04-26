@@ -22,6 +22,9 @@ class TasksDao extends DatabaseAccessor<AppDatabase> with _$TasksDaoMixin {
 
   Future<int> insertTask(TasksCompanion entry) => into(tasks).insert(entry);
 
+  Future<int> insertOrReplace(TasksCompanion entry) =>
+      into(tasks).insertOnConflictUpdate(entry);
+
   Future<bool> updateTask(TasksCompanion entry) => update(tasks).replace(entry);
 
   Future<int> deleteTaskById(String id) =>
