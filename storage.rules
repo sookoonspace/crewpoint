@@ -17,6 +17,20 @@ service firebase.storage {
         && request.resource.size < 10 * 1024 * 1024;  // Max 10MB
     }
 
+    // Event receipts — only event members can read/write; ≤5MB image only
+    match /events/{eventId}/receipts/{filename} {
+      allow read: if request.auth != null
+        && request.auth.uid in firestore.get(
+          /databases/(default)/documents/events/$(eventId)
+        ).data.memberIds;
+      allow write: if request.auth != null
+        && request.auth.uid in firestore.get(
+          /databases/(default)/documents/events/$(eventId)
+        ).data.memberIds
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
     // Deny everything else
     match /{allPaths=**} {
       allow read, write: if false;

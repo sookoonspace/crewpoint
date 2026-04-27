@@ -28,6 +28,26 @@ class ExpenseModel {
   final List<ExpenseSplit> splits;
   final DateTime? createdAt;
 
+  ExpenseModel copyWith({
+    String? description,
+    String? receiptPath,
+    bool dropReceiptPath = false,
+    bool? isDonation,
+    bool? isPayment,
+    List<ExpenseSplit>? splits,
+  }) => ExpenseModel(
+    id: id,
+    eventId: eventId,
+    payerId: payerId,
+    amount: amount,
+    description: description ?? this.description,
+    receiptPath: dropReceiptPath ? null : (receiptPath ?? this.receiptPath),
+    isDonation: isDonation ?? this.isDonation,
+    isPayment: isPayment ?? this.isPayment,
+    splits: splits ?? this.splits,
+    createdAt: createdAt,
+  );
+
   /// Calculates equal splits among members.
   /// If [isDonation], the payer is excluded from the split.
   static List<ExpenseSplit> calculateSplits({

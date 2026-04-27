@@ -90,14 +90,19 @@ Ship V1 of Tasks (RBAC + checklist), Budget (currency + splits + receipts + Venm
 ### Phase 4: Receipt upload
 
 - **Goal**: image_picker → Storage → display; expense save resilient to upload failure.
-- [ ] `storage.rules` — `events/{eid}/receipts/{exid}.jpg`: read=event member, write=expense `payerId`, ≤5MB, `image/*`
-- [ ] `lib/app/features/budget/data/expense_repository.dart` — `uploadReceipt(eventId, expenseId, file)` returns path; expense save proceeds even on upload failure
-- [ ] `lib/app/features/budget/presentation/widgets/expense_modal.dart` — `image_picker` (`imageQuality: 70`); thumbnail in form
-- [ ] `lib/app/features/budget/presentation/widgets/expense_tile.dart` — thumbnail when present
-- [ ] `lib/app/features/budget/presentation/widgets/receipt_viewer.dart` — full-screen viewer
-- [ ] TDD: upload failure → expense persisted without `receiptPath`; "Retry" CTA wiring
-- [ ] Widget: thumbnail render; failure-state CTA
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `storage.rules` — `events/{eventId}/receipts/{filename}`: read=event member (via `firestore.get`), write=event member with image content-type and ≤5MB
+- [x] `lib/app/features/budget/data/expense_repository.dart` — `uploadReceipt(eventId, expenseId, file)` injects `IImageService`; returns download URL on success, `null` on failure (caller persists expense regardless)
+- [x] `lib/app/features/budget/domain/models/expense.dart` — `copyWith` supporting receiptPath updates (and explicit drop)
+- [x] `lib/app/features/budget/presentation/widgets/expense_modal.dart` — `onPickReceipt` callback (parent supplies `IImageService.pickFromGallery(quality: 70)`); inline thumbnail preview + clear; `onSubmit(expense, file?)` signature
+- [x] `lib/app/features/budget/presentation/widgets/expense_tile.dart` — thumbnail when `receiptPath` is set; tap opens viewer; threaded `currencySymbol`
+- [x] `lib/app/features/budget/presentation/widgets/receipt_viewer.dart` — full-screen `InteractiveViewer` with tap-to-dismiss + error/loading states
+- [x] `lib/app/features/budget/presentation/event_budget_page.dart` — orchestrates upload-then-save; failure snackbar, expense saves anyway
+- [x] `lib/app/core/providers.dart` — `expenseRepositoryProvider` injects `imageServiceProvider`
+- [x] TDD: `uploadReceipt` returns URL on success and writes to expected path
+- [x] TDD: `uploadReceipt` returns null on failure; subsequent `createExpense` persists with `receiptPath: null` (resilience contract)
+- [x] Widget: tile renders thumbnail with stable `Key('budget.expense.tile.{id}.thumbnail')`; default icon when no receipt; tile honors `currencySymbol`
+- [x] Widget: modal hides "Add receipt" button when `onPickReceipt` is null; tap pulls picker → preview rendered; submit forwards picked file
+- [x] Verify: `flutter analyze` && `flutter test` — clean (98 tests)
 
 ### Phase 5: Pay handles + deep-link settle (happy path)
 

@@ -1,10 +1,20 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/widgets/custom_text_field.dart';
 import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
-import 'package:uuid/uuid.dart';
+
+/// Submit signature: receives the expense model AND the picked receipt file
+/// (if any). The parent uploads the file out-of-band so the modal stays free
+/// of Firebase / Storage coupling.
+typedef ExpenseSubmit = void Function(ExpenseModel expense, File? receipt);
+
+/// Async receipt picker callback — returns null if the user cancels.
+typedef ReceiptPicker = Future<File?> Function();
 
 class ExpenseModal extends StatefulWidget {
   const ExpenseModal({
@@ -15,6 +25,7 @@ class ExpenseModal extends StatefulWidget {
     this.currencySymbol = '\$',
     this.minAmount = 0.01,
     this.maxAmount = 10000000,
+    this.onPickReceipt,
     this.onSubmit,
   });
 
@@ -24,7 +35,8 @@ class ExpenseModal extends StatefulWidget {
   final String currencySymbol;
   final double minAmount;
   final double maxAmount;
-  final ValueChanged<ExpenseModel>? onSubmit;
+  final ReceiptPicker? onPickReceipt;
+  final ExpenseSubmit? onSubmit;
 
   /// Validates amount-string then bounds. Returns null if valid; else error msg.
   static String? validateAmountInput(
@@ -60,7 +72,8 @@ class ExpenseModal extends StatefulWidget {
     required String payerId,
     required List<String> memberIds,
     String currencySymbol = '\$',
-    ValueChanged<ExpenseModel>? onSubmit,
+    ReceiptPicker? onPickReceipt,
+    ExpenseSubmit? onSubmit,
   }) {
     return showModalBottomSheet<void>(
       context: context,
@@ -70,6 +83,7 @@ class ExpenseModal extends StatefulWidget {
         payerId: payerId,
         memberIds: memberIds,
         currencySymbol: currencySymbol,
+        onPickReceipt: onPickReceipt,
         onSubmit: onSubmit,
       ),
     );
@@ -84,12 +98,21 @@ class _ExpenseModalState extends State<ExpenseModal> {
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
   bool _isDonation = false;
+  File? _pickedReceipt;
 
   @override
   void dispose() {
     _amountController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickReceipt() async {
+    final picker = widget.onPickReceipt;
+    if (picker == null) return;
+    final file = await picker();
+    if (!mounted || file == null) return;
+    setState(() => _pickedReceipt = file);
   }
 
   void _submit() {
@@ -115,7 +138,7 @@ class _ExpenseModalState extends State<ExpenseModal> {
       splits: splits,
     );
 
-    widget.onSubmit?.call(expense);
+    widget.onSubmit?.call(expense, _pickedReceipt);
     Navigator.of(context).pop();
   }
 
@@ -126,6 +149,7 @@ class _ExpenseModalState extends State<ExpenseModal> {
         ? widget.memberIds.where((id) => id != widget.payerId).length
         : widget.memberIds.length;
     final splitAmount = splitCount > 0 ? amount / splitCount : 0.0;
+    final canPickReceipt = widget.onPickReceipt != null;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -177,6 +201,12 @@ class _ExpenseModalState extends State<ExpenseModal> {
                 ),
               ],
             ),
+            if (canPickReceipt)
+              _ReceiptRow(
+                file: _pickedReceipt,
+                onPick: _pickReceipt,
+                onClear: () => setState(() => _pickedReceipt = null),
+              ),
             if (amount > 0)
               Text(
                 'Split: ${widget.currencySymbol}${splitAmount.toStringAsFixed(2)} per person ($splitCount people)',
@@ -192,6 +222,58 @@ class _ExpenseModalState extends State<ExpenseModal> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ReceiptRow extends StatelessWidget {
+  const _ReceiptRow({
+    required this.file,
+    required this.onPick,
+    required this.onClear,
+  });
+
+  final File? file;
+  final VoidCallback onPick;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    if (file == null) {
+      return OutlinedButton.icon(
+        key: const Key('budget.expense.receipt.add'),
+        onPressed: onPick,
+        icon: const Icon(Icons.camera_alt_outlined),
+        label: const Text('Add receipt'),
+      );
+    }
+
+    return Row(
+      key: const Key('budget.expense.receipt.preview'),
+      spacing: AppSpacing.md,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.file(
+            file!,
+            width: 56,
+            height: 56,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => Container(
+              width: 56,
+              height: 56,
+              color: AppColors.lightGrey,
+              child: const Icon(Icons.broken_image),
+            ),
+          ),
+        ),
+        const Expanded(child: Text('Receipt attached')),
+        IconButton(
+          key: const Key('budget.expense.receipt.clear'),
+          onPressed: onClear,
+          icon: const Icon(Icons.close),
+        ),
+      ],
     );
   }
 }

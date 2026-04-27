@@ -38,8 +38,8 @@ void main() {
       ),
     );
 
-    // Total card displays event currency.
-    expect(find.text('€50.00'), findsOneWidget);
+    // Total card and tile both display event currency now that tile is threaded.
+    expect(find.text('€50.00'), findsAtLeastNWidgets(1));
   });
 
   testWidgets('settlement row carries stable Key budget.settle.{payeeId} '

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:drift/drift.dart' show Value;
@@ -8,6 +9,7 @@ import 'package:crewpoint_app/app/core/database/app_database.dart'
     show ExpensesCompanion, ExpenseSplitsCompanion;
 import 'package:crewpoint_app/app/core/database/daos/expense_splits_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/expenses_dao.dart';
+import 'package:crewpoint_app/app/core/services/image_service.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/budget/domain/repositories/i_expense_repository.dart';
 
@@ -16,13 +18,16 @@ class ExpenseRepository implements IExpenseRepository {
     required ExpensesDao expensesDao,
     required ExpenseSplitsDao splitsDao,
     required FirebaseFirestore firestore,
+    IImageService? imageService,
   }) : _expensesDao = expensesDao,
        _splitsDao = splitsDao,
-       _firestore = firestore;
+       _firestore = firestore,
+       _imageService = imageService;
 
   final ExpensesDao _expensesDao;
   final ExpenseSplitsDao _splitsDao;
   final FirebaseFirestore _firestore;
+  final IImageService? _imageService;
   final Map<String, StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>
   _firestoreSubs = {};
 
@@ -77,6 +82,34 @@ class ExpenseRepository implements IExpenseRepository {
       await sub.cancel();
     }
     _firestoreSubs.clear();
+  }
+
+  /// Uploads a receipt to Storage at `events/{eid}/receipts/{exid}.jpg`.
+  /// Returns the download URL on success, or `null` on failure (caller may
+  /// still persist the expense without a receipt and offer a Retry CTA).
+  Future<String?> uploadReceipt({
+    required String eventId,
+    required String expenseId,
+    required File file,
+  }) async {
+    final svc = _imageService;
+    if (svc == null) {
+      log(
+        'uploadReceipt called without IImageService injected',
+        name: 'budget',
+      );
+      return null;
+    }
+    try {
+      final url = await svc.uploadToStorage(
+        file: file,
+        storagePath: 'events/$eventId/receipts/$expenseId.jpg',
+      );
+      return url;
+    } catch (e, st) {
+      log('Receipt upload failed', error: e, stackTrace: st, name: 'budget');
+      return null;
+    }
   }
 
   @override

@@ -33,6 +33,7 @@ class EventBudgetPage extends ConsumerWidget {
 
     final asyncExpenses = ref.watch(expenseListProvider(event.id));
     final repo = ref.watch(expenseRepositoryProvider);
+    final imageService = ref.watch(imageServiceProvider);
     final symbol = _currencySymbol(event.currency);
 
     return asyncExpenses.when(
@@ -46,8 +47,34 @@ class EventBudgetPage extends ConsumerWidget {
           payerId: uid,
           memberIds: event.memberIds,
           currencySymbol: symbol,
-          onSubmit: (expense) async {
-            final ok = await repo.createExpense(expense);
+          onPickReceipt: () => imageService.pickFromGallery(
+            maxWidth: 1600,
+            maxHeight: 1600,
+            quality: 70,
+          ),
+          onSubmit: (expense, receipt) async {
+            // Upload first (resilient: failure does not block save).
+            String? receiptUrl;
+            if (receipt != null) {
+              receiptUrl = await repo.uploadReceipt(
+                eventId: event.id,
+                expenseId: expense.id,
+                file: receipt,
+              );
+              if (receiptUrl == null && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Receipt upload failed — saving expense without it',
+                    ),
+                    backgroundColor: AppColors.terracotta,
+                  ),
+                );
+              }
+            }
+            final ok = await repo.createExpense(
+              expense.copyWith(receiptPath: receiptUrl),
+            );
             if (!ok && context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(

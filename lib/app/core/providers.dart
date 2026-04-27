@@ -122,6 +122,7 @@ final expenseRepositoryProvider = Provider<ExpenseRepository>((ref) {
     expensesDao: ExpensesDao(db),
     splitsDao: ExpenseSplitsDao(db),
     firestore: ref.watch(firestoreProvider),
+    imageService: ref.watch(imageServiceProvider),
   );
   ref.onDispose(repo.dispose);
   return repo;

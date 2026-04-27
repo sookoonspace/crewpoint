@@ -99,7 +99,9 @@ class BudgetScreen extends StatelessWidget {
           if (regularExpenses.isEmpty)
             const _EmptyExpenses()
           else
-            ...regularExpenses.map((e) => ExpenseTile(expense: e)),
+            ...regularExpenses.map(
+              (e) => ExpenseTile(expense: e, currencySymbol: symbol),
+            ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
