@@ -56,6 +56,7 @@ class EventRepository implements IEventRepository {
           endDate: Value(event.endDate),
           adminIds: Value(jsonEncode(event.adminIds)),
           memberIds: Value(jsonEncode(event.memberIds)),
+          currency: Value(event.currency),
         ),
       );
       return true;
@@ -92,6 +93,7 @@ class EventRepository implements IEventRepository {
     adminIds: _decodeStringList(row.adminIds),
     memberIds: _decodeStringList(row.memberIds),
     status: EventStatus.fromString(row.status),
+    currency: row.currency,
   );
 
   List<String> _decodeStringList(String json) {

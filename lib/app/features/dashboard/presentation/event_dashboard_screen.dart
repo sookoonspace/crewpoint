@@ -65,9 +65,10 @@ class EventDashboardScreen extends StatelessWidget {
                   label: 'Budget',
                   subtitle: 'Expenses & settlements',
                   color: AppColors.terracotta,
-                  onTap: () {
-                    // Navigate to event budget
-                  },
+                  onTap: () => context.push(
+                    '/dashboard/event/${event.id}/budget',
+                    extra: event,
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 _QuickLinkCard(

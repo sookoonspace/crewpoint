@@ -19,6 +19,9 @@ class ExpensesDao extends DatabaseAccessor<AppDatabase>
   Future<int> insertExpense(ExpensesCompanion entry) =>
       into(expenses).insert(entry);
 
+  Future<int> insertOrReplace(ExpensesCompanion entry) =>
+      into(expenses).insertOnConflictUpdate(entry);
+
   Future<int> deleteExpenseById(String id) =>
       (delete(expenses)..where((e) => e.id.equals(id))).go();
 }

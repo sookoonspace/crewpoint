@@ -12,19 +12,54 @@ class ExpenseModal extends StatefulWidget {
     required this.eventId,
     required this.payerId,
     required this.memberIds,
+    this.currencySymbol = '\$',
+    this.minAmount = 0.01,
+    this.maxAmount = 10000000,
     this.onSubmit,
   });
 
   final String eventId;
   final String payerId;
   final List<String> memberIds;
+  final String currencySymbol;
+  final double minAmount;
+  final double maxAmount;
   final ValueChanged<ExpenseModel>? onSubmit;
+
+  /// Validates amount-string then bounds. Returns null if valid; else error msg.
+  static String? validateAmountInput(
+    String? raw, {
+    double minAmount = 0.01,
+    double maxAmount = 10000000,
+  }) {
+    if (raw == null || raw.trim().isEmpty) return 'Enter an amount';
+    final value = double.tryParse(raw.trim());
+    if (value == null) return 'Invalid amount';
+    if (value < minAmount) return 'Amount must be at least $minAmount';
+    if (value > maxAmount) return 'Amount must be at most $maxAmount';
+    return null;
+  }
+
+  /// Returns null if splits sum is within `tolerance` of `total`; else error.
+  static String? validateSplitSum(
+    Iterable<ExpenseSplit> splits,
+    double total, {
+    double tolerance = 0.01,
+  }) {
+    final sum = splits.fold<double>(0, (acc, s) => acc + s.amount);
+    if ((sum - total).abs() > tolerance) {
+      return 'Split sum (${sum.toStringAsFixed(2)}) must equal total '
+          '(${total.toStringAsFixed(2)})';
+    }
+    return null;
+  }
 
   static Future<void> show({
     required BuildContext context,
     required String eventId,
     required String payerId,
     required List<String> memberIds,
+    String currencySymbol = '\$',
     ValueChanged<ExpenseModel>? onSubmit,
   }) {
     return showModalBottomSheet<void>(
@@ -34,6 +69,7 @@ class ExpenseModal extends StatefulWidget {
         eventId: eventId,
         payerId: payerId,
         memberIds: memberIds,
+        currencySymbol: currencySymbol,
         onSubmit: onSubmit,
       ),
     );
@@ -107,18 +143,19 @@ class _ExpenseModalState extends State<ExpenseModal> {
           children: [
             Text('Add Expense', style: Theme.of(context).textTheme.titleLarge),
             CustomTextField(
-              hintText: 'Amount',
+              key: const Key('budget.expense.amount'),
+              hintText: 'Amount (${widget.currencySymbol})',
               controller: _amountController,
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
               prefixIcon: const Icon(Icons.attach_money),
               onChanged: (_) => setState(() {}),
-              validator: (value) {
-                if (value == null || value.isEmpty) return 'Enter an amount';
-                if (double.tryParse(value) == null) return 'Invalid amount';
-                return null;
-              },
+              validator: (value) => ExpenseModal.validateAmountInput(
+                value,
+                minAmount: widget.minAmount,
+                maxAmount: widget.maxAmount,
+              ),
             ),
             CustomTextField(
               hintText: 'Description (optional)',
@@ -142,12 +179,16 @@ class _ExpenseModalState extends State<ExpenseModal> {
             ),
             if (amount > 0)
               Text(
-                'Split: \$${splitAmount.toStringAsFixed(2)} per person ($splitCount people)',
+                'Split: ${widget.currencySymbol}${splitAmount.toStringAsFixed(2)} per person ($splitCount people)',
                 style: Theme.of(
                   context,
                 ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGrey),
               ),
-            PrimaryButton(label: 'Add Expense', onPressed: _submit),
+            PrimaryButton(
+              key: const Key('budget.expense.save'),
+              label: 'Add Expense',
+              onPressed: _submit,
+            ),
           ],
         ),
       ),

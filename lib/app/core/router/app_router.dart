@@ -12,6 +12,7 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboar
 import 'package:crewpoint_app/app/features/dashboard/presentation/member_management_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/onboarding/presentation/onboarding_screen.dart';
+import 'package:crewpoint_app/app/features/budget/presentation/event_budget_page.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/event_task_detail_page.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/event_tasks_page.dart';
 
@@ -106,6 +107,16 @@ GoRouter createRouter({
                             event: event,
                             currentUserId: '', // TODO: get from auth
                           );
+                        },
+                      ),
+                      GoRoute(
+                        path: 'budget',
+                        builder: (context, state) {
+                          final event = state.extra as EventModel?;
+                          if (event == null) {
+                            return const _PlaceholderScreen(title: 'Budget');
+                          }
+                          return EventBudgetPage(event: event);
                         },
                       ),
                       GoRoute(

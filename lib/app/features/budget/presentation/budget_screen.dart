@@ -12,6 +12,7 @@ class BudgetScreen extends StatelessWidget {
     super.key,
     required this.expenses,
     required this.memberIds,
+    this.currency = 'USD',
     this.memberNames = const {},
     this.onAddExpense,
     this.onRecordPayment,
@@ -19,9 +20,19 @@ class BudgetScreen extends StatelessWidget {
 
   final List<ExpenseModel> expenses;
   final List<String> memberIds;
+  final String currency;
   final Map<String, String> memberNames;
   final VoidCallback? onAddExpense;
   final void Function(Settlement settlement)? onRecordPayment;
+
+  String _currencySymbol(String code) => switch (code) {
+    'USD' || 'CAD' || 'AUD' => '\$',
+    'EUR' => '€',
+    'GBP' => '£',
+    'JPY' => '¥',
+    'INR' => '₹',
+    _ => '\$',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +41,7 @@ class BudgetScreen extends StatelessWidget {
       memberIds: memberIds,
     );
     final regularExpenses = expenses.where((e) => !e.isPayment).toList();
+    final symbol = _currencySymbol(currency);
 
     return Scaffold(
       backgroundColor: AppColors.cream,
@@ -42,7 +54,7 @@ class BudgetScreen extends StatelessWidget {
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
           // Total summary
-          _TotalCard(total: ledger.totalExpenses),
+          _TotalCard(total: ledger.totalExpenses, symbol: symbol),
           const SizedBox(height: AppSpacing.xl),
 
           // Balances
@@ -52,6 +64,7 @@ class BudgetScreen extends StatelessWidget {
             _BalancesCard(
               balances: ledger.netBalances,
               memberNames: memberNames,
+              symbol: symbol,
             ),
             const SizedBox(height: AppSpacing.xl),
           ],
@@ -63,6 +76,7 @@ class BudgetScreen extends StatelessWidget {
             _SettleUpCard(
               settlements: ledger.settlements,
               memberNames: memberNames,
+              symbol: symbol,
               onSettle: (settlement) {
                 if (onRecordPayment != null) {
                   onRecordPayment!(settlement);
@@ -89,6 +103,7 @@ class BudgetScreen extends StatelessWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
+        key: const Key('budget.expense.create'),
         onPressed: onAddExpense,
         backgroundColor: AppColors.sage,
         foregroundColor: AppColors.white,
@@ -99,9 +114,10 @@ class BudgetScreen extends StatelessWidget {
 }
 
 class _TotalCard extends StatelessWidget {
-  const _TotalCard({required this.total});
+  const _TotalCard({required this.total, required this.symbol});
 
   final double total;
+  final String symbol;
 
   @override
   Widget build(BuildContext context) {
@@ -127,7 +143,7 @@ class _TotalCard extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              '\$${total.toStringAsFixed(2)}',
+              '$symbol${total.toStringAsFixed(2)}',
               style: Theme.of(
                 context,
               ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700),
@@ -161,10 +177,15 @@ class _SectionLabel extends StatelessWidget {
 }
 
 class _BalancesCard extends StatelessWidget {
-  const _BalancesCard({required this.balances, required this.memberNames});
+  const _BalancesCard({
+    required this.balances,
+    required this.memberNames,
+    required this.symbol,
+  });
 
   final Map<String, double> balances;
   final Map<String, String> memberNames;
+  final String symbol;
 
   @override
   Widget build(BuildContext context) {
@@ -189,6 +210,7 @@ class _BalancesCard extends StatelessWidget {
             _BalanceRow(
               name: memberNames[entries[i].key] ?? entries[i].key,
               balance: entries[i].value,
+              symbol: symbol,
             ),
           ],
         ],
@@ -198,10 +220,15 @@ class _BalancesCard extends StatelessWidget {
 }
 
 class _BalanceRow extends StatelessWidget {
-  const _BalanceRow({required this.name, required this.balance});
+  const _BalanceRow({
+    required this.name,
+    required this.balance,
+    required this.symbol,
+  });
 
   final String name;
   final double balance;
+  final String symbol;
 
   @override
   Widget build(BuildContext context) {
@@ -241,7 +268,7 @@ class _BalanceRow extends StatelessWidget {
             ),
           ),
           Text(
-            '$prefix\$${balance.abs().toStringAsFixed(2)}',
+            '$prefix$symbol${balance.abs().toStringAsFixed(2)}',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
               color: color,
               fontWeight: FontWeight.w600,
@@ -257,11 +284,13 @@ class _SettleUpCard extends StatelessWidget {
   const _SettleUpCard({
     required this.settlements,
     required this.memberNames,
+    required this.symbol,
     required this.onSettle,
   });
 
   final List<Settlement> settlements;
   final Map<String, String> memberNames;
+  final String symbol;
   final ValueChanged<Settlement> onSettle;
 
   @override
@@ -289,6 +318,7 @@ class _SettleUpCard extends StatelessWidget {
               toName:
                   memberNames[settlements[i].toUserId] ??
                   settlements[i].toUserId,
+              symbol: symbol,
               onSettle: () => onSettle(settlements[i]),
             ),
           ],
@@ -303,12 +333,14 @@ class _SettlementRow extends StatelessWidget {
     required this.settlement,
     required this.fromName,
     required this.toName,
+    required this.symbol,
     required this.onSettle,
   });
 
   final Settlement settlement;
   final String fromName;
   final String toName;
+  final String symbol;
   final VoidCallback onSettle;
 
   @override
@@ -329,7 +361,7 @@ class _SettlementRow extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 Text(
-                  '\$${settlement.amount.toStringAsFixed(2)}',
+                  '$symbol${settlement.amount.toStringAsFixed(2)}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppColors.terracotta,
                     fontWeight: FontWeight.w600,
@@ -339,6 +371,7 @@ class _SettlementRow extends StatelessWidget {
             ),
           ),
           TextButton(
+            key: Key('budget.settle.${settlement.toUserId}'),
             onPressed: onSettle,
             style: TextButton.styleFrom(foregroundColor: AppColors.sage),
             child: const Text('Settle'),

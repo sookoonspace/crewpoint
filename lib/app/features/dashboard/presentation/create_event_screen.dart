@@ -7,9 +7,25 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:uuid/uuid.dart';
 
 class CreateEventScreen extends StatefulWidget {
-  const CreateEventScreen({super.key, this.onSubmit});
+  const CreateEventScreen({
+    super.key,
+    this.defaultCurrency = 'USD',
+    this.onSubmit,
+  });
 
+  final String defaultCurrency;
   final ValueChanged<EventModel>? onSubmit;
+
+  /// V1 supported currencies. Display-only — no FX conversion in V1.
+  static const List<String> supportedCurrencies = [
+    'USD',
+    'EUR',
+    'GBP',
+    'CAD',
+    'AUD',
+    'JPY',
+    'INR',
+  ];
 
   @override
   State<CreateEventScreen> createState() => _CreateEventScreenState();
@@ -21,6 +37,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   final _descriptionController = TextEditingController();
   EventType _eventType = EventType.custom;
   DateTime? _startDate;
+  late String _currency = widget.defaultCurrency;
 
   @override
   void dispose() {
@@ -55,6 +72,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       startDate: _startDate,
       adminIds: const [],
       memberIds: const [],
+      currency: _currency,
     );
 
     widget.onSubmit?.call(event);
@@ -166,6 +184,32 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                   borderRadius: BorderRadius.circular(12),
                   side: const BorderSide(color: AppColors.lightGrey),
                 ),
+              ),
+
+              const SizedBox(height: AppSpacing.md),
+
+              // Currency (immutable after creation)
+              Text(
+                'Currency',
+                style: Theme.of(
+                  context,
+                ).textTheme.labelLarge?.copyWith(color: AppColors.charcoal),
+              ),
+              DropdownButtonFormField<String>(
+                key: const Key('events.create.currency'),
+                initialValue: _currency,
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.attach_money),
+                  border: OutlineInputBorder(),
+                  helperText: 'Cannot be changed after creating the event.',
+                ),
+                items: [
+                  for (final code in CreateEventScreen.supportedCurrencies)
+                    DropdownMenuItem(value: code, child: Text(code)),
+                ],
+                onChanged: (value) {
+                  if (value != null) setState(() => _currency = value);
+                },
               ),
 
               const SizedBox(height: AppSpacing.md),

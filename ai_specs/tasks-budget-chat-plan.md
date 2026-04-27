@@ -69,18 +69,23 @@ Ship V1 of Tasks (RBAC + checklist), Budget (currency + splits + receipts + Venm
 ### Phase 3: Budget — per-event currency + splits persistence + live stream
 
 - **Goal**: Fix `_toDomain` splits regression; live BalanceLedger; per-event currency immutable at creation.
-- [ ] `lib/app/features/dashboard/presentation/create_event_screen.dart` — currency selector (default user currency or `'USD'`); immutable
-- [ ] `lib/app/features/budget/data/expense_repository.dart` — Firestore stream + Drift mirror (mirror events repo); fix `_toDomain` to hydrate `splits` from `ExpenseSplits` DAO
-- [ ] `lib/app/features/budget/domain/models/expense.dart` — `toFirestore`/`fromFirestore` round-trips `splits` array; `currency` reads from event
-- [ ] `lib/app/features/budget/application/budget_provider.dart` — wire live stream
-- [ ] `lib/app/features/budget/presentation/budget_screen.dart` — render `BalanceLedger.calculate(...)` from live stream; suggested-settlement rows with `Key('budget.settle.{payeeId}')` (UI present, sheet stub for Phase 5)
-- [ ] `lib/app/features/budget/presentation/widgets/expense_modal.dart` — currency symbol from event; validate amount range (0.01–10M); split-sum equals total within $0.01
-- [ ] `lib/app/core/router/app_router.dart` — wire `/budget`
-- [ ] TDD: `ExpenseRepository._toDomain` hydrates splits (regression test for current `[]` bug)
-- [ ] TDD: `ExpenseModal` split-sum validation
-- [ ] TDD: existing `BalanceLedger` tests still pass — do not modify algorithm
-- [ ] Widget: Budget screen empty state; settlement row visibility
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `lib/app/features/dashboard/presentation/create_event_screen.dart` — currency dropdown (USD/EUR/GBP/CAD/AUD/JPY/INR), `Key('events.create.currency')`, `defaultCurrency` parameter, helper text "Cannot be changed after creating the event."
+- [x] `lib/app/features/budget/data/expense_repository.dart` — refactored to take `splitsDao` + `FirebaseFirestore`; Firestore stream + Drift mirror with reconciliation; splits round-tripped through `ExpenseSplits` table; fixed `_toDomain` regression (was returning `splits: []`); `dispose`/`disposeMirror` for cleanup
+- [x] `lib/app/features/budget/domain/models/expense.dart` — model already had `splits` field; serialization lives at the repository boundary (no Firestore types in the domain layer)
+- [x] `lib/app/core/providers.dart` — `expenseRepositoryProvider` + `expenseListProvider.family` with `ref.onDispose` cleanup
+- [x] `lib/app/features/budget/presentation/budget_screen.dart` — `currency` parameter; symbol prepended to total / balances / settlements; `Key('budget.settle.{payeeId}')` on each settle button; `Key('budget.expense.create')` on FAB
+- [x] `lib/app/features/budget/presentation/widgets/expense_modal.dart` — `currencySymbol` parameter; `validateAmountInput` checks min 0.01 / max 10M; `validateSplitSum` (within $0.01); stable `Key('budget.expense.amount')`, `Key('budget.expense.save')`
+- [x] `lib/app/features/budget/presentation/event_budget_page.dart` — new wrapper that subscribes to `expenseListProvider`, opens `ExpenseModal` with the right currency symbol, and routes mutations through `expenseRepositoryProvider`
+- [x] `lib/app/core/router/app_router.dart` — `/dashboard/event/:eventId/budget` wired to `EventBudgetPage`; event dashboard quick-link wired
+- [x] `lib/app/features/dashboard/data/event_repository.dart` — `currency` round-tripped through Drift companion + domain mapper
+- [x] TDD: `ExpenseRepository.getExpensesByEventId` hydrates splits from `ExpenseSplits` DAO (regression test for the previous empty-list bug)
+- [x] TDD: `ExpenseModal.validateAmountInput` (empty / non-numeric / below min / above max / valid)
+- [x] TDD: `ExpenseModal.validateSplitSum` (accepts within tolerance; rejects mismatch)
+- [x] TDD: `ExpenseRepository.createExpense` writes splits array to Firestore
+- [x] TDD: `ExpenseRepository` Firestore stream mirrors incoming docs (and their splits) into Drift
+- [x] Widget: Budget screen empty state; currency symbol from event; settlement-row stable key
+- [x] Verify: `flutter analyze` && `flutter test` — clean (90 tests)
+- [x] Existing `BalanceLedger` tests still green — algorithm untouched per spec
 
 ### Phase 4: Receipt upload
 

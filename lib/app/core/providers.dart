@@ -3,6 +3,8 @@ import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart';
+import 'package:crewpoint_app/app/core/database/daos/expense_splits_dao.dart';
+import 'package:crewpoint_app/app/core/database/daos/expenses_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/task_checklist_items_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/tasks_dao.dart';
 import 'package:crewpoint_app/app/core/services/account_deletion_service.dart';
@@ -16,6 +18,8 @@ import 'package:crewpoint_app/app/core/services/image_service.dart';
 import 'package:crewpoint_app/app/features/onboarding/application/onboarding_provider.dart';
 import 'package:crewpoint_app/app/features/profile/data/firestore_user_repository.dart';
 import 'package:crewpoint_app/app/features/profile/domain/repositories/i_user_repository.dart';
+import 'package:crewpoint_app/app/features/budget/data/expense_repository.dart';
+import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/tasks/data/task_repository.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 
@@ -110,3 +114,25 @@ final taskChecklistProvider =
       ref.onDispose(() => repo.disposeChecklistMirror(key.eventId, key.taskId));
       return repo.watchChecklist(key.eventId, key.taskId);
     });
+
+/// Expense repository (Firestore source of truth + Drift mirror).
+final expenseRepositoryProvider = Provider<ExpenseRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  final repo = ExpenseRepository(
+    expensesDao: ExpensesDao(db),
+    splitsDao: ExpenseSplitsDao(db),
+    firestore: ref.watch(firestoreProvider),
+  );
+  ref.onDispose(repo.dispose);
+  return repo;
+});
+
+/// Live stream of expenses for a given event.
+final expenseListProvider = StreamProvider.family<List<ExpenseModel>, String>((
+  ref,
+  eventId,
+) {
+  final repo = ref.watch(expenseRepositoryProvider);
+  ref.onDispose(() => repo.disposeMirror(eventId));
+  return repo.watchExpensesByEventId(eventId);
+});
