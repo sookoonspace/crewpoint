@@ -51,4 +51,30 @@ class ChatRepository implements IChatRepository {
       return false;
     }
   }
+
+  @override
+  Future<bool> postSettlementNotice({
+    required String eventId,
+    required String messageId,
+    required String senderId,
+    required String text,
+  }) async {
+    try {
+      await _chatService.postSettlementNotice(
+        eventId: eventId,
+        messageId: messageId,
+        senderId: senderId,
+        text: text,
+      );
+      return true;
+    } catch (e, st) {
+      log(
+        'Failed to post settlement notice',
+        error: e,
+        stackTrace: st,
+        name: 'chat',
+      );
+      return false;
+    }
+  }
 }

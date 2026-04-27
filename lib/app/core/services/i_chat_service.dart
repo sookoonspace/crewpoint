@@ -15,6 +15,15 @@ abstract class IChatService {
     required String eventId,
     required String messageId,
   });
+
+  /// Posts a system-style notice (e.g., a settlement record) to the event's
+  /// message thread. Uses a caller-supplied [messageId] for idempotency.
+  Future<void> postSettlementNotice({
+    required String eventId,
+    required String messageId,
+    required String senderId,
+    required String text,
+  });
 }
 
 /// Chat message model independent of Firestore document structure.

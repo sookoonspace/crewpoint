@@ -81,9 +81,12 @@ class BudgetScreen extends StatelessWidget {
                 if (onRecordPayment != null) {
                   onRecordPayment!(settlement);
                 } else {
+                  // Fallback for screens that don't wire onRecordPayment.
+                  // EventBudgetPage supplies it with the full pay flow.
                   SettleSheet.show(
                     context: context,
                     settlement: settlement,
+                    currencySymbol: symbol,
                     fromName: memberNames[settlement.fromUserId],
                     toName: memberNames[settlement.toUserId],
                   );

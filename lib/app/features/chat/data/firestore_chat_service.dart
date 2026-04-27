@@ -62,6 +62,33 @@ class FirestoreChatService implements IChatService {
     }
   }
 
+  @override
+  Future<void> postSettlementNotice({
+    required String eventId,
+    required String messageId,
+    required String senderId,
+    required String text,
+  }) async {
+    try {
+      // Idempotent: same messageId == same expenseId; .set() upserts.
+      await _messagesRef(eventId).doc(messageId).set({
+        'senderId': senderId,
+        'text': text,
+        'isHighPriority': false,
+        'kind': 'settlement',
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    } catch (e, st) {
+      log(
+        'Failed to post settlement notice',
+        error: e,
+        stackTrace: st,
+        name: 'chat',
+      );
+      rethrow;
+    }
+  }
+
   ChatMessage _fromFirestore(String id, Map<String, dynamic> data) =>
       ChatMessage(
         id: id,

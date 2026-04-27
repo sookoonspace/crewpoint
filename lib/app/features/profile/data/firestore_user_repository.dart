@@ -28,6 +28,8 @@ class FirestoreUserRepository implements IUserRepository {
         photoUrl: data['photoUrl'] as String?,
         paymentMethod: data['paymentMethod'] as String?,
         paymentHandle: data['paymentHandle'] as String?,
+        venmoHandle: data['venmoHandle'] as String?,
+        cashappHandle: data['cashappHandle'] as String?,
         currency: data['currency'] as String? ?? 'USD',
       );
     } catch (e, st) {
@@ -43,6 +45,8 @@ class FirestoreUserRepository implements IUserRepository {
     String? photoUrl,
     String? paymentMethod,
     String? paymentHandle,
+    String? venmoHandle,
+    String? cashappHandle,
   }) async {
     try {
       final data = <String, dynamic>{
@@ -50,6 +54,8 @@ class FirestoreUserRepository implements IUserRepository {
         'updatedAt': FieldValue.serverTimestamp(),
         'paymentMethod': paymentMethod,
         'paymentHandle': paymentHandle,
+        'venmoHandle': venmoHandle,
+        'cashappHandle': cashappHandle,
       };
       if (photoUrl != null) {
         data['photoUrl'] = photoUrl;

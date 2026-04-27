@@ -22,11 +22,23 @@ class EditProfileScreen extends ConsumerStatefulWidget {
 class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _nameController = TextEditingController();
   final _paymentHandleController = TextEditingController();
+  final _venmoHandleController = TextEditingController();
+  final _cashappHandleController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   File? _pickedImage;
   String? _selectedPaymentMethod;
   bool _isSaving = false;
   bool _showSuccess = false;
+
+  static final _handlePattern = RegExp(r'^[A-Za-z0-9_-]{1,30}$');
+
+  String? _validateHandle(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    if (!_handlePattern.hasMatch(value.trim())) {
+      return 'Letters, numbers, _ or - only (≤30 chars)';
+    }
+    return null;
+  }
 
   static const _paymentMethods = [
     ('venmo', 'Venmo', Icons.payment),
@@ -45,6 +57,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       _nameController.text = authState.user.displayName ?? '';
       _selectedPaymentMethod = authState.user.paymentMethod;
       _paymentHandleController.text = authState.user.paymentHandle ?? '';
+      _venmoHandleController.text = authState.user.venmoHandle ?? '';
+      _cashappHandleController.text = authState.user.cashappHandle ?? '';
     }
   }
 
@@ -52,6 +66,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   void dispose() {
     _nameController.dispose();
     _paymentHandleController.dispose();
+    _venmoHandleController.dispose();
+    _cashappHandleController.dispose();
     super.dispose();
   }
 
@@ -131,6 +147,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         paymentHandle: _paymentHandleController.text.trim().isEmpty
             ? null
             : _paymentHandleController.text.trim(),
+        venmoHandle: _venmoHandleController.text.trim().isEmpty
+            ? null
+            : _venmoHandleController.text.trim(),
+        cashappHandle: _cashappHandleController.text.trim().isEmpty
+            ? null
+            : _cashappHandleController.text.trim(),
       );
 
       // Refresh auth state so profile screen shows updated data
@@ -375,6 +397,38 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 controller: _paymentHandleController,
                 enabled: !_isSaving,
                 prefixIcon: const Icon(Icons.alternate_email),
+              ),
+
+              const SizedBox(height: AppSpacing.md),
+
+              // Deep-link handles for one-tap settle
+              Text(
+                'Settle handles',
+                style: Theme.of(
+                  context,
+                ).textTheme.labelLarge?.copyWith(color: AppColors.charcoal),
+              ),
+              Text(
+                'Used by the Venmo / CashApp deep-link buttons in Budget',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGrey),
+              ),
+              CustomTextField(
+                key: const Key('profile.edit.venmoHandle'),
+                hintText: 'Venmo handle (optional)',
+                controller: _venmoHandleController,
+                enabled: !_isSaving,
+                prefixIcon: const Icon(Icons.account_balance_wallet_outlined),
+                validator: _validateHandle,
+              ),
+              CustomTextField(
+                key: const Key('profile.edit.cashappHandle'),
+                hintText: 'Cash App \$cashtag (optional)',
+                controller: _cashappHandleController,
+                enabled: !_isSaving,
+                prefixIcon: const Icon(Icons.attach_money),
+                validator: _validateHandle,
               ),
 
               const SizedBox(height: AppSpacing.lg),

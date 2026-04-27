@@ -9,4 +9,13 @@ abstract class IChatRepository {
     required String text,
     bool isHighPriority,
   });
+
+  /// Posts a system-style settlement notice to the event chat.
+  /// Idempotent — re-posting with the same [messageId] is a no-op.
+  Future<bool> postSettlementNotice({
+    required String eventId,
+    required String messageId,
+    required String senderId,
+    required String text,
+  });
 }

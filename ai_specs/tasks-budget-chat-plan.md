@@ -107,24 +107,29 @@ Ship V1 of Tasks (RBAC + checklist), Budget (currency + splits + receipts + Venm
 ### Phase 5: Pay handles + deep-link settle (happy path)
 
 - **Goal**: Profile handles; pure `PayLinkBuilder`; lifecycle-aware confirm; settlement notice posted.
-- [ ] `lib/app/features/profile/application/user_profile_notifier.dart` — **new**; persists profile mutations (currently `EditProfileScreen` is a no-op)
-- [ ] `lib/app/features/profile/presentation/edit_profile_screen.dart` — wire to notifier; add Venmo + CashApp fields with `^[A-Za-z0-9_-]+$` validation, ≤30 chars
-- [ ] `lib/app/features/budget/data/pay_link_builder.dart` — pure top-level functions; no Flutter/Firebase imports; throws on invalid handle
-- [ ] `lib/app/core/services/url_launcher_service.dart` — `IUrlLauncher` interface + real impl wrapping `url_launcher` (`LaunchMode.externalApplication`)
-- [ ] `lib/app/core/services/app_lifecycle_source.dart` — `Stream<AppLifecycleState>` seam fed by `WidgetsBindingObserver`
-- [ ] `lib/app/features/budget/application/pending_settlement_notifier.dart` — accepts `Clock` + `IUrlLauncher` + `AppLifecycleSource`; 30s window constant `confirmWindow = Duration(seconds: 30)`; drop on app kill
-- [ ] `lib/app/features/budget/presentation/widgets/settle_sheet.dart` — Venmo + CashApp buttons disabled if handle missing; "Copy details" fallback when neither
-- [ ] `lib/app/features/budget/data/expense_repository.dart` — `recordSettlement(payerId, payeeId, amount)` writes `isPayment: true` expense with `splits: [{userId: payee, amount: -amount}]`
-- [ ] `lib/app/features/chat/data/chat_repository.dart` — `postSettlementNotice(eventId, expenseId, text)` writes message with `kind: 'settlement'` metadata; same id as expense (idempotent)
-- [ ] `lib/app/features/chat/presentation/widgets/message_bubble.dart` — settlement-kind variant (outlined; tap target for Phase 6)
-- [ ] `ios/Runner/Info.plist` — `LSApplicationQueriesSchemes`: `venmo`, `cashme`
-- [ ] TDD: `PayLinkBuilder.venmo(...)` builds `venmo://paycharge?...` with web fallback URI; throws on invalid handle; amount always 2dp; note URI-encoded + truncated to 60
-- [ ] TDD: `PayLinkBuilder.cashApp(...)` produces `https://cash.app/${handle}/${amount}`
-- [ ] TDD: `PendingSettlementNotifier` — launches → records pending; resume within 30s → confirm fires; resume after 30s → no confirm; dismiss → no settlement; kill → state dropped
-- [ ] TDD: `recordSettlement` writes correct ledger payload; idempotent on chat notice
-- [ ] Widget: `SettleSheet` enables/disables per handle availability; copy-details fallback
-- [ ] Robot: `BudgetRobot` with selectors `budget.expense.create`, `budget.settle.{payeeId}`, `budget.settle.venmo`, `budget.settle.cashapp`, `budget.settle.confirm`, `budget.settle.copy`; journey: create expense → settle Venmo (faked launcher) → confirm → ledger zero
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `lib/app/features/profile/presentation/edit_profile_screen.dart` — added Venmo + CashApp fields with `^[A-Za-z0-9_-]{1,30}$` validation; reuses existing `userRepositoryProvider` instead of introducing a new `UserProfileNotifier` (the existing wiring already persists, so the notifier was unnecessary indirection)
+- [x] `lib/app/features/profile/data/firestore_user_repository.dart` + `i_user_repository.dart` — `saveProfile` / `getUser` round-trip the new handles
+- [x] `lib/app/features/auth/domain/models/app_user.dart` — already had `venmoHandle` / `cashappHandle` (Phase 1 foundation)
+- [x] `lib/app/features/budget/data/pay_link_builder.dart` — pure utility (no Flutter/Firebase); `venmo`, `venmoWebFallback`, `cashApp`; throws `ArgumentError` on invalid handle
+- [x] `lib/app/core/services/url_launcher_service.dart` — `IUrlLauncher` + `UrlLauncherService` (LaunchMode.externalApplication)
+- [x] `lib/app/core/services/app_lifecycle_source.dart` — `WidgetsAppLifecycleSource` (production) + `FakeAppLifecycleSource` (test)
+- [x] `lib/app/features/budget/application/pending_settlement_notifier.dart` — `confirmWindow = Duration(seconds: 30)`; takes `Clock + IUrlLauncher + AppLifecycleSource`; in-memory pending state (drops on app kill); `onConfirmRequested` callback fires only on resume within window
+- [x] `lib/app/features/budget/presentation/widgets/settle_sheet.dart` — rewritten: Venmo + CashApp buttons enabled per handle availability; "Copy details" fallback always present; stable `Key('budget.settle.{venmo|cashapp|copy}')`
+- [x] `lib/app/features/budget/data/expense_repository.dart` — `recordSettlement(payerId, payeeId, amount)` writes `isPayment: true` expense with `splits: [(payeeId, -amount)]`; returns the doc id (used as the chat-notice id for idempotency)
+- [x] `lib/app/core/services/i_chat_service.dart` + `firestore_chat_service.dart` + `chat_repository.dart` — `postSettlementNotice(eventId, messageId, senderId, text)`; uses caller-supplied `messageId` for idempotency (same id as the expense); writes `kind: 'settlement'`
+- [x] `lib/app/features/chat/domain/models/chat_message.dart` — added `ChatMessageKind` enum + `kind` field
+- [x] `lib/app/features/chat/presentation/widgets/message_bubble.dart` — settlement variant: outlined sage border, "Settlement" label, center-aligned, optional `onTapSettlement` (Phase 6 hook); stable `Key('chat.message.{id}')`
+- [x] `lib/app/features/budget/presentation/event_budget_page.dart` — owns `PendingSettlementNotifier` + `WidgetsAppLifecycleSource` lifecycle; `onSettlePressed` shows `SettleSheet`, launches deep link via `PendingSettlementNotifier`, prompts confirm dialog on resume, records settlement + posts chat notice
+- [x] `lib/app/core/providers.dart` — `chatServiceProvider`, `chatRepositoryProvider`, `urlLauncherProvider`
+- [x] `ios/Runner/Info.plist` — `LSApplicationQueriesSchemes: ['venmo', 'cashme']`
+- [x] TDD: `PayLinkBuilder.venmo` (params + 2dp amount + invalid handle + 60-char note truncation + web fallback); `PayLinkBuilder.cashApp` (URL shape + invalid handle)
+- [x] TDD: `PendingSettlementNotifier` — `launchAndPrepare` records pending and launches; resume within 30s fires confirm; resume after 30s drops pending; `clearPending` drops state
+- [x] TDD: `recordSettlement` writes `isPayment: true` with single negative split addressed to payee
+- [x] Widget: `SettleSheet` Venmo enabled with handle / disabled without; both disabled with no handles; Copy stays available; currency symbol applied
+- [ ] Robot: `BudgetRobot` settle-via-Venmo journey — **deferred**: requires deeper test harness (Riverpod overrides for `IUrlLauncher`, `AppLifecycleSource`, faked Firestore + fake auth, and a stable settle-row Key matching the family payee id). The pure-unit + widget tests cover the contract; tracked in `ai_specs/todo.md`
+- [x] Verify: `flutter analyze` && `flutter test` — clean (113 tests)
+
+**Deviation note**: skipped the explicit `UserProfileNotifier` — `EditProfileScreen` already calls `userRepositoryProvider.saveProfile` directly with `ref.read`. Adding a notifier wrapper would have been pure indirection without test or feature benefit.
 
 ### Phase 6: Dispute path
 

@@ -44,6 +44,25 @@ class FakeChatService implements IChatService {
     _controller.add(List.of(_messages));
   }
 
+  @override
+  Future<void> postSettlementNotice({
+    required String eventId,
+    required String messageId,
+    required String senderId,
+    required String text,
+  }) async {
+    _messages.add(
+      ChatMessage(
+        id: messageId,
+        eventId: eventId,
+        senderId: senderId,
+        text: text,
+        timestamp: DateTime.now(),
+      ),
+    );
+    _controller.add(List.of(_messages));
+  }
+
   void dispose() => _controller.close();
 }
 

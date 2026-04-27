@@ -1,38 +1,50 @@
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
 
-/// Bottom sheet for recording a settlement payment.
-class SettleSheet extends StatefulWidget {
+/// Bottom sheet for choosing how to settle an outstanding balance.
+///
+/// Pure presentation — the parent supplies the payee's handles + callbacks.
+/// Each pay button stays disabled when the corresponding handle is missing;
+/// a "Copy payment details" fallback always appears so the user can settle
+/// out-of-band when the recipient hasn't configured a handle.
+class SettleSheet extends StatelessWidget {
   const SettleSheet({
     super.key,
     required this.settlement,
+    required this.currencySymbol,
     this.fromName,
     this.toName,
-    this.paymentMethod,
-    this.paymentHandle,
-    this.onRecordPayment,
+    this.venmoHandle,
+    this.cashappHandle,
+    this.onPayVenmo,
+    this.onPayCashApp,
+    this.onCopyDetails,
   });
 
   final Settlement settlement;
+  final String currencySymbol;
   final String? fromName;
   final String? toName;
-  final String? paymentMethod;
-  final String? paymentHandle;
-  final VoidCallback? onRecordPayment;
+  final String? venmoHandle;
+  final String? cashappHandle;
+  final VoidCallback? onPayVenmo;
+  final VoidCallback? onPayCashApp;
+  final VoidCallback? onCopyDetails;
 
   static Future<void> show({
     required BuildContext context,
     required Settlement settlement,
+    required String currencySymbol,
     String? fromName,
     String? toName,
-    String? paymentMethod,
-    String? paymentHandle,
-    VoidCallback? onRecordPayment,
+    String? venmoHandle,
+    String? cashappHandle,
+    VoidCallback? onPayVenmo,
+    VoidCallback? onPayCashApp,
+    VoidCallback? onCopyDetails,
   }) {
     return showModalBottomSheet<void>(
       context: context,
@@ -43,67 +55,23 @@ class SettleSheet extends StatefulWidget {
       ),
       builder: (_) => SettleSheet(
         settlement: settlement,
+        currencySymbol: currencySymbol,
         fromName: fromName,
         toName: toName,
-        paymentMethod: paymentMethod,
-        paymentHandle: paymentHandle,
-        onRecordPayment: onRecordPayment,
+        venmoHandle: venmoHandle,
+        cashappHandle: cashappHandle,
+        onPayVenmo: onPayVenmo,
+        onPayCashApp: onPayCashApp,
+        onCopyDetails: onCopyDetails,
       ),
     );
   }
 
-  @override
-  State<SettleSheet> createState() => _SettleSheetState();
-}
-
-class _SettleSheetState extends State<SettleSheet> {
-  bool _showSuccess = false;
-
-  void _recordPayment() {
-    widget.onRecordPayment?.call();
-    setState(() => _showSuccess = true);
-    Future<void>.delayed(const Duration(milliseconds: 1500), () {
-      if (mounted) Navigator.of(context).pop();
-    });
-  }
+  bool get _hasVenmo => venmoHandle != null && venmoHandle!.isNotEmpty;
+  bool get _hasCashApp => cashappHandle != null && cashappHandle!.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
-    if (_showSuccess) {
-      return Padding(
-        padding: EdgeInsets.only(
-          top: AppSpacing.xxl,
-          bottom: MediaQuery.viewPaddingOf(context).bottom + AppSpacing.xxl,
-        ),
-        child: Column(
-          mainAxisSize: .min,
-          spacing: AppSpacing.lg,
-          children: [
-            Lottie.asset(
-              'assets/animations/success.json',
-              width: 80,
-              height: 80,
-              errorBuilder: (_, _, _) => const Icon(
-                Icons.check_circle,
-                size: 64,
-                color: AppColors.sage,
-              ),
-            ),
-            Text(
-              'Payment recorded!',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: AppColors.sage,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final hasPaymentMethod =
-        widget.paymentMethod != null && widget.paymentMethod!.isNotEmpty;
-
     return Padding(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.xl,
@@ -115,7 +83,6 @@ class _SettleSheetState extends State<SettleSheet> {
         mainAxisSize: .min,
         spacing: AppSpacing.lg,
         children: [
-          // Drag handle
           Container(
             width: 40,
             height: 4,
@@ -124,78 +91,48 @@ class _SettleSheetState extends State<SettleSheet> {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-
-          // Amount
           Text(
-            '\$${widget.settlement.amount.toStringAsFixed(2)}',
+            '$currencySymbol${settlement.amount.toStringAsFixed(2)}',
             style: Theme.of(
               context,
             ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700),
           ),
-
-          // Transfer description
           Text(
-            '${widget.fromName ?? 'Someone'} pays ${widget.toName ?? 'someone'}',
+            '${fromName ?? 'You'} pay ${toName ?? 'them'}',
             style: Theme.of(
               context,
             ).textTheme.bodyLarge?.copyWith(color: AppColors.darkGrey),
           ),
-
-          // Payment method info
-          if (hasPaymentMethod)
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              decoration: BoxDecoration(
-                color: AppColors.cream,
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-              ),
-              child: Row(
-                spacing: AppSpacing.md,
-                children: [
-                  const Icon(Icons.payment, color: AppColors.sage),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: .start,
-                      children: [
-                        Text(
-                          _formatMethod(widget.paymentMethod!),
-                          style: Theme.of(context).textTheme.labelMedium,
-                        ),
-                        if (widget.paymentHandle != null)
-                          Text(
-                            widget.paymentHandle!,
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(color: AppColors.darkGrey),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else
-            Text(
-              'No payment method set \u2014 ask them directly',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.mediumGrey,
-                fontStyle: FontStyle.italic,
-              ),
+          ElevatedButton.icon(
+            key: const Key('budget.settle.venmo'),
+            onPressed: _hasVenmo ? onPayVenmo : null,
+            icon: const Icon(Icons.account_balance_wallet_outlined),
+            label: Text(_hasVenmo ? 'Pay with Venmo' : 'No Venmo handle'),
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size.fromHeight(48),
+              backgroundColor: AppColors.sage,
+              foregroundColor: AppColors.white,
             ),
-
-          const SizedBox(height: AppSpacing.sm),
-
-          PrimaryButton(label: 'Record Payment', onPressed: _recordPayment),
+          ),
+          OutlinedButton.icon(
+            key: const Key('budget.settle.cashapp'),
+            onPressed: _hasCashApp ? onPayCashApp : null,
+            icon: const Icon(Icons.attach_money),
+            label: Text(
+              _hasCashApp ? 'Pay with Cash App' : 'No Cash App handle',
+            ),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(48),
+            ),
+          ),
+          TextButton.icon(
+            key: const Key('budget.settle.copy'),
+            onPressed: onCopyDetails,
+            icon: const Icon(Icons.copy_rounded),
+            label: const Text('Copy payment details'),
+          ),
         ],
       ),
     );
   }
-
-  String _formatMethod(String method) => switch (method) {
-    'venmo' => 'Venmo',
-    'zelle' => 'Zelle',
-    'cashapp' => 'Cash App',
-    'paypal' => 'PayPal',
-    'cash' => 'Cash',
-    _ => method,
-  };
 }

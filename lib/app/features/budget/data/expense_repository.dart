@@ -84,6 +84,35 @@ class ExpenseRepository implements IExpenseRepository {
     _firestoreSubs.clear();
   }
 
+  /// Records a settlement payment from [payerId] to [payeeId] as a single
+  /// `isPayment: true` expense whose only split is `(payeeId, -amount)`.
+  /// This integrates with the existing [BalanceLedger] payment handling.
+  /// Returns the generated expense id (which doubles as the chat-notice id),
+  /// or `null` on failure.
+  Future<String?> recordSettlement({
+    required String eventId,
+    required String payerId,
+    required String payeeId,
+    required double amount,
+  }) async {
+    final id = _firestore
+        .collection('events')
+        .doc(eventId)
+        .collection('expenses')
+        .doc()
+        .id;
+    final expense = ExpenseModel(
+      id: id,
+      eventId: eventId,
+      payerId: payerId,
+      amount: amount,
+      isPayment: true,
+      splits: [ExpenseSplit(userId: payeeId, amount: -amount)],
+    );
+    final ok = await createExpense(expense);
+    return ok ? id : null;
+  }
+
   /// Uploads a receipt to Storage at `events/{eid}/receipts/{exid}.jpg`.
   /// Returns the download URL on success, or `null` on failure (caller may
   /// still persist the expense without a receipt and offer a Retry CTA).

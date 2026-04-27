@@ -18,8 +18,12 @@ import 'package:crewpoint_app/app/core/services/image_service.dart';
 import 'package:crewpoint_app/app/features/onboarding/application/onboarding_provider.dart';
 import 'package:crewpoint_app/app/features/profile/data/firestore_user_repository.dart';
 import 'package:crewpoint_app/app/features/profile/domain/repositories/i_user_repository.dart';
+import 'package:crewpoint_app/app/core/services/i_chat_service.dart';
+import 'package:crewpoint_app/app/core/services/url_launcher_service.dart';
 import 'package:crewpoint_app/app/features/budget/data/expense_repository.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
+import 'package:crewpoint_app/app/features/chat/data/chat_repository.dart';
+import 'package:crewpoint_app/app/features/chat/data/firestore_chat_service.dart';
 import 'package:crewpoint_app/app/features/tasks/data/task_repository.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 
@@ -137,3 +141,18 @@ final expenseListProvider = StreamProvider.family<List<ExpenseModel>, String>((
   ref.onDispose(() => repo.disposeMirror(eventId));
   return repo.watchExpensesByEventId(eventId);
 });
+
+/// Chat service (Firestore-backed for V1).
+final chatServiceProvider = Provider<IChatService>(
+  (ref) => FirestoreChatService(firestore: ref.watch(firestoreProvider)),
+);
+
+/// Chat repository — wraps the chat service.
+final chatRepositoryProvider = Provider<ChatRepository>(
+  (ref) => ChatRepository(chatService: ref.watch(chatServiceProvider)),
+);
+
+/// `package:url_launcher` seam (testable).
+final urlLauncherProvider = Provider<IUrlLauncher>(
+  (_) => const UrlLauncherService(),
+);

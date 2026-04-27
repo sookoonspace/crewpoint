@@ -13,6 +13,8 @@ abstract class IUserRepository {
     String? photoUrl,
     String? paymentMethod,
     String? paymentHandle,
+    String? venmoHandle,
+    String? cashappHandle,
   });
 
   /// Creates user document if it doesn't exist yet (first login).
