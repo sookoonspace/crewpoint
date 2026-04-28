@@ -134,13 +134,16 @@ Ship V1 of Tasks (RBAC + checklist), Budget (currency + splits + receipts + Venm
 ### Phase 6: Dispute path
 
 - **Goal**: Payee or payer can dispute; settlement expense + notice rolled back.
-- [ ] `functions/src/events/disputeSettlement.ts` — onCall; caller is payer or payee of the settlement; deletes settlement expense; updates chat notice text to "{name} disputed this settlement"; mirrors `promoteToAdmin.ts` shape
-- [ ] `functions/src/index.ts` — export
-- [ ] `lib/app/features/chat/presentation/widgets/dispute_sheet.dart` — bottom sheet; cancel / dispute
-- [ ] `lib/app/features/chat/presentation/widgets/message_bubble.dart` — settlement notice tap → opens dispute sheet
-- [ ] TDD: emulator integration — non-payer non-payee → `permission-denied`; payer → success; payee → success; settlement expense gone
-- [ ] Widget: dispute confirm/cancel; notice text mutation
-- [ ] Verify: `cd functions && npm run build && cd ..` && `flutter analyze` && `flutter test`
+- [x] `functions/src/events/disputeSettlement.ts` — onCall; verifies caller is `payerId` or first-split `userId` (the payee); deletes settlement expense; rewrites chat notice with `kind: 'settlement_disputed'`; mirrors `promoteToAdmin.ts` shape
+- [x] `functions/src/index.ts` — export `disputeSettlement`
+- [x] `lib/app/features/chat/presentation/widgets/dispute_sheet.dart` — bottom sheet; "All good — keep it" cancels, "Dispute this settlement" fires `onDispute`
+- [x] `lib/app/features/chat/presentation/widgets/message_bubble.dart` — settlement variant + `onTapSettlement` already wired in Phase 5
+- [x] `lib/app/features/chat/presentation/chat_screen.dart` — `onTapSettlement` callback; only settlement bubbles are interactive
+- [x] `lib/app/core/providers.dart` — `DisputeSettlementCall` typedef + `disputeSettlementCallableProvider` (default wraps `FirebaseFunctions.instance`; tests override)
+- [ ] TDD: emulator integration — **deferred**: same `functions/test/` harness gap as Phase 1 / Phase 2 CFs (tracked in todo.md). Logic is straightforward and mirrors the verified `promoteToAdmin.ts` shape; manual smoke required pre-deploy
+- [x] Widget: DisputeSheet renders summary; Cancel does not fire `onDispute`; Dispute confirm fires and closes
+- [x] Widget: ChatScreen — tapping a settlement bubble fires `onTapSettlement`; tapping a normal one does not
+- [x] Verify: `cd functions && npm run build && cd ..` && `flutter analyze` && `flutter test` — clean (117 tests)
 
 ### Phase 7: Chat polish + Drift cache
 

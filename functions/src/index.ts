@@ -14,3 +14,4 @@ export {deleteEvent} from "./events/deleteEvent";
 export {promoteToAdmin} from "./events/promoteToAdmin";
 export {demoteAdmin} from "./events/demoteAdmin";
 export {markTaskComplete} from "./events/markTaskComplete";
+export {disputeSettlement} from "./events/disputeSettlement";

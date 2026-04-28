@@ -12,12 +12,16 @@ class ChatScreen extends StatefulWidget {
     required this.currentUserId,
     this.onSendMessage,
     this.onSendCriticalAlert,
+    this.onTapSettlement,
   });
 
   final List<ChatMessageModel> messages;
   final String currentUserId;
   final ValueChanged<String>? onSendMessage;
   final ValueChanged<String>? onSendCriticalAlert;
+
+  /// Tapped a settlement-kind bubble — caller opens the DisputeSheet.
+  final ValueChanged<ChatMessageModel>? onTapSettlement;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -74,6 +78,10 @@ class _ChatScreenState extends State<ChatScreen> {
                       return MessageBubble(
                         message: message,
                         isCurrentUser: message.senderId == widget.currentUserId,
+                        onTapSettlement:
+                            message.kind == ChatMessageKind.settlement
+                            ? () => widget.onTapSettlement?.call(message)
+                            : null,
                       );
                     },
                   ),

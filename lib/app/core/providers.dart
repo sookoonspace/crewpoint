@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -155,4 +156,24 @@ final chatRepositoryProvider = Provider<ChatRepository>(
 /// `package:url_launcher` seam (testable).
 final urlLauncherProvider = Provider<IUrlLauncher>(
   (_) => const UrlLauncherService(),
+);
+
+/// Callable signature for the `disputeSettlement` Cloud Function.
+typedef DisputeSettlementCall =
+    Future<void> Function({
+      required String eventId,
+      required String settlementId,
+    });
+
+/// Default impl wraps `FirebaseFunctions.instance`. Tests override with a fake.
+final disputeSettlementCallableProvider = Provider<DisputeSettlementCall>(
+  (_) => ({required eventId, required settlementId}) async {
+    final callable = FirebaseFunctions.instance.httpsCallable(
+      'disputeSettlement',
+    );
+    await callable.call<Map<String, dynamic>>({
+      'eventId': eventId,
+      'settlementId': settlementId,
+    });
+  },
 );
