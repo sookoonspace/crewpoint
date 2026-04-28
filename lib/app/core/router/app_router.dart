@@ -30,14 +30,18 @@ abstract final class AppRoutes {
 
 /// Creates the app router.
 /// [isOnboardingComplete] and [isAuthenticated] drive redirects.
+/// [onRouteChanged] (optional) is called with the matched location on each
+/// navigation — used to keep `currentRouteProvider` in sync.
 GoRouter createRouter({
   required bool isOnboardingComplete,
   required bool isAuthenticated,
+  void Function(String location)? onRouteChanged,
 }) {
   return GoRouter(
     initialLocation: AppRoutes.dashboard,
     redirect: (context, state) {
       final location = state.matchedLocation;
+      onRouteChanged?.call(location);
 
       if (!isOnboardingComplete && location != AppRoutes.onboarding) {
         return AppRoutes.onboarding;

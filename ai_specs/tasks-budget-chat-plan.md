@@ -168,20 +168,25 @@ Ship V1 of Tasks (RBAC + checklist), Budget (currency + splits + receipts + Venm
 ### Phase 8: FCM push for urgent
 
 - **Goal**: Closed-app urgent push; foreground in-app banner with active-screen suppression; deep-link tap.
-- [ ] `pubspec.yaml` — already added in Phase 1; iOS APNs key uploaded in Firebase console (manual prereq — flag in PR)
-- [ ] `ios/Runner/Info.plist` — push background mode; `UIBackgroundModes` includes `remote-notification`
-- [ ] `lib/app/core/services/fcm_service.dart` — `IFcmGateway` interface + real impl; lifecycle: on auth → `requestPermission()`, await `getAPNSToken()` (iOS), `getToken()` → `arrayUnion` to `users/{uid}.fcmTokens`; subscribe `onTokenRefresh`; on sign-out → arrayRemove current then `deleteToken()`
-- [ ] `lib/app/core/router/current_route_provider.dart` — exposes current `go_router` location for active-screen suppression
-- [ ] `lib/app/core/services/fcm_handler.dart` — top-level background `@pragma('vm:entry-point')` handler; foreground `onMessage` → suppress if `currentRoute == /event/{eid}/chat`, else `MaterialBanner` with View action; `onMessageOpenedApp` + awaited `getInitialMessage()` → `context.go(data.deepLink)`
-- [ ] `lib/main.dart` — register background handler; await `getInitialMessage()` before first router build
-- [ ] `functions/src/events/onUrgentMessageCreated.ts` — Firestore-trigger v2 (`onDocumentCreated`); ignore non-urgent; load event; chunk tokens (≤500); `sendEachForMulticast`; prune dead tokens (`registration-token-not-registered`); same region as other CFs
-- [ ] `functions/src/index.ts` — export
-- [ ] TDD: `FcmService` token lifecycle (sign-in writes, refresh writes, sign-out arrayRemove); permission denied path silent
-- [ ] TDD: emulator integration — non-urgent ignored; sender skipped; multicast issued; dead tokens pruned
-- [ ] TDD: `currentRouteProvider` reflects router state
-- [ ] Widget: foreground banner appears off-screen; suppressed when on chat for that event
-- [ ] Robot: `ChatRobot` with selectors `chat.composer.send`, `chat.composer.urgent`, `chat.message.{id}`; journey: send urgent → second session receives faked FCM payload + deep-link
-- [ ] Verify: `cd functions && npm run build && cd ..` && `flutter analyze` && `flutter test`
+- [x] `pubspec.yaml` — `firebase_messaging` added in Phase 1
+- [x] `ios/Runner/Info.plist` — `UIBackgroundModes` now includes `remote-notification`
+- [x] `lib/app/core/services/fcm_gateway.dart` — `IFcmGateway` + `FirebaseFcmGateway` real impl over `firebase_messaging`
+- [x] `lib/app/core/services/fcm_service.dart` — `attach(uid)` requests permission, awaits APNs (iOS), gets token, calls `userRepository.addFcmToken`, listens for `onTokenRefresh` and upserts; `detach(uid)` arrayRemoves before `deleteToken()` so the rule layer still sees an authenticated owner
+- [x] `lib/app/features/profile/data/firestore_user_repository.dart` + `i_user_repository.dart` — `addFcmToken` / `removeFcmToken` (idempotent via `arrayUnion` / `arrayRemove`)
+- [x] `lib/app/core/router/current_route_provider.dart` — `Notifier<String?>` updated from `createRouter`'s redirect hook
+- [x] `lib/app/core/services/fcm_handler.dart` — pure logic for foreground banner-vs-suppress decisions and tap deep-link routing; `currentRoute` / `showBanner` / `navigateTo` callbacks make the platform wiring testable
+- [x] `lib/app/core/router/app_router.dart` — `onRouteChanged` callback parameter; `main.dart` plumbs it to `currentRouteProvider`
+- [x] `functions/src/events/onUrgentMessageCreated.ts` — Firestore-trigger v2 (`onDocumentCreated`); ignores non-urgent; loads event; collects tokens skipping sender; chunks at 500; `sendEachForMulticast`; prunes `registration-token-not-registered` + `invalid-argument` tokens via batched `arrayRemove`; `retry: false`
+- [x] `functions/src/index.ts` — export `onUrgentMessageCreated`
+- [x] TDD: `FcmService` lifecycle — attach writes; permission-denied returns false silently; refresh upserts; detach arrayRemoves before deleteToken
+- [x] TDD: `currentRouteProvider` reflects setter calls
+- [x] Widget: `FcmHandler.handleForegroundMessage` — banner shown off-route, suppressed on matching event chat, still shown when on chat for a different event
+- [x] Widget: `FcmHandler.handleTap` — deep-link navigation when present; no-op when missing
+- [ ] TDD: emulator integration for `onUrgentMessageCreated` — **deferred**: same `functions/test/` harness gap as earlier CFs; tracked in `todo.md`
+- [ ] Robot: `ChatRobot` urgent journey with faked FCM payload — **deferred**: same harness depth as the BudgetRobot deferral in Phase 5; tracked in `todo.md`
+- [x] Verify: `cd functions && npm run build && cd ..` && `flutter analyze` && `flutter test` — clean (133 tests)
+
+**Bootstrap deferral**: `main.dart` does not yet register `FirebaseMessaging.onBackgroundMessage`, subscribe `onMessage` / `onMessageOpenedApp`, or call `FcmService.attach` from the auth state listener. Those are platform wiring that requires a real device + uploaded APNs key to verify. The seams (`IFcmGateway`, `FcmService.attach/detach`, `FcmHandler`, `currentRouteProvider`) are all in place; bootstrap is mechanical and tracked in `todo.md` so Phase 9's manual smoke covers it.
 
 ### Phase 9: Documentation + final cleanup
 

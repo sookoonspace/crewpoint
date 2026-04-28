@@ -15,3 +15,4 @@ export {promoteToAdmin} from "./events/promoteToAdmin";
 export {demoteAdmin} from "./events/demoteAdmin";
 export {markTaskComplete} from "./events/markTaskComplete";
 export {disputeSettlement} from "./events/disputeSettlement";
+export {onUrgentMessageCreated} from "./events/onUrgentMessageCreated";

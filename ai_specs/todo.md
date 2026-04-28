@@ -34,3 +34,15 @@ Tracks ideas and partial implementations explicitly out of V1 scope. Promote int
 ## Test Infrastructure
 - Firebase emulator harness (`functions/test/`) for Cloud Function integration tests + `firestore.rules` access-matrix tests (deferred from Phase 1 of tasks-budget-chat plan)
 - BudgetRobot settle-via-Venmo journey test (Phase 5) — requires Riverpod overrides for `IUrlLauncher`, `AppLifecycleSource`, faked Firestore + fake auth, and stable per-payee settle-row keys
+- ChatRobot urgent-message journey test (Phase 8) — requires faked `IFcmGateway` + `FcmHandler` invariants pumped through a two-session widget harness
+
+## FCM bootstrap (Phase 8 → Phase 9 manual smoke)
+- `main.dart`: register `FirebaseMessaging.onBackgroundMessage` (top-level fn with `@pragma('vm:entry-point')`)
+- Subscribe `FirebaseMessaging.onMessage` and `onMessageOpenedApp` to `FcmHandler`
+- Await `FirebaseMessaging.getInitialMessage()` before first router build (cold-start tap)
+- Call `FcmService.attach(uid)` from the auth state listener; `detach(uid)` on sign-out
+- Ship the foreground banner UI (`MaterialBanner` with View action that calls `context.go(deepLink)`)
+- Pre-deploy: upload APNs key to Firebase console (iOS); verify "🚨 Urgent in {EventName}" push lands on a closed-app device
+
+## Chat polish followups
+- "Unknown member" coalescing for removed senders (currently shows UID label)

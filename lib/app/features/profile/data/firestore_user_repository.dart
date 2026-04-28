@@ -74,6 +74,42 @@ class FirestoreUserRepository implements IUserRepository {
   }
 
   @override
+  Future<void> addFcmToken({required String uid, required String token}) async {
+    try {
+      await _usersRef.doc(uid).set({
+        'fcmTokens': FieldValue.arrayUnion([token]),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e, st) {
+      log(
+        'Failed to add FCM token for $uid',
+        error: e,
+        stackTrace: st,
+        name: 'profile',
+      );
+    }
+  }
+
+  @override
+  Future<void> removeFcmToken({
+    required String uid,
+    required String token,
+  }) async {
+    try {
+      await _usersRef.doc(uid).set({
+        'fcmTokens': FieldValue.arrayRemove([token]),
+      }, SetOptions(merge: true));
+    } catch (e, st) {
+      log(
+        'Failed to remove FCM token for $uid',
+        error: e,
+        stackTrace: st,
+        name: 'profile',
+      );
+    }
+  }
+
+  @override
   Future<void> createUserIfNotExists({
     required String uid,
     required String email,

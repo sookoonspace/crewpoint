@@ -23,4 +23,10 @@ abstract class IUserRepository {
     required String email,
     String? displayName,
   });
+
+  /// Adds an FCM token to `users/{uid}.fcmTokens` (idempotent via arrayUnion).
+  Future<void> addFcmToken({required String uid, required String token});
+
+  /// Removes an FCM token from `users/{uid}.fcmTokens` (idempotent).
+  Future<void> removeFcmToken({required String uid, required String token});
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/router/app_router.dart';
+import 'package:crewpoint_app/app/core/router/current_route_provider.dart';
 import 'package:crewpoint_app/app/core/services/firebase_service.dart';
 import 'package:crewpoint_app/app/core/theme/app_theme.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
@@ -38,6 +39,8 @@ class _MyAppState extends ConsumerState<MyApp> {
     final router = createRouter(
       isOnboardingComplete: isOnboardingComplete,
       isAuthenticated: isAuthenticated,
+      onRouteChanged: (location) =>
+          ref.read(currentRouteProvider.notifier).set(location),
     );
 
     return MaterialApp.router(
