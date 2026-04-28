@@ -35,6 +35,7 @@ class ChatMessage {
     required this.text,
     required this.timestamp,
     this.isHighPriority = false,
+    this.kind,
   });
 
   final String id;
@@ -43,4 +44,7 @@ class ChatMessage {
   final String text;
   final DateTime timestamp;
   final bool isHighPriority;
+
+  /// Raw kind tag — used by the domain layer to map to [ChatMessageKind].
+  final String? kind;
 }

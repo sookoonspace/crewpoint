@@ -4,6 +4,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart';
+import 'package:crewpoint_app/app/core/database/daos/chat_messages_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/expense_splits_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/expenses_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/task_checklist_items_dao.dart';
@@ -25,6 +26,7 @@ import 'package:crewpoint_app/app/features/budget/data/expense_repository.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/chat/data/chat_repository.dart';
 import 'package:crewpoint_app/app/features/chat/data/firestore_chat_service.dart';
+import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
 import 'package:crewpoint_app/app/features/tasks/data/task_repository.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 
@@ -148,10 +150,23 @@ final chatServiceProvider = Provider<IChatService>(
   (ref) => FirestoreChatService(firestore: ref.watch(firestoreProvider)),
 );
 
-/// Chat repository — wraps the chat service.
-final chatRepositoryProvider = Provider<ChatRepository>(
-  (ref) => ChatRepository(chatService: ref.watch(chatServiceProvider)),
-);
+/// Chat repository — wraps the chat service with a Drift cache.
+final chatRepositoryProvider = Provider<ChatRepository>((ref) {
+  final repo = ChatRepository(
+    chatService: ref.watch(chatServiceProvider),
+    chatMessagesDao: ChatMessagesDao(ref.watch(databaseProvider)),
+  );
+  ref.onDispose(repo.dispose);
+  return repo;
+});
+
+/// Live stream of chat messages for an event (Drift-mirrored).
+final chatMessagesProvider =
+    StreamProvider.family<List<ChatMessageModel>, String>((ref, eventId) {
+      final repo = ref.watch(chatRepositoryProvider);
+      ref.onDispose(() => repo.disposeMirror(eventId));
+      return repo.watchMessages(eventId);
+    });
 
 /// `package:url_launcher` seam (testable).
 final urlLauncherProvider = Provider<IUrlLauncher>(

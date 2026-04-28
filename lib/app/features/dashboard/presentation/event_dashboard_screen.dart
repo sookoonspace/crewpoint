@@ -55,9 +55,10 @@ class EventDashboardScreen extends StatelessWidget {
                   label: 'Chat',
                   subtitle: 'Messages & alerts',
                   color: AppColors.sage,
-                  onTap: () {
-                    // Navigate to event chat
-                  },
+                  onTap: () => context.push(
+                    '/dashboard/event/${event.id}/chat',
+                    extra: event,
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 _QuickLinkCard(

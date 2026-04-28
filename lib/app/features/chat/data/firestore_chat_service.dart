@@ -24,7 +24,7 @@ class FirestoreChatService implements IChatService {
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
-              .map((doc) => _fromFirestore(doc.id, doc.data()))
+              .map((doc) => _fromFirestore(eventId, doc.id, doc.data()))
               .toList(),
         );
   }
@@ -89,14 +89,17 @@ class FirestoreChatService implements IChatService {
     }
   }
 
-  ChatMessage _fromFirestore(String id, Map<String, dynamic> data) =>
-      ChatMessage(
-        id: id,
-        eventId: '',
-        senderId: data['senderId'] as String? ?? '',
-        text: data['text'] as String? ?? '',
-        timestamp:
-            (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
-        isHighPriority: data['isHighPriority'] as bool? ?? false,
-      );
+  ChatMessage _fromFirestore(
+    String eventId,
+    String id,
+    Map<String, dynamic> data,
+  ) => ChatMessage(
+    id: id,
+    eventId: eventId,
+    senderId: data['senderId'] as String? ?? '',
+    text: data['text'] as String? ?? '',
+    timestamp: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    isHighPriority: data['isHighPriority'] as bool? ?? false,
+    kind: data['kind'] as String?,
+  );
 }

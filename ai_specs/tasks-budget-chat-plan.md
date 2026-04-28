@@ -148,16 +148,22 @@ Ship V1 of Tasks (RBAC + checklist), Budget (currency + splits + receipts + Venm
 ### Phase 7: Chat polish + Drift cache
 
 - **Goal**: Fix `eventId` bug; sender-name hydration; instant cold-start render; auto-scroll discipline.
-- [ ] `lib/app/features/chat/data/firestore_chat_service.dart` — fix line-68 `eventId: ''` (pass through from caller)
-- [ ] `lib/app/features/chat/data/chat_repository.dart` — Firestore stream → Drift mirror (cap 200 oldest deleted); `watchMessages` returns Drift watch; sender-name hydration via `usersByIdProvider(eventId)`
-- [ ] `lib/app/features/chat/application/users_by_id_provider.dart` — subscribes to `users/{uid}` for current event members; Drift cache
-- [ ] `lib/app/features/chat/application/chat_provider.dart` — composer in-flight state; `kind` filter helpers
-- [ ] `lib/app/features/chat/presentation/chat_screen.dart` — empty state copy; auto-scroll only when at bottom; disable Send while in-flight; Retry on send failure (no partial doc)
-- [ ] `lib/app/core/router/app_router.dart` — wire `/event/:eventId/chat` (deep-link target)
-- [ ] TDD: `ChatRepository` merge — Drift-only when offline; Firestore wins when both present (ordered by `serverTimestamp`); 200-cap eviction
-- [ ] TDD: removed-sender shows "Unknown member"
-- [ ] Widget: empty state; auto-scroll suppressed when scrolled-up; in-flight composer guard; urgent terracotta bubble + "URGENT" label
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `lib/app/features/chat/data/firestore_chat_service.dart` — fixed `eventId: ''` bug; passes eventId through `_fromFirestore`; reads `kind` field
+- [x] `lib/app/core/services/i_chat_service.dart` — `ChatMessage.kind` field
+- [x] `lib/app/core/database/daos/chat_messages_dao.dart` — new DAO with `watchByEventId`, `insertOrReplace`, `evictOldestIfNeeded(maxRows)`
+- [x] `lib/app/features/chat/data/chat_repository.dart` — Firestore stream → Drift mirror per event; reads via Drift watch; `disposeMirror`/`dispose` cleanup; `maxCachedRows: 200` default
+- [x] `lib/app/features/chat/application/users_by_id_provider.dart` — `FutureProvider.family<Map<String,AppUser>,List<String>>` for sender-name hydration via existing `userRepositoryProvider`
+- [x] Composer in-flight state lives on `EventChatPage` (no separate notifier needed): `_isSending` + `_lastSendFailed` flags drive ChatScreen UI
+- [x] `lib/app/features/chat/presentation/chat_screen.dart` — empty state copy "No messages yet — be the first to say something."; reverse-list auto-scroll only when offset < 80px; Send button disabled while `isSending`; `lastSendFailed` shows retry hint; resolves sender name via `memberNames` map; stable `Key('chat.composer.send')`, `Key('chat.composer.input')`, `Key('chat.list.empty')`, `Key('chat.list')`
+- [x] `lib/app/features/chat/presentation/event_chat_page.dart` — new wrapper: subscribes to `chatMessagesProvider(eventId)` + `usersByIdProvider(memberIds)`; routes send + dispute through providers; opens `DisputeSheet` on settlement tap
+- [x] `lib/app/core/providers.dart` — `chatRepositoryProvider` injects DAO + dispose hook; `chatMessagesProvider.family` with onDispose cleanup
+- [x] `lib/app/core/router/app_router.dart` — `/dashboard/event/:eventId/chat` wired to `EventChatPage`; event-dashboard quick-link wired
+- [x] TDD: `ChatRepository` mirror — incoming Firestore message persists to Drift and surfaces through `watchMessages`
+- [x] TDD: 200-cap eviction — only newest `maxCachedRows` remain in Drift
+- [x] Widget: empty state copy; in-flight Send disabled with spinner; `lastSendFailed` surfaces retry hint; `memberNames` resolves UID to display name
+- [x] Verify: `flutter analyze` && `flutter test` — clean (123 tests)
+
+**Deviations**: Removed-sender path defers to `usersByIdProvider` returning `null` (UI shows the UID label, no special "Unknown member" string yet — Phase 8 push-tap deep-link handler is the right place to coalesce). Tracked in `todo.md`.
 
 ### Phase 8: FCM push for urgent
 

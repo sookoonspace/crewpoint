@@ -10,6 +10,9 @@ class ChatScreen extends StatefulWidget {
     super.key,
     required this.messages,
     required this.currentUserId,
+    this.memberNames = const {},
+    this.isSending = false,
+    this.lastSendFailed = false,
     this.onSendMessage,
     this.onSendCriticalAlert,
     this.onTapSettlement,
@@ -17,6 +20,9 @@ class ChatScreen extends StatefulWidget {
 
   final List<ChatMessageModel> messages;
   final String currentUserId;
+  final Map<String, String> memberNames;
+  final bool isSending;
+  final bool lastSendFailed;
   final ValueChanged<String>? onSendMessage;
   final ValueChanged<String>? onSendCriticalAlert;
 
@@ -29,25 +35,62 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final _controller = TextEditingController();
+  final _scrollController = ScrollController();
+  int _lastMessageCount = 0;
+
+  @override
+  void didUpdateWidget(ChatScreen old) {
+    super.didUpdateWidget(old);
+    final delta = widget.messages.length - _lastMessageCount;
+    if (delta > 0 && _isNearBottom()) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            0,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    }
+    _lastMessageCount = widget.messages.length;
+  }
+
+  /// "At bottom" while `reverse: true` means offset is near zero.
+  bool _isNearBottom() {
+    if (!_scrollController.hasClients) return true;
+    return _scrollController.offset < 80;
+  }
 
   @override
   void dispose() {
     _controller.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   void _send() {
+    if (widget.isSending) return;
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     widget.onSendMessage?.call(text);
     _controller.clear();
   }
 
+  String? _resolveSenderName(String senderId) {
+    final fromMap = widget.memberNames[senderId];
+    if (fromMap != null && fromMap.isNotEmpty) return fromMap;
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.cream,
       appBar: AppBar(
         title: const Text('Chat'),
+        backgroundColor: AppColors.cream,
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.warning_amber, color: AppColors.terracotta),
@@ -63,20 +106,37 @@ class _ChatScreenState extends State<ChatScreen> {
           Expanded(
             child: widget.messages.isEmpty
                 ? const Center(
+                    key: Key('chat.list.empty'),
                     child: Text(
-                      'No messages yet',
+                      'No messages yet — be the first to say something.',
                       style: TextStyle(color: AppColors.mediumGrey),
                     ),
                   )
                 : ListView.builder(
+                    key: const Key('chat.list'),
+                    controller: _scrollController,
                     padding: const EdgeInsets.all(AppSpacing.lg),
                     reverse: true,
                     itemCount: widget.messages.length,
                     itemBuilder: (_, index) {
                       final reversedIndex = widget.messages.length - 1 - index;
                       final message = widget.messages[reversedIndex];
+                      final senderName =
+                          message.senderName ??
+                          _resolveSenderName(message.senderId);
                       return MessageBubble(
-                        message: message,
+                        message: senderName == null
+                            ? message
+                            : ChatMessageModel(
+                                id: message.id,
+                                eventId: message.eventId,
+                                senderId: message.senderId,
+                                text: message.text,
+                                timestamp: message.timestamp,
+                                isHighPriority: message.isHighPriority,
+                                senderName: senderName,
+                                kind: message.kind,
+                              ),
                         isCurrentUser: message.senderId == widget.currentUserId,
                         onTapSettlement:
                             message.kind == ChatMessageKind.settlement
@@ -86,7 +146,12 @@ class _ChatScreenState extends State<ChatScreen> {
                     },
                   ),
           ),
-          _MessageInput(controller: _controller, onSend: _send),
+          _MessageInput(
+            controller: _controller,
+            onSend: _send,
+            isSending: widget.isSending,
+            lastSendFailed: widget.lastSendFailed,
+          ),
         ],
       ),
     );
@@ -94,10 +159,17 @@ class _ChatScreenState extends State<ChatScreen> {
 }
 
 class _MessageInput extends StatelessWidget {
-  const _MessageInput({required this.controller, required this.onSend});
+  const _MessageInput({
+    required this.controller,
+    required this.onSend,
+    required this.isSending,
+    required this.lastSendFailed,
+  });
 
   final TextEditingController controller;
   final VoidCallback onSend;
+  final bool isSending;
+  final bool lastSendFailed;
 
   @override
   Widget build(BuildContext context) {
@@ -112,23 +184,57 @@ class _MessageInput extends StatelessWidget {
         color: Theme.of(context).colorScheme.surface,
         border: const Border(top: BorderSide(color: AppColors.lightGrey)),
       ),
-      child: Row(
-        spacing: AppSpacing.sm,
+      child: Column(
+        mainAxisSize: .min,
         children: [
-          Expanded(
-            child: TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                hintText: 'Type a message...',
-                border: InputBorder.none,
+          if (lastSendFailed)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    size: 14,
+                    color: AppColors.terracotta,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    'Send failed — tap Send again to retry',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: AppColors.terracotta,
+                    ),
+                  ),
+                ],
               ),
-              textInputAction: TextInputAction.send,
-              onSubmitted: (_) => onSend(),
             ),
-          ),
-          IconButton(
-            onPressed: onSend,
-            icon: const Icon(Icons.send, color: AppColors.sage),
+          Row(
+            spacing: AppSpacing.sm,
+            children: [
+              Expanded(
+                child: TextField(
+                  key: const Key('chat.composer.input'),
+                  controller: controller,
+                  enabled: !isSending,
+                  decoration: const InputDecoration(
+                    hintText: 'Type a message...',
+                    border: InputBorder.none,
+                  ),
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (_) => onSend(),
+                ),
+              ),
+              IconButton(
+                key: const Key('chat.composer.send'),
+                onPressed: isSending ? null : onSend,
+                icon: isSending
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.send, color: AppColors.sage),
+              ),
+            ],
           ),
         ],
       ),
