@@ -32,7 +32,9 @@ dependencies:
 
   # Auth
   google_sign_in: ^6.2.2
-  sign_in_with_apple: ^6.1.4
+  # Note: sign_in_with_apple removed — Firebase Auth's
+  # AppleAuthProvider + signInWithProvider() drives both iOS (system
+  # sheet) and web (popup) without a kIsWeb branch.
 
   # Local Database
   drift: ^2.25.0

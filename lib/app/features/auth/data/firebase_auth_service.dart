@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:crewpoint_app/app/core/services/i_auth_service.dart';
+import 'package:crewpoint_app/app/features/auth/data/firebase_auth_error_messages.dart';
 
 /// Firebase implementation of [IAuthService].
 class FirebaseAuthService implements IAuthService {
@@ -113,13 +114,5 @@ class FirebaseAuthService implements IAuthService {
     photoUrl: user.photoURL,
   );
 
-  String _mapFirebaseError(String code) => switch (code) {
-    'invalid-email' => 'The email address is invalid.',
-    'wrong-password' || 'invalid-credential' => 'Incorrect email or password.',
-    'user-not-found' => 'No account found with this email.',
-    'email-already-in-use' => 'An account already exists with this email.',
-    'weak-password' => 'Password must be at least 6 characters.',
-    'network-request-failed' => 'Network error. Please check your connection.',
-    _ => 'An unexpected error occurred. Please try again.',
-  };
+  String _mapFirebaseError(String code) => firebaseAuthErrorMessage(code);
 }
