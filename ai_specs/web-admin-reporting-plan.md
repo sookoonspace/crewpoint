@@ -107,16 +107,18 @@ Desktop/web parity for CrewPoint + repo polish. Thin slice first (responsive she
 ### Phase 5: Marketing microsite (cross-repo PR in `/Users/googoo/Websites/sookoon_space`)
 
 - **Goal**: `https://sookoon.space/crewpoint/` mirrors `/sanctuary/` shape; "Open web app" CTA → subdomain; privacy/terms pages publicly reachable (gates Phase 6).
-- [ ] (sookoon_space) `app/[locale]/crewpoint/page.tsx`, `layout.tsx` — mirror `app/[locale]/sanctuary/` shape; CrewPoint brand colors + copy
-- [ ] (sookoon_space) `app/[locale]/crewpoint/{about,how-it-works,download,faq,privacy,terms,guidelines,contact}/page.tsx` — mirror Sanctuary subroutes
+- **Gate**: dev hosting must serve a working build first. See `docs/dev-first-rollout-checklist.md` "Gating signal — dev is validated." Marketing microsite ships in parallel with stg/prod hosting work, not before it.
+- [x] (crewpoint_app) Deliverables brief to marketing PR — `docs/crewpoint-marketing-brief.md` — covers the canonical web-app URL, brand assets + palette, tagline + feature bullets + "why" copy, FAQ Q&A, full English V1 privacy / terms / community-guidelines body text, `DEPLOY_NAMECHEAP.md` test-list snippet, and the maintainer PR checklist for the marketing repo
+- [x] (crewpoint_app) Operational rollout order doc — `docs/dev-first-rollout-checklist.md` — captures dev gating signal + stg + prod step-by-step so marketing-microsite + Apple sign-in (Phase 6) are sequenced after the relevant Hosting environment is verified
+- [ ] (sookoon_space) `app/[locale]/crewpoint/page.tsx`, `layout.tsx` — mirror `app/[locale]/sanctuary/` shape; CrewPoint brand colors + copy from the brief
+- [ ] (sookoon_space) `app/[locale]/crewpoint/{about,how-it-works,download,faq,privacy,terms,guidelines,contact}/page.tsx` — body text from the brief, lifted into Sanctuary's React/TSX page shell
 - [ ] (sookoon_space) `app/crewpoint/page.tsx` — locale-redirect mirroring `app/sanctuary/page.tsx`
-- [ ] (sookoon_space) `app/[locale]/apps/page.tsx` — add CrewPoint entry to `apps` array (cream/sage/terracotta accents)
+- [ ] (sookoon_space) `app/[locale]/apps/page.tsx` — add CrewPoint entry to `apps` array (cream/sage/terracotta accents per the brief's palette table)
 - [ ] (sookoon_space) `messages/{en,es,hi}.json` — add `crewpointPage.*` and `appsPage.crewpoint.*` keys (English copy V1; ES/HI fallback)
-- [ ] (sookoon_space) Primary CTA on `crewpoint/page.tsx` and `crewpoint/download/page.tsx`: **"Open web app"** → `https://crewpoint.sookoon.space`, `target="_blank" rel="noopener noreferrer"`
-- [ ] (sookoon_space) `DEPLOY_NAMECHEAP.md` — extend Step 4 test list with `/crewpoint/`, `/crewpoint/about/`, `/crewpoint/privacy/`, etc.
-- [ ] (crewpoint_app) Deliverables to marketing PR: launcher icon PNG (resize from `assets/icons/launcher_icon.png`), copy strings (tagline + features + FAQ), reviewed privacy/terms/guidelines text, final web-app URL
-- [ ] Manual smoke: `npm run build` in sookoon_space; FTP upload `out/`; `curl https://sookoon.space/crewpoint/privacy/` returns 200 with privacy page content; "Open web app" CTA navigates to `https://crewpoint.sookoon.space`
-- [ ] Verify (this repo unchanged): `flutter analyze` && `flutter test`
+- [ ] (sookoon_space) Primary CTA on `crewpoint/page.tsx` and `crewpoint/download/page.tsx`: **"Open web app"** → `https://crewpoint.sookoon.space` (until prod custom domain is live, link to `https://crewpoint-prod.web.app` and update once DNS resolves), `target="_blank" rel="noopener noreferrer"`
+- [ ] (sookoon_space) `DEPLOY_NAMECHEAP.md` — extend Step 4 test list with `/crewpoint/`, `/crewpoint/about/`, `/crewpoint/privacy/`, etc. (snippet ready in the brief)
+- [ ] Manual smoke: `npm run build` in sookoon_space; FTP upload `out/`; `curl https://sookoon.space/crewpoint/privacy/` returns 200 with privacy page content; "Open web app" CTA navigates correctly — **manual user step (cross-repo)**
+- [x] Verify (this repo unchanged): `flutter analyze` clean; `flutter test` 160 green
 
 ### Phase 6: Apple sign-in + screenshots + final docs
 

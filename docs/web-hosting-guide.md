@@ -6,6 +6,12 @@ parallel dev / staging subdomains for pre-production smokes — without
 disturbing the Sookoon LLC marketing site that lives at the apex on
 Namecheap.
 
+> **Rollout order**: validate everything on dev first. The
+> per-environment task list (with the dev gating signal that unlocks
+> stg, and the stg gate that unlocks prod) lives in
+> **[dev-first-rollout-checklist.md](./dev-first-rollout-checklist.md)**.
+> Run that as the operational companion to this reference.
+
 > **Hosting topology.** This guide owns the Firebase-hosted subdomain
 > only. The apex `https://sookoon.space` (Next.js + Namecheap shared
 > hosting via FTP/cPanel; see `/Users/googoo/Websites/sookoon_space`)
@@ -265,9 +271,14 @@ change needed.
 - `scripts/apply-cors.sh` — flavor-aware CORS apply wrapper.
 - `web/.well-known/apple-developer-domain-association.txt` — Apple
   domain-verification placeholder.
+- `docs/dev-first-rollout-checklist.md` — operational order of
+  operations across dev → stg → prod with the gating signals.
 - `docs/firebase-hosting-dev-deploy.md` — dev-only deploy loop.
 - `docs/flutterfire-reconfigure.md` — when (and how) to refresh
   `firebase_options_*.dart` without breaking iOS/Android.
+- `docs/crewpoint-marketing-brief.md` — copy, privacy, terms,
+  guidelines, FAQ, and PR checklist for the cross-repo
+  `/sookoon_space` marketing-microsite work (Phase 5).
 - `docs/cloud-functions-guide.md` — Cloud Functions deploy lifecycle
   (sibling concern; deploys are independent of hosting).
 - `ai_specs/web-admin-reporting-plan.md` — Phase 4 (this work),
