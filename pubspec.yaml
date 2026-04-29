@@ -31,10 +31,12 @@ dependencies:
   firebase_messaging: ^15.2.0
 
   # Auth
-  google_sign_in: ^6.2.2
-  # Note: sign_in_with_apple removed — Firebase Auth's
-  # AppleAuthProvider + signInWithProvider() drives both iOS (system
-  # sheet) and web (popup) without a kIsWeb branch.
+  # Note: google_sign_in and sign_in_with_apple were both removed —
+  # Firebase Auth's GoogleAuthProvider + AppleAuthProvider via
+  # signInWithProvider() drive iOS (system sheet) / Android (Custom
+  # Tab) / web (popup) uniformly without a kIsWeb branch and without
+  # native plugin glue. See ai_specs/auth-google-mobile-fix-plan.md
+  # for context.
 
   # Local Database
   drift: ^2.25.0

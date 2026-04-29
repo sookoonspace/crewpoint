@@ -2,7 +2,6 @@ import 'dart:developer';
 
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart';
 import 'package:crewpoint_app/app/core/services/secure_storage_service.dart';
 
@@ -20,18 +19,15 @@ class AccountDeletionService {
     required SecureStorageService secureStorage,
     FirebaseAuth? firebaseAuth,
     FirebaseFunctions? functions,
-    GoogleSignIn? googleSignIn,
   }) : _database = database,
        _secureStorage = secureStorage,
        _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
-       _functions = functions ?? FirebaseFunctions.instance,
-       _googleSignIn = googleSignIn ?? GoogleSignIn();
+       _functions = functions ?? FirebaseFunctions.instance;
 
   final AppDatabase _database;
   final SecureStorageService _secureStorage;
   final FirebaseAuth _firebaseAuth;
   final FirebaseFunctions _functions;
-  final GoogleSignIn _googleSignIn;
 
   /// Returns the primary auth provider for the current user.
   AuthProviderType get currentAuthProvider {
@@ -65,17 +61,20 @@ class AccountDeletionService {
   }
 
   /// Re-authenticates with Google.
+  ///
+  /// Uses Firebase Auth's `reauthenticateWithProvider(GoogleAuthProvider)`
+  /// — same path as the matching Apple method below — instead of the
+  /// legacy `google_sign_in` plugin. The unified flow works on iOS,
+  /// Android, and web through the same Custom Tab / SafariViewController
+  /// / popup OAuth handler.
   Future<bool> reAuthenticateWithGoogle() async {
     try {
-      final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return false;
-
-      final googleAuth = await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
+      final googleProvider = GoogleAuthProvider()
+        ..addScope('email')
+        ..addScope('profile');
+      await _firebaseAuth.currentUser?.reauthenticateWithProvider(
+        googleProvider,
       );
-      await _firebaseAuth.currentUser?.reauthenticateWithCredential(credential);
       return true;
     } catch (e, st) {
       log('Google re-auth failed', error: e, stackTrace: st, name: 'deletion');

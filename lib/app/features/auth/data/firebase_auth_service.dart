@@ -1,20 +1,15 @@
 import 'dart:developer';
 
 import 'package:firebase_auth/firebase_auth.dart' as fb;
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:crewpoint_app/app/core/services/i_auth_service.dart';
 import 'package:crewpoint_app/app/features/auth/data/firebase_auth_error_messages.dart';
 
 /// Firebase implementation of [IAuthService].
 class FirebaseAuthService implements IAuthService {
-  FirebaseAuthService({
-    fb.FirebaseAuth? firebaseAuth,
-    GoogleSignIn? googleSignIn,
-  }) : _firebaseAuth = firebaseAuth ?? fb.FirebaseAuth.instance,
-       _googleSignIn = googleSignIn ?? GoogleSignIn();
+  FirebaseAuthService({fb.FirebaseAuth? firebaseAuth})
+    : _firebaseAuth = firebaseAuth ?? fb.FirebaseAuth.instance;
 
   final fb.FirebaseAuth _firebaseAuth;
-  final GoogleSignIn _googleSignIn;
 
   @override
   AuthUser? get currentUser {
@@ -66,16 +61,10 @@ class FirebaseAuthService implements IAuthService {
   @override
   Future<AuthResult> signInWithGoogle() async {
     try {
-      final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        return const AuthResultFailure('Google sign-in cancelled');
-      }
-      final googleAuth = await googleUser.authentication;
-      final credential = fb.GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-      final result = await _firebaseAuth.signInWithCredential(credential);
+      final googleProvider = fb.GoogleAuthProvider()
+        ..addScope('email')
+        ..addScope('profile');
+      final result = await _firebaseAuth.signInWithProvider(googleProvider);
       return AuthSuccess(_mapUser(result.user!));
     } on fb.FirebaseAuthException catch (e, st) {
       log('Google sign-in failed', error: e, stackTrace: st, name: 'auth');
@@ -99,7 +88,7 @@ class FirebaseAuthService implements IAuthService {
 
   @override
   Future<void> signOut() async {
-    await Future.wait([_firebaseAuth.signOut(), _googleSignIn.signOut()]);
+    await _firebaseAuth.signOut();
   }
 
   @override

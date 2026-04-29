@@ -28,14 +28,14 @@ Fix Google sign-in mobile crash by unifying onto Firebase's `signInWithProvider(
 ### Phase 1: Unify Google sign-in onto `signInWithProvider`
 
 - **Goal**: Google sign-in works on iOS + Android + web through Firebase's native OAuth path. `google_sign_in` dep removed.
-- [ ] `lib/app/features/auth/data/firebase_auth_service.dart` — replace `signInWithGoogle` body with `signInWithProvider(GoogleAuthProvider()..addScope('email')..addScope('profile'))`; drop the `googleSignIn` constructor param + `_googleSignIn` field; drop `package:google_sign_in/google_sign_in.dart` import. The existing `firebaseAuthErrorMessage` helper already maps `popup-blocked` / `popup-closed-by-user` / `cancelled-popup-request` from Phase 6.
-- [ ] `lib/app/core/services/account_deletion_service.dart` — replace `reAuthenticateWithGoogle()` body with `currentUser?.reauthenticateWithProvider(GoogleAuthProvider()..addScope('email'))`; drop the `googleSignIn` constructor param + field + import.
-- [ ] `pubspec.yaml` — remove `google_sign_in: ^6.2.2` with the same kind of explanatory comment we added when removing `sign_in_with_apple`.
-- [ ] `lib/app/core/providers.dart` — verify `authServiceProvider` and `accountDeletionServiceProvider` constructors still match; fix call sites if needed.
-- [ ] Search the test harness for `GoogleSignIn` references and remove (`grep -rn GoogleSignIn test/`).
+- [x] `lib/app/features/auth/data/firebase_auth_service.dart` — `signInWithGoogle` now uses `signInWithProvider(GoogleAuthProvider()..addScope('email')..addScope('profile'))`; `googleSignIn` constructor param + `_googleSignIn` field + `package:google_sign_in/google_sign_in.dart` import dropped; `signOut` no longer calls `_googleSignIn.signOut()` (Firebase handles its own session). The existing `firebaseAuthErrorMessage` helper already maps `popup-blocked` / `popup-closed-by-user` / `cancelled-popup-request` from Phase 6.
+- [x] `lib/app/core/services/account_deletion_service.dart` — `reAuthenticateWithGoogle()` now calls `currentUser?.reauthenticateWithProvider(GoogleAuthProvider..addScopes)`; `googleSignIn` constructor param + field + import dropped.
+- [x] `pubspec.yaml` — `google_sign_in: ^6.2.2` removed with an explanatory comment that consolidates both Google + Apple removals (single Firebase Auth path for all OAuth providers, no native plugin glue).
+- [x] `lib/app/core/providers.dart` — `authServiceProvider` and `accountDeletionServiceProvider` already use no-arg / arg-only-internal-state constructors; no changes needed.
+- [x] Search the test harness for `GoogleSignIn` references — `grep -rn GoogleSignIn test/` returns empty.
 - [ ] Manual smoke (mobile, real device): tap Continue with Google → consent screen opens in an in-app browser → sign in → app lands on dashboard. **Manual user step**
 - [ ] Manual smoke (web, dev hosting): same flow, popup-based — confirms web path is unchanged. **Manual user step**
-- [ ] Verify: `flutter analyze` && `flutter test` && `cd functions && npm run build`
+- [x] Verify: `flutter analyze` clean; `flutter test` 165 pass + 4 screenshot suites skipped; `cd functions && npm run build` clean
 
 ### Phase 2: Email verification for email/password signups
 
