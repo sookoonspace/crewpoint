@@ -15,6 +15,9 @@ import 'package:crewpoint_app/app/core/database/daos/expenses_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/task_checklist_items_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/tasks_dao.dart';
 import 'package:crewpoint_app/app/core/services/account_deletion_service.dart';
+import 'package:crewpoint_app/app/core/services/file_export_service.dart';
+import 'package:crewpoint_app/app/core/services/file_export_service_native.dart'
+    if (dart.library.html) 'package:crewpoint_app/app/core/services/file_export_service_web.dart';
 import 'package:crewpoint_app/app/core/services/i_auth_service.dart';
 import 'package:crewpoint_app/app/core/services/secure_storage_service.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
@@ -183,6 +186,17 @@ final chatMessagesProvider =
 /// `package:url_launcher` seam (testable).
 final urlLauncherProvider = Provider<IUrlLauncher>(
   (_) => const UrlLauncherService(),
+);
+
+/// Platform-aware file-export seam (PDF + CSV downloads).
+///
+/// Web target compiles against `WebFileExporter` (Wasm-safe `package:web`
+/// Blob + anchor for non-PDF; `Printing.sharePdf` for PDF). Mobile/desktop
+/// compile against `NativeFileExporter` (`Printing.sharePdf` for PDF;
+/// `share_plus` for everything else). Tests override with a recording
+/// fake.
+final fileExporterProvider = Provider<IFileExporter>(
+  (_) => createFileExporter(),
 );
 
 /// Callable signature for the `disputeSettlement` Cloud Function.
