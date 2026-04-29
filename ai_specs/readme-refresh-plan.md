@@ -15,7 +15,7 @@ Replace default Flutter README with a real project README. Quick plan; no spec.
 ### Phase 1: Refresh README
 
 - **Goal**: README matches the actual app instead of Flutter boilerplate.
-- [ ] `README.md` — replace template with sections:
+- [x] `README.md` — replaced template with sections:
   - One-line tagline + 1-paragraph overview (CrewPoint = collaborative event management; tasks, budget w/ Splitwise-style ledger, chat with urgent push)
   - Feature highlights (Events + RBAC, Tasks, Budget + deep-link settle, Chat + urgent push)
   - Tech stack (Flutter 3.11.5 / Dart 3, Riverpod 3, Firebase Auth + Firestore + Storage + Functions + Messaging, Drift v4, go_router 14)
@@ -26,7 +26,7 @@ Replace default Flutter README with a real project README. Quick plan; no spec.
   - Testing (`flutter test`; 133 tests; robot journey at `test/journeys/`)
   - Architecture pointers (Firestore source of truth + Drift mirror; pure utilities in `data/` like `PayLinkBuilder`; test seams: `IFcmGateway`, `IUrlLauncher`, `AppLifecycleSource`)
   - Roadmap pointer to `ai_specs/todo.md`
-- [ ] Verify: `flutter analyze` (README change is doc-only; this is the smoke that nothing else regressed)
+- [x] Verify: `flutter analyze` clean (README change is doc-only)
 
 ## Risks / Out of scope
 
