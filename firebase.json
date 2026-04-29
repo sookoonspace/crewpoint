@@ -89,18 +89,24 @@
         "lib/firebase_options_dev.dart": {
           "projectId": "crewpoint-dev",
           "configurations": {
-            "web": "1:711822236757:web:7fc7f232d8f717188788dc"
+            "web": "1:711822236757:web:7fc7f232d8f717188788dc",
+            "android": "1:711822236757:android:4f2c437150bdb7038788dc",
+            "ios": "1:711822236757:ios:9de1be56deaf89208788dc"
           }
         },
         "lib/firebase_options_stg.dart": {
           "projectId": "crewpoint-stg",
           "configurations": {
+            "web": "1:715030987637:web:588e1db0f6255fc77a093c",
+            "android": "1:715030987637:android:7bd1a6bc200f2c337a093c",
             "ios": "1:715030987637:ios:a4daa6543962aa0e7a093c"
           }
         },
         "lib/firebase_options_prod.dart": {
           "projectId": "crewpoint-prod",
           "configurations": {
+            "web": "1:394956084700:web:9a26cd6a360e6cec52ab19",
+            "android": "1:394956084700:android:04992e46e35351bf52ab19",
             "ios": "1:394956084700:ios:4803c60efff8d6b852ab19"
           }
         }

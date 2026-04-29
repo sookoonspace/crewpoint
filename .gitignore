@@ -55,3 +55,8 @@ app.*.map.json
 # Cloud Functions build output
 functions/lib/
 functions/node_modules/
+
+# Firebase CLI local cache (hosting deploys, login state)
+.firebase/
+
+# Flutter web build output is /build/ (already covered above)
