@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:crewpoint_app/app/core/constants/app_pdf_theme.dart';
+import 'package:crewpoint_app/app/features/budget/data/member_name_resolver.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
@@ -174,7 +175,7 @@ pw.Widget _balancesBlock(
       pw.SizedBox(height: 4),
       for (final entry in ledger.netBalances.entries)
         pw.Text(
-          '${memberNames[entry.key] ?? entry.key}: '
+          '${resolveMemberName(uid: entry.key, memberNames: memberNames)}: '
           '${entry.value.toStringAsFixed(2)} $currency',
           style: pw.TextStyle(
             color: entry.value < 0 ? AppPdfTheme.terracotta : AppPdfTheme.sage,
@@ -204,8 +205,8 @@ pw.Widget _settlementsBlock(
       pw.SizedBox(height: 4),
       for (final s in settlements)
         pw.Text(
-          '${memberNames[s.fromUserId] ?? s.fromUserId} -> '
-          '${memberNames[s.toUserId] ?? s.toUserId}: '
+          '${resolveMemberName(uid: s.fromUserId, memberNames: memberNames)} -> '
+          '${resolveMemberName(uid: s.toUserId, memberNames: memberNames)}: '
           '${s.amount.toStringAsFixed(2)} $currency',
         ),
     ],
@@ -256,7 +257,7 @@ pw.Widget _expenseRow(
                 style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
               ),
               pw.Text(
-                '${memberNames[e.payerId] ?? '(no longer in event)'}  ·  '
+                '${resolveMemberName(uid: e.payerId, memberNames: memberNames)}  ·  '
                 '${e.amount.toStringAsFixed(2)} $currency',
                 style: const pw.TextStyle(
                   color: AppPdfTheme.charcoalLight,

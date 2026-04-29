@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:crewpoint_app/app/core/constants/app_pdf_theme.dart';
+import 'package:crewpoint_app/app/features/budget/data/member_name_resolver.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 
@@ -128,14 +129,14 @@ pw.Widget _statusSection(
 pw.Widget _taskRow(TaskModel task, Map<String, String> memberNames) {
   final assignee = task.assigneeId == null
       ? null
-      : (memberNames[task.assigneeId!] ?? '(no longer in event)');
+      : resolveMemberName(uid: task.assigneeId, memberNames: memberNames);
   final dueLabel = task.dueDate?.toIso8601String().split('T').first;
   final progress = checklistProgressLabel(task);
 
   final completedLabel = task.status == TaskStatus.done
       ? [
           if (task.completedBy != null)
-            'by ${memberNames[task.completedBy!] ?? '(no longer in event)'}',
+            'by ${resolveMemberName(uid: task.completedBy, memberNames: memberNames)}',
           if (task.completedAt != null)
             'at ${task.completedAt!.toIso8601String().split('T').first}',
         ].where((s) => s.isNotEmpty).join(' ')
