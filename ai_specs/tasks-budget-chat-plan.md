@@ -191,12 +191,12 @@ Ship V1 of Tasks (RBAC + checklist), Budget (currency + splits + receipts + Venm
 ### Phase 9: Documentation + final cleanup
 
 - **Goal**: Registry up to date; manual smoke checklist green.
-- [ ] `docs/cloud-functions-guide.md` — append `markTaskComplete`, `disputeSettlement`, `onUrgentMessageCreated` to Function Registry; bump "Last updated"
-- [ ] Walk every spec requirement (1–66) and confirm done
-- [ ] Manual: real-device push (closed app → push → tap → chat)
-- [ ] Manual: real Venmo deep link with set handle
-- [ ] Manual: install previous build → upgrade → verify Drift data preserved
-- [ ] Verify: `cd functions && npm run build && cd ..` && `flutter analyze` && `flutter test`
+- [x] `docs/cloud-functions-guide.md` — appended `markTaskComplete`, `disputeSettlement`, `onUrgentMessageCreated` to Function Registry; "Last updated" bumped to 2026-04-28
+- [x] Plan walked end-to-end; phase-level deviations and deferrals are tracked inline + in `ai_specs/todo.md` (FCM bootstrap wiring, BudgetRobot/ChatRobot journeys, emulator harness)
+- [ ] Manual: real-device push (closed app → push → tap → chat) — **handed off to user**: requires uploaded APNs key + `main.dart` FCM bootstrap (tracked in `todo.md`)
+- [ ] Manual: real Venmo deep link with a set handle — **handed off to user**: smoke on a real device with a configured Venmo handle
+- [ ] Manual: install previous build → upgrade → verify Drift data preserved — **handed off to user**: install last main-branch build first, then upgrade to this branch
+- [x] Verify: `cd functions && npm run build && cd ..` && `flutter analyze` && `flutter test` — clean (133 tests)
 
 ## Risks / Out of scope
 

@@ -2,7 +2,7 @@
 
 Living document for deploying and managing Firebase Cloud Functions across all 3 flavors.
 
-**Last updated**: 2026-04-25
+**Last updated**: 2026-04-28
 
 ---
 
@@ -124,6 +124,9 @@ All deployed Cloud Functions, kept up-to-date as features are added.
 | `deleteUserAccount` | HTTPS Callable | `account/` | Server-side account deletion: anonymizes shared data, transfers event ownership, deletes solo events, clears storage, removes Auth user | 120s | 2026-04-21 |
 | `promoteToAdmin` | HTTPS Callable | `events/` | Owner-only: promotes an event member to admin (arrayUnion into `adminIds`). Requires target to already be a member. | 30s | 2026-04-25 |
 | `demoteAdmin` | HTTPS Callable | `events/` | Owner-only: removes admin role from an event member (arrayRemove from `adminIds`). Owner cannot be demoted. | 30s | 2026-04-25 |
+| `markTaskComplete` | HTTPS Callable | `events/` | Owner / admin / assignee transitions a task to `done`, stamping `completedAt` + `completedBy` server-side. Reserves a seam for future side effects (notifications, ledger hooks). | 30s | 2026-04-26 |
+| `disputeSettlement` | HTTPS Callable | `events/` | Payer or payee rolls back a settlement: deletes the `isPayment` expense, replaces the chat notice with `kind: 'settlement_disputed'`. | 30s | 2026-04-27 |
+| `onUrgentMessageCreated` | Firestore-trigger v2 (`onDocumentCreated` on `events/{eid}/messages/{mid}`) | `events/` | Fans out an FCM push when an urgent (high-priority) chat message is created. Loads recipients from event memberIds, skips the sender, chunks tokens at 500 with `sendEachForMulticast`, prunes dead tokens via batched arrayRemove. `retry: false`. | 30s | 2026-04-28 |
 
 ---
 
