@@ -17,6 +17,7 @@ class TaskListScreen extends StatelessWidget {
     this.onStatusChanged,
     this.onCreateTask,
     this.onUnauthorizedStatusTap,
+    this.onExportPdf,
   });
 
   final List<TaskModel> tasks;
@@ -28,6 +29,7 @@ class TaskListScreen extends StatelessWidget {
   final void Function(TaskModel task, TaskStatus newStatus)? onStatusChanged;
   final VoidCallback? onCreateTask;
   final VoidCallback? onUnauthorizedStatusTap;
+  final VoidCallback? onExportPdf;
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +46,15 @@ class TaskListScreen extends StatelessWidget {
         title: const Text('Tasks'),
         backgroundColor: AppColors.cream,
         elevation: 0,
+        actions: [
+          if (onExportPdf != null)
+            IconButton(
+              key: const Key('tasks.export.pdf'),
+              icon: const Icon(Icons.ios_share),
+              tooltip: 'Export PDF',
+              onPressed: onExportPdf,
+            ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: _FilterBar(

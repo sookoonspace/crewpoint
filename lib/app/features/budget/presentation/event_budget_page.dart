@@ -4,13 +4,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/services/app_lifecycle_source.dart';
+import 'package:crewpoint_app/app/core/services/file_export_service.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/budget/application/pending_settlement_notifier.dart';
+import 'package:crewpoint_app/app/features/budget/data/expense_csv_builder.dart';
+import 'package:crewpoint_app/app/features/budget/data/expense_pdf_builder.dart';
 import 'package:crewpoint_app/app/features/budget/data/pay_link_builder.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
+import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/budget_screen.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/expense_modal.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/settle_sheet.dart';
+import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
 /// Event-scoped budget page. Reads `expenseListProvider(eventId)` and routes
@@ -184,6 +189,58 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
     );
   }
 
+  Future<void> _runExport({
+    required List<ExpenseModel> expenses,
+    required Map<String, String> memberNames,
+    required String kind,
+  }) async {
+    final exporter = ref.read(fileExporterProvider);
+    final filename = buildExportFilename(
+      eventTitle: widget.event.title,
+      kind: 'expenses',
+      extension: kind,
+      date: DateTime.now(),
+    );
+    try {
+      if (kind == 'pdf') {
+        final ledger = BalanceLedger.calculate(
+          expenses: expenses,
+          memberIds: widget.event.memberIds,
+        );
+        final bytes = await buildExpenseReport(
+          event: widget.event,
+          expenses: expenses,
+          memberNames: memberNames,
+          ledger: ledger,
+        );
+        await exporter.share(
+          bytes: bytes,
+          filename: filename,
+          mimeType: 'application/pdf',
+        );
+      } else {
+        final csv = buildExpenseCsv(
+          event: widget.event,
+          expenses: expenses,
+          memberNames: memberNames,
+        );
+        await exporter.share(
+          bytes: Uint8List.fromList(csv.codeUnits),
+          filename: filename,
+          mimeType: 'text/csv',
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Couldn't generate report"),
+          backgroundColor: AppColors.terracotta,
+        ),
+      );
+    }
+  }
+
   Future<void> _handleConfirmRequested(PendingSettlement pending) async {
     if (!mounted) return;
     final symbol = _currencySymbol(widget.event.currency);
@@ -241,60 +298,81 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
     }
 
     final asyncExpenses = ref.watch(expenseListProvider(widget.event.id));
+    final asyncUsers = ref.watch(usersByIdProvider(widget.event.memberIds));
     final repo = ref.watch(expenseRepositoryProvider);
     final imageService = ref.watch(imageServiceProvider);
     final symbol = _currencySymbol(widget.event.currency);
 
     return asyncExpenses.when(
-      data: (expenses) => BudgetScreen(
-        expenses: expenses,
-        memberIds: widget.event.memberIds,
-        currency: widget.event.currency,
-        onRecordPayment: _onSettlePressed,
-        onAddExpense: () => ExpenseModal.show(
-          context: context,
-          eventId: widget.event.id,
-          payerId: uid,
+      data: (expenses) {
+        final memberNames = asyncUsers.maybeWhen(
+          data: (users) => {
+            for (final entry in users.entries)
+              entry.key: entry.value.displayName ?? '',
+          },
+          orElse: () => <String, String>{},
+        );
+        return BudgetScreen(
+          expenses: expenses,
           memberIds: widget.event.memberIds,
-          currencySymbol: symbol,
-          onPickReceipt: () => imageService.pickFromGallery(
-            maxWidth: 1600,
-            maxHeight: 1600,
-            quality: 70,
+          currency: widget.event.currency,
+          memberNames: memberNames,
+          onRecordPayment: _onSettlePressed,
+          onExportPdf: () => _runExport(
+            expenses: expenses,
+            memberNames: memberNames,
+            kind: 'pdf',
           ),
-          onSubmit: (expense, receipt) async {
-            String? receiptUrl;
-            if (receipt != null) {
-              receiptUrl = await repo.uploadReceipt(
-                eventId: widget.event.id,
-                expenseId: expense.id,
-                file: receipt,
+          onExportCsv: () => _runExport(
+            expenses: expenses,
+            memberNames: memberNames,
+            kind: 'csv',
+          ),
+          onAddExpense: () => ExpenseModal.show(
+            context: context,
+            eventId: widget.event.id,
+            payerId: uid,
+            memberIds: widget.event.memberIds,
+            currencySymbol: symbol,
+            onPickReceipt: () => imageService.pickFromGallery(
+              maxWidth: 1600,
+              maxHeight: 1600,
+              quality: 70,
+            ),
+            onSubmit: (expense, receipt) async {
+              String? receiptUrl;
+              if (receipt != null) {
+                receiptUrl = await repo.uploadReceipt(
+                  eventId: widget.event.id,
+                  expenseId: expense.id,
+                  file: receipt,
+                );
+                if (receiptUrl == null && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Receipt upload failed — saving expense without it',
+                      ),
+                      backgroundColor: AppColors.terracotta,
+                    ),
+                  );
+                }
+              }
+              final ok = await repo.createExpense(
+                expense.copyWith(receiptPath: receiptUrl),
               );
-              if (receiptUrl == null && context.mounted) {
+              if (!ok && context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text(
-                      'Receipt upload failed — saving expense without it',
-                    ),
+                    content: Text('Failed to add expense'),
                     backgroundColor: AppColors.terracotta,
                   ),
                 );
               }
-            }
-            final ok = await repo.createExpense(
-              expense.copyWith(receiptPath: receiptUrl),
-            );
-            if (!ok && context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Failed to add expense'),
-                  backgroundColor: AppColors.terracotta,
-                ),
-              );
-            }
-          },
-        ),
-      ),
+            },
+          ),
+        );
+      },
       loading: () => Scaffold(
         backgroundColor: AppColors.cream,
         appBar: AppBar(

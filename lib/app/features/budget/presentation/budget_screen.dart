@@ -16,6 +16,8 @@ class BudgetScreen extends StatelessWidget {
     this.memberNames = const {},
     this.onAddExpense,
     this.onRecordPayment,
+    this.onExportPdf,
+    this.onExportCsv,
   });
 
   final List<ExpenseModel> expenses;
@@ -24,6 +26,8 @@ class BudgetScreen extends StatelessWidget {
   final Map<String, String> memberNames;
   final VoidCallback? onAddExpense;
   final void Function(Settlement settlement)? onRecordPayment;
+  final VoidCallback? onExportPdf;
+  final VoidCallback? onExportCsv;
 
   String _currencySymbol(String code) => switch (code) {
     'USD' || 'CAD' || 'AUD' => '\$',
@@ -49,6 +53,36 @@ class BudgetScreen extends StatelessWidget {
         title: const Text('Budget'),
         backgroundColor: AppColors.cream,
         elevation: 0,
+        actions: [
+          if (onExportPdf != null || onExportCsv != null)
+            PopupMenuButton<String>(
+              key: const Key('budget.export.menu'),
+              icon: const Icon(Icons.ios_share),
+              tooltip: 'Export',
+              onSelected: (value) {
+                switch (value) {
+                  case 'pdf':
+                    onExportPdf?.call();
+                  case 'csv':
+                    onExportCsv?.call();
+                }
+              },
+              itemBuilder: (_) => [
+                if (onExportPdf != null)
+                  const PopupMenuItem(
+                    key: Key('budget.export.pdf'),
+                    value: 'pdf',
+                    child: Text('Export PDF'),
+                  ),
+                if (onExportCsv != null)
+                  const PopupMenuItem(
+                    key: Key('budget.export.csv'),
+                    value: 'csv',
+                    child: Text('Export CSV'),
+                  ),
+              ],
+            ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
