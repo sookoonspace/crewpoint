@@ -1,0 +1,3 @@
+tags:
+  screenshots:
+    skip: "Run with `flutter test --tags screenshots --update-goldens` (or `scripts/regenerate-screenshots.sh`) to (re)generate the placeholder screenshot PNGs in screenshots/."

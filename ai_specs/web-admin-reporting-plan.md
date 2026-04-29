@@ -123,25 +123,27 @@ Desktop/web parity for CrewPoint + repo polish. Thin slice first (responsive she
 ### Phase 6: Apple sign-in + screenshots + final docs
 
 - **Goal**: Apple sign-in works on web round-trip; placeholder screenshots in repo + README; spec done.
-- [ ] Apple Developer Console: create Services ID `com.sookoonspace.crewpoint.web`; enable Sign in with Apple; Configure → Return URLs `https://crewpoint.sookoon.space/__/auth/handler` + `https://crewpoint.sookoon.space/__/auth/iframe`; primary App ID linked
-- [ ] Apple Developer Console: domain verification — download Apple-issued domain-association content; replace `web/.well-known/apple-developer-domain-association.txt` placeholder; `firebase deploy --only hosting:crewpoint-prod`; verify Apple console "Verified"
-- [ ] Apple Developer Console: generate `.p8` key; Firebase Console → Auth → Sign-in providers → Apple → upload `.p8` + Services ID + Team ID; **do not commit `.p8`**
-- [ ] Firebase Auth → Authorized Domains: add `crewpoint.sookoon.space` (keep `crewpoint-prod.firebaseapp.com`)
-- [ ] `lib/app/features/auth/data/firebase_auth_service.dart` — extend `_mapFirebaseError` with `auth/popup-blocked`, `auth/popup-closed-by-user`, `auth/cancelled-popup-request`
-- [ ] `pubspec.yaml` — audit `sign_in_with_apple`; remove if unused (grep across `lib/`)
-- [ ] `lib/app/features/auth/presentation/auth_gate_screen.dart` — show Apple sign-in tile on web (`kIsWeb` toggle if not already)
-- [ ] TDD: `_mapFirebaseError('auth/popup-blocked')` returns user-friendly "Please allow pop-ups…" string
-- [ ] TDD: `_mapFirebaseError('auth/cancelled-popup-request')` returns "Sign-in cancelled" (or equivalent)
-- [ ] Widget test: `_AuthGateScreen` renders Apple tile on web target only
-- [ ] `test/screenshots/dashboard_screenshot_test.dart`, `budget_screenshot_test.dart`, `tasks_screenshot_test.dart`, `chat_screenshot_test.dart` — render at iPhone (375×812) + desktop (1280×800); each wraps the screen in a 1px terracotta-bordered Container with overlay "PLACEHOLDER — replace before public launch"; **all tagged `@Tags(['screenshots'])`** so default `flutter test` skips them
-- [ ] `scripts/regenerate-screenshots.sh` — `flutter test --update-goldens --tags screenshots test/screenshots/`
-- [ ] `screenshots/` — committed PNGs produced by the regen script
-- [ ] `README.md` — `## Screenshots` section embeds the four PNGs via relative paths
-- [ ] `docs/web-hosting-guide.md` — finalize Apple section: Services ID setup, domain verification, `.p8` upload, post-deploy `curl … | grep PLACEHOLDER` guard
-- [ ] `ai_specs/todo.md` — remove "Web platform support (CORS, FCM web push)"; add follow-ups (FCM web push, RTL audit, rules emulator harness, `authDomain` white-label)
-- [ ] Manual smoke: incognito → `https://crewpoint.sookoon.space` → "Sign in with Apple" → Apple popup → returns to dashboard; verify `users/{uid}` doc created
-- [ ] Manual smoke: `curl -fsSL https://crewpoint.sookoon.space/.well-known/apple-developer-domain-association.txt | grep -q PLACEHOLDER` → fails (placeholder gone)
-- [ ] Verify: `flutter analyze` && `flutter test` && `cd functions && npm run build && cd ..`
+- **Gate**: prod hosting must resolve `https://crewpoint.sookoon.space` AND `https://sookoon.space/crewpoint/privacy/` must be live (Apple Services ID requires a public privacy URL). See `docs/dev-first-rollout-checklist.md`.
+- [ ] Apple Developer Console: create Services ID `com.sookoonspace.crewpoint.web`; enable Sign in with Apple; Configure → Return URLs `https://crewpoint.sookoon.space/__/auth/handler` + `https://crewpoint.sookoon.space/__/auth/iframe`; primary App ID linked — **manual user step**
+- [ ] Apple Developer Console: domain verification — download Apple-issued domain-association content; replace `web/.well-known/apple-developer-domain-association.txt` placeholder; `firebase deploy --only hosting:crewpoint-prod`; verify Apple console "Verified" — **manual user step**
+- [ ] Apple Developer Console: generate `.p8` key; Firebase Console → Auth → Sign-in providers → Apple → upload `.p8` + Services ID + Team ID; **do not commit `.p8`** — **manual user step**
+- [ ] Firebase Auth → Authorized Domains: add `crewpoint.sookoon.space` (keep `crewpoint-prod.firebaseapp.com`) — **manual user step**
+- [x] `lib/app/features/auth/data/firebase_auth_error_messages.dart` — extracted `firebaseAuthErrorMessage()` top-level pure helper; added mappings for `popup-blocked`, `popup-closed-by-user`, and `cancelled-popup-request`. `firebase_auth_service.dart` now delegates to it.
+- [x] `pubspec.yaml` — removed unused `sign_in_with_apple` dep (grep across `lib/` returned zero hits; per the spec review, `firebase_auth`'s `signInWithProvider(AppleAuthProvider)` already drives both iOS and web)
+- [x] `auth_gate_screen.dart` / `social_auth_buttons.dart` — Apple sign-in tile already renders unconditionally; no `kIsWeb` toggle needed (the same `signInWithProvider(AppleAuthProvider)` works on iOS, Android, and web). Plan task is satisfied as-is.
+- [x] TDD: `firebaseAuthErrorMessage('popup-blocked')` returns the "Pop-ups are blocked - please allow pop-ups…" string
+- [x] TDD: `firebaseAuthErrorMessage('cancelled-popup-request')` and `'popup-closed-by-user'` both return the "Sign-in cancelled." string
+- [x] Widget test: `social_auth_buttons_test.dart` — Apple + Google tiles render unconditionally; tapping Apple invokes `authProvider.signInWithApple()`
+- [x] `test/screenshots/{dashboard,budget,tasks,chat}_screenshot_test.dart` — render at iPhone (375×812) + desktop (1280×800); each wraps a placeholder body in a 1-px terracotta-bordered Container with the "PLACEHOLDER - replace before public launch" overlay; all tagged `@Tags(['screenshots'])`. Shared `_screenshot_helpers.dart` handles the frame and goldens path.
+- [x] `dart_test.yaml` — skips the `screenshots` tag by default with a hint pointing at the regen script; `flutter test` reports them as skipped suites and CI's grep guard never flags them
+- [x] `scripts/regenerate-screenshots.sh` — runs `flutter test --tags screenshots --run-skipped --update-goldens test/screenshots/` (the `--run-skipped` flag overrides the `dart_test.yaml` skip; without it the tagged tests stay quiet)
+- [x] `screenshots/` — 8 committed placeholder PNGs (4 screens × mobile + desktop), each carrying the terracotta border + overlay
+- [x] `README.md` — `## Screenshots` section now embeds the 8 PNGs via a small mobile/desktop table; default `flutter test` skip behavior documented inline
+- [x] `docs/web-hosting-guide.md` — Apple section already finalized in Phase 4 (Stage 7 covers Services ID setup, domain verification, `.p8` upload, post-deploy `curl … | grep PLACEHOLDER` guard); cross-linked from the dev-first rollout checklist
+- [x] `ai_specs/todo.md` — removed "Web platform support (CORS, FCM web push)"; added follow-ups for FCM web push, RTL audit on web, `authDomain` white-label (V2), and real receipt thumbnails in expense PDFs
+- [ ] Manual smoke: incognito → `https://crewpoint.sookoon.space` → "Sign in with Apple" → Apple popup → returns to dashboard; verify `users/{uid}` doc created — **manual user step (gated on Apple Services ID setup)**
+- [ ] Manual smoke: `curl -fsSL https://crewpoint.sookoon.space/.well-known/apple-developer-domain-association.txt | grep -q PLACEHOLDER` → fails (placeholder gone) — **manual user step (gated on Apple domain verification)**
+- [x] Verify: `flutter analyze` clean; `flutter test` 165 pass + 4 screenshot suites skipped; `cd functions && npm run build` clean
 
 ## Risks / Out of scope
 

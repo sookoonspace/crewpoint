@@ -27,9 +27,12 @@ Tracks ideas and partial implementations explicitly out of V1 scope. Promote int
 
 ## Sync / Platform
 - Full offline-first last-write-wins sync engine for events / tasks / expenses
-- Web platform support (CORS, FCM web push)
+- FCM web push (web platform support landed in `web-admin-reporting-spec.md`; FCM web push remains)
 - Background message archival job
 - Refactor `EventRepository` to Firestore-stream + Drift-mirror (currently Drift-only — write path doesn't reach Firestore for events)
+- RTL audit on web (Material's NavigationRail handles RTL natively; verify the rest of the responsive shell + Budget / Tasks / Chat behave correctly under `Directionality.rtl`)
+- White-label `authDomain` from `crewpoint-prod.firebaseapp.com` to `crewpoint.sookoon.space` (V2; OAuth popup currently shows the firebaseapp.com hostname — see `docs/web-hosting-guide.md` Stage 6 for the upgrade path)
+- Real receipt thumbnails embedded in expense PDFs (the `receiptLoader` parameter is plumbed; `EventBudgetPage` just passes `null` today — wire an `http`-based loader when receipt embedding becomes a priority)
 
 ## Test Infrastructure
 - Firebase emulator harness (`functions/test/`) for Cloud Function integration tests + `firestore.rules` access-matrix tests (deferred from Phase 1 of tasks-budget-chat plan)
