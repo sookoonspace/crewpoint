@@ -28,19 +28,21 @@ Desktop/web parity for CrewPoint + repo polish. Thin slice first (responsive she
 ### Phase 1: Responsive shell + dev-hosting smoke (vertical slice)
 
 - **Goal**: desktop user opens dev URL, sees side rail at ≥720, bar at <720, branch state survives resize.
-- [ ] `lib/app/core/widgets/responsive_shell.dart` — single `Scaffold` with `navigationShell` body; rail vs bar siblings swap by width via `LayoutBuilder` (≥720 = `NavigationRail` extended, <720 = `NavigationBar`); leading hero + trailing Sign out on rail; web-only `ConstrainedBox(maxWidth: 1280)` body wrap
-- [ ] `lib/app/core/router/app_router.dart` — swap `AppShell` → `ResponsiveShell` in `StatefulShellRoute.indexedStack` builder
-- [ ] `firebase.json` — add `hosting` array with one entry for `crewpoint-dev` target only (predeploy `flutter build web --release --dart-define=FLAVOR=dev`, SPA rewrite, cache headers); leave prod/stg for Phase 4
-- [ ] `.firebaserc` — create with `projects.default = crewpoint-dev`, `targets.crewpoint-dev.hosting.crewpoint-dev = ["crewpoint-dev-web"]`
-- [ ] Re-run `flutterfire configure --project=crewpoint-dev` so `firebase.json`'s Dart map re-registers web (don't hand-edit `firebase_options_dev.dart`)
-- [ ] TDD: `ResponsiveShell` renders `NavigationBar` at 600×800
-- [ ] TDD: `ResponsiveShell` renders `NavigationRail` at 800×600 and 1280×800
-- [ ] TDD: branch index round-trips when width crosses 720 mid-test (pumped with stub `StatefulNavigationShell`)
-- [ ] TDD: `ScrollController` offset on the active branch survives a resize across 720 (proves shell isn't re-mounted)
-- [ ] Robot journey: `test/journeys/web_shell_journey_test.dart` — 1280×800 → tap `Key('shell.rail.budget')` → assert `BudgetScreen` on-screen → resize 600×800 → assert `Key('shell.bar.budget')` active
-- [ ] Selectors: `Key('shell.rail.{dashboard,tasks,chat,budget,profile}')`, `Key('shell.bar.{dashboard,tasks,chat,budget,profile}')`, `Key('shell.rail.signOut')`
-- [ ] Manual smoke: `flutter build web --release --dart-define=FLAVOR=dev && firebase deploy --only hosting:crewpoint-dev`; open the Firebase-default URL (`crewpoint-dev.web.app` or default) in Chrome at >720 width, confirm rail
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `lib/app/core/widgets/responsive_shell.dart` — single `Scaffold` with `navigationShell` body; rail vs bar siblings swap by width via `LayoutBuilder` (≥720 = `NavigationRail` extended, <720 = `NavigationBar`); leading hero + trailing Sign out on rail; web-only `ConstrainedBox(maxWidth: 1280)` body wrap
+  - Note: hero/wordmark + body `ConstrainedBox` deferred to a polish pass — V1 ships with `extended: true` rail labels and a sign-out `IconButton` in the trailing slot. Body-width clamp not needed in Phase 1 (no widescreen UX bugs reported); revisit if reading lengths feel stretched after Stage D deploy.
+- [x] `lib/app/core/router/app_router.dart` — swap `AppShell` → `ResponsiveShell` in `StatefulShellRoute.indexedStack` builder; old `app_shell.dart` deleted
+- [x] `firebase.json` — add `hosting` array with one entry for `crewpoint-dev` target only (predeploy `flutter build web --release --dart-define=FLAVOR=dev`, SPA rewrite, cache headers); leave prod/stg for Phase 4
+- [x] `.firebaserc` — create with `projects.default = crewpoint-dev`, `targets.crewpoint-dev.hosting.crewpoint-dev = ["crewpoint-dev"]`
+- [ ] Re-run `flutterfire configure --project=crewpoint-dev` so `firebase.json`'s Dart map re-registers web (don't hand-edit `firebase_options_dev.dart`) — **manual user step (interactive auth required)**
+- [x] TDD: `ResponsiveShell` renders `NavigationBar` at 600×800
+- [x] TDD: `ResponsiveShell` renders `NavigationRail` at 800×600 and 1280×800
+- [x] TDD: branch index round-trips when width crosses 720 mid-test (pumped with stub `StatefulNavigationShell`)
+  - Implemented as: `currentIndex` propagates to both bar and rail across breakpoint (`StatefulNavigationShell` not constructible standalone; the prop-driven shell preserves the same invariant)
+- [x] TDD: `ScrollController` offset on the active branch survives a resize across 720 (proves shell isn't re-mounted) — required adding a stable `ValueKey('shell.body')` on the body-slot `Expanded` so its `Element` survives the rail siblings being inserted/removed alongside it
+- [x] Robot journey: `test/journeys/web_shell_journey_test.dart` — 1280×800 → tap `Key('shell.rail.budget')` → assert `Budget branch` on-screen → resize 600×800 → assert `NavigationBar` `selectedIndex == 3` (uses an `_ShellDriver` mirroring `StatefulShellRoute.indexedStack`'s `IndexedStack` body without invoking go_router/Firebase)
+- [x] Selectors: `Key('shell.rail.{dashboard,tasks,chat,budget,profile}')`, `Key('shell.bar.{dashboard,tasks,chat,budget,profile}')`, `Key('shell.rail.signOut')`
+- [ ] Manual smoke: `flutter build web --release --dart-define=FLAVOR=dev && firebase deploy --only hosting:crewpoint-dev`; open the Firebase-default URL (`crewpoint-dev.web.app` or default) in Chrome at >720 width, confirm rail — **manual user step (requires Firebase Hosting site provisioned + `firebase target:apply hosting crewpoint-dev <site-name>` first)**
+- [x] Verify: `flutter analyze` && `flutter test` (138 tests pass; 0 analyzer issues)
 
 ### Phase 2: Repo polish + CI
 

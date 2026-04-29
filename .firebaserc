@@ -1,0 +1,17 @@
+{
+  "projects": {
+    "default": "crewpoint-dev",
+    "dev": "crewpoint-dev",
+    "stg": "crewpoint-stg",
+    "prod": "crewpoint-prod"
+  },
+  "targets": {
+    "crewpoint-dev": {
+      "hosting": {
+        "crewpoint-dev": [
+          "crewpoint-dev"
+        ]
+      }
+    }
+  }
+}
