@@ -47,17 +47,17 @@ Desktop/web parity for CrewPoint + repo polish. Thin slice first (responsive she
 ### Phase 2: Repo polish + CI
 
 - **Goal**: LICENSE/CONTRIBUTING/CI green; mobile-feature PRs gated; web-build only when relevant
-- [ ] `LICENSE` — MIT, copyright `Sookoon Space`, year `2026`
-- [ ] `CONTRIBUTING.md` — branching, conventional commits, test/analyze gates, links to `ai_specs/setup-guide.md`, `docs/cloud-functions-guide.md`, future `docs/web-hosting-guide.md`
-- [ ] `.github/PULL_REQUEST_TEMPLATE.md` — Summary / Changes / Testing / Screenshots / Checklist
-- [ ] `.github/workflows/flutter.yml` — checkout, Flutter `stable`, pub-cache cache, `flutter pub get`, `dart run build_runner build --delete-conflicting-outputs`, `flutter analyze`, `flutter test` (no web build); job `flutter`
-- [ ] `.github/workflows/web-build.yml` — `paths: lib/**, web/**, pubspec.yaml, firebase.json`; checkout, Flutter stable, `flutter build web --release --dart-define=FLAVOR=dev`; job `web-build`
-- [ ] `.github/workflows/functions.yml` — `paths: functions/**, firebase.json`; Node 22, `npm ci && npm run build`; job `functions`
-- [ ] `.github/workflows/release-drafter.yml` + `.github/release-drafter.yml` — categories Features/Fixes/Docs/Chores/Breaking; semver auto-resolver
-- [ ] `CHANGELOG.md` — Keep-a-Changelog; backfill prior tasks-budget-chat phases under `[Unreleased]`
-- [ ] `README.md` — add badges row (Flutter CI, Web Build CI, Functions CI, License-MIT) under title; placeholder for `## Screenshots` section (filled in Phase 6)
-- [ ] Guard: `grep -rn "Firebase.initializeApp\|FirebaseService.initialize" test/` returns empty (CI invariant)
-- [ ] Verify: open a smoke PR; confirm `flutter`, `web-build` (if paths trigger), `functions` workflows run green
+- [x] `LICENSE` — MIT, copyright `Sookoon Space`, year `2026`
+- [x] `CONTRIBUTING.md` — branching, conventional commits, test/analyze gates, links to `ai_specs/setup-guide.md`, `docs/cloud-functions-guide.md`, future `docs/web-hosting-guide.md`
+- [x] `.github/PULL_REQUEST_TEMPLATE.md` — Summary / Changes / Testing / Screenshots / Checklist
+- [x] `.github/workflows/flutter.yml` — checkout, Flutter `stable`, pub-cache cache, `flutter pub get`, `dart run build_runner build --delete-conflicting-outputs`, `flutter analyze`, `flutter test` (no web build); job `flutter`. Inline grep guard that fails the build if any test references `Firebase.initializeApp` or `FirebaseService.initialize`.
+- [x] `.github/workflows/web-build.yml` — `paths: lib/**, web/**, pubspec.yaml, pubspec.lock, firebase.json`; checkout, Flutter stable, `flutter build web --release --dart-define=FLAVOR=dev`; job `web-build`
+- [x] `.github/workflows/functions.yml` — `paths: functions/**, firebase.json`; Node 22, `npm ci && npm run build`; job `functions`
+- [x] `.github/workflows/release-drafter.yml` + `.github/release-drafter.yml` — categories Features/Fixes/Docs/Chores/Breaking; semver auto-resolver
+- [x] `CHANGELOG.md` — Keep-a-Changelog; backfilled prior milestones (tasks/budget/chat phases through Phase 9, plus pre-tasks foundations) and current `[Unreleased]` shape
+- [x] `README.md` — added badges row (Flutter CI, Web Build CI, Functions CI, License-MIT) below title; `## Screenshots` placeholder + `## Contributing` + `## License` sections (Phase 6 fills the screenshot images)
+- [x] Guard: `grep -rn "Firebase.initializeApp\|FirebaseService.initialize" test/` returns empty (CI invariant) — passes today; enforced by `flutter.yml` step "Verify tests do not initialize Firebase"
+- [ ] Verify: open a smoke PR; confirm `flutter`, `web-build` (if paths trigger), `functions` workflows run green — **manual user step (requires push to GitHub remote)**
 
 ### Phase 3: PDF + CSV reporting
 

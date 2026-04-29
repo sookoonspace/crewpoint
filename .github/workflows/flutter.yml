@@ -1,0 +1,57 @@
+name: Flutter
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: flutter-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  flutter:
+    name: flutter
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Show Flutter / Dart versions
+        run: flutter --version
+
+      - name: Cache pub-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run build_runner
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Verify tests do not initialize Firebase
+        run: |
+          if grep -rn "Firebase\.initializeApp\|FirebaseService\.initialize" test/; then
+            echo "::error::Tests must not call Firebase.initializeApp() or FirebaseService.initialize(). Use Riverpod overrides on the IAuthService / IUserRepository / IFcmGateway seams instead."
+            exit 1
+          fi
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
