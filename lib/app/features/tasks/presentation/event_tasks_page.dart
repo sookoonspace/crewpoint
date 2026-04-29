@@ -3,11 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
-import 'package:crewpoint_app/app/core/services/file_export_service.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
-import 'package:crewpoint_app/app/features/tasks/data/task_pdf_builder.dart';
+import 'package:crewpoint_app/app/features/tasks/data/task_export_pipeline.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/create_task_screen.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/task_list_screen.dart';
@@ -86,23 +85,12 @@ class _EventTasksPageState extends ConsumerState<EventTasksPage> {
     List<TaskModel> tasks,
     Map<String, String> memberNames,
   ) async {
-    final exporter = ref.read(fileExporterProvider);
-    final filename = buildExportFilename(
-      eventTitle: widget.event.title,
-      kind: 'tasks',
-      extension: 'pdf',
-      date: DateTime.now(),
-    );
     try {
-      final bytes = await buildTaskReport(
+      await runTaskPdfExport(
         event: widget.event,
         tasks: tasks,
         memberNames: memberNames,
-      );
-      await exporter.share(
-        bytes: bytes,
-        filename: filename,
-        mimeType: 'application/pdf',
+        exporter: ref.read(fileExporterProvider),
       );
     } catch (_) {
       if (!mounted) return;

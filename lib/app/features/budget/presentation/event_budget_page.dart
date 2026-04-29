@@ -4,11 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/services/app_lifecycle_source.dart';
-import 'package:crewpoint_app/app/core/services/file_export_service.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/budget/application/pending_settlement_notifier.dart';
-import 'package:crewpoint_app/app/features/budget/data/expense_csv_builder.dart';
-import 'package:crewpoint_app/app/features/budget/data/expense_pdf_builder.dart';
+import 'package:crewpoint_app/app/features/budget/data/expense_export_pipeline.dart';
 import 'package:crewpoint_app/app/features/budget/data/pay_link_builder.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
@@ -192,45 +190,17 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
   Future<void> _runExport({
     required List<ExpenseModel> expenses,
     required Map<String, String> memberNames,
-    required String kind,
+    required ExpenseExportKind kind,
   }) async {
-    final exporter = ref.read(fileExporterProvider);
-    final filename = buildExportFilename(
-      eventTitle: widget.event.title,
-      kind: 'expenses',
-      extension: kind,
-      date: DateTime.now(),
-    );
     try {
-      if (kind == 'pdf') {
-        final ledger = BalanceLedger.calculate(
-          expenses: expenses,
-          memberIds: widget.event.memberIds,
-        );
-        final bytes = await buildExpenseReport(
-          event: widget.event,
-          expenses: expenses,
-          memberNames: memberNames,
-          ledger: ledger,
-        );
-        await exporter.share(
-          bytes: bytes,
-          filename: filename,
-          mimeType: 'application/pdf',
-        );
-      } else {
-        final csv = buildExpenseCsv(
-          event: widget.event,
-          expenses: expenses,
-          memberNames: memberNames,
-        );
-        await exporter.share(
-          bytes: Uint8List.fromList(csv.codeUnits),
-          filename: filename,
-          mimeType: 'text/csv',
-        );
-      }
-    } catch (e) {
+      await runExpenseExport(
+        event: widget.event,
+        expenses: expenses,
+        memberNames: memberNames,
+        exporter: ref.read(fileExporterProvider),
+        kind: kind,
+      );
+    } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -321,12 +291,12 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
           onExportPdf: () => _runExport(
             expenses: expenses,
             memberNames: memberNames,
-            kind: 'pdf',
+            kind: ExpenseExportKind.pdf,
           ),
           onExportCsv: () => _runExport(
             expenses: expenses,
             memberNames: memberNames,
-            kind: 'csv',
+            kind: ExpenseExportKind.csv,
           ),
           onAddExpense: () => ExpenseModal.show(
             context: context,

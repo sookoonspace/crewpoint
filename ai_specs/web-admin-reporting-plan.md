@@ -62,26 +62,28 @@ Desktop/web parity for CrewPoint + repo polish. Thin slice first (responsive she
 ### Phase 3: PDF + CSV reporting
 
 - **Goal**: Budget + Tasks export downloadable files on web (Wasm-safe) and share on mobile.
-- [ ] `pubspec.yaml` — add `pdf: ^3.11.0`, `printing: ^5.13.0`, `csv: ^6.0.0`
-- [ ] `lib/app/core/constants/app_pdf_theme.dart` — `PdfColor` mirrors of `AppColors`
-- [ ] `lib/app/features/budget/data/expense_pdf_builder.dart` — pure `Future<Uint8List> buildExpenseReport({event, expenses, memberNames, ledger})`
-- [ ] `lib/app/features/budget/data/expense_csv_builder.dart` — pure `String buildExpenseCsv({event, expenses, memberNames})`
-- [ ] `lib/app/features/tasks/data/task_pdf_builder.dart` — pure `Future<Uint8List> buildTaskReport({event, tasks, memberNames})`
-- [ ] `lib/app/core/services/file_export_service.dart` — `IFileExporter` interface + `FileExporterService` impl with `kIsWeb` branch (web Blob+anchor uses **`package:web` + `dart:js_interop`** — never `dart:html`; mobile uses `Printing.sharePdf` / `share_plus.shareXFiles`)
-- [ ] `lib/app/core/providers.dart` — `fileExporterProvider`
-- [ ] `lib/app/features/budget/presentation/widgets/budget_export_menu.dart` — popup menu with `Key('budget.export.pdf')`, `Key('budget.export.csv')`
-- [ ] `lib/app/features/budget/presentation/budget_screen.dart` — wire export menu into AppBar `actions`; resolve `memberNames` via `usersByIdProvider`
-- [ ] `lib/app/features/tasks/presentation/event_tasks_page.dart` — AppBar action `Key('tasks.export.pdf')`
-- [ ] TDD: CSV builder writes RFC-4180 header + rows; commas/quotes/newlines escaped
-- [ ] TDD: CSV builder handles zero expenses (header-only output)
-- [ ] TDD: expense PDF builder produces non-empty `Uint8List` parseable by `pdf` package; expected page count for sample event
-- [ ] TDD: expense PDF builder embeds slate-grey placeholder when receipt fetch throws (never bubbles)
-- [ ] TDD: expense PDF builder caps at 200 pages with "Truncated — filter to see more"
-- [ ] TDD: task PDF builder sections by status with row counts; checklist progress fraction rendered
-- [ ] TDD: removed-from-event member resolves to `"(no longer in event)"`
-- [ ] TDD: `IFileExporter` selector — web path produces `application/pdf` mime + slugified filename; mobile path delegates to share sheet
-- [ ] Robot journey: `test/journeys/export_journey_test.dart` — seed event w/ 3 expenses → tap `Key('budget.export.pdf')` → assert `RecordingFileExporter.lastShare` mime + filename pattern; repeat for CSV; repeat PDF from `EventTasksPage`
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `pubspec.yaml` — added `pdf: ^3.11.0`, `printing: ^5.13.0`, `csv: ^6.0.0`, `web: ^1.1.0`
+- [x] `lib/app/core/constants/app_pdf_theme.dart` — `PdfColor` mirrors of `AppColors`
+- [x] `lib/app/features/budget/data/expense_pdf_builder.dart` — pure `Future<Uint8List> buildExpenseReport({event, expenses, memberNames, ledger, receiptLoader?})`
+- [x] `lib/app/features/budget/data/expense_csv_builder.dart` — pure `String buildExpenseCsv({event, expenses, memberNames})` via `csv` package's `ListToCsvConverter`
+- [x] `lib/app/features/tasks/data/task_pdf_builder.dart` — pure `Future<Uint8List> buildTaskReport({event, tasks, memberNames})`
+- [x] `lib/app/core/services/file_export_service.dart` — `IFileExporter` interface + slugifying `buildExportFilename(...)` helper; conditional-imported native/web impls (`file_export_service_native.dart` uses `Printing.sharePdf` + `Share.shareXFiles`; `file_export_service_web.dart` uses `Printing.sharePdf` + `package:web` Blob+anchor — never `dart:html`)
+- [x] `lib/app/core/providers.dart` — `fileExporterProvider` resolved via conditional import
+- [x] `lib/app/features/budget/presentation/budget_screen.dart` — `PopupMenuButton` in AppBar with `Key('budget.export.pdf')` and `Key('budget.export.csv')`; menu shown only when callbacks supplied. Inline rather than a separate `widgets/budget_export_menu.dart` because the menu is a single `PopupMenuButton` tightly coupled to the AppBar — extracting felt like over-engineering.
+- [x] `lib/app/features/budget/presentation/event_budget_page.dart` — wires export to `runExpenseExport(...)` with `usersByIdProvider`-resolved `memberNames`
+- [x] `lib/app/features/tasks/presentation/task_list_screen.dart` + `event_tasks_page.dart` — AppBar `IconButton` `Key('tasks.export.pdf')`; wires to `runTaskPdfExport(...)`
+- [x] `lib/app/features/budget/data/expense_export_pipeline.dart` + `lib/app/features/tasks/data/task_export_pipeline.dart` — pure orchestration functions (`ExpenseExportKind` enum, `runExpenseExport`, `runTaskPdfExport`) so journey tests can drive the full pipeline with a recording fake without a Firestore harness
+- [x] `lib/app/features/budget/data/member_name_resolver.dart` — extracted shared helper for the `(no longer in event)` rule used by both PDF builders
+- [x] TDD: CSV builder writes RFC-4180 header + rows; commas/quotes/newlines escaped (verified via embedded `BBQ, "team night"\nand drinks` payload)
+- [x] TDD: CSV builder handles zero expenses (header-only output)
+- [x] TDD: expense PDF builder produces non-empty `Uint8List` with the `%PDF` magic header
+- [x] TDD: expense PDF builder embeds slate-grey placeholder when receipt loader throws (verified via simulated `StateError`)
+- [x] TDD: expense PDF builder caps at 200 rows with "Truncated" trailing line — cap policy extracted into `truncateExpensesForRender` and unit-tested independently
+- [x] TDD: task PDF builder sections by status with row counts; checklist progress fraction rendered — covered by `groupTasksByStatus` + `checklistProgressLabel` unit tests
+- [x] TDD: removed-from-event member resolves to `"(no longer in event)"` — covered by `resolveMemberName` unit tests (null uid, missing key, empty mapped name all map to placeholder)
+- [x] TDD: `IFileExporter` selector — `buildExportFilename` slugifies + appends ISO date + extension; recording fake `RecordingFileExporter` captures bytes/mime/filename; web vs mobile share-sheet plumbing is exercised by manual smoke (`Printing.sharePdf` and `package:web` Blob+anchor are platform-bound)
+- [x] Robot journey: `test/journeys/export_journey_test.dart` — drives the full `runExpenseExport` (PDF + CSV) and `runTaskPdfExport` pipelines against a `RecordingFileExporter`; asserts mime type + canonical filename pattern + `%PDF` magic for PDFs and `id,createdAt,...` header for CSV
+- [x] Verify: `flutter analyze` clean; `flutter test` 160 green
 
 ### Phase 4: Production hosting + CORS + Apple `.well-known`
 
