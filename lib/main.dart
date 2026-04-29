@@ -39,8 +39,15 @@ class _MyAppState extends ConsumerState<MyApp> {
     final router = createRouter(
       isOnboardingComplete: isOnboardingComplete,
       isAuthenticated: isAuthenticated,
-      onRouteChanged: (location) =>
-          ref.read(currentRouteProvider.notifier).set(location),
+      // GoRouter's redirect callback fires synchronously during the
+      // widget tree's build phase; Riverpod 3 forbids mutating a
+      // provider mid-build. Defer the set() onto the next microtask so
+      // currentRouteProvider updates after the frame settles.
+      onRouteChanged: (location) {
+        Future.microtask(
+          () => ref.read(currentRouteProvider.notifier).set(location),
+        );
+      },
     );
 
     return MaterialApp.router(
