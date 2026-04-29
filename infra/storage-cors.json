@@ -1,0 +1,8 @@
+[
+  {
+    "origin": ["https://crewpoint.sookoon.space"],
+    "method": ["GET", "HEAD"],
+    "responseHeader": ["Content-Type", "Cache-Control", "Content-Length"],
+    "maxAgeSeconds": 3600
+  }
+]

@@ -12,6 +12,20 @@
           "crewpoint-dev"
         ]
       }
+    },
+    "crewpoint-stg": {
+      "hosting": {
+        "crewpoint-stg": [
+          "crewpoint-stg"
+        ]
+      }
+    },
+    "crewpoint-prod": {
+      "hosting": {
+        "crewpoint-prod": [
+          "crewpoint-prod"
+        ]
+      }
     }
   },
   "etags": {}

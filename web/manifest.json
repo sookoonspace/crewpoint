@@ -1,12 +1,12 @@
 {
-    "name": "crewpoint_app",
-    "short_name": "crewpoint_app",
+    "name": "CrewPoint",
+    "short_name": "CrewPoint",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "background_color": "#FFFFFF",
+    "theme_color": "#EADDCE",
+    "description": "Collaborative event management — by Sookoon.",
+    "orientation": "any",
     "prefer_related_applications": false,
     "icons": [
         {

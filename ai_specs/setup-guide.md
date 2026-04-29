@@ -546,3 +546,11 @@ firebase functions:log --project crewpoint-dev
 | Function | Trigger | Description |
 |----------|---------|-------------|
 | `deleteUserAccount` | HTTPS Callable | Server-side account deletion: anonymizes shared data, deletes solo events, clears storage, removes Auth user |
+
+## 12. Web hosting
+
+The Flutter web build ships to Firebase Hosting on the **`crewpoint.sookoon.space`** subdomain (prod). The apex `sookoon.space` is owned by the separate Sookoon LLC marketing repo (Next.js + Namecheap) and is **not** changed by anything in this repo.
+
+End-to-end walkthrough — `firebase.json` `hosting` configuration, `firebase target:apply`, custom-domain DNS at Namecheap, Storage CORS, Apple sign-in domain verification, rollback — lives in **[docs/web-hosting-guide.md](../docs/web-hosting-guide.md)**.
+
+For the dev-only loop (no custom domain, fast iteration), see **[docs/firebase-hosting-dev-deploy.md](../docs/firebase-hosting-dev-deploy.md)**.

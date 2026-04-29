@@ -4,6 +4,12 @@ Living document for deploying and managing Firebase Cloud Functions across all 3
 
 **Last updated**: 2026-04-28
 
+> **Sibling concern**: Hosting deploys are independent of Cloud Functions
+> deploys. `firebase deploy --only functions` and `firebase deploy --only hosting:<target>`
+> can run in either order; neither blocks the other. Web hosting setup
+> (custom domain, CORS, Apple sign-in domain verification, rollback) is
+> documented in **[web-hosting-guide.md](./web-hosting-guide.md)**.
+
 ---
 
 ## 1. Prerequisites

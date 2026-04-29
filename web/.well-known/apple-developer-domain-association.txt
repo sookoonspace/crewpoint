@@ -1,0 +1,24 @@
+PLACEHOLDER — replace before public launch.
+
+This file is served at:
+
+    https://crewpoint.sookoon.space/.well-known/apple-developer-domain-association.txt
+
+Apple requires the literal contents downloaded from the Apple Developer
+Console (Certificates, Identifiers & Profiles → Services IDs → CrewPoint
+Web → Configure → Sign in with Apple → Domain verification) to live at
+this exact URL before "Sign in with Apple" round-trips will work.
+
+Replacement procedure (Phase 6 of the web-admin-reporting plan):
+
+  1. In the Apple Developer Console, configure the Services ID
+     `com.sookoonspace.crewpoint.web` and add `crewpoint.sookoon.space`
+     under Domain Verification.
+  2. Apple will provide a downloadable text file. Replace this entire
+     file's contents with that downloaded payload.
+  3. Deploy: `firebase deploy --only hosting:crewpoint-prod`.
+  4. Verify: Apple console will confirm the domain.
+  5. Post-deploy guard:
+       curl -fsSL https://crewpoint.sookoon.space/.well-known/apple-developer-domain-association.txt \
+         | grep -q PLACEHOLDER && echo 'NOT REPLACED — block public launch'
+     The grep should fail (exit 1) once the placeholder is gone.

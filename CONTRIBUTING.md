@@ -29,8 +29,9 @@ person.
    ```
 
 For web hosting setup (Firebase Hosting on `crewpoint.sookoon.space`),
-see **[docs/web-hosting-guide.md](docs/web-hosting-guide.md)** *(forthcoming
-in Phase 4)*.
+see **[docs/web-hosting-guide.md](docs/web-hosting-guide.md)**. For the
+dev-only deploy loop, see
+**[docs/firebase-hosting-dev-deploy.md](docs/firebase-hosting-dev-deploy.md)**.
 
 For Cloud Functions deploy lifecycle, see
 **[docs/cloud-functions-guide.md](docs/cloud-functions-guide.md)**.

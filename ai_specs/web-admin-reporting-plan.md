@@ -88,20 +88,21 @@ Desktop/web parity for CrewPoint + repo polish. Thin slice first (responsive she
 ### Phase 4: Production hosting + CORS + Apple `.well-known`
 
 - **Goal**: `https://crewpoint.sookoon.space` resolves to prod build with valid SSL; Storage CORS narrow to subdomain; Apple domain-verification file in place.
-- [ ] `firebase.json` — extend `hosting` array with `crewpoint-stg`, `crewpoint-prod` entries (each with predeploy `flutter build web --release --dart-define=FLAVOR={flavor}`, SPA rewrite, cache headers `**/*.{js,wasm}` immutable, `index.html` no-cache)
-- [ ] `.firebaserc` — register stg + prod project aliases and hosting targets
-- [ ] Re-run `flutterfire configure --project=crewpoint-stg` and `--project=crewpoint-prod` so `firebase.json` Dart map registers `web` for both flavors (existing `web` blocks in `firebase_options_*.dart` left alone)
-- [ ] `web/manifest.json` — rebrand: `name: "CrewPoint"`, `short_name: "CrewPoint"`, `description: "Collaborative event management — by Sookoon."`, `theme_color` = `AppColors.cream` hex, icons 192/512/maskable
-- [ ] `web/index.html` — title `"CrewPoint"`, fav-tag, `<meta name="apple-mobile-web-app-capable" content="yes">`, drop default scaffold meta lines
-- [ ] `web/.well-known/apple-developer-domain-association.txt` — placeholder + replacement comment (real value added in Phase 6 after Apple Services ID is configured)
-- [ ] `infra/storage-cors.json` — `[{"origin":["https://crewpoint.sookoon.space"],"method":["GET","HEAD"],"responseHeader":["Content-Type","Cache-Control","Content-Length"],"maxAgeSeconds":3600}]`
-- [ ] `scripts/apply-cors.sh` — wrap `gsutil cors set infra/storage-cors.json gs://crewpoint-{flavor}.appspot.com`; idempotent
-- [ ] `docs/web-hosting-guide.md` — Firebase Hosting custom-domain wizard for subdomain; Namecheap CNAME (apex unchanged); SSL provisioning; flavor-aware deploy commands; rollback; CORS apply step; **note**: `authDomain` stays at `crewpoint-prod.firebaseapp.com` for V1 (white-label later requires adding subdomain as Firebase Hosting site first); cross-link to `docs/cloud-functions-guide.md`
-- [ ] `ai_specs/setup-guide.md` — add brief "web setup" pointer to `docs/web-hosting-guide.md`
-- [ ] `docs/cloud-functions-guide.md` — note hosting deploy is sibling concern; cross-link
-- [ ] Manual smoke: `firebase deploy --only hosting:crewpoint-prod` (predeploy auto-builds); open `https://crewpoint.sookoon.space` incognito; confirm SSL valid + side rail renders + apex `https://sookoon.space/` still serves Namecheap site unchanged
-- [ ] Manual smoke: open Budget on a public event with one receipt; browser console shows zero CORS errors
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `firebase.json` — extended `hosting` array with `crewpoint-stg` and `crewpoint-prod` entries (each with flavor-aware predeploy `flutter build web --release --dart-define=FLAVOR={flavor}`, SPA rewrite, cache-immutable on `**/*.{js,wasm}`, no-cache on `/index.html`)
+- [x] `.firebaserc` — registered stg + prod hosting targets alongside the existing dev entry
+- [ ] Re-run `flutterfire configure --project=crewpoint-stg` and `--project=crewpoint-prod` so `firebase.json` Dart map registers `web` for both flavors — **manual user step (interactive auth required); Path A in `docs/flutterfire-reconfigure.md` is the recommended hand-edit alternative**
+- [x] `web/manifest.json` — rebranded: `name: "CrewPoint"`, `short_name: "CrewPoint"`, `description: "Collaborative event management — by Sookoon."`, `theme_color` = `AppColors.cream` hex (`#EADDCE`), `background_color` `#FFFFFF`, `orientation: "any"`, icons 192/512/maskable retained
+- [x] `web/index.html` — title `"CrewPoint"`, description meta updated, favicon retained, added `apple-mobile-web-app-capable` + `apple-mobile-web-app-title` + `apple-mobile-web-app-status-bar-style`, dropped default Flutter scaffold copy
+- [x] `web/.well-known/apple-developer-domain-association.txt` — placeholder + replacement procedure committed (real value lands in Phase 6 after Apple Services ID is configured)
+- [x] `infra/storage-cors.json` — `[{"origin":["https://crewpoint.sookoon.space"],"method":["GET","HEAD"],"responseHeader":[...],"maxAgeSeconds":3600}]`
+- [x] `scripts/apply-cors.sh` — flavor-aware wrapper (`dev|stg|prod|all`) around `gsutil cors set infra/storage-cors.json gs://crewpoint-<flavor>.firebasestorage.app`; idempotent; `chmod +x`'d
+- [x] `docs/web-hosting-guide.md` — full walkthrough: 8 stages from prerequisites through provisioning, target binding, deploy, custom-domain wizard at Firebase, Namecheap CNAME for subdomain (apex untouched), CORS apply, `authDomain` decision (stays at default V1, white-label deferred), Apple sign-in domain verification + post-deploy `curl … grep PLACEHOLDER` guard, rollback. Cross-links to dev-deploy guide, flutterfire-reconfigure, cloud-functions-guide.
+- [x] `ai_specs/setup-guide.md` — added §12 "Web hosting" pointer to `docs/web-hosting-guide.md` and `docs/firebase-hosting-dev-deploy.md`
+- [x] `docs/cloud-functions-guide.md` — top-of-doc note that hosting is a sibling concern; cross-link to `web-hosting-guide.md`
+- [x] `CONTRIBUTING.md` — removed "forthcoming" stamp on the web-hosting-guide pointer; added dev-deploy link
+- [ ] Manual smoke: `firebase deploy --only hosting:crewpoint-prod` (predeploy auto-builds); open `https://crewpoint.sookoon.space` incognito; confirm SSL valid + side rail renders + apex `https://sookoon.space/` still serves Namecheap site unchanged — **manual user step (requires Hosting site provisioned + Namecheap DNS CNAME applied per `web-hosting-guide.md` Stage 4)**
+- [ ] Manual smoke: open Budget on a public event with one receipt; browser console shows zero CORS errors — **manual user step (requires `scripts/apply-cors.sh prod` run first)**
+- [x] Verify: `flutter analyze` clean; `flutter test` 160 green; `flutter build web --release --dart-define=FLAVOR=dev` succeeds locally
 
 ### Phase 5: Marketing microsite (cross-repo PR in `/Users/googoo/Websites/sookoon_space`)
 
