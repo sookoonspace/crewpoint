@@ -53,6 +53,12 @@ dependencies:
   url_launcher: ^6.3.1
   clock: ^1.1.1
 
+  # Reporting (PDF + CSV exports)
+  pdf: ^3.11.0
+  printing: ^5.13.0
+  csv: ^6.0.0
+  web: ^1.1.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
