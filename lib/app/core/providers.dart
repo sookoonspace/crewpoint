@@ -1,9 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart';
+// Conditional import: native (mobile/desktop) uses dart:ffi sqlite3, web
+// uses drift's Wasm backend. Importing the right file at compile time
+// keeps dart:ffi out of the web JS bundle (otherwise sqlite3 FFI bindings
+// fail to compile to JS).
+import 'package:crewpoint_app/app/core/database/connection/native.dart'
+    if (dart.library.html) 'package:crewpoint_app/app/core/database/connection/web.dart';
 import 'package:crewpoint_app/app/core/database/daos/chat_messages_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/expense_splits_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/expenses_dao.dart';
@@ -59,10 +64,17 @@ final onboardingProvider = NotifierProvider<OnboardingNotifier, bool>(
   ),
 );
 
-/// App database (Drift). Uses in-memory for now; swap with native connection
-/// via connection/native.dart when platform-specific init is wired.
+/// App database (Drift).
+///
+/// On mobile/desktop, [openConnection] returns a [LazyDatabase] that
+/// opens a persistent SQLite file at `<docs>/crewpoint.db` (see
+/// `connection/native.dart`). On web, it returns a `WasmDatabase`
+/// wrapper (`connection/web.dart`) — but per the V1 spec the web build
+/// does not actually exercise Drift (data flows through Firestore
+/// directly), so the Wasm path is only triggered if a Drift-backed
+/// provider is read on web.
 final databaseProvider = Provider<AppDatabase>(
-  (_) => AppDatabase(NativeDatabase.memory()),
+  (_) => AppDatabase(openConnection()),
 );
 
 /// Image service (pick, take, upload).
