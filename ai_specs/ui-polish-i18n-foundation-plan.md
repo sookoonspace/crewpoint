@@ -25,14 +25,14 @@ UI hardening pass: branded web favicon, web-friendly auth-gate layout, WCAG-grad
 ### Phase 1: Web brand polish + auth-gate layout
 
 - **Goal**: web tab shows the CrewPoint icon; auth gate buttons + text fields are bounded to a readable column on wide viewports.
-- [ ] `web/favicon.png` — replace with the CrewPoint launcher icon downsized to 32×32 (browsers also accept 16×16; the existing 16×16 is too small for high-DPI tabs). Source from `assets/icons/launcher_icon.png` via `dart run scripts/regenerate_favicon.dart` OR a one-time hand resize — pick whichever ships fastest.
-- [ ] `web/icons/Icon-192.png`, `Icon-512.png`, `Icon-maskable-{192,512}.png` — verify they already use the CrewPoint launcher icon (Phase 4 of web-admin-reporting reused them as-is). Regenerate if any are still default-Flutter.
-- [ ] `web/index.html` — already correct; no change.
-- [ ] `lib/app/features/auth/presentation/auth_gate_screen.dart` — wrap the body's `Column` in `Center > ConstrainedBox(maxWidth: 480)` so buttons + text fields stop at a readable column on web; mobile (narrow widths) is unaffected because `maxWidth` clamps at the viewport width on phones.
-- [ ] TDD: `auth_gate_screen` widget test pumps at desktop width (1280 × 800) and asserts the inner `Column` has a constrained width ≤ 480 px (use `tester.getSize(finder)` on a stable selector).
-- [ ] TDD: same test pumps at iPhone width (375 × 812) and asserts the column fills the viewport (no wasted side gutters on mobile).
-- [ ] Manual smoke (web): `flutter build web --release --dart-define=FLAVOR=dev && firebase deploy --only hosting:crewpoint-dev`; open in Chrome at 1280 width — confirm tab shows the CrewPoint icon and the auth gate isn't stretched. **Manual user step**
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `web/favicon.png` — regenerated from `assets/icons/launcher_icon.png` at 32×32 via `sips` (replaced the 16×16 default-Flutter art).
+- [x] `web/icons/Icon-192.png`, `Icon-512.png`, `Icon-maskable-{192,512}.png` — regenerated from the same launcher source so the manifest icons match the web favicon (the previous files were thin; the regenerated set is 15.5 KB / 49 KB / etc., consistent with the CrewPoint launcher branding).
+- [x] `web/index.html` — already correct; no change.
+- [x] `lib/app/features/auth/presentation/auth_gate_screen.dart` — body's `Column` now lives inside `Center > ConstrainedBox(key: Key('auth.gate.column'), maxWidth: 480)`. Below 480-px viewports the column fills the available width; above it the column centers + clamps so buttons + text fields stop stretching edge-to-edge on web.
+- [x] TDD: `auth_gate_screen_layout_test.dart` pumps at 1280×800 (desktop), asserts `tester.getSize(find.byKey('auth.gate.column')).width <= 480`.
+- [x] TDD: same file pumps at 375×812 (iPhone), asserts the column fills the viewport (`> 300 && < 375`).
+- [ ] Manual smoke (web): `flutter build web --release --dart-define=FLAVOR=dev && firebase deploy --only hosting:crewpoint-dev`; open in Chrome at 1280 width — confirm tab shows the CrewPoint icon and the auth gate isn't stretched. Hard-refresh (`Cmd+Shift+R`) to bust the favicon cache. **Manual user step**
+- [x] Verify: `flutter analyze` clean; `flutter test` 183 pass + 4 screenshot suites skipped
 
 ### Phase 2: Color contrast + typography readability
 

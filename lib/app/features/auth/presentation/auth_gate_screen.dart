@@ -10,19 +10,28 @@ class AuthGateScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return const Scaffold(
+    // 480px clamp: below this width the column fills the viewport
+    // (mobile/tablet portrait); at or above it the column centers and
+    // stops so buttons + text fields don't stretch edge-to-edge on web.
+    return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            spacing: AppSpacing.xl,
-            children: [
-              SizedBox(height: AppSpacing.xxxl),
-              _Header(),
-              SocialAuthButtons(),
-              _Divider(),
-              EmailAuthForm(),
-            ],
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Center(
+            child: ConstrainedBox(
+              key: const Key('auth.gate.column'),
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: const Column(
+                spacing: AppSpacing.xl,
+                children: [
+                  SizedBox(height: AppSpacing.xxxl),
+                  _Header(),
+                  SocialAuthButtons(),
+                  _Divider(),
+                  EmailAuthForm(),
+                ],
+              ),
+            ),
           ),
         ),
       ),
