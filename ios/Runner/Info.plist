@@ -31,6 +31,36 @@
 		<string>venmo</string>
 		<string>cashme</string>
 	</array>
+	<!--
+	  CFBundleURLTypes registers URL schemes the OS will dispatch back to
+	  this app. Required for Firebase Auth's signInWithProvider() OAuth
+	  callback (Continue with Google) which redirects back via the
+	  reversed iOS OAuth client ID. Apple sign-in does NOT need this —
+	  ASAuthorizationController returns through Apple's framework.
+
+	  All three flavors are listed because a single Info.plist serves
+	  every Xcode scheme; only the URL scheme matching the active Firebase
+	  project's iOS OAuth client is exercised at runtime.
+
+	  Source: lib/firebase_options_<flavor>.dart -> iosClientId, reversed
+	  to com.googleusercontent.apps.<base>.
+	-->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<!-- crewpoint-dev -->
+				<string>com.googleusercontent.apps.711822236757-2n9vt2l6mqnutpkk9247ehrjmp2voi6e</string>
+				<!-- crewpoint-stg -->
+				<string>com.googleusercontent.apps.715030987637-0mkbfpdkpn3thoficscmdmapstgi36mu</string>
+				<!-- crewpoint-prod -->
+				<string>com.googleusercontent.apps.394956084700-vk8cbpb88f6cicdlrn3mh1tcr0od698v</string>
+			</array>
+		</dict>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
