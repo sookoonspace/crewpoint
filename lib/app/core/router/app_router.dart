@@ -5,6 +5,7 @@ import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/responsive_shell.dart';
 import 'package:crewpoint_app/app/features/auth/presentation/widgets/email_unverified_banner.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/edit_profile_screen.dart';
+import 'package:crewpoint_app/app/features/profile/presentation/privacy_dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/profile_screen.dart';
 import 'package:crewpoint_app/app/features/auth/presentation/auth_gate_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/create_event_screen.dart';
@@ -27,6 +28,7 @@ abstract final class AppRoutes {
   static const String chat = '/chat';
   static const String budget = '/budget';
   static const String profile = '/profile';
+  static const String privacyDashboard = '/profile/privacy-dashboard';
 }
 
 /// Creates the app router.
@@ -214,6 +216,10 @@ GoRouter createRouter({
                   GoRoute(
                     path: 'edit',
                     builder: (_, _) => const EditProfileScreen(),
+                  ),
+                  GoRoute(
+                    path: 'privacy-dashboard',
+                    builder: (_, _) => const PrivacyDashboardScreen(),
                   ),
                 ],
               ),

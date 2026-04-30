@@ -72,6 +72,13 @@ abstract class AuthStrings {
   String verifyBannerBody(String email);
   String get verifyBannerResend;
   String get verifyBannerRefresh;
+
+  // Auth-gate legal footer
+  String get legalFooterPrefix; // e.g. "By continuing, you agree to our "
+  String get legalFooterTermsLink; // e.g. "Terms"
+  String get legalFooterAnd; // e.g. " and "
+  String get legalFooterPrivacyLink; // e.g. "Privacy Policy"
+  String get legalFooterSuffix; // e.g. "."
 }
 
 abstract class ErrorStrings {
@@ -177,6 +184,21 @@ class _EnglishAuthStrings extends AuthStrings {
 
   @override
   String get verifyBannerRefresh => "I've verified";
+
+  @override
+  String get legalFooterPrefix => 'By continuing, you agree to our ';
+
+  @override
+  String get legalFooterTermsLink => 'Terms';
+
+  @override
+  String get legalFooterAnd => ' and ';
+
+  @override
+  String get legalFooterPrivacyLink => 'Privacy Policy';
+
+  @override
+  String get legalFooterSuffix => '.';
 }
 
 class _EnglishErrorStrings extends ErrorStrings {

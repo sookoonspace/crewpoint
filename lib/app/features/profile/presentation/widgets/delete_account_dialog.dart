@@ -165,13 +165,16 @@ class _WarningStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Verbatim retention clause from docs/legal/privacy-policy.md
+    // (Account deletion section). Keeping the dialog and the policy
+    // in lock-step prevents UI/policy drift; counsel review of either
+    // side requires updating both.
     return const Text(
-      'This action is permanent. Your profile, solo events, '
-      'and local data will be erased.\n\n'
-      'Financials and messages in shared events will be '
-      'anonymized to protect group integrity.\n\n'
-      'If you want specific messages deleted, please remove '
-      'them manually before proceeding.',
+      'Your solo events will be permanently deleted. In shared events, '
+      "your name and account ID will be replaced with 'deleted user' "
+      'so the historical record stays intact for the rest of your group. '
+      'This is irreversible. To request full erasure of an anonymized '
+      'record on a per-event basis, contact support after deletion.',
     );
   }
 }

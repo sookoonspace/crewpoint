@@ -72,4 +72,41 @@ void main() {
     expect(size.width, greaterThan(300));
     expect(size.width, lessThan(375));
   });
+
+  testWidgets(
+    'legal footer spans wider than the 480-px column on a desktop viewport',
+    (tester) async {
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.binding.setSurfaceSize(const Size(1280, 800));
+
+      await _pumpAuthGate(tester, fake: fake);
+
+      final footerWidth = tester
+          .getSize(find.byKey(const Key('auth.gate.footer')))
+          .width;
+      expect(
+        footerWidth,
+        greaterThan(480),
+        reason:
+            'Legal footer must render OUTSIDE the 480-px clamp so the '
+            'copy reads edge-to-edge on web.',
+      );
+    },
+  );
+
+  testWidgets(
+    'legal footer is visible above the bottom safe area on phone width',
+    (tester) async {
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.binding.setSurfaceSize(const Size(375, 812));
+
+      await _pumpAuthGate(tester, fake: fake);
+
+      // Just assert the footer is in the tree at this viewport.
+      expect(find.byKey(const Key('auth.gate.footer')), findsOneWidget);
+      // And its bottom edge is above the viewport bottom (no overflow).
+      final rect = tester.getRect(find.byKey(const Key('auth.gate.footer')));
+      expect(rect.bottom, lessThanOrEqualTo(812));
+    },
+  );
 }

@@ -38,9 +38,10 @@ class ProfileScreen extends ConsumerWidget {
                 _SectionCard(
                   children: [
                     _SettingsTile(
+                      key: const Key('profile.privacyDashboard.tile'),
                       icon: Icons.privacy_tip_outlined,
                       label: 'Privacy Dashboard',
-                      onTap: () {},
+                      onTap: () => context.push(AppRoutes.privacyDashboard),
                     ),
                     const Divider(height: 1, indent: 56),
                     _SettingsTile(
@@ -252,7 +253,12 @@ class _SectionCard extends StatelessWidget {
 }
 
 class _SettingsTile extends StatelessWidget {
-  const _SettingsTile({required this.icon, required this.label, this.onTap});
+  const _SettingsTile({
+    super.key,
+    required this.icon,
+    required this.label,
+    this.onTap,
+  });
 
   final IconData icon;
   final String label;

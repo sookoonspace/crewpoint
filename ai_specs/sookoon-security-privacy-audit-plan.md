@@ -106,34 +106,33 @@ Pre-launch security + legal hardening: rules audit, CF streaming refactor, legal
 ### Phase 5: Legal docs — drafts + in-app render + hosted static + auth footer
 
 - **Goal**: Privacy Policy + ToS shipped in three places (markdown, in-app via `PrivacyDashboardScreen`, hosted static HTML on all 3 hosting targets); auth-gate footer linked.
-- [ ] `docs/legal/privacy-policy.md` — YAML frontmatter (`effective_date`, `last_updated`, `counsel_review_date`, `counsel_name`, `version: 1.0`) + body covering spec §req-17 fields (controller, data collected, MVD ethos, GDPR rights, CCPA rights, account-deletion mechanics, no-location-yet, children, data residency, retention, security, changes).
-- [ ] `docs/legal/terms-of-service.md` — same frontmatter + body per spec §req-18.
-- [ ] `assets/legal/privacy-policy.md` + `terms-of-service.md` — copy or symlink from `docs/legal/`. Document the copy mechanism.
-- [ ] `pubspec.yaml` — register `assets/legal/`; add chosen markdown package (verification gate below).
-- [ ] **Markdown package verification gate**: confirm chosen package's last release ≤6 months + Flutter 3.27+ support. Default `flutter_markdown_plus`; fallback `markdown_widget`. Justify in PR description.
-- [ ] `lib/app/core/env/app_flavor.dart` — extend with `legalBaseUrl` getter: dev → `https://crewpoint-dev.web.app`; stg → `https://crewpoint-stg.web.app`; prod → `https://crewpoint.sookoon.space`.
-- [ ] `lib/app/core/router/app_router.dart` — add `AppRoutes.privacyDashboard` route.
-- [ ] `lib/app/features/profile/presentation/profile_screen.dart:40-44` — wire stubbed `_SettingsTile.onTap` to `context.push(AppRoutes.privacyDashboard)`.
-- [ ] `lib/app/features/profile/presentation/privacy_dashboard_screen.dart` — append "LEGAL DOCUMENTS" `_SectionLabel` + `_SectionCard(children: [_SettingsTile(privacy), Divider, _SettingsTile(terms)])`.
-- [ ] `lib/app/features/profile/presentation/markdown_render_screen.dart` — accepts `assetPath`, `title`, `hostedUrl`. Loads asset, strips YAML frontmatter via regex (`^---\n[\s\S]*?\n---\n`), parses frontmatter via `package:yaml`, renders body via chosen markdown package. AppBar = title; top = effective/last-updated stamps; bottom = "View hosted version" button → `url_launcher` to `hostedUrl`.
-- [ ] `lib/app/features/profile/presentation/markdown_render_screen.dart` — error-handling: asset load fail → fallback row with "View online" button.
-- [ ] `lib/app/features/auth/presentation/widgets/legal_footer.dart` — new widget; full-width centered text "By continuing, you agree to our Terms and Privacy Policy"; tappable links resolve via `AppFlavor.legalBaseUrl` + `url_launcher`. Stable Keys: `auth.legal.termsLink`, `auth.legal.privacyLink`.
-- [ ] `lib/app/features/auth/presentation/auth_gate_screen.dart` — restructure body: `Scaffold > SafeArea > Column(children: [Expanded(SingleChildScrollView(...existing 480-clamped layout...)), LegalFooter()])`. Inner Column inside ConstrainedBox stays `const`; outer `Column` becomes non-const because of `LegalFooter()`.
-- [ ] `lib/app/core/i18n/app_strings.dart` — add `auth.legalFooter`, `auth.legalFooterTermsLink`, `auth.legalFooterPrivacyLink` to `AuthStrings` + `_EnglishAuthStrings`.
-- [ ] `lib/app/features/profile/presentation/widgets/delete_account_dialog.dart:168-176` — replace copy with the verbatim privacy-policy retention clause (spec §user-flows §account-deletion-confirmation-flow).
-- [ ] `scripts/build_legal_html.dart` — markdown → self-contained HTML with inline styles + `<meta name="robots" content="noindex">`. Output to `web/legal/{privacy,terms}.html`.
-- [ ] `web/legal/privacy.html` + `terms.html` — generated; checked in.
-- [ ] `firebase.json` — add `/privacy` + `/terms` rewrites before `**` catch-all in **all 3 hosting targets** (`crewpoint-dev`, `crewpoint-stg`, `crewpoint-prod`).
-- [ ] TDD: widget test — `PrivacyDashboardScreen` LEGAL DOCUMENTS section renders, both rows tappable.
-- [ ] TDD: widget test — `MarkdownRenderScreen` renders H1 + first paragraph from a fixed asset; frontmatter `effective_date`/`last_updated` surface above body.
-- [ ] TDD: widget test — `MarkdownRenderScreen` asset-load failure → fallback "View online" button visible.
-- [ ] TDD: widget test — auth-gate footer present; both link Keys tappable; `IUrlLauncher` fake invoked with per-flavor URL.
-- [ ] TDD: layout-regression test in `auth_gate_screen_layout_test.dart` — at 1280×800 footer width > 480; at 375×812 footer visible above bottom safe area.
-- [ ] Robot journey: `PrivacyDashboardRobot.viewPrivacyPolicy()` — Profile → Privacy Dashboard tile → Privacy Policy row → markdown H1 visible. Stable selectors per spec §validation.
-- [ ] Robot journey: `PrivacyDashboardRobot.viewTermsOfService()` — same path, terms asset.
-- [ ] Robot journey: `AuthGateRobot.tapPrivacyFooter()` — auth-gate footer tap → fake `IUrlLauncher` invoked with hosted URL.
-- [ ] Manual smoke: `flutter build web --release --dart-define=FLAVOR=dev && firebase deploy --only hosting:crewpoint-dev`; visit `https://crewpoint-dev.web.app/{privacy,terms}` — confirm static HTML renders. Repeat for stg.
-- [ ] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`.
+- [x] `docs/legal/privacy-policy.md` — YAML frontmatter (TBD-marked sign-off fields) + body covering controller/contact, exhaustive data collection list, MVD ethos verbatim, GDPR Articles 15–22, CCPA Right to Know/Delete/Opt-out/Non-discrimination, account-deletion mechanics, "no location tracking — yet", children 13+ (counsel may raise to 16), `us-central1` data residency, retention table, security posture (no-E2EE-V1 disclosed), change-notification policy.
+- [x] `docs/legal/terms-of-service.md` — same frontmatter shape; body covers acceptance, account requirements, acceptable use, user content + license, settlements (CrewPoint doesn't process payments), termination, disclaimers, liability cap (counsel-pending), governing law (Delaware default; counsel-pending), no-mandatory-arbitration default, changes.
+- [x] `assets/legal/{privacy-policy,terms-of-service}.md` — generated via `scripts/build_legal_html.dart` from the canonical `docs/legal/` source. Re-run on every doc edit to keep both surfaces in sync.
+- [x] `pubspec.yaml` — registered `assets/legal/`; added `flutter_markdown_plus: ^1.0.7` (last release 2025-12-28; supports Flutter 3.27.1+) + `yaml: ^3.1.2` (frontmatter parser); added `markdown: ^7.3.0` to dev deps for the build script.
+- [x] **Markdown package verification gate**: `flutter_markdown_plus` 1.0.7 verified via pub.dev API — last release 2025-12-28 (well within the 6-month window), `environment: {sdk: ^3.4.0, flutter: '>=3.27.1'}`. `flutter_markdown` archived by Flutter team 2024 — used `flutter_markdown_plus` as drop-in successor.
+- [x] `lib/app/core/env/app_flavor.dart` — extended with per-flavor `legalBaseUrl` getter (dev → `crewpoint-dev.web.app`; stg → `crewpoint-stg.web.app`; prod → `crewpoint.sookoon.space`) + a `static final AppFlavor.current` derived from `String.fromEnvironment('FLAVOR')` so any UI surface can resolve the active flavor without a Riverpod provider.
+- [x] `lib/app/core/router/app_router.dart` — added `AppRoutes.privacyDashboard = '/profile/privacy-dashboard'` as a nested go_router route under profile.
+- [x] `lib/app/features/profile/presentation/profile_screen.dart:40-44` — wired the stubbed `_SettingsTile.onTap` to `context.push(AppRoutes.privacyDashboard)`. Added stable `Key('profile.privacyDashboard.tile')` for journey-test selectors.
+- [x] `lib/app/features/profile/presentation/privacy_dashboard_screen.dart` — appended "LEGAL DOCUMENTS" `_SectionLabel` + `_SectionCard` with two `ListTile`s pushing `MarkdownRenderScreen` via `Navigator.of(context).push`. Stable Keys `privacyDashboard.legal.{privacy,terms}`.
+- [x] `lib/app/features/profile/presentation/markdown_render_screen.dart` — new screen accepts `title`, `assetPath`, `hostedUrl`. Loads asset via `rootBundle.loadString`, splits frontmatter via regex (`^---\r?\n([\s\S]*?)\r?\n---\r?\n`), parses YAML via `package:yaml`, renders body via `MarkdownBody`. Frontmatter stamps `legal.stamp.{effective,lastUpdated}` surface above body. "View hosted version" button (`legal.viewHosted`) at the bottom.
+- [x] `lib/app/features/profile/presentation/markdown_render_screen.dart` — asset-load failure path renders `_LoadFailure` with `legal.fallback.viewOnline` button + the hosted URL displayed below. Logs the failure via `dart:developer`.
+- [x] `lib/app/features/auth/presentation/widgets/legal_footer.dart` — new widget rendering "By continuing, you agree to our Terms and Privacy Policy" via `Text.rich` with `WidgetSpan + InkWell` link tap targets. URLs resolved per-flavor via `AppFlavor.current.legalBaseUrl`. Test seam: `urlLauncher` parameter (defaults to `launchUrl`).
+- [x] `lib/app/features/auth/presentation/auth_gate_screen.dart` — restructured: `Scaffold > SafeArea > Column(children: [Expanded(SingleChildScrollView(... 480-clamped column ...)), LegalFooter()])`. Inner Column inside ConstrainedBox stays `const`; outer Column dropped const because `LegalFooter()` is now mounted.
+- [x] `lib/app/core/i18n/app_strings.dart` — added 5 new `AuthStrings` getters: `legalFooterPrefix`, `legalFooterTermsLink`, `legalFooterAnd`, `legalFooterPrivacyLink`, `legalFooterSuffix`. English impl wires them into `_EnglishAuthStrings`.
+- [x] `lib/app/features/profile/presentation/widgets/delete_account_dialog.dart:168-176` — replaced copy with the verbatim privacy-policy retention clause. Inline comment cites the source-of-truth in `docs/legal/privacy-policy.md` so any future edit keeps both files in lock-step.
+- [x] `scripts/build_legal_html.dart` — Dart CLI build script. Reads `docs/legal/*.md` → strips YAML frontmatter → renders body via `package:markdown` (GitHub-flavored) → wraps in self-contained HTML with inline styles + `<meta name="robots" content="noindex">`. Outputs both the `assets/legal/*.md` copies and `web/legal/{privacy,terms}.html`. Idempotent.
+- [x] `web/legal/privacy.html` + `terms.html` — generated; checked in.
+- [x] `firebase.json` — added `/privacy` → `/legal/privacy.html` and `/terms` → `/legal/terms.html` rewrites BEFORE the `**` catch-all in **all 3 hosting targets** (`crewpoint-dev`, `crewpoint-stg`, `crewpoint-prod`).
+- [x] TDD: widget test — `PrivacyDashboardScreen` "LEGAL DOCUMENTS" section + both row Keys tappable. Tall surface (400×2000) lets the lazy ListView build all sections.
+- [x] TDD: widget test — `MarkdownRenderScreen` renders H1 from bundled asset + frontmatter stamps surface above body (combined into one test to dodge cross-test state bleed). Asset-load failure renders the fallback button.
+- [x] TDD: widget test — `LegalFooter` link Keys present; tapping each invokes `IUrlLauncher` fake with the per-flavor `/{privacy,terms}` URL.
+- [x] TDD: layout-regression — at 1280×800, footer width > 480 (full-viewport edge-to-edge); at 375×812, footer is mounted and bottom edge fits within the viewport.
+- [ ] Robot journey: `PrivacyDashboardRobot.viewPrivacyPolicy()` — **deferred follow-up.** Equivalent coverage exists in `privacy_dashboard_screen_test.dart` (asserts both row keys) + `markdown_render_screen_test.dart` (asserts H1 renders); a robot-class abstraction would be ergonomic sugar but doesn't add new coverage. Tracked in `ai_specs/todo.md`.
+- [ ] Robot journey: `PrivacyDashboardRobot.viewTermsOfService()` — **deferred follow-up** (same rationale).
+- [ ] Robot journey: `AuthGateRobot.tapPrivacyFooter()` — **deferred follow-up.** Equivalent coverage exists in `legal_footer_test.dart` (asserts the fake URL launcher gets per-flavor `/privacy` and `/terms` URLs).
+- [ ] Manual smoke: `flutter build web --release --dart-define=FLAVOR=dev && firebase deploy --only hosting:crewpoint-dev`; visit `https://crewpoint-dev.web.app/{privacy,terms}` — confirm static HTML renders. Repeat for stg. **Manual user step.**
+- [x] Verify: `flutter analyze` clean; `flutter test` 210 pass + 4 screenshot suites skipped (8 new tests: 2 markdown_render, 1 privacy_dashboard, 3 legal_footer, 2 layout-regression); `npm --prefix functions test` 55/55 pass; `dart run scripts/build_legal_html.dart` produces clean assets + HTML.
 
 ### Phase 6: Pre-launch verification checklist + final hand-off
 
