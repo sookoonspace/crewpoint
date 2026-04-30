@@ -218,3 +218,6 @@ test users (Step 3) or **Publish app** (prod only).
 For Apple sign-in, see **[apple-sign-in-web-setup.md](./apple-sign-in-web-setup.md)**.
 For the dev → stg → prod rollout order, see
 **[dev-first-rollout-checklist.md](./dev-first-rollout-checklist.md)**.
+For what happens when the same email signs in via multiple providers
+(silent password drop, recovery via Forgot password, "Hide my email"
+caveat), see **[account-linking-behavior.md](./account-linking-behavior.md)**.

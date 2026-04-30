@@ -328,3 +328,6 @@ For the dev → stg → prod rollout order, see
 For the underlying `authDomain` decision (why prod's redirect URL is
 `crewpoint-prod.firebaseapp.com`, not the custom subdomain), see
 **[web-hosting-guide.md](./web-hosting-guide.md)** Stage 6.
+For what happens when the same email signs in via Apple after an
+unverified email/password signup (silent password drop + recovery),
+see **[account-linking-behavior.md](./account-linking-behavior.md)**.

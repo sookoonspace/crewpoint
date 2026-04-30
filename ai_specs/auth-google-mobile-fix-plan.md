@@ -72,18 +72,12 @@ Fix Google sign-in mobile crash by unifying onto Firebase's `signInWithProvider(
 ### Phase 4: Document the auto-upgrade behavior + verify Firebase Console settings
 
 - **Goal**: future-self / contributors / support understand exactly what happens when an unverified email/password account collides with an OAuth sign-in; Firebase Console settings are captured per flavor.
-- [ ] Manual: per flavor — Firebase Console → Authentication → Settings → **User account linking** = **"Link accounts that use the same email"** (the default that drives the auto-upgrade behavior). If "Create multiple accounts for each email" is selected anywhere, switch and re-test. **Manual user step (per flavor: dev / stg / prod).**
-- [ ] Manual: per flavor — Firebase Console → Authentication → Settings → **Email enumeration protection** decision. **Recommend ON** (don't leak existence); accept that Phase 3's "right-provider" hint silently degrades when ON. Document the trade-off.
-- [ ] `docs/account-linking-behavior.md` — new doc covering:
-  - Plain-English flow walkthrough of the silent-upgrade scenario the user just hit (email+password unverified → OAuth sign-in same email → password credential dropped → only OAuth on the account).
-  - Why Firebase does this (security: prevents pre-claim attack on a victim's email).
-  - Recovery for an affected account: "Forgot password" → reset email → password provider re-added alongside OAuth. No data loss; same UID.
-  - The "Hide my email" Apple relay caveat (different relay address → separate account, can't auto-merge).
-  - How to inspect the providers on a user record (Firebase Console Users tab + the `providerData` field on `currentUser`).
-  - The Phase 2 (verification banner) and Phase 3 (right-provider hint) defenses + their limitations under email enumeration protection.
-- [ ] `docs/google-sign-in-web-setup.md` + `docs/apple-sign-in-web-setup.md` — Cross-references line pointing at `account-linking-behavior.md`.
-- [ ] `ai_specs/todo.md` — add follow-ups: (a) optional "Linked sign-in methods" UI under Profile listing providers + offering link/unlink (V2); (b) explicit account-linking flow when password sign-in fails AND user wants to add password to OAuth-only account.
-- [ ] Verify: `flutter analyze` && `flutter test` (docs-only — no behavior change)
+- [ ] Manual: per flavor — Firebase Console → Authentication → Settings → **User account linking** = **"Link accounts that use the same email"** (the default that drives the auto-upgrade behavior). If "Create multiple accounts for each email" is selected anywhere, switch and re-test. **Manual user step (per flavor: dev / stg / prod).** Procedure documented in `docs/account-linking-behavior.md` (Firebase Console settings audit section).
+- [ ] Manual: per flavor — Firebase Console → Authentication → Settings → **Email enumeration protection** decision. **Recommend ON**; trade-off vs Phase 3's right-provider hint documented in `docs/account-linking-behavior.md`. **Manual user step (per flavor).**
+- [x] `docs/account-linking-behavior.md` — new doc covering: the silent-upgrade flow walkthrough; why Firebase does this (verified-email > unverified-password security); Phase 2 verification banner + Phase 3 suggest-provider hint with their limitations; recovery via Forgot password (preserves UID + Firestore data); the "Hide my email" Apple relay caveat; how to inspect linked providers (Firebase Console + `providerData` + `AppUser.providerIds`); per-flavor Firebase Console settings audit table.
+- [x] `docs/google-sign-in-web-setup.md` + `docs/apple-sign-in-web-setup.md` — Cross-references line at the bottom pointing at `account-linking-behavior.md`.
+- [x] `ai_specs/todo.md` — added Auth polish followups section: (a) "Linked sign-in methods" UI (read-only V1 / link-unlink V2); (b) explicit account-linking ceremony for OAuth-only users wanting to add password; (c) consider hard-blocking dashboard on `emailVerified`; (d) `signInWithRedirect()` migration for Safari third-party-cookie users; (e) `fetchSignInMethodsForEmail` deprecation tracking.
+- [x] Verify: `flutter analyze` clean; `flutter test` 181 pass + 4 screenshot suites skipped (docs-only — no behavior change)
 
 ## Risks / Out of scope
 

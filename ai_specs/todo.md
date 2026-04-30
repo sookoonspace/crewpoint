@@ -49,3 +49,10 @@ Tracks ideas and partial implementations explicitly out of V1 scope. Promote int
 
 ## Chat polish followups
 - "Unknown member" coalescing for removed senders (currently shows UID label)
+
+## Auth polish followups
+- "Linked sign-in methods" UI under Profile — read-only V1 listing of attached providers (`AppUser.providerIds`) so users can see which sign-in methods own their account; V2 link/unlink actions. Phase 2/3 of `auth-google-mobile-fix-plan` left this for a separate spec.
+- Explicit account-linking ceremony — when a user is OAuth-only and wants to add an email/password credential, offer an in-app flow (currently they have to use Forgot password as a side-channel). Tracked alongside the linked-methods UI.
+- Hard-block the dashboard on `emailVerified` for password-only accounts? Currently the verification banner is non-blocking. Revisit if abuse / support-cost data warrants it.
+- Switch web Apple sign-in to `signInWithRedirect()` for Safari users where third-party-cookie blocks break the popup flow.
+- Audit prep: drop the deprecation warning on `fetchSignInMethodsForEmail` once Firebase ships a non-deprecated equivalent.
