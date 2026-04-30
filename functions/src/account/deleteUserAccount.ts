@@ -2,6 +2,7 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions/v2";
 import * as admin from "firebase-admin";
 import {commitInChunks, getSubcollectionRefs, BatchOperation} from "../utils/batch";
+import {withStructuredLogs} from "../utils/logging";
 
 const db = admin.firestore();
 const storage = admin.storage();
@@ -122,67 +123,70 @@ export const deleteUserAccount = onCall(
     }
 
     const uid = request.auth.uid;
-    logger.info(`Starting account deletion for user ${uid}`);
 
-    try {
-      // Query all events where user is a member
-      const eventsSnapshot = await db
-        .collection("events")
-        .where("memberIds", "array-contains", uid)
-        .get();
+    return withStructuredLogs(
+      {op: "deleteUserAccount", uid, args: {}},
+      async () => {
+        try {
+          const eventsSnapshot = await db
+            .collection("events")
+            .where("memberIds", "array-contains", uid)
+            .get();
 
-      logger.info(`Found ${eventsSnapshot.size} events for user ${uid}`);
+          logger.info(`Found ${eventsSnapshot.size} events for user ${uid}`);
 
-      // Process each event
-      for (const eventDoc of eventsSnapshot.docs) {
-        const eventData = eventDoc.data();
-        const memberIds: string[] = eventData.memberIds || [];
+          for (const eventDoc of eventsSnapshot.docs) {
+            const eventData = eventDoc.data();
+            const memberIds: string[] = eventData.memberIds || [];
 
-        if (memberIds.length <= 1) {
-          logger.info(`Deleting solo event ${eventDoc.id}`);
-          await deleteEventCompletely(eventDoc.ref);
-        } else {
-          logger.info(`Anonymizing user in shared event ${eventDoc.id}`);
-          await anonymizeUserInEvent(eventDoc.ref, eventData, uid);
+            if (memberIds.length <= 1) {
+              await deleteEventCompletely(eventDoc.ref);
+            } else {
+              await anonymizeUserInEvent(eventDoc.ref, eventData, uid);
+            }
+          }
+
+          // Firestore does NOT cascade-delete subcollections, so we
+          // explicitly tear down the private/profile subdoc (Fix 1.B
+          // Option A) before deleting the parent user doc.
+          await db
+            .collection("users")
+            .doc(uid)
+            .collection("private")
+            .doc("profile")
+            .delete()
+            .catch((err: unknown) => {
+              // Idempotent: missing private/profile is fine on retry.
+              logger.warn(
+                `Private subdoc cleanup warning for ${uid}:`,
+                err
+              );
+            });
+          await db.collection("users").doc(uid).delete();
+
+          try {
+            await deleteUserStorage(uid);
+          } catch (storageError) {
+            logger.warn(
+              `Storage cleanup warning for ${uid}:`,
+              storageError
+            );
+          }
+
+          // Delete Firebase Auth user — LAST STEP.
+          await auth.deleteUser(uid);
+
+          return {success: true};
+        } catch (error) {
+          // Surface non-HttpsError failures as `internal`. The wrapper's
+          // structured-error log line will capture context.
+          if (error instanceof HttpsError) throw error;
+          throw new HttpsError(
+            "internal",
+            "Account deletion failed. Please try again or contact support."
+          );
         }
       }
-
-      // Delete user document. Firestore does NOT cascade-delete
-      // subcollections, so we explicitly tear down the private/profile
-      // subdoc (Fix 1.B Option A) before deleting the parent user doc.
-      logger.info(`Deleting user document ${uid}`);
-      await db
-        .collection("users")
-        .doc(uid)
-        .collection("private")
-        .doc("profile")
-        .delete()
-        .catch((err: unknown) => {
-          // Idempotent: missing private/profile is fine on retry.
-          logger.warn(`Private subdoc cleanup warning for ${uid}:`, err);
-        });
-      await db.collection("users").doc(uid).delete();
-
-      // Delete user storage files
-      logger.info(`Deleting storage files for ${uid}`);
-      try {
-        await deleteUserStorage(uid);
-      } catch (storageError) {
-        logger.warn(`Storage cleanup warning for ${uid}:`, storageError);
-      }
-
-      // Delete Firebase Auth user — LAST STEP
-      logger.info(`Deleting auth user ${uid}`);
-      await auth.deleteUser(uid);
-
-      logger.info(`Account deletion completed for user ${uid}`);
-      return {success: true};
-    } catch (error) {
-      logger.error(`Account deletion failed for user ${uid}:`, error);
-      throw new HttpsError(
-        "internal",
-        "Account deletion failed. Please try again or contact support."
-      );
-    }
+    );
   }
 );

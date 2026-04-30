@@ -69,22 +69,23 @@ Pre-launch security + legal hardening: rules audit, CF streaming refactor, legal
 ### Phase 3: Cloud Function hardening pass (10 functions) — input validation + structured logging + HttpsError audit
 
 - **Goal**: every CF validates `request.data` shape; emits start/end structured logs (uid, op, args, elapsed-ms); throws canonical `HttpsError` codes.
-- [ ] `functions/src/account/deleteUserAccount.ts` — input/auth/log/error-code pass.
-- [ ] `functions/src/events/deleteEvent.ts` — same. (Streaming refactor in Phase 4.)
-- [ ] `functions/src/events/joinEvent.ts` — explicit "code redeemed / event missing" check at top of handler (spec §req-14); rest of pass.
-- [ ] `functions/src/events/removeEventMember.ts` — pass.
-- [ ] `functions/src/events/promoteToAdmin.ts` — pass; verify last-admin demotion is impossible.
-- [ ] `functions/src/events/demoteAdmin.ts` — pass; verify last-admin demotion is impossible.
-- [ ] `functions/src/events/markTaskComplete.ts` — pass.
-- [ ] `functions/src/events/disputeSettlement.ts` — pass.
-- [ ] `functions/src/events/generateInviteCode.ts` — pass.
-- [ ] `functions/src/events/onUrgentMessageCreated.ts` — pass (Firestore trigger, not callable; logging only).
-- [ ] `functions/test/cloud-functions.test.ts` — happy-path + auth-failure case per callable (8 callables × 2 = 16 tests minimum). `firebase-functions-test` v3 online mode; seed via Admin SDK pointed at emulator.
-- [ ] TDD: each callable's auth-failure test (write before refactor; verify failure mode).
-- [ ] TDD: `joinEvent` rejects expired/redeemed/missing codes with correct `HttpsError` codes.
-- [ ] TDD: `promoteToAdmin`/`demoteAdmin` reject non-creator + refuse last-admin demote with `failed-precondition`.
-- [ ] `docs/security/cloud-functions-audit.md` — per-function findings (input shape, auth, error codes, idempotency, logging gaps + fixes applied).
-- [ ] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`.
+- [x] `functions/src/utils/logging.ts` — added `withStructuredLogs({op, uid, args}, fn)` helper + `requireString(value, fieldName)` validator. Used by every callable below.
+- [x] `functions/src/account/deleteUserAccount.ts` — input/auth/log/error-code pass; wrapper preserves the existing memory-risk note (deferred to Phase 4).
+- [x] `functions/src/events/deleteEvent.ts` — same; memory risk explicitly documented in the function header.
+- [x] `functions/src/events/joinEvent.ts` — `requireString` enforces input shape; missing/expired/event-deleted all return `not-found` (with code-cleanup side effect on expired); already-member returns `already-exists`; full returns `resource-exhausted` with `MAX_MEMBERS` interpolated into the message.
+- [x] `functions/src/events/removeEventMember.ts` — pass; admin/creator OR self-removal authorization; owner-cannot-be-removed enforced.
+- [x] `functions/src/events/promoteToAdmin.ts` — pass; creator-only auth; target-must-be-member check.
+- [x] `functions/src/events/demoteAdmin.ts` — pass; **new last-admin guard** (TDD-driven: refuses to demote when `adminIds.length <= 1` with `failed-precondition`); creator-only auth + owner-cannot-be-demoted + target-must-be-admin.
+- [x] `functions/src/events/markTaskComplete.ts` — pass; owner/admin/assignee authorization.
+- [x] `functions/src/events/disputeSettlement.ts` — pass; payer/payee authorization; idempotency via shared-id chat notice.
+- [x] `functions/src/events/onUrgentMessageCreated.ts` — **important Phase 2 follow-up**: reads `fcmTokens` from `users/{uid}/private/profile` (post-projection-split) and prunes dead tokens to the same private subdoc. Without this fix the trigger would silently send zero pushes after Phase 2 deployed.
+- [x] `functions/src/events/generateInviteCode.ts` — pass; admin-or-creator auth; collision-retry; single-active-code invariant.
+- [x] `functions/test/cloud-functions.test.ts` — 35 emulator-driven integration tests via `firebase-functions-test` v3 online mode. `test.each` covers all 8 callables × auth-failure (8 tests) + all 8 callables × invalid-argument (8 tests). Per-callable suites add authorization-rejection + happy-path + edge cases (last-admin, expired join codes, missing target events, settlement-dispute side effects, deleteEvent subcollection cascade). Setup helper `seedEvent()` reduces fixture boilerplate.
+- [x] TDD: each callable's auth-failure test (RED via `test.each` showed all 8 callables already enforced auth; GREEN regression coverage).
+- [x] TDD: `joinEvent` rejects expired/redeemed/missing codes with correct `HttpsError` codes — 4 tests cover missing/expired/missing-event/happy-path.
+- [x] TDD: `promoteToAdmin`/`demoteAdmin` reject non-creator + refuse last-admin demote with `failed-precondition` — last-admin guard was the driving RED → GREEN cycle for the whole CF test harness.
+- [x] `docs/security/cloud-functions-audit.md` — per-function findings, hardening pattern, full HttpsError catalog, test surface, sign-off checkpoint.
+- [x] Verify: `flutter analyze` clean; `flutter test` 202 pass + 4 screenshot suites skipped; `npm --prefix functions test` 50/50 pass (15 rules + 35 CF); `npm run build` clean.
 
 ### Phase 4: Streaming pagination refactor (deleteEvent + deleteUserAccount) — memory fix
 

@@ -1,15 +1,18 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
-import {logger} from "firebase-functions/v2";
 import * as admin from "firebase-admin";
+import {requireString, withStructuredLogs} from "../utils/logging";
 
 const db = admin.firestore();
 
 /**
  * removeEventMember — removes a user from an event.
  *
- * - Caller must be admin or owner
- * - Target cannot be the event owner
- * - Removes from both memberIds and adminIds
+ * - Caller must be admin/owner OR removing themselves (leave-event)
+ * - Owner cannot be removed (prevents accidental orphaning)
+ * - Removes target from both memberIds and adminIds atomically
+ *
+ * Idempotency: `arrayRemove` is a no-op if the uid is already gone,
+ * so retries converge on the same end state.
  */
 export const removeEventMember = onCall(
   {timeoutSeconds: 30},
@@ -18,62 +21,52 @@ export const removeEventMember = onCall(
       throw new HttpsError("unauthenticated", "Must be signed in.");
     }
 
-    const {eventId, targetUserId} = request.data as {
-      eventId?: string;
-      targetUserId?: string;
+    const data = (request.data ?? {}) as {
+      eventId?: unknown;
+      targetUserId?: unknown;
     };
-
-    if (!eventId || !targetUserId) {
-      throw new HttpsError(
-        "invalid-argument",
-        "eventId and targetUserId are required."
-      );
-    }
+    const eventId = requireString(data.eventId, "eventId");
+    const targetUserId = requireString(data.targetUserId, "targetUserId");
 
     const uid = request.auth.uid;
 
-    // Get event
-    const eventDoc = await db.collection("events").doc(eventId).get();
-    if (!eventDoc.exists) {
-      throw new HttpsError("not-found", "Event not found.");
-    }
+    return withStructuredLogs(
+      {op: "removeEventMember", uid, args: {eventId, targetUserId}},
+      async () => {
+        const eventDoc = await db.collection("events").doc(eventId).get();
+        if (!eventDoc.exists) {
+          throw new HttpsError("not-found", "Event not found.");
+        }
 
-    const eventData = eventDoc.data()!;
-    const adminIds: string[] = eventData.adminIds || [];
+        const eventData = eventDoc.data()!;
+        const adminIds: string[] = eventData.adminIds || [];
 
-    // Verify caller is admin or owner
-    const callerIsAuthorized =
-      eventData.creatorId === uid || adminIds.includes(uid);
+        const callerIsAuthorized =
+          eventData.creatorId === uid || adminIds.includes(uid);
+        const isSelfRemoval = uid === targetUserId;
 
-    // Allow self-removal (leave event) for any member
-    const isSelfRemoval = uid === targetUserId;
+        if (!callerIsAuthorized && !isSelfRemoval) {
+          throw new HttpsError(
+            "permission-denied",
+            "Only admins and the event owner can remove members."
+          );
+        }
 
-    if (!callerIsAuthorized && !isSelfRemoval) {
-      throw new HttpsError(
-        "permission-denied",
-        "Only admins and the event owner can remove members."
-      );
-    }
+        if (targetUserId === eventData.creatorId) {
+          throw new HttpsError(
+            "failed-precondition",
+            "The event owner cannot be removed."
+          );
+        }
 
-    // Owner cannot be removed
-    if (targetUserId === eventData.creatorId) {
-      throw new HttpsError(
-        "failed-precondition",
-        "The event owner cannot be removed."
-      );
-    }
+        await db.collection("events").doc(eventId).update({
+          memberIds: admin.firestore.FieldValue.arrayRemove(targetUserId),
+          adminIds: admin.firestore.FieldValue.arrayRemove(targetUserId),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
 
-    // Remove from both arrays
-    await db.collection("events").doc(eventId).update({
-      memberIds: admin.firestore.FieldValue.arrayRemove(targetUserId),
-      adminIds: admin.firestore.FieldValue.arrayRemove(targetUserId),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-
-    logger.info(
-      `User ${targetUserId} removed from event ${eventId} by ${uid}`
+        return {success: true};
+      }
     );
-
-    return {success: true};
   }
 );

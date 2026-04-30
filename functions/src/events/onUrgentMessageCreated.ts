@@ -47,13 +47,20 @@ export const onUrgentMessageCreated = onDocumentCreated(
     const eventTitle = (eventData.title as string | undefined) ?? "Event";
 
     // Collect tokens for every recipient except the sender, tracking which
-    // (uid, token) pair to prune if FCM rejects it.
+    // (uid, token) pair to prune if FCM rejects it. Post Fix 1.B Option A
+    // fcmTokens lives in users/{uid}/private/profile, not the public doc.
     type TokenOwner = {uid: string; token: string};
     const owners: TokenOwner[] = [];
     for (const uid of memberIds) {
       if (uid === senderId) continue;
-      const userSnap = await db.collection("users").doc(uid).get();
-      const tokens = (userSnap.data()?.fcmTokens as string[] | undefined) ?? [];
+      const privateSnap = await db
+        .collection("users")
+        .doc(uid)
+        .collection("private")
+        .doc("profile")
+        .get();
+      const tokens =
+        (privateSnap.data()?.fcmTokens as string[] | undefined) ?? [];
       for (const token of tokens) {
         owners.push({uid, token});
       }
@@ -96,7 +103,7 @@ export const onUrgentMessageCreated = onDocumentCreated(
       });
     }
 
-    // Prune dead tokens.
+    // Prune dead tokens — write to users/{uid}/private/profile.
     if (deadTokens.length > 0) {
       const byUid = new Map<string, string[]>();
       for (const owner of deadTokens) {
@@ -106,9 +113,17 @@ export const onUrgentMessageCreated = onDocumentCreated(
       }
       const batch = db.batch();
       for (const [uid, tokens] of byUid) {
-        batch.update(db.collection("users").doc(uid), {
-          fcmTokens: admin.firestore.FieldValue.arrayRemove(...tokens),
-        });
+        batch.set(
+          db
+            .collection("users")
+            .doc(uid)
+            .collection("private")
+            .doc("profile"),
+          {
+            fcmTokens: admin.firestore.FieldValue.arrayRemove(...tokens),
+          },
+          {merge: true}
+        );
       }
       await batch.commit();
       logger.info(
