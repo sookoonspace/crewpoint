@@ -15,5 +15,7 @@ String firebaseAuthErrorMessage(String code) => switch (code) {
   'popup-blocked' =>
     'Pop-ups are blocked - please allow pop-ups for this site and try again.',
   'cancelled-popup-request' || 'popup-closed-by-user' => 'Sign-in cancelled.',
+  'too-many-requests' =>
+    'Too many attempts. Please wait a minute before trying again.',
   _ => 'An unexpected error occurred. Please try again.',
 };

@@ -21,4 +21,9 @@ void main() {
   test('falls back to the generic copy for unknown codes', () {
     expect(firebaseAuthErrorMessage('something-novel'), contains('unexpected'));
   });
+
+  test('maps too-many-requests to a rate-limit-aware message', () {
+    final msg = firebaseAuthErrorMessage('too-many-requests');
+    expect(msg.toLowerCase(), contains('too many'));
+  });
 }

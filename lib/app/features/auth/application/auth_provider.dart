@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/features/auth/data/auth_repository.dart';
@@ -123,5 +124,44 @@ class AuthNotifier extends Notifier<AuthState> {
   Future<void> signOut() async {
     await _authRepository.signOut();
     state = const Unauthenticated();
+  }
+
+  /// Resends the verification email to the currently signed-in user.
+  /// Surfaces failure as an [AuthError] (rate-limited messages, etc.)
+  /// so the banner UI can display them; never flips the user out of
+  /// `Authenticated` on failure.
+  Future<void> resendVerificationEmail() async {
+    final current = state;
+    if (current is! Authenticated) return;
+    try {
+      await _authRepository.sendEmailVerification();
+    } catch (e, st) {
+      log(
+        'resendVerificationEmail failed',
+        error: e,
+        stackTrace: st,
+        name: 'auth',
+      );
+      state = AuthError(
+        AuthFailure(
+          type: AuthFailureType.unknown,
+          message: e.toString().replaceFirst('Exception: ', ''),
+        ),
+      );
+      // Restore Authenticated so the user isn't kicked out of the app.
+      state = current;
+    }
+  }
+
+  /// Refreshes `emailVerified` (and other server-side fields) from
+  /// Firebase. Updates [Authenticated] state in place when the user
+  /// is signed in.
+  Future<void> reloadCurrentUser() async {
+    final current = state;
+    if (current is! Authenticated) return;
+    final refreshed = await _authRepository.reloadCurrentUser();
+    if (refreshed != null) {
+      state = Authenticated(refreshed);
+    }
   }
 }

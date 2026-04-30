@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/responsive_shell.dart';
+import 'package:crewpoint_app/app/features/auth/presentation/widgets/email_unverified_banner.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/edit_profile_screen.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/profile_screen.dart';
 import 'package:crewpoint_app/app/features/auth/presentation/auth_gate_screen.dart';
@@ -84,7 +85,12 @@ GoRouter createRouter({
               initialLocation: index == navigationShell.currentIndex,
             ),
             onSignOut: () => ref.read(authProvider.notifier).signOut(),
-            body: navigationShell,
+            body: Column(
+              children: [
+                const EmailUnverifiedBanner(),
+                Expanded(child: navigationShell),
+              ],
+            ),
           ),
         ),
         branches: [

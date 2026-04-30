@@ -51,6 +51,19 @@ class FirebaseAuthService implements IAuthService {
         password: password,
       );
       await credential.user!.updateDisplayName(displayName);
+      // Fire-and-forget the verification email. Failure here (rate limit,
+      // template misconfig) shouldn't block the signup itself; the user
+      // can resend from the unverified-email banner if it didn't arrive.
+      try {
+        await credential.user!.sendEmailVerification();
+      } catch (e, st) {
+        log(
+          'Verification email send failed at signup',
+          error: e,
+          stackTrace: st,
+          name: 'auth',
+        );
+      }
       return AuthSuccess(_mapUser(credential.user!));
     } on fb.FirebaseAuthException catch (e, st) {
       log('Email sign-up failed', error: e, stackTrace: st, name: 'auth');
@@ -96,11 +109,36 @@ class FirebaseAuthService implements IAuthService {
     await _firebaseAuth.currentUser?.delete();
   }
 
+  @override
+  Future<void> sendEmailVerification() async {
+    final user = _firebaseAuth.currentUser;
+    if (user == null) return;
+    try {
+      await user.sendEmailVerification();
+    } on fb.FirebaseAuthException catch (e, st) {
+      log(
+        'sendEmailVerification failed (${e.code})',
+        error: e,
+        stackTrace: st,
+        name: 'auth',
+      );
+      // Re-throw with a friendly message so AuthNotifier can surface it.
+      throw Exception(_mapFirebaseError(e.code));
+    }
+  }
+
+  @override
+  Future<void> reloadCurrentUser() async {
+    await _firebaseAuth.currentUser?.reload();
+  }
+
   AuthUser _mapUser(fb.User user) => AuthUser(
     uid: user.uid,
     email: user.email ?? '',
     displayName: user.displayName,
     photoUrl: user.photoURL,
+    emailVerified: user.emailVerified,
+    providerIds: user.providerData.map((p) => p.providerId).toList(),
   );
 
   String _mapFirebaseError(String code) => firebaseAuthErrorMessage(code);

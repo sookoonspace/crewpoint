@@ -7,6 +7,16 @@ class FakeAuthService implements IAuthService {
   AuthUser? _currentUser;
   final _controller = StreamController<AuthUser?>.broadcast();
 
+  /// Records every `sendEmailVerification` call so tests can assert on
+  /// resend invocations.
+  int sendEmailVerificationCalls = 0;
+
+  /// When set, the next `sendEmailVerification` call throws this exception.
+  Object? sendEmailVerificationError;
+
+  /// Records every `reloadCurrentUser` call.
+  int reloadCalls = 0;
+
   @override
   AuthUser? get currentUser => _currentUser;
 
@@ -70,6 +80,27 @@ class FakeAuthService implements IAuthService {
   Future<void> deleteAccount() async {
     _currentUser = null;
     _controller.add(null);
+  }
+
+  @override
+  Future<void> sendEmailVerification() async {
+    sendEmailVerificationCalls++;
+    if (sendEmailVerificationError != null) {
+      throw sendEmailVerificationError!;
+    }
+  }
+
+  @override
+  Future<void> reloadCurrentUser() async {
+    reloadCalls++;
+  }
+
+  /// Test setter — drives state transitions in tests where the
+  /// ordinary sign-in/up paths aren't exercised. Updates [currentUser]
+  /// AND broadcasts on `authStateChanges`.
+  void setCurrentUser(AuthUser? user) {
+    _currentUser = user;
+    _controller.add(user);
   }
 
   void dispose() {

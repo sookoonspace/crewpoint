@@ -12,28 +12,25 @@ class AuthRepository implements IAuthRepository {
 
   final IAuthService _authService;
 
+  AppUser _toAppUser(AuthUser user) => AppUser(
+    uid: user.uid,
+    email: user.email,
+    displayName: user.displayName,
+    photoUrl: user.photoUrl,
+    emailVerified: user.emailVerified,
+    providerIds: user.providerIds,
+  );
+
   @override
   Stream<AppUser?> get authStateChanges => _authService.authStateChanges.map(
-    (user) => user != null
-        ? AppUser(
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName,
-            photoUrl: user.photoUrl,
-          )
-        : null,
+    (u) => u == null ? null : _toAppUser(u),
   );
 
   @override
   AppUser? get currentUser {
     final user = _authService.currentUser;
     if (user == null) return null;
-    return AppUser(
-      uid: user.uid,
-      email: user.email,
-      displayName: user.displayName,
-      photoUrl: user.photoUrl,
-    );
+    return _toAppUser(user);
   }
 
   @override
@@ -47,15 +44,7 @@ class AuthRepository implements IAuthRepository {
         password: password,
       );
       return switch (result) {
-        AuthSuccess(:final user) => (
-          user: AppUser(
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName,
-            photoUrl: user.photoUrl,
-          ),
-          failure: null,
-        ),
+        AuthSuccess(:final user) => (user: _toAppUser(user), failure: null),
         AuthResultFailure(:final message) => (
           user: null,
           failure: AuthFailure(type: AuthFailureType.unknown, message: message),
@@ -86,15 +75,7 @@ class AuthRepository implements IAuthRepository {
         displayName: displayName,
       );
       return switch (result) {
-        AuthSuccess(:final user) => (
-          user: AppUser(
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName,
-            photoUrl: user.photoUrl,
-          ),
-          failure: null,
-        ),
+        AuthSuccess(:final user) => (user: _toAppUser(user), failure: null),
         AuthResultFailure(:final message) => (
           user: null,
           failure: AuthFailure(type: AuthFailureType.unknown, message: message),
@@ -117,15 +98,7 @@ class AuthRepository implements IAuthRepository {
     try {
       final result = await _authService.signInWithGoogle();
       return switch (result) {
-        AuthSuccess(:final user) => (
-          user: AppUser(
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName,
-            photoUrl: user.photoUrl,
-          ),
-          failure: null,
-        ),
+        AuthSuccess(:final user) => (user: _toAppUser(user), failure: null),
         AuthResultFailure(:final message) => (
           user: null,
           failure: AuthFailure(type: AuthFailureType.unknown, message: message),
@@ -148,15 +121,7 @@ class AuthRepository implements IAuthRepository {
     try {
       final result = await _authService.signInWithApple();
       return switch (result) {
-        AuthSuccess(:final user) => (
-          user: AppUser(
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName,
-            photoUrl: user.photoUrl,
-          ),
-          failure: null,
-        ),
+        AuthSuccess(:final user) => (user: _toAppUser(user), failure: null),
         AuthResultFailure(:final message) => (
           user: null,
           failure: AuthFailure(type: AuthFailureType.unknown, message: message),
@@ -179,4 +144,13 @@ class AuthRepository implements IAuthRepository {
 
   @override
   Future<void> deleteAccount() => _authService.deleteAccount();
+
+  @override
+  Future<void> sendEmailVerification() => _authService.sendEmailVerification();
+
+  @override
+  Future<AppUser?> reloadCurrentUser() async {
+    await _authService.reloadCurrentUser();
+    return currentUser;
+  }
 }

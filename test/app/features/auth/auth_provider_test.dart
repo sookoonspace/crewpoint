@@ -64,4 +64,37 @@ void main() {
     final state = container.read(authProvider);
     expect(state, isA<AuthError>());
   });
+
+  test('resendVerificationEmail invokes the service exactly once when '
+      'authenticated', () async {
+    fakeAuthService.setCurrentUser(testAuthUser);
+    await Future<void>.delayed(Duration.zero); // let stream propagate
+    // Force-rebuild so we observe the post-stream state.
+    container.read(authProvider);
+
+    await container.read(authProvider.notifier).resendVerificationEmail();
+
+    expect(fakeAuthService.sendEmailVerificationCalls, equals(1));
+  });
+
+  test(
+    'resendVerificationEmail no-ops when the user is unauthenticated',
+    () async {
+      await container.read(authProvider.notifier).resendVerificationEmail();
+      expect(fakeAuthService.sendEmailVerificationCalls, equals(0));
+    },
+  );
+
+  test(
+    'reloadCurrentUser delegates to the service when authenticated',
+    () async {
+      fakeAuthService.setCurrentUser(testAuthUser);
+      await Future<void>.delayed(Duration.zero);
+      container.read(authProvider);
+
+      await container.read(authProvider.notifier).reloadCurrentUser();
+
+      expect(fakeAuthService.reloadCalls, equals(1));
+    },
+  );
 }

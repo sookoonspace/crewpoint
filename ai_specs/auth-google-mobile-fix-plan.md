@@ -40,16 +40,19 @@ Fix Google sign-in mobile crash by unifying onto Firebase's `signInWithProvider(
 ### Phase 2: Email verification for email/password signups
 
 - **Goal**: close the silent-upgrade trap. Email/password accounts must verify email before they're considered "complete"; users learn that early so they don't get surprised when OAuth later promotes the account and drops their password.
-- [ ] `lib/app/core/services/i_auth_service.dart` — extend `IAuthService` with `Future<void> sendEmailVerification()` and `Future<void> reloadCurrentUser()` (the latter pulls the latest `emailVerified` flag from Firebase).
-- [ ] `lib/app/features/auth/data/firebase_auth_service.dart` — implement both. After `signUpWithEmail` succeeds, immediately call `credential.user!.sendEmailVerification()` (don't block on it; surface a clear "verification email sent" message in the UI).
-- [ ] `lib/app/features/auth/application/auth_provider.dart` — add `bool get emailVerified` to the `Authenticated` state (read from `currentUser` on each rebuild) and a `Future<void> resendVerificationEmail()` method.
-- [ ] `lib/app/features/auth/presentation/auth_gate_screen.dart` (or new `email_unverified_banner.dart`) — when `Authenticated.user.emailVerified == false` AND the only provider is `password`, show a non-dismissible MaterialBanner: "Verify your email so this sign-in stays active. We sent a link to {email}. [Resend] [I've verified — refresh]". The Resend button calls `resendVerificationEmail`; the Refresh button calls `reloadCurrentUser`.
-- [ ] Skip the banner for Google/Apple sign-ins (their `emailVerified` is true at first sign-in).
-- [ ] TDD: `firebaseAuthErrorMessage('too-many-requests')` returns user-friendly "Too many attempts" copy (Firebase rate-limits resend-verification per minute).
-- [ ] TDD: `AuthNotifier.resendVerificationEmail()` calls `sendEmailVerification` exactly once on the underlying service (use a recording fake `IAuthService`).
-- [ ] Widget test: when `Authenticated.user.emailVerified == false` and provider is `password`, the verification banner renders with `Key('auth.verifyBanner')`; when `emailVerified == true` OR provider is OAuth, the banner is absent.
+- [x] `lib/app/core/services/i_auth_service.dart` — `IAuthService` gains `Future<void> sendEmailVerification()` and `Future<void> reloadCurrentUser()`. `AuthUser` gains `emailVerified` + `providerIds`.
+- [x] `lib/app/features/auth/data/firebase_auth_service.dart` — implements both; `signUpWithEmail` fire-and-forgets `sendEmailVerification()` after the user is created (failure logged, doesn't block the signup). `_mapUser` populates `emailVerified` and `providerIds` from the underlying `fb.User`.
+- [x] `lib/app/features/auth/data/auth_repository.dart` + `lib/app/features/auth/domain/repositories/i_auth_repository.dart` — repository gains matching `sendEmailVerification` + `reloadCurrentUser` methods; `_toAppUser` propagates `emailVerified` + `providerIds`.
+- [x] `lib/app/features/auth/domain/models/app_user.dart` — `AppUser` gains `emailVerified` + `providerIds` + an `isPasswordOnly` getter (drives banner visibility).
+- [x] `lib/app/features/auth/application/auth_provider.dart` — `AuthNotifier` exposes `resendVerificationEmail()` and `reloadCurrentUser()` methods. Errors during resend surface via a transient `AuthError` then restore the prior `Authenticated` state so the user isn't kicked out of the app.
+- [x] `lib/app/features/auth/presentation/widgets/email_unverified_banner.dart` — non-dismissible banner with `Key('auth.verifyBanner')`. Two action buttons (`auth.verifyBanner.resend`, `auth.verifyBanner.refresh`) call the matching notifier methods. Self-hides for verified users + OAuth-linked accounts.
+- [x] `lib/app/core/router/app_router.dart` — banner mounted above the `StatefulNavigationShell` body inside the existing `Consumer` so it renders on every authenticated screen but doesn't pollute `ResponsiveShell`'s provider-free contract.
+- [x] TDD: `firebaseAuthErrorMessage('too-many-requests')` returns "Too many attempts. Please wait a minute before trying again."
+- [x] TDD: `AuthNotifier.resendVerificationEmail()` calls `sendEmailVerification` exactly once when `Authenticated`; no-ops when `Unauthenticated`. (Plus a parallel test for `reloadCurrentUser`.)
+- [x] Widget test: 6 cases in `email_unverified_banner_test.dart` cover signed-out, verified, OAuth-linked (banner absent), unverified-password-only (banner present + email + buttons), and tap behavior on Resend / I've verified.
+- [x] `test/app/features/auth/fake_auth_service.dart` — extended with `sendEmailVerificationCalls`, `sendEmailVerificationError`, `reloadCalls`, and a `setCurrentUser` test setter so harnesses don't have to drive sign-in flows just to seed state.
 - [ ] Manual smoke: sign up with email+password → verification email lands → tap link → return to app, tap "I've verified" → banner disappears. **Manual user step**
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] Verify: `flutter analyze` clean; `flutter test` 175 pass + 4 screenshot suites skipped
 
 ### Phase 3: Sign-in error UX — guide users to the right provider
 
