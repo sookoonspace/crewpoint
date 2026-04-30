@@ -153,4 +153,8 @@ class AuthRepository implements IAuthRepository {
     await _authService.reloadCurrentUser();
     return currentUser;
   }
+
+  @override
+  Future<List<String>> fetchSignInMethodsForEmail(String email) =>
+      _authService.fetchSignInMethodsForEmail(email);
 }

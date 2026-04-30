@@ -57,15 +57,17 @@ Fix Google sign-in mobile crash by unifying onto Firebase's `signInWithProvider(
 ### Phase 3: Sign-in error UX — guide users to the right provider
 
 - **Goal**: when password sign-in fails because Firebase auto-upgraded the account, the user is told "this email signs in with Apple/Google — tap that instead" instead of being stuck on a generic "Incorrect email or password" message.
-- [ ] `lib/app/core/services/i_auth_service.dart` — add `Future<List<String>> fetchSignInMethodsForEmail(String email)` — wraps `FirebaseAuth.instance.fetchSignInMethodsForEmail(email)` (returns provider strings like `password`, `apple.com`, `google.com`). Disabled-by-default in newer Firebase projects when "Email enumeration protection" is on; this task is best-effort.
-- [ ] `lib/app/features/auth/data/firebase_auth_service.dart` — implement, return empty list on failure (don't bubble the exception).
-- [ ] `lib/app/features/auth/application/auth_provider.dart` — when `signInWithEmail` returns `AuthResultFailure` for `wrong-password`/`invalid-credential`, internally call `fetchSignInMethodsForEmail` and, if it returns OAuth providers without `password`, surface a structured error: `AuthResultRedirect(suggestedProvider: 'apple.com')`. Email enumeration protection ON → fall back to the existing generic message.
-- [ ] `lib/app/features/auth/presentation/widgets/email_auth_form.dart` — on `AuthResultRedirect` show a snackbar / inline message: "This email is registered with Apple. Tap Continue with Apple above." (or Google). Never show this when Firebase doesn't return providers (don't enumerate emails).
-- [ ] TDD: `AuthNotifier.signInWithEmail` returns `AuthResultRedirect(suggestedProvider: 'apple.com')` when the underlying service returns `wrong-password` AND `fetchSignInMethodsForEmail` returns `['apple.com']`.
-- [ ] TDD: `AuthNotifier.signInWithEmail` returns the existing generic `AuthResultFailure` when `fetchSignInMethodsForEmail` returns `[]` (enumeration protection on) — never leak account existence.
-- [ ] TDD: `AuthNotifier.signInWithEmail` returns the existing generic failure when the email genuinely has no account (404-style, `[]` from Firebase).
-- [ ] Widget test: when an `AuthResultRedirect` lands on `email_auth_form.dart`, a `Key('auth.suggestProvider.apple')` (or `.google`) snackbar/widget renders with copy mentioning the provider name.
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] `lib/app/core/services/i_auth_service.dart` — `fetchSignInMethodsForEmail(String email)` added; documented as best-effort (empty list when enumeration protection is on, when no account exists, or on any failure — callers must not branch on "empty = no account" or it leaks existence).
+- [x] `lib/app/features/auth/data/firebase_auth_service.dart` — wraps `FirebaseAuth.instance.fetchSignInMethodsForEmail` in a try/catch, returns `const []` on failure, logs via `dart:developer`.
+- [x] `lib/app/features/auth/data/auth_repository.dart` + `lib/app/features/auth/domain/repositories/i_auth_repository.dart` — passthrough.
+- [x] `lib/app/features/auth/domain/models/auth_failure.dart` — `AuthFailure` enriched with `String? suggestedProvider` (drives the UI; null when there's no usable suggestion or when the privacy-protected response leaves us nothing to suggest).
+- [x] `lib/app/features/auth/application/auth_provider.dart` — `signInWithEmail` looks up methods on every failure path (always-attempt, not just `wrong-password`-keyed); sets `suggestedProvider = firstOauth` only when (a) methods is non-empty AND (b) `password` is absent. Empty methods or password-included → null suggestion → generic error.
+- [x] `lib/app/features/auth/presentation/widgets/email_auth_form.dart` — `ref.listen` now branches on `failure.suggestedProvider`. Provider hint snackbar carries `Key('auth.suggestProvider.{apple|google|other}')` and copy "This email is registered with Apple. Tap 'Continue with Apple' above." Falls back to the existing generic snackbar otherwise.
+- [x] TDD: `AuthNotifier.signInWithEmail` sets `suggestedProvider == 'apple.com'` when service returns wrong-password AND `fetchSignInMethodsForEmail` returns `['apple.com']`.
+- [x] TDD: `AuthNotifier.signInWithEmail` returns the existing generic failure (no suggestion) when methods come back empty — never leaks account existence under enumeration-protection-on.
+- [x] TDD: `AuthNotifier.signInWithEmail` never suggests when `password` is in the registered methods (user just typed wrong password for a real password-only or mixed account).
+- [x] Widget test: 3 cases in `email_auth_form_suggest_provider_test.dart` — Apple-only / Google-only / empty (generic fallback). All assert on the stable `auth.suggestProvider.<slug>` key.
+- [x] Verify: `flutter analyze` clean; `flutter test` 181 pass + 4 screenshot suites skipped
 
 ### Phase 4: Document the auto-upgrade behavior + verify Firebase Console settings
 

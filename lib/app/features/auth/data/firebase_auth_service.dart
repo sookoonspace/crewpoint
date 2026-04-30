@@ -132,6 +132,22 @@ class FirebaseAuthService implements IAuthService {
     await _firebaseAuth.currentUser?.reload();
   }
 
+  @override
+  Future<List<String>> fetchSignInMethodsForEmail(String email) async {
+    try {
+      // ignore: deprecated_member_use
+      return await _firebaseAuth.fetchSignInMethodsForEmail(email);
+    } catch (e, st) {
+      log(
+        'fetchSignInMethodsForEmail failed (returning [])',
+        error: e,
+        stackTrace: st,
+        name: 'auth',
+      );
+      return const [];
+    }
+  }
+
   AuthUser _mapUser(fb.User user) => AuthUser(
     uid: user.uid,
     email: user.email ?? '',

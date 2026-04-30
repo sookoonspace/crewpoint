@@ -28,6 +28,17 @@ abstract class IAuthService {
   /// the server. Call after the user reports they clicked the link.
   Future<void> reloadCurrentUser();
 
+  /// Returns the Firebase sign-in provider IDs registered for [email]
+  /// (`password`, `apple.com`, `google.com`, ...).
+  ///
+  /// Best-effort: returns an empty list when Firebase's email
+  /// enumeration protection is on (default in newer projects), when
+  /// the email has no account, or on any other failure. Callers must
+  /// not branch on "empty list = no account" — empty is also the
+  /// privacy-protected response and conflating the two would leak
+  /// account existence.
+  Future<List<String>> fetchSignInMethodsForEmail(String email);
+
   Stream<AuthUser?> get authStateChanges;
 
   AuthUser? get currentUser;

@@ -97,4 +97,61 @@ void main() {
       expect(fakeAuthService.reloadCalls, equals(1));
     },
   );
+
+  group('signInWithEmail provider suggestion', () {
+    test('sets suggestedProvider when password fails and only OAuth providers '
+        'exist for the email', () async {
+      fakeAuthService.nextResult = const AuthResultFailure(
+        'Incorrect email or password.',
+      );
+      fakeAuthService.nextSignInMethods = const ['apple.com'];
+
+      await container
+          .read(authProvider.notifier)
+          .signInWithEmail(email: 'shared@example.com', password: 'wrong-pw');
+
+      final state = container.read(authProvider);
+      expect(state, isA<AuthError>());
+      final failure = (state as AuthError).failure;
+      expect(failure.suggestedProvider, equals('apple.com'));
+    });
+
+    test('never suggests when fetchSignInMethodsForEmail returns empty '
+        '(enumeration protection on / no account)', () async {
+      fakeAuthService.nextResult = const AuthResultFailure(
+        'Incorrect email or password.',
+      );
+      fakeAuthService.nextSignInMethods = const [];
+
+      await container
+          .read(authProvider.notifier)
+          .signInWithEmail(email: 'who@example.com', password: 'wrong-pw');
+
+      final state = container.read(authProvider);
+      expect(state, isA<AuthError>());
+      expect(
+        (state as AuthError).failure.suggestedProvider,
+        isNull,
+        reason: 'Empty methods list must not leak account existence',
+      );
+    });
+
+    test('never suggests when password is among the registered methods '
+        '(user just typed wrong password)', () async {
+      fakeAuthService.nextResult = const AuthResultFailure(
+        'Incorrect email or password.',
+      );
+      fakeAuthService.nextSignInMethods = const ['password', 'apple.com'];
+
+      await container
+          .read(authProvider.notifier)
+          .signInWithEmail(email: 'mixed@example.com', password: 'wrong-pw');
+
+      expect(
+        (container.read(authProvider) as AuthError).failure.suggestedProvider,
+        isNull,
+        reason: 'Account already has password — user just typed it wrong',
+      );
+    });
+  });
 }

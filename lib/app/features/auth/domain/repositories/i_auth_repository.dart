@@ -29,4 +29,10 @@ abstract class IAuthRepository {
   /// Forces a refresh of the local user's `emailVerified` flag from the
   /// server, then returns the refreshed [AppUser] (or null if signed out).
   Future<AppUser?> reloadCurrentUser();
+
+  /// Returns the Firebase sign-in provider IDs registered for [email].
+  /// Empty list when email enumeration protection is on, when no
+  /// account exists, or on any error — callers must not branch on
+  /// "empty = no account."
+  Future<List<String>> fetchSignInMethodsForEmail(String email);
 }

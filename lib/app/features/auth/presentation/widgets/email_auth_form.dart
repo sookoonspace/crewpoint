@@ -57,16 +57,34 @@ class _EmailAuthFormState extends ConsumerState<EmailAuthForm> {
     final authState = ref.watch(authProvider);
     final isLoading = authState is AuthLoading;
 
-    // Show error message if auth failed
+    // Show error message if auth failed. Two snackbar variants:
+    //   - default: the generic auth error message (e.g. "Incorrect email
+    //     or password.")
+    //   - provider hint: when AuthFailure.suggestedProvider is set, route
+    //     the user to the right tile instead of leaving them stuck.
     ref.listen<AuthState>(authProvider, (previous, next) {
-      if (next is AuthError) {
+      if (next is! AuthError) return;
+      final suggested = next.failure.suggestedProvider;
+      if (suggested != null) {
+        final providerLabel = _providerLabel(suggested);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(next.failure.message),
+            key: Key('auth.suggestProvider.${_providerSlug(suggested)}'),
+            content: Text(
+              'This email is registered with $providerLabel. '
+              'Tap "Continue with $providerLabel" above.',
+            ),
             backgroundColor: AppColors.terracotta,
           ),
         );
+        return;
       }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(next.failure.message),
+          backgroundColor: AppColors.terracotta,
+        ),
+      );
     });
 
     return Form(
@@ -134,3 +152,19 @@ class _EmailAuthFormState extends ConsumerState<EmailAuthForm> {
     );
   }
 }
+
+/// Maps a Firebase provider ID to a human-friendly label for snackbar
+/// copy. Falls back to "your existing provider" for unknown IDs so the
+/// message stays grammatical.
+String _providerLabel(String providerId) => switch (providerId) {
+  'google.com' => 'Google',
+  'apple.com' => 'Apple',
+  _ => 'your existing provider',
+};
+
+/// Shortens a Firebase provider ID for use in stable widget Keys.
+String _providerSlug(String providerId) => switch (providerId) {
+  'google.com' => 'google',
+  'apple.com' => 'apple',
+  _ => 'other',
+};

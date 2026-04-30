@@ -71,7 +71,29 @@ class AuthNotifier extends Notifier<AuthState> {
       password: password,
     );
     if (failure != null) {
-      state = AuthError(failure);
+      // On password failure, best-effort look up which providers Firebase
+      // recognises for this email. If only OAuth providers come back
+      // (`password` absent), the account was upgraded by an OAuth merge —
+      // surface a suggestion so the UI can route the user to the right
+      // tile instead of a blunt "Incorrect password" message.
+      // Empty list → enumeration protection on / no account → never
+      // suggest (would leak account existence).
+      final methods = await _authRepository.fetchSignInMethodsForEmail(email);
+      final hasPassword = methods.contains('password');
+      final firstOauth = methods.firstWhere(
+        (m) => m != 'password',
+        orElse: () => '',
+      );
+      final suggested = (!hasPassword && firstOauth.isNotEmpty)
+          ? firstOauth
+          : null;
+      state = AuthError(
+        AuthFailure(
+          type: failure.type,
+          message: failure.message,
+          suggestedProvider: suggested,
+        ),
+      );
     } else if (user != null) {
       state = Authenticated(user);
     }

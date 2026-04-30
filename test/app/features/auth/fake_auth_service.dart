@@ -17,6 +17,13 @@ class FakeAuthService implements IAuthService {
   /// Records every `reloadCurrentUser` call.
   int reloadCalls = 0;
 
+  /// Stubs the response of `fetchSignInMethodsForEmail`. Defaults to an
+  /// empty list (mimics email-enumeration-protection-on / no-account).
+  List<String> nextSignInMethods = const [];
+
+  /// Records every `fetchSignInMethodsForEmail` call's email arg.
+  final List<String> fetchSignInMethodsCalls = [];
+
   @override
   AuthUser? get currentUser => _currentUser;
 
@@ -93,6 +100,12 @@ class FakeAuthService implements IAuthService {
   @override
   Future<void> reloadCurrentUser() async {
     reloadCalls++;
+  }
+
+  @override
+  Future<List<String>> fetchSignInMethodsForEmail(String email) async {
+    fetchSignInMethodsCalls.add(email);
+    return nextSignInMethods;
   }
 
   /// Test setter — drives state transitions in tests where the
