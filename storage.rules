@@ -7,7 +7,7 @@ service firebase.storage {
       allow read: if request.auth != null;
       allow write: if request.auth.uid == userId
         && request.resource.size < 5 * 1024 * 1024  // Max 5MB
-        && request.resource.contentType.matches('image/.*');
+        && request.resource.contentType.matches('image/(jpeg|png|heic|webp)');
     }
 
     // User files folder — only the owner can read/write
@@ -28,7 +28,7 @@ service firebase.storage {
           /databases/(default)/documents/events/$(eventId)
         ).data.memberIds
         && request.resource.size < 5 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
+        && request.resource.contentType.matches('image/(jpeg|png|heic|webp)');
     }
 
     // Deny everything else

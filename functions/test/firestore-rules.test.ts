@@ -104,6 +104,215 @@ describe('events update — Fix 1.A: field-level guards on memberIds/adminIds/cr
   });
 });
 
+describe('tasks update — Fix 1.C: field-level guards on eventId/createdBy', () => {
+  test('assignee cannot rewrite eventId on a task they are assigned to', async () => {
+    const eventId = 'evtT1';
+    const taskId = 'taskT1';
+    const creatorUid = 'creatorT1';
+    const assigneeUid = 'assigneeT1';
+
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, `events/${eventId}`), {
+        creatorId: creatorUid,
+        memberIds: [creatorUid, assigneeUid],
+        adminIds: [creatorUid],
+        title: 'Trip',
+      });
+      await setDoc(doc(db, `events/${eventId}/tasks/${taskId}`), {
+        eventId,
+        createdBy: creatorUid,
+        assigneeId: assigneeUid,
+        title: 'Buy snacks',
+        status: 'todo',
+      });
+    });
+
+    // Assignee tries to rewrite eventId. Without Fix 1.C this would
+    // succeed because the existing rule allows assignee updates to
+    // any field. Fix 1.C must block writes that change eventId.
+    const assigneeCtx = env.authenticatedContext(assigneeUid);
+    await assertFails(
+      updateDoc(
+        doc(assigneeCtx.firestore(), `events/${eventId}/tasks/${taskId}`),
+        {eventId: 'attackerOwnedEvent'}
+      )
+    );
+  });
+
+  test('assignee cannot rewrite createdBy on a task they are assigned to', async () => {
+    const eventId = 'evtT2';
+    const taskId = 'taskT2';
+    const creatorUid = 'creatorT2';
+    const assigneeUid = 'assigneeT2';
+
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, `events/${eventId}`), {
+        creatorId: creatorUid,
+        memberIds: [creatorUid, assigneeUid],
+        adminIds: [creatorUid],
+      });
+      await setDoc(doc(db, `events/${eventId}/tasks/${taskId}`), {
+        eventId,
+        createdBy: creatorUid,
+        assigneeId: assigneeUid,
+        title: 'Buy snacks',
+        status: 'todo',
+      });
+    });
+
+    const assigneeCtx = env.authenticatedContext(assigneeUid);
+    await assertFails(
+      updateDoc(
+        doc(assigneeCtx.firestore(), `events/${eventId}/tasks/${taskId}`),
+        {createdBy: assigneeUid}
+      )
+    );
+  });
+
+  test('assignee can update task status (backward-compat positive case)', async () => {
+    const eventId = 'evtT3';
+    const taskId = 'taskT3';
+    const creatorUid = 'creatorT3';
+    const assigneeUid = 'assigneeT3';
+
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, `events/${eventId}`), {
+        creatorId: creatorUid,
+        memberIds: [creatorUid, assigneeUid],
+        adminIds: [creatorUid],
+      });
+      await setDoc(doc(db, `events/${eventId}/tasks/${taskId}`), {
+        eventId,
+        createdBy: creatorUid,
+        assigneeId: assigneeUid,
+        title: 'Buy snacks',
+        status: 'todo',
+      });
+    });
+
+    const assigneeCtx = env.authenticatedContext(assigneeUid);
+    await assertSucceeds(
+      updateDoc(
+        doc(assigneeCtx.firestore(), `events/${eventId}/tasks/${taskId}`),
+        {status: 'in_progress'}
+      )
+    );
+  });
+});
+
+describe('users — Fix 1.B Option A: PII isolated in users/{uid}/private/profile', () => {
+  test('self can read own users/{uid}/private/profile', async () => {
+    const selfUid = 'selfB1';
+
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, `users/${selfUid}`), {
+        displayName: 'Alice',
+        photoUrl: 'https://example.com/alice.jpg',
+      });
+      await setDoc(doc(db, `users/${selfUid}/private/profile`), {
+        email: 'alice@example.com',
+        providerIds: ['password'],
+        fcmTokens: ['tok1'],
+      });
+    });
+
+    const selfCtx = env.authenticatedContext(selfUid);
+    await assertSucceeds(
+      getDoc(doc(selfCtx.firestore(), `users/${selfUid}/private/profile`))
+    );
+  });
+
+  test('non-self cannot read users/{otherUid}/private/profile', async () => {
+    const ownerUid = 'ownerB2';
+    const otherUid = 'otherB2';
+
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, `users/${ownerUid}/private/profile`), {
+        email: 'owner@example.com',
+      });
+    });
+
+    const otherCtx = env.authenticatedContext(otherUid);
+    await assertFails(
+      getDoc(doc(otherCtx.firestore(), `users/${ownerUid}/private/profile`))
+    );
+  });
+
+  test('non-self can still read users/{otherUid} public projection (display fields)', async () => {
+    const ownerUid = 'ownerB3';
+    const otherUid = 'otherB3';
+
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `users/${ownerUid}`), {
+        displayName: 'Bob',
+        photoUrl: 'https://example.com/bob.jpg',
+        paymentMethod: 'venmo',
+        paymentHandle: '@bob',
+      });
+    });
+
+    const otherCtx = env.authenticatedContext(otherUid);
+    await assertSucceeds(
+      getDoc(doc(otherCtx.firestore(), `users/${ownerUid}`))
+    );
+  });
+
+  test('self can write users/{uid}/private/profile', async () => {
+    const selfUid = 'selfB4';
+
+    const selfCtx = env.authenticatedContext(selfUid);
+    await assertSucceeds(
+      setDoc(
+        doc(selfCtx.firestore(), `users/${selfUid}/private/profile`),
+        {email: 'self@example.com', fcmTokens: ['tok-fresh']}
+      )
+    );
+  });
+
+  test('non-self cannot write users/{otherUid}/private/profile', async () => {
+    const ownerUid = 'ownerB5';
+    const attackerUid = 'attackerB5';
+
+    const attackerCtx = env.authenticatedContext(attackerUid);
+    await assertFails(
+      setDoc(
+        doc(attackerCtx.firestore(), `users/${ownerUid}/private/profile`),
+        {email: 'phished@example.com'}
+      )
+    );
+  });
+});
+
+describe('event_invites — client access denied universally', () => {
+  test('authenticated user cannot read event_invites', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'event_invites/CODE01'), {
+        eventId: 'evtX',
+        expiresAt: new Date(Date.now() + 60_000),
+      });
+    });
+
+    const userCtx = env.authenticatedContext('anyUser');
+    await assertFails(
+      getDoc(doc(userCtx.firestore(), 'event_invites/CODE01'))
+    );
+  });
+
+  test('authenticated user cannot create event_invites', async () => {
+    const userCtx = env.authenticatedContext('anyUser');
+    await assertFails(
+      setDoc(doc(userCtx.firestore(), 'event_invites/CODE02'), {
+        eventId: 'evtY',
+      })
+    );
+  });
+});
+
 describe('access matrix smoke', () => {
   test('anonymous user cannot read events', async () => {
     const eventId = 'evtAnon';

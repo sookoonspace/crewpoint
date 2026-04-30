@@ -65,11 +65,18 @@ service cloud.firestore {
           && request.resource.data.eventId == eventId;
 
         // Update: owner, admins, or the assignee
-        // (status changes routed through markTaskComplete CF for ->done)
+        // (status changes routed through markTaskComplete CF for ->done).
+        // Fix 1.C — field-level guard: clients must NOT mutate eventId or
+        // createdBy. eventId pinpoints the parent event and is set on
+        // create; createdBy records authorship. An assignee rewriting
+        // either could either move the task to a different event (data
+        // integrity) or claim ownership (audit trail integrity).
         allow update: if request.auth != null
           && (eventDoc().creatorId == request.auth.uid
               || request.auth.uid in eventDoc().adminIds
-              || resource.data.assigneeId == request.auth.uid);
+              || resource.data.assigneeId == request.auth.uid)
+          && request.resource.data.eventId == resource.data.eventId
+          && request.resource.data.createdBy == resource.data.createdBy;
 
         // Delete: only creator/owner/admin
         allow delete: if request.auth != null
@@ -117,9 +124,22 @@ service cloud.firestore {
     }
 
     // Users collection
+    //
+    // Fix 1.B Option A — projection-split. The public users/{uid} doc keeps
+    // only display fields visible to every CrewPoint user (displayName,
+    // photoUrl, payment* handles, currency). PII fields (email, providerIds,
+    // fcmTokens, preferences, createdAt, updatedAt) live in the
+    // users/{uid}/private/profile subdoc with self-only access. This
+    // eliminates the broad read on PII without touching the
+    // co-member-display read path that chat / tasks / budget rely on.
     match /users/{userId} {
       allow read: if request.auth != null;
       allow write: if request.auth.uid == userId;
+
+      match /private/{docId} {
+        allow read, write: if request.auth != null
+          && request.auth.uid == userId;
+      }
     }
   }
 }

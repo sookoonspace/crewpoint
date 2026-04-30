@@ -147,8 +147,20 @@ export const deleteUserAccount = onCall(
         }
       }
 
-      // Delete user document
+      // Delete user document. Firestore does NOT cascade-delete
+      // subcollections, so we explicitly tear down the private/profile
+      // subdoc (Fix 1.B Option A) before deleting the parent user doc.
       logger.info(`Deleting user document ${uid}`);
+      await db
+        .collection("users")
+        .doc(uid)
+        .collection("private")
+        .doc("profile")
+        .delete()
+        .catch((err: unknown) => {
+          // Idempotent: missing private/profile is fine on retry.
+          logger.warn(`Private subdoc cleanup warning for ${uid}:`, err);
+        });
       await db.collection("users").doc(uid).delete();
 
       // Delete user storage files

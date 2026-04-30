@@ -49,22 +49,22 @@ Pre-launch security + legal hardening: rules audit, CF streaming refactor, legal
 ### Phase 2: Remaining rule fixes (1.B projection-split + 1.C tasks + 1.D storage) + access-matrix tests + audit reports
 
 - **Goal**: every rule branch hardened; `users` PII isolated to private subcollection; storage MIME allow-list; written reports committed.
-- [ ] `firestore.rules` — apply Fix 1.B Option A: keep `users/{uid}` public (display fields only), add `match /users/{uid}/private/{docId}` with self-only rule.
-- [ ] `firestore.rules` — apply Fix 1.C (tasks update field-level guard for `eventId`/`createdBy`).
-- [ ] `firestore.rules` — write-shape allow-listing on `events`/`tasks`/`expenses` create+update (intent-only).
-- [ ] `storage.rules` — audit `image/.*` regex; if `image/svg+xml` admitted, replace with explicit allow-list (Fix 1.D).
-- [ ] `lib/app/features/profile/data/firestore_user_repository.dart` — split write path into public-doc set + `private/profile` subdoc set (batched). Split read path: public-only on non-self reads; both on self.
-- [ ] `lib/app/features/profile/domain/repositories/i_user_repository.dart` — extend interface if read-self vs read-other diverges.
-- [ ] `functions/scripts/migratePiiToPrivate.ts` — one-shot idempotent migration for existing `users/{uid}` docs (check `private/profile` existence before write; record `migratedAt`).
-- [ ] `functions/src/account/deleteUserAccount.ts` — delete `users/{uid}/private/profile` subdoc before deleting parent (Firestore doesn't cascade).
-- [ ] Grep audit: every dart call site reading non-self `users/{uid}` doc. Start point: `lib/app/features/chat/application/users_by_id_provider.dart`. Verify each survives the projection-split rule.
-- [ ] TDD: rules test — non-self read on `users/{otherUid}` returns public projection only; private subdoc denied.
-- [ ] TDD: rules test — self read on `users/{uid}/private/profile` succeeds; other reads denied.
-- [ ] TDD: rules test — assignee cannot rewrite `eventId` or `createdBy` on a task (Fix 1.C).
-- [ ] TDD: rules test — `event_invites` denied to all clients regardless of role.
-- [ ] TDD: dart unit test — repository read-self vs read-other returns expected projections.
-- [ ] `docs/security/firestore-rules-audit.md` — every match block + access matrix (read/create/update/delete × actor) + `get()`-cost flagging + Fix list.
-- [ ] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`.
+- [x] `firestore.rules` — applied Fix 1.B Option A: kept `users/{uid}` publicly readable (display fields only), added `match /users/{uid}/private/{docId}` with self-only `read, write` rule. Comment cites the rationale.
+- [x] `firestore.rules` — applied Fix 1.C (tasks update field-level guard for `eventId`/`createdBy`). Comment cites the data-integrity / audit-trail rationale.
+- [ ] `firestore.rules` — write-shape allow-listing on `events`/`tasks`/`expenses` create+update (intent-only — deferred follow-up; audit doc lists as out-of-scope for V1).
+- [x] `storage.rules` — replaced `image/.*` (admits `image/svg+xml` XSS surface) with explicit `image/(jpeg|png|heic|webp)` allow-list at both `users/{userId}/profile.jpg` and `events/{eventId}/receipts/{filename}` write rules.
+- [x] `lib/app/features/profile/data/firestore_user_repository.dart` — write path split via `WriteBatch`: public-doc gets display + payment fields; `private/profile` subdoc gets email/preferences/timestamps/fcmTokens. Read path attempts both; permission-denied on private (non-self read under the new rules) gracefully returns the public projection only.
+- [x] `lib/app/features/profile/domain/repositories/i_user_repository.dart` — interface unchanged; the public-vs-private split is hidden behind `getUser(uid)` semantics. Documented in the Firestore impl's class-level dartdoc.
+- [x] `functions/scripts/migratePiiToPrivate.ts` — one-shot idempotent migration. Cursor-paged (500-doc pages, document-ID order); skips users with existing `private/profile`; writes `migratedAt` marker. Documented usage for both emulator and prod with required env vars.
+- [x] `functions/src/account/deleteUserAccount.ts` — deletes `users/{uid}/private/profile` subdoc before parent (Firestore doesn't cascade). Catches missing-subdoc errors as warnings for retry idempotency.
+- [x] Grep audit: every dart call site reading non-self `users/{uid}` doc surveyed — `lib/app/features/chat/application/users_by_id_provider.dart:18` (consumed by chat / tasks / budget pages) reads only public-display fields and survives the projection-split. `lib/app/features/profile/presentation/edit_profile_screen.dart:159` is a self-read and gets the full AppUser. `lib/app/core/services/fcm_service.dart` writes only (now to private subdoc). No other consumers found.
+- [x] TDD: rules test — non-self read on `users/{otherUid}` returns public projection (existing rule unchanged); non-self read on `users/{otherUid}/private/profile` denied.
+- [x] TDD: rules test — self read on `users/{uid}/private/profile` succeeds; self write succeeds; non-self write denied (RED → applied Fix 1.B → GREEN).
+- [x] TDD: rules test — assignee cannot rewrite `eventId` or `createdBy` on a task (Fix 1.C; RED → applied Fix 1.C → GREEN); positive backward-compat (assignee updates `status`) green.
+- [x] TDD: rules test — `event_invites` denied to all clients regardless of role (read + create both denied).
+- [x] TDD: dart unit test — `firestore_user_repository_test.dart` covers `createUserIfNotExists` PII split, `saveProfile` public-only writes, `addFcmToken`/`removeFcmToken` private-subdoc routing, `getUser` merge logic + missing-private fallback. 7/7 tests pass via `fake_cloud_firestore`.
+- [x] `docs/security/firestore-rules-audit.md` — full access matrix, per-rule findings, `get()`-cost table, storage-rule audit, out-of-scope tracking, sign-off checkpoint.
+- [x] Verify: `flutter analyze` clean; `flutter test` 202 pass + 4 screenshot suites skipped; `npm --prefix functions test` 15/15 pass; `npm --prefix functions run build` clean.
 
 ### Phase 3: Cloud Function hardening pass (10 functions) — input validation + structured logging + HttpsError audit
 
