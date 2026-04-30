@@ -1,7 +1,11 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions/v2";
 import * as admin from "firebase-admin";
-import {commitInChunks, getSubcollectionRefs, BatchOperation} from "../utils/batch";
+import {
+  commitInChunks,
+  streamDeleteSubcollection,
+  BatchOperation,
+} from "../utils/batch";
 import {withStructuredLogs} from "../utils/logging";
 
 const db = admin.firestore();
@@ -9,22 +13,17 @@ const storage = admin.storage();
 const auth = admin.auth();
 
 /**
- * Deletes an event and all its subcollections (messages, expenses, tasks).
+ * Deletes an event and all its subcollections (messages, expenses,
+ * tasks). Bounded memory via paged streaming deletes — safe for events
+ * with arbitrarily large subcollections.
  */
 async function deleteEventCompletely(
   eventRef: FirebaseFirestore.DocumentReference
 ): Promise<void> {
-  const ops: BatchOperation[] = [];
-
   for (const sub of ["messages", "expenses", "tasks"]) {
-    const refs = await getSubcollectionRefs(eventRef, sub);
-    for (const ref of refs) {
-      ops.push({type: "delete", ref});
-    }
+    await streamDeleteSubcollection(eventRef, sub);
   }
-
-  ops.push({type: "delete", ref: eventRef});
-  await commitInChunks(ops);
+  await eventRef.delete();
 }
 
 /**

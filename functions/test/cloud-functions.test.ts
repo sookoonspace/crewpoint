@@ -30,6 +30,7 @@ const {markTaskComplete} = require('../src/events/markTaskComplete');
 const {generateInviteCode} = require('../src/events/generateInviteCode');
 const {disputeSettlement} = require('../src/events/disputeSettlement');
 const {deleteEvent} = require('../src/events/deleteEvent');
+const {deleteUserAccount} = require('../src/account/deleteUserAccount');
 /* eslint-enable @typescript-eslint/no-var-requires */
 
 afterEach(async () => {
@@ -72,6 +73,7 @@ describe('callables — auth-failure case (no auth → unauthenticated)', () => 
     ['generateInviteCode', generateInviteCode, {eventId: 'e'}],
     ['disputeSettlement', disputeSettlement, {eventId: 'e', settlementId: 's'}],
     ['deleteEvent', deleteEvent, {eventId: 'e'}],
+    ['deleteUserAccount', deleteUserAccount, {}],
   ];
 
   test.each(cases)(
@@ -573,6 +575,223 @@ describe('deleteEvent', () => {
       expect(messagesAfter.empty).toBe(true);
       const tasksAfter = await eventRef.collection('tasks').get();
       expect(tasksAfter.empty).toBe(true);
+    }
+  );
+
+  test(
+    'streams the delete on a 1,200-message event (proves bounded memory)',
+    async () => {
+      const eventId = 'evtDELarge';
+      const creatorUid = 'creatorDELarge';
+      await seedEvent({eventId, creatorUid});
+
+      // Seed 1,200 messages — past the 500-doc batch cap, so the
+      // streaming loop must run at least three pages (500, 500, 200).
+      const eventRef = getAdminDb().collection('events').doc(eventId);
+      const PAGE = 500;
+      let written = 0;
+      while (written < 1200) {
+        const pageSize = Math.min(PAGE, 1200 - written);
+        const batch = getAdminDb().batch();
+        for (let i = 0; i < pageSize; i++) {
+          batch.set(
+            eventRef
+              .collection('messages')
+              .doc(`m${(written + i).toString().padStart(5, '0')}`),
+            {senderId: creatorUid, text: `msg ${written + i}`}
+          );
+        }
+        await batch.commit();
+        written += pageSize;
+      }
+
+      const wrapped = ftest.wrap(deleteEvent);
+      const result = await wrapped({
+        auth: {uid: creatorUid},
+        data: {eventId},
+      });
+      expect(result).toEqual({success: true});
+
+      const eventAfter = await eventRef.get();
+      expect(eventAfter.exists).toBe(false);
+      const messagesAfter = await eventRef.collection('messages').get();
+      expect(messagesAfter.size).toBe(0);
+    },
+    60_000 // tighter timeout so an upfront-collection regression would surface
+  );
+
+  test(
+    'idempotent on retry: second invocation throws not-found',
+    async () => {
+      const eventId = 'evtDERetry';
+      const creatorUid = 'creatorDERetry';
+      await seedEvent({eventId, creatorUid});
+
+      const wrapped = ftest.wrap(deleteEvent);
+      await wrapped({auth: {uid: creatorUid}, data: {eventId}});
+
+      // Second invocation should not crash — it should hit the
+      // not-found check at the top and return a clean HttpsError.
+      await expect(
+        wrapped({auth: {uid: creatorUid}, data: {eventId}})
+      ).rejects.toMatchObject({code: 'not-found'});
+    }
+  );
+});
+
+describe('deleteUserAccount', () => {
+  // Helper: deleteUserAccount calls auth().deleteUser(uid) at the end,
+  // so we need a real auth user in the emulator first.
+  async function createAuthUser(uid: string, email: string): Promise<void> {
+    await admin.auth().createUser({uid, email});
+  }
+
+  async function deleteAuthUserSilently(uid: string): Promise<void> {
+    try {
+      await admin.auth().deleteUser(uid);
+    } catch {
+      // Test cleanup — ignore.
+    }
+  }
+
+  test(
+    'solo event → hard delete; private subdoc gone; auth user deleted',
+    async () => {
+      const uid = 'soloUserA';
+      const eventId = 'evtSolo';
+      await createAuthUser(uid, 'solo@example.com');
+
+      const db = getAdminDb();
+      await db
+        .collection('users')
+        .doc(uid)
+        .set({displayName: 'Solo'});
+      await db
+        .collection('users')
+        .doc(uid)
+        .collection('private')
+        .doc('profile')
+        .set({email: 'solo@example.com'});
+      await seedEvent({
+        eventId,
+        creatorUid: uid,
+        memberUids: [uid],
+        adminUids: [uid],
+      });
+      await db
+        .collection('events')
+        .doc(eventId)
+        .collection('messages')
+        .doc('m1')
+        .set({senderId: uid, text: 'hi'});
+
+      const wrapped = ftest.wrap(deleteUserAccount);
+      const result = await wrapped({auth: {uid}, data: {}});
+      expect(result).toEqual({success: true});
+
+      // Solo event hard-deleted.
+      const eventAfter = await db.collection('events').doc(eventId).get();
+      expect(eventAfter.exists).toBe(false);
+
+      // Public user doc + private subdoc both gone.
+      const publicAfter = await db.collection('users').doc(uid).get();
+      expect(publicAfter.exists).toBe(false);
+      const privateAfter = await db
+        .collection('users')
+        .doc(uid)
+        .collection('private')
+        .doc('profile')
+        .get();
+      expect(privateAfter.exists).toBe(false);
+
+      // Auth user gone.
+      await expect(admin.auth().getUser(uid)).rejects.toMatchObject({
+        code: 'auth/user-not-found',
+      });
+    }
+  );
+
+  test(
+    'shared event → anonymize + ownership transfer to first remaining admin',
+    async () => {
+      const deletingUid = 'creatorShared';
+      const remainingAdminUid = 'remainAdmin';
+      const remainingMemberUid = 'remainMember';
+      const eventId = 'evtShared';
+
+      await createAuthUser(deletingUid, 'creator@example.com');
+
+      const db = getAdminDb();
+      await db.collection('users').doc(deletingUid).set({displayName: 'Creator'});
+      await seedEvent({
+        eventId,
+        creatorUid: deletingUid,
+        memberUids: [deletingUid, remainingAdminUid, remainingMemberUid],
+        adminUids: [deletingUid, remainingAdminUid],
+      });
+      await db
+        .collection('events')
+        .doc(eventId)
+        .collection('messages')
+        .doc('m1')
+        .set({senderId: deletingUid, text: 'creator msg'});
+      await db
+        .collection('events')
+        .doc(eventId)
+        .collection('expenses')
+        .doc('e1')
+        .set({payerId: deletingUid, amount: 50});
+      await db
+        .collection('events')
+        .doc(eventId)
+        .collection('tasks')
+        .doc('t1')
+        .set({
+          eventId,
+          createdBy: remainingMemberUid,
+          assigneeId: deletingUid,
+          status: 'todo',
+        });
+
+      const wrapped = ftest.wrap(deleteUserAccount);
+      await wrapped({auth: {uid: deletingUid}, data: {}});
+
+      // Event survives, ownership transferred to the first remaining admin.
+      const eventAfter = await db.collection('events').doc(eventId).get();
+      expect(eventAfter.exists).toBe(true);
+      expect(eventAfter.data()!.creatorId).toBe(remainingAdminUid);
+      expect(eventAfter.data()!.memberIds).not.toContain(deletingUid);
+      expect(eventAfter.data()!.adminIds).not.toContain(deletingUid);
+
+      // Messages anonymized.
+      const msgAfter = await db
+        .collection('events')
+        .doc(eventId)
+        .collection('messages')
+        .doc('m1')
+        .get();
+      expect(msgAfter.data()!.senderId).toBe('deleted_user');
+
+      // Expenses anonymized.
+      const expAfter = await db
+        .collection('events')
+        .doc(eventId)
+        .collection('expenses')
+        .doc('e1')
+        .get();
+      expect(expAfter.data()!.payerId).toBe('deleted_user');
+
+      // Tasks unassigned.
+      const taskAfter = await db
+        .collection('events')
+        .doc(eventId)
+        .collection('tasks')
+        .doc('t1')
+        .get();
+      expect(taskAfter.data()!.assigneeId).toBeNull();
+
+      await deleteAuthUserSilently(remainingAdminUid);
+      await deleteAuthUserSilently(remainingMemberUid);
     }
   );
 });

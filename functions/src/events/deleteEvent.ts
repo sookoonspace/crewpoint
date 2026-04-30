@@ -1,6 +1,6 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
-import {commitInChunks, getSubcollectionRefs, BatchOperation} from "../utils/batch";
+import {streamDeleteSubcollection} from "../utils/batch";
 import {requireString, withStructuredLogs} from "../utils/logging";
 
 const db = admin.firestore();
@@ -9,22 +9,24 @@ const db = admin.firestore();
  * deleteEvent — deletes an event and all subcollections.
  *
  * - Caller must be the event creator (owner)
- * - Batch deletes messages, expenses, tasks subcollections
- * - Uses commitInChunks for 500-doc batch limit safety
+ * - Streams delete of `messages`, `expenses`, `tasks` subcollections
+ *   in pages of 500 (bounded memory; safe for 100k+ message events)
+ * - Deletes any active invite codes for the event
+ * - Deletes the event doc itself
  *
- * **Known memory risk** (deferred to Phase 4): the current
- * implementation collects every subcollection ref into memory before
- * chunking. A 100k-message event would OOM the 256 MiB function
- * before the first batch commits. Tracked for streaming-pagination
- * refactor.
+ * **Memory bound**: at most 500 doc refs in flight at any time. The
+ * 256 MiB function memory cap is never approached regardless of
+ * subcollection size.
  *
  * Idempotency: a retry that runs after the first attempt deleted some
- * subset of docs will simply re-issue empty deletes for the missing
- * docs (Firestore tolerates `delete` on a missing doc) and converge on
- * the same end state.
+ * subset of docs simply re-pages through the surviving docs (Firestore
+ * tolerates `delete` on a missing doc; the streaming pattern handles
+ * gaps without special-casing). The second invocation either finds
+ * `not-found` on the event doc (already deleted) or finds an empty
+ * subcollection page on the first iteration of each loop.
  */
 export const deleteEvent = onCall(
-  {timeoutSeconds: 120, memory: "256MiB"},
+  {timeoutSeconds: 540, memory: "256MiB"},
   async (request) => {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Must be signed in.");
@@ -38,7 +40,8 @@ export const deleteEvent = onCall(
     return withStructuredLogs(
       {op: "deleteEvent", uid, args: {eventId}},
       async () => {
-        const eventDoc = await db.collection("events").doc(eventId).get();
+        const eventRef = db.collection("events").doc(eventId);
+        const eventDoc = await eventRef.get();
         if (!eventDoc.exists) {
           throw new HttpsError("not-found", "Event not found.");
         }
@@ -51,33 +54,23 @@ export const deleteEvent = onCall(
           );
         }
 
-        const ops: BatchOperation[] = [];
-
         for (const sub of ["messages", "expenses", "tasks"]) {
-          const refs = await getSubcollectionRefs(
-            db.collection("events").doc(eventId),
-            sub
-          );
-          for (const ref of refs) {
-            ops.push({type: "delete", ref});
-          }
+          await streamDeleteSubcollection(eventRef, sub);
         }
 
         const inviteCodes = await db
           .collection("event_invites")
           .where("eventId", "==", eventId)
           .get();
-
-        for (const doc of inviteCodes.docs) {
-          ops.push({type: "delete", ref: doc.ref});
+        if (!inviteCodes.empty) {
+          const batch = db.batch();
+          for (const doc of inviteCodes.docs) {
+            batch.delete(doc.ref);
+          }
+          await batch.commit();
         }
 
-        ops.push({
-          type: "delete",
-          ref: db.collection("events").doc(eventId),
-        });
-
-        await commitInChunks(ops);
+        await eventRef.delete();
 
         return {success: true};
       }
