@@ -33,18 +33,18 @@ Pre-launch security + legal hardening: rules audit, CF streaming refactor, legal
 ### Phase 1: Test harness + Fix 1.A (events update guard) — end-to-end proving slice
 
 - **Goal**: rules-test loop runs locally; first field-level rule guard shipped + tested; pattern locked in for Phases 2–3.
-- [ ] `functions/package.json` — add dev deps: `@firebase/rules-unit-testing`, `firebase-functions-test`, `jest`, `ts-jest`, `@types/jest`, `tsx`.
-- [ ] `functions/jest.config.js` — TypeScript, emulator-pointed, `testTimeout: 30000`.
-- [ ] `functions/test/setup.ts` — boot emulator helpers; **guard**: throw if `FIRESTORE_EMULATOR_HOST` unset.
-- [ ] `firebase.json` — add `emulators` block (firestore 8080, auth 9099, functions 5001, ui 4000).
-- [ ] `functions/README.md` — document `npm test` run path + emulator prereq.
-- [ ] `firestore.rules` — apply Fix 1.A (events update field-level guard for `memberIds`/`adminIds`/`creatorId`). Spec §Phase-1 req-2.
-- [ ] TDD: rules test — admin cannot self-promote via direct `events/{id}` update (Fix 1.A negative case).
-- [ ] TDD: rules test — admin cannot remove a member via direct `events/{id}` update.
-- [ ] TDD: rules test — creator can update title/description/dates without touching member arrays (positive case; backward-compat).
-- [ ] TDD: rules test — anonymous user denied read on every collection (smoke).
-- [ ] TDD: rules test — non-member denied read on `events/{id}` (smoke).
-- [ ] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`.
+- [x] `functions/package.json` — added dev deps: `@firebase/rules-unit-testing@^4.0.1`, `firebase-functions-test@^3.4.1`, `jest@^29.7.0`, `ts-jest@^29.2.5`, `@types/jest@^29.5.13`, `tsx@^4.19.2`, `@types/node@^22.10.0`. Added `test` + `test:watch` scripts wrapped in `firebase emulators:exec --only firestore,auth`.
+- [x] `functions/jest.config.js` — ts-jest preset, `testTimeout: 30000`, node env, `<rootDir>/test/**/*.test.ts` match.
+- [x] `functions/test/setup.ts` — `getTestEnv()` loads `firestore.rules` from disk + boots `RulesTestEnvironment`; throws if `FIRESTORE_EMULATOR_HOST` unset.
+- [x] `firebase.json` — added `emulators` block (firestore 8080, auth 9099, functions 5001, ui 4000, `singleProjectMode: true`).
+- [x] `functions/README.md` — documented `npm test` run path + emulator prereq + test layout.
+- [x] `firestore.rules` — applied Fix 1.A (events update now field-level-guarded against `memberIds`/`adminIds`/`creatorId` mutation; comment cites the dedicated CFs that gatekeep those arrays).
+- [x] TDD: rules test — admin cannot promote another member to admin via direct `events/{id}` update (Fix 1.A driving test; RED → applied Fix 1.A → GREEN).
+- [x] TDD: rules test — admin cannot remove a member from `memberIds` via direct `events/{id}` update.
+- [x] TDD: rules test — creator can update title without touching member arrays (positive case; backward-compat).
+- [x] TDD: rules test — anonymous user denied read on `events` (smoke).
+- [x] TDD: rules test — non-member denied read on `events/{id}` (smoke).
+- [x] Verify: `flutter analyze` clean; `flutter test` 195 pass + 4 screenshot suites skipped; `npm --prefix functions test` 5/5 pass.
 
 ### Phase 2: Remaining rule fixes (1.B projection-split + 1.C tasks + 1.D storage) + access-matrix tests + audit reports
 

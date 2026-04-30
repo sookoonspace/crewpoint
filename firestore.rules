@@ -18,10 +18,19 @@ service cloud.firestore {
       allow create: if request.auth != null
         && request.resource.data.creatorId == request.auth.uid;
 
-      // Update: admins or creator (client writes: title, description, dates, type, status)
+      // Update: admins or creator (client writes: title, description, dates, type, status).
+      // Fix 1.A — field-level guard: clients must NOT mutate memberIds, adminIds,
+      // or creatorId. Those arrays are gatekept by the dedicated Cloud Functions
+      // (promoteToAdmin, demoteAdmin, removeEventMember, joinEvent), which use
+      // the Admin SDK and bypass these rules. Without this guard a malicious
+      // admin client could escalate other users to admin or eject members
+      // outside the audited CF paths.
       allow update: if request.auth != null
         && (resource.data.creatorId == request.auth.uid
-            || request.auth.uid in resource.data.adminIds);
+            || request.auth.uid in resource.data.adminIds)
+        && request.resource.data.memberIds == resource.data.memberIds
+        && request.resource.data.adminIds == resource.data.adminIds
+        && request.resource.data.creatorId == resource.data.creatorId;
 
       // Delete: only the creator
       allow delete: if request.auth != null
