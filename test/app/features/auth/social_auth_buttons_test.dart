@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/services/i_auth_service.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/auth/data/auth_repository.dart';
@@ -13,6 +14,10 @@ class _FakeAuthService implements IAuthService {
 }
 
 void main() {
+  // Source labels from `AppStrings.fallbackEnglish.auth` so these
+  // assertions don't break once the strings get translated.
+  final auth = AppStrings.fallbackEnglish.auth;
+
   testWidgets('renders Apple + Google tiles unconditionally', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -21,8 +26,8 @@ void main() {
       ),
     );
 
-    expect(find.text('Continue with Google'), findsOneWidget);
-    expect(find.text('Continue with Apple'), findsOneWidget);
+    expect(find.text(auth.continueWithGoogle), findsOneWidget);
+    expect(find.text(auth.continueWithApple), findsOneWidget);
   });
 
   testWidgets('Apple tile invokes authProvider.signInWithApple on tap', (
@@ -41,7 +46,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Continue with Apple'));
+    await tester.tap(find.text(auth.continueWithApple));
     await tester.pump();
 
     expect(appleTaps, equals(1));

@@ -56,3 +56,6 @@ Tracks ideas and partial implementations explicitly out of V1 scope. Promote int
 - Hard-block the dashboard on `emailVerified` for password-only accounts? Currently the verification banner is non-blocking. Revisit if abuse / support-cost data warrants it.
 - Switch web Apple sign-in to `signInWithRedirect()` for Safari users where third-party-cookie blocks break the popup flow.
 - Audit prep: drop the deprecation warning on `fetchSignInMethodsForEmail` once Firebase ships a non-deprecated equivalent.
+- Migrate strings in remaining features (dashboard, events, tasks, budget, chat, profile) to `context.strings.<feature>.*`. ~226 of the 276 `Text(...)` call sites in `lib/` remain after the auth-feature proving slice in `ui-polish-i18n-foundation-plan` Phase 3.
+- Wire `flutter_localizations` + `gen-l10n` ARB pipeline. Add `lib/l10n/app_en.arb` mirroring the shape in `lib/app/core/i18n/app_strings.dart`; later add `app_es.arb`, `app_hi.arb`, `app_fr.arb`. Migration is one file: replace the body of `extension StringsX on BuildContext { ... }` in `app_strings.dart` with an `AppLocalizations` adapter. Zero UI call-site changes.
+- Add a `MaterialApp.locale` switcher to Profile so QA can preview non-English locales without changing system settings.

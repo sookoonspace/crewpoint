@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/features/auth/presentation/widgets/email_auth_form.dart';
 import 'package:crewpoint_app/app/features/auth/presentation/widgets/social_auth_buttons.dart';
 
@@ -47,9 +48,12 @@ class _Header extends StatelessWidget {
     return Column(
       spacing: AppSpacing.sm,
       children: [
-        Text('CrewPoint', style: Theme.of(context).textTheme.headlineLarge),
         Text(
-          'Collaborate. Organize. Deliver.',
+          context.strings.auth.heroTitle,
+          style: Theme.of(context).textTheme.headlineLarge,
+        ),
+        Text(
+          context.strings.auth.tagline,
           style: Theme.of(
             context,
           ).textTheme.bodyMedium?.copyWith(color: AppColors.mediumGrey),
@@ -70,7 +74,7 @@ class _Divider extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Text(
-            'or continue with email',
+            context.strings.auth.dividerLabel,
             style: Theme.of(
               context,
             ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGrey),

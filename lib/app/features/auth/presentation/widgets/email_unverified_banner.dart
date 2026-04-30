@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart' show authProvider;
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 
@@ -44,15 +45,15 @@ class EmailUnverifiedBanner extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Verify your email so this sign-in stays active',
-                  style: TextStyle(
+                Text(
+                  context.strings.auth.verifyBannerTitle,
+                  style: const TextStyle(
                     color: AppColors.charcoal,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
-                  'We sent a link to ${user.email}.',
+                  context.strings.auth.verifyBannerBody(user.email),
                   style: const TextStyle(
                     color: AppColors.charcoal,
                     fontSize: 12,
@@ -65,13 +66,13 @@ class EmailUnverifiedBanner extends ConsumerWidget {
             key: const Key('auth.verifyBanner.resend'),
             onPressed: () =>
                 ref.read(authProvider.notifier).resendVerificationEmail(),
-            child: const Text('Resend'),
+            child: Text(context.strings.auth.verifyBannerResend),
           ),
           TextButton(
             key: const Key('auth.verifyBanner.refresh'),
             onPressed: () =>
                 ref.read(authProvider.notifier).reloadCurrentUser(),
-            child: const Text("I've verified"),
+            child: Text(context.strings.auth.verifyBannerRefresh),
           ),
         ],
       ),

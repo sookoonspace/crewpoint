@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 
 class SocialAuthButtons extends ConsumerWidget {
@@ -13,12 +14,12 @@ class SocialAuthButtons extends ConsumerWidget {
       spacing: AppSpacing.md,
       children: [
         _SocialButton(
-          label: 'Continue with Google',
+          label: context.strings.auth.continueWithGoogle,
           icon: Icons.g_mobiledata,
           onPressed: () => ref.read(authProvider.notifier).signInWithGoogle(),
         ),
         _SocialButton(
-          label: 'Continue with Apple',
+          label: context.strings.auth.continueWithApple,
           icon: Icons.apple,
           onPressed: () => ref.read(authProvider.notifier).signInWithApple(),
         ),

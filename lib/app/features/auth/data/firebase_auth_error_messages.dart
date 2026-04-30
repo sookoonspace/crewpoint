@@ -1,3 +1,5 @@
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
+
 /// Maps a Firebase Auth error code (the part after `auth/`) to the
 /// user-facing copy CrewPoint shows in snackbars / form errors.
 ///
@@ -5,17 +7,25 @@
 /// added for web Apple sign-in can be unit-tested without instantiating
 /// `FirebaseAuthService` (which would otherwise need a real Firebase
 /// binding).
-String firebaseAuthErrorMessage(String code) => switch (code) {
-  'invalid-email' => 'The email address is invalid.',
-  'wrong-password' || 'invalid-credential' => 'Incorrect email or password.',
-  'user-not-found' => 'No account found with this email.',
-  'email-already-in-use' => 'An account already exists with this email.',
-  'weak-password' => 'Password must be at least 6 characters.',
-  'network-request-failed' => 'Network error. Please check your connection.',
-  'popup-blocked' =>
-    'Pop-ups are blocked - please allow pop-ups for this site and try again.',
-  'cancelled-popup-request' || 'popup-closed-by-user' => 'Sign-in cancelled.',
-  'too-many-requests' =>
-    'Too many attempts. Please wait a minute before trying again.',
-  _ => 'An unexpected error occurred. Please try again.',
-};
+///
+/// Service-layer fallback: this function reads from
+/// `AppStrings.fallbackEnglish.errors` because no `BuildContext` is in
+/// scope here. UI code that has a context should prefer
+/// `context.strings.errors.<key>` directly so the message picks up the
+/// active locale once `flutter_localizations` is wired.
+String firebaseAuthErrorMessage(String code) {
+  final errors = AppStrings.fallbackEnglish.errors;
+  return switch (code) {
+    'invalid-email' => errors.invalidEmail,
+    'wrong-password' || 'invalid-credential' => errors.wrongPassword,
+    'user-not-found' => errors.userNotFound,
+    'email-already-in-use' => errors.emailAlreadyInUse,
+    'weak-password' => errors.weakPassword,
+    'network-request-failed' => errors.networkRequestFailed,
+    'popup-blocked' => errors.popupBlocked,
+    'cancelled-popup-request' ||
+    'popup-closed-by-user' => errors.popupCancelled,
+    'too-many-requests' => errors.tooManyRequests,
+    _ => errors.genericFallback,
+  };
+}

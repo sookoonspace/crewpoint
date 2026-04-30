@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart' show authProvider;
 import 'package:crewpoint_app/app/core/services/i_auth_service.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
@@ -29,11 +30,12 @@ Future<void> _pumpForm(
 }
 
 Future<void> _attemptSignIn(WidgetTester tester) async {
-  final emailField = find.widgetWithText(TextField, 'Email');
-  final passwordField = find.widgetWithText(TextField, 'Password');
+  final auth = AppStrings.fallbackEnglish.auth;
+  final emailField = find.widgetWithText(TextField, auth.emailHint);
+  final passwordField = find.widgetWithText(TextField, auth.passwordHint);
   await tester.enterText(emailField, 'shared@example.com');
   await tester.enterText(passwordField, 'wrong-password-1234');
-  await tester.tap(find.widgetWithText(ElevatedButton, 'Sign In'));
+  await tester.tap(find.widgetWithText(ElevatedButton, auth.signIn));
   await tester.pump(); // start the future
   await tester.pump(); // settle the post-failure state transition
 }
@@ -49,11 +51,15 @@ void main() {
     fake.dispose();
   });
 
+  // Source generic-failure copy from `AppStrings.fallbackEnglish.errors`
+  // so this assertion stays green when those messages are translated.
+  final wrongPassword = AppStrings.fallbackEnglish.errors.wrongPassword;
+
   testWidgets(
     'shows the apple-suggest snackbar when password fails on an Apple-only '
     'account',
     (tester) async {
-      fake.nextResult = const AuthResultFailure('Incorrect email or password.');
+      fake.nextResult = AuthResultFailure(wrongPassword);
       fake.nextSignInMethods = const ['apple.com'];
 
       await _pumpForm(tester, fake: fake);
@@ -70,7 +76,7 @@ void main() {
   testWidgets('shows the google-suggest snackbar for google-only accounts', (
     tester,
   ) async {
-    fake.nextResult = const AuthResultFailure('Incorrect email or password.');
+    fake.nextResult = AuthResultFailure(wrongPassword);
     fake.nextSignInMethods = const ['google.com'];
 
     await _pumpForm(tester, fake: fake);
@@ -86,7 +92,7 @@ void main() {
     'falls back to the generic snackbar when methods are empty (enumeration '
     'protection on)',
     (tester) async {
-      fake.nextResult = const AuthResultFailure('Incorrect email or password.');
+      fake.nextResult = AuthResultFailure(wrongPassword);
       fake.nextSignInMethods = const [];
 
       await _pumpForm(tester, fake: fake);
@@ -97,10 +103,7 @@ void main() {
         find.byKey(const Key('auth.suggestProvider.google')),
         findsNothing,
       );
-      expect(
-        find.text('Incorrect email or password.'),
-        findsAtLeastNWidgets(1),
-      );
+      expect(find.text(wrongPassword), findsAtLeastNWidgets(1));
     },
   );
 }

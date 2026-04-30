@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/custom_text_field.dart';
 import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
@@ -70,10 +71,7 @@ class _EmailAuthFormState extends ConsumerState<EmailAuthForm> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             key: Key('auth.suggestProvider.${_providerSlug(suggested)}'),
-            content: Text(
-              'This email is registered with $providerLabel. '
-              'Tap "Continue with $providerLabel" above.',
-            ),
+            content: Text(context.strings.auth.suggestProvider(providerLabel)),
             backgroundColor: AppColors.terracotta,
           ),
         );
@@ -94,48 +92,50 @@ class _EmailAuthFormState extends ConsumerState<EmailAuthForm> {
         children: [
           if (_isSignUp)
             CustomTextField(
-              hintText: 'Full Name',
+              hintText: context.strings.auth.fullNameHint,
               controller: _nameController,
               prefixIcon: const Icon(Icons.person_outline),
               enabled: !isLoading,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Please enter your name';
+                  return context.strings.auth.validatorNameRequired;
                 }
                 return null;
               },
             ),
           CustomTextField(
-            hintText: 'Email',
+            hintText: context.strings.auth.emailHint,
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             prefixIcon: const Icon(Icons.email_outlined),
             enabled: !isLoading,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
-                return 'Please enter your email';
+                return context.strings.auth.validatorEmailRequired;
               }
               if (!value.contains('@')) {
-                return 'Please enter a valid email';
+                return context.strings.auth.validatorEmailInvalid;
               }
               return null;
             },
           ),
           CustomTextField(
-            hintText: 'Password',
+            hintText: context.strings.auth.passwordHint,
             controller: _passwordController,
             obscureText: true,
             prefixIcon: const Icon(Icons.lock_outline),
             enabled: !isLoading,
             validator: (value) {
               if (value == null || value.length < 6) {
-                return 'Password must be at least 6 characters';
+                return context.strings.auth.validatorPasswordTooShort;
               }
               return null;
             },
           ),
           PrimaryButton(
-            label: _isSignUp ? 'Create Account' : 'Sign In',
+            label: _isSignUp
+                ? context.strings.auth.createAccount
+                : context.strings.auth.signIn,
             onPressed: isLoading ? null : _submit,
             isLoading: isLoading,
           ),
@@ -143,8 +143,8 @@ class _EmailAuthFormState extends ConsumerState<EmailAuthForm> {
             onPressed: isLoading ? null : _toggleMode,
             child: Text(
               _isSignUp
-                  ? 'Already have an account? Sign In'
-                  : "Don't have an account? Sign Up",
+                  ? context.strings.auth.toggleToSignIn
+                  : context.strings.auth.toggleToSignUp,
             ),
           ),
         ],
