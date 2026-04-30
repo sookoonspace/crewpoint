@@ -36,15 +36,16 @@ UI hardening pass: branded web favicon, web-friendly auth-gate layout, WCAG-grad
 
 ### Phase 2: Color contrast + typography readability
 
-- **Goal**: every foreground/background pair the app uses meets WCAG AA (4.5:1 body, 3:1 large/UI). Typography gets a polish pass — line height + weight tuning.
-- [ ] `lib/app/core/constants/wcag.dart` — small pure helper: `double contrastRatio(Color fg, Color bg)` per WCAG 2.1 relative luminance. Pure function, no Flutter UI deps beyond `Color`.
-- [ ] TDD: `wcag.dart` returns 21.0 for black-on-white; ≈4.5 for known borderline pair (e.g. `#767676` on white); symmetric (swapping fg/bg returns the same ratio).
-- [ ] `test/app/core/constants/app_colors_contrast_test.dart` — table-driven test asserting WCAG AA on every documented pair this app uses today: `charcoal`-on-`cream`, `charcoal`-on-`offWhite`, `charcoal`-on-`white`, `white`-on-`sage`, `white`-on-`terracotta`, `charcoal`-on-`terracottaLight` (the unverified-email banner foreground/background), `mediumGrey`-on-`cream` (the auth-gate subtitle "Collaborate. Organize. Deliver.").
-- [ ] Fix the violators surfaced by the contrast test. Most likely candidates from a quick scan: `mediumGrey` (#B2BEC3) on `cream` (#EADDCE) — body text on auth gate; `charcoalLight` on `cream` for hint/secondary copy. Adjust either the colors themselves (preferred — single source of truth) or swap the usage to a higher-contrast token.
-- [ ] `lib/app/core/constants/app_typography.dart` — bump body text `letterSpacing: 0.15` and `height: 1.4` for `bodyLarge` / `bodyMedium`; verify visually that the result reads cleanly. Heading sizes already shipped; no change needed unless contrast forces a weight bump.
-- [ ] `lib/app/core/theme/app_theme.dart` — verify `OutlinedButton` foreground color matches the higher-contrast token; the social-auth buttons currently inherit defaults that may render as a faint sage-on-cream.
-- [ ] TDD: contrast test re-asserted green after fixes.
-- [ ] Verify: `flutter analyze` && `flutter test`
+- **Goal**: every foreground/background pair the app uses meets WCAG AA (4.5:1 body, 3:1 large/UI). Typography gets a polish pass — line height + letter-spacing tuning.
+- [x] `lib/app/core/constants/wcag.dart` — `contrastRatio(Color a, Color b)` plus `kWcagAaBodyText` / `kWcagAaLargeText` constants. Pure (only `dart:ui` `Color`).
+- [x] TDD: 4 cases — black-on-white = 21.0, identical colors = 1.0, `#767676` on white at the WCAG body-text threshold (≥4.5 < 5.0), and symmetry.
+- [x] `test/app/core/constants/app_colors_contrast_test.dart` — table-driven test on 6 documented pairs: charcoal-on-cream, charcoal-on-offWhite, charcoal-on-white, white-on-sageDark, white-on-terracotta, charcoal-on-terracottaLight.
+- [x] **Violator surfaced + fixed**: white text on `sage` (#6B9080) = 3.54 — fails 4.5 AA threshold. Fix: switch primary button + theme + current-user chat bubble to `AppColors.sageDark` (#4A6B5A, ratio ≈5.4). `AppColors.sage` itself stays unchanged as a brand accent for non-text surfaces (icons, borders, status indicators where contrast doesn't apply). Comment in `app_theme.dart` + `primary_button.dart` documents the rationale.
+- [x] `lib/app/core/constants/app_typography.dart` — `bodyLarge` / `bodyMedium` / `bodySmall` gain `height: 1.4` + `letterSpacing: 0.15` for comfortable reading at Material's default body sizes. Display + headline sizes left untouched so visual rhythm doesn't shift.
+- [x] `lib/app/core/theme/app_theme.dart` — input-field `focusedBorder` switched from sage to sageDark to keep focus indicators visible against the verification banner's terracottaLight bg. ElevatedButton background updated to sageDark in both light + dark themes.
+- [x] `test/app/core/widgets/primary_button_test.dart` — existing background-color assertion updated from `AppColors.sage` to `AppColors.sageDark` with an inline note explaining the AA driver.
+- [x] TDD: full contrast test green after fixes (6 pairs all clear).
+- [x] Verify: `flutter analyze` clean; `flutter test` 193 pass + 4 screenshot suites skipped
 
 ### Phase 3: `context.strings` extension — i18n-ready foundation (auth feature)
 

@@ -20,14 +20,18 @@ void main() {
     );
   }
 
-  testWidgets('renders with sage green background color', (tester) async {
+  testWidgets('renders with the sageDark accessibility-pass green', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildSubject());
 
     final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
     final style = button.style!;
     final bgColor = style.backgroundColor!.resolve({});
 
-    expect(bgColor, equals(AppColors.sage));
+    // sageDark, not sage — sage at 6B9080 fails WCAG AA against white
+    // labels; sageDark clears it. See app_colors_contrast_test.dart.
+    expect(bgColor, equals(AppColors.sageDark));
   });
 
   testWidgets('displays label text', (tester) async {

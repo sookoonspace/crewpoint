@@ -54,20 +54,30 @@ abstract final class AppTypography {
         fontWeight: FontWeight.w500,
         color: color,
       ),
+      // Body text: 1.4 line-height + 0.15 letter-spacing tunes Inter
+      // for comfortable reading at the small sizes Material defaults
+      // to. Display + headline sizes left untouched so visual rhythm
+      // doesn't shift.
       bodyLarge: GoogleFonts.inter(
         fontSize: 16,
         fontWeight: FontWeight.w400,
         color: color,
+        height: 1.4,
+        letterSpacing: 0.15,
       ),
       bodyMedium: GoogleFonts.inter(
         fontSize: 14,
         fontWeight: FontWeight.w400,
         color: color,
+        height: 1.4,
+        letterSpacing: 0.15,
       ),
       bodySmall: GoogleFonts.inter(
         fontSize: 12,
         fontWeight: FontWeight.w400,
         color: color,
+        height: 1.4,
+        letterSpacing: 0.15,
       ),
       labelLarge: GoogleFonts.inter(
         fontSize: 14,

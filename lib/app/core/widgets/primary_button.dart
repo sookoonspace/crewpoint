@@ -23,7 +23,10 @@ class PrimaryButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.sage,
+          // sageDark (4A6B5A) clears WCAG AA against white text (~5.4:1);
+          // sage (6B9080) only hits 3.5:1 — fine for icon/border accents
+          // but fails for body-sized button labels.
+          backgroundColor: AppColors.sageDark,
           foregroundColor: AppColors.white,
           disabledBackgroundColor: AppColors.sageLight,
           shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),

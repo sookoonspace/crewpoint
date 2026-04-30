@@ -34,7 +34,10 @@ abstract final class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.sage,
+          // sageDark clears WCAG AA against white labels (~5.4:1);
+          // sage at 6B9080 only hits 3.5:1 — fine for icon/border accents
+          // but fails for body-sized button text.
+          backgroundColor: AppColors.sageDark,
           foregroundColor: AppColors.white,
           minimumSize: const Size.fromHeight(48),
           shape: RoundedRectangleBorder(
@@ -55,7 +58,7 @@ abstract final class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.sage, width: 2),
+          borderSide: const BorderSide(color: AppColors.sageDark, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,

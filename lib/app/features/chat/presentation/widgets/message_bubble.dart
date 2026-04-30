@@ -30,7 +30,10 @@ class MessageBubble extends StatelessWidget {
       background = AppColors.terracottaLight.withValues(alpha: 0.2);
       border = Border.all(color: AppColors.terracotta, width: 1.5);
     } else if (isCurrentUser) {
-      background = AppColors.sage;
+      // sageDark, not sage — white text on sage (#6B9080) only hits
+      // a 3.5:1 contrast ratio, below WCAG AA's 4.5 threshold for body
+      // text. sageDark (#4A6B5A) clears at ~5.4:1.
+      background = AppColors.sageDark;
       border = null;
     } else {
       background = AppColors.lightGrey;
