@@ -137,17 +137,19 @@ Pre-launch security + legal hardening: rules audit, CF streaming refactor, legal
 ### Phase 6: Pre-launch verification checklist + final hand-off
 
 - **Goal**: every gate from spec §Phase-5 documented; counsel sign-off recorded; production smoke green.
-- [ ] `docs/security/pre-launch-checklist.md` — every gate per spec §req-34 (rules tests green, CF tests green, manual emulator smoke with seeded large event, counsel review, hosted /privacy + /terms on all 3 targets, prod custom-domain TLS, in-app legal reachable, auth-footer links, deletion-dialog copy verbatim, IAM review, Auth provider review, deployed rules match repo, Storage CORS).
-- [ ] Update `ai_specs/todo.md` — close out the deferred emulator-harness item; flag any spec items deferred (DPDP Act compliance, E2EE chat, automated retention purge, CI integration of test harness).
-- [ ] Manual smoke (counsel-pending — block until done):
+- [x] `docs/security/pre-launch-checklist.md` — committed. Nine sections cover code-level gates, manual emulator smoke (with the seed-script invocation example), rules-deploy ↔ migration sequencing (the **load-bearing** "run migration BEFORE rules deploy" sequence), counsel review, hosted /privacy + /terms across dev/stg/prod, in-app legal surface, Firebase Console review (IAM / Auth providers / Storage CORS), audit doc cross-checks, and a sign-off table for release-ceremony history.
+- [x] `ai_specs/todo.md` — closed out the emulator-harness item (now ~~struck~~ + cited as shipped); added a new **Security & privacy followups** section enumerating: DPDP Act (India) compliance clauses, E2EE chat (separate large spec), automated retention purge, per-uid rate limiting, audit-trail logging for membership changes, write-shape allow-listing on events/tasks/expenses, `anonymizeUserInEvent` streaming refactor (deferred until a real workload demands it), CI integration of `npm --prefix functions test`, robot-class abstractions for the legal-surface flows.
+- [ ] Manual smoke (counsel-pending — release-ceremony gate; **user-blocking**):
   - Counsel review of `docs/legal/privacy-policy.md` + `terms-of-service.md`.
-  - Update frontmatter in both legal docs (`counsel_review_date`, `counsel_name`).
-  - Update `pre-launch-checklist.md` row with same.
-  - Remove `<meta name="robots" content="noindex">` from `web/legal/{privacy,terms}.html` post-counsel.
-  - Production deploy: `firebase deploy --only hosting:crewpoint-prod`.
+  - Update frontmatter in both legal docs (`counsel_review_date`, `counsel_name`); re-run `dart run scripts/build_legal_html.dart` to propagate.
+  - Update `pre-launch-checklist.md` sign-off table row with date + counsel name.
+  - Remove `<meta name="robots" content="noindex">` from `web/legal/{privacy,terms}.html` post-counsel (or update the build script to omit it on launch flip).
+  - Run `migratePiiToPrivate.ts` against `crewpoint-stg` first, then `crewpoint-prod`.
+  - Deploy rules: `firebase deploy --only firestore:rules,storage:rules --project=crewpoint-prod`.
+  - Production deploy: `flutter build web --release --dart-define=FLAVOR=prod && firebase deploy --only hosting:crewpoint-prod`.
   - Smoke: `https://crewpoint.sookoon.space/{privacy,terms}` — TLS green, no mixed-content, content matches drafts.
-  - Verify prod build artifact: auth-gate footer hrefs point at `crewpoint.sookoon.space`, not `*.web.app`.
-- [ ] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test` (final green run before launch flip).
+  - Verify prod build artifact: auth-gate footer hrefs point at `crewpoint.sookoon.space`, not `*.web.app` (grep `main.dart.js` for `web.app`).
+- [x] Verify: `flutter analyze` clean; `flutter test` 210 pass; `npm --prefix functions test` 55/55 pass — last engineering green run before the manual launch ceremony.
 
 ## Risks / Out of scope
 

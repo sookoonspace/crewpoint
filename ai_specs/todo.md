@@ -35,9 +35,11 @@ Tracks ideas and partial implementations explicitly out of V1 scope. Promote int
 - Real receipt thumbnails embedded in expense PDFs (the `receiptLoader` parameter is plumbed; `EventBudgetPage` just passes `null` today — wire an `http`-based loader when receipt embedding becomes a priority)
 
 ## Test Infrastructure
-- Firebase emulator harness (`functions/test/`) for Cloud Function integration tests + `firestore.rules` access-matrix tests (deferred from Phase 1 of tasks-budget-chat plan)
+- ~~Firebase emulator harness (`functions/test/`) for Cloud Function integration tests + `firestore.rules` access-matrix tests~~ — **shipped** in `sookoon-security-privacy-audit-plan` Phase 1. `npm --prefix functions test` covers 15 rules tests + 40 CF integration tests via `@firebase/rules-unit-testing` + `firebase-functions-test` v3.
 - BudgetRobot settle-via-Venmo journey test (Phase 5) — requires Riverpod overrides for `IUrlLauncher`, `AppLifecycleSource`, faked Firestore + fake auth, and stable per-payee settle-row keys
 - ChatRobot urgent-message journey test (Phase 8) — requires faked `IFcmGateway` + `FcmHandler` invariants pumped through a two-session widget harness
+- CI integration of `npm --prefix functions test` — currently a manual-run-only suite. Wire into GitHub Actions (or whichever CI ships first) so PRs that touch `firestore.rules` or `functions/src/` automatically gate on the emulator-driven test suite.
+- `PrivacyDashboardRobot` + `AuthGateRobot` robot-class abstractions for the legal-surface flows. Equivalent coverage exists in widget tests (`privacy_dashboard_screen_test.dart`, `markdown_render_screen_test.dart`, `legal_footer_test.dart`); robot-class wrappers would be ergonomic sugar for cross-screen journeys when more legal-surface flows land.
 
 ## FCM bootstrap (Phase 8 → Phase 9 manual smoke)
 - `main.dart`: register `FirebaseMessaging.onBackgroundMessage` (top-level fn with `@pragma('vm:entry-point')`)
@@ -59,3 +61,12 @@ Tracks ideas and partial implementations explicitly out of V1 scope. Promote int
 - Migrate strings in remaining features (dashboard, events, tasks, budget, chat, profile) to `context.strings.<feature>.*`. ~226 of the 276 `Text(...)` call sites in `lib/` remain after the auth-feature proving slice in `ui-polish-i18n-foundation-plan` Phase 3.
 - Wire `flutter_localizations` + `gen-l10n` ARB pipeline. Add `lib/l10n/app_en.arb` mirroring the shape in `lib/app/core/i18n/app_strings.dart`; later add `app_es.arb`, `app_hi.arb`, `app_fr.arb`. Migration is one file: replace the body of `extension StringsX on BuildContext { ... }` in `app_strings.dart` with an `AppLocalizations` adapter. Zero UI call-site changes.
 - Add a `MaterialApp.locale` switcher to Profile so QA can preview non-English locales without changing system settings.
+
+## Security & privacy followups (post sookoon-security-privacy-audit)
+- **DPDP Act (India) compliance clauses** — Hindi is on the localization roadmap; India-residency compliance is a separate spec. Likely additions: Indian data principal definitions, grievance officer contact, consent-manager integration, breach-notification timeline.
+- **E2EE chat** — `firestore_chat_service.dart` documents this gap. Privacy Policy explicitly states V1 messaging is not E2EE. Separate large spec when prioritized.
+- **Automated retention purge** for anonymized records — V1 is on-request manual via support. Revisit if compliance posture demands automation (scheduled CF that purges anonymized records past N years from account deletion).
+- **Per-uid rate limiting** for callable Cloud Functions — Firebase's default per-project quotas stand for V1. Revisit `joinEvent` and `generateInviteCode` if abuse data warrants per-uid quotas (App Check + Firestore counter pattern).
+- **Audit-trail logging** for membership changes (`promoteToAdmin`, `demoteAdmin`, `removeEventMember`). Currently only written to Cloud Logging. A dedicated Firestore `events/{eventId}/audit/{timestamp}` collection is a separate spec.
+- **Write-shape allow-listing** on `events`, `tasks`, `expenses` create + update rules. Per-feature schema audit required so backward-compat client writes don't break — flagged as out-of-scope in `docs/security/firestore-rules-audit.md`.
+- **`anonymizeUserInEvent` streaming refactor** — `functions/src/account/deleteUserAccount.ts` keeps the anonymize path as upfront fetch because per-user-per-event docs are bounded by user activity. Revisit if a user with thousands of messages in a single event surfaces.
