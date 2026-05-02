@@ -41,8 +41,8 @@ Layout-only pass: `Breakpoints` constants + `ContentMaxWidth` wrapper, Responsiv
 - [x] TDD: `dashboard_screen_layout_test.dart` (new) — at 1280×800 `dashboard.body.clamped` width ≤ 720; at 375×812 width fills viewport (> 300 && ≤ 375).
 
 **ResponsiveShell breakpoint migration:**
-- [ ] `lib/app/core/widgets/responsive_shell.dart` — `_railBreakpoint` 720 → 840; comment cites M3 medium → expanded boundary.
-- [ ] TDD: split existing "renders NavigationRail at 800 and 1280 widths" into three — bar at 800, rail at 880 (NEW boundary case), rail at 1280. Write 880-rail test FIRST (RED before threshold migration since the new test pins behavior at the new boundary).
+- [x] `lib/app/core/widgets/responsive_shell.dart` — `_railBreakpoint` 720 → 840; comment cites M3 medium → expanded boundary.
+- [x] TDD: split existing "renders NavigationRail at 800 and 1280 widths" into three — bar at 800 (RED → GREEN), rail at 880 (NEW boundary case), rail at 1280.
 
 **Chat bubble width fix:**
 - [ ] `lib/app/features/chat/presentation/widgets/message_bubble.dart` — replace `MediaQuery.sizeOf(context).width * 0.75` with **fixed-cap** `Align(alignment: isCurrentUser ? centerRight : centerLeft) > ConstrainedBox(maxWidth: 540)`. **No `LayoutBuilder`** — N bubbles → N rebuilds on resize causes web jank on long threads. 540 = 75% × 720 (chat thread clamp). Pin dependency in a comment naming both constants. **Deliberate divergence from spec §req-6**; rationale is web-perf, not correctness.

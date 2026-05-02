@@ -19,7 +19,7 @@ void main() {
     );
   }
 
-  testWidgets('renders NavigationBar below 720 width', (tester) async {
+  testWidgets('renders NavigationBar at 600 width', (tester) async {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.binding.setSurfaceSize(const Size(600, 800));
     await tester.pumpWidget(buildSubject());
@@ -28,16 +28,33 @@ void main() {
     expect(find.byType(NavigationRail), findsNothing);
   });
 
-  testWidgets('renders NavigationRail at 800 and 1280 widths', (tester) async {
+  testWidgets('renders NavigationBar at 800 width (below 840 boundary)', (
+    tester,
+  ) async {
     addTearDown(() => tester.binding.setSurfaceSize(null));
-
-    await tester.binding.setSurfaceSize(const Size(800, 600));
+    await tester.binding.setSurfaceSize(const Size(800, 1024));
     await tester.pumpWidget(buildSubject());
+
+    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(NavigationRail), findsNothing);
+  });
+
+  testWidgets('renders NavigationRail at 880 width (just above 840 boundary)', (
+    tester,
+  ) async {
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.binding.setSurfaceSize(const Size(880, 1024));
+    await tester.pumpWidget(buildSubject());
+
     expect(find.byType(NavigationRail), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
+  });
 
+  testWidgets('renders NavigationRail at 1280 width', (tester) async {
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.binding.setSurfaceSize(const Size(1280, 800));
     await tester.pumpWidget(buildSubject());
+
     expect(find.byType(NavigationRail), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
   });
@@ -58,7 +75,7 @@ void main() {
     expect(bar.selectedIndex, equals(3));
   });
 
-  testWidgets('body scroll position survives resize across 720', (
+  testWidgets('body scroll position survives resize across rail breakpoint', (
     tester,
   ) async {
     addTearDown(() => tester.binding.setSurfaceSize(null));

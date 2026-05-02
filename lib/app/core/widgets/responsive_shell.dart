@@ -5,6 +5,11 @@ import 'package:flutter/material.dart';
 /// Width < [_railBreakpoint] → bottom [NavigationBar].
 /// Width ≥ [_railBreakpoint] → leading [NavigationRail].
 ///
+/// The breakpoint sits at the Material 3 medium → expanded boundary
+/// (840 px). Tablet-portrait widths (e.g. 768 px) belong to "bar" UX,
+/// not rail; on-screen keyboards eat too much vertical space for a
+/// rail to feel right at those sizes.
+///
 /// The [body] widget is the only child of the underlying [Scaffold] in
 /// every layout, so its [Element] identity (and therefore branch state,
 /// route stack, and scroll positions) survives a breakpoint transition.
@@ -22,7 +27,7 @@ class ResponsiveShell extends StatelessWidget {
   final VoidCallback onSignOut;
   final Widget body;
 
-  static const double _railBreakpoint = 720;
+  static const double _railBreakpoint = 840;
 
   /// Stable key on the body slot so its [Element] (and therefore branch
   /// state, route stack, and scroll positions) survives the breakpoint
