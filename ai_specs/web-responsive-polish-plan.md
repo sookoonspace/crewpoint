@@ -30,11 +30,11 @@ Layout-only pass: `Breakpoints` constants + `ContentMaxWidth` wrapper, Responsiv
 - **Sequencing rule**: run `flutter test` after each subsection (foundations / slice / shell / bubble / forms / lists / details / markdown / padding) so regressions surface close to cause.
 
 **Foundations:**
-- [ ] `lib/app/core/constants/breakpoints.dart` — `abstract final class Breakpoints` with `compactMax = 600`, `mediumMax = 840`, `expandedMax = 1200`, `largeMax = 1600` + `screenHorizontalPadding(BuildContext)` returning 24/40.
-- [ ] `lib/app/core/widgets/content_max_width.dart` — `ContentMaxWidth({required maxWidth, required child, alignment = Alignment.topCenter})`; body = `Align > ConstrainedBox(maxWidth) > child`.
-- [ ] TDD: `ContentMaxWidth` clamps child when parent wider; passes through when parent narrower (two cases via `tester.binding.setSurfaceSize`). (`test/app/core/widgets/content_max_width_test.dart`)
-- [ ] `lib/app/core/widgets/form_card_shell.dart` — `FormCardShell({required child, padding = AppSpacing.xl})`: at viewport > `compactMax` wraps in `Card(elevation: 1) > Padding(padding)`; ≤ compactMax passthrough. `Key('form.card.shell')` on Card.
-- [ ] TDD: `FormCardShell` resolves Card at 1280×800; Key absent at 375×812. (`test/app/core/widgets/form_card_shell_test.dart`)
+- [x] `lib/app/core/constants/breakpoints.dart` — `abstract final class Breakpoints` with `compactMax = 600`, `mediumMax = 840`, `expandedMax = 1200`, `largeMax = 1600` + `screenHorizontalPadding(BuildContext)` returning 24/40.
+- [x] `lib/app/core/widgets/content_max_width.dart` — `ContentMaxWidth({required maxWidth, required child, alignment = Alignment.topCenter})`; body = `Align > ConstrainedBox(maxWidth) > child`.
+- [x] TDD: `ContentMaxWidth` clamps child when parent wider; passes through when parent narrower (two cases via `tester.view.physicalSize`). (`test/app/core/widgets/content_max_width_test.dart`)
+- [x] `lib/app/core/widgets/form_card_shell.dart` — `FormCardShell({required child, padding = AppSpacing.xl})`: at viewport > `compactMax` wraps in `Card(elevation: 1) > Padding(padding)`; ≤ compactMax passthrough. `Key('form.card.shell')` on Card.
+- [x] TDD: `FormCardShell` resolves Card at 1280×800; Key absent at 375×812. (`test/app/core/widgets/form_card_shell_test.dart`)
 
 **Thin vertical slice — dashboard end-to-end:**
 - [ ] `lib/app/features/dashboard/presentation/dashboard_screen.dart` — wrap `ListView.separated` body in `ContentMaxWidth(maxWidth: 720, key: Key('dashboard.body.clamped'))`; padding `EdgeInsets.symmetric(horizontal: Breakpoints.screenHorizontalPadding(context), vertical: AppSpacing.xl)`.
