@@ -73,16 +73,14 @@ Layout-only pass: `Breakpoints` constants + `ContentMaxWidth` wrapper, Responsiv
 - [ ] TDD: extend `markdown_render_screen_test.dart` with clamp assertion at 1280×800. Use `await tester.binding.setSurfaceSize(const Size(1280, 800))` + `addTearDown(() async => tester.binding.setSurfaceSize(null))` so the existing default 800×600 surface doesn't accidentally satisfy the assertion.
 
 **Padding-scale rollout:**
-- [ ] Adopt `Breakpoints.screenHorizontalPadding(context)` on all 10 wrapped screens (replace existing `EdgeInsets.symmetric(horizontal: AppSpacing.lg)` / `EdgeInsets.all(AppSpacing.lg)`). Vertical stays `AppSpacing.xl = 24`.
+- [x] Adopt `Breakpoints.screenHorizontalPadding(context)` on all 10 wrapped screens (applied inline during each screen wrap). Inner-widget paddings (`_FilterBar`, `_Divider`, callout containers) keep `AppSpacing.lg` — outside the screen-padding scope.
 
 **Closeout:**
-- [ ] `ai_specs/todo.md` — append two follow-ups:
-  - "Web polish followups — DashboardScreen FAB anchors to Scaffold's bottom-right, not the clamped body. At 1920 viewport with 720 clamp, FAB sits ~600 px outside content. Defer to V1+: inline 'Create event' button in the header OR `Positioned` overlay aligned to the clamp."
-  - "Cleanup `lib/app/features/dashboard/presentation/event_detail_screen.dart` — defined but never routed. Either delete (preferred if `EventDashboardScreen` fully replaces it) or wire into the router."
-- [ ] Manual smoke (Chrome DevTools): resize across 375 / 768 / 800 / 880 / 1280 / 1920 widths.
+- [x] `ai_specs/todo.md` — appended a "Web responsive polish followups" section with the FAB-position deferral, `event_detail_screen.dart` cleanup, and the MarkdownRenderScreen layout-regression-test follow-up.
+- [ ] Manual smoke (Chrome DevTools): resize across 375 / 768 / 800 / 880 / 1280 / 1920 widths. **User verification required.**
   - At each: every wrapped screen renders the expected clamp; ResponsiveShell flips bar ↔ rail at the 840 boundary; no horizontal overflow; existing functionality (sign in, event create, task create, chat send) works inside the clamps.
   - At 1920: verify auth-gate footer hrefs point at `crewpoint.sookoon.space` not `*.web.app` if not already verified.
-- [ ] Verify: `flutter analyze` && `flutter test` (full suite must stay green; existing 210+ tests must not regress).
+- [x] Verify: `flutter analyze` clean; `flutter test` green (228 tests pass, 4 skipped — net +18 new tests over the pre-existing 210).
 
 ## Risks / Out of scope
 

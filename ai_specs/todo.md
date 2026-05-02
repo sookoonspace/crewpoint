@@ -62,6 +62,11 @@ Tracks ideas and partial implementations explicitly out of V1 scope. Promote int
 - Wire `flutter_localizations` + `gen-l10n` ARB pipeline. Add `lib/l10n/app_en.arb` mirroring the shape in `lib/app/core/i18n/app_strings.dart`; later add `app_es.arb`, `app_hi.arb`, `app_fr.arb`. Migration is one file: replace the body of `extension StringsX on BuildContext { ... }` in `app_strings.dart` with an `AppLocalizations` adapter. Zero UI call-site changes.
 - Add a `MaterialApp.locale` switcher to Profile so QA can preview non-English locales without changing system settings.
 
+## Web responsive polish followups (post web-responsive-polish-plan)
+- **DashboardScreen FAB position at large viewports** — FAB anchors to the Scaffold's bottom-right (full viewport), not the clamped body. At 1920 viewport with 720 clamp, the FAB sits ~600 px outside content. Defer to V1+: inline "Create event" button in the header OR `Positioned` overlay aligned to the clamp.
+- **`event_detail_screen.dart` cleanup** — `lib/app/features/dashboard/presentation/event_detail_screen.dart` is defined but never routed. Either delete it (preferred if `EventDashboardScreen` fully replaces it) or wire it into the router.
+- **MarkdownRenderScreen layout-regression test** — clamp assertion lives in `privacy_dashboard_screen_test.dart` because the MarkdownRenderScreen FutureBuilder + cross-test ordering left the `rootBundle.loadString` data path stuck in loading at the resized surface. Either drive the loader via a faked binary messenger or pump in `runAsync` once the asset cache reset is figured out, then add the markdown clamp assertion to its own file.
+
 ## Security & privacy followups (post sookoon-security-privacy-audit)
 - **DPDP Act (India) compliance clauses** — Hindi is on the localization roadmap; India-residency compliance is a separate spec. Likely additions: Indian data principal definitions, grievance officer contact, consent-manager integration, breach-notification timeline.
 - **E2EE chat** — `firestore_chat_service.dart` documents this gap. Privacy Policy explicitly states V1 messaging is not E2EE. Separate large spec when prioritized.
