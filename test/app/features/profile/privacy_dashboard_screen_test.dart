@@ -32,4 +32,21 @@ void main() {
       expect(termsTile, findsOneWidget);
     },
   );
+
+  testWidgets('clamps body to <= 720 px on a desktop viewport', (tester) async {
+    tester.view.devicePixelRatio = 1.0;
+    tester.view.physicalSize = const Size(1280, 800);
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpWidget(const MaterialApp(home: PrivacyDashboardScreen()));
+    await tester.pump();
+
+    final width = tester
+        .getSize(find.byKey(const Key('privacyDashboard.body.clamped')))
+        .width;
+    expect(width, lessThanOrEqualTo(720));
+  });
 }

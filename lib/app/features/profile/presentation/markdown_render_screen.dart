@@ -7,6 +7,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:yaml/yaml.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
+import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 
 /// Renders a bundled markdown document (Privacy Policy / Terms of
 /// Service) with the YAML frontmatter parsed and surfaced above the
@@ -124,27 +126,31 @@ class _RenderedMarkdown extends StatelessWidget {
       );
     }
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.md,
-        AppSpacing.lg,
-        AppSpacing.xxl,
-      ),
-      children: [
-        if (stamps.isNotEmpty) ...[
-          ...stamps,
-          const SizedBox(height: AppSpacing.lg),
-        ],
-        MarkdownBody(key: const Key('legal.markdown.body'), data: doc.body),
-        const SizedBox(height: AppSpacing.xl),
-        OutlinedButton.icon(
-          key: const Key('legal.viewHosted'),
-          onPressed: onLaunchHosted,
-          icon: const Icon(Icons.open_in_new, size: 16),
-          label: const Text('View hosted version'),
+    return ContentMaxWidth(
+      key: const Key('markdown.body.clamped'),
+      maxWidth: 720,
+      child: ListView(
+        padding: EdgeInsets.fromLTRB(
+          Breakpoints.screenHorizontalPadding(context),
+          AppSpacing.md,
+          Breakpoints.screenHorizontalPadding(context),
+          AppSpacing.xxl,
         ),
-      ],
+        children: [
+          if (stamps.isNotEmpty) ...[
+            ...stamps,
+            const SizedBox(height: AppSpacing.lg),
+          ],
+          MarkdownBody(key: const Key('legal.markdown.body'), data: doc.body),
+          const SizedBox(height: AppSpacing.xl),
+          OutlinedButton.icon(
+            key: const Key('legal.viewHosted'),
+            onPressed: onLaunchHosted,
+            icon: const Icon(Icons.open_in_new, size: 16),
+            label: const Text('View hosted version'),
+          ),
+        ],
+      ),
     );
   }
 }
