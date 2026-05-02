@@ -45,8 +45,8 @@ Layout-only pass: `Breakpoints` constants + `ContentMaxWidth` wrapper, Responsiv
 - [x] TDD: split existing "renders NavigationRail at 800 and 1280 widths" into three — bar at 800 (RED → GREEN), rail at 880 (NEW boundary case), rail at 1280.
 
 **Chat bubble width fix:**
-- [ ] `lib/app/features/chat/presentation/widgets/message_bubble.dart` — replace `MediaQuery.sizeOf(context).width * 0.75` with **fixed-cap** `Align(alignment: isCurrentUser ? centerRight : centerLeft) > ConstrainedBox(maxWidth: 540)`. **No `LayoutBuilder`** — N bubbles → N rebuilds on resize causes web jank on long threads. 540 = 75% × 720 (chat thread clamp). Pin dependency in a comment naming both constants. **Deliberate divergence from spec §req-6**; rationale is web-perf, not correctness.
-- [ ] TDD: extend (or create) `message_bubble_test.dart` — pump inside `SizedBox(width: 720)`, assert bubble width ≤ 540; pump inside `SizedBox(width: 375)`, assert width ≤ 375 (cap inactive below cap); assert `Align` direction flips by `isCurrentUser`.
+- [x] `lib/app/features/chat/presentation/widgets/message_bubble.dart` — replace `MediaQuery.sizeOf(context).width * 0.75` with fixed-cap `BoxConstraints(maxWidth: 540)` on the bubble Container; outer `Align` already flips direction by `isCurrentUser`. **Deliberate divergence from spec §req-6** (no `LayoutBuilder`); rationale: N bubbles × N rebuilds on resize causes web jank on long threads. 540 = 75 % × 720 (chat thread clamp); pinned in a source comment naming both constants.
+- [x] TDD: new `test/app/features/chat/widgets/message_bubble_test.dart` — pump inside `SizedBox(width: 720)`, assert bubble width ≤ 540; pump inside `SizedBox(width: 375)`, assert width ≤ 375; assert `Align` direction flips by `isCurrentUser`.
 
 **Form screens (clamp 480 + FormCardShell at >600 px):**
 - [ ] `lib/app/features/profile/presentation/edit_profile_screen.dart` — wrap body in `ContentMaxWidth(maxWidth: 480, key: Key('editProfile.body.clamped')) > FormCardShell(child: form_fields)`.

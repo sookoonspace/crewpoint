@@ -40,10 +40,14 @@ class MessageBubble extends StatelessWidget {
       border = null;
     }
 
+    // Fixed cap, not LayoutBuilder. The chat thread itself is clamped to
+    // 720 by event_chat_page.dart; 540 = 75 % × 720 reproduces the old
+    // viewport-based 75 % rule under the new clamp without N rebuilds
+    // per resize on long threads. If the chat thread clamp ever moves,
+    // update this 540 in lockstep.
     final bubble = Container(
-      constraints: BoxConstraints(
-        maxWidth: MediaQuery.sizeOf(context).width * 0.75,
-      ),
+      key: Key('chat.bubble.${message.id}'),
+      constraints: const BoxConstraints(maxWidth: 540),
       margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
