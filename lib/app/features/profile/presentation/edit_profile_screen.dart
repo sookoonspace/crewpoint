@@ -7,8 +7,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
+import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/core/widgets/custom_text_field.dart';
+import 'package:crewpoint_app/app/core/widgets/form_card_shell.dart';
 import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 
@@ -239,207 +242,224 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: .start,
-            spacing: AppSpacing.lg,
-            children: [
-              // Avatar (tappable)
-              Center(
-                child: GestureDetector(
-                  onTap: _isSaving ? null : _showImagePicker,
-                  child: Stack(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.sage.withValues(alpha: 0.3),
-                              blurRadius: 12,
-                              spreadRadius: 2,
+        padding: EdgeInsets.symmetric(
+          horizontal: Breakpoints.screenHorizontalPadding(context),
+          vertical: AppSpacing.xl,
+        ),
+        child: ContentMaxWidth(
+          key: const Key('editProfile.body.clamped'),
+          maxWidth: 480,
+          child: FormCardShell(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: .start,
+                spacing: AppSpacing.lg,
+                children: [
+                  // Avatar (tappable)
+                  Center(
+                    child: GestureDetector(
+                      onTap: _isSaving ? null : _showImagePicker,
+                      child: Stack(
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.sage.withValues(alpha: 0.3),
+                                  blurRadius: 12,
+                                  spreadRadius: 2,
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        child: CircleAvatar(
-                          radius: 52,
-                          backgroundColor: AppColors.charcoalDark,
-                          backgroundImage: _pickedImage != null
-                              ? FileImage(_pickedImage!)
-                              : (currentPhotoUrl != null
-                                        ? NetworkImage(currentPhotoUrl)
-                                        : null)
-                                    as ImageProvider?,
-                          child:
-                              (_pickedImage == null && currentPhotoUrl == null)
-                              ? Lottie.asset(
-                                  'assets/animations/profile.json',
-                                  width: 64,
-                                  height: 64,
-                                  errorBuilder: (_, _, _) => const Icon(
-                                    Icons.person,
-                                    size: 48,
-                                    color: AppColors.sageLight,
-                                  ),
-                                )
-                              : null,
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(AppSpacing.sm),
-                          decoration: const BoxDecoration(
-                            color: AppColors.sage,
-                            shape: BoxShape.circle,
+                            child: CircleAvatar(
+                              radius: 52,
+                              backgroundColor: AppColors.charcoalDark,
+                              backgroundImage: _pickedImage != null
+                                  ? FileImage(_pickedImage!)
+                                  : (currentPhotoUrl != null
+                                            ? NetworkImage(currentPhotoUrl)
+                                            : null)
+                                        as ImageProvider?,
+                              child:
+                                  (_pickedImage == null &&
+                                      currentPhotoUrl == null)
+                                  ? Lottie.asset(
+                                      'assets/animations/profile.json',
+                                      width: 64,
+                                      height: 64,
+                                      errorBuilder: (_, _, _) => const Icon(
+                                        Icons.person,
+                                        size: 48,
+                                        color: AppColors.sageLight,
+                                      ),
+                                    )
+                                  : null,
+                            ),
                           ),
-                          child: const Icon(
-                            Icons.camera_alt_rounded,
-                            size: 18,
-                            color: AppColors.white,
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(AppSpacing.sm),
+                              decoration: const BoxDecoration(
+                                color: AppColors.sage,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt_rounded,
+                                size: 18,
+                                color: AppColors.white,
+                              ),
+                            ),
                           ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  Center(
+                    child: Text(
+                      'Tap photo to change',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.mediumGrey,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: AppSpacing.sm),
+
+                  // Display Name
+                  Text(
+                    'Display Name',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelLarge?.copyWith(color: AppColors.charcoal),
+                  ),
+                  CustomTextField(
+                    hintText: 'How others see you',
+                    controller: _nameController,
+                    enabled: !_isSaving,
+                    prefixIcon: const Icon(Icons.person_outline),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter your name';
+                      }
+                      return null;
+                    },
+                  ),
+
+                  const SizedBox(height: AppSpacing.md),
+
+                  // Payment section header
+                  Text(
+                    'Payment Info',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelLarge?.copyWith(color: AppColors.charcoal),
+                  ),
+                  Text(
+                    'Optional — helps your crew settle up with you',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.mediumGrey,
+                    ),
+                  ),
+
+                  // Payment Method dropdown
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedPaymentMethod,
+                    decoration: InputDecoration(
+                      hintText: 'Select payment method',
+                      prefixIcon: const Icon(Icons.payment_outlined),
+                      filled: true,
+                      fillColor: AppColors.offWhite,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: AppColors.lightGrey,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
-
-              Center(
-                child: Text(
-                  'Tap photo to change',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGrey),
-                ),
-              ),
-
-              const SizedBox(height: AppSpacing.sm),
-
-              // Display Name
-              Text(
-                'Display Name',
-                style: Theme.of(
-                  context,
-                ).textTheme.labelLarge?.copyWith(color: AppColors.charcoal),
-              ),
-              CustomTextField(
-                hintText: 'How others see you',
-                controller: _nameController,
-                enabled: !_isSaving,
-                prefixIcon: const Icon(Icons.person_outline),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter your name';
-                  }
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: AppSpacing.md),
-
-              // Payment section header
-              Text(
-                'Payment Info',
-                style: Theme.of(
-                  context,
-                ).textTheme.labelLarge?.copyWith(color: AppColors.charcoal),
-              ),
-              Text(
-                'Optional — helps your crew settle up with you',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGrey),
-              ),
-
-              // Payment Method dropdown
-              DropdownButtonFormField<String>(
-                initialValue: _selectedPaymentMethod,
-                decoration: InputDecoration(
-                  hintText: 'Select payment method',
-                  prefixIcon: const Icon(Icons.payment_outlined),
-                  filled: true,
-                  fillColor: AppColors.offWhite,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.lightGrey),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.lightGrey),
-                  ),
-                ),
-                items: _paymentMethods
-                    .map(
-                      (m) => DropdownMenuItem(
-                        value: m.$1,
-                        child: Row(
-                          spacing: AppSpacing.sm,
-                          children: [
-                            Icon(m.$3, size: 20, color: AppColors.charcoal),
-                            Text(m.$2),
-                          ],
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: AppColors.lightGrey,
                         ),
                       ),
-                    )
-                    .toList(),
-                onChanged: _isSaving
-                    ? null
-                    : (value) => setState(() => _selectedPaymentMethod = value),
-              ),
+                    ),
+                    items: _paymentMethods
+                        .map(
+                          (m) => DropdownMenuItem(
+                            value: m.$1,
+                            child: Row(
+                              spacing: AppSpacing.sm,
+                              children: [
+                                Icon(m.$3, size: 20, color: AppColors.charcoal),
+                                Text(m.$2),
+                              ],
+                            ),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: _isSaving
+                        ? null
+                        : (value) =>
+                              setState(() => _selectedPaymentMethod = value),
+                  ),
 
-              // Payment Handle
-              CustomTextField(
-                hintText: '@username, phone, or email',
-                controller: _paymentHandleController,
-                enabled: !_isSaving,
-                prefixIcon: const Icon(Icons.alternate_email),
-              ),
+                  // Payment Handle
+                  CustomTextField(
+                    hintText: '@username, phone, or email',
+                    controller: _paymentHandleController,
+                    enabled: !_isSaving,
+                    prefixIcon: const Icon(Icons.alternate_email),
+                  ),
 
-              const SizedBox(height: AppSpacing.md),
+                  const SizedBox(height: AppSpacing.md),
 
-              // Deep-link handles for one-tap settle
-              Text(
-                'Settle handles',
-                style: Theme.of(
-                  context,
-                ).textTheme.labelLarge?.copyWith(color: AppColors.charcoal),
-              ),
-              Text(
-                'Used by the Venmo / CashApp deep-link buttons in Budget',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGrey),
-              ),
-              CustomTextField(
-                key: const Key('profile.edit.venmoHandle'),
-                hintText: 'Venmo handle (optional)',
-                controller: _venmoHandleController,
-                enabled: !_isSaving,
-                prefixIcon: const Icon(Icons.account_balance_wallet_outlined),
-                validator: _validateHandle,
-              ),
-              CustomTextField(
-                key: const Key('profile.edit.cashappHandle'),
-                hintText: 'Cash App \$cashtag (optional)',
-                controller: _cashappHandleController,
-                enabled: !_isSaving,
-                prefixIcon: const Icon(Icons.attach_money),
-                validator: _validateHandle,
-              ),
+                  // Deep-link handles for one-tap settle
+                  Text(
+                    'Settle handles',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelLarge?.copyWith(color: AppColors.charcoal),
+                  ),
+                  Text(
+                    'Used by the Venmo / CashApp deep-link buttons in Budget',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.mediumGrey,
+                    ),
+                  ),
+                  CustomTextField(
+                    key: const Key('profile.edit.venmoHandle'),
+                    hintText: 'Venmo handle (optional)',
+                    controller: _venmoHandleController,
+                    enabled: !_isSaving,
+                    prefixIcon: const Icon(
+                      Icons.account_balance_wallet_outlined,
+                    ),
+                    validator: _validateHandle,
+                  ),
+                  CustomTextField(
+                    key: const Key('profile.edit.cashappHandle'),
+                    hintText: 'Cash App \$cashtag (optional)',
+                    controller: _cashappHandleController,
+                    enabled: !_isSaving,
+                    prefixIcon: const Icon(Icons.attach_money),
+                    validator: _validateHandle,
+                  ),
 
-              const SizedBox(height: AppSpacing.lg),
+                  const SizedBox(height: AppSpacing.lg),
 
-              // Save button
-              PrimaryButton(
-                label: 'Save Changes',
-                onPressed: _isSaving ? null : _save,
-                isLoading: _isSaving,
+                  // Save button
+                  PrimaryButton(
+                    label: 'Save Changes',
+                    onPressed: _isSaving ? null : _save,
+                    isLoading: _isSaving,
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

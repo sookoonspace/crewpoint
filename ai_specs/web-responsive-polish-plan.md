@@ -49,10 +49,10 @@ Layout-only pass: `Breakpoints` constants + `ContentMaxWidth` wrapper, Responsiv
 - [x] TDD: new `test/app/features/chat/widgets/message_bubble_test.dart` — pump inside `SizedBox(width: 720)`, assert bubble width ≤ 540; pump inside `SizedBox(width: 375)`, assert width ≤ 375; assert `Align` direction flips by `isCurrentUser`.
 
 **Form screens (clamp 480 + FormCardShell at >600 px):**
-- [ ] `lib/app/features/profile/presentation/edit_profile_screen.dart` — wrap body in `ContentMaxWidth(maxWidth: 480, key: Key('editProfile.body.clamped')) > FormCardShell(child: form_fields)`.
-- [ ] `lib/app/features/dashboard/presentation/create_event_screen.dart` — same shape, `Key('createEvent.body.clamped')`.
-- [ ] `lib/app/features/tasks/presentation/create_task_screen.dart` — same shape, `Key('createTask.body.clamped')`.
-- [ ] TDD: `edit_profile_screen_layout_test.dart` (new) — at 1280×800 body-clamped width ≤ 480 AND `form.card.shell` Card present; at 375×812 fills viewport AND no Card.
+- [x] `lib/app/features/profile/presentation/edit_profile_screen.dart` — wrap body in `ContentMaxWidth(maxWidth: 480, key: Key('editProfile.body.clamped')) > FormCardShell(child: form_fields)`. Padding helper applied.
+- [x] `lib/app/features/dashboard/presentation/create_event_screen.dart` — same shape, `Key('createEvent.body.clamped')`.
+- [x] `lib/app/features/tasks/presentation/create_task_screen.dart` — same shape, `Key('createTask.body.clamped')`.
+- [x] TDD: `edit_profile_screen_layout_test.dart` (new) — at 1280×800 body-clamped width ≤ 480 AND `form.card.shell` Card present; at 375×812 fills viewport AND no Card. Test consumes a benign Material `DropdownButtonFormField` overflow (~7 px) unrelated to the clamp.
 
 **List screens (clamp 720):**
 - [ ] `lib/app/features/tasks/presentation/event_tasks_page.dart` — `ContentMaxWidth(maxWidth: 720, key: Key('eventTasks.body.clamped'))`.

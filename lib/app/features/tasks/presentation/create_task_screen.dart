@@ -4,7 +4,10 @@ import 'package:uuid/uuid.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
+import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/core/widgets/custom_text_field.dart';
+import 'package:crewpoint_app/app/core/widgets/form_card_shell.dart';
 import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
@@ -80,70 +83,79 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
         elevation: 0,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: .start,
-            spacing: AppSpacing.lg,
-            children: [
-              CustomTextField(
-                key: const Key('tasks.create.title'),
-                hintText: 'Task Title',
-                controller: _titleController,
-                prefixIcon: const Icon(Icons.task),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a title';
-                  }
-                  if (value.trim().length > 120) {
-                    return 'Title must be 120 characters or fewer';
-                  }
-                  return null;
-                },
-              ),
-              CustomTextField(
-                key: const Key('tasks.create.description'),
-                hintText: 'Description (optional)',
-                controller: _descriptionController,
-                maxLines: 3,
-                prefixIcon: const Icon(Icons.description),
-              ),
-              AssigneePicker(
-                memberIds: widget.event.memberIds,
-                selected: _assigneeId,
-                onChanged: (value) => setState(() => _assigneeId = value),
-              ),
-              InkWell(
-                key: const Key('tasks.create.dueDate'),
-                onTap: _pickDueDate,
-                borderRadius: AppRadius.borderLg,
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'Due Date',
-                    prefixIcon: Icon(Icons.calendar_today_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: AppRadius.borderLg,
+        padding: EdgeInsets.symmetric(
+          horizontal: Breakpoints.screenHorizontalPadding(context),
+          vertical: AppSpacing.xl,
+        ),
+        child: ContentMaxWidth(
+          key: const Key('createTask.body.clamped'),
+          maxWidth: 480,
+          child: FormCardShell(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: .start,
+                spacing: AppSpacing.lg,
+                children: [
+                  CustomTextField(
+                    key: const Key('tasks.create.title'),
+                    hintText: 'Task Title',
+                    controller: _titleController,
+                    prefixIcon: const Icon(Icons.task),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter a title';
+                      }
+                      if (value.trim().length > 120) {
+                        return 'Title must be 120 characters or fewer';
+                      }
+                      return null;
+                    },
+                  ),
+                  CustomTextField(
+                    key: const Key('tasks.create.description'),
+                    hintText: 'Description (optional)',
+                    controller: _descriptionController,
+                    maxLines: 3,
+                    prefixIcon: const Icon(Icons.description),
+                  ),
+                  AssigneePicker(
+                    memberIds: widget.event.memberIds,
+                    selected: _assigneeId,
+                    onChanged: (value) => setState(() => _assigneeId = value),
+                  ),
+                  InkWell(
+                    key: const Key('tasks.create.dueDate'),
+                    onTap: _pickDueDate,
+                    borderRadius: AppRadius.borderLg,
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Due Date',
+                        prefixIcon: Icon(Icons.calendar_today_outlined),
+                        border: OutlineInputBorder(
+                          borderRadius: AppRadius.borderLg,
+                        ),
+                      ),
+                      child: Text(
+                        _dueDate == null
+                            ? 'No due date'
+                            : DateFormat.yMMMd().format(_dueDate!),
+                        style: TextStyle(
+                          color: _dueDate == null
+                              ? AppColors.mediumGrey
+                              : AppColors.charcoal,
+                        ),
+                      ),
                     ),
                   ),
-                  child: Text(
-                    _dueDate == null
-                        ? 'No due date'
-                        : DateFormat.yMMMd().format(_dueDate!),
-                    style: TextStyle(
-                      color: _dueDate == null
-                          ? AppColors.mediumGrey
-                          : AppColors.charcoal,
-                    ),
+                  PrimaryButton(
+                    key: const Key('tasks.create.save'),
+                    label: 'Create Task',
+                    onPressed: _submit,
                   ),
-                ),
+                ],
               ),
-              PrimaryButton(
-                key: const Key('tasks.create.save'),
-                label: 'Create Task',
-                onPressed: _submit,
-              ),
-            ],
+            ),
           ),
         ),
       ),
