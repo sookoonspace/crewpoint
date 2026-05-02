@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
+import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/event_card.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/join_event_sheet.dart';
@@ -30,18 +32,26 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: events.isEmpty
-          ? const _EmptyState()
-          : ListView.separated(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              itemCount: events.length,
-              separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
-              itemBuilder: (_, index) => EventCard(
-                event: events[index],
-                onTap: () =>
-                    context.push('/dashboard/event/${events[index].id}'),
+      body: ContentMaxWidth(
+        key: const Key('dashboard.body.clamped'),
+        maxWidth: 720,
+        child: events.isEmpty
+            ? const _EmptyState()
+            : ListView.separated(
+                padding: EdgeInsets.symmetric(
+                  horizontal: Breakpoints.screenHorizontalPadding(context),
+                  vertical: AppSpacing.xl,
+                ),
+                itemCount: events.length,
+                separatorBuilder: (_, _) =>
+                    const SizedBox(height: AppSpacing.sm),
+                itemBuilder: (_, index) => EventCard(
+                  event: events[index],
+                  onTap: () =>
+                      context.push('/dashboard/event/${events[index].id}'),
+                ),
               ),
-            ),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/dashboard/create'),
         backgroundColor: AppColors.sage,

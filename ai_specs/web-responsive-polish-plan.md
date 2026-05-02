@@ -37,8 +37,8 @@ Layout-only pass: `Breakpoints` constants + `ContentMaxWidth` wrapper, Responsiv
 - [x] TDD: `FormCardShell` resolves Card at 1280×800; Key absent at 375×812. (`test/app/core/widgets/form_card_shell_test.dart`)
 
 **Thin vertical slice — dashboard end-to-end:**
-- [ ] `lib/app/features/dashboard/presentation/dashboard_screen.dart` — wrap `ListView.separated` body in `ContentMaxWidth(maxWidth: 720, key: Key('dashboard.body.clamped'))`; padding `EdgeInsets.symmetric(horizontal: Breakpoints.screenHorizontalPadding(context), vertical: AppSpacing.xl)`.
-- [ ] TDD: `dashboard_screen_layout_test.dart` (new) — at 1280×800 `dashboard.body.clamped` width ≤ 720; at 375×812 width fills viewport (> 300 && < 375).
+- [x] `lib/app/features/dashboard/presentation/dashboard_screen.dart` — wrap `ListView.separated` body in `ContentMaxWidth(maxWidth: 720, key: Key('dashboard.body.clamped'))`; padding `EdgeInsets.symmetric(horizontal: Breakpoints.screenHorizontalPadding(context), vertical: AppSpacing.xl)`.
+- [x] TDD: `dashboard_screen_layout_test.dart` (new) — at 1280×800 `dashboard.body.clamped` width ≤ 720; at 375×812 width fills viewport (> 300 && ≤ 375).
 
 **ResponsiveShell breakpoint migration:**
 - [ ] `lib/app/core/widgets/responsive_shell.dart` — `_railBreakpoint` 720 → 840; comment cites M3 medium → expanded boundary.
