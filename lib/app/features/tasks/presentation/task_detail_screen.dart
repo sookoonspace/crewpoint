@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
+import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/widgets/checklist_editor.dart';
@@ -57,64 +59,75 @@ class TaskDetailScreen extends StatelessWidget {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Column(
-          crossAxisAlignment: .start,
-          spacing: AppSpacing.lg,
-          children: [
-            _StatusBadge(status: task.status),
-            if (hasPendingWrites)
-              const Row(
-                spacing: AppSpacing.sm,
-                children: [
-                  Icon(Icons.cloud_off, size: 16, color: AppColors.mediumGrey),
-                  Text(
-                    'Will sync when online',
-                    style: TextStyle(color: AppColors.mediumGrey),
-                  ),
-                ],
+        padding: EdgeInsets.symmetric(
+          horizontal: Breakpoints.screenHorizontalPadding(context),
+          vertical: AppSpacing.xl,
+        ),
+        child: ContentMaxWidth(
+          key: const Key('eventTaskDetail.body.clamped'),
+          maxWidth: 960,
+          child: Column(
+            crossAxisAlignment: .start,
+            spacing: AppSpacing.lg,
+            children: [
+              _StatusBadge(status: task.status),
+              if (hasPendingWrites)
+                const Row(
+                  spacing: AppSpacing.sm,
+                  children: [
+                    Icon(
+                      Icons.cloud_off,
+                      size: 16,
+                      color: AppColors.mediumGrey,
+                    ),
+                    Text(
+                      'Will sync when online',
+                      style: TextStyle(color: AppColors.mediumGrey),
+                    ),
+                  ],
+                ),
+              if (task.description != null && task.description!.isNotEmpty)
+                Text(
+                  task.description!,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              if (task.assigneeId != null)
+                _AssigneeRow(
+                  assigneeId: task.assigneeId!,
+                  stillInEvent: _assigneeStillInEvent,
+                ),
+              if (task.dueDate != null)
+                Row(
+                  spacing: AppSpacing.sm,
+                  children: [
+                    const Icon(
+                      Icons.calendar_today,
+                      size: 16,
+                      color: AppColors.mediumGrey,
+                    ),
+                    Text(
+                      'Due ${DateFormat.yMMMd().format(task.dueDate!)}',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
+              if (task.status == TaskStatus.done && task.completedAt != null)
+                Text(
+                  'Completed ${DateFormat.yMMMd().format(task.completedAt!)}'
+                  '${task.completedBy != null ? ' by ${task.completedBy!.length > 8 ? task.completedBy!.substring(0, 8) : task.completedBy}' : ''}',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGrey),
+                ),
+              ChecklistEditor(
+                items: checklist,
+                onToggle: canChangeStatus ? onChecklistToggle : null,
+                onAdd: canEditTask ? onChecklistAdd : null,
+                onEditText: canEditTask ? onChecklistEditText : null,
+                onDelete: canEditTask ? onChecklistDelete : null,
               ),
-            if (task.description != null && task.description!.isNotEmpty)
-              Text(
-                task.description!,
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-            if (task.assigneeId != null)
-              _AssigneeRow(
-                assigneeId: task.assigneeId!,
-                stillInEvent: _assigneeStillInEvent,
-              ),
-            if (task.dueDate != null)
-              Row(
-                spacing: AppSpacing.sm,
-                children: [
-                  const Icon(
-                    Icons.calendar_today,
-                    size: 16,
-                    color: AppColors.mediumGrey,
-                  ),
-                  Text(
-                    'Due ${DateFormat.yMMMd().format(task.dueDate!)}',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
-              ),
-            if (task.status == TaskStatus.done && task.completedAt != null)
-              Text(
-                'Completed ${DateFormat.yMMMd().format(task.completedAt!)}'
-                '${task.completedBy != null ? ' by ${task.completedBy!.length > 8 ? task.completedBy!.substring(0, 8) : task.completedBy}' : ''}',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGrey),
-              ),
-            ChecklistEditor(
-              items: checklist,
-              onToggle: canChangeStatus ? onChecklistToggle : null,
-              onAdd: canEditTask ? onChecklistAdd : null,
-              onEditText: canEditTask ? onChecklistEditText : null,
-              onDelete: canEditTask ? onChecklistDelete : null,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/widgets/loading_animation.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
@@ -26,73 +27,83 @@ class EventDashboardScreen extends StatelessWidget {
 
           // Content
           SliverPadding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                if (event.description != null &&
-                    event.description!.isNotEmpty) ...[
-                  Text(
-                    event.description!,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: AppColors.darkGrey),
+            padding: EdgeInsets.symmetric(
+              horizontal: Breakpoints.screenHorizontalPadding(context),
+              vertical: AppSpacing.xl,
+            ),
+            sliver: SliverConstrainedCrossAxis(
+              maxExtent: 960,
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  const SizedBox(
+                    key: Key('eventDashboard.body.clamped'),
+                    height: 1,
                   ),
+                  if (event.description != null &&
+                      event.description!.isNotEmpty) ...[
+                    Text(
+                      event.description!,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.darkGrey,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                  ],
+
+                  // Member avatars row
+                  _MembersPreview(
+                    memberCount: event.memberIds.length,
+                    onTap: () =>
+                        context.push('/dashboard/event/${event.id}/members'),
+                  ),
+
                   const SizedBox(height: AppSpacing.xl),
-                ],
 
-                // Member avatars row
-                _MembersPreview(
-                  memberCount: event.memberIds.length,
-                  onTap: () =>
-                      context.push('/dashboard/event/${event.id}/members'),
-                ),
-
-                const SizedBox(height: AppSpacing.xl),
-
-                // Quick-link cards
-                _QuickLinkCard(
-                  icon: Icons.chat_rounded,
-                  label: 'Chat',
-                  subtitle: 'Messages & alerts',
-                  color: AppColors.sage,
-                  onTap: () => context.push(
-                    '/dashboard/event/${event.id}/chat',
-                    extra: event,
+                  // Quick-link cards
+                  _QuickLinkCard(
+                    icon: Icons.chat_rounded,
+                    label: 'Chat',
+                    subtitle: 'Messages & alerts',
+                    color: AppColors.sage,
+                    onTap: () => context.push(
+                      '/dashboard/event/${event.id}/chat',
+                      extra: event,
+                    ),
                   ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                _QuickLinkCard(
-                  icon: Icons.account_balance_wallet_rounded,
-                  label: 'Budget',
-                  subtitle: 'Expenses & settlements',
-                  color: AppColors.terracotta,
-                  onTap: () => context.push(
-                    '/dashboard/event/${event.id}/budget',
-                    extra: event,
+                  const SizedBox(height: AppSpacing.md),
+                  _QuickLinkCard(
+                    icon: Icons.account_balance_wallet_rounded,
+                    label: 'Budget',
+                    subtitle: 'Expenses & settlements',
+                    color: AppColors.terracotta,
+                    onTap: () => context.push(
+                      '/dashboard/event/${event.id}/budget',
+                      extra: event,
+                    ),
                   ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                _QuickLinkCard(
-                  icon: Icons.task_alt_rounded,
-                  label: 'Tasks',
-                  subtitle: 'To-dos & assignments',
-                  color: AppColors.charcoal,
-                  onTap: () => context.push(
-                    '/dashboard/event/${event.id}/tasks',
-                    extra: event,
+                  const SizedBox(height: AppSpacing.md),
+                  _QuickLinkCard(
+                    icon: Icons.task_alt_rounded,
+                    label: 'Tasks',
+                    subtitle: 'To-dos & assignments',
+                    color: AppColors.charcoal,
+                    onTap: () => context.push(
+                      '/dashboard/event/${event.id}/tasks',
+                      extra: event,
+                    ),
                   ),
-                ),
 
-                const SizedBox(height: AppSpacing.xl),
+                  const SizedBox(height: AppSpacing.xl),
 
-                // Event actions (archive, leave, delete)
-                _EventActions(
-                  event: event,
-                  currentUserId: '', // TODO: wire from auth provider
-                ),
+                  // Event actions (archive, leave, delete)
+                  _EventActions(
+                    event: event,
+                    currentUserId: '', // TODO: wire from auth provider
+                  ),
 
-                const SizedBox(height: AppSpacing.xl),
-              ]),
+                  const SizedBox(height: AppSpacing.xl),
+                ]),
+              ),
             ),
           ),
         ],

@@ -62,10 +62,10 @@ Layout-only pass: `Breakpoints` constants + `ContentMaxWidth` wrapper, Responsiv
 - [x] TDD: `profile_screen_layout_test.dart` (new) — at 1280×800 `profile.body.clamped` ≤ 720 AND `_HeroCard` width = viewport (1280); at 375×812 fills viewport.
 
 **Detail screens (clamp 960):**
-- [ ] Audit `EventDashboardScreen` for full-bleed hero before wrapping. If hero present → `SliverConstrainedCrossAxis(maxExtent: 960, ...)` on `SliverPadding` subtree only. If absent → plain `ContentMaxWidth(maxWidth: 960)`.
-- [ ] `lib/app/features/dashboard/presentation/event_dashboard_screen.dart` — wrap per audit, `Key('eventDashboard.body.clamped')`.
-- [ ] `lib/app/features/tasks/presentation/event_task_detail_page.dart` — `ContentMaxWidth(maxWidth: 960, key: Key('eventTaskDetail.body.clamped'))`.
-- [ ] TDD: `event_dashboard_screen_layout_test.dart` (new) — at 1280×800 body-clamped ≤ 960; at 375×812 fills viewport. If hero present, hero stays full-bleed at both sizes.
+- [x] Audit `EventDashboardScreen`: confirmed full-bleed `_EventHero` `SliverToBoxAdapter`. Use `SliverConstrainedCrossAxis(maxExtent: 960)` on the `SliverPadding` subtree.
+- [x] `lib/app/features/dashboard/presentation/event_dashboard_screen.dart` — wrap per audit; `Key('eventDashboard.body.clamped')` on the first SliverList child SizedBox (RenderBox-measurable, height: 1).
+- [x] `lib/app/features/tasks/presentation/task_detail_screen.dart` — wrap body in `ContentMaxWidth(maxWidth: 960, key: Key('eventTaskDetail.body.clamped'))`. Same routed-parent → sub-widget deviation as the list screens.
+- [x] TDD: `event_dashboard_screen_layout_test.dart` (new) — at 1280×800 body-clamped ≤ 960 AND `_EventHero` width = 1280; at 375×812 fills viewport.
 
 **Markdown screens (clamp 720):**
 - [ ] `lib/app/features/profile/presentation/markdown_render_screen.dart` — wrap `ListView` body in `ContentMaxWidth(maxWidth: 720, key: Key('markdown.body.clamped'))`.
