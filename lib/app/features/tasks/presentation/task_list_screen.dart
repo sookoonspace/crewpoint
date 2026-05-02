@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
+import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/widgets/task_tile.dart';
@@ -63,35 +65,42 @@ class TaskListScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: filteredTasks.isEmpty
-          ? const Center(
-              key: Key('tasks.list.empty'),
-              child: Text(
-                'No tasks yet',
-                style: TextStyle(color: AppColors.mediumGrey),
+      body: ContentMaxWidth(
+        key: const Key('eventTasks.body.clamped'),
+        maxWidth: 720,
+        child: filteredTasks.isEmpty
+            ? const Center(
+                key: Key('tasks.list.empty'),
+                child: Text(
+                  'No tasks yet',
+                  style: TextStyle(color: AppColors.mediumGrey),
+                ),
+              )
+            : ListView.builder(
+                key: const Key('tasks.list'),
+                padding: EdgeInsets.symmetric(
+                  horizontal: Breakpoints.screenHorizontalPadding(context),
+                  vertical: AppSpacing.xl,
+                ),
+                itemCount: filteredTasks.length,
+                itemBuilder: (_, index) {
+                  final task = filteredTasks[index];
+                  final canChange = task.canChangeStatus(
+                    isOwner: isOwner,
+                    isAdmin: isAdmin,
+                    currentUserId: currentUserId,
+                  );
+                  return TaskTile(
+                    task: task,
+                    canChangeStatus: canChange,
+                    onTap: () => onTaskTap?.call(task),
+                    onStatusChanged: (status) =>
+                        onStatusChanged?.call(task, status),
+                    onUnauthorizedTap: onUnauthorizedStatusTap,
+                  );
+                },
               ),
-            )
-          : ListView.builder(
-              key: const Key('tasks.list'),
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              itemCount: filteredTasks.length,
-              itemBuilder: (_, index) {
-                final task = filteredTasks[index];
-                final canChange = task.canChangeStatus(
-                  isOwner: isOwner,
-                  isAdmin: isAdmin,
-                  currentUserId: currentUserId,
-                );
-                return TaskTile(
-                  task: task,
-                  canChangeStatus: canChange,
-                  onTap: () => onTaskTap?.call(task),
-                  onStatusChanged: (status) =>
-                      onStatusChanged?.call(task, status),
-                  onUnauthorizedTap: onUnauthorizedStatusTap,
-                );
-              },
-            ),
+      ),
       floatingActionButton: FloatingActionButton(
         key: const Key('tasks.list.create'),
         onPressed: onCreateTask,

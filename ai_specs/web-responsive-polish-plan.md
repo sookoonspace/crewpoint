@@ -55,11 +55,11 @@ Layout-only pass: `Breakpoints` constants + `ContentMaxWidth` wrapper, Responsiv
 - [x] TDD: `edit_profile_screen_layout_test.dart` (new) — at 1280×800 body-clamped width ≤ 480 AND `form.card.shell` Card present; at 375×812 fills viewport AND no Card. Test consumes a benign Material `DropdownButtonFormField` overflow (~7 px) unrelated to the clamp.
 
 **List screens (clamp 720):**
-- [ ] `lib/app/features/tasks/presentation/event_tasks_page.dart` — `ContentMaxWidth(maxWidth: 720, key: Key('eventTasks.body.clamped'))`.
-- [ ] `lib/app/features/chat/presentation/event_chat_page.dart` — `ContentMaxWidth(maxWidth: 720, key: Key('eventChat.body.clamped'))`.
-- [ ] `lib/app/features/profile/presentation/profile_screen.dart` — **special-case**: keep `_HeroCard` `SliverToBoxAdapter` full-bleed; clamp `SliverPadding` subtree via `SliverConstrainedCrossAxis(maxExtent: 720, sliver: SliverList(...), key: Key('profile.body.clamped'))`.
-- [ ] `lib/app/features/dashboard/presentation/member_management_screen.dart` — `ContentMaxWidth(maxWidth: 720, key: Key('memberManagement.body.clamped'))`.
-- [ ] TDD: `profile_screen_layout_test.dart` (new) — at 1280×800 `profile.body.clamped` ≤ 720 AND `_HeroCard` width = viewport (1280); at 375×812 both fill viewport.
+- [x] `lib/app/features/tasks/presentation/task_list_screen.dart` — wrap body in `ContentMaxWidth(maxWidth: 720, key: Key('eventTasks.body.clamped'))`. **Deviation**: clamp lives in the sub-widget body (not the routed `event_tasks_page.dart`) because the sub-widget owns the Scaffold; wrapping the routed page would clamp the AppBar + FAB too.
+- [x] `lib/app/features/chat/presentation/chat_screen.dart` — wrap body Column in `ContentMaxWidth(maxWidth: 720, key: Key('eventChat.body.clamped'))`. Same deviation rationale.
+- [x] `lib/app/features/profile/presentation/profile_screen.dart` — **special-case**: keep `_HeroCard` `SliverToBoxAdapter` full-bleed; clamp `SliverPadding` subtree via `SliverConstrainedCrossAxis(maxExtent: 720, sliver: SliverList(...))` with `Key('profile.body.clamped')` on the first SliverList child SizedBox (RenderBox-measurable for layout tests).
+- [x] `lib/app/features/dashboard/presentation/member_management_screen.dart` — `ContentMaxWidth(maxWidth: 720, key: Key('memberManagement.body.clamped'))`.
+- [x] TDD: `profile_screen_layout_test.dart` (new) — at 1280×800 `profile.body.clamped` ≤ 720 AND `_HeroCard` width = viewport (1280); at 375×812 fills viewport.
 
 **Detail screens (clamp 960):**
 - [ ] Audit `EventDashboardScreen` for full-bleed hero before wrapping. If hero present → `SliverConstrainedCrossAxis(maxExtent: 960, ...)` on `SliverPadding` subtree only. If absent → plain `ContentMaxWidth(maxWidth: 960)`.

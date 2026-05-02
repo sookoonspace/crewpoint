@@ -5,6 +5,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/network_image_with_placeholder.dart';
 import 'package:crewpoint_app/app/core/router/app_router.dart';
@@ -27,77 +28,85 @@ class ProfileScreen extends ConsumerWidget {
         slivers: [
           SliverToBoxAdapter(child: _HeroCard(user: user)),
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                const SizedBox(height: AppSpacing.xl),
-
-                // Settings
-                const _SectionHeader(label: 'SETTINGS'),
-                const SizedBox(height: AppSpacing.sm),
-                _SectionCard(
-                  children: [
-                    _SettingsTile(
-                      key: const Key('profile.privacyDashboard.tile'),
-                      icon: Icons.privacy_tip_outlined,
-                      label: 'Privacy Dashboard',
-                      onTap: () => context.push(AppRoutes.privacyDashboard),
-                    ),
-                    const Divider(height: 1, indent: 56),
-                    _SettingsTile(
-                      icon: Icons.notifications_none_rounded,
-                      label: 'Notifications',
-                      onTap: () {},
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: AppSpacing.xl),
-
-                // Payment
-                const _SectionHeader(label: 'PAYMENT'),
-                const SizedBox(height: AppSpacing.sm),
-                _PaymentCard(user: user),
-
-                const SizedBox(height: AppSpacing.xl),
-
-                // Account
-                const _SectionHeader(label: 'ACCOUNT'),
-                const SizedBox(height: AppSpacing.sm),
-                _SectionCard(
-                  children: [
-                    _SettingsTile(
-                      icon: Icons.logout_rounded,
-                      label: 'Sign Out',
-                      onTap: () => SignOutSheet.show(
-                        context: context,
-                        onSignOut: () =>
-                            ref.read(authProvider.notifier).signOut(),
-                      ),
-                    ),
-                  ],
-                ),
-
-                // Danger zone
-                const SizedBox(height: AppSpacing.xxxl),
-                _DangerCard(
-                  onTap: () => DeleteAccountDialog.show(
-                    context: context,
-                    onDeleted: () {
-                      ref
-                          .read(onboardingProvider.notifier)
-                          .completeOnboarding();
-                      if (context.mounted) {
-                        context.go(AppRoutes.auth);
-                      }
-                    },
+            padding: EdgeInsets.symmetric(
+              horizontal: Breakpoints.screenHorizontalPadding(context),
+            ),
+            sliver: SliverConstrainedCrossAxis(
+              maxExtent: 720,
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  const SizedBox(
+                    key: Key('profile.body.clamped'),
+                    height: AppSpacing.xl,
                   ),
-                ),
 
-                const SizedBox(height: AppSpacing.xxl),
-                const _AppVersion(),
-                const SizedBox(height: AppSpacing.xl),
-              ]),
+                  // Settings
+                  const _SectionHeader(label: 'SETTINGS'),
+                  const SizedBox(height: AppSpacing.sm),
+                  _SectionCard(
+                    children: [
+                      _SettingsTile(
+                        key: const Key('profile.privacyDashboard.tile'),
+                        icon: Icons.privacy_tip_outlined,
+                        label: 'Privacy Dashboard',
+                        onTap: () => context.push(AppRoutes.privacyDashboard),
+                      ),
+                      const Divider(height: 1, indent: 56),
+                      _SettingsTile(
+                        icon: Icons.notifications_none_rounded,
+                        label: 'Notifications',
+                        onTap: () {},
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: AppSpacing.xl),
+
+                  // Payment
+                  const _SectionHeader(label: 'PAYMENT'),
+                  const SizedBox(height: AppSpacing.sm),
+                  _PaymentCard(user: user),
+
+                  const SizedBox(height: AppSpacing.xl),
+
+                  // Account
+                  const _SectionHeader(label: 'ACCOUNT'),
+                  const SizedBox(height: AppSpacing.sm),
+                  _SectionCard(
+                    children: [
+                      _SettingsTile(
+                        icon: Icons.logout_rounded,
+                        label: 'Sign Out',
+                        onTap: () => SignOutSheet.show(
+                          context: context,
+                          onSignOut: () =>
+                              ref.read(authProvider.notifier).signOut(),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Danger zone
+                  const SizedBox(height: AppSpacing.xxxl),
+                  _DangerCard(
+                    onTap: () => DeleteAccountDialog.show(
+                      context: context,
+                      onDeleted: () {
+                        ref
+                            .read(onboardingProvider.notifier)
+                            .completeOnboarding();
+                        if (context.mounted) {
+                          context.go(AppRoutes.auth);
+                        }
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: AppSpacing.xxl),
+                  const _AppVersion(),
+                  const SizedBox(height: AppSpacing.xl),
+                ]),
+              ),
             ),
           ),
         ],

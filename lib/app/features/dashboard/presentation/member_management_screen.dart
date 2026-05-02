@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
+import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
 
@@ -38,39 +40,46 @@ class _MemberManagementScreenState extends State<MemberManagementScreen> {
         backgroundColor: AppColors.cream,
         elevation: 0,
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        itemCount: event.memberIds.length,
-        itemBuilder: (context, index) {
-          final memberId = event.memberIds[index];
-          final memberIsOwner = event.isOwner(memberId);
-          final memberIsAdmin = event.isAdmin(memberId);
-          final canRemove =
-              (isOwner || isAdmin) &&
-              !memberIsOwner &&
-              memberId != currentUserId;
-          final isProcessing = _processingIds.contains(memberId);
+      body: ContentMaxWidth(
+        key: const Key('memberManagement.body.clamped'),
+        maxWidth: 720,
+        child: ListView.builder(
+          padding: EdgeInsets.symmetric(
+            horizontal: Breakpoints.screenHorizontalPadding(context),
+            vertical: AppSpacing.xl,
+          ),
+          itemCount: event.memberIds.length,
+          itemBuilder: (context, index) {
+            final memberId = event.memberIds[index];
+            final memberIsOwner = event.isOwner(memberId);
+            final memberIsAdmin = event.isAdmin(memberId);
+            final canRemove =
+                (isOwner || isAdmin) &&
+                !memberIsOwner &&
+                memberId != currentUserId;
+            final isProcessing = _processingIds.contains(memberId);
 
-          return _MemberTile(
-            memberId: memberId,
-            role: memberIsOwner
-                ? 'Owner'
-                : memberIsAdmin
-                ? 'Admin'
-                : 'Member',
-            roleColor: memberIsOwner
-                ? AppColors.sage
-                : memberIsAdmin
-                ? AppColors.info
-                : AppColors.mediumGrey,
-            canRemove: canRemove,
-            canPromote: isOwner && !memberIsOwner,
-            isAdmin: memberIsAdmin,
-            isProcessing: isProcessing,
-            onRemove: () => _removeMember(memberId),
-            onToggleAdmin: () => _toggleAdmin(memberId, memberIsAdmin),
-          );
-        },
+            return _MemberTile(
+              memberId: memberId,
+              role: memberIsOwner
+                  ? 'Owner'
+                  : memberIsAdmin
+                  ? 'Admin'
+                  : 'Member',
+              roleColor: memberIsOwner
+                  ? AppColors.sage
+                  : memberIsAdmin
+                  ? AppColors.info
+                  : AppColors.mediumGrey,
+              canRemove: canRemove,
+              canPromote: isOwner && !memberIsOwner,
+              isAdmin: memberIsAdmin,
+              isProcessing: isProcessing,
+              onRemove: () => _removeMember(memberId),
+              onToggleAdmin: () => _toggleAdmin(memberId, memberIsAdmin),
+            );
+          },
+        ),
       ),
       floatingActionButton: (isOwner || isAdmin)
           ? FloatingActionButton(

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
+import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
 import 'package:crewpoint_app/app/features/chat/presentation/widgets/critical_alert_modal.dart';
 import 'package:crewpoint_app/app/features/chat/presentation/widgets/message_bubble.dart';
@@ -101,58 +103,69 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: widget.messages.isEmpty
-                ? const Center(
-                    key: Key('chat.list.empty'),
-                    child: Text(
-                      'No messages yet — be the first to say something.',
-                      style: TextStyle(color: AppColors.mediumGrey),
+      body: ContentMaxWidth(
+        key: const Key('eventChat.body.clamped'),
+        maxWidth: 720,
+        child: Column(
+          children: [
+            Expanded(
+              child: widget.messages.isEmpty
+                  ? const Center(
+                      key: Key('chat.list.empty'),
+                      child: Text(
+                        'No messages yet — be the first to say something.',
+                        style: TextStyle(color: AppColors.mediumGrey),
+                      ),
+                    )
+                  : ListView.builder(
+                      key: const Key('chat.list'),
+                      controller: _scrollController,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: Breakpoints.screenHorizontalPadding(
+                          context,
+                        ),
+                        vertical: AppSpacing.lg,
+                      ),
+                      reverse: true,
+                      itemCount: widget.messages.length,
+                      itemBuilder: (_, index) {
+                        final reversedIndex =
+                            widget.messages.length - 1 - index;
+                        final message = widget.messages[reversedIndex];
+                        final senderName =
+                            message.senderName ??
+                            _resolveSenderName(message.senderId);
+                        return MessageBubble(
+                          message: senderName == null
+                              ? message
+                              : ChatMessageModel(
+                                  id: message.id,
+                                  eventId: message.eventId,
+                                  senderId: message.senderId,
+                                  text: message.text,
+                                  timestamp: message.timestamp,
+                                  isHighPriority: message.isHighPriority,
+                                  senderName: senderName,
+                                  kind: message.kind,
+                                ),
+                          isCurrentUser:
+                              message.senderId == widget.currentUserId,
+                          onTapSettlement:
+                              message.kind == ChatMessageKind.settlement
+                              ? () => widget.onTapSettlement?.call(message)
+                              : null,
+                        );
+                      },
                     ),
-                  )
-                : ListView.builder(
-                    key: const Key('chat.list'),
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    reverse: true,
-                    itemCount: widget.messages.length,
-                    itemBuilder: (_, index) {
-                      final reversedIndex = widget.messages.length - 1 - index;
-                      final message = widget.messages[reversedIndex];
-                      final senderName =
-                          message.senderName ??
-                          _resolveSenderName(message.senderId);
-                      return MessageBubble(
-                        message: senderName == null
-                            ? message
-                            : ChatMessageModel(
-                                id: message.id,
-                                eventId: message.eventId,
-                                senderId: message.senderId,
-                                text: message.text,
-                                timestamp: message.timestamp,
-                                isHighPriority: message.isHighPriority,
-                                senderName: senderName,
-                                kind: message.kind,
-                              ),
-                        isCurrentUser: message.senderId == widget.currentUserId,
-                        onTapSettlement:
-                            message.kind == ChatMessageKind.settlement
-                            ? () => widget.onTapSettlement?.call(message)
-                            : null,
-                      );
-                    },
-                  ),
-          ),
-          _MessageInput(
-            controller: _controller,
-            onSend: _send,
-            isSending: widget.isSending,
-            lastSendFailed: widget.lastSendFailed,
-          ),
-        ],
+            ),
+            _MessageInput(
+              controller: _controller,
+              onSend: _send,
+              isSending: widget.isSending,
+              lastSendFailed: widget.lastSendFailed,
+            ),
+          ],
+        ),
       ),
     );
   }
