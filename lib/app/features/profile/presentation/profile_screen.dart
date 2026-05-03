@@ -89,17 +89,15 @@ class ProfileScreen extends ConsumerWidget {
                   // Danger zone
                   const SizedBox(height: AppSpacing.xxxl),
                   _DangerCard(
-                    onTap: () => DeleteAccountDialog.show(
-                      context: context,
-                      onDeleted: () {
-                        ref
-                            .read(onboardingProvider.notifier)
-                            .completeOnboarding();
-                        if (context.mounted) {
-                          context.go(AppRoutes.auth);
-                        }
-                      },
-                    ),
+                    // The dialog owns the deletion flow end-to-end:
+                    // - Onboarding flag is preserved inside
+                    //   AccountDeletionService._clearLocalData (Phase 1).
+                    // - Navigation to /auth happens via the global
+                    //   GoRouter redirect when AuthNotifier flips to
+                    //   Unauthenticated after `auth.deleteUser` revokes
+                    //   the client token. Embracing the global redirect
+                    //   avoids racing it from inside the dialog.
+                    onTap: () => DeleteAccountDialog.show(context: context),
                   ),
 
                   const SizedBox(height: AppSpacing.xxl),

@@ -117,8 +117,19 @@ class AccountDeletionService {
   }
 
   /// Calls the deleteUserAccount Cloud Function, then clears local data.
-  /// Returns null on success, or an error message on failure.
-  Future<String?> executeAccountDeletion() async {
+  ///
+  /// Returns `(errorCode: null, message: null)` on success. On failure
+  /// returns a typed error code matching the Cloud Function's
+  /// `details.stage` payload ([_kFirestoreStageCode],
+  /// [_kStorageStageCode], [_kAuthStageCode]) or one of the generic
+  /// codes ([_kUnauthenticatedCode], [_kUnknownCode]) plus a
+  /// user-facing message.
+  ///
+  /// Mirrors the `(:user, :failure)` record idiom in
+  /// `lib/app/features/auth/application/auth_provider.dart` rather than
+  /// introducing a new sealed-class result type.
+  Future<({String? errorCode, String? message})>
+  executeAccountDeletion() async {
     try {
       await _callDeleteUserAccount();
 
@@ -135,7 +146,7 @@ class AccountDeletionService {
         );
       }
 
-      return null; // success
+      return (errorCode: null, message: null);
     } on FirebaseFunctionsException catch (e, st) {
       log(
         'Cloud Function failed: ${e.code}',
@@ -143,7 +154,7 @@ class AccountDeletionService {
         stackTrace: st,
         name: 'deletion',
       );
-      return e.message ?? 'Account deletion failed. Please try again.';
+      return _mapFunctionsException(e);
     } catch (e, st) {
       log(
         'Account deletion failed',
@@ -151,9 +162,85 @@ class AccountDeletionService {
         stackTrace: st,
         name: 'deletion',
       );
-      return 'An unexpected error occurred. Please try again.';
+      return (
+        errorCode: _kUnknownCode,
+        message: 'An unexpected error occurred. Please try again.',
+      );
     }
   }
+
+  /// Maps a [FirebaseFunctionsException] to a typed `(errorCode, message)`
+  /// pair using the Cloud Function's `details.stage` field. Falls back to
+  /// generic codes when the Cloud Function did not surface a stage.
+  ({String? errorCode, String? message}) _mapFunctionsException(
+    FirebaseFunctionsException e,
+  ) {
+    if (e.code == 'unauthenticated') {
+      return (
+        errorCode: _kUnauthenticatedCode,
+        message: 'Please sign in again to delete your account.',
+      );
+    }
+    final details = e.details;
+    final stage = details is Map ? details['stage'] : null;
+    return switch (stage) {
+      'firestore' => (
+        errorCode: _kFirestoreStageCode,
+        message:
+            "We couldn't delete your data. Tap Try again or contact "
+            'support.',
+      ),
+      'storage' => (
+        errorCode: _kStorageStageCode,
+        // Storage failures are surfaced as warnings server-side and never
+        // user-visible (Cloud Function continues past them); included
+        // here for completeness so downstream callers don't have to
+        // special-case the absent code.
+        message:
+            'A storage cleanup step failed; your data was deleted but '
+            'one or more files may need manual cleanup.',
+      ),
+      'auth' => (
+        errorCode: _kAuthStageCode,
+        message:
+            'Your data was deleted but we could not fully remove your '
+            'account. Tap Try again — your data is gone, only the '
+            'sign-in record remains.',
+      ),
+      _ => (
+        errorCode: _kUnknownCode,
+        message: e.message ?? 'Account deletion failed. Please try again.',
+      ),
+    };
+  }
+
+  // ----- Stage error codes returned to the dialog. ----- //
+  static const String _kFirestoreStageCode = 'firestore-cleanup-failed';
+  static const String _kStorageStageCode = 'storage-cleanup-failed';
+  static const String _kAuthStageCode = 'auth-delete-failed';
+  static const String _kUnauthenticatedCode = 'unauthenticated';
+  static const String _kUnknownCode = 'unknown';
+
+  // ----- Public re-exports for callers (dialog, tests). ----- //
+  /// Returned when the Cloud Function fails during the Firestore wipe.
+  static const String firestoreCleanupFailedCode = _kFirestoreStageCode;
+
+  /// Returned when the Cloud Function emits a storage warning. Storage
+  /// failures are non-fatal server-side and won't normally reach the
+  /// client; this code exists so the mapping is exhaustive.
+  static const String storageCleanupFailedCode = _kStorageStageCode;
+
+  /// Returned when the Cloud Function fails to delete the Firebase Auth
+  /// user (typically: retry exhaustion). Firestore + Storage are gone;
+  /// only the sign-in record remains.
+  static const String authDeleteFailedCode = _kAuthStageCode;
+
+  /// Returned when the Cloud Function rejects the call as unauthenticated.
+  static const String unauthenticatedCode = _kUnauthenticatedCode;
+
+  /// Returned when no typed code is available (network error,
+  /// unrecognised exception, etc.).
+  static const String unknownCode = _kUnknownCode;
 
   /// Clears local cache: Drift tables + secure storage.
   ///

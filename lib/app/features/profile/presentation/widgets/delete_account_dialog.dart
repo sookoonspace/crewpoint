@@ -7,27 +7,42 @@ import 'package:crewpoint_app/app/core/services/account_deletion_service.dart';
 import 'package:crewpoint_app/app/core/widgets/custom_text_field.dart';
 import 'package:crewpoint_app/app/core/widgets/destructive_button.dart';
 import 'package:crewpoint_app/app/core/widgets/loading_animation.dart';
-import 'package:lottie/lottie.dart';
+import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 
 /// Multi-step account deletion dialog with dynamic re-authentication.
 ///
-/// Step 0: Warning — explains what happens to shared data
-/// Step 1: Re-auth — password field (email) or provider button (Google/Apple)
-/// Step 2: Processing — loading overlay during Cloud Function call
-/// Step 3: Done — success, caller handles navigation
+/// State machine:
+/// - **Step 0**: warning copy (Cancel / Continue).
+/// - **Step 1**: re-auth — password field for email, provider tile for
+///   Google/Apple. (Cancel / Delete Forever.)
+/// - **Step 2**: processing loader. The Cloud Function call runs here.
+///
+/// On Cloud Function success the dialog does **NOT** call
+/// `Navigator.pop` and does **NOT** call `context.go` — the deletion of
+/// the Firebase Auth user revokes the client token, `authStateChanges`
+/// fires `null`, `AuthNotifier` flips to [Unauthenticated], `main.dart`
+/// rebuilds `MaterialApp.router`, and the global GoRouter redirect
+/// routes the entire app to `/auth`. The dialog is unmounted as part
+/// of that route reconciliation. Trying to drive navigation from inside
+/// the dialog races the global redirect and reproduces today's
+/// "code-blob + Home link" symptom.
+///
+/// Mid-dialog auth-state-flip handling:
+/// - On step 0 or 1 (no CF call in flight): pop the dialog so the
+///   global redirect doesn't have to fight an open modal route. This
+///   path covers token-expired and signed-out-elsewhere cases.
+/// - On step 2: ignore the auth flip. The CF success path does not pop
+///   or navigate; the global redirect handles it. Mounted guards on
+///   every state update short-circuit cleanly if the global redirect
+///   beats the awaited CF future.
 class DeleteAccountDialog extends ConsumerStatefulWidget {
-  const DeleteAccountDialog({super.key, this.onDeleted});
+  const DeleteAccountDialog({super.key});
 
-  final VoidCallback? onDeleted;
-
-  static Future<void> show({
-    required BuildContext context,
-    VoidCallback? onDeleted,
-  }) {
+  static Future<void> show({required BuildContext context}) {
     return showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => DeleteAccountDialog(onDeleted: onDeleted),
+      builder: (_) => const DeleteAccountDialog(),
     );
   }
 
@@ -37,50 +52,57 @@ class DeleteAccountDialog extends ConsumerStatefulWidget {
 }
 
 class _DeleteAccountDialogState extends ConsumerState<DeleteAccountDialog> {
+  /// 0 = warning, 1 = re-auth, 2 = processing.
   int _step = 0;
   String? _errorMessage;
   final _passwordController = TextEditingController();
+  ProviderSubscription<AuthState>? _authListener;
+
+  @override
+  void initState() {
+    super.initState();
+    // Step 0/1 only: if the auth state flips to Unauthenticated while
+    // the user is still in the warning or re-auth screens (token
+    // expired, signed out elsewhere), pop the dialog cleanly. Step 2
+    // explicitly ignores this listener — the CF success path lets the
+    // global GoRouter redirect tear the dialog down naturally.
+    _authListener = ref.listenManual<AuthState>(authProvider, (prev, next) {
+      if (!mounted) return;
+      if (_step > 1) return;
+      if (next is Unauthenticated) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+    });
+  }
 
   @override
   void dispose() {
+    _authListener?.close();
     _passwordController.dispose();
     super.dispose();
   }
 
-  Future<void> _reAuthAndDelete() async {
+  Future<void> _onDeleteForever() async {
     final service = ref.read(accountDeletionServiceProvider);
 
-    setState(() {
-      _step = 2;
-      _errorMessage = null;
-    });
-
-    // Step 1: Re-authenticate based on provider
+    // Step 1: Re-authenticate FIRST. Do NOT flip to step 2 yet — the
+    // processing loader must not flash while the OAuth sheet is open.
     final provider = service.currentAuthProvider;
-    bool reAuthSuccess;
-
-    switch (provider) {
-      case AuthProviderType.email:
+    final reAuthSuccess = await switch (provider) {
+      AuthProviderType.email => () async {
         final password = _passwordController.text.trim();
-        if (password.isEmpty) {
-          setState(() {
-            _step = 1;
-            _errorMessage = 'Please enter your password.';
-          });
-          return;
-        }
-        reAuthSuccess = await service.reAuthenticateWithEmail(password);
-      case AuthProviderType.google:
-        reAuthSuccess = await service.reAuthenticateWithGoogle();
-      case AuthProviderType.apple:
-        reAuthSuccess = await service.reAuthenticateWithApple();
-      case AuthProviderType.unknown:
-        reAuthSuccess = false;
-    }
+        if (password.isEmpty) return false;
+        return service.reAuthenticateWithEmail(password);
+      }(),
+      AuthProviderType.google => service.reAuthenticateWithGoogle(),
+      AuthProviderType.apple => service.reAuthenticateWithApple(),
+      AuthProviderType.unknown => Future<bool>.value(false),
+    };
+
+    if (!mounted) return;
 
     if (!reAuthSuccess) {
       setState(() {
-        _step = 1;
         _errorMessage = provider == AuthProviderType.email
             ? 'Incorrect password. Please try again.'
             : 'Authentication failed. Please try again.';
@@ -88,51 +110,59 @@ class _DeleteAccountDialogState extends ConsumerState<DeleteAccountDialog> {
       return;
     }
 
-    // Step 2: Call Cloud Function
-    final error = await service.executeAccountDeletion();
+    // Step 2: Re-auth confirmed. Flip to processing loader and call CF.
+    setState(() {
+      _step = 2;
+      _errorMessage = null;
+    });
 
-    if (error != null) {
-      setState(() {
-        _step = 1;
-        _errorMessage = error;
-      });
+    final result = await service.executeAccountDeletion();
+
+    // Critical: do NOT call Navigator.pop and do NOT call context.go on
+    // the success path. The global authProvider redirect handles
+    // navigation as the Auth user deletion revokes the token. Mounted
+    // guards short-circuit cleanly if the global redirect already
+    // unmounted the dialog.
+    if (!mounted) return;
+
+    if (result.errorCode == null) {
+      // Success. Stay on step 2 until the global redirect reconciles
+      // the route stack and unmounts us. The user sees: loader → /auth.
       return;
     }
 
-    // Step 3: Success — show Lottie briefly
-    if (mounted) {
-      setState(() => _step = 3);
-      await Future<void>.delayed(const Duration(seconds: 2));
-      if (mounted) {
-        Navigator.of(context).pop();
-        widget.onDeleted?.call();
-      }
-    }
+    // CF failure. The Auth user wasn't deleted, the client token still
+    // works, the global redirect is not firing — it's safe to update
+    // our own UI and return to the re-auth step.
+    setState(() {
+      _step = 1;
+      _errorMessage =
+          result.message ?? 'Account deletion failed. Please try again.';
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final stepBody = switch (_step) {
+      0 => const _WarningStep(),
+      1 => _ReAuthStep(
+        provider: ref.read(accountDeletionServiceProvider).currentAuthProvider,
+        passwordController: _passwordController,
+        errorMessage: _errorMessage,
+      ),
+      2 => const _ProcessingStep(),
+      _ => const SizedBox.shrink(),
+    };
+
     return AlertDialog(
-      title: (_step == 2 || _step == 3)
+      title: _step == 2
           ? null
           : Text(
               _step == 0 ? 'Delete Account?' : 'Confirm Deletion',
               style: const TextStyle(color: AppColors.terracotta),
             ),
-      content: switch (_step) {
-        0 => const _WarningStep(),
-        1 => _ReAuthStep(
-          provider: ref
-              .read(accountDeletionServiceProvider)
-              .currentAuthProvider,
-          passwordController: _passwordController,
-          errorMessage: _errorMessage,
-        ),
-        2 => const _ProcessingStep(),
-        3 => const _SuccessStep(),
-        _ => const SizedBox.shrink(),
-      },
-      actions: (_step == 2 || _step == 3)
+      content: stepBody,
+      actions: _step == 2
           ? null
           : [
               TextButton(
@@ -152,7 +182,7 @@ class _DeleteAccountDialogState extends ConsumerState<DeleteAccountDialog> {
                   width: 140,
                   child: DestructiveButton(
                     label: 'Delete Forever',
-                    onPressed: _reAuthAndDelete,
+                    onPressed: _onDeleteForever,
                   ),
                 ),
             ],
@@ -169,12 +199,15 @@ class _WarningStep extends StatelessWidget {
     // (Account deletion section). Keeping the dialog and the policy
     // in lock-step prevents UI/policy drift; counsel review of either
     // side requires updating both.
-    return const Text(
-      'Your solo events will be permanently deleted. In shared events, '
-      "your name and account ID will be replaced with 'deleted user' "
-      'so the historical record stays intact for the rest of your group. '
-      'This is irreversible. To request full erasure of an anonymized '
-      'record on a per-event basis, contact support after deletion.',
+    return const KeyedSubtree(
+      key: Key('deleteAccount.dialog.warn'),
+      child: Text(
+        'Your solo events will be permanently deleted. In shared events, '
+        "your name and account ID will be replaced with 'deleted user' "
+        'so the historical record stays intact for the rest of your group. '
+        'This is irreversible. To request full erasure of an anonymized '
+        'record on a per-event basis, contact support after deletion.',
+      ),
     );
   }
 }
@@ -193,7 +226,8 @@ class _ReAuthStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      mainAxisSize: .min,
+      key: const Key('deleteAccount.dialog.reauth'),
+      mainAxisSize: MainAxisSize.min,
       spacing: AppSpacing.lg,
       children: [
         if (errorMessage != null)
@@ -205,7 +239,7 @@ class _ReAuthStep extends StatelessWidget {
           ),
         switch (provider) {
           AuthProviderType.email => Column(
-            mainAxisSize: .min,
+            mainAxisSize: MainAxisSize.min,
             spacing: AppSpacing.md,
             children: [
               const Text('Enter your password to confirm deletion.'),
@@ -244,7 +278,7 @@ class _ProviderReAuthPrompt extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      mainAxisSize: .min,
+      mainAxisSize: MainAxisSize.min,
       spacing: AppSpacing.md,
       children: [
         const Text(
@@ -269,42 +303,12 @@ class _ProcessingStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Padding(
+      key: Key('deleteAccount.dialog.processing'),
       padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
       child: Column(
-        mainAxisSize: .min,
+        mainAxisSize: MainAxisSize.min,
         spacing: AppSpacing.lg,
         children: [LoadingAnimation(), Text('Deleting your account...')],
-      ),
-    );
-  }
-}
-
-class _SuccessStep extends StatelessWidget {
-  const _SuccessStep();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
-      child: Column(
-        mainAxisSize: .min,
-        spacing: AppSpacing.lg,
-        children: [
-          Lottie.asset(
-            'assets/animations/success.json',
-            width: 80,
-            height: 80,
-            errorBuilder: (_, _, _) =>
-                const Icon(Icons.check_circle, size: 64, color: AppColors.sage),
-          ),
-          Text(
-            'Account deleted',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: AppColors.sage,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
       ),
     );
   }
