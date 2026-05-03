@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/responsive_shell.dart';
 import 'package:crewpoint_app/app/features/auth/presentation/widgets/email_unverified_banner.dart';
@@ -35,13 +37,17 @@ abstract final class AppRoutes {
 /// [isOnboardingComplete] and [isAuthenticated] drive redirects.
 /// [onRouteChanged] (optional) is called with the matched location on each
 /// navigation — used to keep `currentRouteProvider` in sync.
+/// [initialLocation] (optional) overrides the default landing path; tests
+/// use this to pump unmatched routes against [errorBuilder].
 GoRouter createRouter({
   required bool isOnboardingComplete,
   required bool isAuthenticated,
   void Function(String location)? onRouteChanged,
+  String initialLocation = AppRoutes.dashboard,
 }) {
   return GoRouter(
-    initialLocation: AppRoutes.dashboard,
+    initialLocation: initialLocation,
+    errorBuilder: (_, _) => const _RouterErrorScreen(),
     redirect: (context, state) {
       final location = state.matchedLocation;
       onRouteChanged?.call(location);
@@ -242,6 +248,60 @@ class _PlaceholderScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text(title)),
       body: Center(child: Text(title)),
+    );
+  }
+}
+
+/// Friendly fallback for unmatched routes. Replaces GoRouter's default
+/// `_DefaultRouterError` (the "route blob + Home link" page the user
+/// was hitting after the broken account-delete flow).
+class _RouterErrorScreen extends StatelessWidget {
+  const _RouterErrorScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.cream,
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              spacing: AppSpacing.lg,
+              children: [
+                const Icon(
+                  Icons.compass_calibration_outlined,
+                  size: 64,
+                  color: AppColors.sage,
+                ),
+                Text(
+                  'Something went wrong',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                Text(
+                  "We couldn't find that page.",
+                  textAlign: TextAlign.center,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: AppColors.mediumGrey),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                ElevatedButton.icon(
+                  key: const Key('router.error.goHome'),
+                  onPressed: () => context.go(AppRoutes.dashboard),
+                  icon: const Icon(Icons.home_outlined),
+                  label: const Text('Go home'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.sage,
+                    foregroundColor: AppColors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

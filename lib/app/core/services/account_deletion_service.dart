@@ -4,9 +4,17 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart';
 import 'package:crewpoint_app/app/core/services/secure_storage_service.dart';
+import 'package:crewpoint_app/app/features/onboarding/application/onboarding_provider.dart';
 
 /// Determines the primary auth provider for the current user.
 enum AuthProviderType { email, google, apple, unknown }
+
+/// Wrapper around the `deleteUserAccount` Cloud Function call.
+///
+/// Defaults to `FirebaseFunctions.instance.httpsCallable('deleteUserAccount')`;
+/// tests inject a stub. Mirrors the `disputeSettlementCallableProvider`
+/// pattern in `lib/app/core/providers.dart`.
+typedef AccountDeletionCallable = Future<void> Function();
 
 /// Handles the complete client-side account deletion flow:
 /// 1. Re-authenticate user (provider-aware)
@@ -19,15 +27,25 @@ class AccountDeletionService {
     required SecureStorageService secureStorage,
     FirebaseAuth? firebaseAuth,
     FirebaseFunctions? functions,
+    AccountDeletionCallable? deletionCallable,
   }) : _database = database,
        _secureStorage = secureStorage,
        _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
-       _functions = functions ?? FirebaseFunctions.instance;
+       _functions = functions,
+       _deletionCallable = deletionCallable;
 
   final AppDatabase _database;
   final SecureStorageService _secureStorage;
   final FirebaseAuth _firebaseAuth;
-  final FirebaseFunctions _functions;
+  final FirebaseFunctions? _functions;
+  final AccountDeletionCallable? _deletionCallable;
+
+  Future<void> _callDeleteUserAccount() {
+    if (_deletionCallable != null) return _deletionCallable();
+    final functions = _functions ?? FirebaseFunctions.instance;
+    final callable = functions.httpsCallable('deleteUserAccount');
+    return callable.call<Map<String, dynamic>>();
+  }
 
   /// Returns the primary auth provider for the current user.
   AuthProviderType get currentAuthProvider {
@@ -102,12 +120,20 @@ class AccountDeletionService {
   /// Returns null on success, or an error message on failure.
   Future<String?> executeAccountDeletion() async {
     try {
-      // Call Cloud Function
-      final callable = _functions.httpsCallable('deleteUserAccount');
-      await callable.call<Map<String, dynamic>>();
+      await _callDeleteUserAccount();
 
-      // Clear local data
-      await _clearLocalData();
+      // Local-data clear is best-effort; server-side state is the source
+      // of truth. A failure here must not flip success → failure.
+      try {
+        await _clearLocalData();
+      } catch (e, st) {
+        log(
+          'Local-data clear failed (non-fatal)',
+          error: e,
+          stackTrace: st,
+          name: 'deletion',
+        );
+      }
 
       return null; // success
     } on FirebaseFunctionsException catch (e, st) {
@@ -129,16 +155,34 @@ class AccountDeletionService {
     }
   }
 
-  /// Clears all local data: Drift DB tables + secure storage.
+  /// Clears local cache: Drift tables + secure storage.
+  ///
+  /// Drift wipes are wrapped so a failure there does not prevent the
+  /// secure-storage cleanup — the persisted secure-storage state is what
+  /// gates the global router's onboarding redirect on next launch, so
+  /// reaching that step matters more than the Drift wipe.
+  ///
+  /// `secureStorage.deleteAll()` wipes EVERY key including
+  /// `onboardingCompleteKey`. We immediately re-pin it to `'true'` so the
+  /// next sign-up on this device does not re-trigger onboarding. Onboarding
+  /// completion is a per-device flag, not auth-scoped.
   Future<void> _clearLocalData() async {
-    // Delete all Drift tables
-    await _database.delete(_database.chatMessages).go();
-    await _database.delete(_database.expenses).go();
-    await _database.delete(_database.tasks).go();
-    await _database.delete(_database.events).go();
-    await _database.delete(_database.users).go();
+    try {
+      await _database.delete(_database.chatMessages).go();
+      await _database.delete(_database.expenses).go();
+      await _database.delete(_database.tasks).go();
+      await _database.delete(_database.events).go();
+      await _database.delete(_database.users).go();
+    } catch (e, st) {
+      log(
+        'Drift wipe failed; continuing to secure-storage cleanup',
+        error: e,
+        stackTrace: st,
+        name: 'deletion',
+      );
+    }
 
-    // Clear secure storage
     await _secureStorage.deleteAll();
+    await _secureStorage.write(key: onboardingCompleteKey, value: 'true');
   }
 }

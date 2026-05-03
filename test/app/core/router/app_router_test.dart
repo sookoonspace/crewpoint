@@ -61,4 +61,31 @@ void main() {
 
     expect(find.text('CrewPoint'), findsOneWidget);
   });
+
+  testWidgets(
+    'unmatched route renders the friendly error screen + Go home button',
+    (tester) async {
+      final router = createRouter(
+        isOnboardingComplete: true,
+        isAuthenticated: true,
+        initialLocation: '/this-route-does-not-exist',
+      );
+
+      await tester.pumpWidget(_wrapWithProviders(router));
+      await tester.pumpAndSettle();
+
+      // Friendly fallback (NOT the default GoRouter "no route" page).
+      expect(find.byKey(const Key('router.error.goHome')), findsOneWidget);
+      expect(find.text('Something went wrong'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('router.error.goHome')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Events'),
+        findsWidgets,
+        reason: 'tapping Go home navigates to the dashboard',
+      );
+    },
+  );
 }
