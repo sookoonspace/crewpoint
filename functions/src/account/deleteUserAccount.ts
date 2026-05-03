@@ -13,6 +13,74 @@ const storage = admin.storage();
 const auth = admin.auth();
 
 /**
+ * Stage tag used in the `details.stage` field of every typed `HttpsError`
+ * thrown by this function. The Flutter client maps these to typed
+ * `errorCode` strings via `AccountDeletionService._mapFunctionsException`.
+ */
+const STAGE_FIRESTORE = "firestore";
+const STAGE_STORAGE = "storage";
+const STAGE_AUTH = "auth";
+
+const CODE_FIRESTORE_CLEANUP_FAILED = "firestore-cleanup-failed";
+const CODE_AUTH_DELETE_FAILED = "auth-delete-failed";
+
+/**
+ * Bounded retry helper around `admin.auth().deleteUser(uid)`.
+ *
+ * Auth deletion failures are the source of the partial-deletion bug
+ * fixed in this spec — Firestore + Storage have already been wiped by
+ * the time we reach the auth stage, so retrying here keeps the function
+ * idempotent over a transient Firebase Auth blip without leaving the
+ * user with an orphaned auth record.
+ *
+ * Exported for unit testing — production wires `deleter` to
+ * `(u) => admin.auth().deleteUser(u)`.
+ */
+export async function deleteAuthUserWithRetry(
+  uid: string,
+  deleter: (uid: string) => Promise<void>,
+  options: {attempts?: number; backoffMs?: number} = {}
+): Promise<void> {
+  const attempts = options.attempts ?? 3;
+  const backoffMs = options.backoffMs ?? 250;
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      logger.info("deleteUserAccount auth.attempt", {
+        op: "deleteUserAccount",
+        uid,
+        stage: STAGE_AUTH,
+        attempt,
+      });
+      await deleter(uid);
+      logger.info("deleteUserAccount auth.complete", {
+        op: "deleteUserAccount",
+        uid,
+        stage: STAGE_AUTH,
+        attempt,
+      });
+      return;
+    } catch (err) {
+      lastError = err;
+      logger.warn("deleteUserAccount auth.attempt-failed", {
+        op: "deleteUserAccount",
+        uid,
+        stage: STAGE_AUTH,
+        attempt,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      if (attempt < attempts) {
+        await new Promise<void>((resolve) =>
+          setTimeout(resolve, backoffMs)
+        );
+      }
+    }
+  }
+  throw lastError;
+}
+
+/**
  * Deletes an event and all its subcollections (messages, expenses,
  * tasks). Bounded memory via paged streaming deletes — safe for events
  * with arbitrarily large subcollections.
@@ -104,12 +172,23 @@ async function deleteUserStorage(uid: string): Promise<void> {
 /**
  * deleteUserAccount — Firebase Callable Cloud Function (2nd Gen)
  *
- * Server-side account deletion:
- * 1. Solo events → hard delete
- * 2. Shared events → anonymize + transfer ownership to first admin
- * 3. Delete user document
- * 4. Delete user storage files
- * 5. Delete Firebase Auth user (last)
+ * Server-side account deletion in the order specified by the spec:
+ * 1. Verify the caller (`request.auth.uid`).
+ * 2. Firestore: delete solo events / anonymize shared events / transfer
+ *    ownership / delete `users/{uid}/private/profile` / delete
+ *    `users/{uid}`. Wrapped — failure throws `HttpsError` with
+ *    `details.stage = 'firestore'`, `details.code = 'firestore-cleanup-failed'`.
+ * 3. Storage: delete `users/{uid}/`. Failure is **non-fatal** — logged
+ *    as a structured warning, function continues to the auth stage.
+ * 4. Auth: `admin.auth().deleteUser(uid)` with bounded retry (3 attempts,
+ *    250 ms linear backoff). Final failure throws `HttpsError` with
+ *    `details.stage = 'auth'`, `details.code = 'auth-delete-failed'`.
+ * 5. Return `{success: true}`.
+ *
+ * The retry only wraps the auth stage because that is where the
+ * partial-deletion bug surfaces — Firestore + Storage are already
+ * gone, so retrying the auth deletion is the cheapest path to a
+ * fully-clean account state.
  */
 export const deleteUserAccount = onCall(
   {timeoutSeconds: 120, memory: "256MiB"},
@@ -126,13 +205,27 @@ export const deleteUserAccount = onCall(
     return withStructuredLogs(
       {op: "deleteUserAccount", uid, args: {}},
       async () => {
+        // ----- Stage 1: Firestore wipe / anonymize ----- //
         try {
+          logger.info("deleteUserAccount firestore.start", {
+            op: "deleteUserAccount",
+            uid,
+            stage: STAGE_FIRESTORE,
+          });
           const eventsSnapshot = await db
             .collection("events")
             .where("memberIds", "array-contains", uid)
             .get();
 
-          logger.info(`Found ${eventsSnapshot.size} events for user ${uid}`);
+          logger.info(
+            `deleteUserAccount found ${eventsSnapshot.size} events for ${uid}`,
+            {
+              op: "deleteUserAccount",
+              uid,
+              stage: STAGE_FIRESTORE,
+              eventCount: eventsSnapshot.size,
+            }
+          );
 
           for (const eventDoc of eventsSnapshot.docs) {
             const eventData = eventDoc.data();
@@ -146,8 +239,8 @@ export const deleteUserAccount = onCall(
           }
 
           // Firestore does NOT cascade-delete subcollections, so we
-          // explicitly tear down the private/profile subdoc (Fix 1.B
-          // Option A) before deleting the parent user doc.
+          // explicitly tear down the private/profile subdoc before
+          // deleting the parent user doc. Idempotent on retry.
           await db
             .collection("users")
             .doc(uid)
@@ -155,36 +248,86 @@ export const deleteUserAccount = onCall(
             .doc("profile")
             .delete()
             .catch((err: unknown) => {
-              // Idempotent: missing private/profile is fine on retry.
               logger.warn(
-                `Private subdoc cleanup warning for ${uid}:`,
-                err
+                `deleteUserAccount private subdoc cleanup warning for ${uid}`,
+                {
+                  op: "deleteUserAccount",
+                  uid,
+                  stage: STAGE_FIRESTORE,
+                  error: err instanceof Error ? err.message : String(err),
+                }
               );
             });
           await db.collection("users").doc(uid).delete();
 
-          try {
-            await deleteUserStorage(uid);
-          } catch (storageError) {
-            logger.warn(
-              `Storage cleanup warning for ${uid}:`,
-              storageError
-            );
-          }
-
-          // Delete Firebase Auth user — LAST STEP.
-          await auth.deleteUser(uid);
-
-          return {success: true};
-        } catch (error) {
-          // Surface non-HttpsError failures as `internal`. The wrapper's
-          // structured-error log line will capture context.
-          if (error instanceof HttpsError) throw error;
+          logger.info("deleteUserAccount firestore.complete", {
+            op: "deleteUserAccount",
+            uid,
+            stage: STAGE_FIRESTORE,
+          });
+        } catch (err) {
+          if (err instanceof HttpsError) throw err;
+          logger.error("deleteUserAccount firestore.failed", {
+            op: "deleteUserAccount",
+            uid,
+            stage: STAGE_FIRESTORE,
+            error: err instanceof Error ? err.message : String(err),
+          });
           throw new HttpsError(
             "internal",
-            "Account deletion failed. Please try again or contact support."
+            "Account deletion failed during data cleanup. Please try again.",
+            {stage: STAGE_FIRESTORE, code: CODE_FIRESTORE_CLEANUP_FAILED}
           );
         }
+
+        // ----- Stage 2: Storage wipe (non-fatal) ----- //
+        try {
+          logger.info("deleteUserAccount storage.start", {
+            op: "deleteUserAccount",
+            uid,
+            stage: STAGE_STORAGE,
+          });
+          await deleteUserStorage(uid);
+          logger.info("deleteUserAccount storage.complete", {
+            op: "deleteUserAccount",
+            uid,
+            stage: STAGE_STORAGE,
+          });
+        } catch (storageError) {
+          logger.warn(`deleteUserAccount storage cleanup warning for ${uid}`, {
+            op: "deleteUserAccount",
+            uid,
+            stage: STAGE_STORAGE,
+            error:
+              storageError instanceof Error
+                ? storageError.message
+                : String(storageError),
+          });
+        }
+
+        // ----- Stage 3: Auth deletion with bounded retry ----- //
+        try {
+          await deleteAuthUserWithRetry(uid, (u) => auth.deleteUser(u));
+        } catch (authError) {
+          logger.error("deleteUserAccount auth.exhausted", {
+            op: "deleteUserAccount",
+            uid,
+            stage: STAGE_AUTH,
+            error:
+              authError instanceof Error
+                ? authError.message
+                : String(authError),
+          });
+          throw new HttpsError(
+            "internal",
+            "Your data was deleted but the sign-in record could not " +
+              "be removed. Please try again — your data is gone, only " +
+              "the auth record remains.",
+            {stage: STAGE_AUTH, code: CODE_AUTH_DELETE_FAILED}
+          );
+        }
+
+        return {success: true};
       }
     );
   }
