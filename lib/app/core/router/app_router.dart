@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -34,39 +36,59 @@ abstract final class AppRoutes {
 }
 
 /// Creates the app router.
-/// [isOnboardingComplete] and [isAuthenticated] drive redirects.
+///
+/// [isOnboardingComplete] / [isAuthenticated] are called fresh on every
+/// redirect evaluation so the router can be constructed ONCE and refreshed
+/// in place when auth or onboarding state changes — instead of recreating
+/// the router on every Riverpod-driven `MyApp.build` (the old pattern,
+/// which destroyed modal routes mid-deletion and reproduced the GoRouter
+/// "code-blob + Home" page).
+///
+/// [refreshListenable] (optional) — if provided, GoRouter re-runs the
+/// redirect chain every time the listenable notifies. Wire it to a
+/// `ChangeNotifier` that fires on auth/onboarding flips.
+///
 /// [onRouteChanged] (optional) is called with the matched location on each
 /// navigation — used to keep `currentRouteProvider` in sync.
+///
 /// [initialLocation] (optional) overrides the default landing path; tests
 /// use this to pump unmatched routes against [errorBuilder].
 GoRouter createRouter({
-  required bool isOnboardingComplete,
-  required bool isAuthenticated,
+  required bool Function() isOnboardingComplete,
+  required bool Function() isAuthenticated,
+  Listenable? refreshListenable,
   void Function(String location)? onRouteChanged,
   String initialLocation = AppRoutes.dashboard,
 }) {
   return GoRouter(
     initialLocation: initialLocation,
-    errorBuilder: (_, _) => const _RouterErrorScreen(),
+    refreshListenable: refreshListenable,
+    errorBuilder: (_, state) => _RouterErrorScreen(
+      attemptedLocation: state.uri.toString(),
+      error: state.error?.toString(),
+    ),
     redirect: (context, state) {
       final location = state.matchedLocation;
       onRouteChanged?.call(location);
 
-      if (!isOnboardingComplete && location != AppRoutes.onboarding) {
+      final onboardingDone = isOnboardingComplete();
+      final authed = isAuthenticated();
+
+      if (!onboardingDone && location != AppRoutes.onboarding) {
         return AppRoutes.onboarding;
       }
 
-      if (isOnboardingComplete && location == AppRoutes.onboarding) {
-        return isAuthenticated ? AppRoutes.dashboard : AppRoutes.auth;
+      if (onboardingDone && location == AppRoutes.onboarding) {
+        return authed ? AppRoutes.dashboard : AppRoutes.auth;
       }
 
-      if (!isAuthenticated &&
+      if (!authed &&
           location != AppRoutes.auth &&
           location != AppRoutes.onboarding) {
         return AppRoutes.auth;
       }
 
-      if (isAuthenticated && location == AppRoutes.auth) {
+      if (authed && location == AppRoutes.auth) {
         return AppRoutes.dashboard;
       }
 
@@ -256,10 +278,24 @@ class _PlaceholderScreen extends StatelessWidget {
 /// `_DefaultRouterError` (the "route blob + Home link" page the user
 /// was hitting after the broken account-delete flow).
 class _RouterErrorScreen extends StatelessWidget {
-  const _RouterErrorScreen();
+  const _RouterErrorScreen({this.attemptedLocation, this.error});
+
+  final String? attemptedLocation;
+  final String? error;
 
   @override
   Widget build(BuildContext context) {
+    // Log the failing match so the cause is visible in `flutter logs` /
+    // Xcode console / Cloud Logging when the screen surfaces in
+    // production. Diagnostic only — does not affect render.
+    if (attemptedLocation != null) {
+      developer.log(
+        'GoRouter unmatched route: $attemptedLocation '
+        '(error: ${error ?? "no-error-object"})',
+        name: 'router',
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.cream,
       body: SafeArea(
@@ -286,6 +322,17 @@ class _RouterErrorScreen extends StatelessWidget {
                     context,
                   ).textTheme.bodyMedium?.copyWith(color: AppColors.mediumGrey),
                 ),
+                if (attemptedLocation != null) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Tried: $attemptedLocation',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.darkGrey,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ],
                 const SizedBox(height: AppSpacing.sm),
                 ElevatedButton.icon(
                   key: const Key('router.error.goHome'),

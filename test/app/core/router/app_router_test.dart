@@ -26,8 +26,8 @@ Widget _wrapWithProviders(GoRouter router) {
 void main() {
   testWidgets('redirects unauthenticated user to auth gate', (tester) async {
     final router = createRouter(
-      isOnboardingComplete: true,
-      isAuthenticated: false,
+      isOnboardingComplete: () => true,
+      isAuthenticated: () => false,
     );
 
     await tester.pumpWidget(_wrapWithProviders(router));
@@ -40,8 +40,8 @@ void main() {
     tester,
   ) async {
     final router = createRouter(
-      isOnboardingComplete: true,
-      isAuthenticated: true,
+      isOnboardingComplete: () => true,
+      isAuthenticated: () => true,
     );
 
     await tester.pumpWidget(_wrapWithProviders(router));
@@ -52,8 +52,8 @@ void main() {
 
   testWidgets('redirects to onboarding when not complete', (tester) async {
     final router = createRouter(
-      isOnboardingComplete: false,
-      isAuthenticated: false,
+      isOnboardingComplete: () => false,
+      isAuthenticated: () => false,
     );
 
     await tester.pumpWidget(_wrapWithProviders(router));
@@ -66,8 +66,8 @@ void main() {
     'unmatched route renders the friendly error screen + Go home button',
     (tester) async {
       final router = createRouter(
-        isOnboardingComplete: true,
-        isAuthenticated: true,
+        isOnboardingComplete: () => true,
+        isAuthenticated: () => true,
         initialLocation: '/this-route-does-not-exist',
       );
 

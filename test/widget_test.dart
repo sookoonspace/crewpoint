@@ -12,8 +12,8 @@ void main() {
   testWidgets('App renders auth gate when unauthenticated', (tester) async {
     final fakeAuthService = FakeAuthService();
     final router = createRouter(
-      isOnboardingComplete: true,
-      isAuthenticated: false,
+      isOnboardingComplete: () => true,
+      isAuthenticated: () => false,
     );
 
     await tester.pumpWidget(
