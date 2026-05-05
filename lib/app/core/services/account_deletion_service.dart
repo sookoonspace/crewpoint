@@ -146,6 +146,28 @@ class AccountDeletionService {
         );
       }
 
+      // Force the client into Unauthenticated so the global authProvider
+      // redirect lands the user on /auth.
+      //
+      // Firebase Auth's iOS client does NOT detect server-side user
+      // deletion in real time — it only notices on the next ID-token
+      // refresh (~hourly). Without this explicit signOut the dialog
+      // sits on step 2 forever and the user has to force-quit the app.
+      // This is a CLIENT-side call (clears the local credential); it
+      // does not talk to a now-deleted server-side user.
+      try {
+        await _firebaseAuth.signOut();
+      } catch (e, st) {
+        log(
+          'Post-deletion signOut failed (non-fatal — server-side '
+          'deletion already succeeded; auth listener will fire on '
+          'next token refresh)',
+          error: e,
+          stackTrace: st,
+          name: 'deletion',
+        );
+      }
+
       return (errorCode: null, message: null);
     } on FirebaseFunctionsException catch (e, st) {
       log(

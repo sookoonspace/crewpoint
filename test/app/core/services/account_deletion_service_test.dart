@@ -179,6 +179,37 @@ void main() {
     expect(result.message, contains('Generic failure'));
   });
 
+  test('signs the client out after a successful Cloud Function call so the '
+      'global authProvider redirect can tear the dialog down — Firebase '
+      'Auth iOS does NOT detect server-side deletion in real time', () async {
+    final service = AccountDeletionService(
+      database: db,
+      secureStorage: storage,
+      firebaseAuth: auth,
+      deletionCallable: () async {
+        /* CF success stub */
+      },
+    );
+
+    expect(
+      auth.currentUser,
+      isNotNull,
+      reason: 'precondition: user is signed in before deletion runs',
+    );
+
+    final result = await service.executeAccountDeletion();
+
+    expect(result.errorCode, isNull);
+    expect(
+      auth.currentUser,
+      isNull,
+      reason:
+          'after CF success the service must explicitly sign out so '
+          'authStateChanges fires null and the global GoRouter '
+          'redirect lands the user on /auth.',
+    );
+  });
+
   test(
     'maps a Cloud Function auth-stage failure to authDeleteFailedCode',
     () async {
