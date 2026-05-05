@@ -11,6 +11,7 @@ import 'package:crewpoint_app/app/core/widgets/network_image_with_placeholder.da
 import 'package:crewpoint_app/app/core/router/app_router.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
+import 'package:crewpoint_app/app/features/profile/application/current_user_doc_provider.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/widgets/delete_account_dialog.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/widgets/sign_out_sheet.dart';
 
@@ -20,7 +21,12 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
-    final user = authState is Authenticated ? authState.user : null;
+    final asyncDoc = ref.watch(currentUserDocProvider);
+    // Prefer the Firestore-backed user (carries derived displayName +
+    // payment fields). Fall back to auth-only AppUser while the first
+    // snapshot is in flight or when unauthenticated.
+    final user =
+        asyncDoc.value ?? (authState is Authenticated ? authState.user : null);
 
     return Scaffold(
       backgroundColor: AppColors.cream,

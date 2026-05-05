@@ -14,6 +14,7 @@ import 'package:crewpoint_app/app/core/widgets/custom_text_field.dart';
 import 'package:crewpoint_app/app/core/widgets/form_card_shell.dart';
 import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
+import 'package:crewpoint_app/app/features/profile/application/current_user_doc_provider.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -55,13 +56,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
+    // Prefer the Firestore-backed user (carries derived displayName +
+    // payment fields written via saveProfile). Fall back to the
+    // auth-only AppUser before the first snapshot lands.
+    final fsUser = ref.read(currentUserDocProvider).value;
     final authState = ref.read(authProvider);
-    if (authState is Authenticated) {
-      _nameController.text = authState.user.displayName ?? '';
-      _selectedPaymentMethod = authState.user.paymentMethod;
-      _paymentHandleController.text = authState.user.paymentHandle ?? '';
-      _venmoHandleController.text = authState.user.venmoHandle ?? '';
-      _cashappHandleController.text = authState.user.cashappHandle ?? '';
+    final user = fsUser ?? (authState is Authenticated ? authState.user : null);
+    if (user != null) {
+      _nameController.text = user.displayName ?? '';
+      _selectedPaymentMethod = user.paymentMethod;
+      _paymentHandleController.text = user.paymentHandle ?? '';
+      _venmoHandleController.text = user.venmoHandle ?? '';
+      _cashappHandleController.text = user.cashappHandle ?? '';
     }
   }
 
