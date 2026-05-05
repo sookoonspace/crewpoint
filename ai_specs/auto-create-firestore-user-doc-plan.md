@@ -43,30 +43,29 @@ Wire `createUserIfNotExists` into `AuthNotifier`'s authStateChanges listener; ex
 - [x] `test/app/features/profile/firestore_user_repository_test.dart` — update existing 3 callsites of `createUserIfNotExists` to compile against new signature (use named defaults); add the new test cases above
 - [x] Verify: `flutter analyze && flutter test`
 
-### Phase 2: AuthNotifier listener wiring (consumer slice)
+### Phase 2: AuthNotifier listener wiring (consumer slice) ✓
 
 - **Goal**: Listener invokes repo on every non-null emission with resolved displayName, errors swallowed, sign-in unblocked.
-- [ ] TDD: `AuthNotifier` listener calls `userRepository.createUserIfNotExists` exactly once when fake auth stream emits non-null user (capture call count + args via hand-rolled fake `IUserRepository`)
-- [ ] TDD: not called when emission is null (sign-out path)
-- [ ] TDD: provider-supplied `displayName='Jane Doe'` flows through unchanged (trim applied)
-- [ ] TDD: provider `displayName=null` + `email='apple+sub@privaterelay.appleid.com'` → repo receives `displayName: 'Apple'`
-- [ ] TDD: repo throws (`FirebaseException` simulated by fake) → state still becomes `Authenticated`; listener does not rethrow; error logged via `dart:developer`
-- [ ] TDD: rapid double emission → repo called twice but no test failure (idempotency lives in repo, not notifier)
-- [ ] `lib/app/features/auth/application/auth_provider.dart`:
-  - Add `IUserRepository` constructor param + private field
-  - Import `IUserRepository` from `features/profile/domain/repositories/i_user_repository.dart`
-  - Import helper from `features/auth/domain/display_name_helper.dart`
-  - In listener (line 47), when `user != null`, call `unawaited(_ensureUserDoc(user))` BEFORE `state = Authenticated(user)` (or after — order indifferent because fire-and-forget)
-  - Add `Future<void> _ensureUserDoc(AppUser user) async { try { ... } catch (e, st) { log(...) } }`
-  - **CRITICAL (per spec req #10 + user note)**: catch clause must be untyped `catch (e, st)` so it captures `FirebaseException`, generic `Exception`, and any sync-thrown error; log via `developer.log('failed to ensure user doc for ${user.uid}', error: e, stackTrace: st, name: 'auth')`; never rethrow
-  - displayName resolution at call site: `final raw = user.displayName?.trim(); final resolved = (raw != null && raw.isNotEmpty) ? raw : deriveDisplayNameFromEmail(user.email);`
-  - Skip the call when `user.email == null || user.email!.isEmpty` (anonymous/guard) — log a `developer.log` debug line, return
-- [ ] `lib/app/core/providers.dart:57` — update `authProvider` factory: pass `userRepository: FirestoreUserRepository()` alongside existing `authRepository`
-- [ ] `test/app/features/auth/auth_provider_test.dart` — update `setUp` to construct `AuthNotifier` with a `FakeUserRepository` (new test fixture in `test/app/features/auth/fake_user_repository.dart`); existing tests must still pass
-- [ ] Per spec req #7: do NOT add the call to `signInWithEmail`/`signUpWithEmail`/`signInWithGoogle`/`signInWithApple` (verify via grep at end of phase)
-- [ ] Per spec — do NOT modify `firestore.rules`, do NOT add Cloud Functions, do NOT promote `providerIds` to public doc
-- [ ] Verify: `flutter analyze && flutter test`
+- [x] TDD: `AuthNotifier` listener calls `userRepository.createUserIfNotExists` exactly once when fake auth stream emits non-null user (capture call count + args via hand-rolled fake `IUserRepository`)
+- [x] TDD: not called when emission is null (sign-out path)
+- [x] TDD: provider-supplied `displayName='Jane Doe'` flows through unchanged (trim applied)
+- [x] TDD: provider `displayName=null` + `email='apple+sub@privaterelay.appleid.com'` → repo receives `displayName: 'Apple'`
+- [x] TDD: repo throws (`FirebaseException` simulated by fake) → state still becomes `Authenticated`; listener does not rethrow; error logged via `dart:developer`
+- [x] TDD: rapid double emission → repo called twice but no test failure (idempotency lives in repo, not notifier)
+- [x] `lib/app/features/auth/application/auth_provider.dart`:
+  - Added `IUserRepository?` constructor param (optional with null default — see deviation note below) + private field
+  - Imported `IUserRepository` and `deriveDisplayNameFromEmail` helper
+  - Listener calls `unawaited(_ensureUserDoc(user))` on non-null emission; cold-start `currentUser` path also fires it
+  - `_ensureUserDoc` short-circuits when repo is null, when `user.email` is empty, then resolves displayName (trim provider value or derive from email) and calls `createUserIfNotExists`
+  - **Untyped `catch (e, st)`** absorbs `FirebaseException`, generic `Exception`, and any sync throw; logged via `dart:developer.log` with `name: 'auth'`; never rethrows
+- [x] `lib/app/core/providers.dart:57` — `authProvider` factory now passes `userRepository: FirestoreUserRepository()`
+- [x] `test/app/features/auth/auth_provider_test.dart` + new `fake_user_repository.dart` fixture — 5 new tests covering call count, sign-out no-op, derived-name fallback, FirebaseException swallow, repeat emission
+- [x] Spec req #7: per-method handlers (`signInWithEmail`/`signUpWithEmail`/`signInWithGoogle`/`signInWithApple`) untouched — verified by grep (`_ensureUserDoc` referenced only inside `build()`)
+- [x] Spec — `firestore.rules` and `functions/` untouched; `providerIds` not promoted to public doc
+- [x] Verify: `flutter analyze` clean; `flutter test` 256 passed
 - [ ] Manual smoke (one-time, simulator): Google sign-in on fresh install → Firestore console shows public doc with `displayName`+`photoUrl`, private subdoc with `email`+`providerIds`+`preferences`+timestamps
+
+**Deviation from plan**: `userRepository` made optional (default `null`) instead of `required`. Reason: the codebase has 11 widget/layout/router test files that construct `AuthNotifier` directly; making the param required would have required mechanical edits across all of them with no behavior benefit (those tests don't exercise the user-doc path). Optional + `null` short-circuit keeps the production callsite explicit (`providers.dart` always passes the real repo) while leaving unrelated tests unchanged.
 
 ## Risks / Out of scope
 
