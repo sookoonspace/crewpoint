@@ -36,6 +36,93 @@ void main() {
       expect(privateDoc.data()!['email'], equals('alice@example.com'));
       expect(privateDoc.data()!['preferences'], isA<Map<String, dynamic>>());
     });
+
+    test('writes photoUrl to public doc and providerIds to private subdoc '
+        'when supplied', () async {
+      await repo.createUserIfNotExists(
+        uid: 'u-google',
+        email: 'jane@gmail.com',
+        displayName: 'Jane Doe',
+        photoUrl: 'https://lh3.googleusercontent.com/a/abc',
+        providerIds: const ['google.com'],
+      );
+
+      final publicDoc = await firestore
+          .collection('users')
+          .doc('u-google')
+          .get();
+      expect(
+        publicDoc.data()!['photoUrl'],
+        equals('https://lh3.googleusercontent.com/a/abc'),
+      );
+      expect(publicDoc.data()!.containsKey('providerIds'), isFalse);
+
+      final privateDoc = await firestore
+          .collection('users')
+          .doc('u-google')
+          .collection('private')
+          .doc('profile')
+          .get();
+      expect(privateDoc.data()!['providerIds'], equals(['google.com']));
+    });
+
+    test('omits photoUrl key when null and stores empty providerIds list '
+        'when not supplied', () async {
+      await repo.createUserIfNotExists(
+        uid: 'u-apple',
+        email: 'jane@privaterelay.appleid.com',
+        displayName: 'Jane',
+      );
+
+      final publicDoc = await firestore
+          .collection('users')
+          .doc('u-apple')
+          .get();
+      expect(publicDoc.data()!.containsKey('photoUrl'), isFalse);
+
+      final privateDoc = await firestore
+          .collection('users')
+          .doc('u-apple')
+          .collection('private')
+          .doc('profile')
+          .get();
+      expect(privateDoc.data()!['providerIds'], equals(<String>[]));
+    });
+
+    test('early-returns when public doc already exists '
+        '(does not overwrite with new params)', () async {
+      // First write — user-edited displayName + no photo.
+      await repo.createUserIfNotExists(
+        uid: 'u-existing',
+        email: 'old@x.com',
+        displayName: 'Old Name',
+      );
+
+      // Second call — provider data differs; must NOT clobber.
+      await repo.createUserIfNotExists(
+        uid: 'u-existing',
+        email: 'new@x.com',
+        displayName: 'New Name',
+        photoUrl: 'https://provider/photo',
+        providerIds: const ['google.com'],
+      );
+
+      final publicDoc = await firestore
+          .collection('users')
+          .doc('u-existing')
+          .get();
+      expect(publicDoc.data()!['displayName'], equals('Old Name'));
+      expect(publicDoc.data()!.containsKey('photoUrl'), isFalse);
+
+      final privateDoc = await firestore
+          .collection('users')
+          .doc('u-existing')
+          .collection('private')
+          .doc('profile')
+          .get();
+      expect(privateDoc.data()!['email'], equals('old@x.com'));
+      expect(privateDoc.data()!['providerIds'], equals(<String>[]));
+    });
   });
 
   group('saveProfile keeps display + payment public; updatedAt private', () {

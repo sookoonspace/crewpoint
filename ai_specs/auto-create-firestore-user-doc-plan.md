@@ -24,24 +24,24 @@ Wire `createUserIfNotExists` into `AuthNotifier`'s authStateChanges listener; ex
 
 ## Plan
 
-### Phase 1: Pure helper + repository extension (data layer slice)
+### Phase 1: Pure helper + repository extension (data layer slice) ✓
 
 - **Goal**: Thinnest slice that produces correct Firestore writes given provider data.
-- [ ] TDD: `deriveDisplayNameFromEmail('jane.doe@x.com') == 'Jane Doe'` → minimal split-and-titlecase
-- [ ] TDD: `'12345@x.com' → '12345'` (numeric tokens preserved)
-- [ ] TDD: `'jane+work@x.com' → 'Jane'` (strip after `+`)
-- [ ] TDD: `'a@x.com' → 'A'` (single-char)
-- [ ] TDD: `'JOHN_smith@x.com' → 'John Smith'` (underscore split, mixed case)
-- [ ] TDD: null/empty/`'@x.com'`/`'+work@x.com'` → `'CrewPoint user'`
-- [ ] `lib/app/features/auth/domain/display_name_helper.dart` — pure top-level `deriveDisplayNameFromEmail(String?)`; no Flutter/Firebase imports
-- [ ] `test/app/features/auth/domain/display_name_helper_test.dart` — host the cases above
-- [ ] TDD: repo writes `photoUrl` to public doc + `providerIds` to private subdoc when both supplied
-- [ ] TDD: repo handles `photoUrl: null` (omit key from public doc map) + `providerIds: const []` (empty array in private)
-- [ ] TDD: repo idempotency preserved — early-returns when public doc exists, regardless of new params
-- [ ] `lib/app/features/profile/domain/repositories/i_user_repository.dart` — extend `createUserIfNotExists` signature: add `String? photoUrl`, `List<String> providerIds = const []`
-- [ ] `lib/app/features/profile/data/firestore_user_repository.dart:152` — implement: conditionally include `photoUrl` in public batch.set map (omit key when null); add `providerIds` to private subdoc batch.set map
-- [ ] `test/app/features/profile/firestore_user_repository_test.dart` — update existing 3 callsites of `createUserIfNotExists` to compile against new signature (use named defaults); add the new test cases above
-- [ ] Verify: `flutter analyze && flutter test`
+- [x] TDD: `deriveDisplayNameFromEmail('jane.doe@x.com') == 'Jane Doe'` → minimal split-and-titlecase
+- [x] TDD: `'12345@x.com' → '12345'` (numeric tokens preserved)
+- [x] TDD: `'jane+work@x.com' → 'Jane'` (strip after `+`)
+- [x] TDD: `'a@x.com' → 'A'` (single-char)
+- [x] TDD: `'JOHN_smith@x.com' → 'John Smith'` (underscore split, mixed case)
+- [x] TDD: null/empty/`'@x.com'`/`'+work@x.com'` → `'CrewPoint user'`
+- [x] `lib/app/features/auth/domain/display_name_helper.dart` — pure top-level `deriveDisplayNameFromEmail(String?)`; no Flutter/Firebase imports
+- [x] `test/app/features/auth/domain/display_name_helper_test.dart` — host the cases above
+- [x] TDD: repo writes `photoUrl` to public doc + `providerIds` to private subdoc when both supplied
+- [x] TDD: repo handles `photoUrl: null` (omit key from public doc map) + `providerIds: const []` (empty array in private)
+- [x] TDD: repo idempotency preserved — early-returns when public doc exists, regardless of new params
+- [x] `lib/app/features/profile/domain/repositories/i_user_repository.dart` — extend `createUserIfNotExists` signature: add `String? photoUrl`, `List<String> providerIds = const []`
+- [x] `lib/app/features/profile/data/firestore_user_repository.dart:152` — implement: conditionally include `photoUrl` in public batch.set map (omit key when null); add `providerIds` to private subdoc batch.set map
+- [x] `test/app/features/profile/firestore_user_repository_test.dart` — update existing 3 callsites of `createUserIfNotExists` to compile against new signature (use named defaults); add the new test cases above
+- [x] Verify: `flutter analyze && flutter test`
 
 ### Phase 2: AuthNotifier listener wiring (consumer slice)
 

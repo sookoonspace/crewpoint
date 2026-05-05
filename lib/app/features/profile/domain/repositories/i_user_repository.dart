@@ -18,10 +18,15 @@ abstract class IUserRepository {
   });
 
   /// Creates user document if it doesn't exist yet (first login).
+  ///
+  /// [photoUrl] is written to the public doc when non-null (omitted otherwise).
+  /// [providerIds] (e.g. `['google.com']`) is written to the private subdoc.
   Future<void> createUserIfNotExists({
     required String uid,
     required String email,
     String? displayName,
+    String? photoUrl,
+    List<String> providerIds = const [],
   });
 
   /// Adds an FCM token to `users/{uid}.fcmTokens` (idempotent via arrayUnion).

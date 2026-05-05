@@ -154,6 +154,8 @@ class FirestoreUserRepository implements IUserRepository {
     required String uid,
     required String email,
     String? displayName,
+    String? photoUrl,
+    List<String> providerIds = const [],
   }) async {
     try {
       final publicDoc = await _usersRef.doc(uid).get();
@@ -161,12 +163,17 @@ class FirestoreUserRepository implements IUserRepository {
 
       final batch = _firestore.batch();
 
-      // Public projection — only displayName.
-      batch.set(_usersRef.doc(uid), {'displayName': displayName});
+      // Public projection — displayName + photoUrl (when provided).
+      final publicData = <String, dynamic>{'displayName': displayName};
+      if (photoUrl != null) {
+        publicData['photoUrl'] = photoUrl;
+      }
+      batch.set(_usersRef.doc(uid), publicData);
 
-      // Private subdoc — email, preferences, timestamps.
+      // Private subdoc — email, providerIds, preferences, timestamps.
       batch.set(_privateProfileRef(uid), {
         'email': email,
+        'providerIds': providerIds,
         'preferences': {'dataOptIn': false, 'currency': 'USD'},
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
