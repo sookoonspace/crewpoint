@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:firebase_auth/firebase_auth.dart' as fb;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:crewpoint_app/app/core/services/i_auth_service.dart';
 import 'package:crewpoint_app/app/features/auth/data/firebase_auth_error_messages.dart';
 
@@ -77,7 +78,12 @@ class FirebaseAuthService implements IAuthService {
       final googleProvider = fb.GoogleAuthProvider()
         ..addScope('email')
         ..addScope('profile');
-      final result = await _firebaseAuth.signInWithProvider(googleProvider);
+      // signInWithProvider() throws UnimplementedError on web — Firebase
+      // Auth's web SDK uses popup-based OAuth instead. Mobile (iOS/Android)
+      // uses the system sheet / Custom Tab via signInWithProvider.
+      final result = kIsWeb
+          ? await _firebaseAuth.signInWithPopup(googleProvider)
+          : await _firebaseAuth.signInWithProvider(googleProvider);
       return AuthSuccess(_mapUser(result.user!));
     } on fb.FirebaseAuthException catch (e, st) {
       log('Google sign-in failed', error: e, stackTrace: st, name: 'auth');
@@ -91,7 +97,10 @@ class FirebaseAuthService implements IAuthService {
       final appleProvider = fb.AppleAuthProvider()
         ..addScope('email')
         ..addScope('name');
-      final result = await _firebaseAuth.signInWithProvider(appleProvider);
+      // See [signInWithGoogle] for the web-vs-mobile rationale.
+      final result = kIsWeb
+          ? await _firebaseAuth.signInWithPopup(appleProvider)
+          : await _firebaseAuth.signInWithProvider(appleProvider);
       return AuthSuccess(_mapUser(result.user!));
     } on fb.FirebaseAuthException catch (e, st) {
       log('Apple sign-in failed', error: e, stackTrace: st, name: 'auth');
