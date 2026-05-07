@@ -290,8 +290,13 @@ class _SettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon, color: AppColors.darkGrey),
-      title: Text(label),
+      leading: Icon(icon, color: AppColors.charcoal),
+      title: Text(
+        label,
+        style: Theme.of(
+          context,
+        ).textTheme.bodyLarge?.copyWith(color: AppColors.charcoal),
+      ),
       trailing: const Icon(Icons.chevron_right, color: AppColors.mediumGrey),
       onTap: onTap,
       shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
