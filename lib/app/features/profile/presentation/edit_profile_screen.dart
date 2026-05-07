@@ -1,5 +1,4 @@
 import 'dart:developer';
-import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +8,7 @@ import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
+import 'package:crewpoint_app/app/core/services/image_service.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/core/widgets/custom_text_field.dart';
 import 'package:crewpoint_app/app/core/widgets/form_card_shell.dart';
@@ -29,7 +29,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _venmoHandleController = TextEditingController();
   final _cashappHandleController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  File? _pickedImage;
+  PickedImage? _picked;
   String? _selectedPaymentMethod;
   bool _isSaving = false;
   bool _showSuccess = false;
@@ -111,11 +111,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   Future<void> _pickImage({required bool fromCamera}) async {
     final imageService = ref.read(imageServiceProvider);
-    final file = fromCamera
+    final picked = fromCamera
         ? await imageService.takePhoto()
         : await imageService.pickFromGallery();
-    if (file != null) {
-      setState(() => _pickedImage = file);
+    if (picked != null) {
+      setState(() => _picked = picked);
     }
   }
 
@@ -132,11 +132,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       String? photoUrl;
 
       // Upload photo if changed — via image service
-      if (_pickedImage != null) {
+      final picked = _picked;
+      if (picked != null) {
         final imageService = ref.read(imageServiceProvider);
         photoUrl = await imageService.uploadToStorage(
-          file: _pickedImage!,
+          bytes: picked.bytes,
           storagePath: 'users/${user.uid}/profile.jpg',
+          contentType: picked.contentType,
         );
       }
 
@@ -164,11 +166,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             : _cashappHandleController.text.trim(),
       );
 
-      // Refresh auth state so profile screen shows updated data
-      final updatedUser = await repo.getUser(user.uid);
-      if (updatedUser != null) {
-        ref.read(authProvider.notifier).refreshUser(updatedUser);
-      }
+      // No manual refresh needed — `currentUserDocProvider` streams the
+      // updated public doc via Firestore snapshot.
 
       if (mounted) {
         setState(() {
@@ -282,15 +281,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             child: CircleAvatar(
                               radius: 52,
                               backgroundColor: AppColors.charcoalDark,
-                              backgroundImage: _pickedImage != null
-                                  ? FileImage(_pickedImage!)
+                              backgroundImage: _picked != null
+                                  ? MemoryImage(_picked!.bytes)
                                   : (currentPhotoUrl != null
                                             ? NetworkImage(currentPhotoUrl)
                                             : null)
                                         as ImageProvider?,
                               child:
-                                  (_pickedImage == null &&
-                                      currentPhotoUrl == null)
+                                  (_picked == null && currentPhotoUrl == null)
                                   ? Lottie.asset(
                                       'assets/animations/profile.json',
                                       width: 64,

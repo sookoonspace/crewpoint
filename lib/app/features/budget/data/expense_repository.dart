@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:developer';
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:drift/drift.dart' show Value;
@@ -119,7 +119,8 @@ class ExpenseRepository implements IExpenseRepository {
   Future<String?> uploadReceipt({
     required String eventId,
     required String expenseId,
-    required File file,
+    required Uint8List bytes,
+    required String contentType,
   }) async {
     final svc = _imageService;
     if (svc == null) {
@@ -131,8 +132,9 @@ class ExpenseRepository implements IExpenseRepository {
     }
     try {
       final url = await svc.uploadToStorage(
-        file: file,
+        bytes: bytes,
         storagePath: 'events/$eventId/receipts/$expenseId.jpg',
+        contentType: contentType,
       );
       return url;
     } catch (e, st) {

@@ -1,20 +1,20 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/services/image_service.dart';
 import 'package:crewpoint_app/app/core/widgets/custom_text_field.dart';
 import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 
-/// Submit signature: receives the expense model AND the picked receipt file
-/// (if any). The parent uploads the file out-of-band so the modal stays free
-/// of Firebase / Storage coupling.
-typedef ExpenseSubmit = void Function(ExpenseModel expense, File? receipt);
+/// Submit signature: receives the expense model AND the picked receipt
+/// (if any). The parent uploads the bytes out-of-band so the modal stays
+/// free of Firebase / Storage coupling. Web-safe — no `dart:io File`.
+typedef ExpenseSubmit =
+    void Function(ExpenseModel expense, PickedImage? receipt);
 
 /// Async receipt picker callback — returns null if the user cancels.
-typedef ReceiptPicker = Future<File?> Function();
+typedef ReceiptPicker = Future<PickedImage?> Function();
 
 class ExpenseModal extends StatefulWidget {
   const ExpenseModal({
@@ -98,7 +98,7 @@ class _ExpenseModalState extends State<ExpenseModal> {
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
   bool _isDonation = false;
-  File? _pickedReceipt;
+  PickedImage? _pickedReceipt;
 
   @override
   void dispose() {
@@ -110,9 +110,9 @@ class _ExpenseModalState extends State<ExpenseModal> {
   Future<void> _pickReceipt() async {
     final picker = widget.onPickReceipt;
     if (picker == null) return;
-    final file = await picker();
-    if (!mounted || file == null) return;
-    setState(() => _pickedReceipt = file);
+    final picked = await picker();
+    if (!mounted || picked == null) return;
+    setState(() => _pickedReceipt = picked);
   }
 
   void _submit() {
@@ -203,7 +203,7 @@ class _ExpenseModalState extends State<ExpenseModal> {
             ),
             if (canPickReceipt)
               _ReceiptRow(
-                file: _pickedReceipt,
+                receipt: _pickedReceipt,
                 onPick: _pickReceipt,
                 onClear: () => setState(() => _pickedReceipt = null),
               ),
@@ -228,18 +228,19 @@ class _ExpenseModalState extends State<ExpenseModal> {
 
 class _ReceiptRow extends StatelessWidget {
   const _ReceiptRow({
-    required this.file,
+    required this.receipt,
     required this.onPick,
     required this.onClear,
   });
 
-  final File? file;
+  final PickedImage? receipt;
   final VoidCallback onPick;
   final VoidCallback onClear;
 
   @override
   Widget build(BuildContext context) {
-    if (file == null) {
+    final r = receipt;
+    if (r == null) {
       return OutlinedButton.icon(
         key: const Key('budget.expense.receipt.add'),
         onPressed: onPick,
@@ -254,8 +255,8 @@ class _ReceiptRow extends StatelessWidget {
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(8),
-          child: Image.file(
-            file!,
+          child: Image.memory(
+            r.bytes,
             width: 56,
             height: 56,
             fit: BoxFit.cover,
