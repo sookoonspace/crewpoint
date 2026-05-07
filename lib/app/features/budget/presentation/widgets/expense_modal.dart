@@ -212,7 +212,7 @@ class _ExpenseModalState extends State<ExpenseModal> {
                 'Split: ${widget.currencySymbol}${splitAmount.toStringAsFixed(2)} per person ($splitCount people)',
                 style: Theme.of(
                   context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGrey),
+                ).textTheme.bodySmall,
               ),
             PrimaryButton(
               key: const Key('budget.expense.save'),

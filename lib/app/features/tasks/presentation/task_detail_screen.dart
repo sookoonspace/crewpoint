@@ -117,7 +117,7 @@ class TaskDetailScreen extends StatelessWidget {
                   '${task.completedBy != null ? ' by ${task.completedBy!.length > 8 ? task.completedBy!.substring(0, 8) : task.completedBy}' : ''}',
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGrey),
+                  ).textTheme.bodySmall,
                 ),
               ChecklistEditor(
                 items: checklist,

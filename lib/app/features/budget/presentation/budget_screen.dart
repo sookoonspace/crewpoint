@@ -301,7 +301,7 @@ class _BalanceRow extends StatelessWidget {
                   label,
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGrey),
+                  ).textTheme.bodySmall,
                 ),
               ],
             ),
@@ -433,7 +433,7 @@ class _EmptyExpenses extends StatelessWidget {
           'No expenses yet',
           style: Theme.of(
             context,
-          ).textTheme.bodyMedium?.copyWith(color: AppColors.mediumGrey),
+          ).textTheme.bodyMedium,
         ),
       ),
     );

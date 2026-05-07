@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/features/auth/presentation/widgets/email_auth_form.dart';
@@ -67,9 +66,7 @@ class _Header extends StatelessWidget {
         ),
         Text(
           context.strings.auth.tagline,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: AppColors.mediumGrey),
+          style: Theme.of(context).textTheme.bodyMedium,
         ),
       ],
     );
@@ -88,9 +85,7 @@ class _Divider extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Text(
             context.strings.auth.dividerLabel,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGrey),
+            style: Theme.of(context).textTheme.bodySmall,
           ),
         ),
         const Expanded(child: Divider()),

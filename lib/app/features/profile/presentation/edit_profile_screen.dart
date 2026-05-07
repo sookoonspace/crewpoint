@@ -326,9 +326,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   Center(
                     child: Text(
                       'Tap photo to change',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.mediumGrey,
-                      ),
+                      style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),
 
@@ -365,9 +363,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   ),
                   Text(
                     'Optional — helps your crew settle up with you',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.mediumGrey,
-                    ),
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
 
                   // Payment Method dropdown
@@ -430,9 +426,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   ),
                   Text(
                     'Used by the Venmo / CashApp deep-link buttons in Budget',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.mediumGrey,
-                    ),
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
                   CustomTextField(
                     key: const Key('profile.edit.venmoHandle'),

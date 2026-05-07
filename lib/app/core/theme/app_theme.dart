@@ -18,6 +18,11 @@ abstract final class AppTheme {
         onTertiary: AppColors.white,
         surface: AppColors.white,
         onSurface: AppColors.charcoal,
+        // Quieter secondary tone — AA-safe on offWhite + white surfaces.
+        // NOT AA-safe on cream (3.93:1), so cream-backed screens should
+        // stick with `onSurface` (charcoal) for body text and use type
+        // weight / size for hierarchy instead.
+        onSurfaceVariant: AppColors.charcoalLight,
         surfaceContainerHighest: AppColors.offWhite,
         error: AppColors.terracotta,
         onError: AppColors.white,
@@ -88,6 +93,9 @@ abstract final class AppTheme {
         onTertiary: AppColors.white,
         surface: AppColors.surfaceDark,
         onSurface: AppColors.offWhite,
+        // Quieter secondary tone for dark mode — AA-safe on the dark
+        // surfaces this scheme actually paints onto.
+        onSurfaceVariant: AppColors.lightGrey,
         surfaceContainerHighest: AppColors.surfaceDarkElevated,
         error: AppColors.terracottaLight,
         onError: AppColors.charcoalDark,

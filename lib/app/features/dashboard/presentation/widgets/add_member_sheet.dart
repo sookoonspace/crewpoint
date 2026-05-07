@@ -177,7 +177,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
               'Share this code with people you want to invite',
               style: Theme.of(
                 context,
-              ).textTheme.bodyMedium?.copyWith(color: AppColors.mediumGrey),
+              ).textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),
 
@@ -209,7 +209,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
               'Tap code to copy \u2022 Expires in 24 hours',
               style: Theme.of(
                 context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGrey),
+              ).textTheme.bodySmall,
             ),
 
             // Action buttons

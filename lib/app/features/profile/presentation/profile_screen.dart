@@ -348,9 +348,9 @@ class _PaymentCard extends StatelessWidget {
             ? null
             : Text(
                 'Let your crew know how to pay you',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGrey),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
         trailing: const Icon(Icons.chevron_right, color: AppColors.mediumGrey),
         onTap: () => context.push('/profile/edit'),
@@ -404,9 +404,7 @@ class _AppVersion extends StatelessWidget {
         return Center(
           child: Text(
             'CrewPoint v$version${buildNumber.isNotEmpty ? ' ($buildNumber)' : ''}',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGrey),
+            style: Theme.of(context).textTheme.bodySmall,
           ),
         );
       },

@@ -330,7 +330,7 @@ class _QuickLinkCard extends StatelessWidget {
           subtitle,
           style: Theme.of(
             context,
-          ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGrey),
+          ).textTheme.bodySmall,
         ),
         trailing: const Icon(Icons.chevron_right, color: AppColors.mediumGrey),
         onTap: onTap,
@@ -522,7 +522,7 @@ class _EventActionsState extends State<_EventActions> {
                     : 'Archive to make read-only',
                 style: Theme.of(
                   context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGrey),
+                ).textTheme.bodySmall,
               ),
               value: widget.event.status == EventStatus.archived,
               onChanged: (_) {
