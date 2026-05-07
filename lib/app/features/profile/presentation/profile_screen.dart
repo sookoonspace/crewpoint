@@ -73,23 +73,33 @@ class ProfileScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.sm),
                   _PaymentCard(user: user),
 
+                  // Sign Out — promoted out of ACCOUNT section to read as
+                  // a clear destructive-but-recoverable action; sits above
+                  // the permanent Delete Account in Danger Zone.
                   const SizedBox(height: AppSpacing.xl),
-
-                  // Account
-                  const _SectionHeader(label: 'ACCOUNT'),
-                  const SizedBox(height: AppSpacing.sm),
-                  _SectionCard(
-                    children: [
-                      _SettingsTile(
-                        icon: Icons.logout_rounded,
-                        label: 'Sign Out',
-                        onTap: () => SignOutSheet.show(
-                          context: context,
-                          onSignOut: () =>
-                              ref.read(authProvider.notifier).signOut(),
-                        ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xl,
+                    ),
+                    child: OutlinedButton.icon(
+                      key: const Key('profile.signOut.button'),
+                      onPressed: () => SignOutSheet.show(
+                        context: context,
+                        onSignOut: () =>
+                            ref.read(authProvider.notifier).signOut(),
                       ),
-                    ],
+                      icon: const Icon(Icons.logout_rounded),
+                      label: const Text('Sign Out'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.terracotta,
+                        side: const BorderSide(
+                          color: AppColors.terracotta,
+                          width: 1.5,
+                        ),
+                        shape: const StadiumBorder(),
+                        minimumSize: const Size.fromHeight(48),
+                      ),
+                    ),
                   ),
 
                   // Danger zone

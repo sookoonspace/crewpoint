@@ -59,4 +59,77 @@ void main() {
     expect(clampedWidth, greaterThan(300));
     expect(clampedWidth, lessThanOrEqualTo(375));
   });
+
+  group('Sign Out button (extracted from ACCOUNT section)', () {
+    testWidgets('ACCOUNT section header is gone', (tester) async {
+      await _pumpAt(tester, const Size(375, 812));
+      // The ACCOUNT _SectionHeader rendered an all-caps "ACCOUNT" label;
+      // sign-out being extracted means that label disappears entirely.
+      expect(find.text('ACCOUNT'), findsNothing);
+    });
+
+    testWidgets('standalone OutlinedButton labeled "Sign Out" exists exactly '
+        'once', (tester) async {
+      await _pumpAt(tester, const Size(375, 812));
+
+      final signOutButton = find.byKey(const Key('profile.signOut.button'));
+      expect(signOutButton, findsOneWidget);
+      expect(
+        tester.widget(signOutButton),
+        isA<OutlinedButton>(),
+        reason:
+            'Sign Out is a destructive-action OutlinedButton, not a '
+            'ListTile-styled row.',
+      );
+      // Label is reachable as a Text descendant of the button.
+      expect(
+        find.descendant(of: signOutButton, matching: find.text('Sign Out')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('Sign Out button sits between PAYMENT section and Danger '
+        'Zone (visual order)', (tester) async {
+      // Pump at a tall viewport so the lazy SliverList materialises every
+      // descendant including the Danger Zone below the typical fold.
+      await _pumpAt(tester, const Size(800, 2400));
+      // Capture vertical center of each anchor widget by finding their
+      // RenderBox positions.
+      final paymentY = tester.getCenter(find.text('PAYMENT')).dy;
+      final signOutY = tester
+          .getCenter(find.byKey(const Key('profile.signOut.button')))
+          .dy;
+      final dangerY = tester.getCenter(find.text('Delete Account')).dy;
+
+      expect(
+        signOutY,
+        greaterThan(paymentY),
+        reason: 'Sign Out must render below the PAYMENT header.',
+      );
+      expect(
+        signOutY,
+        lessThan(dangerY),
+        reason:
+            'Sign Out must render above the Danger Zone delete-account '
+            'tile.',
+      );
+    });
+
+    testWidgets('tapping Sign Out surfaces the SignOutSheet confirmation', (
+      tester,
+    ) async {
+      await _pumpAt(tester, const Size(800, 2400));
+      // Sheet not visible before tap.
+      expect(find.text('Sign out of CrewPoint?'), findsNothing);
+
+      await tester.tap(find.byKey(const Key('profile.signOut.button')));
+      // Drive the modal-show animation manually — Lottie's animation
+      // controller would block `pumpAndSettle` indefinitely.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // The bottom sheet renders its distinctive title.
+      expect(find.text('Sign out of CrewPoint?'), findsOneWidget);
+    });
+  });
 }

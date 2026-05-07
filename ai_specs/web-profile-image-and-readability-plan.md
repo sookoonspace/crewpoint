@@ -75,15 +75,16 @@ Three coordinated fixes: bytes-based image upload (web compat), readability swee
 **Deviation from plan**:
 - Spec/plan assumed `charcoalLight` on cream would pass body AA. Test proved it's 3.93:1 (passes large-text 3.0, fails body 4.5). Adjusted strategy: on cream surfaces use `onSurface` (charcoal); reserve `onSurfaceVariant` for offWhite/white surfaces. The new theme cascade applies cleanly because the bulk of the app sits on `scaffoldBackgroundColor: offWhite` where `onSurfaceVariant` IS AA.
 
-### Phase 3: Sign-out button redesign
+### Phase 3: Sign-out button redesign ✓
 
 - **Goal**: Remove ACCOUNT section; standalone terracotta outlined Sign Out button between Payment and Danger Zone.
-- [ ] TDD: profile screen no longer contains an `_SectionHeader(label: 'ACCOUNT')` or its `_SectionCard`
-- [ ] TDD: profile screen contains exactly one `OutlinedButton.icon` whose label `Text` reads "Sign Out"
-- [ ] TDD: tapping the new button surfaces `SignOutSheet` in the widget tree
-- [ ] `lib/app/features/profile/presentation/profile_screen.dart:79-93` — DELETE the `_SectionHeader('ACCOUNT')` + the surrounding `SizedBox(height: AppSpacing.sm)` + the `_SectionCard` containing the sign-out tile (and the trailing `SizedBox(height: AppSpacing.xl)` if redundant); insert at that position a `Padding(EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.xl, AppSpacing.xl, AppSpacing.xl), child: OutlinedButton.icon(...))` with foreground + 1.5px border `AppColors.terracotta`, `StadiumBorder`, `Size.fromHeight(48)`, icon `Icons.logout_rounded`, label "Sign Out", onPressed reusing `SignOutSheet.show(context: context, onSignOut: () => ref.read(authProvider.notifier).signOut())`
-- [ ] Confirm `app_colors.dart` UNCHANGED (no new red constants)
-- [ ] Verify: `flutter analyze` && `flutter test`
+- [x] TDD: profile screen no longer renders the "ACCOUNT" section header label (assert `find.text('ACCOUNT')` returns nothing) — RED → GREEN by deleting the ACCOUNT block
+- [x] TDD: profile screen contains exactly one `OutlinedButton.icon` whose label `Text` reads "Sign Out"; verified via stable `Key('profile.signOut.button')`
+- [x] TDD: Sign Out button renders between PAYMENT header and Danger Zone Delete-Account tile (vertical-position assertion at a tall viewport so lazy slivers materialize the full body)
+- [x] TDD: tapping the new button surfaces `SignOutSheet` (asserted via the sheet's distinctive title "Sign out of CrewPoint?"; explicit pump beats `pumpAndSettle` here because the sheet's Lottie animation never settles)
+- [x] `lib/app/features/profile/presentation/profile_screen.dart` — DELETED the `_SectionHeader('ACCOUNT')` + the `_SectionCard` block; inserted standalone `Padding(EdgeInsets.symmetric(horizontal: AppSpacing.xl), child: OutlinedButton.icon(key: Key('profile.signOut.button'), foregroundColor: AppColors.terracotta, side: BorderSide(color: AppColors.terracotta, width: 1.5), shape: StadiumBorder(), minimumSize: Size.fromHeight(48), icon: Icons.logout_rounded, label: 'Sign Out', onPressed: SignOutSheet.show))` between Payment and Danger Zone
+- [x] Confirmed `app_colors.dart` UNCHANGED (no new red constants — `git diff` empty for that file)
+- [x] Verify: `flutter analyze` clean; `flutter test` 279 passing (up from 275 — 4 new sign-out tests)
 - [ ] Manual smoke (deploy + load on Safari/Chrome): pick + save profile photo; visit Dashboard / Profile / Edit Profile / Create Event — all text readable; new Sign Out button visible between Payment and Danger Zone, tap → confirmation sheet → signed out
 
 ## Risks / Out of scope
