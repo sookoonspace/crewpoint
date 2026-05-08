@@ -5,11 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
+import 'package:crewpoint_app/app/core/widgets/event_guard.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/auth/data/auth_repository.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/create_event_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/dashboard_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboard_screen.dart';
 
 /// Forces an `Authenticated` state without going through Firebase auth.
 class _StubAuthNotifier extends AuthNotifier {
@@ -49,6 +51,13 @@ class DashboardJourneyHarness {
         builder: (_, _) => const DashboardScreen(),
         routes: [
           GoRoute(path: 'create', builder: (_, _) => const CreateEventScreen()),
+          GoRoute(
+            path: 'event/:eventId',
+            builder: (_, state) => EventGuard(
+              eventId: state.pathParameters['eventId'] ?? '',
+              child: (event) => EventDashboardScreen(event: event),
+            ),
+          ),
         ],
       ),
     ],

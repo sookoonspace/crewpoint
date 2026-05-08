@@ -1,11 +1,13 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
+import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/loading_animation.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
@@ -59,16 +61,15 @@ class EventDashboardScreen extends StatelessWidget {
 
                   const SizedBox(height: AppSpacing.xl),
 
-                  // Quick-link cards
+                  // Quick-link cards. No `extra:` payload — child routes
+                  // resolve the event by id via EventGuard.
                   _QuickLinkCard(
                     icon: Icons.chat_rounded,
                     label: 'Chat',
                     subtitle: 'Messages & alerts',
                     color: AppColors.sage,
-                    onTap: () => context.push(
-                      '/dashboard/event/${event.id}/chat',
-                      extra: event,
-                    ),
+                    onTap: () =>
+                        context.push('/dashboard/event/${event.id}/chat'),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   _QuickLinkCard(
@@ -76,10 +77,8 @@ class EventDashboardScreen extends StatelessWidget {
                     label: 'Budget',
                     subtitle: 'Expenses & settlements',
                     color: AppColors.terracotta,
-                    onTap: () => context.push(
-                      '/dashboard/event/${event.id}/budget',
-                      extra: event,
-                    ),
+                    onTap: () =>
+                        context.push('/dashboard/event/${event.id}/budget'),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   _QuickLinkCard(
@@ -87,18 +86,20 @@ class EventDashboardScreen extends StatelessWidget {
                     label: 'Tasks',
                     subtitle: 'To-dos & assignments',
                     color: AppColors.charcoal,
-                    onTap: () => context.push(
-                      '/dashboard/event/${event.id}/tasks',
-                      extra: event,
-                    ),
+                    onTap: () =>
+                        context.push('/dashboard/event/${event.id}/tasks'),
                   ),
 
                   const SizedBox(height: AppSpacing.xl),
 
-                  // Event actions (archive, leave, delete)
-                  _EventActions(
-                    event: event,
-                    currentUserId: '', // TODO: wire from auth provider
+                  // Event actions (archive, leave, delete) — uid threaded
+                  // from currentUserIdProvider so isOwner / isAdmin /
+                  // isMember branches evaluate correctly.
+                  Consumer(
+                    builder: (_, ref, _) => _EventActions(
+                      event: event,
+                      currentUserId: ref.watch(currentUserIdProvider) ?? '',
+                    ),
                   ),
 
                   const SizedBox(height: AppSpacing.xl),
@@ -326,12 +327,7 @@ class _QuickLinkCard extends StatelessWidget {
           child: Icon(icon, color: color, size: 22),
         ),
         title: Text(label),
-        subtitle: Text(
-          subtitle,
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall,
-        ),
+        subtitle: Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
         trailing: const Icon(Icons.chevron_right, color: AppColors.mediumGrey),
         onTap: onTap,
         shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
@@ -520,9 +516,7 @@ class _EventActionsState extends State<_EventActions> {
                 widget.event.status == EventStatus.archived
                     ? 'Event is archived (read-only)'
                     : 'Archive to make read-only',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall,
+                style: Theme.of(context).textTheme.bodySmall,
               ),
               value: widget.event.status == EventStatus.archived,
               onChanged: (_) {

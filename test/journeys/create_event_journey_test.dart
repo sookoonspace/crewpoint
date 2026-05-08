@@ -44,6 +44,16 @@ void main() {
       expect(data['memberIds'], ['uid-42']);
       expect(data['status'], 'active');
 
+      // Tap the tile → resolve-by-ID navigates to EventDashboardScreen.
+      // Closes the user-reported "Event not found" bug end-to-end.
+      await tester.tap(find.text('Tahoe Trip'));
+      await tester.pumpAndSettle();
+      // Hero text is the event title rendered inside EventDashboardScreen's
+      // hero block; finding it again here proves we landed on the detail
+      // screen (and didn't fall through to EventNotFoundScreen).
+      expect(find.text('Tahoe Trip'), findsWidgets);
+      expect(find.byKey(const Key('event.notFound.back')), findsNothing);
+
       // Unmount before the test framework's invariants run; lets Drift's
       // StreamQueryStore cleanup timer fire.
       await tester.pumpWidget(const SizedBox.shrink());

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboard_screen.dart';
 
@@ -21,7 +23,10 @@ Future<void> _pumpAt(WidgetTester tester, Size size) async {
     tester.view.resetDevicePixelRatio();
   });
   await tester.pumpWidget(
-    const MaterialApp(home: EventDashboardScreen(event: _event)),
+    ProviderScope(
+      overrides: [currentUserIdProvider.overrideWithValue(_event.creatorId)],
+      child: const MaterialApp(home: EventDashboardScreen(event: _event)),
+    ),
   );
   await tester.pump();
 }

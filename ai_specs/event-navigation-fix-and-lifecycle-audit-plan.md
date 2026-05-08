@@ -25,63 +25,64 @@ Fix "Event not found" via resolve-by-ID + `_EventGuard` (ref.listen-scheduled 75
 
 ## Plan
 
-### Phase 1: Navigation by ID + `_EventGuard` + uid wiring (vertical slice)
+### Phase 1: Navigation by ID + `EventGuard` + uid wiring (vertical slice) ✅
 
 - **Goal**: Tap any event tile → correct screen on iOS + web; reload-safe with brief grace spinner; no flicker; Leave/Delete buttons fire; test suite green with no pending-timer failures.
 
 **Provider:**
 
-- [ ] `lib/app/core/providers.dart` — add `eventByIdProvider` (`Provider.family<EventModel?, String>`) reading `dashboardEventsProvider`'s `AsyncValue.maybeWhen(data: ...)`; returns matching event or null.
-- [ ] TDD: returns matching event from `data` emission.
-- [ ] TDD: returns null when id absent from `data` emission.
-- [ ] TDD: returns null while underlying provider is loading or in error.
+- [x] `lib/app/core/providers.dart` — add `eventByIdProvider` (`Provider.family<EventModel?, String>`) reading `dashboardEventsProvider`'s `AsyncValue.maybeWhen(data: ...)`; returns matching event or null.
+- [x] TDD: returns matching event from `data` emission.
+- [x] TDD: returns null when id absent from `data` emission.
+- [x] TDD: returns null while underlying provider is loading or in error.
 
-**`_EventNotFoundScreen` (router-private):**
+**`EventNotFoundScreen` (lifted to `lib/app/core/widgets/event_guard.dart`):**
 
-- [ ] `lib/app/core/router/app_router.dart` — add `_EventNotFoundScreen({required String eventId})`. Logs eventId in `initState` via `developer.log(name: 'router')` (once per visit). Layout mirrors `_RouterErrorScreen`: icon, headline "We couldn't find that event", body "It may have been deleted, or you may not have access", primary button keyed `Key('event.notFound.back')` calling `context.go('/dashboard')`.
+- [x] Public widget at `lib/app/core/widgets/event_guard.dart`. Constructor `EventNotFoundScreen({required String eventId})`. Logs eventId in `initState` via `developer.log(name: 'router')`. Layout mirrors `_RouterErrorScreen`: icon, headline, body, primary button keyed `Key('event.notFound.back')` calling `context.go('/dashboard')`. *Lifted from spec's "private to app_router.dart" guidance because Dart's library-private `_` prefix forbids `@visibleForTesting`; spec already authorized the lift.*
 
-**`_EventGuard` (router-private; the single source of truth for load/found/not-found):**
+**`EventGuard` (also at `lib/app/core/widgets/event_guard.dart`):**
 
-- [ ] `app_router.dart` — add private `_EventGuard` `ConsumerStatefulWidget` per spec sketch. Fields: `Timer? _graceTimer`, `bool _graceElapsed = false`. Methods: `_cancelGrace`, `_scheduleGrace` (no-op if `_graceTimer != null || _graceElapsed`).
-- [ ] Implement `dispose` → cancel + null `_graceTimer`.
-- [ ] Implement `didUpdateWidget` → on `eventId` change, cancel timer + reset `_graceElapsed = false`.
-- [ ] Implement `build`: empty `eventId` → `_EventNotFoundScreen` immediately. Otherwise `ref.listen<AsyncValue<List<EventModel>>>(dashboardEventsProvider, ..., fireImmediately: true)` schedules/cancels grace based on whether the data emission contains the event. `build` reads `_graceElapsed` and renders progress / resolved / fallback.
-- [ ] TDD: shows progress while `dashboardEventsProvider` is loading. *(Pattern B)*
-- [ ] TDD: shows resolved screen when `eventByIdProvider(eventId)` returns the event. *(Pattern B)*
-- [ ] TDD: empty `eventId` → `_EventNotFoundScreen` immediately, no grace. *(no Timer involved)*
-- [ ] TDD: shows progress (NOT fallback) for the first 750ms after `data: []` emission. *(Pattern B — unmount before grace fires)*
-- [ ] TDD: re-emission lands during grace → resolved screen renders, `_graceElapsed` clears if it had been set. *(Pattern B)*
-- [ ] TDD: 750ms elapses with event still missing → `_EventNotFoundScreen`. *(Pattern A — `tester.pump(750ms)` + `pump()`)*
-- [ ] TDD: provider in `error` state → fallback renders, no grace. *(Pattern B)*
-- [ ] TDD: `didUpdateWidget` — eventId A in missing state past 750ms (Pattern A) → re-pump same instance with eventId B in resolved state → assert resolved screen renders without waiting another 750ms.
-- [ ] TDD: `dispose` cancels in-flight timer — pump with `data: []`, immediately unmount via `pumpWidget(SizedBox.shrink())` BEFORE 750ms; test exits with no "Timer still pending" failure. *(Contract test for the user-flagged failure mode.)*
+- [x] Public `ConsumerStatefulWidget`. Fields: `Timer? _graceTimer`, `bool _graceElapsed = false`. Methods: `_cancelGrace`, `_scheduleGrace` (no-op if timer in flight or grace elapsed).
+- [x] `dispose` → cancel + null `_graceTimer`.
+- [x] `didUpdateWidget` → on `eventId` change, cancel timer + reset `_graceElapsed = false` + schedule a post-frame re-evaluation.
+- [x] `build`: empty `eventId` → `EventNotFoundScreen` immediately. Otherwise `ref.listen<AsyncValue<List<EventModel>>>(dashboardEventsProvider, _evaluate)` for transitions PLUS an `initState` post-frame `_evaluate(ref.read(...))` for the first emission (Riverpod 3's `WidgetRef.listen` deliberately omits `fireImmediately`, per its source comment). `build` reads `_graceElapsed` and renders progress / resolved / fallback.
+- [x] TDD: shows progress while `dashboardEventsProvider` is loading. *(Pattern B)*
+- [x] TDD: shows resolved screen when `eventByIdProvider(eventId)` returns the event. *(Pattern B)*
+- [x] TDD: empty `eventId` → `EventNotFoundScreen` immediately, no grace. *(no Timer involved)*
+- [x] TDD: shows progress (NOT fallback) for the first 750ms after `data: []` emission. *(Pattern B — unmount before grace fires)*
+- [x] TDD: re-emission lands during grace → resolved screen renders, `_graceElapsed` clears if it had been set. *(Pattern B)*
+- [x] TDD: 750ms elapses with event still missing → `EventNotFoundScreen`. *(Pattern A — `tester.pump(750ms)` + `pump()`)*
+- [x] TDD: provider in `error` state → fallback renders, no grace. *(Pattern B)*
+- [x] TDD: `didUpdateWidget` — eventId A in missing state past 750ms (Pattern A) → re-pump same instance with eventId B in resolved state → assert resolved screen renders without waiting another 750ms.
+- [x] TDD: `dispose` cancels in-flight timer — pump with `data: []`, immediately unmount via `pumpWidget(SizedBox.shrink())` BEFORE 750ms; test exits with no "Timer still pending" failure. *(Contract test for the user-flagged failure mode.)*
 
 **Route builder rewrites + `_resolveEventId` helper (6 sites):**
 
-- [ ] `app_router.dart` — add `String _resolveEventId(GoRouterState state)` helper: prefer `state.pathParameters['eventId']`; fall back to `RegExp(r'/event/([^/]+)').firstMatch(state.matchedLocation)?.group(1) ?? ''`.
-- [ ] Replace `state.extra as EventModel?` reads at all 6 event routes (parent + members + budget + chat + tasks + task-detail) with `_EventGuard(eventId: _resolveEventId(state), child: (event) => SubScreen(event: event))`.
-- [ ] TDD: parameterized router test (reuses `_wrapWithProviders` + `FakeAuthService`) — for each of the 6 URLs: resolved event renders the correct screen; missing-id renders `_EventNotFoundScreen` after grace.
+- [x] `app_router.dart` — added `String _resolveEventId(GoRouterState state)` helper: prefer `state.pathParameters['eventId']`; fall back to `RegExp(r'/event/([^/]+)').firstMatch(state.matchedLocation)?.group(1) ?? ''`.
+- [x] Replaced `state.extra as EventModel?` reads at all 6 event routes (parent + members + budget + chat + tasks + task-detail) with `EventGuard(eventId: _resolveEventId(state), child: (event) => SubScreen(event: event))`. Dropped now-unused `EventModel` import.
+- [x] TDD: parameterized router test (reuses `_wrapWithProviders` + `FakeAuthService`, extended to seed `dashboardEventsProvider`) — for each of the 6 URLs: resolved event renders the correct screen type; missing-id renders `EventNotFoundScreen` after grace; `Back to events` lands on `/dashboard`.
 
 **Quick-link nav cleanup:**
 
-- [ ] `lib/app/features/dashboard/presentation/event_dashboard_screen.dart` — drop `extra: event` from the three `_QuickLinkCard` `onTap` handlers (Chat / Budget / Tasks).
+- [x] `lib/app/features/dashboard/presentation/event_dashboard_screen.dart` — dropped `extra: event` from the three `_QuickLinkCard` `onTap` handlers (Chat / Budget / Tasks).
 
 **`_EventActions` uid wrap (bundled bug-prevention):**
 
-- [ ] `event_dashboard_screen.dart` — replace bare `_EventActions(event: event, currentUserId: '')` with `Consumer(builder: (_, ref, _) => _EventActions(event: event, currentUserId: ref.watch(currentUserIdProvider) ?? ''))`. Same shape as the router's `MemberManagementScreen` wrap.
-- [ ] TDD: with `currentUserIdProvider == event.creatorId` → owner-only Delete Event tile renders. With a non-creator uid → Leave Event tile renders, Delete hidden.
+- [x] `event_dashboard_screen.dart` — replaced bare `_EventActions(event: event, currentUserId: '')` with `Consumer(builder: (_, ref, _) => _EventActions(event: event, currentUserId: ref.watch(currentUserIdProvider) ?? ''))`.
+- [x] TDD: with `currentUserIdProvider == event.creatorId` → owner-only Delete Event tile renders. With a non-creator uid → Leave Event tile renders, Delete hidden.
+- [x] Pre-existing `event_dashboard_screen_layout_test.dart` updated to override `currentUserIdProvider` (the new Consumer wrap triggers the auth chain otherwise; same fix pattern as `dashboard_screen_layout_test.dart` from PR #3).
 
 **Journey extension:**
 
-- [ ] Extend `test/journeys/create_event_journey_test.dart`: after the existing tile-appears assertion, tap the tile → assert `EventDashboardScreen` hero text matches the event title.
+- [x] Extended `test/journeys/create_event_journey_test.dart`: after the existing tile-appears assertion, tap the tile → assert `EventDashboardScreen` hero text matches AND no `event.notFound.back` button is present. Harness's mini-router extended with `/dashboard/event/:eventId` → `EventGuard(...)`.
 
 **Verify:**
 
-- [ ] `flutter analyze` clean (only the pre-existing `TableMigration` warning).
-- [ ] `flutter test` full suite green — no "Timer still pending" failures anywhere.
-- [ ] Manual smoke iOS sim: tap tile → see hero + quick links → tap each → return; tap Leave/Delete → action fires.
-- [ ] Manual smoke web (`flutter run -d chrome --dart-define=FLAVOR=dev`): tap tile + reload at `/dashboard/event/{id}/budget` → spinner briefly → resolved screen.
-- [ ] Manual smoke web direct URL `/dashboard/event/{nonexistent}` → spinner for 750ms → `_EventNotFoundScreen`.
+- [x] `flutter analyze` clean (only the pre-existing `TableMigration` experimental warning).
+- [x] `flutter test` full suite green — 314 passed, 4 pre-existing skips. No "Timer still pending" failures.
+- [ ] Manual smoke iOS sim: tap tile → see hero + quick links → tap each → return; tap Leave/Delete → action fires. *(User verification.)*
+- [ ] Manual smoke web (`flutter run -d chrome --dart-define=FLAVOR=dev`): tap tile + reload at `/dashboard/event/{id}/budget` → spinner briefly → resolved screen. *(User verification.)*
+- [ ] Manual smoke web direct URL `/dashboard/event/{nonexistent}` → spinner for 750ms → `EventNotFoundScreen`. *(User verification.)*
 
 ### Phase 2: Event lifecycle deep dive (audit doc)
 
