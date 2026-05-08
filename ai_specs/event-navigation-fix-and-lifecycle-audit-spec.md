@@ -141,6 +141,7 @@ Why it matters: the navigation bug makes every event unusable after creation —
 
 - Stage 1 does NOT touch the sub-screen widgets themselves (chat, budget, tasks, members, task detail). They continue to receive `event:` directly from the resolved route builder.
 - Stage 1 does NOT add a separate `Stream<EventModel?>` provider per event; we use the in-memory list from `dashboardEventsProvider` since it already streams the user's full event set.
+- Genuinely-missing IDs (typos, pasted bad URLs, deleted events) wait the full 750 ms grace before falling back. This is an accepted tradeoff for fixing the cold-start race; a "data emitted with non-empty list AND id absent" fast-path could short-circuit the wait but adds branch complexity for a rare flow. Revisit only if user-testing flags the wait as a problem.
 - Stage 2 produces a document; it does NOT execute any code-level fixes. Each follow-up gap gets its own `/spec` later.
 </boundaries>
 
@@ -170,8 +171,13 @@ Why it matters: the navigation bug makes every event unusable after creation —
   ```
 
 - `lib/app/core/router/app_router.dart`:
-  - Add a private `_EventNotFoundScreen` widget at the bottom of the file (next to `_RouterErrorScreen`). Mirrors its layout: icon, headline ("We couldn't find that event"), body ("It may have been deleted, or you may not have access"), primary `Back to events` button keyed `Key('event.notFound.back')`. Logs the missing eventId via `developer.log(name: 'router')`.
-  - Add a private `_EventGuard` ConsumerStatefulWidget — owns the load / found / not-found contract and the cold-start grace period. Sketch:
+  - Add a private `_EventNotFoundScreen` widget at the bottom of the file (next to `_RouterErrorScreen`). Constructor signature: `_EventNotFoundScreen({required String eventId})`. Logs the eventId in `initState` via `developer.log(name: 'router')` (so logs fire once per visit, not on every rebuild). Layout mirrors `_RouterErrorScreen`: icon, "We couldn't find that event" headline, "It may have been deleted, or you may not have access" body, primary `Back to events` button keyed `Key('event.notFound.back')` calling `context.go('/dashboard')`.
+  - Add a private `_EventGuard` ConsumerStatefulWidget — owns the load / found / not-found contract and the cold-start grace period. **Critical implementation rules** (these resolve the timer-in-build anti-pattern, eventId-stale-state bug, and "Timer still pending" test failures):
+    - **Timer scheduling lives in `ref.listen`, NOT in `build`.** `build` is pure: it reads `_graceElapsed` and renders.
+    - **`didUpdateWidget` MUST reset grace state on `eventId` change** — otherwise stale `_graceElapsed = true` from event A bleeds into event B if Flutter reuses the State.
+    - **`dispose` MUST cancel `_graceTimer` and null it out** — leaks fail tests with "A Timer is still pending after dispose."
+
+    Sketch:
     ```dart
     class _EventGuard extends ConsumerStatefulWidget {
       const _EventGuard({required this.eventId, required this.child});
@@ -186,39 +192,81 @@ Why it matters: the navigation bug makes every event unusable after creation —
       bool _graceElapsed = false;
 
       @override
-      void dispose() { _graceTimer?.cancel(); super.dispose(); }
+      void didUpdateWidget(_EventGuard old) {
+        super.didUpdateWidget(old);
+        if (old.eventId != widget.eventId) {
+          _cancelGrace();
+          _graceElapsed = false;
+        }
+      }
 
-      void _startGrace() {
-        _graceTimer ??= Timer(const Duration(milliseconds: 750), () {
-          if (mounted) setState(() => _graceElapsed = true);
+      @override
+      void dispose() {
+        _cancelGrace();
+        super.dispose();
+      }
+
+      void _cancelGrace() {
+        _graceTimer?.cancel();
+        _graceTimer = null;
+      }
+
+      void _scheduleGrace() {
+        if (_graceTimer != null || _graceElapsed) return;
+        _graceTimer = Timer(const Duration(milliseconds: 750), () {
+          if (!mounted) return;
+          _graceTimer = null;
+          setState(() => _graceElapsed = true);
         });
       }
 
       @override
       Widget build(BuildContext context) {
         if (widget.eventId.isEmpty) {
-          return _EventNotFoundScreen(eventId: widget.eventId);
+          return const _EventNotFoundScreen(eventId: '');
         }
+
+        // ref.listen is Riverpod 3's side-effect seam: fires only on
+        // transitions (and once at subscription time when fireImmediately:
+        // true). Subscription is managed automatically — no manual cleanup.
+        ref.listen<AsyncValue<List<EventModel>>>(
+          dashboardEventsProvider,
+          (_, next) {
+            next.whenOrNull(data: (events) {
+              final hasEvent = events.any((e) => e.id == widget.eventId);
+              if (hasEvent) {
+                _cancelGrace();
+                if (_graceElapsed && mounted) {
+                  setState(() => _graceElapsed = false);
+                }
+              } else {
+                _scheduleGrace();
+              }
+            });
+          },
+          fireImmediately: true,
+        );
+
         final asyncEvents = ref.watch(dashboardEventsProvider);
         final event = ref.watch(eventByIdProvider(widget.eventId));
         if (event != null) return widget.child(event);
+
         return asyncEvents.when(
-          loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+          loading: () => const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          ),
           error: (_, _) => _EventNotFoundScreen(eventId: widget.eventId),
-          data: (_) {
-            // Cold-start grace: provider has emitted but event is still
-            // absent. Wait for a re-emission to land before showing the
-            // fallback. See spec req #3 for rationale.
-            _startGrace();
-            return _graceElapsed
-                ? _EventNotFoundScreen(eventId: widget.eventId)
-                : const Scaffold(body: Center(child: CircularProgressIndicator()));
-          },
+          data: (_) => _graceElapsed
+              ? _EventNotFoundScreen(eventId: widget.eventId)
+              : const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                ),
         );
       }
     }
     ```
-  - Replace each `state.extra as EventModel?` block in the `event/:eventId` route and its children with `_EventGuard(eventId: state.pathParameters['eventId'] ?? '', child: (event) => SomeSubScreen(event: event))`. Six call sites total: parent + members + budget + chat + tasks + task detail.
+  - Replace each `state.extra as EventModel?` block in the `event/:eventId` route and its children with `_EventGuard(eventId: _resolveEventId(state), child: (event) => SomeSubScreen(event: event))`. Six call sites total: parent + members + budget + chat + tasks + task detail.
+  - Add a small `String _resolveEventId(GoRouterState state)` helper that first reads `state.pathParameters['eventId']`, and as a fallback parses `state.matchedLocation` with `RegExp(r'/event/([^/]+)').firstMatch(...)`. Use the regex fallback only if the param is empty — handles the (uncommon) case where GoRouter doesn't propagate the parent path param into deeply nested route builders.
   - Drop `extra: event` from quick-link navigations inside `event_dashboard_screen.dart`.
 
 - `lib/app/features/dashboard/presentation/event_dashboard_screen.dart`:
@@ -241,6 +289,7 @@ Why it matters: the navigation bug makes every event unusable after creation —
 - `_EventNotFoundScreen` mirrors `_RouterErrorScreen`'s shape — same icon family, same button-key naming convention (`Key('event.notFound.back')` parallels `Key('router.error.goHome')`).
 - Use `context.go('/dashboard')` (not `context.pop`) from the not-found screen — pop would land on `/dashboard/event/{id}` again and re-trigger the same fallback.
 - The `Consumer` wrap of `_EventActions` matches the same pattern used at `app_router.dart:155-162` for `MemberManagementScreen`'s uid threading (the fix that shipped in PR #3).
+- `ref.listen` inside `build` is Riverpod 3's idiomatic side-effect seam — subscription is auto-managed; do NOT add manual `addListener`/`removeListener` plumbing or store the returned subscription. Use `fireImmediately: true` when the listener body needs to evaluate the current state at first build, not just on subsequent transitions.
 
 **What to avoid:**
 
@@ -267,9 +316,11 @@ Why it matters: the navigation bug makes every event unusable after creation —
   - Missing: with the provider emitting an event list that does NOT include the id, after the 750 ms grace the route renders `_EventNotFoundScreen` with `Key('event.notFound.back')`.
   - Tap `Back to events` → router lands at `/dashboard`.
 - **`_EventGuard` cold-start grace test** (separate widget test, no router): pump `_EventGuard` with `dashboardEventsProvider` overridden to a `StreamController` that:
-  1. Emits `[]` first → assert progress visible (NOT fallback).
-  2. Within the 750 ms window, emit `[matchingEvent]` → assert resolved screen renders (no fallback flicker).
-  3. Repeat with no second emission → after 750 ms + a pump, assert `_EventNotFoundScreen` renders.
+  1. Emits `[]` first → assert progress visible (NOT fallback). Use Pattern B (unmount before exit).
+  2. Within the 750 ms window, emit `[matchingEvent]` → assert resolved screen renders (no fallback flicker). Use Pattern B.
+  3. Repeat with no second emission → use Pattern A (`tester.pump(750ms)` + `tester.pump()`) and assert `_EventNotFoundScreen` renders.
+- **`_EventGuard` eventId-change test:** pump with eventId A missing → advance past 750 ms (Pattern A) → assert fallback. Re-pump same `_EventGuard` instance with eventId B in resolved state → assert resolved screen renders without waiting another 750 ms. Verifies `didUpdateWidget` resets state.
+- **`_EventGuard` dispose-cancels-timer test:** pump with `data: []`, let the timer schedule, immediately unmount via `pumpWidget(SizedBox.shrink())` BEFORE 750 ms elapses. The test must exit cleanly with no "Timer still pending" failure. This is the contract test for the user-flagged failure mode.
 - **Loading state test:** with `dashboardEventsProvider` stuck in loading, route shows `CircularProgressIndicator`.
 - **Empty/null eventId test:** `_EventGuard(eventId: '')` renders `_EventNotFoundScreen` immediately (no grace).
 - **`currentUserId` Consumer wrap test:** in `event_dashboard_screen_test.dart` (extend or create), pump `EventDashboardScreen` with `currentUserIdProvider` overridden to a uid; assert `_EventActions` receives the same uid (e.g., via the visibility of the owner-only Delete button when `currentUser.uid == event.creatorId`).
@@ -289,22 +340,26 @@ Strict vertical-slice cycles for Stage 1, in order:
 5. RED: returns null while underlying provider is loading.
 6. GREEN.
 7. RED: `_EventGuard` shows progress while provider is loading.
-8. GREEN: minimal `_EventGuard`.
+8. GREEN: minimal `_EventGuard` skeleton (no grace yet).
 9. RED: `_EventGuard` shows the resolved screen when the event is in the data emission.
 10. GREEN.
 11. RED: `_EventGuard` shows progress (NOT fallback) for the first 750 ms after a `data: []` emission.
-12. GREEN: add the grace timer.
-13. RED: `_EventGuard` resolves the screen if a re-emission lands during the grace window.
+12. GREEN: add the grace `Timer` scheduled by `ref.listen` (NOT inside `build`).
+13. RED: `_EventGuard` resolves the screen if a re-emission lands during the grace window AND clears `_graceElapsed` if it had been set.
 14. GREEN.
 15. RED: `_EventGuard` shows `_EventNotFoundScreen` after grace elapses with the event still missing.
 16. GREEN.
-17. RED: parameterized sub-route resolution — six URLs render six screens.
-18. GREEN: route-builder rewrites.
-19. RED: `currentUserId` Consumer wrap threads uid into `_EventActions`.
+17. RED: changing `eventId` on a live `_EventGuard` resets `_graceTimer` and `_graceElapsed` (didUpdateWidget).
+18. GREEN.
+19. RED: `dispose()` cancels an in-flight `_graceTimer` (no "Timer still pending" assertion failure on tear-down).
 20. GREEN.
-21. RED: extended journey — create event → tap tile → see EventDashboardScreen.
-22. GREEN.
-23. REFACTOR.
+21. RED: parameterized sub-route resolution — six URLs render six screens.
+22. GREEN: route-builder rewrites.
+23. RED: `currentUserId` Consumer wrap threads uid into `_EventActions`.
+24. GREEN.
+25. RED: extended journey — create event → tap tile → see EventDashboardScreen.
+26. GREEN.
+27. REFACTOR.
 
 **Required test seams + selectors:**
 
@@ -318,6 +373,28 @@ Strict vertical-slice cycles for Stage 1, in order:
 - Prefer `dashboardEventsProvider.overrideWith(...)` over deeper Firestore mocking — the provider is the public seam.
 - For the grace-period test, override `dashboardEventsProvider` with a `StreamController.stream` so the test controls emission timing.
 - `fake_cloud_firestore` is unnecessary at this layer; the bug + audit are router-level concerns.
+
+**Timer lifecycle in tests** (CRITICAL — `_EventGuard` schedules a real `Timer(750ms)`; mishandling produces "A Timer is still pending even after the widget tree was disposed" failures):
+
+Mandate one of these patterns per test scenario. Pick deliberately; do NOT mix.
+
+- **Pattern A — assert post-grace fallback renders.** Use when the test's expectation is the timer-fired state.
+  ```dart
+  await tester.pumpWidget(...);                                  // initial frame
+  await tester.pump(const Duration(milliseconds: 750));          // advances Flutter's fake clock; Timer fires
+  await tester.pump();                                           // flush the resulting setState
+  expect(find.byType(_EventNotFoundScreen), findsOneWidget);
+  ```
+- **Pattern B — exit during grace (test asserts the in-grace progress state, NOT the fallback).** Unmount the tree before the test ends so `dispose()` cancels the live timer.
+  ```dart
+  await tester.pumpWidget(...);
+  await tester.pump();                                           // initial frame
+  expect(find.byType(CircularProgressIndicator), findsOneWidget);
+  await tester.pumpWidget(const SizedBox.shrink());              // triggers dispose -> cancels timer
+  ```
+- **Pattern C — eventId switch resets grace.** Pump with eventId A in the missing state past 750 ms, then re-pump the same `_EventGuard` with eventId B in a state where it resolves. Assert the resolved screen renders (no stale `_graceElapsed`). Same Timer hygiene as Pattern A applies.
+
+In every test, `dispose()` must run before the test exits. The widget tester does this automatically when the next `pumpWidget` replaces the tree or when the binding tears down — Patterns A and B both satisfy this. If you write a test that creates a guard and asserts something between pumps without unmounting, add `await tester.pumpWidget(const SizedBox.shrink()); await tester.pumpAndSettle();` at the end as a belt-and-suspenders cleanup.
 
 **Audit validation (Stage 2):**
 
