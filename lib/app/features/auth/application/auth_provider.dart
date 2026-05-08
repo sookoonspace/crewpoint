@@ -3,8 +3,10 @@ import 'dart:developer';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/features/auth/data/auth_repository.dart';
+import 'package:crewpoint_app/app/features/auth/domain/display_name_helper.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/auth_failure.dart';
+import 'package:crewpoint_app/app/features/profile/domain/repositories/i_user_repository.dart';
 
 /// Auth state for the app.
 sealed class AuthState {
@@ -35,10 +37,19 @@ class AuthError extends AuthState {
 
 /// Notifier managing auth state transitions.
 class AuthNotifier extends Notifier<AuthState> {
-  AuthNotifier({required AuthRepository authRepository})
-    : _authRepository = authRepository;
+  /// [userRepository] is optional so widget/layout tests that don't care
+  /// about Firestore wiring can omit it. Production wires the concrete
+  /// `FirestoreUserRepository` in `lib/app/core/providers.dart`. When
+  /// null, `_ensureUserDoc` short-circuits — auth state still transitions
+  /// normally; only the doc-materialisation side-effect is skipped.
+  AuthNotifier({
+    required AuthRepository authRepository,
+    IUserRepository? userRepository,
+  }) : _authRepository = authRepository,
+       _userRepository = userRepository;
 
   final AuthRepository _authRepository;
+  final IUserRepository? _userRepository;
   StreamSubscription<AppUser?>? _subscription;
 
   @override
@@ -46,6 +57,7 @@ class AuthNotifier extends Notifier<AuthState> {
     _subscription?.cancel();
     _subscription = _authRepository.authStateChanges.listen((user) {
       if (user != null) {
+        unawaited(_ensureUserDoc(user));
         state = Authenticated(user);
       } else {
         state = const Unauthenticated();
@@ -56,9 +68,44 @@ class AuthNotifier extends Notifier<AuthState> {
 
     final currentUser = _authRepository.currentUser;
     if (currentUser != null) {
+      unawaited(_ensureUserDoc(currentUser));
       return Authenticated(currentUser);
     }
     return const Unauthenticated();
+  }
+
+  /// Ensures a Firestore user document exists for [user]. Fire-and-forget;
+  /// any error is logged and swallowed so auth state transitions are never
+  /// blocked by a transient Firestore failure (offline, rules denial, etc.).
+  Future<void> _ensureUserDoc(AppUser user) async {
+    final repo = _userRepository;
+    if (repo == null) return;
+    try {
+      if (user.email.isEmpty) {
+        log('skip ensureUserDoc — empty email for ${user.uid}', name: 'auth');
+        return;
+      }
+      final raw = user.displayName?.trim();
+      final resolved = (raw != null && raw.isNotEmpty)
+          ? raw
+          : deriveDisplayNameFromEmail(user.email);
+      await repo.createUserIfNotExists(
+        uid: user.uid,
+        email: user.email,
+        displayName: resolved,
+        photoUrl: user.photoUrl,
+        providerIds: user.providerIds,
+      );
+    } catch (e, st) {
+      // Untyped catch by design — must absorb FirebaseException, generic
+      // Exception, and any sync throw so AuthNotifier never crashes.
+      log(
+        'failed to ensure user doc for ${user.uid}',
+        error: e,
+        stackTrace: st,
+        name: 'auth',
+      );
+    }
   }
 
   Future<void> signInWithEmail({

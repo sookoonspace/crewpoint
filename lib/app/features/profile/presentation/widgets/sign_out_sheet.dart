@@ -72,7 +72,7 @@ class SignOutSheet extends StatelessWidget {
             'Your local data will be preserved for next time.',
             style: Theme.of(
               context,
-            ).textTheme.bodyMedium?.copyWith(color: AppColors.mediumGrey),
+            ).textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.xl),

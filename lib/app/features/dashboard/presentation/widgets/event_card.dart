@@ -29,7 +29,7 @@ class EventCard extends StatelessWidget {
                   event.description!,
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGrey),
+                  ).textTheme.bodySmall,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),

@@ -320,7 +320,7 @@ class _RouterErrorScreen extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: Theme.of(
                     context,
-                  ).textTheme.bodyMedium?.copyWith(color: AppColors.mediumGrey),
+                  ).textTheme.bodyMedium,
                 ),
                 if (attemptedLocation != null) ...[
                   const SizedBox(height: AppSpacing.xs),

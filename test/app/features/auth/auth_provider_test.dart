@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/services/i_auth_service.dart';
@@ -5,10 +6,12 @@ import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/auth/data/auth_repository.dart';
 
 import 'fake_auth_service.dart';
+import 'fake_user_repository.dart';
 
 void main() {
   late FakeAuthService fakeAuthService;
   late AuthRepository repository;
+  late FakeUserRepository fakeUserRepository;
   late ProviderContainer container;
   late NotifierProvider<AuthNotifier, AuthState> authProvider;
 
@@ -21,9 +24,13 @@ void main() {
   setUp(() {
     fakeAuthService = FakeAuthService();
     repository = AuthRepository(authService: fakeAuthService);
+    fakeUserRepository = FakeUserRepository();
 
     authProvider = NotifierProvider<AuthNotifier, AuthState>(
-      () => AuthNotifier(authRepository: repository),
+      () => AuthNotifier(
+        authRepository: repository,
+        userRepository: fakeUserRepository,
+      ),
     );
 
     container = ProviderContainer();
@@ -97,6 +104,104 @@ void main() {
       expect(fakeAuthService.reloadCalls, equals(1));
     },
   );
+
+  group('user doc creation on auth state change', () {
+    test('listener calls createUserIfNotExists exactly once with provider '
+        'displayName when stream emits a non-null user', () async {
+      const richUser = AuthUser(
+        uid: 'uid-google',
+        email: 'jane@gmail.com',
+        displayName: '  Jane Doe  ', // surrounding whitespace must be trimmed
+        photoUrl: 'https://lh3.googleusercontent.com/a/abc',
+        providerIds: ['google.com'],
+      );
+      fakeAuthService.nextResult = const AuthSuccess(richUser);
+
+      await container
+          .read(authProvider.notifier)
+          .signInWithEmail(email: 'jane@gmail.com', password: 'pw');
+      await Future<void>.delayed(Duration.zero); // let unawaited future run
+
+      expect(fakeUserRepository.createCalls, hasLength(1));
+      final call = fakeUserRepository.createCalls.single;
+      expect(call.uid, equals('uid-google'));
+      expect(call.email, equals('jane@gmail.com'));
+      expect(call.displayName, equals('Jane Doe'));
+      expect(call.photoUrl, equals('https://lh3.googleusercontent.com/a/abc'));
+      expect(call.providerIds, equals(['google.com']));
+    });
+
+    test('falls back to deriveDisplayNameFromEmail when provider supplies '
+        'null displayName (Apple subsequent login)', () async {
+      const appleUser = AuthUser(
+        uid: 'uid-apple',
+        email: 'apple+sub@privaterelay.appleid.com',
+        // displayName intentionally omitted (null) — Apple's behaviour
+        // on subsequent logins.
+        providerIds: ['apple.com'],
+      );
+      fakeAuthService.nextResult = const AuthSuccess(appleUser);
+
+      await container
+          .read(authProvider.notifier)
+          .signInWithEmail(
+            email: 'apple+sub@privaterelay.appleid.com',
+            password: 'pw',
+          );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(fakeUserRepository.createCalls, hasLength(1));
+      // 'apple+sub@...' → strip after '+' → 'apple' → 'Apple'
+      expect(
+        fakeUserRepository.createCalls.single.displayName,
+        equals('Apple'),
+      );
+    });
+
+    test('swallows FirebaseException from the repo so the user still '
+        'transitions to Authenticated (offline / rules-denial path)', () async {
+      fakeUserRepository.nextCreateError = FirebaseException(
+        plugin: 'cloud_firestore',
+        code: 'permission-denied',
+        message: 'simulated rules denial',
+      );
+      fakeAuthService.nextResult = const AuthSuccess(testAuthUser);
+
+      await container
+          .read(authProvider.notifier)
+          .signInWithEmail(email: 'test@example.com', password: 'pw');
+      await Future<void>.delayed(Duration.zero);
+
+      // Swallowed — call still recorded, state still Authenticated, no rethrow.
+      expect(fakeUserRepository.createCalls, hasLength(1));
+      expect(container.read(authProvider), isA<Authenticated>());
+    });
+
+    test('listener does not call createUserIfNotExists on null emission '
+        '(sign-out path)', () async {
+      // Seed an authenticated session, drain the resulting create call.
+      fakeAuthService.setCurrentUser(testAuthUser);
+      await Future<void>.delayed(Duration.zero);
+      fakeUserRepository.createCalls.clear();
+
+      // Now emit null (sign-out).
+      fakeAuthService.setCurrentUser(null);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(fakeUserRepository.createCalls, isEmpty);
+    });
+
+    test('listener invokes the repo on every non-null emission '
+        '(idempotency lives in the repo, not the notifier)', () async {
+      fakeAuthService.setCurrentUser(testAuthUser);
+      await Future<void>.delayed(Duration.zero);
+      // Simulate a token refresh: same user re-emitted.
+      fakeAuthService.setCurrentUser(testAuthUser);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(fakeUserRepository.createCalls.length, equals(2));
+    });
+  });
 
   group('signInWithEmail provider suggestion', () {
     test('sets suggestedProvider when password fails and only OAuth providers '

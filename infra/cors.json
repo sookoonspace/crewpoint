@@ -1,0 +1,12 @@
+[
+    {
+      "origin": [
+        "https://crewpoint-dev.web.app",
+        "https://crewpoint-dev.firebaseapp.com",
+        "http://localhost:5000"
+      ],
+      "method": ["GET"],
+      "responseHeader": ["Content-Type", "Cache-Control"],
+      "maxAgeSeconds": 3600
+    }
+]

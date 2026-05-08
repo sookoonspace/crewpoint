@@ -315,7 +315,8 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
                 receiptUrl = await repo.uploadReceipt(
                   eventId: widget.event.id,
                   expenseId: expense.id,
-                  file: receipt,
+                  bytes: receipt.bytes,
+                  contentType: receipt.contentType,
                 );
                 if (receiptUrl == null && context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(

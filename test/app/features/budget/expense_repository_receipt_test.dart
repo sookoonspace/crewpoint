@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
@@ -17,16 +17,18 @@ import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 class _FakeImageService implements IImageService {
   bool shouldThrow = false;
   String? lastPath;
+  String? lastContentType;
+  Uint8List? lastBytes;
 
   @override
-  Future<File?> pickFromGallery({
+  Future<PickedImage?> pickFromGallery({
     int maxWidth = 512,
     int maxHeight = 512,
     int quality = 85,
   }) async => null;
 
   @override
-  Future<File?> takePhoto({
+  Future<PickedImage?> takePhoto({
     int maxWidth = 512,
     int maxHeight = 512,
     int quality = 85,
@@ -34,10 +36,13 @@ class _FakeImageService implements IImageService {
 
   @override
   Future<String> uploadToStorage({
-    required File file,
+    required Uint8List bytes,
     required String storagePath,
+    required String contentType,
   }) async {
     lastPath = storagePath;
+    lastContentType = contentType;
+    lastBytes = bytes;
     if (shouldThrow) {
       throw StateError('upload failed');
     }
@@ -76,25 +81,24 @@ void main() {
 
   tearDown(() => db.close());
 
-  test(
-    'uploadReceipt returns the URL on success and uploads to expected path',
-    () async {
-      final url = await repository.uploadReceipt(
-        eventId: 'event-1',
-        expenseId: 'exp-1',
-        file: File('/tmp/dummy.jpg'),
-      );
+  test('uploadReceipt returns the URL on success and uploads to expected path '
+      'with the supplied bytes + content type', () async {
+    final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
+    final url = await repository.uploadReceipt(
+      eventId: 'event-1',
+      expenseId: 'exp-1',
+      bytes: bytes,
+      contentType: 'image/png',
+    );
 
-      expect(
-        url,
-        equals('https://cdn.example/events/event-1/receipts/exp-1.jpg'),
-      );
-      expect(
-        imageService.lastPath,
-        equals('events/event-1/receipts/exp-1.jpg'),
-      );
-    },
-  );
+    expect(
+      url,
+      equals('https://cdn.example/events/event-1/receipts/exp-1.jpg'),
+    );
+    expect(imageService.lastPath, equals('events/event-1/receipts/exp-1.jpg'));
+    expect(imageService.lastContentType, equals('image/png'));
+    expect(imageService.lastBytes, equals(bytes));
+  });
 
   test('uploadReceipt returns null on failure (caller may still persist '
       'expense without a receipt)', () async {
@@ -103,7 +107,8 @@ void main() {
     final url = await repository.uploadReceipt(
       eventId: 'event-1',
       expenseId: 'exp-1',
-      file: File('/tmp/dummy.jpg'),
+      bytes: Uint8List.fromList([1]),
+      contentType: 'image/jpeg',
     );
     expect(url, isNull);
 

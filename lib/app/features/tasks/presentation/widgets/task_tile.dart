@@ -77,7 +77,7 @@ class TaskTile extends StatelessWidget {
                   '${task.checklistItems.where((i) => i.isCompleted).length}/${task.checklistItems.length}',
                   style: Theme.of(
                     context,
-                  ).textTheme.labelSmall?.copyWith(color: AppColors.mediumGrey),
+                  ).textTheme.labelSmall,
                 ),
             ],
           ),

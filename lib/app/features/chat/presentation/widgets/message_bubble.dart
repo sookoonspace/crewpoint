@@ -66,7 +66,7 @@ class MessageBubble extends StatelessWidget {
               message.senderName!,
               style: Theme.of(
                 context,
-              ).textTheme.labelSmall?.copyWith(color: AppColors.mediumGrey),
+              ).textTheme.labelSmall,
             ),
           if (_isSettlement)
             Padding(

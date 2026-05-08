@@ -1,9 +1,24 @@
 import 'dart:developer';
 
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:crewpoint_app/app/core/services/i_auth_service.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/auth_failure.dart';
 import 'package:crewpoint_app/app/features/auth/domain/repositories/i_auth_repository.dart';
+
+/// Builds a debug-friendly message exposing the underlying Firebase auth
+/// error code in the UI. `dart:developer.log` is silenced in Flutter web
+/// release builds, so we also `debugPrint` to ensure the trace reaches
+/// browser DevTools.
+String _diagnosticMessage(String operation, Object error, StackTrace st) {
+  log('$operation failed', error: error, stackTrace: st, name: 'auth');
+  debugPrint('[auth] $operation failed: $error');
+  if (error is FirebaseAuthException) {
+    return 'Sign-in failed (${error.code})${error.message == null ? '' : ': ${error.message}'}';
+  }
+  return 'Sign-in failed: $error';
+}
 
 /// Repository wrapping [IAuthService] with typed error handling.
 class AuthRepository implements IAuthRepository {
@@ -51,12 +66,11 @@ class AuthRepository implements IAuthRepository {
         ),
       };
     } catch (e, st) {
-      log('signInWithEmail failed', error: e, stackTrace: st, name: 'auth');
       return (
         user: null,
-        failure: const AuthFailure(
+        failure: AuthFailure(
           type: AuthFailureType.unknown,
-          message: 'An unexpected error occurred.',
+          message: _diagnosticMessage('signInWithEmail', e, st),
         ),
       );
     }
@@ -82,12 +96,11 @@ class AuthRepository implements IAuthRepository {
         ),
       };
     } catch (e, st) {
-      log('signUpWithEmail failed', error: e, stackTrace: st, name: 'auth');
       return (
         user: null,
-        failure: const AuthFailure(
+        failure: AuthFailure(
           type: AuthFailureType.unknown,
-          message: 'An unexpected error occurred.',
+          message: _diagnosticMessage('signUpWithEmail', e, st),
         ),
       );
     }
@@ -105,12 +118,11 @@ class AuthRepository implements IAuthRepository {
         ),
       };
     } catch (e, st) {
-      log('signInWithGoogle failed', error: e, stackTrace: st, name: 'auth');
       return (
         user: null,
-        failure: const AuthFailure(
+        failure: AuthFailure(
           type: AuthFailureType.unknown,
-          message: 'An unexpected error occurred.',
+          message: _diagnosticMessage('signInWithGoogle', e, st),
         ),
       );
     }
@@ -128,12 +140,11 @@ class AuthRepository implements IAuthRepository {
         ),
       };
     } catch (e, st) {
-      log('signInWithApple failed', error: e, stackTrace: st, name: 'auth');
       return (
         user: null,
-        failure: const AuthFailure(
+        failure: AuthFailure(
           type: AuthFailureType.unknown,
-          message: 'An unexpected error occurred.',
+          message: _diagnosticMessage('signInWithApple', e, st),
         ),
       );
     }

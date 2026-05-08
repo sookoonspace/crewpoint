@@ -57,6 +57,7 @@ final authRepositoryProvider = Provider<AuthRepository>(
 final authProvider = NotifierProvider<AuthNotifier, AuthState>(
   () => AuthNotifier(
     authRepository: AuthRepository(authService: FirebaseAuthService()),
+    userRepository: FirestoreUserRepository(),
   ),
 );
 

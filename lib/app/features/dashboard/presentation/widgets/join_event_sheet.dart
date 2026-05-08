@@ -118,7 +118,7 @@ class _JoinEventSheetState extends State<JoinEventSheet> {
             'Enter the 6-character code shared by the event organizer',
             style: Theme.of(
               context,
-            ).textTheme.bodyMedium?.copyWith(color: AppColors.mediumGrey),
+            ).textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ),
 

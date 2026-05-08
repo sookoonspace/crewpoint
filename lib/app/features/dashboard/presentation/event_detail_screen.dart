@@ -73,7 +73,7 @@ class _DetailRow extends StatelessWidget {
               label,
               style: Theme.of(
                 context,
-              ).textTheme.labelSmall?.copyWith(color: AppColors.mediumGrey),
+              ).textTheme.labelSmall,
             ),
             Text(value, style: Theme.of(context).textTheme.bodyMedium),
           ],

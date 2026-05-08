@@ -285,7 +285,7 @@ class _DataRow extends StatelessWidget {
         purpose,
         style: Theme.of(
           context,
-        ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGrey),
+        ).textTheme.bodySmall,
       ),
       trailing: isRequired
           ? Text(
@@ -298,7 +298,7 @@ class _DataRow extends StatelessWidget {
               'Optional',
               style: Theme.of(
                 context,
-              ).textTheme.labelSmall?.copyWith(color: AppColors.mediumGrey),
+              ).textTheme.labelSmall,
             ),
       dense: true,
     );

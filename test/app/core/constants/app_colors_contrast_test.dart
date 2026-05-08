@@ -71,6 +71,58 @@ const _pairs = <_Pair>[
     background: AppColors.terracottaLight,
     minRatio: kWcagAaBodyText,
   ),
+  // Secondary / muted text on light surfaces — onSurfaceVariant cascade.
+  // charcoalLight on cream measures 3.93:1 — passes large-text AA (3.0)
+  // but FAILS body-text AA (4.5). On cream surfaces, prefer the charcoal
+  // body color and rely on type weight/size for the secondary-tone
+  // hierarchy. charcoalLight stays AA-safe on offWhite + white.
+  _Pair(
+    label: 'charcoalLight text on cream (large-text / quiet caption only)',
+    foreground: AppColors.charcoalLight,
+    background: AppColors.cream,
+    minRatio: kWcagAaLargeText,
+  ),
+  _Pair(
+    label: 'charcoalLight text on offWhite (secondary on default scaffold)',
+    foreground: AppColors.charcoalLight,
+    background: AppColors.offWhite,
+    minRatio: kWcagAaBodyText,
+  ),
+  _Pair(
+    label: 'charcoalLight text on white (secondary on cards)',
+    foreground: AppColors.charcoalLight,
+    background: AppColors.white,
+    minRatio: kWcagAaBodyText,
+  ),
+];
+
+/// Pairs that MUST stay below WCAG AA. Treat these as regression locks:
+/// if any of these passes, someone has either lightened the foreground or
+/// darkened the background — re-audit the screens that depend on these
+/// colors before bumping the threshold.
+const _forbiddenPairs = <_Pair>[
+  _Pair(
+    label:
+        'mediumGrey text on cream — never use; theme should cascade '
+        'charcoal/charcoalLight instead',
+    foreground: AppColors.mediumGrey,
+    background: AppColors.cream,
+    minRatio: kWcagAaBodyText,
+  ),
+  _Pair(
+    label: 'mediumGrey text on offWhite — same as above',
+    foreground: AppColors.mediumGrey,
+    background: AppColors.offWhite,
+    minRatio: kWcagAaBodyText,
+  ),
+  _Pair(
+    label:
+        'lightGrey text on cream — never use; lightGrey is reserved for '
+        'borders/dividers/icons, not text on light surfaces',
+    foreground: AppColors.lightGrey,
+    background: AppColors.cream,
+    minRatio: kWcagAaBodyText,
+  ),
 ];
 
 void main() {
@@ -84,6 +136,23 @@ void main() {
           reason:
               '${p.label}: ratio ${ratio.toStringAsFixed(2)} '
               'must be >= ${p.minRatio} (WCAG AA).',
+        );
+      });
+    }
+  });
+
+  group('AppColors forbidden pairs MUST stay below WCAG AA '
+      '(regression locks)', () {
+    for (final p in _forbiddenPairs) {
+      test(p.label, () {
+        final ratio = contrastRatio(p.foreground, p.background);
+        expect(
+          ratio,
+          lessThan(p.minRatio),
+          reason:
+              '${p.label}: ratio ${ratio.toStringAsFixed(2)} unexpectedly '
+              'passed AA. Re-audit the screens that rely on this pair being '
+              'the "forbidden / use a darker color" signal.',
         );
       });
     }

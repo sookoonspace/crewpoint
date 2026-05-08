@@ -11,6 +11,7 @@ import 'package:crewpoint_app/app/core/widgets/network_image_with_placeholder.da
 import 'package:crewpoint_app/app/core/router/app_router.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
+import 'package:crewpoint_app/app/features/profile/application/current_user_doc_provider.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/widgets/delete_account_dialog.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/widgets/sign_out_sheet.dart';
 
@@ -20,7 +21,12 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
-    final user = authState is Authenticated ? authState.user : null;
+    final asyncDoc = ref.watch(currentUserDocProvider);
+    // Prefer the Firestore-backed user (carries derived displayName +
+    // payment fields). Fall back to auth-only AppUser while the first
+    // snapshot is in flight or when unauthenticated.
+    final user =
+        asyncDoc.value ?? (authState is Authenticated ? authState.user : null);
 
     return Scaffold(
       backgroundColor: AppColors.cream,
@@ -67,23 +73,33 @@ class ProfileScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.sm),
                   _PaymentCard(user: user),
 
+                  // Sign Out — promoted out of ACCOUNT section to read as
+                  // a clear destructive-but-recoverable action; sits above
+                  // the permanent Delete Account in Danger Zone.
                   const SizedBox(height: AppSpacing.xl),
-
-                  // Account
-                  const _SectionHeader(label: 'ACCOUNT'),
-                  const SizedBox(height: AppSpacing.sm),
-                  _SectionCard(
-                    children: [
-                      _SettingsTile(
-                        icon: Icons.logout_rounded,
-                        label: 'Sign Out',
-                        onTap: () => SignOutSheet.show(
-                          context: context,
-                          onSignOut: () =>
-                              ref.read(authProvider.notifier).signOut(),
-                        ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xl,
+                    ),
+                    child: OutlinedButton.icon(
+                      key: const Key('profile.signOut.button'),
+                      onPressed: () => SignOutSheet.show(
+                        context: context,
+                        onSignOut: () =>
+                            ref.read(authProvider.notifier).signOut(),
                       ),
-                    ],
+                      icon: const Icon(Icons.logout_rounded),
+                      label: const Text('Sign Out'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.terracotta,
+                        side: const BorderSide(
+                          color: AppColors.terracotta,
+                          width: 1.5,
+                        ),
+                        shape: const StadiumBorder(),
+                        minimumSize: const Size.fromHeight(48),
+                      ),
+                    ),
                   ),
 
                   // Danger zone
@@ -274,8 +290,13 @@ class _SettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon, color: AppColors.darkGrey),
-      title: Text(label),
+      leading: Icon(icon, color: AppColors.charcoal),
+      title: Text(
+        label,
+        style: Theme.of(
+          context,
+        ).textTheme.bodyLarge?.copyWith(color: AppColors.charcoal),
+      ),
       trailing: const Icon(Icons.chevron_right, color: AppColors.mediumGrey),
       onTap: onTap,
       shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
@@ -342,9 +363,9 @@ class _PaymentCard extends StatelessWidget {
             ? null
             : Text(
                 'Let your crew know how to pay you',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGrey),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
         trailing: const Icon(Icons.chevron_right, color: AppColors.mediumGrey),
         onTap: () => context.push('/profile/edit'),
@@ -398,9 +419,7 @@ class _AppVersion extends StatelessWidget {
         return Center(
           child: Text(
             'CrewPoint v$version${buildNumber.isNotEmpty ? ' ($buildNumber)' : ''}',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGrey),
+            style: Theme.of(context).textTheme.bodySmall,
           ),
         );
       },

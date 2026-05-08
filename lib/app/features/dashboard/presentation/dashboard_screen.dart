@@ -73,17 +73,10 @@ class _EmptyState extends StatelessWidget {
         spacing: AppSpacing.lg,
         children: [
           const Icon(Icons.event_note, size: 64, color: AppColors.lightGrey),
-          Text(
-            'No events yet',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(color: AppColors.mediumGrey),
-          ),
+          Text('No events yet', style: Theme.of(context).textTheme.titleMedium),
           Text(
             'Create an event or join one with a code',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGrey),
+            style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: AppSpacing.lg),
           OutlinedButton.icon(

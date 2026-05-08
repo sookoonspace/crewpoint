@@ -85,6 +85,8 @@ class _FakeUserRepo implements IUserRepository {
     required String uid,
     required String email,
     String? displayName,
+    String? photoUrl,
+    List<String> providerIds = const [],
   }) async {}
 }
 
