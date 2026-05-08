@@ -1,3 +1,7 @@
+<audit_link>
+**Stage 2 deliverable shipped:** [`## Event Lifecycle Deep Dive`](../docs/v1-progress-audit.md#event-lifecycle-deep-dive) — appended to `docs/v1-progress-audit.md`. 12-row matrix per lifecycle step + follow-up specs.
+</audit_link>
+
 <goal>
 Two deliverables in one spec:
 

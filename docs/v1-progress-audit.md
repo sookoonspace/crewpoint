@@ -164,4 +164,38 @@ The architecture moved to per-repository Firestore listeners + Drift mirrors. Ke
 
 ---
 
-*Generated as Phase 1 of the V1 audit + create-event fix work. Phase 2 of the spec implements blocker #1, #2, and #5; blocker #6 (Firestore web persistence) and blocker #7 (Zelle) need separate small specs before public launch.*
+## Event Lifecycle Deep Dive
+
+> Deepens **Pillar 2 — Unified Event Hub** above. Walks each step a user can take with an event, from creation through deletion, with the surface that backs it and any remaining gap. Single source of truth for "what works on events today."
+
+| # | Step | Status | File refs | Follow-up |
+| --- | --- | --- | --- | --- |
+| 1 | **Create event** | ✅ Done | `lib/app/features/dashboard/presentation/create_event_screen.dart` (Riverpod-aware, captures messenger before pop, inline error); `lib/app/features/dashboard/data/event_repository.dart` (Firestore write + Drift mirror); `test/app/features/dashboard/create_event_screen_test.dart` (happy/failure/loading/sign-out); `test/journeys/create_event_journey_test.dart` (full slice). Shipped in PR #3. | none |
+| 2 | **View list** | ✅ Done | `lib/app/features/dashboard/presentation/dashboard_screen.dart` (consumes `dashboardEventsProvider` via `AsyncValue.when`); `dashboard.events.list` key. Shipped in PR #3. | none |
+| 3 | **Open detail (tap tile)** | 🔄 Resolved in this PR | `lib/app/core/widgets/event_guard.dart` (resolve-by-ID + 750ms grace); `lib/app/core/router/app_router.dart` (`_resolveEventId` helper + 6 route rewrites); `test/app/core/widgets/event_guard_test.dart` (9 tests including dispose-cancels-timer contract); parameterized router test in `test/app/core/router/app_router_test.dart`; journey extension in `test/journeys/create_event_journey_test.dart`. | none |
+| 4 | **Edit event info (title / description / dates / type)** | ❌ Missing | `event_dashboard_screen.dart` settings `IconButton` has empty `onPressed`. No `EditEventScreen`. | `event-edit-screen-spec.md` (V1.x). Currency stays immutable. |
+| 5 | **Members — view / promote / demote / remove** | ✅ Done | UI: `lib/app/features/dashboard/presentation/member_management_screen.dart`. Cloud Functions: `functions/src/events/promoteToAdmin.ts`, `demoteAdmin.ts`, `removeEventMember.ts`. Auth-rules guard at `firestore.rules:22-33`. uid threading wired in `app_router.dart:155-162`. | none (verify CFs end-to-end during manual smoke) |
+| 6 | **Members — invite / join via code** | ✅ Done | `lib/app/features/dashboard/presentation/widgets/join_event_sheet.dart` (6-char code input, typed FCF errors); `functions/src/events/joinEvent.ts`, `generateInviteCode.ts`. | none (verify end-to-end during manual smoke) |
+| 7 | **Tasks (within event)** | ⚠️ Wired-but-broken | List + detail render: `lib/app/features/tasks/presentation/event_tasks_page.dart`, `event_task_detail_page.dart`. **`CreateTaskScreen` has the same silent-no-op pattern that this PR closes for events** (`lib/app/features/tasks/presentation/create_task_screen.dart:73`). Mark-complete CF: `functions/src/events/markTaskComplete.ts`. | Same fix pattern as Stage 2 of the V1 audit + create-event fix; tracked in V1 launch blockers list above. |
+| 8 | **Chat (within event)** | ✅ Done | `lib/app/features/chat/data/firestore_chat_service.dart` (write path); `lib/app/features/chat/presentation/event_chat_page.dart` (UI); urgent-message FCM at `functions/src/events/onUrgentMessageCreated.ts`. | none |
+| 9 | **Budget (within event)** | ⚠️ Wired-but-broken | Repository + UI: `lib/app/features/budget/`. Greedy settlement: `balance_ledger.dart`. Pay-link: `pay_link_builder.dart` covers Venmo + CashApp; **Zelle missing**. | `event-zelle-uxnavigation-spec.md` or scope-cut decision. Tracked in V1 launch blockers. |
+| 10 | **Archive event** | ⚠️ Wired-but-broken | UI toggle exists in `event_dashboard_screen.dart` `_EventActions`; `onChanged` body is `// TODO: Update event status via Firestore`. The switch flips visually but nothing persists. | `event-archive-toggle-spec.md` (V1 should-ship). |
+| 11 | **Leave event (non-owner)** | 🔄 Resolved in this PR | `event_dashboard_screen.dart` `_EventActions._leaveEvent` calls `removeEventMember` CF. Now wraps in a `Consumer` reading `currentUserIdProvider` so `event.isOwner(uid)` / `isAdmin(uid)` branches evaluate correctly. Tested in `test/app/features/dashboard/event_actions_uid_wrap_test.dart`. | none |
+| 12 | **Delete event (owner only)** | 🔄 Resolved in this PR | `event_dashboard_screen.dart` `_EventActions._deleteEvent` two-step confirm → `deleteEvent` CF. The CF call already worked for the owner; this PR fixes the visibility branch via the uid Consumer wrap. CF: `functions/src/events/deleteEvent.ts`. | none |
+
+### Cross-references to the V1 audit above
+
+- **Pillar 2 — Unified Event Hub** row already names the silent-no-op pattern as a launch blocker; rows 3 + 11 + 12 in the matrix here are the events-specific resolution. The CreateTaskScreen blocker (row 7) remains open.
+- **Pillar 3 — Zero-Liability Settlements** row already flags the Zelle gap (row 9 here).
+- **Pillar 5 — Minimum Viable Data Security** row covers the underlying Firestore rules + delete CF that rows 5, 6, 12 lean on.
+
+### Follow-up specs (from this section)
+
+1. `event-archive-toggle-spec.md` — persist `status` to Firestore from the archive switch via a new `EventRepository.archiveEvent(eventId, archived)` method (admins/creator only per `firestore.rules:28-33`). **V1 should-ship.**
+2. `event-edit-screen-spec.md` — `EditEventScreen` for title / description / eventType / startDate / endDate. Currency stays immutable. **V1.x follow-up.**
+
+The `event-actions-uid-wiring-spec.md` follow-up that earlier audit drafts named is **dropped** — Phase 1 of the navigation-fix PR resolved it inline (rows 11 + 12 above).
+
+---
+
+*Section appended as Phase 2 of the event-navigation-fix work (PR following PR #3). The original V1 audit was generated as Phase 1 of the V1-audit + create-event-fix work; PR #3 implemented blockers 1, 2, and 5 from that audit. Web Firestore offline persistence (blocker 6) and Zelle (blocker 7) still need separate small specs before public launch.*

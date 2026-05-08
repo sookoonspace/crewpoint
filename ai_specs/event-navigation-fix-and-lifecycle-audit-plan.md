@@ -84,16 +84,16 @@ Fix "Event not found" via resolve-by-ID + `_EventGuard` (ref.listen-scheduled 75
 - [ ] Manual smoke web (`flutter run -d chrome --dart-define=FLAVOR=dev`): tap tile + reload at `/dashboard/event/{id}/budget` → spinner briefly → resolved screen. *(User verification.)*
 - [ ] Manual smoke web direct URL `/dashboard/event/{nonexistent}` → spinner for 750ms → `EventNotFoundScreen`. *(User verification.)*
 
-### Phase 2: Event lifecycle deep dive (audit doc)
+### Phase 2: Event lifecycle deep dive (audit doc) ✅
 
 - **Goal**: Append `## Event Lifecycle Deep Dive` section to `docs/v1-progress-audit.md`.
 
-- [ ] `docs/v1-progress-audit.md` — append new section. 10-row matrix (*Step* / *Status* ✅⚠️❌ / *File refs* / *Follow-up*): create, view, edit, members, tasks, chat, budget, archive, leave, delete.
-- [ ] Mark navigation + `currentUserId` rows as "Resolved in this PR" (Phase 1 of this plan).
-- [ ] Cross-reference V1 audit Pillar 2 row at the top.
-- [ ] Subsection: *Follow-up specs* — `event-archive-toggle-spec.md` (V1 should-ship), `event-edit-screen-spec.md` (V1.x). Note: uid-wiring follow-up is dropped (resolved here).
-- [ ] `ai_specs/event-navigation-fix-and-lifecycle-audit-spec.md` — add a one-line link at the top pointing to the new audit section.
-- [ ] Verify: every Status cell opens to a file; every Follow-up names a spec, "none", or "in this PR".
+- [x] `docs/v1-progress-audit.md` — appended new section with a 12-row matrix (*Step* / *Status* / *File refs* / *Follow-up*) covering: create, view list, open detail, edit, members lifecycle, members invite/join, tasks (in-event), chat, budget, archive, leave, delete.
+- [x] Marked rows for "open detail," "leave," and "delete" as **🔄 Resolved in this PR** (Phase 1 of this plan); marked "create" and "view list" as ✅ Done (PR #3).
+- [x] Cross-references to V1 audit Pillar 2 / Pillar 3 / Pillar 5 at the bottom of the section.
+- [x] Subsection: *Follow-up specs* — `event-archive-toggle-spec.md` (V1 should-ship), `event-edit-screen-spec.md` (V1.x). Explicitly notes the uid-wiring follow-up is dropped (resolved here).
+- [x] `ai_specs/event-navigation-fix-and-lifecycle-audit-spec.md` — added a one-line `<audit_link>` block at the top pointing to the new audit section.
+- [x] Verify: every Status cell opens to a file; every Follow-up names a spec, "none", or "in this PR".
 
 ## Risks / Out of scope
 
