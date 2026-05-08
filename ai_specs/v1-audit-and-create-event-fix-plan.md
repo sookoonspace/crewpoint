@@ -24,24 +24,24 @@ V1 progress audit doc + Firestore-Write / Drift-Read fix for the create-event si
 
 ## Plan
 
-### Phase 1: V1 Progress Audit
+### Phase 1: V1 Progress Audit ✅
 
 - **Goal**: Stand up `docs/v1-progress-audit.md` so the team has a concrete V1 punch list.
-- [ ] `docs/v1-progress-audit.md` — five-pillar matrix (Pillar / V1 Intent / Done / Missing / Severity) with file refs for every claim.
-- [ ] Verify Drift schema coverage: events, tasks, expenses, expense_splits, chat_messages, users, task_checklist_items (`lib/app/core/database/app_database.dart`).
-- [ ] Locate greedy settlement algorithm (`lib/app/features/budget/domain/models/balance_ledger.dart`) + cite `test/app/features/budget/balance_ledger_test.dart`.
-- [ ] Verify urgent-message FCM path: `functions/src/events/onUrgentMessageCreated.ts` exists + invoked from chat write path.
-- [ ] Verify pay-link deep links: `lib/app/features/budget/data/pay_link_builder.dart` covers Venmo / CashApp / Zelle (or document gaps).
-- [ ] Verify receipt upload + silent compression: `image_picker` → `firebase_image_service` → Storage path.
-- [ ] Verify web parity primitives: `responsive_shell.dart`, `content_max_width.dart`, PDF/CSV exports.
-- [ ] Verify account deletion CF: solitary-event wipe, anonymise to `deleted_user`, drop Auth user (`functions/src/account/deleteUserAccount.ts`).
-- [ ] Verify auto user-doc creation: `AuthNotifier._ensureUserDoc` (`lib/app/features/auth/application/auth_provider.dart:80-109`).
-- [ ] Verify Firestore offline persistence is enabled (`firebase_service.dart` or equivalent init); flag if absent.
-- [ ] Recommend deletion of `lib/app/core/services/sync_engine.dart` + `lib/app/core/services/i_sync_service.dart` as dead code.
-- [ ] Section: V1 launch blockers (CreateEventScreen, CreateTaskScreen, JoinEventSheet silent-no-ops; DashboardScreen hardcoded empty list; `currentUserId: ''` placeholder at `app_router.dart:158`).
-- [ ] Section: V1.x follow-ups.
-- [ ] Update spec `ai_specs/v1-audit-and-create-event-fix-spec.md` to link the audit doc.
-- [ ] Verify: every "done" claim opens to a file; every "missing" claim has a file ref or grep proof.
+- [x] `docs/v1-progress-audit.md` — five-pillar matrix (Pillar / V1 Intent / Done / Missing / Severity) with file refs for every claim.
+- [x] Verify Drift schema coverage: events, tasks, expenses, expense_splits, chat_messages, users, task_checklist_items (`lib/app/core/database/app_database.dart`).
+- [x] Locate greedy settlement algorithm (`lib/app/features/budget/domain/models/balance_ledger.dart`) + cite `test/app/features/budget/balance_ledger_test.dart`.
+- [x] Verify urgent-message FCM path: `functions/src/events/onUrgentMessageCreated.ts` exists + invoked from chat write path.
+- [x] Verify pay-link deep links: `lib/app/features/budget/data/pay_link_builder.dart` covers Venmo / CashApp / Zelle (or document gaps). **Zelle is missing — flagged as launch blocker.**
+- [x] Verify receipt upload + silent compression: `image_picker` → `firebase_image_service` → Storage path.
+- [x] Verify web parity primitives: `responsive_shell.dart`, `content_max_width.dart`, PDF/CSV exports.
+- [x] Verify account deletion CF: solitary-event wipe, anonymise to `deleted_user`, drop Auth user (`functions/src/account/deleteUserAccount.ts`).
+- [x] Verify auto user-doc creation: `AuthNotifier._ensureUserDoc` (`lib/app/features/auth/application/auth_provider.dart:80-109`).
+- [x] Verify Firestore offline persistence is enabled (`firebase_service.dart` or equivalent init); flag if absent. **Mobile defaults OK; web persistence NOT enabled — flagged as launch blocker.**
+- [x] Recommend deletion of `lib/app/core/services/sync_engine.dart` + `lib/app/core/services/i_sync_service.dart` as dead code. (Plus stale `test/app/features/profile/profile_test.dart` that references SyncEngine.)
+- [x] Section: V1 launch blockers (CreateEventScreen, CreateTaskScreen, JoinEventSheet silent-no-ops; DashboardScreen hardcoded empty list; `currentUserId: ''` placeholder at `app_router.dart:158`; web Firestore persistence; Zelle UX).
+- [x] Section: V1.x follow-ups.
+- [x] Update spec `ai_specs/v1-audit-and-create-event-fix-spec.md` to link the audit doc.
+- [x] Verify: every "done" claim opens to a file; every "missing" claim has a file ref or grep proof.
 
 ### Phase 2: Create Event Fix — Firestore-Write / Drift-Read vertical slice
 
@@ -51,6 +51,8 @@ V1 progress audit doc + Firestore-Write / Drift-Read fix for the create-event si
 
 - [ ] `lib/app/features/dashboard/domain/models/event.dart` — add `createdAt` and `updatedAt` (`DateTime?`, optional, defaults `null`).
 - [ ] `lib/app/core/database/app_database.dart:29` — drop FK on `Events.creatorId` (`text()()`); bump `schemaVersion` 4 → 5; add `if (from < 5)` migration. Use `m.alterTable(TableMigration(events))` if FK enforcement is on; pass-through otherwise.
+
+> **CRITICAL (carried from `/work` invocation):** When bumping `schemaVersion` to 5 and dropping the FK on `Events.creatorId`, write a **safe** `onUpgrade` migration block. SQLite cannot drop foreign keys in place — the migration must rebuild the table (`m.alterTable(TableMigration(events))`) or use `customStatement` to recreate-copy-rename. After modifying the table definition, **MUST run `dart run build_runner build -d`** to regenerate `app_database.g.dart` and the DAOs **before** running any tests. Do not proceed past this step until build_runner completes successfully.
 
 **Repository rewrite (mirror TaskRepository):**
 

@@ -1,3 +1,7 @@
+<audit_link>
+**V1 progress audit (Stage 1 deliverable):** [`docs/v1-progress-audit.md`](../docs/v1-progress-audit.md). Covers all five pillars with file-cited done/missing claims, recommended deletions, and a launch-blockers list.
+</audit_link>
+
 <goal>
 Two deliverables in one spec:
 
