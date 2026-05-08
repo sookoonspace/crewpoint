@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:crewpoint_app/app/core/providers.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/dashboard_screen.dart';
 
 const _bodyKey = Key('dashboard.body.clamped');
@@ -13,7 +15,14 @@ Future<void> _pumpAt(WidgetTester tester, Size size) async {
     tester.view.resetDevicePixelRatio();
   });
   await tester.pumpWidget(
-    const ProviderScope(child: MaterialApp(home: DashboardScreen())),
+    ProviderScope(
+      overrides: [
+        dashboardEventsProvider.overrideWith(
+          (ref) => Stream.value(const <EventModel>[]),
+        ),
+      ],
+      child: const MaterialApp(home: DashboardScreen()),
+    ),
   );
   await tester.pump();
 }

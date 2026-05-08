@@ -153,9 +153,12 @@ GoRouter createRouter({
                           if (event == null) {
                             return const _PlaceholderScreen(title: 'Members');
                           }
-                          return MemberManagementScreen(
-                            event: event,
-                            currentUserId: '', // TODO: get from auth
+                          return Consumer(
+                            builder: (_, ref, _) => MemberManagementScreen(
+                              event: event,
+                              currentUserId:
+                                  ref.watch(currentUserIdProvider) ?? '',
+                            ),
                           );
                         },
                       ),
@@ -318,9 +321,7 @@ class _RouterErrorScreen extends StatelessWidget {
                 Text(
                   "We couldn't find that page.",
                   textAlign: TextAlign.center,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium,
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 if (attemptedLocation != null) ...[
                   const SizedBox(height: AppSpacing.xs),
