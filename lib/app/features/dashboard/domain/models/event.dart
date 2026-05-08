@@ -45,6 +45,8 @@ class EventModel {
     this.memberIds = const [],
     this.status = EventStatus.active,
     this.currency = 'USD',
+    this.createdAt,
+    this.updatedAt,
   });
 
   final String id;
@@ -58,6 +60,8 @@ class EventModel {
   final List<String> memberIds;
   final EventStatus status;
   final String currency;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   /// Check if [uid] is the event owner (creator).
   bool isOwner(String uid) => creatorId == uid;

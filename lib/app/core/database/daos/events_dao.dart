@@ -16,6 +16,9 @@ class EventsDao extends DatabaseAccessor<AppDatabase> with _$EventsDaoMixin {
 
   Future<int> insertEvent(EventsCompanion entry) => into(events).insert(entry);
 
+  Future<int> insertOrReplace(EventsCompanion entry) =>
+      into(events).insertOnConflictUpdate(entry);
+
   Future<bool> updateEvent(EventsCompanion entry) =>
       update(events).replace(entry);
 

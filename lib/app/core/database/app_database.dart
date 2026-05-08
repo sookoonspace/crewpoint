@@ -26,7 +26,7 @@ class Events extends Table {
   TextColumn get title => text().withLength(min: 1, max: 200)();
   TextColumn get description => text().nullable()();
   TextColumn get eventType => text().withDefault(const Constant('custom'))();
-  TextColumn get creatorId => text().references(Users, #id)();
+  TextColumn get creatorId => text()();
   DateTimeColumn get startDate => dateTime().nullable()();
   DateTimeColumn get endDate => dateTime().nullable()();
   TextColumn get adminIds => text().withDefault(const Constant('[]'))(); // JSON
@@ -132,7 +132,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -147,6 +147,15 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(tasks, tasks.completedBy);
         await m.createTable(taskChecklistItems);
         await m.createTable(expenseSplits);
+      }
+      if (from < 5) {
+        // Drop the FK on Events.creatorId. SQLite cannot drop FKs in
+        // place, so Drift's TableMigration rebuilds the table: creates a
+        // shadow with the new schema (no FK), copies rows, drops the
+        // original, renames. Architectural rationale lives in the
+        // Firestore-Write / Drift-Read spec — events are mirrored from
+        // Firestore and don't depend on a Drift Users row existing.
+        await m.alterTable(TableMigration(events));
       }
     },
   );
