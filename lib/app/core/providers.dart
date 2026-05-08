@@ -140,6 +140,23 @@ final dashboardEventsProvider = StreamProvider<List<EventModel>>((ref) {
   return repo.watchEventsForUser(uid);
 });
 
+/// Looks up a single event by id from the user's dashboard event list.
+/// Returns null when the event isn't in the list (loading, deleted, or the
+/// user lost access). Loading-vs-missing discrimination happens at the
+/// widget layer (`_EventGuard`), not here.
+final eventByIdProvider = Provider.family<EventModel?, String>((ref, id) {
+  final asyncEvents = ref.watch(dashboardEventsProvider);
+  return asyncEvents.maybeWhen(
+    data: (events) {
+      for (final e in events) {
+        if (e.id == id) return e;
+      }
+      return null;
+    },
+    orElse: () => null,
+  );
+});
+
 /// Task repository (Firestore source of truth + Drift mirror).
 final taskRepositoryProvider = Provider<TaskRepository>((ref) {
   final db = ref.watch(databaseProvider);
