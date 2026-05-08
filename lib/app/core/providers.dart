@@ -35,6 +35,9 @@ import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/chat/data/chat_repository.dart';
 import 'package:crewpoint_app/app/features/chat/data/firestore_chat_service.dart';
 import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
+import 'package:crewpoint_app/app/features/dashboard/data/event_repository.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
+import 'package:crewpoint_app/app/core/database/daos/events_dao.dart';
 import 'package:crewpoint_app/app/features/tasks/data/task_repository.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 
@@ -103,6 +106,39 @@ final accountDeletionServiceProvider = Provider<AccountDeletionService>(
 final firestoreProvider = Provider<FirebaseFirestore>(
   (_) => FirebaseFirestore.instance,
 );
+
+/// Current user's uid, derived from [authProvider]. Returns null when the
+/// user is signed out, in any non-`Authenticated` state, or before auth
+/// initialises. UI code reads this instead of pattern-matching `authProvider`
+/// so the auth-state surface stays in one place.
+final currentUserIdProvider = Provider<String?>((ref) {
+  final state = ref.watch(authProvider);
+  return switch (state) {
+    Authenticated(:final user) => user.uid,
+    _ => null,
+  };
+});
+
+/// Event repository (Firestore source of truth + Drift mirror).
+final eventRepositoryProvider = Provider<EventRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  final repo = EventRepository(
+    eventsDao: EventsDao(db),
+    firestore: ref.watch(firestoreProvider),
+  );
+  ref.onDispose(repo.dispose);
+  return repo;
+});
+
+/// Live stream of events the current user is a member of. Emits an empty
+/// list when no user is signed in.
+final dashboardEventsProvider = StreamProvider<List<EventModel>>((ref) {
+  final uid = ref.watch(currentUserIdProvider);
+  if (uid == null) return Stream.value(const <EventModel>[]);
+  final repo = ref.watch(eventRepositoryProvider);
+  ref.onDispose(() => repo.disposeMirror(uid));
+  return repo.watchEventsForUser(uid);
+});
 
 /// Task repository (Firestore source of truth + Drift mirror).
 final taskRepositoryProvider = Provider<TaskRepository>((ref) {
