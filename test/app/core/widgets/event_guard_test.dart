@@ -305,7 +305,7 @@ class _IdSwapHost extends StatefulWidget {
   const _IdSwapHost();
 
   static void swap(String id) {
-    _state?.._next(id);
+    _state?._next(id);
   }
 
   static _IdSwapHostState? _state;

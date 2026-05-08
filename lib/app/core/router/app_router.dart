@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
+import 'package:crewpoint_app/app/core/widgets/event_guard.dart';
 import 'package:crewpoint_app/app/core/widgets/responsive_shell.dart';
 import 'package:crewpoint_app/app/features/auth/presentation/widgets/email_unverified_banner.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/edit_profile_screen.dart';
@@ -16,7 +17,6 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/create_event_s
 import 'package:crewpoint_app/app/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/member_management_screen.dart';
-import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/event_budget_page.dart';
 import 'package:crewpoint_app/app/features/chat/presentation/event_chat_page.dart';
@@ -136,73 +136,56 @@ GoRouter createRouter({
                   ),
                   GoRoute(
                     path: 'event/:eventId',
-                    builder: (context, state) {
-                      final event = state.extra as EventModel?;
-                      if (event == null) {
-                        return const _PlaceholderScreen(
-                          title: 'Event not found',
-                        );
-                      }
-                      return EventDashboardScreen(event: event);
-                    },
+                    builder: (_, state) => EventGuard(
+                      eventId: _resolveEventId(state),
+                      child: (event) => EventDashboardScreen(event: event),
+                    ),
                     routes: [
                       GoRoute(
                         path: 'members',
-                        builder: (context, state) {
-                          final event = state.extra as EventModel?;
-                          if (event == null) {
-                            return const _PlaceholderScreen(title: 'Members');
-                          }
-                          return Consumer(
+                        builder: (_, state) => EventGuard(
+                          eventId: _resolveEventId(state),
+                          child: (event) => Consumer(
                             builder: (_, ref, _) => MemberManagementScreen(
                               event: event,
                               currentUserId:
                                   ref.watch(currentUserIdProvider) ?? '',
                             ),
-                          );
-                        },
+                          ),
+                        ),
                       ),
                       GoRoute(
                         path: 'budget',
-                        builder: (context, state) {
-                          final event = state.extra as EventModel?;
-                          if (event == null) {
-                            return const _PlaceholderScreen(title: 'Budget');
-                          }
-                          return EventBudgetPage(event: event);
-                        },
+                        builder: (_, state) => EventGuard(
+                          eventId: _resolveEventId(state),
+                          child: (event) => EventBudgetPage(event: event),
+                        ),
                       ),
                       GoRoute(
                         path: 'chat',
-                        builder: (context, state) {
-                          final event = state.extra as EventModel?;
-                          if (event == null) {
-                            return const _PlaceholderScreen(title: 'Chat');
-                          }
-                          return EventChatPage(event: event);
-                        },
+                        builder: (_, state) => EventGuard(
+                          eventId: _resolveEventId(state),
+                          child: (event) => EventChatPage(event: event),
+                        ),
                       ),
                       GoRoute(
                         path: 'tasks',
-                        builder: (context, state) {
-                          final event = state.extra as EventModel?;
-                          if (event == null) {
-                            return const _PlaceholderScreen(title: 'Tasks');
-                          }
-                          return EventTasksPage(event: event);
-                        },
+                        builder: (_, state) => EventGuard(
+                          eventId: _resolveEventId(state),
+                          child: (event) => EventTasksPage(event: event),
+                        ),
                         routes: [
                           GoRoute(
                             path: ':taskId',
-                            builder: (context, state) {
-                              final event = state.extra as EventModel?;
-                              final taskId = state.pathParameters['taskId'];
-                              if (event == null || taskId == null) {
-                                return const _PlaceholderScreen(title: 'Task');
-                              }
-                              return EventTaskDetailPage(
-                                event: event,
-                                taskId: taskId,
+                            builder: (_, state) {
+                              final taskId =
+                                  state.pathParameters['taskId'] ?? '';
+                              return EventGuard(
+                                eventId: _resolveEventId(state),
+                                child: (event) => EventTaskDetailPage(
+                                  event: event,
+                                  taskId: taskId,
+                                ),
                               );
                             },
                           ),
@@ -260,6 +243,19 @@ GoRouter createRouter({
       ),
     ],
   );
+}
+
+/// Extracts the `eventId` for an event-related route. Prefers
+/// `state.pathParameters['eventId']`; falls back to a regex parse of
+/// `state.matchedLocation` for the (uncommon) case where GoRouter doesn't
+/// propagate the parent path param into deeply nested route builders.
+/// Returns the empty string for a malformed URL — `EventGuard` then
+/// renders the fallback immediately.
+String _resolveEventId(GoRouterState state) {
+  final fromParam = state.pathParameters['eventId'];
+  if (fromParam != null && fromParam.isNotEmpty) return fromParam;
+  final match = RegExp(r'/event/([^/]+)').firstMatch(state.matchedLocation);
+  return match?.group(1) ?? '';
 }
 
 /// Temporary placeholder until real screens are built.
