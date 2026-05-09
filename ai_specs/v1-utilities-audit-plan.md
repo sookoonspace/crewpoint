@@ -21,53 +21,40 @@ Single-phase plan: produce `docs/v1-utilities-audit.md` per spec; back-link from
 
 ## Plan
 
-### Phase 1: Write the V1 utilities audit + cross-links
+### Phase 1: Write the V1 utilities audit + cross-links ✅
 
 - **Goal**: Single-source-of-truth utility decisions; companion to `docs/v1-progress-audit.md`.
 
 **Audit doc:**
 
-- [ ] `docs/v1-utilities-audit.md` — open with freshness header: `Generated against commit <sha> on 2026-05-09. Re-run the verification steps if pubspec.yaml changes.`
-- [ ] **Section 1 — Already in pubspec.** Per-package table for the 16 deps + 2 dev_deps. Columns: name / version / status (✅⚠️❌) / file refs / one-line note. Transcribe from researcher table. Flag `package_info_plus` as ⚠️ Underused (imported in `profile_screen.dart` but no `.version` / `.appName` call).
-- [ ] **Section 2 — V1 launch blockers (utility-shaped).**
-  - **Invite share (pre-decided, refined scope):** `share_plus` is wired in `add_member_sheet.dart:107-109` but the share affordance is buried in member management. Missing: (a) Share button surfaced from event detail screen, (b) post-create share prompt after `CreateEventScreen.submit` succeeds. Follow-up: `invite-share-spec.md`.
-  - Cross-link to `docs/v1-progress-audit.md` for web Firestore persistence + Zelle UX.
-- [ ] **Section 3 — V1 should-ship.**
-  - **On-device OCR (pre-decided):** `google_mlkit_text_recognition`, mobile-only. Cross-platform contract: button **shown-with-fallback** on web (existing manual amount-entry path). Caveats — flag both: (a) ~5–10MB iOS bundle delta, (b) first-call model-download UX on Android (Play Services). Follow-up: `receipt-ocr-spec.md`.
-  - **`permission_handler` outcome:** **NOT NEEDED for V1** per decision rule. `image_picker` + `firebase_messaging` prompt natively; no custom rationale UI exists or is justified.
-  - **`flutter_local_notifications` outcome:** **NOT NEEDED for V1** per decision rule. Every notification journey flows through FCM (server-triggered). Defer to V1.x if a device-local reminder becomes a user story.
-- [ ] **Section 4 — V1.x follow-ups.** QR-code generation for invites (`qr_flutter`), deep-links/universal-links (`app_links` or Firebase Hosting redirect-to-app), connectivity-state UI (`connectivity_plus`), contact picker (`flutter_contacts`), biometrics (`local_auth`). Screenshot capture/share package: deferred — existing PDF export covers settlement-summary use case.
-- [ ] **Section 5 — Explicitly NOT adopting.** Mark each entry firm vs conditional:
-  - Cloud OCR — **conditional → revisit when** on-device ML Kit accuracy on V1 telemetry shows >20% of receipts mis-parsed (specific threshold; the receipt-ocr-spec defines the metric).
-  - Screenshot capture/share package — **firm** (PDF export already covers the settlement-summary case).
-  - State-management swap (Bloc, etc.) — **firm** (Riverpod 3 in place; no migration justified).
-- [ ] **Section 6 — Follow-up specs index, V1 priority order:**
-  1. `invite-share-spec.md` — V1 launch blocker.
-  2. `receipt-ocr-spec.md` — V1 should-ship.
-  3. `qr-invite-spec.md` — V1.x.
-  4. `deep-link-invite-spec.md` — V1.x.
-  5. `connectivity-state-ui-spec.md` — V1.x.
+- [x] `docs/v1-utilities-audit.md` — opens with freshness header `Generated against commit 0f6d357 on 2026-05-09`.
+- [x] **Section 1 — Already in pubspec.** 16-row table covering all allow-listed deps + 2 dev_deps with file:line refs. `package_info_plus` flagged ⚠️ Underused; everything else ✅.
+- [x] **Section 2 — V1 launch blockers (utility-shaped):** invite-share UX wiring (refined scope: `share_plus` IS wired in `add_member_sheet.dart:107-109`; gap is event-detail surfacing + post-create prompt). Follow-up: `invite-share-spec.md`. Cross-references to V1 audit Pillar 1 (web Firestore persistence) + Pillar 3 (Zelle).
+- [x] **Section 3 — V1 should-ship:** on-device OCR via `google_mlkit_text_recognition` (mobile-only, with cross-platform contract spelled out + bundle-size and first-launch caveats). `permission_handler` → NOT NEEDED outcome. `flutter_local_notifications` → NOT NEEDED for V1 outcome.
+- [x] **Section 4 — V1.x follow-ups:** QR (`qr_flutter`), deep-link (`app_links`), connectivity (`connectivity_plus`), contacts (`flutter_contacts`), biometrics (`local_auth`). Screenshot package deferred.
+- [x] **Section 5 — Explicitly NOT adopting:** Cloud OCR (conditional → >20% mis-parse threshold), screenshot package (firm), state-management swap (firm).
+- [x] **Section 6 — Follow-up specs index in V1 priority order:** invite-share → receipt-ocr → qr-invite → deep-link-invite → connectivity-state-ui.
 
 **Cross-platform contract per Section 3 OCR row:**
 
-- [ ] Spell out in the audit row: button visibility = shown-with-fallback; fallback path = existing manual amount entry; conditional-branch location = `kIsWeb` check inside the receipt-attachment widget (mirrors `event_repository.dart` web/mobile branch).
+- [x] Button visibility = shown-with-fallback; fallback path = existing manual amount entry; conditional-branch location = `kIsWeb` check inside the receipt-attachment widget. Pattern reference to `event_repository.dart` and `file_export_service` conditional imports.
 
 **Back-link:**
 
-- [ ] `docs/v1-progress-audit.md` — append `**Companion audit:**` line near the top pointing to `docs/v1-utilities-audit.md`. Future readers landing on either doc find both.
+- [x] `docs/v1-progress-audit.md` — `**Companion audit:**` line added at the top pointing to `docs/v1-utilities-audit.md`.
 
 **Spec freshness:**
 
-- [ ] `ai_specs/v1-utilities-audit-spec.md` — confirm the doc references in Done When are current; no other edits needed.
+- [x] `ai_specs/v1-utilities-audit-spec.md` — Done When references current; no edits needed.
 
 **Verify:**
 
-- [ ] Every Section 1 "Used" claim cites at least one file:line; reviewer can open the path and confirm.
-- [ ] Every Section 5 entry tagged **firm** or **conditional → revisit when X**.
-- [ ] Section 6 sequenced V1 priority order (launch blockers first).
-- [ ] Spot-check one random Section 1 row by `grep`-ing for the cited file:line.
-- [ ] `flutter analyze` clean (only the pre-existing `TableMigration` warning) — no code changes expected.
-- [ ] `flutter test` not required (doc-only deliverable); skip if no code changes.
+- [x] Every Section 1 "Used" claim cites at least one file:line.
+- [x] Every Section 5 entry tagged **firm** or **conditional → revisit when X**.
+- [x] Section 6 sequenced V1 priority order.
+- [x] Spot-checked `share_plus` row (`add_member_sheet.dart:107-109`) — `_shareCode()` calls `Share.share('Join my event on CrewPoint! Use code: $_code')`. Confirmed.
+- [x] `flutter analyze` clean (only the pre-existing `TableMigration` warning; no code changes).
+- [x] `flutter test` skipped — doc-only deliverable; no code changes to validate.
 
 ## Risks / Out of scope
 

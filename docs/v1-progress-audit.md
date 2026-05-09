@@ -1,5 +1,7 @@
 # V1 Progress Audit
 
+**Companion audit:** [`docs/v1-utilities-audit.md`](v1-utilities-audit.md) — utility-package decisions (`share_plus`, OCR, QR, etc.). This audit covers architecture (Drift, Riverpod, GoRouter, Firebase); the utilities audit covers the rest.
+
 Source spec: [`ai_specs/v1-audit-and-create-event-fix-spec.md`](../ai_specs/v1-audit-and-create-event-fix-spec.md) (commit `9f93273`).
 
 Architecture in force: **Firestore-Write / Drift-Read** — writes go to Firestore (its SDK queues offline), per-repository listeners mirror snapshots into Drift on mobile/desktop, UI reads from Drift (web reads directly from the Firestore stream).
