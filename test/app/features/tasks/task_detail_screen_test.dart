@@ -107,6 +107,37 @@ void main() {
     expect(find.text('Assigned to Bo Lyons'), findsOneWidget);
   });
 
+  testWidgets('renders passed completedByName instead of truncated UID', (
+    tester,
+  ) async {
+    final completedTask = TaskModel(
+      id: 'task-1',
+      eventId: 'evt-1',
+      title: 'Buy snacks',
+      createdBy: 'owner-1',
+      assigneeId: 'user-2',
+      status: TaskStatus.done,
+      completedAt: DateTime(2026, 7, 4),
+      completedBy: 'user-2',
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: TaskDetailScreen(
+          task: completedTask,
+          event: event,
+          checklist: const [],
+          canEditTask: false,
+          canChangeStatus: false,
+          completedByName: 'Bo Lyons',
+        ),
+      ),
+    );
+
+    expect(find.textContaining('by Bo Lyons'), findsOneWidget);
+    expect(find.textContaining('by user-2'), findsNothing);
+  });
+
   testWidgets('falls back to truncated UID when assigneeName is null', (
     tester,
   ) async {

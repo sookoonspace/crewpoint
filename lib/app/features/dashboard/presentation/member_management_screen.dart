@@ -1,15 +1,17 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
+import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
 
 /// Member management screen — shows members with roles, remove/promote actions.
-class MemberManagementScreen extends StatefulWidget {
+class MemberManagementScreen extends ConsumerStatefulWidget {
   const MemberManagementScreen({
     super.key,
     required this.event,
@@ -20,10 +22,12 @@ class MemberManagementScreen extends StatefulWidget {
   final String currentUserId;
 
   @override
-  State<MemberManagementScreen> createState() => _MemberManagementScreenState();
+  ConsumerState<MemberManagementScreen> createState() =>
+      _MemberManagementScreenState();
 }
 
-class _MemberManagementScreenState extends State<MemberManagementScreen> {
+class _MemberManagementScreenState
+    extends ConsumerState<MemberManagementScreen> {
   final Set<String> _processingIds = <String>{};
 
   @override
@@ -32,6 +36,15 @@ class _MemberManagementScreenState extends State<MemberManagementScreen> {
     final currentUserId = widget.currentUserId;
     final isOwner = event.isOwner(currentUserId);
     final isAdmin = event.isAdmin(currentUserId);
+
+    final asyncUsers = ref.watch(usersByIdProvider(event.memberIds));
+    final displayNames = asyncUsers.maybeWhen(
+      data: (users) => {
+        for (final entry in users.entries)
+          entry.key: entry.value.displayName ?? '',
+      },
+      orElse: () => const <String, String>{},
+    );
 
     return Scaffold(
       backgroundColor: AppColors.cream,
@@ -61,6 +74,7 @@ class _MemberManagementScreenState extends State<MemberManagementScreen> {
 
             return _MemberTile(
               memberId: memberId,
+              displayName: displayNames[memberId],
               role: memberIsOwner
                   ? 'Owner'
                   : memberIsAdmin
@@ -199,11 +213,13 @@ class _MemberTile extends StatelessWidget {
     required this.canPromote,
     required this.isAdmin,
     required this.isProcessing,
+    this.displayName,
     this.onRemove,
     this.onToggleAdmin,
   });
 
   final String memberId;
+  final String? displayName;
   final String role;
   final Color roleColor;
   final bool canRemove;
@@ -264,7 +280,11 @@ class _MemberTile extends StatelessWidget {
           child: const Icon(Icons.person, color: AppColors.sage),
         ),
         title: Text(
-          memberId.length > 8 ? '${memberId.substring(0, 8)}...' : memberId,
+          displayName != null && displayName!.isNotEmpty
+              ? displayName!
+              : (memberId.length > 8
+                    ? '${memberId.substring(0, 8)}…'
+                    : memberId),
         ),
         subtitle: Text(
           role,

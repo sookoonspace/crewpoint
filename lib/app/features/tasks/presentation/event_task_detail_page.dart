@@ -72,18 +72,28 @@ class EventTaskDetailPage extends ConsumerWidget {
 
         // Resolve assignee display name via usersByIdProvider. Include the
         // orphan assignee UID (one who left the event) so its name still
-        // hydrates for the "no longer in event" affordance.
+        // hydrates for the "no longer in event" affordance. Also includes
+        // `completedBy` so the "Completed by …" row renders a real name.
         final uidsToResolve = <String>[
           ...event.memberIds,
           if (task.assigneeId != null &&
               !event.memberIds.contains(task.assigneeId))
             task.assigneeId!,
+          if (task.completedBy != null &&
+              !event.memberIds.contains(task.completedBy))
+            task.completedBy!,
         ];
         final asyncUsers = ref.watch(usersByIdProvider(uidsToResolve));
         final assigneeName = task.assigneeId == null
             ? null
             : asyncUsers.maybeWhen(
                 data: (users) => users[task.assigneeId]?.displayName,
+                orElse: () => null,
+              );
+        final completedByName = task.completedBy == null
+            ? null
+            : asyncUsers.maybeWhen(
+                data: (users) => users[task.completedBy]?.displayName,
                 orElse: () => null,
               );
 
@@ -103,6 +113,7 @@ class EventTaskDetailPage extends ConsumerWidget {
             canEditTask: canEdit,
             canChangeStatus: canChangeStatus,
             assigneeName: assigneeName,
+            completedByName: completedByName,
             onEdit: canEdit
                 ? () async {
                     final updated = await Navigator.of(context).push<TaskModel>(

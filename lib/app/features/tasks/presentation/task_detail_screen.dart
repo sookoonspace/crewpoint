@@ -19,6 +19,7 @@ class TaskDetailScreen extends StatelessWidget {
     required this.canEditTask,
     required this.canChangeStatus,
     this.assigneeName,
+    this.completedByName,
     this.onEdit,
     this.onDelete,
     this.onChecklistToggle,
@@ -38,6 +39,10 @@ class TaskDetailScreen extends StatelessWidget {
   /// back to a truncated UID. Hydrated upstream by `event_task_detail_page.dart`
   /// via `usersByIdProvider` so this screen stays Riverpod-free.
   final String? assigneeName;
+
+  /// Resolved display name for `task.completedBy`. Falls back to a truncated
+  /// UID when null. Hydrated upstream by `event_task_detail_page.dart`.
+  final String? completedByName;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
   final void Function(ChecklistItem item, bool isCompleted)? onChecklistToggle;
@@ -48,6 +53,13 @@ class TaskDetailScreen extends StatelessWidget {
 
   bool get _assigneeStillInEvent =>
       task.assigneeId == null || event.memberIds.contains(task.assigneeId);
+
+  String _completedByLabel(String uid) {
+    if (completedByName != null && completedByName!.isNotEmpty) {
+      return completedByName!;
+    }
+    return uid.length > 8 ? uid.substring(0, 8) : uid;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -129,7 +141,7 @@ class TaskDetailScreen extends StatelessWidget {
               if (task.status == TaskStatus.done && task.completedAt != null)
                 Text(
                   'Completed ${DateFormat.yMMMd().format(task.completedAt!)}'
-                  '${task.completedBy != null ? ' by ${task.completedBy!.length > 8 ? task.completedBy!.substring(0, 8) : task.completedBy}' : ''}',
+                  '${task.completedBy != null ? ' by ${_completedByLabel(task.completedBy!)}' : ''}',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ChecklistEditor(
