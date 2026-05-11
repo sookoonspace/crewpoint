@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
 
 import '../harness/dashboard_harness.dart';
 import '../robots/create_event_robot.dart';
@@ -54,8 +55,21 @@ void main() {
       expect(find.text('Tahoe Trip'), findsWidgets);
       expect(find.byKey(const Key('event.notFound.back')), findsNothing);
 
+      // Tap the new Invite Members tile (admin-only; harness's currentUser
+      // is the creator) → AddMemberSheet opens. The CF isn't initialized
+      // in the test, so the sheet renders its offline error UI; that's the
+      // expected fallback and exercises the full tile-leads-to-sheet
+      // wiring without requiring CF plumbing here (CF logic is covered
+      // exhaustively in functions/test/cloud-functions.test.ts).
+      await tester.tap(
+        find.byKey(const Key('eventDashboard.inviteMembers.tile')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(AddMemberSheet), findsOneWidget);
+
       // Unmount before the test framework's invariants run; lets Drift's
-      // StreamQueryStore cleanup timer fire.
+      // StreamQueryStore cleanup timer fire AND ensures the modal route
+      // is torn down before the binding asserts a clean tree.
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpAndSettle();
     },

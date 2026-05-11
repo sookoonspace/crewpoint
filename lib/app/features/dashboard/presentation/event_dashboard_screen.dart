@@ -10,6 +10,7 @@ import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/loading_animation.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
 
 /// Event detail hub — shows event info, member avatars, and quick links
 /// to sub-features (Chat, Budget, Tasks).
@@ -57,6 +58,33 @@ class EventDashboardScreen extends StatelessWidget {
                     memberCount: event.memberIds.length,
                     onTap: () =>
                         context.push('/dashboard/event/${event.id}/members'),
+                  ),
+
+                  const SizedBox(height: AppSpacing.md),
+
+                  // Invite Members tile — admin/owner only. Explicit
+                  // null-uid guard so we don't rely on isAdmin('') semantics.
+                  Consumer(
+                    builder: (_, ref, _) {
+                      final uid = ref.watch(currentUserIdProvider);
+                      if (uid == null || !event.isAdmin(uid)) {
+                        return const SizedBox.shrink();
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(top: AppSpacing.md),
+                        child: _QuickLinkCard(
+                          key: const Key('eventDashboard.inviteMembers.tile'),
+                          icon: Icons.person_add_rounded,
+                          label: 'Invite Members',
+                          subtitle: 'Share a code to add people',
+                          color: AppColors.terracotta,
+                          onTap: () => AddMemberSheet.show(
+                            context: context,
+                            eventId: event.id,
+                          ),
+                        ),
+                      );
+                    },
                   ),
 
                   const SizedBox(height: AppSpacing.xl),
@@ -291,6 +319,7 @@ class _MembersPreview extends StatelessWidget {
 
 class _QuickLinkCard extends StatelessWidget {
   const _QuickLinkCard({
+    super.key,
     required this.icon,
     required this.label,
     required this.subtitle,
