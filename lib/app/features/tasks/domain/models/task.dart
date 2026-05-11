@@ -12,6 +12,7 @@ class TaskModel {
     this.dueDate,
     this.completedAt,
     this.completedBy,
+    this.budgetEstimate,
     this.checklistItems = const [],
   });
 
@@ -26,6 +27,11 @@ class TaskModel {
   final DateTime? dueDate;
   final DateTime? completedAt;
   final String? completedBy;
+
+  /// Optional display-only cost estimate in the event's currency.
+  /// `null` = unspecified; `0` = explicitly zero ("TBD / free"). Non-negative
+  /// when set.
+  final double? budgetEstimate;
   final List<ChecklistItem> checklistItems;
 
   TaskModel copyWith({
@@ -38,6 +44,8 @@ class TaskModel {
     DateTime? dueDate,
     DateTime? completedAt,
     String? completedBy,
+    double? budgetEstimate,
+    bool clearBudgetEstimate = false,
     List<ChecklistItem>? checklistItems,
   }) {
     return TaskModel(
@@ -52,6 +60,9 @@ class TaskModel {
       dueDate: dueDate ?? this.dueDate,
       completedAt: completedAt ?? this.completedAt,
       completedBy: completedBy ?? this.completedBy,
+      budgetEstimate: clearBudgetEstimate
+          ? null
+          : (budgetEstimate ?? this.budgetEstimate),
       checklistItems: checklistItems ?? this.checklistItems,
     );
   }

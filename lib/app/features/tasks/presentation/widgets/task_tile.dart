@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
@@ -8,6 +9,7 @@ class TaskTile extends StatelessWidget {
     super.key,
     required this.task,
     required this.canChangeStatus,
+    this.currencyCode = 'USD',
     this.onTap,
     this.onStatusChanged,
     this.onUnauthorizedTap,
@@ -15,6 +17,7 @@ class TaskTile extends StatelessWidget {
 
   final TaskModel task;
   final bool canChangeStatus;
+  final String currencyCode;
   final VoidCallback? onTap;
   final ValueChanged<TaskStatus>? onStatusChanged;
   final VoidCallback? onUnauthorizedTap;
@@ -87,6 +90,14 @@ class TaskTile extends StatelessWidget {
                         ],
                       ),
                     ),
+                    if (task.budgetEstimate != null)
+                      Text(
+                        key: Key('tasks.tile.${task.id}.budget'),
+                        NumberFormat.simpleCurrency(
+                          name: currencyCode,
+                        ).format(task.budgetEstimate),
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
                     if (task.checklistItems.isNotEmpty)
                       Text(
                         '${task.checklistItems.where((i) => i.isCompleted).length}/${task.checklistItems.length}',

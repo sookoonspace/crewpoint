@@ -55,4 +55,29 @@ void main() {
     );
     expect(stripeColor(tester), AppColors.sageDark);
   });
+
+  testWidgets('renders budget text only when budgetEstimate is non-null', (
+    tester,
+  ) async {
+    const taskWithBudget = TaskModel(
+      id: 'task-1',
+      eventId: 'evt-1',
+      title: 'Buy snacks',
+      budgetEstimate: 25.5,
+    );
+    await tester.pumpWidget(
+      harness(const TaskTile(task: taskWithBudget, canChangeStatus: false)),
+    );
+    expect(find.byKey(const Key('tasks.tile.task-1.budget')), findsOneWidget);
+
+    const taskNoBudget = TaskModel(
+      id: 'task-2',
+      eventId: 'evt-1',
+      title: 'No estimate',
+    );
+    await tester.pumpWidget(
+      harness(const TaskTile(task: taskNoBudget, canChangeStatus: false)),
+    );
+    expect(find.byKey(const Key('tasks.tile.task-2.budget')), findsNothing);
+  });
 }

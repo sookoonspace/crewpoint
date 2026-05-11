@@ -93,6 +93,7 @@ class TaskListScreen extends StatelessWidget {
                   return TaskTile(
                     task: task,
                     canChangeStatus: canChange,
+                    currencyCode: event.currency,
                     onTap: () => onTaskTap?.call(task),
                     onStatusChanged: (status) =>
                         onStatusChanged?.call(task, status),

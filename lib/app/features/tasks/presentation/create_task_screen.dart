@@ -12,6 +12,7 @@ import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/widgets/assignee_picker.dart';
+import 'package:crewpoint_app/app/features/tasks/presentation/widgets/budget_estimate_field.dart';
 
 class CreateTaskScreen extends StatefulWidget {
   const CreateTaskScreen({
@@ -35,6 +36,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _budgetController = TextEditingController();
   String? _assigneeId;
   DateTime? _dueDate;
 
@@ -42,6 +44,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    _budgetController.dispose();
     super.dispose();
   }
 
@@ -60,6 +63,12 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
   void _submit() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
+    final localeTag = Localizations.localeOf(context).toLanguageTag();
+    final budget = parseBudgetEstimate(
+      _budgetController.text,
+      locale: localeTag,
+    );
+
     final task = TaskModel(
       id: const Uuid().v4(),
       eventId: widget.event.id,
@@ -70,6 +79,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
       assigneeId: _assigneeId,
       createdBy: widget.currentUserId,
       dueDate: _dueDate,
+      budgetEstimate: budget,
     );
 
     widget.onSubmit?.call(task);
@@ -126,6 +136,10 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                     displayNames: widget.displayNames,
                     selected: _assigneeId,
                     onChanged: (value) => setState(() => _assigneeId = value),
+                  ),
+                  BudgetEstimateField(
+                    controller: _budgetController,
+                    currencyCode: widget.event.currency,
                   ),
                   InkWell(
                     key: const Key('tasks.create.dueDate'),

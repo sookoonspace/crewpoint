@@ -55,6 +55,7 @@ class Tasks extends Table {
   DateTimeColumn get dueDate => dateTime().nullable()();
   DateTimeColumn get completedAt => dateTime().nullable()();
   TextColumn get completedBy => text().nullable().references(Users, #id)();
+  RealColumn get budgetEstimate => real().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 
@@ -132,7 +133,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -156,6 +157,9 @@ class AppDatabase extends _$AppDatabase {
         // Firestore-Write / Drift-Read spec — events are mirrored from
         // Firestore and don't depend on a Drift Users row existing.
         await m.alterTable(TableMigration(events));
+      }
+      if (from < 6) {
+        await m.addColumn(tasks, tasks.budgetEstimate);
       }
     },
   );

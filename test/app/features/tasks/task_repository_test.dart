@@ -50,6 +50,48 @@ void main() {
 
   tearDown(() => db.close());
 
+  group('TaskModel budgetEstimate', () {
+    test('copyWith round-trips null and non-null budget', () {
+      const base = TaskModel(
+        id: 't',
+        eventId: 'e',
+        title: 'x',
+        budgetEstimate: 25.5,
+      );
+      expect(base.copyWith().budgetEstimate, 25.5);
+      expect(base.copyWith(budgetEstimate: 0).budgetEstimate, 0);
+      expect(base.copyWith(clearBudgetEstimate: true).budgetEstimate, isNull);
+    });
+  });
+
+  group('budget round-trip through Firestore + Drift', () {
+    test('persists null, zero, and positive budgetEstimate', () async {
+      for (final budget in <double?>[null, 0, 75.25]) {
+        final task = TaskModel(
+          id: 'budget-${budget ?? 'null'}',
+          eventId: 'event-1',
+          title: 'Budget round-trip',
+          createdBy: 'user-1',
+          budgetEstimate: budget,
+        );
+        final ok = await repository.createTask(task);
+        expect(ok, isTrue);
+
+        final fsDoc = await firestore
+            .collection('events')
+            .doc('event-1')
+            .collection('tasks')
+            .doc(task.id)
+            .get();
+        expect(fsDoc.data()!['budgetEstimate'], budget);
+
+        final fromDrift = await repository.getTasksByEventId('event-1');
+        final hydrated = fromDrift.firstWhere((t) => t.id == task.id);
+        expect(hydrated.budgetEstimate, budget);
+      }
+    });
+  });
+
   group('createTask', () {
     test('writes Firestore document AND mirrors to Drift', () async {
       const task = TaskModel(

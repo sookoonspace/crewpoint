@@ -37,22 +37,22 @@ Tasks-polish vertical slices: assignee names → color stripe → Drift v6 budge
 - [x] TDD: `TaskDetailScreen._AssigneeRow` shows passed `assigneeName` when present, truncated UID otherwise
 - [x] Verify: `flutter analyze && flutter test test/app/features/tasks/`
 
-### Phase 2: Drift v6 + `budgetEstimate` plumbed through create + tile
+### Phase 2: Drift v6 + `budgetEstimate` plumbed through create + tile ✓
 
 - **Goal**: Add the budget field end-to-end on the create path before the edit path needs it. One schema bump, one repo plumb, one validator.
-- [ ] `lib/app/core/database/app_database.dart` — add `RealColumn get budgetEstimate => real().nullable()();` on `Tasks`; bump `schemaVersion = 6`; extend `onUpgrade` with `if (from < 6) { await m.addColumn(tasks, tasks.budgetEstimate); }` (user critical instruction)
-- [ ] **Run `dart run build_runner build -d`** (user critical instruction — BEFORE writing tests; regenerates `app_database.g.dart` + `tasks_dao.g.dart`)
-- [ ] `lib/app/features/tasks/domain/models/task.dart` — `final double? budgetEstimate;` + `copyWith` + constructor param (spec req 4)
-- [ ] `lib/app/features/tasks/data/task_repository.dart` — `budgetEstimate` in `_toFirestore`, `_fromFirestore`, `_toDomain`, `_upsertDrift` (spec req 4)
-- [ ] `lib/app/features/tasks/presentation/create_task_screen.dart` — locale-aware budget `TextFormField` with `event.currency` symbol prefix (spec req 6, 27)
-- [ ] `lib/app/features/tasks/presentation/widgets/task_tile.dart` — render budget `Text` next to checklist count when non-null, key `tasks.tile.${id}.budget` (spec req 8)
-- [ ] Bootstrap schema snapshot: `mkdir -p drift_schemas && dart run drift_dev schema dump lib/app/core/database/app_database.dart drift_schemas/` (commit snapshot)
-- [ ] `test/database/migration_v5_to_v6_test.dart` — `SchemaVerifier` from `drift_dev`; assert `verifyMigration(5, 6)` succeeds + `budget_estimate` column exists nullable (spec validation)
-- [ ] TDD: `TaskModel.copyWith` round-trips `budgetEstimate` null + non-null
-- [ ] TDD: `task_repository_test.dart` — `_toFirestore`/`_fromFirestore` round-trip for null, 0, and positive value (`fake_cloud_firestore`)
-- [ ] TDD: budget validator parses `en_US` (`0`, `0.5`, `1234.56`) and `de_DE` (`0,5`, `1234,56`); rejects negative + 3-decimal + non-numeric; empty → null
-- [ ] TDD: `TaskTile` renders budget text only when `budgetEstimate != null`
-- [ ] Verify: `flutter analyze && flutter test`
+- [x] `lib/app/core/database/app_database.dart` — add `RealColumn get budgetEstimate => real().nullable()();` on `Tasks`; bump `schemaVersion = 6`; extend `onUpgrade` with `if (from < 6) { await m.addColumn(tasks, tasks.budgetEstimate); }` (user critical instruction)
+- [x] **Run `dart run build_runner build -d`** (user critical instruction — BEFORE writing tests; regenerates `app_database.g.dart` + `tasks_dao.g.dart`)
+- [x] `lib/app/features/tasks/domain/models/task.dart` — `final double? budgetEstimate;` + `copyWith` + constructor param (spec req 4)
+- [x] `lib/app/features/tasks/data/task_repository.dart` — `budgetEstimate` in `_toFirestore`, `_fromFirestore`, `_toDomain`, `_upsertDrift` (spec req 4)
+- [x] `lib/app/features/tasks/presentation/create_task_screen.dart` — locale-aware budget `TextFormField` with `event.currency` symbol prefix (spec req 6, 27)
+- [x] `lib/app/features/tasks/presentation/widgets/task_tile.dart` — render budget `Text` next to checklist count when non-null, key `tasks.tile.${id}.budget` (spec req 8)
+- [x] Bootstrap schema snapshot: `drift_schemas/drift_schema_v6.json` baseline committed (no prior v5 snapshot existed)
+- [x] `test/database/migration_v5_to_v6_test.dart` — manually seeds a v5-shaped DB via `sqlite3` + `PRAGMA user_version = 5`, opens `AppDatabase`, asserts `budget_estimate` column exists and the v5 row survives. Future migrations will use `SchemaVerifier` against the new v6 snapshot.
+- [x] TDD: `TaskModel.copyWith` round-trips `budgetEstimate` null + non-null
+- [x] TDD: `task_repository_test.dart` — `_toFirestore`/`_fromFirestore` round-trip for null, 0, and positive value (`fake_cloud_firestore`)
+- [x] TDD: budget validator parses `en_US` (`0`, `0.5`, `1234.56`) and `de_DE` (`0,5`, `1234,56`); rejects negative + 3-decimal + non-numeric; empty → null
+- [x] TDD: `TaskTile` renders budget text only when `budgetEstimate != null`
+- [x] Verify: `flutter analyze && flutter test`
 
 ### Phase 3: `EditTaskScreen` + pencil action
 

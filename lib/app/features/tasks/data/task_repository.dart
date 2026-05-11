@@ -388,6 +388,7 @@ class TaskRepository implements ITaskRepository {
         dueDate: Value(task.dueDate),
         completedAt: Value(task.completedAt),
         completedBy: Value(task.completedBy),
+        budgetEstimate: Value(task.budgetEstimate),
         updatedAt: Value(DateTime.now()),
       ),
     );
@@ -406,6 +407,7 @@ class TaskRepository implements ITaskRepository {
         ? Timestamp.fromDate(task.completedAt!)
         : null,
     'completedBy': task.completedBy,
+    'budgetEstimate': task.budgetEstimate,
     'updatedAt': FieldValue.serverTimestamp(),
   };
 
@@ -425,6 +427,7 @@ class TaskRepository implements ITaskRepository {
     dueDate: (data['dueDate'] as Timestamp?)?.toDate(),
     completedAt: (data['completedAt'] as Timestamp?)?.toDate(),
     completedBy: data['completedBy'] as String?,
+    budgetEstimate: (data['budgetEstimate'] as num?)?.toDouble(),
   );
 
   TaskModel _toDomain(Task row) => TaskModel(
@@ -439,6 +442,7 @@ class TaskRepository implements ITaskRepository {
     dueDate: row.dueDate,
     completedAt: row.completedAt,
     completedBy: row.completedBy,
+    budgetEstimate: row.budgetEstimate,
   );
 
   TaskStatus _parseStatus(String? status) => switch (status) {

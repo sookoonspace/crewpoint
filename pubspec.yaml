@@ -85,6 +85,10 @@ dev_dependencies:
   image: ^4.5.3
   fake_cloud_firestore: ^3.0.3
   firebase_auth_mocks: ^0.14.1
+  # sqlite3 is a transitive dep via sqlite3_flutter_libs; declared here
+  # so test/database/migration_v5_to_v6_test.dart can import it cleanly
+  # to seed a v5-shaped DB before Drift's MigrationStrategy runs.
+  sqlite3: ^2.4.0
 
 flutter_launcher_icons:
   android: true
