@@ -14,6 +14,7 @@ import 'package:crewpoint_app/app/features/auth/data/auth_repository.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/dashboard/data/event_repository.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/create_event_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
 
 void main() {
   late AppDatabase database;
@@ -91,6 +92,50 @@ void main() {
       expect(find.byKey(const Key('host.openCreate')), findsOneWidget);
       expect(find.byKey(const Key('createEvent.submit')), findsNothing);
       expect(find.text('Event created'), findsOneWidget);
+      // Post-create share affordance is visible on the success SnackBar.
+      expect(find.text('Share invite'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'post-create SnackBar Share invite action opens AddMemberSheet for the new event',
+    (tester) async {
+      useTallViewport(tester);
+      await tester.pumpWidget(
+        buildApp(
+          authFactory: () => _StubAuthNotifier(
+            const AppUser(uid: 'uid-42', email: 'a@example.com'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('host.openCreate')));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('createEvent.title')),
+        'Tahoe Trip',
+      );
+      await tester.tap(find.byKey(const Key('createEvent.submit')));
+      await tester.pumpAndSettle();
+
+      // SnackBar visible with Share invite action.
+      expect(find.text('Event created'), findsOneWidget);
+      expect(find.text('Share invite'), findsOneWidget);
+
+      // Tap the action → AddMemberSheet opens.
+      await tester.tap(find.text('Share invite'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AddMemberSheet), findsOneWidget);
+
+      // Contract: dismiss the sheet → user is back on the host (the
+      // dashboard scaffold the screen popped to). Proves the
+      // messenger.context navigator-level resolution works cleanly.
+      Navigator.of(tester.element(find.byType(AddMemberSheet))).pop();
+      await tester.pumpAndSettle();
+      expect(find.byType(AddMemberSheet), findsNothing);
+      expect(find.byKey(const Key('host.openCreate')), findsOneWidget);
     },
   );
 

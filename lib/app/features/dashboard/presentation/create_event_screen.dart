@@ -12,6 +12,7 @@ import 'package:crewpoint_app/app/core/widgets/custom_text_field.dart';
 import 'package:crewpoint_app/app/core/widgets/form_card_shell.dart';
 import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
 
 class CreateEventScreen extends ConsumerStatefulWidget {
   const CreateEventScreen({super.key, this.defaultCurrency = 'USD'});
@@ -99,7 +100,27 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       await ref.read(eventRepositoryProvider).createEvent(event);
       if (!mounted) return;
       navigator.pop();
-      messenger.showSnackBar(const SnackBar(content: Text('Event created')));
+      // 6s gives the user time to read "Event created" and tap "Share
+      // invite" without rushing them; long enough to react, short enough
+      // not to loiter on the dashboard. Material default is ~4s.
+      // Use navigator.context (not messenger.context) — the ScaffoldMessenger
+      // sits ABOVE the Navigator in the widget tree, so its context has no
+      // Navigator ancestor and showModalBottomSheet throws "Navigator
+      // operation requested with a context that does not include a
+      // Navigator." The Navigator's own context resolves cleanly.
+      messenger.showSnackBar(
+        SnackBar(
+          content: const Text('Event created'),
+          action: SnackBarAction(
+            label: 'Share invite',
+            onPressed: () => AddMemberSheet.show(
+              context: navigator.context,
+              eventId: event.id,
+            ),
+          ),
+          duration: const Duration(seconds: 6),
+        ),
+      );
     } catch (e, st) {
       log('createEvent failed', error: e, stackTrace: st, name: 'events');
       if (!mounted) return;

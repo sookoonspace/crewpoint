@@ -42,19 +42,18 @@ Scope is the explicit allow-list defined in the spec. Anything found in `pubspec
 
 ## 2. V1 launch blockers (utility-shaped)
 
-### 2.1 Invite-share UX wiring *(pre-decided)*
+### 2.1 Invite-share UX wiring *(pre-decided)* — 🔄 Resolved
 
-**User journey:** *(see [`ai_specs/v1-utilities-audit-spec.md`](../ai_specs/v1-utilities-audit-spec.md) `<user_flows>` row 1)* — admin opens an event → taps "Invite" → app surfaces the invite code → admin shares via system share sheet → recipient pastes into `JoinEventSheet`.
+**Status:** Resolved in the invite-share PR (event branch commits `0e2822e` → Phase 1 CF reuse-if-valid; `b5aaf29` → Phase 2 Invite Members tile on event detail; the post-create SnackBar action with `Share invite` button on top of that). See [`ai_specs/invite-share-spec.md`](../ai_specs/invite-share-spec.md).
 
-**What we have:** `share_plus` is wired in `lib/app/features/dashboard/presentation/widgets/add_member_sheet.dart:107-109` — `_shareCode()` calls `Share.share('Join my event on CrewPoint! Use code: $_code')`. Shipped today.
+**Original gap:** the existing `Share.share` call at `add_member_sheet.dart:107-109` was buried inside the member-management sheet. Users didn't have an obvious affordance from event detail OR a nudge after creating an event.
 
-**What's missing — narrowed scope:**
-1. The share affordance lives **inside the Add Member sheet**, which most users won't open until they realise they need to invite someone. The share button needs to surface from the **event detail screen** itself (`EventDashboardScreen` — likely next to the Members preview card).
-2. **No post-create share prompt** — after `CreateEventScreen` submits successfully, the user is dropped back on the dashboard with no nudge to invite anyone. A SnackBar action ("Share invite code →") or a follow-up sheet would close that loop.
+**What shipped:**
+1. **Invite Members tile on event detail** — admin/owner sees a dedicated tile under the Members preview. Tap opens `AddMemberSheet`. Hidden from non-admins.
+2. **Post-create SnackBar with "Share invite" action** — after `CreateEventScreen` submits successfully, the SnackBar gains an action button that opens the sheet for the just-created event.
+3. **CF reuse-if-valid** — `generateInviteCode` returns the existing non-expired code by default (race-safe via `runTransaction`). Codes shared yesterday keep working until 24h expiry. `rotate: true` opts into rotation for the leak-suspicion case.
 
-**Recommended package:** none — `share_plus` already in pubspec. Spec is wiring + UX placement, not a package add.
-
-**Follow-up spec:** [`invite-share-spec.md`](../ai_specs/invite-share-spec.md) *(to be written)*. **must-ship.**
+**Implementation note:** spec originally specified `context: messenger.context` for `AddMemberSheet.show(...)`; the Phase 3 contract test caught that `ScaffoldMessenger` sits above the Navigator, so its context has no Navigator ancestor. Switched to `navigator.context` (already captured before pop in `_submit`) and the navigator-level path resolves cleanly.
 
 ### 2.2 Cross-references to architecture-shaped V1 launch blockers
 
