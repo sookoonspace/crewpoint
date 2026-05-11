@@ -449,6 +449,172 @@ describe('generateInviteCode', () => {
     expect(codeDoc.exists).toBe(true);
     expect(codeDoc.data()!.eventId).toBe('evtG2');
   });
+
+  test('second call without rotate flag returns the SAME code (reuse-if-valid)', async () => {
+    await seedEvent({eventId: 'evtG3', creatorUid: 'creatorG3'});
+
+    const wrapped = ftest.wrap(generateInviteCode);
+    const first = await wrapped({
+      auth: {uid: 'creatorG3'},
+      data: {eventId: 'evtG3'},
+    });
+    const second = await wrapped({
+      auth: {uid: 'creatorG3'},
+      data: {eventId: 'evtG3'},
+    });
+
+    expect(second.code).toBe(first.code);
+
+    const docs = await getAdminDb()
+      .collection('event_invites')
+      .where('eventId', '==', 'evtG3')
+      .get();
+    expect(docs.size).toBe(1);
+  });
+
+  test('expired existing code is replaced with a fresh one on default call', async () => {
+    await seedEvent({eventId: 'evtG5', creatorUid: 'creatorG5'});
+    // Pre-seed an EXPIRED invite doc.
+    const expiredCode = 'EXP123';
+    const past = new Date(Date.now() - 60 * 60 * 1000); // 1 hour ago
+    await getAdminDb()
+      .collection('event_invites')
+      .doc(expiredCode)
+      .set({
+        eventId: 'evtG5',
+        createdBy: 'creatorG5',
+        createdAt: admin.firestore.Timestamp.fromDate(
+          new Date(past.getTime() - 60 * 60 * 1000)
+        ),
+        expiresAt: admin.firestore.Timestamp.fromDate(past),
+      });
+
+    const wrapped = ftest.wrap(generateInviteCode);
+    const result = await wrapped({
+      auth: {uid: 'creatorG5'},
+      data: {eventId: 'evtG5'},
+    });
+
+    expect(result.code).not.toBe(expiredCode);
+
+    // Expired doc deleted; only the fresh one remains for this event.
+    const expiredDoc = await getAdminDb()
+      .collection('event_invites')
+      .doc(expiredCode)
+      .get();
+    expect(expiredDoc.exists).toBe(false);
+
+    const docs = await getAdminDb()
+      .collection('event_invites')
+      .where('eventId', '==', 'evtG5')
+      .get();
+    expect(docs.size).toBe(1);
+    expect(docs.docs[0].id).toBe(result.code);
+  });
+
+  test('self-heal: multiple non-expired duplicates → returns most-recent + deletes siblings', async () => {
+    await seedEvent({eventId: 'evtG6', creatorUid: 'creatorG6'});
+
+    const future = admin.firestore.Timestamp.fromDate(
+      new Date(Date.now() + 12 * 60 * 60 * 1000)
+    );
+    const older = admin.firestore.Timestamp.fromDate(
+      new Date(Date.now() - 5 * 60 * 1000)
+    );
+    const newer = admin.firestore.Timestamp.fromDate(
+      new Date(Date.now() - 1 * 60 * 1000)
+    );
+
+    // Two non-expired docs for the same event — simulates the
+    // post-race data-corruption state.
+    await getAdminDb()
+      .collection('event_invites')
+      .doc('OLDER1')
+      .set({
+        eventId: 'evtG6',
+        createdBy: 'creatorG6',
+        createdAt: older,
+        expiresAt: future,
+      });
+    await getAdminDb()
+      .collection('event_invites')
+      .doc('NEWER1')
+      .set({
+        eventId: 'evtG6',
+        createdBy: 'creatorG6',
+        createdAt: newer,
+        expiresAt: future,
+      });
+
+    const wrapped = ftest.wrap(generateInviteCode);
+    const result = await wrapped({
+      auth: {uid: 'creatorG6'},
+      data: {eventId: 'evtG6'},
+    });
+
+    // Most recent (NEWER1) is returned; OLDER1 is deleted in the same tx.
+    expect(result.code).toBe('NEWER1');
+
+    const olderDoc = await getAdminDb()
+      .collection('event_invites')
+      .doc('OLDER1')
+      .get();
+    expect(olderDoc.exists).toBe(false);
+
+    const docs = await getAdminDb()
+      .collection('event_invites')
+      .where('eventId', '==', 'evtG6')
+      .get();
+    expect(docs.size).toBe(1);
+  });
+
+  test('rotate as string "true" is treated as false (reuse, not rotate)', async () => {
+    await seedEvent({eventId: 'evtG7', creatorUid: 'creatorG7'});
+
+    const wrapped = ftest.wrap(generateInviteCode);
+    const first = await wrapped({
+      auth: {uid: 'creatorG7'},
+      data: {eventId: 'evtG7'},
+    });
+    // String 'true' is NOT the literal boolean true; strict coercion
+    // must treat this as reuse (returning the same code), not rotate.
+    const second = await wrapped({
+      auth: {uid: 'creatorG7'},
+      data: {eventId: 'evtG7', rotate: 'true'},
+    });
+
+    expect(second.code).toBe(first.code);
+  });
+
+  test('rotate: true returns a NEW code and deletes the previous one', async () => {
+    await seedEvent({eventId: 'evtG4', creatorUid: 'creatorG4'});
+
+    const wrapped = ftest.wrap(generateInviteCode);
+    const first = await wrapped({
+      auth: {uid: 'creatorG4'},
+      data: {eventId: 'evtG4'},
+    });
+    const rotated = await wrapped({
+      auth: {uid: 'creatorG4'},
+      data: {eventId: 'evtG4', rotate: true},
+    });
+
+    expect(rotated.code).not.toBe(first.code);
+
+    // Old code is gone; new code is the only one for this event.
+    const oldDoc = await getAdminDb()
+      .collection('event_invites')
+      .doc(first.code)
+      .get();
+    expect(oldDoc.exists).toBe(false);
+
+    const docs = await getAdminDb()
+      .collection('event_invites')
+      .where('eventId', '==', 'evtG4')
+      .get();
+    expect(docs.size).toBe(1);
+    expect(docs.docs[0].id).toBe(rotated.code);
+  });
 });
 
 describe('disputeSettlement', () => {
