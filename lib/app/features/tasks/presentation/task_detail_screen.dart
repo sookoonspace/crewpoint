@@ -18,6 +18,7 @@ class TaskDetailScreen extends StatelessWidget {
     required this.checklist,
     required this.canEditTask,
     required this.canChangeStatus,
+    this.assigneeName,
     this.onDelete,
     this.onChecklistToggle,
     this.onChecklistAdd,
@@ -31,6 +32,11 @@ class TaskDetailScreen extends StatelessWidget {
   final List<ChecklistItem> checklist;
   final bool canEditTask;
   final bool canChangeStatus;
+
+  /// Resolved display name for `task.assigneeId`. When null, the screen falls
+  /// back to a truncated UID. Hydrated upstream by `event_task_detail_page.dart`
+  /// via `usersByIdProvider` so this screen stays Riverpod-free.
+  final String? assigneeName;
   final VoidCallback? onDelete;
   final void Function(ChecklistItem item, bool isCompleted)? onChecklistToggle;
   final void Function(String id, String text)? onChecklistAdd;
@@ -94,6 +100,7 @@ class TaskDetailScreen extends StatelessWidget {
               if (task.assigneeId != null)
                 _AssigneeRow(
                   assigneeId: task.assigneeId!,
+                  displayName: assigneeName,
                   stillInEvent: _assigneeStillInEvent,
                 ),
               if (task.dueDate != null)
@@ -115,9 +122,7 @@ class TaskDetailScreen extends StatelessWidget {
                 Text(
                   'Completed ${DateFormat.yMMMd().format(task.completedAt!)}'
                   '${task.completedBy != null ? ' by ${task.completedBy!.length > 8 ? task.completedBy!.substring(0, 8) : task.completedBy}' : ''}',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall,
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
               ChecklistEditor(
                 items: checklist,
@@ -135,16 +140,23 @@ class TaskDetailScreen extends StatelessWidget {
 }
 
 class _AssigneeRow extends StatelessWidget {
-  const _AssigneeRow({required this.assigneeId, required this.stillInEvent});
+  const _AssigneeRow({
+    required this.assigneeId,
+    required this.stillInEvent,
+    this.displayName,
+  });
 
   final String assigneeId;
+  final String? displayName;
   final bool stillInEvent;
 
   @override
   Widget build(BuildContext context) {
-    final label = assigneeId.length > 10
-        ? '${assigneeId.substring(0, 10)}…'
-        : assigneeId;
+    final label = (displayName != null && displayName!.isNotEmpty)
+        ? displayName!
+        : (assigneeId.length > 10
+              ? '${assigneeId.substring(0, 10)}…'
+              : assigneeId);
     return Row(
       spacing: AppSpacing.sm,
       children: [

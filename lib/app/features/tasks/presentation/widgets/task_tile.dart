@@ -19,68 +19,84 @@ class TaskTile extends StatelessWidget {
   final ValueChanged<TaskStatus>? onStatusChanged;
   final VoidCallback? onUnauthorizedTap;
 
+  Color _stripeColor() => switch (task.status) {
+    TaskStatus.todo => AppColors.lightGrey,
+    TaskStatus.inProgress => AppColors.sage,
+    TaskStatus.done => AppColors.sageDark,
+  };
+
   @override
   Widget build(BuildContext context) {
     return Card(
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         key: Key('tasks.tile.${task.id}'),
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Row(
-            spacing: AppSpacing.md,
-            children: [
-              _StatusChip(
-                key: Key('tasks.tile.${task.id}.status'),
-                status: task.status,
-                enabled: canChangeStatus,
-                onTap: () {
-                  if (!canChangeStatus) {
-                    onUnauthorizedTap?.call();
-                    return;
-                  }
-                  final next = switch (task.status) {
-                    TaskStatus.todo => TaskStatus.inProgress,
-                    TaskStatus.inProgress => TaskStatus.done,
-                    TaskStatus.done => TaskStatus.todo,
-                  };
-                  onStatusChanged?.call(next);
-                },
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: .start,
+        child: Row(
+          children: [
+            Container(
+              key: Key('tasks.tile.${task.id}.stripe'),
+              width: 4,
+              color: _stripeColor(),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Row(
+                  spacing: AppSpacing.md,
                   children: [
-                    Text(
-                      task.title,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        decoration: task.status == TaskStatus.done
-                            ? TextDecoration.lineThrough
-                            : null,
+                    _StatusChip(
+                      key: Key('tasks.tile.${task.id}.status'),
+                      status: task.status,
+                      enabled: canChangeStatus,
+                      onTap: () {
+                        if (!canChangeStatus) {
+                          onUnauthorizedTap?.call();
+                          return;
+                        }
+                        final next = switch (task.status) {
+                          TaskStatus.todo => TaskStatus.inProgress,
+                          TaskStatus.inProgress => TaskStatus.done,
+                          TaskStatus.done => TaskStatus.todo,
+                        };
+                        onStatusChanged?.call(next);
+                      },
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: .start,
+                        children: [
+                          Text(
+                            task.title,
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(
+                                  decoration: task.status == TaskStatus.done
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                                ),
+                          ),
+                          if (task.description != null)
+                            Text(
+                              task.description!,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: AppColors.mediumGrey),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                        ],
                       ),
                     ),
-                    if (task.description != null)
+                    if (task.checklistItems.isNotEmpty)
                       Text(
-                        task.description!,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.mediumGrey,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        '${task.checklistItems.where((i) => i.isCompleted).length}/${task.checklistItems.length}',
+                        style: Theme.of(context).textTheme.labelSmall,
                       ),
                   ],
                 ),
               ),
-              if (task.checklistItems.isNotEmpty)
-                Text(
-                  '${task.checklistItems.where((i) => i.isCompleted).length}/${task.checklistItems.length}',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.labelSmall,
-                ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

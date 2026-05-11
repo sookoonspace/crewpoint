@@ -30,7 +30,7 @@ class _EventTasksPageState extends ConsumerState<EventTasksPage> {
     return auth is Authenticated ? auth.user.uid : null;
   }
 
-  Future<void> _onCreate() async {
+  Future<void> _onCreate(Map<String, String> displayNames) async {
     final uid = _currentUserId();
     if (uid == null) return;
     final created = await Navigator.of(context).push<TaskModel>(
@@ -38,6 +38,7 @@ class _EventTasksPageState extends ConsumerState<EventTasksPage> {
         builder: (_) => CreateTaskScreen(
           event: widget.event,
           currentUserId: uid,
+          displayNames: displayNames,
           onSubmit: (task) => Navigator.of(context).pop(task),
         ),
       ),
@@ -128,7 +129,7 @@ class _EventTasksPageState extends ConsumerState<EventTasksPage> {
           currentUserId: uid,
           selectedFilter: _filter,
           onFilterChanged: (status) => setState(() => _filter = status),
-          onCreateTask: _onCreate,
+          onCreateTask: () => _onCreate(memberNames),
           onStatusChanged: _onStatusChanged,
           onUnauthorizedStatusTap: _onUnauthorizedTap,
           onExportPdf: () => _exportPdf(tasks, memberNames),

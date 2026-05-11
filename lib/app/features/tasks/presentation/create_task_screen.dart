@@ -18,11 +18,13 @@ class CreateTaskScreen extends StatefulWidget {
     super.key,
     required this.event,
     required this.currentUserId,
+    this.displayNames = const {},
     this.onSubmit,
   });
 
   final EventModel event;
   final String currentUserId;
+  final Map<String, String> displayNames;
   final ValueChanged<TaskModel>? onSubmit;
 
   @override
@@ -121,6 +123,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                   ),
                   AssigneePicker(
                     memberIds: widget.event.memberIds,
+                    displayNames: widget.displayNames,
                     selected: _assigneeId,
                     onChanged: (value) => setState(() => _assigneeId = value),
                   ),

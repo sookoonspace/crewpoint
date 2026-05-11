@@ -91,6 +91,39 @@ void main() {
     expect(find.text('(no longer in event)'), findsOneWidget);
   });
 
+  testWidgets('renders passed assigneeName when present', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: TaskDetailScreen(
+          task: task,
+          event: event,
+          checklist: [],
+          canEditTask: true,
+          canChangeStatus: true,
+          assigneeName: 'Bo Lyons',
+        ),
+      ),
+    );
+    expect(find.text('Assigned to Bo Lyons'), findsOneWidget);
+  });
+
+  testWidgets('falls back to truncated UID when assigneeName is null', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: TaskDetailScreen(
+          task: task,
+          event: event,
+          checklist: [],
+          canEditTask: true,
+          canChangeStatus: true,
+        ),
+      ),
+    );
+    expect(find.text('Assigned to user-2'), findsOneWidget);
+  });
+
   testWidgets('pending writes indicator renders only when flag is true', (
     tester,
   ) async {

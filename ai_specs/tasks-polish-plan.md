@@ -22,20 +22,20 @@ Tasks-polish vertical slices: assignee names → color stripe → Drift v6 budge
 
 ## Plan
 
-### Phase 1: Assignee names + TaskTile stripe (UI-only, no schema)
+### Phase 1: Assignee names + TaskTile stripe (UI-only, no schema) ✓
 
 - **Goal**: Ship the immediately-visible polish wins without touching DB. Proves `usersByIdProvider` plumbing end-to-end before schema risk lands.
-- [ ] `lib/app/features/tasks/presentation/widgets/assignee_picker.dart` — add `Map<String, String> displayNames` + optional `String? orphanAssigneeId`; render hydrated names, fallback truncated UID, disabled `(no longer in event)` orphan row at bottom (spec req 1, 22)
-- [ ] `lib/app/features/tasks/presentation/widgets/task_tile.dart` — leading 4px `Container` stripe outside `Padding`; `Card.clipBehavior: Clip.antiAlias`; status color map (spec req 7)
-- [ ] `lib/app/features/tasks/presentation/task_detail_screen.dart` — accept `String? assigneeName`; replace `_AssigneeRow` truncation with the resolved name; keep widget Riverpod-free (spec req 3)
-- [ ] `lib/app/features/tasks/presentation/event_task_detail_page.dart` — Consumer wrapper resolves `usersByIdProvider([...event.memberIds, if (orphan) task.assigneeId!])`; pass name into `TaskDetailScreen` (spec req 3)
-- [ ] `lib/app/features/tasks/presentation/event_tasks_page.dart` — pass resolved names to `AssigneePicker` (via `CreateTaskScreen` push) and to each `TaskTile`
-- [ ] `lib/app/features/tasks/presentation/create_task_screen.dart` — accept `Map<String, String> displayNames`; pass to `AssigneePicker`
-- [ ] TDD: `AssigneePicker` renders display name when present, truncated UID fallback otherwise (unit/widget)
-- [ ] TDD: `AssigneePicker` renders orphan UID as disabled item at bottom labeled `(no longer in event)`
-- [ ] TDD: `TaskTile` stripe color matches status (3 cases) + flush with card left edge (offset assertion)
-- [ ] TDD: `TaskDetailScreen._AssigneeRow` shows passed `assigneeName` when present, truncated UID otherwise
-- [ ] Verify: `flutter analyze && flutter test test/app/features/tasks/`
+- [x] `lib/app/features/tasks/presentation/widgets/assignee_picker.dart` — add `Map<String, String> displayNames` + optional `String? orphanAssigneeId`; render hydrated names, fallback truncated UID, disabled `(no longer in event)` orphan row at bottom (spec req 1, 22)
+- [x] `lib/app/features/tasks/presentation/widgets/task_tile.dart` — leading 4px `Container` stripe outside `Padding`; `Card.clipBehavior: Clip.antiAlias`; status color map (spec req 7)
+- [x] `lib/app/features/tasks/presentation/task_detail_screen.dart` — accept `String? assigneeName`; replace `_AssigneeRow` truncation with the resolved name; keep widget Riverpod-free (spec req 3)
+- [x] `lib/app/features/tasks/presentation/event_task_detail_page.dart` — Consumer wrapper resolves `usersByIdProvider([...event.memberIds, if (orphan) task.assigneeId!])`; pass name into `TaskDetailScreen` (spec req 3)
+- [x] `lib/app/features/tasks/presentation/event_tasks_page.dart` — pass resolved names to `AssigneePicker` (via `CreateTaskScreen` push) and to each `TaskTile`
+- [x] `lib/app/features/tasks/presentation/create_task_screen.dart` — accept `Map<String, String> displayNames`; pass to `AssigneePicker`
+- [x] TDD: `AssigneePicker` renders display name when present, truncated UID fallback otherwise (unit/widget)
+- [x] TDD: `AssigneePicker` renders orphan UID as disabled item at bottom labeled `(no longer in event)`
+- [x] TDD: `TaskTile` stripe color matches status (3 cases) + flush with card left edge (offset assertion)
+- [x] TDD: `TaskDetailScreen._AssigneeRow` shows passed `assigneeName` when present, truncated UID otherwise
+- [x] Verify: `flutter analyze && flutter test test/app/features/tasks/`
 
 ### Phase 2: Drift v6 + `budgetEstimate` plumbed through create + tile
 

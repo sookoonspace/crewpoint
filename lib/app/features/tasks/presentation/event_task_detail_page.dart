@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
+import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/task_detail_screen.dart';
@@ -68,6 +69,23 @@ class EventTaskDetailPage extends ConsumerWidget {
           currentUserId: uid,
         );
 
+        // Resolve assignee display name via usersByIdProvider. Include the
+        // orphan assignee UID (one who left the event) so its name still
+        // hydrates for the "no longer in event" affordance.
+        final uidsToResolve = <String>[
+          ...event.memberIds,
+          if (task.assigneeId != null &&
+              !event.memberIds.contains(task.assigneeId))
+            task.assigneeId!,
+        ];
+        final asyncUsers = ref.watch(usersByIdProvider(uidsToResolve));
+        final assigneeName = task.assigneeId == null
+            ? null
+            : asyncUsers.maybeWhen(
+                data: (users) => users[task.assigneeId]?.displayName,
+                orElse: () => null,
+              );
+
         return asyncChecklist.when(
           data: (items) => TaskDetailScreen(
             task: task,
@@ -75,6 +93,7 @@ class EventTaskDetailPage extends ConsumerWidget {
             checklist: items,
             canEditTask: canEdit,
             canChangeStatus: canChangeStatus,
+            assigneeName: assigneeName,
             onDelete: canEdit
                 ? () async {
                     final confirmed = await showDialog<bool>(
