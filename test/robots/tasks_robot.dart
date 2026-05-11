@@ -43,4 +43,33 @@ class TasksRobot {
   void expectStatusIcon({required IconData icon}) {
     expect(find.byIcon(icon), findsAtLeastNWidgets(1));
   }
+
+  // ===== Edit-task journey helpers =====
+
+  Future<void> tapEditOnDetail() async {
+    await tester.tap(find.byKey(const Key('tasks.detail.edit')));
+    // Page-push transition; explicit pump avoids pumpAndSettle deadlock
+    // when downstream Drift / Firestore streams keep emitting.
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+  }
+
+  Future<void> enterEditBudget(String value) async {
+    await tester.enterText(
+      find.descendant(
+        of: find.byKey(const Key('tasks.edit.budget')),
+        matching: find.byType(TextField),
+      ),
+      value,
+    );
+    await tester.pump();
+  }
+
+  Future<void> tapEditSave() async {
+    await tester.tap(find.byKey(const Key('tasks.edit.save')));
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+  }
 }

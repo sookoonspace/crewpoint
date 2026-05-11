@@ -54,18 +54,18 @@ Tasks-polish vertical slices: assignee names → color stripe → Drift v6 budge
 - [x] TDD: `TaskTile` renders budget text only when `budgetEstimate != null`
 - [x] Verify: `flutter analyze && flutter test`
 
-### Phase 3: `EditTaskScreen` + pencil action
+### Phase 3: `EditTaskScreen` + pencil action ✓
 
 - **Goal**: Close the task-side edit loop. Mirrors `CreateTaskScreen` pattern (`onSubmit` callback, screen stays Riverpod-free).
-- [ ] `lib/app/features/tasks/presentation/edit_task_screen.dart` — new screen pre-filled from `TaskModel`; same fields + validators as `CreateTaskScreen`; Save label `Save changes`; `firstDate: DateTime(2000)` on due-date picker so past-due dates remain editable (spec req 9)
-- [ ] `lib/app/features/tasks/presentation/task_detail_screen.dart` — add `Icons.edit_outlined` action key `tasks.detail.edit` when `canEditTask`; `onEdit` callback (spec req 10)
-- [ ] `lib/app/features/tasks/presentation/event_task_detail_page.dart` — wire `onEdit` to push `EditTaskScreen` with hydrated `displayNames` + `orphanAssigneeId`; on return call `taskRepositoryProvider.updateTask` (spec req 10, 22)
-- [ ] TDD: `EditTaskScreen` pre-fills title, description, assignee, due date, budget from `TaskModel`
-- [ ] TDD: `EditTaskScreen` `onSubmit` emits updated `TaskModel` with edited fields
-- [ ] TDD: `TaskDetailScreen` pencil action visible iff `canEditTask`; hidden for non-creator non-admin
-- [ ] TDD: `EditTaskScreen` accepts past due-date via picker (regression for `firstDate: DateTime.now()` clamp)
-- [ ] Robot: `TaskRobot.editAssigneeBudgetAndSave` — open detail → tap edit → change assignee + budget → save → assert list reflects updated assignee name + budget chip (`fake_cloud_firestore` + `usersByIdProvider` override)
-- [ ] Verify: `flutter analyze && flutter test`
+- [x] `lib/app/features/tasks/presentation/edit_task_screen.dart` — new screen pre-filled from `TaskModel`; same fields + validators as `CreateTaskScreen`; Save label `Save changes`; `firstDate: DateTime(2000)` on due-date picker so past-due dates remain editable (spec req 9)
+- [x] `lib/app/features/tasks/presentation/task_detail_screen.dart` — add `Icons.edit_outlined` action key `tasks.detail.edit` when `canEditTask`; `onEdit` callback (spec req 10)
+- [x] `lib/app/features/tasks/presentation/event_task_detail_page.dart` — wire `onEdit` to push `EditTaskScreen` with hydrated `displayNames` + `orphanAssigneeId`; on return call `taskRepositoryProvider.updateTask` (spec req 10, 22)
+- [x] TDD: `EditTaskScreen` pre-fills title, description, assignee, due date, budget from `TaskModel`
+- [x] TDD: `EditTaskScreen` `onSubmit` emits updated `TaskModel` with edited fields
+- [x] TDD: `TaskDetailScreen` pencil action visible iff `canEditTask`; hidden for non-creator non-admin
+- [x] TDD: `EditTaskScreen` accepts past due-date via picker (regression for `firstDate: DateTime.now()` clamp)
+- [x] Robot: `TasksRobot` edit helpers + `edit_task_journey_test.dart` — owner opens detail, edits budget, save reaches Firestore. Uses `buildDetailPage` harness (skips go_router list→detail nav, which lives outside this PR's scope).
+- [x] Verify: `flutter analyze && flutter test`
 
 ### Phase 4: `EditEventScreen` + `updateEvent` + settings gear
 

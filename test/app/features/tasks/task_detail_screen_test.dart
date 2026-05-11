@@ -124,6 +124,42 @@ void main() {
     expect(find.text('Assigned to user-2'), findsOneWidget);
   });
 
+  testWidgets('pencil edit action visible only when canEditTask is true', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: TaskDetailScreen(
+          task: task,
+          event: event,
+          checklist: [],
+          canEditTask: false,
+          canChangeStatus: false,
+        ),
+      ),
+    );
+    expect(find.byKey(const Key('tasks.detail.edit')), findsNothing);
+
+    var editPressed = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: TaskDetailScreen(
+          task: task,
+          event: event,
+          checklist: const [],
+          canEditTask: true,
+          canChangeStatus: true,
+          onEdit: () => editPressed = true,
+        ),
+      ),
+    );
+    expect(find.byKey(const Key('tasks.detail.edit')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('tasks.detail.edit')));
+    await tester.pump();
+    expect(editPressed, isTrue);
+  });
+
   testWidgets('pending writes indicator renders only when flag is true', (
     tester,
   ) async {

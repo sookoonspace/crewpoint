@@ -6,6 +6,7 @@ import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
+import 'package:crewpoint_app/app/features/tasks/presentation/edit_task_screen.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/task_detail_screen.dart';
 
 /// Loads task + checklist live streams and wires mutations through the
@@ -86,6 +87,14 @@ class EventTaskDetailPage extends ConsumerWidget {
                 orElse: () => null,
               );
 
+        final displayNamesMap = asyncUsers.maybeWhen(
+          data: (users) => {
+            for (final entry in users.entries)
+              entry.key: entry.value.displayName ?? '',
+          },
+          orElse: () => <String, String>{},
+        );
+
         return asyncChecklist.when(
           data: (items) => TaskDetailScreen(
             task: task,
@@ -94,6 +103,30 @@ class EventTaskDetailPage extends ConsumerWidget {
             canEditTask: canEdit,
             canChangeStatus: canChangeStatus,
             assigneeName: assigneeName,
+            onEdit: canEdit
+                ? () async {
+                    final updated = await Navigator.of(context).push<TaskModel>(
+                      MaterialPageRoute(
+                        builder: (_) => EditTaskScreen(
+                          event: event,
+                          initial: task,
+                          displayNames: displayNamesMap,
+                          onSubmit: (t) => Navigator.of(context).pop(t),
+                        ),
+                      ),
+                    );
+                    if (updated == null || !context.mounted) return;
+                    final ok = await repo.updateTask(updated);
+                    if (!ok && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Could not save changes'),
+                          backgroundColor: AppColors.terracotta,
+                        ),
+                      );
+                    }
+                  }
+                : null,
             onDelete: canEdit
                 ? () async {
                     final confirmed = await showDialog<bool>(

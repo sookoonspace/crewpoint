@@ -19,6 +19,7 @@ class TaskDetailScreen extends StatelessWidget {
     required this.canEditTask,
     required this.canChangeStatus,
     this.assigneeName,
+    this.onEdit,
     this.onDelete,
     this.onChecklistToggle,
     this.onChecklistAdd,
@@ -37,6 +38,7 @@ class TaskDetailScreen extends StatelessWidget {
   /// back to a truncated UID. Hydrated upstream by `event_task_detail_page.dart`
   /// via `usersByIdProvider` so this screen stays Riverpod-free.
   final String? assigneeName;
+  final VoidCallback? onEdit;
   final VoidCallback? onDelete;
   final void Function(ChecklistItem item, bool isCompleted)? onChecklistToggle;
   final void Function(String id, String text)? onChecklistAdd;
@@ -56,6 +58,12 @@ class TaskDetailScreen extends StatelessWidget {
         backgroundColor: AppColors.cream,
         elevation: 0,
         actions: [
+          if (canEditTask)
+            IconButton(
+              key: const Key('tasks.detail.edit'),
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: onEdit,
+            ),
           if (canEditTask)
             IconButton(
               key: const Key('tasks.detail.delete'),

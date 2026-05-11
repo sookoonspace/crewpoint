@@ -13,7 +13,9 @@ import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/auth/data/auth_repository.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
+import 'package:crewpoint_app/app/features/profile/data/firestore_user_repository.dart';
 import 'package:crewpoint_app/app/features/tasks/data/task_repository.dart';
+import 'package:crewpoint_app/app/features/tasks/presentation/event_task_detail_page.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/event_tasks_page.dart';
 
 /// Forces an `Authenticated` state without going through Firebase auth.
@@ -86,6 +88,27 @@ class TasksHarness {
         authProvider.overrideWith(() => _StubAuthNotifier(currentUser)),
       ],
       child: MaterialApp(home: EventTasksPage(event: event)),
+    );
+  }
+
+  /// Pumps `EventTaskDetailPage` directly for the edit-task journey.
+  /// The `EventTasksPage`-driven list-to-detail navigation lives in go_router,
+  /// which this harness intentionally avoids.
+  Widget buildDetailPage({required String taskId}) {
+    final repo = repository;
+    return ProviderScope(
+      overrides: [
+        databaseProvider.overrideWithValue(database),
+        firestoreProvider.overrideWithValue(firestore),
+        taskRepositoryProvider.overrideWithValue(repo),
+        userRepositoryProvider.overrideWithValue(
+          FirestoreUserRepository(firestore: firestore),
+        ),
+        authProvider.overrideWith(() => _StubAuthNotifier(currentUser)),
+      ],
+      child: MaterialApp(
+        home: EventTaskDetailPage(event: event, taskId: taskId),
+      ),
     );
   }
 }
