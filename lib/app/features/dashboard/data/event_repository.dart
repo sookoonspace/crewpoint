@@ -43,6 +43,40 @@ class EventRepository {
     await _eventsRef.doc(event.id).set(_toFirestore(event));
   }
 
+  /// Updates the client-editable fields on `events/{id}`.
+  ///
+  /// Editable: `title`, `description`, `eventType`, `startDate`, `endDate`,
+  /// `status`. NOT writable here (server-gatekept or data-integrity locked):
+  /// `currency`, `memberIds`, `adminIds`, `creatorId`, `createdAt`.
+  ///
+  /// Returns `false` on caught failure (log + bool), matching the rest of
+  /// the app's mutation pattern. `createEvent` retains its throw signature
+  /// for backward compatibility.
+  Future<bool> updateEvent(EventModel updated) async {
+    try {
+      final docRef = _eventsRef.doc(updated.id);
+      final existing = await docRef.get();
+      if (!existing.exists) return false;
+      await docRef.update({
+        'title': updated.title,
+        'description': updated.description,
+        'eventType': updated.eventType.name,
+        'startDate': updated.startDate != null
+            ? Timestamp.fromDate(updated.startDate!)
+            : null,
+        'endDate': updated.endDate != null
+            ? Timestamp.fromDate(updated.endDate!)
+            : null,
+        'status': updated.status.name,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      return true;
+    } catch (e, st) {
+      log('updateEvent failed', error: e, stackTrace: st, name: 'events');
+      return false;
+    }
+  }
+
   /// Streams the events the user is a member of. Starts/reuses a Firestore
   /// listener that mirrors snapshots into Drift on mobile/desktop; returns
   /// a Drift-backed stream on those platforms. On web, returns the

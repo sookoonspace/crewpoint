@@ -185,16 +185,23 @@ class _EventHero extends StatelessWidget {
                     onPressed: () => context.pop(),
                   ),
                   const Spacer(),
-                  if (event.isAdmin(event.creatorId))
-                    IconButton(
-                      icon: const Icon(
-                        Icons.settings_outlined,
-                        color: AppColors.offWhite,
-                      ),
-                      onPressed: () {
-                        // Event settings
-                      },
-                    ),
+                  Consumer(
+                    builder: (_, ref, _) {
+                      final uid = ref.watch(currentUserIdProvider);
+                      if (uid == null || !event.isAdmin(uid)) {
+                        return const SizedBox.shrink();
+                      }
+                      return IconButton(
+                        key: const Key('event.dashboard.settingsIcon'),
+                        icon: const Icon(
+                          Icons.settings_outlined,
+                          color: AppColors.offWhite,
+                        ),
+                        onPressed: () =>
+                            context.push('/dashboard/event/${event.id}/edit'),
+                      );
+                    },
+                  ),
                 ],
               ),
               const SizedBox(height: AppSpacing.lg),
@@ -539,21 +546,38 @@ class _EventActionsState extends State<_EventActions> {
                 width: 0.5,
               ),
             ),
-            child: SwitchListTile(
-              title: const Text('Archive Event'),
-              subtitle: Text(
-                widget.event.status == EventStatus.archived
-                    ? 'Event is archived (read-only)'
-                    : 'Archive to make read-only',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              value: widget.event.status == EventStatus.archived,
-              onChanged: (_) {
-                // TODO: Update event status via Firestore
-              },
-              activeThumbColor: AppColors.sage,
-              shape: const RoundedRectangleBorder(
-                borderRadius: AppRadius.borderLg,
+            child: Consumer(
+              builder: (_, ref, _) => SwitchListTile(
+                title: const Text('Archive Event'),
+                subtitle: Text(
+                  widget.event.status == EventStatus.archived
+                      ? 'Event is archived (read-only)'
+                      : 'Archive to make read-only',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                value: widget.event.status == EventStatus.archived,
+                onChanged: (archived) async {
+                  final updated = widget.event.copyWith(
+                    status: archived
+                        ? EventStatus.archived
+                        : EventStatus.active,
+                  );
+                  final ok = await ref
+                      .read(eventRepositoryProvider)
+                      .updateEvent(updated);
+                  if (!ok && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Could not update archive status'),
+                        backgroundColor: AppColors.terracotta,
+                      ),
+                    );
+                  }
+                },
+                activeThumbColor: AppColors.sage,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: AppRadius.borderLg,
+                ),
               ),
             ),
           ),

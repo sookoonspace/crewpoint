@@ -15,6 +15,8 @@ import 'package:crewpoint_app/app/features/profile/presentation/profile_screen.d
 import 'package:crewpoint_app/app/features/auth/presentation/auth_gate_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/create_event_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/dashboard_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/edit_event_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/member_management_screen.dart';
 import 'package:crewpoint_app/app/features/onboarding/presentation/onboarding_screen.dart';
@@ -141,6 +143,16 @@ GoRouter createRouter({
                       child: (event) => EventDashboardScreen(event: event),
                     ),
                     routes: [
+                      GoRoute(
+                        path: 'edit',
+                        builder: (_, state) => EventGuard(
+                          eventId: _resolveEventId(state),
+                          child: (event) => Consumer(
+                            builder: (_, ref, _) =>
+                                _EditEventRouteScreen(event: event),
+                          ),
+                        ),
+                      ),
                       GoRoute(
                         path: 'members',
                         builder: (_, state) => EventGuard(
@@ -346,6 +358,36 @@ class _RouterErrorScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Wrapper screen for the `event/:eventId/edit` route. Pushes the edit
+/// form, calls `eventRepositoryProvider.updateEvent` on submit, surfaces
+/// terracotta snackbar on failure.
+class _EditEventRouteScreen extends ConsumerWidget {
+  const _EditEventRouteScreen({required this.event});
+
+  final EventModel event;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return EditEventScreen(
+      initial: event,
+      onSubmit: (updated) async {
+        final ok = await ref.read(eventRepositoryProvider).updateEvent(updated);
+        if (!context.mounted) return;
+        if (ok) {
+          context.pop();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not save event'),
+              backgroundColor: AppColors.terracotta,
+            ),
+          );
+        }
+      },
     );
   }
 }

@@ -11,6 +11,7 @@ import 'package:crewpoint_app/app/features/auth/data/auth_repository.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/create_event_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/dashboard_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/edit_event_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboard_screen.dart';
 
 /// Forces an `Authenticated` state without going through Firebase auth.
@@ -57,6 +58,24 @@ class DashboardJourneyHarness {
               eventId: state.pathParameters['eventId'] ?? '',
               child: (event) => EventDashboardScreen(event: event),
             ),
+            routes: [
+              GoRoute(
+                path: 'edit',
+                builder: (_, state) => EventGuard(
+                  eventId: state.pathParameters['eventId'] ?? '',
+                  child: (event) => Consumer(
+                    builder: (_, ref, _) => EditEventScreen(
+                      initial: event,
+                      onSubmit: (updated) async {
+                        await ref
+                            .read(eventRepositoryProvider)
+                            .updateEvent(updated);
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

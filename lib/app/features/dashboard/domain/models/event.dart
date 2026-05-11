@@ -71,4 +71,31 @@ class EventModel {
 
   /// Check if [uid] is a member (memberIds includes admins and owner).
   bool isMember(String uid) => memberIds.contains(uid);
+
+  EventModel copyWith({
+    String? title,
+    String? description,
+    EventType? eventType,
+    DateTime? startDate,
+    DateTime? endDate,
+    EventStatus? status,
+    bool clearStartDate = false,
+    bool clearEndDate = false,
+  }) {
+    return EventModel(
+      id: id,
+      title: title ?? this.title,
+      creatorId: creatorId,
+      description: description ?? this.description,
+      eventType: eventType ?? this.eventType,
+      startDate: clearStartDate ? null : (startDate ?? this.startDate),
+      endDate: clearEndDate ? null : (endDate ?? this.endDate),
+      adminIds: adminIds,
+      memberIds: memberIds,
+      status: status ?? this.status,
+      currency: currency,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
+  }
 }

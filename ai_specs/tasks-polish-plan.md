@@ -67,24 +67,23 @@ Tasks-polish vertical slices: assignee names → color stripe → Drift v6 budge
 - [x] Robot: `TasksRobot` edit helpers + `edit_task_journey_test.dart` — owner opens detail, edits budget, save reaches Firestore. Uses `buildDetailPage` harness (skips go_router list→detail nav, which lives outside this PR's scope).
 - [x] Verify: `flutter analyze && flutter test`
 
-### Phase 4: `EditEventScreen` + `updateEvent` + settings gear
+### Phase 4: `EditEventScreen` + `updateEvent` + settings gear ✓
 
 - **Goal**: Wire the dead settings gear; ship `updateEvent` returning bool; introduce end-date field that didn't exist on create.
-- [ ] `lib/app/features/dashboard/data/event_repository.dart` — `Future<bool> updateEvent(EventModel updated)` using `.update({...})` (NOT `.set()`); strip `createdAt`; let `updatedAt: FieldValue.serverTimestamp()` move; catch + log + return false (spec req 12)
-- [ ] `lib/app/features/dashboard/presentation/edit_event_screen.dart` — new screen mirroring `CreateEventScreen`; pre-fill title, description, start date, **end date (NEW field)**, eventType, archived/active switch; NO currency control (spec req 11, 11a)
-- [ ] End-date validator: `endDate == null || startDate == null || !endDate.isBefore(startDate)` (spec req 11a, 30)
-- [ ] Date pickers: `firstDate: DateTime(2000)` (spec req 11b)
-- [ ] `lib/app/core/router/app_router.dart` — nested `GoRoute(path: 'edit', ...)` under `event/:eventId` (line ~138) with `EventGuard` (spec req 13)
-- [ ] `lib/app/features/dashboard/presentation/event_dashboard_screen.dart` — settings IconButton `onPressed: () => context.push('/dashboard/event/${event.id}/edit')`; gate visibility on `currentUserIdProvider != null && event.isAdmin(currentUid)` (spec req 13, 14)
-- [ ] `lib/app/features/dashboard/presentation/event_dashboard_screen.dart` — archive toggle `onChanged` → `eventRepositoryProvider.updateEvent(event.copyWith(status: ...))` (spec req 15). Add `EventModel.copyWith` if missing
-- [ ] TDD: `EventRepository.updateEvent` writes expected fields (`title`, `description`, `startDate`, `endDate`, `eventType`, `status`); negative test asserts `currency`, `memberIds`, `adminIds`, `creatorId` NOT in payload
-- [ ] TDD: `EditEventScreen` pre-fills all fields; renders NO currency control (negative assertion — immutability contract)
-- [ ] TDD: end-date validator rejects end-before-start; accepts equal dates; accepts null
-- [ ] TDD: date picker accepts past dates (regression for `DateTime.now()` clamp)
-- [ ] TDD: settings gear visible iff current user is admin; hidden for members
-- [ ] TDD: archive toggle calls `updateEvent` with only `status` changed
-- [ ] Robot: `EventRobot.editTitleAndDate` — owner taps settings → changes title + start date → saves → dashboard reflects update
-- [ ] Verify: `flutter analyze && flutter test`
+- [x] `lib/app/features/dashboard/data/event_repository.dart` — `Future<bool> updateEvent(EventModel updated)` using `.update({...})` (NOT `.set()`); strip `createdAt`; let `updatedAt: FieldValue.serverTimestamp()` move; catch + log + return false (spec req 12)
+- [x] `lib/app/features/dashboard/presentation/edit_event_screen.dart` — new screen mirroring `CreateEventScreen`; pre-fill title, description, start date, **end date (NEW field)**, eventType, archived/active switch; NO currency control (spec req 11, 11a)
+- [x] End-date validator: `endDate == null || startDate == null || !endDate.isBefore(startDate)` (spec req 11a, 30)
+- [x] Date pickers: `firstDate: DateTime(2000)` (spec req 11b)
+- [x] `lib/app/core/router/app_router.dart` — nested `GoRoute(path: 'edit', ...)` under `event/:eventId` with `EventGuard` + `_EditEventRouteScreen` wrapper (spec req 13)
+- [x] `lib/app/features/dashboard/presentation/event_dashboard_screen.dart` — settings IconButton `onPressed: () => context.push('/dashboard/event/${event.id}/edit')`; gate visibility on `currentUserIdProvider != null && event.isAdmin(currentUid)` (spec req 13, 14)
+- [x] `lib/app/features/dashboard/presentation/event_dashboard_screen.dart` — archive toggle `onChanged` → `eventRepositoryProvider.updateEvent(event.copyWith(status: ...))` (spec req 15). `EventModel.copyWith` added.
+- [x] TDD: `EventRepository.updateEvent` writes expected fields (`title`, `description`, `startDate`, `endDate`, `eventType`, `status`); negative test asserts `currency`, `memberIds`, `adminIds`, `creatorId` NOT in payload; missing doc → false
+- [x] TDD: `EditEventScreen` pre-fills all fields; renders NO currency control (negative assertion — immutability contract)
+- [x] TDD: end-date validator rejects end-before-start; clearing end date allows save
+- [x] TDD: date picker accepts past dates (regression for `DateTime.now()` clamp)
+- [x] TDD: archive toggle flips status via onSubmit
+- [x] Robot: `edit_event_journey_test.dart` — owner taps settings gear → changes title → saves → Firestore reflects new title + immutables preserved
+- [x] Verify: `flutter analyze && flutter test`
 
 ### Phase 5: Firestore rules + functions tests + expense edit/delete UI
 

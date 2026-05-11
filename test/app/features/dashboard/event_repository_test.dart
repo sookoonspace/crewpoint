@@ -82,6 +82,66 @@ void main() {
     // here would mean implementing sealed SDK types — too brittle.
   });
 
+  group('updateEvent', () {
+    test('writes only the client-editable fields via update()', () async {
+      // Seed an existing event with all immutable fields populated.
+      await firestore.collection('events').doc('evt-1').set({
+        'title': 'Original Title',
+        'creatorId': 'uid-1',
+        'eventType': 'trip',
+        'adminIds': ['uid-1', 'uid-2'],
+        'memberIds': ['uid-1', 'uid-2', 'uid-3'],
+        'status': 'active',
+        'currency': 'USD',
+        'createdAt': Timestamp.fromDate(DateTime.utc(2025, 1, 1)),
+      });
+
+      final updated = EventModel(
+        id: 'evt-1',
+        title: 'New Title',
+        creatorId: 'uid-1',
+        description: 'New desc',
+        eventType: EventType.project,
+        startDate: DateTime.utc(2026, 6, 1),
+        endDate: DateTime.utc(2026, 6, 3),
+        adminIds: ['hacker'], // must NOT be written
+        memberIds: ['hacker'], // must NOT be written
+        status: EventStatus.archived,
+        currency: 'EUR', // must NOT be written
+      );
+
+      final ok = await repo.updateEvent(updated);
+      expect(ok, isTrue);
+
+      final data = (await firestore.collection('events').doc('evt-1').get())
+          .data()!;
+      expect(data['title'], 'New Title');
+      expect(data['description'], 'New desc');
+      expect(data['eventType'], 'project');
+      expect(
+        (data['startDate'] as Timestamp).toDate().toUtc(),
+        DateTime.utc(2026, 6, 1),
+      );
+      expect(
+        (data['endDate'] as Timestamp).toDate().toUtc(),
+        DateTime.utc(2026, 6, 3),
+      );
+      expect(data['status'], 'archived');
+
+      // Immutables preserved.
+      expect(data['adminIds'], ['uid-1', 'uid-2']);
+      expect(data['memberIds'], ['uid-1', 'uid-2', 'uid-3']);
+      expect(data['creatorId'], 'uid-1');
+      expect(data['currency'], 'USD');
+    });
+
+    test('returns false when the document does not exist', () async {
+      const event = EventModel(id: 'missing', title: 'X', creatorId: 'uid-1');
+      final ok = await repo.updateEvent(event);
+      expect(ok, isFalse);
+    });
+  });
+
   group('watchEventsForUser', () {
     test(
       'mirrors Firestore docs into Drift and emits matching EventModels',
