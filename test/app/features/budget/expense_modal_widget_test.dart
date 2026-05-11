@@ -116,4 +116,61 @@ void main() {
     expect(submittedReceipt!.bytes, equals(_stubBytes));
     expect(submittedReceipt!.contentType, equals('image/png'));
   });
+
+  testWidgets(
+    'edit mode: pre-fills amount + description, Save label flips, preserves id',
+    (tester) async {
+      const initial = ExpenseModel(
+        id: 'exp-existing',
+        eventId: 'evt-1',
+        payerId: 'u1',
+        amount: 42.5,
+        description: 'Original',
+        isDonation: true,
+      );
+
+      ExpenseModel? submitted;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ExpenseModal(
+              eventId: 'evt-1',
+              payerId: 'u1',
+              memberIds: const ['u1', 'u2'],
+              initial: initial,
+              onSubmit: (expense, _) => submitted = expense,
+            ),
+          ),
+        ),
+      );
+
+      // Pre-fill assertions.
+      final amount = tester.widget<TextField>(
+        find.descendant(
+          of: find.byKey(const Key('budget.expense.amount')),
+          matching: find.byType(TextField),
+        ),
+      );
+      expect(amount.controller!.text, '42.5');
+
+      expect(find.text('Edit Expense'), findsOneWidget);
+      expect(find.text('Add Expense'), findsNothing);
+
+      // Save button label flips.
+      expect(find.text('Save changes'), findsOneWidget);
+
+      // Edit amount and submit → id preserved.
+      await tester.enterText(
+        find.byKey(const Key('budget.expense.amount')),
+        '99.99',
+      );
+      await tester.tap(find.byKey(const Key('budget.expense.save')));
+      await tester.pumpAndSettle();
+
+      expect(submitted, isNotNull);
+      expect(submitted!.id, 'exp-existing');
+      expect(submitted!.amount, closeTo(99.99, 0.001));
+      expect(submitted!.isDonation, isTrue);
+    },
+  );
 }

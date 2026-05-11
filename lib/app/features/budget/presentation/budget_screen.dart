@@ -15,6 +15,8 @@ class BudgetScreen extends StatelessWidget {
     this.currency = 'USD',
     this.memberNames = const {},
     this.onAddExpense,
+    this.onEditExpense,
+    this.onDeleteExpense,
     this.onRecordPayment,
     this.onExportPdf,
     this.onExportCsv,
@@ -25,6 +27,12 @@ class BudgetScreen extends StatelessWidget {
   final String currency;
   final Map<String, String> memberNames;
   final VoidCallback? onAddExpense;
+
+  /// Per-tile callbacks. When null, the overflow menu hides that action.
+  /// Parent (`EventBudgetPage`) computes RBAC.
+  final void Function(ExpenseModel expense)? onEditExpense;
+  final void Function(ExpenseModel expense)? onDeleteExpense;
+
   final void Function(Settlement settlement)? onRecordPayment;
   final VoidCallback? onExportPdf;
   final VoidCallback? onExportCsv;
@@ -137,7 +145,16 @@ class BudgetScreen extends StatelessWidget {
             const _EmptyExpenses()
           else
             ...regularExpenses.map(
-              (e) => ExpenseTile(expense: e, currencySymbol: symbol),
+              (e) => ExpenseTile(
+                expense: e,
+                currencySymbol: symbol,
+                onEdit: onEditExpense == null
+                    ? null
+                    : () => onEditExpense!.call(e),
+                onDelete: onDeleteExpense == null
+                    ? null
+                    : () => onDeleteExpense!.call(e),
+              ),
             ),
         ],
       ),
@@ -297,12 +314,7 @@ class _BalanceRow extends StatelessWidget {
               crossAxisAlignment: .start,
               children: [
                 Text(name, style: Theme.of(context).textTheme.bodyMedium),
-                Text(
-                  label,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall,
-                ),
+                Text(label, style: Theme.of(context).textTheme.bodySmall),
               ],
             ),
           ),
@@ -431,9 +443,7 @@ class _EmptyExpenses extends StatelessWidget {
       child: Center(
         child: Text(
           'No expenses yet',
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium,
+          style: Theme.of(context).textTheme.bodyMedium,
         ),
       ),
     );

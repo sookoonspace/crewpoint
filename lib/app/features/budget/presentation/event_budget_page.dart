@@ -282,11 +282,75 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
           },
           orElse: () => <String, String>{},
         );
+        bool canMutate(ExpenseModel expense) =>
+            uid == expense.payerId || widget.event.isAdmin(uid);
+
+        Future<void> editExpense(ExpenseModel expense) async {
+          await ExpenseModal.show(
+            context: context,
+            eventId: widget.event.id,
+            payerId: expense.payerId,
+            memberIds: widget.event.memberIds,
+            currencySymbol: symbol,
+            initial: expense,
+            onSubmit: (updated, _) async {
+              final ok = await repo.updateExpense(updated);
+              if (!ok && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Could not update expense'),
+                    backgroundColor: AppColors.terracotta,
+                  ),
+                );
+              }
+            },
+          );
+        }
+
+        Future<void> deleteExpense(ExpenseModel expense) async {
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Delete this expense?'),
+              content: const Text(
+                'It will be removed for everyone and balances will update.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text(
+                    'Delete',
+                    style: TextStyle(color: AppColors.terracotta),
+                  ),
+                ),
+              ],
+            ),
+          );
+          if (confirmed != true || !context.mounted) return;
+          final ok = await repo.deleteExpense(expense.id);
+          if (!ok && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Could not delete expense'),
+                backgroundColor: AppColors.terracotta,
+              ),
+            );
+          }
+        }
+
         return BudgetScreen(
           expenses: expenses,
           memberIds: widget.event.memberIds,
           currency: widget.event.currency,
           memberNames: memberNames,
+          onEditExpense: (expense) =>
+              canMutate(expense) ? editExpense(expense) : null,
+          onDeleteExpense: (expense) =>
+              canMutate(expense) ? deleteExpense(expense) : null,
           onRecordPayment: _onSettlePressed,
           onExportPdf: () => _runExport(
             expenses: expenses,

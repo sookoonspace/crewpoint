@@ -25,6 +25,7 @@ class ExpenseModal extends StatefulWidget {
     this.currencySymbol = '\$',
     this.minAmount = 0.01,
     this.maxAmount = 10000000,
+    this.initial,
     this.onPickReceipt,
     this.onSubmit,
   });
@@ -35,6 +36,11 @@ class ExpenseModal extends StatefulWidget {
   final String currencySymbol;
   final double minAmount;
   final double maxAmount;
+
+  /// When non-null, the modal opens in edit mode: pre-fills from this
+  /// model, locks `payerId` (display-only), preserves the id on submit,
+  /// and renders `Save changes` instead of `Add Expense`.
+  final ExpenseModel? initial;
   final ReceiptPicker? onPickReceipt;
   final ExpenseSubmit? onSubmit;
 
@@ -72,6 +78,7 @@ class ExpenseModal extends StatefulWidget {
     required String payerId,
     required List<String> memberIds,
     String currencySymbol = '\$',
+    ExpenseModel? initial,
     ReceiptPicker? onPickReceipt,
     ExpenseSubmit? onSubmit,
   }) {
@@ -83,6 +90,7 @@ class ExpenseModal extends StatefulWidget {
         payerId: payerId,
         memberIds: memberIds,
         currencySymbol: currencySymbol,
+        initial: initial,
         onPickReceipt: onPickReceipt,
         onSubmit: onSubmit,
       ),
@@ -95,10 +103,25 @@ class ExpenseModal extends StatefulWidget {
 
 class _ExpenseModalState extends State<ExpenseModal> {
   final _formKey = GlobalKey<FormState>();
-  final _amountController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  bool _isDonation = false;
+  late final TextEditingController _amountController;
+  late final TextEditingController _descriptionController;
+  late bool _isDonation;
   PickedImage? _pickedReceipt;
+
+  bool get _isEdit => widget.initial != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initial;
+    _amountController = TextEditingController(
+      text: initial != null ? initial.amount.toString() : '',
+    );
+    _descriptionController = TextEditingController(
+      text: initial?.description ?? '',
+    );
+    _isDonation = initial?.isDonation ?? false;
+  }
 
   @override
   void dispose() {
@@ -126,8 +149,9 @@ class _ExpenseModalState extends State<ExpenseModal> {
       isDonation: _isDonation,
     );
 
+    final initial = widget.initial;
     final expense = ExpenseModel(
-      id: const Uuid().v4(),
+      id: initial?.id ?? const Uuid().v4(),
       eventId: widget.eventId,
       payerId: widget.payerId,
       amount: amount,
@@ -135,7 +159,10 @@ class _ExpenseModalState extends State<ExpenseModal> {
           ? null
           : _descriptionController.text.trim(),
       isDonation: _isDonation,
+      isPayment: initial?.isPayment ?? false,
       splits: splits,
+      receiptPath: initial?.receiptPath,
+      createdAt: initial?.createdAt,
     );
 
     widget.onSubmit?.call(expense, _pickedReceipt);
@@ -165,7 +192,10 @@ class _ExpenseModalState extends State<ExpenseModal> {
           crossAxisAlignment: .start,
           spacing: AppSpacing.lg,
           children: [
-            Text('Add Expense', style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              _isEdit ? 'Edit Expense' : 'Add Expense',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             CustomTextField(
               key: const Key('budget.expense.amount'),
               hintText: 'Amount (${widget.currencySymbol})',
@@ -210,13 +240,11 @@ class _ExpenseModalState extends State<ExpenseModal> {
             if (amount > 0)
               Text(
                 'Split: ${widget.currencySymbol}${splitAmount.toStringAsFixed(2)} per person ($splitCount people)',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall,
+                style: Theme.of(context).textTheme.bodySmall,
               ),
             PrimaryButton(
               key: const Key('budget.expense.save'),
-              label: 'Add Expense',
+              label: _isEdit ? 'Save changes' : 'Add Expense',
               onPressed: _submit,
             ),
           ],

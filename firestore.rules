@@ -104,17 +104,33 @@ service cloud.firestore {
 
       // Expenses subcollection
       match /expenses/{expenseId} {
+        function eventDocForExpense() {
+          return get(/databases/$(database)/documents/events/$(eventId)).data;
+        }
+
         allow read: if request.auth != null && isEventMember(eventId);
 
         allow create: if request.auth != null
           && isEventMember(eventId)
           && request.resource.data.payerId == request.auth.uid;
 
+        // Update: payer, event creator, or any admin may edit. payerId and
+        // eventId are locked so an edit cannot reassign the expense to a
+        // different payer or move it across events. Other fields
+        // (amount, description, splits, receiptPath, isDonation,
+        // isPayment) flow freely.
+        allow update: if request.auth != null
+          && (resource.data.payerId == request.auth.uid
+              || eventDocForExpense().creatorId == request.auth.uid
+              || request.auth.uid in eventDocForExpense().adminIds)
+          && request.resource.data.payerId == resource.data.payerId
+          && request.resource.data.eventId == resource.data.eventId;
+
+        // Delete: payer, event creator, or any admin.
         allow delete: if request.auth != null
           && (resource.data.payerId == request.auth.uid
-              || get(/databases/$(database)/documents/events/$(eventId)).data.creatorId == request.auth.uid);
-
-        allow update: if false;
+              || eventDocForExpense().creatorId == request.auth.uid
+              || request.auth.uid in eventDocForExpense().adminIds);
       }
     }
 

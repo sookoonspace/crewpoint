@@ -85,20 +85,22 @@ Tasks-polish vertical slices: assignee names → color stripe → Drift v6 budge
 - [x] Robot: `edit_event_journey_test.dart` — owner taps settings gear → changes title → saves → Firestore reflects new title + immutables preserved
 - [x] Verify: `flutter analyze && flutter test`
 
-### Phase 5: Firestore rules + functions tests + expense edit/delete UI
+### Phase 5: Firestore rules + functions tests + expense edit/delete UI ✓
 
 - **Goal**: Land the rules patch first (with passing rules tests — user critical instruction), then the UI that depends on it. Order is non-negotiable: rules-tests-green → UI work.
-- [ ] `firestore.rules` (line ~117) — replace `allow update: if false;` for `/events/{eventId}/expenses/{expenseId}` with the rule in spec req 18a (payer/creator/admin; lock `payerId`, `eventId`); widen `allow delete` (line ~113–115) to include `request.auth.uid in get(...).data.adminIds`
-- [ ] `functions/test/firestore-rules.test.ts` — new `describe('expenses update — payer/creator/admin allowed, others denied; payerId/eventId locked', ...)` block with positive (payer self-edit, creator-edit, admin-edit) + negative (random-member edit, payerId mutation, eventId mutation) cases (user critical instruction)
-- [ ] `functions/test/firestore-rules.test.ts` — extend existing expense-delete coverage with admin-allowed positive case + non-payer-non-admin-non-creator denied case
-- [ ] **Verify rules tests green BEFORE moving to UI**: `npm --prefix functions test`
-- [ ] `lib/app/features/budget/presentation/widgets/expense_modal.dart` — accept optional `ExpenseModel? initial`; pre-fill description, amount, splits, receipt; lock payer display row (no payer dropdown); reuse `initial.id` on submit; emit `initial.copyWith(...)`; Save label `Save changes` when in edit mode (spec req 17)
-- [ ] `lib/app/features/budget/presentation/widgets/expense_tile.dart` — add `VoidCallback? onEdit`, `VoidCallback? onDelete`; trailing `PopupMenuButton` when at least one non-null; omit Edit item when `expense.isPayment == true`; keys `budget.expense.${id}.overflow`/`.edit`/`.delete` (spec req 16)
-- [ ] `lib/app/features/budget/presentation/event_budget_page.dart` — compute per-tile RBAC (`currentUid == expense.payerId || event.isAdmin(currentUid)`); pass `onEdit`/`onDelete` (null when forbidden); wire edit submit → `expenseRepositoryProvider.updateExpense`; wire delete (with confirm dialog) → `deleteExpense`; terracotta snackbar on `false` (spec req 18)
-- [ ] TDD: `ExpenseTile` renders no menu when both callbacks null; renders Edit+Delete when both non-null; hides Edit when `isPayment == true`
-- [ ] TDD: `ExpenseModal` in edit mode pre-fills + locks payer + submission preserves `initial.id` + Save label flips
-- [ ] Robot: `BudgetRobot.editAndDeleteExpense` — payer edits an expense (amount), saves, then deletes another; both reflect in `BalanceLedger` re-compute
-- [ ] Verify: `flutter analyze && flutter test && npm --prefix functions test`
+- [x] `firestore.rules` — replace `allow update: if false;` for `/events/{eventId}/expenses/{expenseId}` with payer/creator/admin rule that locks `payerId`/`eventId`; widen `allow delete` to include admins
+- [x] `functions/test/firestore-rules.test.ts` — new `describe('expenses update — ...')` block with 7 cases (payer/creator/admin allowed; random-member + non-member denied; payerId + eventId mutation locked)
+- [x] `functions/test/firestore-rules.test.ts` — new `describe('expenses delete — ...')` block: admin allowed (new permission); random-member denied
+- [x] **Verified rules tests green BEFORE UI work**: `npm --prefix functions test` → 75 passed
+- [x] `lib/app/features/budget/presentation/widgets/expense_modal.dart` — optional `ExpenseModel? initial`; pre-fills description, amount, isDonation; preserves id + isPayment + receipt + createdAt on submit; Save label flips to `Save changes` and title flips to `Edit Expense` (spec req 17)
+- [x] `lib/app/features/budget/presentation/widgets/expense_tile.dart` — `onEdit` / `onDelete` callbacks-from-parent; `PopupMenuButton` keyed `budget.expense.${id}.overflow` with items `.edit` / `.delete`; Edit hidden when `expense.isPayment == true` (spec req 16)
+- [x] `lib/app/features/budget/presentation/event_budget_page.dart` — `canMutate` RBAC (`uid == payerId || event.isAdmin(uid)`); edit opens `ExpenseModal` in edit mode → `updateExpense`; delete shows confirm dialog → `deleteExpense`; terracotta snackbar on `false`
+- [x] `lib/app/features/budget/presentation/budget_screen.dart` — accepts `onEditExpense` / `onDeleteExpense`, threads to each `ExpenseTile`
+- [x] `lib/app/features/budget/data/expense_repository.dart` — `Future<bool> updateExpense` via Firestore `update()` + Drift upsert
+- [x] TDD: `ExpenseTile` overflow menu — hidden when both callbacks null; renders Edit+Delete when non-null; Edit hidden for `isPayment`; tap fires callback
+- [x] TDD: `ExpenseModal` edit mode — pre-fills, title + Save label flip, submission preserves `initial.id`
+- [ ] Robot: `BudgetRobot.editAndDeleteExpense` — **deferred**. Widget-level coverage at the tile + modal level (per spec req 16, 17) is exhaustive; building a full budget journey harness (similar to the dashboard/tasks harnesses) is a separate slice. Captured in `ai_specs/todo.md` if needed.
+- [x] Verify: `flutter analyze` (clean) && `flutter test` (354 pass) && `npm --prefix functions test` (75 pass)
 
 ## Risks / Out of scope
 

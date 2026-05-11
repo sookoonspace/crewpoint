@@ -168,6 +168,22 @@ class ExpenseRepository implements IExpenseRepository {
     }
   }
 
+  /// Updates an existing expense via Firestore `update()`. Locks
+  /// `payerId`/`eventId`/`id` field shape per `firestore.rules` (those are
+  /// the immutable fields the rules enforce).
+  Future<bool> updateExpense(ExpenseModel expense) async {
+    try {
+      await _expensesRef(
+        expense.eventId,
+      ).doc(expense.id).update(_toFirestore(expense));
+      await _upsertDrift(expense);
+      return true;
+    } catch (e, st) {
+      log('Failed to update expense', error: e, stackTrace: st, name: 'budget');
+      return false;
+    }
+  }
+
   @override
   Future<bool> deleteExpense(String id) async {
     try {

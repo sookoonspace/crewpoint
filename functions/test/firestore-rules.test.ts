@@ -8,6 +8,7 @@ import {
   getDoc,
   doc,
   updateDoc,
+  deleteDoc,
   arrayUnion,
   arrayRemove,
 } from 'firebase/firestore';
@@ -283,6 +284,157 @@ describe('users — Fix 1.B Option A: PII isolated in users/{uid}/private/profil
       setDoc(
         doc(attackerCtx.firestore(), `users/${ownerUid}/private/profile`),
         {email: 'phished@example.com'}
+      )
+    );
+  });
+});
+
+describe('expenses update — payer/creator/admin allowed, others denied; payerId/eventId locked', () => {
+  const eventId = 'evtExp';
+  const creatorUid = 'creator1';
+  const adminUid = 'admin1';
+  const payerUid = 'payer1';
+  const memberUid = 'member1';
+  const outsiderUid = 'outsider1';
+  const expenseId = 'exp1';
+
+  async function seed() {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `events/${eventId}`), {
+        creatorId: creatorUid,
+        adminIds: [creatorUid, adminUid],
+        memberIds: [creatorUid, adminUid, payerUid, memberUid],
+        title: 'Trip',
+      });
+      await setDoc(
+        doc(ctx.firestore(), `events/${eventId}/expenses/${expenseId}`),
+        {
+          eventId,
+          payerId: payerUid,
+          amount: 25,
+          description: 'Original',
+        }
+      );
+    });
+  }
+
+  test('payer can update their own expense (amount, description)', async () => {
+    await seed();
+    const payerCtx = env.authenticatedContext(payerUid);
+    await assertSucceeds(
+      updateDoc(
+        doc(payerCtx.firestore(), `events/${eventId}/expenses/${expenseId}`),
+        {amount: 50, description: 'Edited'}
+      )
+    );
+  });
+
+  test('event creator can update any expense', async () => {
+    await seed();
+    const creatorCtx = env.authenticatedContext(creatorUid);
+    await assertSucceeds(
+      updateDoc(
+        doc(creatorCtx.firestore(), `events/${eventId}/expenses/${expenseId}`),
+        {description: 'Creator edit'}
+      )
+    );
+  });
+
+  test('event admin can update any expense', async () => {
+    await seed();
+    const adminCtx = env.authenticatedContext(adminUid);
+    await assertSucceeds(
+      updateDoc(
+        doc(adminCtx.firestore(), `events/${eventId}/expenses/${expenseId}`),
+        {amount: 75}
+      )
+    );
+  });
+
+  test('random member (non-payer, non-creator, non-admin) is denied', async () => {
+    await seed();
+    const memberCtx = env.authenticatedContext(memberUid);
+    await assertFails(
+      updateDoc(
+        doc(memberCtx.firestore(), `events/${eventId}/expenses/${expenseId}`),
+        {amount: 999}
+      )
+    );
+  });
+
+  test('non-member is denied', async () => {
+    await seed();
+    const outsiderCtx = env.authenticatedContext(outsiderUid);
+    await assertFails(
+      updateDoc(
+        doc(outsiderCtx.firestore(), `events/${eventId}/expenses/${expenseId}`),
+        {amount: 999}
+      )
+    );
+  });
+
+  test('payer cannot reassign payerId via update', async () => {
+    await seed();
+    const payerCtx = env.authenticatedContext(payerUid);
+    await assertFails(
+      updateDoc(
+        doc(payerCtx.firestore(), `events/${eventId}/expenses/${expenseId}`),
+        {payerId: outsiderUid}
+      )
+    );
+  });
+
+  test('admin cannot move an expense to a different eventId', async () => {
+    await seed();
+    const adminCtx = env.authenticatedContext(adminUid);
+    await assertFails(
+      updateDoc(
+        doc(adminCtx.firestore(), `events/${eventId}/expenses/${expenseId}`),
+        {eventId: 'evtOther'}
+      )
+    );
+  });
+});
+
+describe('expenses delete — payer/creator/admin allowed, others denied', () => {
+  const eventId = 'evtExpDel';
+  const creatorUid = 'creator2';
+  const adminUid = 'admin2';
+  const payerUid = 'payer2';
+  const memberUid = 'member2';
+  const expenseId = 'exp2';
+
+  async function seed() {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `events/${eventId}`), {
+        creatorId: creatorUid,
+        adminIds: [creatorUid, adminUid],
+        memberIds: [creatorUid, adminUid, payerUid, memberUid],
+        title: 'Trip',
+      });
+      await setDoc(
+        doc(ctx.firestore(), `events/${eventId}/expenses/${expenseId}`),
+        {eventId, payerId: payerUid, amount: 25}
+      );
+    });
+  }
+
+  test('event admin can delete an expense (new permission)', async () => {
+    await seed();
+    const adminCtx = env.authenticatedContext(adminUid);
+    await assertSucceeds(
+      deleteDoc(
+        doc(adminCtx.firestore(), `events/${eventId}/expenses/${expenseId}`)
+      )
+    );
+  });
+
+  test('random member cannot delete an expense', async () => {
+    await seed();
+    const memberCtx = env.authenticatedContext(memberUid);
+    await assertFails(
+      deleteDoc(
+        doc(memberCtx.firestore(), `events/${eventId}/expenses/${expenseId}`)
       )
     );
   });
