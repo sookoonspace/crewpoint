@@ -33,7 +33,7 @@ class TasksRobot {
   }
 
   void expectEmptyState() {
-    expect(find.byKey(const Key('tasks.list.empty')), findsOneWidget);
+    expect(find.byKey(const Key('tasks.list.emptyState')), findsOneWidget);
   }
 
   void expectTaskTitle(String title) {

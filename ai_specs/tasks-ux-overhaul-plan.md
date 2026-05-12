@@ -89,19 +89,19 @@ Tasks UX overhaul: form-kit foundation → remaining kit widgets → data-layer 
 - [x] TDD: priority pill — absent for `priority == 0`; present with correct label for 1/2/3
 - [x] Verify: `flutter analyze` clean; `flutter test` 416 pass (405→416, +11 new)
 
-### Phase 5: Tasks screen overhaul
+### Phase 5: Tasks screen overhaul ✓
 
 - **Goal**: Replace single-status filter with `TasksFilter` end-to-end; ship search + chips + sort menu + group toggle + per-filter empty state.
-- [ ] `lib/app/features/tasks/presentation/widgets/tasks_filter_bar.dart` — search row (`AppTextField` + `Icons.search` prefix), filter chips `Wrap`, sort `PopupMenuButton<TasksSortKey>` (no asc/desc toggle), `SegmentedButton<TasksGroupBy>`; all keyed per spec (spec req 20)
-- [ ] `lib/app/features/tasks/presentation/task_list_screen.dart` — **breaking API change**: drop `selectedFilter` / `onFilterChanged: ValueChanged<TaskStatus?>?`; add `filter: TasksFilter, onFilterChanged: ValueChanged<TasksFilter>, groups: List<TasksGroup>`; render `_TasksGroupHeader` + tiles per group (spec req 19, 20)
-- [ ] `lib/app/features/tasks/presentation/event_tasks_page.dart` — own `TasksFilter` state; compute filtered+grouped via `applyTasksFilter` + `groupTasks` with `clock.now()` + resolved `assigneeNames` from existing `usersByIdProvider`; thread to `TaskListScreen`
-- [ ] `lib/app/features/tasks/presentation/task_list_screen.dart` — per-filter empty state: "No tasks yet" when no filters active vs "No tasks match this filter" + `Clear filters` button (key `tasks.list.emptyState.clear`) resetting to default `TasksFilter` (spec req 21)
-- [ ] `lib/app/core/i18n/app_strings.dart` — add labels for Mine, Overdue, Has budget, Todo, In Progress, Done, Today, This week, Later, No due date, Sort by, Group by, search hint, empty-state copy, Clear filters
-- [ ] TDD: `TaskListScreen` tapping a chip calls `onFilterChanged` with updated `TasksFilter`
-- [ ] TDD: `TaskListScreen` empty-state copy differs when filters active; Clear filters resets state
-- [ ] TDD: `TaskListScreen` renders a group header per non-empty `TasksGroup`
-- [ ] Robot: `test/journeys/tasks_filter_sort_group_journey_test.dart` — `withClock(Clock.fixed(DateTime.utc(2026, 6, 15)))`, seed 4 tasks with varied statuses/dueDates/budgets; pump `EventTasksPage`; flow: search "lunch" → toggle Overdue chip → switch sort to Priority → switch group to Assignee. Assert visible titles + group headers at each step
-- [ ] Verify: `flutter analyze && flutter test`
+- [x] `lib/app/features/tasks/presentation/widgets/tasks_filter_bar.dart` — search row (`TextField` + leading `Icons.search` inside a `KeyedSubtree` so widget tests can find the field by row key), `Wrap` of filter chips (Mine, Overdue, Has budget, Todo, In Progress, Done), sort `PopupMenuButton<TasksSortKey>`, `SegmentedButton<TasksGroupBy>`. All keys match spec (`tasks.list.search`, `tasks.list.filterChip.<name>`, `tasks.list.sortMenu`/`.<key>`, `tasks.list.groupToggle`/`.<value>`). Sort + group toggle live in a `Wrap` so the segmented button reflows on narrow viewports instead of overflowing.
+- [x] `lib/app/features/tasks/presentation/task_list_screen.dart` — **breaking API change** applied: dropped `selectedFilter` / `onFilterChanged: ValueChanged<TaskStatus?>?`; added `filter: TasksFilter, onFilterChanged: ValueChanged<TasksFilter>, groups: List<TasksGroup>`. Renders the filter bar at the top, then `_GroupHeader` (`tasks.list.groupHeader.<key>`) + `TaskTile` per group.
+- [x] `lib/app/features/tasks/presentation/event_tasks_page.dart` — owns a single `TasksFilter` in state (session-only); computes `applyTasksFilter(tasks, _filter, currentUserId, now: clock.now())` → `groupTasks(filtered, _filter.groupBy, now: clock.now(), assigneeNames: ...)` and threads `groups` + `filter` + `onFilterChanged` into `TaskListScreen`. Uses `usersByIdProvider` for assigneeNames (already wired).
+- [x] `lib/app/features/tasks/presentation/task_list_screen.dart` — `_EmptyState`: "No tasks yet" when no filters active; "No tasks match this filter" + Clear-filters button (key `tasks.list.emptyState.clear`) resetting to default `TasksFilter` (spec req 21)
+- [x] `lib/app/core/i18n/app_strings.dart` — added 21 new fields covering Mine, Overdue, Has budget, status labels, sort menu items, group toggle items, due-window labels, Unassigned, search hint, empty-state copy, Clear filters. `_EnglishTasksStrings` provides the English values.
+- [x] `test/robots/tasks_robot.dart` — updated `expectEmptyState` to look up the new `tasks.list.emptyState` key (was the legacy `tasks.list.empty`).
+- [x] TDD: `TasksFilterBar` — search typing emits onFilterChanged.query; chip taps toggle predicate + status flags; sort menu selecting Priority updates sortKey; group toggle changes groupBy
+- [x] TDD: `TaskListScreen` — chip taps propagate updated `TasksFilter`; empty-state copy differs by `filter.hasActiveFilters`; Clear filters resets to default; group header keyed per non-empty `TasksGroup`
+- [x] Robot: `test/journeys/tasks_filter_sort_group_journey_test.dart` — `withClock(Clock.fixed(DateTime(2026, 6, 15, 12, 0)))`, seeds 4 tasks varying statuses/dueDates/priorities in fake Firestore; pumps `EventTasksPage`; walks search "lunch" → Overdue chip → sort Priority → group Assignee. Asserts visible titles + group headers + that Overdue narrows to the single past-due task.
+- [x] Verify: `flutter analyze` clean; `flutter test` 426 pass (416→426, +10 new)
 
 ### Phase 6: Create/Edit form redesign + Duplicate
 
