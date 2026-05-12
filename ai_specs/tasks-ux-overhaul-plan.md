@@ -38,23 +38,24 @@ Tasks UX overhaul: form-kit foundation → remaining kit widgets → data-layer 
 - [x] TDD: `AppFormSection` renders title + child; helper appears only when provided
 - [x] Verify: `flutter analyze` clean (zero new errors); `flutter test` 360 pass
 
-### Phase 2: Remaining form-kit widgets
+### Phase 2: Remaining form-kit widgets ✓
 
 - **Goal**: Ship `AppDropdown`, `AppRadioGroup`, `AppSwitchTile`, `AppCheckboxTile`, `AppCurrencyField`, `AppDateField` (responsive). All `StatelessWidget` + `FocusableActionDetector` where focus visuals matter.
-- [ ] `lib/app/core/widgets/forms/app_dropdown.dart` — `AppDropdown<T>` built on `DropdownButtonFormField<T>` (NOT `DropdownButton` + `InputDecorator`); `AppDropdownItem<T>` with `value/label/enabled`; web styling = +8 px vertical row padding on `kIsWeb` (spec req 4)
-- [ ] `lib/app/core/widgets/forms/app_radio_group.dart` — `AppRadioGroup<T>` (`int` + enum-friendly); vertical or horizontal; `AppRadioOption<T>` with `value/label/subtitle?` (spec req 7)
-- [ ] `lib/app/core/widgets/forms/app_switch_tile.dart` — `SwitchListTile` wrapper with title/subtitle/key (spec req 8)
-- [ ] `lib/app/core/widgets/forms/app_checkbox_tile.dart` — `CheckboxListTile` wrapper with title/subtitle/key (spec req 8)
-- [ ] `lib/app/core/widgets/forms/app_currency_field.dart` — generalise `parseBudgetEstimate` into a reusable field; accepts `currencyCode`, `allowZero`, `allowEmpty`; locale fallback to `en_US` when `Localizations` absent (spec req 10)
-- [ ] `lib/app/core/widgets/forms/app_date_field.dart` — `LayoutBuilder` cutover at `Breakpoints.compactMax`: inline `CalendarDatePicker` when allotted width ≥ 600, `showDatePicker` otherwise; `firstDate: DateTime(2000)`; `clearable` exposes `Icons.clear` → `onChanged(null)` (spec req 6, CI2)
-- [ ] `lib/app/features/tasks/presentation/widgets/budget_estimate_field.dart` — re-implement as a thin wrapper passing `currencyCode` + label to `AppCurrencyField` (spec req 10)
-- [ ] TDD: `AppDropdown` selecting an item fires `onChanged` with typed value; disabled item is non-selectable; underlying widget is `DropdownButtonFormField`
-- [ ] TDD: `AppRadioGroup<int>` highlights the current value; tapping another option fires `onChanged`
-- [ ] TDD: `AppSwitchTile` / `AppCheckboxTile` toggle correctly and respect `key`
-- [ ] TDD: `AppCurrencyField` validates `en_US` + `de_DE` inputs; locale fallback works without a `Localizations` ancestor
-- [ ] TDD: `AppDateField` modal path — `tester.view.physicalSize = Size(360, 800)` + `resetPhysicalSize` cleanup → tapping opens `showDatePicker`
-- [ ] TDD: `AppDateField` inline path — `tester.view.physicalSize = Size(1200, 800)` → renders `CalendarDatePicker`; tapping a date fires `onChanged`
-- [ ] Verify: `flutter analyze && flutter test`
+- [x] `lib/app/core/widgets/forms/app_dropdown.dart` — `AppDropdown<T>` built on `DropdownButtonFormField<T>`; `AppDropdownItem<T>` with `value/label/enabled`; web row padding via `kIsWeb` (spec req 4)
+- [x] `lib/app/core/widgets/forms/app_radio_group.dart` — `AppRadioGroup<T>` using Flutter 3.32+ `RadioGroup<T>` ancestor; `AppRadioOption<T>` with `value/label/subtitle?`; vertical + horizontal layouts (spec req 7)
+- [x] `lib/app/core/widgets/forms/app_switch_tile.dart` — `SwitchListTile` wrapper with title/subtitle/key, sage active colour (spec req 8)
+- [x] `lib/app/core/widgets/forms/app_checkbox_tile.dart` — `CheckboxListTile` wrapper with title/subtitle/key, sage active colour (spec req 8)
+- [x] `lib/app/core/widgets/forms/app_currency_field.dart` — pure `parseCurrencyInput(raw, locale:)` + `AppCurrencyField` widget; locale resolved via `Localizations.maybeLocaleOf(context) ?? 'en_US'` (spec req 10)
+- [x] `lib/app/core/widgets/forms/app_date_field.dart` — `LayoutBuilder` cutover at `Breakpoints.compactMax` (NOT `kIsWeb`); inline `CalendarDatePicker` when allotted width ≥ 600 else `showDatePicker`; `firstDate: DateTime(2000)`; clearable suffix (spec req 6, **CI2**)
+- [x] `lib/app/features/tasks/presentation/widgets/budget_estimate_field.dart` — thin wrapper over `AppCurrencyField`; `parseBudgetEstimate` kept as an alias to `parseCurrencyInput` so existing call sites + the validator unit test compile unchanged
+- [x] TDD: `AppDropdown` selecting fires `onChanged`; disabled item non-selectable; underlying `DropdownButtonFormField<T>` asserted
+- [x] TDD: `AppRadioGroup<int>` highlights value, tapping fires `onChanged`, label + helper render
+- [x] TDD: `AppSwitchTile` / `AppCheckboxTile` toggle correctly and respect `key`
+- [x] TDD: `AppCurrencyField` widget validator accepts/rejects per spec; pure `parseCurrencyInput` covered for `en_US` + `de_DE` (including 3-decimal comma rejection)
+- [x] TDD: `AppDateField` modal path — `Size(360, 800)` viewport → tap trigger opens `DatePickerDialog`
+- [x] TDD: `AppDateField` inline path — `Size(1200, 800)` viewport → `CalendarDatePicker` renders without tap; modal trigger absent
+- [x] TDD: `AppDateField` clearable — clear icon fires `onChanged(null)`
+- [x] Verify: `flutter analyze` clean; `flutter test` 374 pass
 
 ### Phase 3: Data layer fix + pure logic
 
