@@ -6,6 +6,7 @@ import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
+import 'package:crewpoint_app/app/features/tasks/presentation/create_task_screen.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/edit_task_screen.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/task_detail_screen.dart';
 
@@ -138,6 +139,40 @@ class EventTaskDetailPage extends ConsumerWidget {
                     }
                   }
                 : null,
+            onDuplicate: () async {
+              // Reads checklist from the already-watched stream so the
+              // copy carries every item from the source. Any viewer
+              // (creator/admin/member) may duplicate; the new task gets
+              // their uid as createdBy.
+              final duplicate = task.duplicate(
+                currentUserId: uid,
+                checklist: items,
+              );
+              final edited = await Navigator.of(context).push<TaskModel>(
+                MaterialPageRoute(
+                  builder: (_) => CreateTaskScreen(
+                    event: event,
+                    currentUserId: uid,
+                    initial: duplicate,
+                    displayNames: displayNamesMap,
+                    onSubmit: (t) => Navigator.of(context).pop(t),
+                  ),
+                ),
+              );
+              if (edited == null || !context.mounted) return;
+              final ok = await repo.createTaskWithChecklist(
+                edited,
+                edited.checklistItems,
+              );
+              if (!ok && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Could not duplicate task'),
+                    backgroundColor: AppColors.terracotta,
+                  ),
+                );
+              }
+            },
             onDelete: canEdit
                 ? () async {
                     final confirmed = await showDialog<bool>(

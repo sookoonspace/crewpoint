@@ -3,10 +3,13 @@ import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/widgets/checklist_editor.dart';
+
+enum _DetailAction { edit, duplicate, delete }
 
 /// Task detail screen — pure presentation. The parent owns mutation wiring and
 /// passes only the callbacks the current user is authorized to use.
@@ -21,6 +24,7 @@ class TaskDetailScreen extends StatelessWidget {
     this.assigneeName,
     this.completedByName,
     this.onEdit,
+    this.onDuplicate,
     this.onDelete,
     this.onChecklistToggle,
     this.onChecklistAdd,
@@ -44,6 +48,10 @@ class TaskDetailScreen extends StatelessWidget {
   /// UID when null. Hydrated upstream by `event_task_detail_page.dart`.
   final String? completedByName;
   final VoidCallback? onEdit;
+
+  /// Optional callback to duplicate the task. Visible to every viewer when
+  /// non-null (any member can spawn a copy under their own `createdBy`).
+  final VoidCallback? onDuplicate;
   final VoidCallback? onDelete;
   final void Function(ChecklistItem item, bool isCompleted)? onChecklistToggle;
   final void Function(String id, String text)? onChecklistAdd;
@@ -70,17 +78,12 @@ class TaskDetailScreen extends StatelessWidget {
         backgroundColor: AppColors.cream,
         elevation: 0,
         actions: [
-          if (canEditTask)
-            IconButton(
-              key: const Key('tasks.detail.edit'),
-              icon: const Icon(Icons.edit_outlined),
-              onPressed: onEdit,
-            ),
-          if (canEditTask)
-            IconButton(
-              key: const Key('tasks.detail.delete'),
-              icon: const Icon(Icons.delete_outline),
-              onPressed: onDelete,
+          if (canEditTask || onDuplicate != null)
+            _DetailOverflowMenu(
+              canEdit: canEditTask,
+              onEdit: onEdit,
+              onDuplicate: onDuplicate,
+              onDelete: onDelete,
             ),
         ],
       ),
@@ -225,6 +228,65 @@ class _StatusBadge extends StatelessWidget {
         status.label,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(color: color),
       ),
+    );
+  }
+}
+
+/// Detail-screen overflow menu. Items in spec'd order:
+/// Edit (canEditTask only) → Duplicate (visible to any viewer with a
+/// non-null callback) → Delete (canEditTask only).
+class _DetailOverflowMenu extends StatelessWidget {
+  const _DetailOverflowMenu({
+    required this.canEdit,
+    required this.onEdit,
+    required this.onDuplicate,
+    required this.onDelete,
+  });
+
+  final bool canEdit;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDuplicate;
+  final VoidCallback? onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.strings.tasks;
+    return PopupMenuButton<_DetailAction>(
+      key: const Key('tasks.detail.overflow'),
+      icon: const Icon(Icons.more_vert),
+      onSelected: (action) {
+        switch (action) {
+          case _DetailAction.edit:
+            onEdit?.call();
+          case _DetailAction.duplicate:
+            onDuplicate?.call();
+          case _DetailAction.delete:
+            onDelete?.call();
+        }
+      },
+      itemBuilder: (_) => [
+        if (canEdit)
+          PopupMenuItem<_DetailAction>(
+            key: const Key('tasks.detail.overflow.edit'),
+            value: _DetailAction.edit,
+            child: Text(s.detailEdit),
+          ),
+        if (onDuplicate != null)
+          PopupMenuItem<_DetailAction>(
+            key: const Key('tasks.detail.overflow.duplicate'),
+            value: _DetailAction.duplicate,
+            child: Text(s.detailDuplicate),
+          ),
+        if (canEdit)
+          PopupMenuItem<_DetailAction>(
+            key: const Key('tasks.detail.overflow.delete'),
+            value: _DetailAction.delete,
+            child: Text(
+              s.detailDelete,
+              style: const TextStyle(color: AppColors.terracotta),
+            ),
+          ),
+      ],
     );
   }
 }

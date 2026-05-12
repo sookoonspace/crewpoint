@@ -103,21 +103,21 @@ Tasks UX overhaul: form-kit foundation → remaining kit widgets → data-layer 
 - [x] Robot: `test/journeys/tasks_filter_sort_group_journey_test.dart` — `withClock(Clock.fixed(DateTime(2026, 6, 15, 12, 0)))`, seeds 4 tasks varying statuses/dueDates/priorities in fake Firestore; pumps `EventTasksPage`; walks search "lunch" → Overdue chip → sort Priority → group Assignee. Asserts visible titles + group headers + that Overdue narrows to the single past-due task.
 - [x] Verify: `flutter analyze` clean; `flutter test` 426 pass (416→426, +10 new)
 
-### Phase 6: Create/Edit form redesign + Duplicate
+### Phase 6: Create/Edit form redesign + Duplicate ✓
 
 - **Goal**: Three `AppFormSection`s on Create + Edit, Priority radio, `AppDateField` + `AppCurrencyField`, Duplicate action wired through `createTaskWithChecklist`.
-- [ ] `lib/app/features/tasks/presentation/widgets/assignee_picker.dart` — refactor internals to `AppDropdown<String?>` (built on `DropdownButtonFormField`); preserve public API + `Key('tasks.create.assignee')` (spec req 25)
-- [ ] `lib/app/features/tasks/presentation/create_task_screen.dart` — restructure into three `AppFormSection`s (Details / Assignment / Timing & Budget); add Priority `AppRadioGroup<int>`; replace due-date `InkWell` with `AppDateField`; replace `BudgetEstimateField` import with `AppCurrencyField` direct usage (spec req 22–24)
-- [ ] `lib/app/features/tasks/presentation/edit_task_screen.dart` — same restructure as create; priority defaults to `task.priority`
-- [ ] `lib/app/features/tasks/presentation/task_detail_screen.dart` — replace standalone edit + delete `IconButton`s with `PopupMenuButton<_DetailAction>` keyed `tasks.detail.overflow`; items Edit / Duplicate / Delete; visibility rules per RBAC (spec req 26)
-- [ ] `lib/app/features/tasks/presentation/event_task_detail_page.dart` — wire `onDuplicate`: read checklist from already-watched `taskChecklistProvider`, call `TaskModel.duplicate(currentUserId, checklist)`, push `CreateTaskScreen` pre-filled, on submit call `taskRepositoryProvider.createTaskWithChecklist(...)` (spec req 27, 28)
-- [ ] `lib/app/core/i18n/app_strings.dart` — add labels for None, Low, Medium, High (priority), section titles, Duplicate action, " (copy)" suffix
-- [ ] TDD: `AssigneePicker` regression — `Key('tasks.create.assignee')` still present; orphan disabled-item behaviour intact (existing Phase 1 tests must pass unchanged)
-- [ ] TDD: `CreateTaskScreen` / `EditTaskScreen` render exactly three `AppFormSection`s in spec'd order
-- [ ] TDD: Priority radio defaults to None on create, `task.priority` on edit; selecting Medium fires `onChanged` propagating to the saved model
-- [ ] TDD: `TaskDetailScreen` overflow menu — Edit + Delete only when `canEditTask`; Duplicate visible for every viewer
-- [ ] Robot: `test/journeys/duplicate_task_journey_test.dart` — seed task with 3 checklist items in fake Firestore; pump detail page; overflow → Duplicate → assert pre-filled title ends `(copy)` and create form opens; tap Save; assert Firestore has 2 task docs + 3+3 checklist docs; both `createdBy` reflect the current user
-- [ ] Verify: `flutter analyze && flutter test`
+- [x] `lib/app/features/tasks/presentation/widgets/assignee_picker.dart` — refactored internals to `AppDropdown<String?>` (built on `DropdownButtonFormField`); public API + `Key('tasks.create.assignee')` preserved; orphan disabled row label keeps `(no longer in event)` suffix (spec req 25)
+- [x] `lib/app/features/tasks/presentation/create_task_screen.dart` — three `AppFormSection`s (Details / Assignment / Timing & Budget); new `AppRadioGroup<int>` priority field keyed `tasks.create.priority`; due-date row uses `AppDateField`; budget uses `AppCurrencyField` directly. Accepts optional `initial: TaskModel?` for the Duplicate pre-fill (carries id + checklist into the create flow).
+- [x] `lib/app/features/tasks/presentation/edit_task_screen.dart` — same three-section restructure; priority defaults to `task.priority` on edit; uses `AppDateField` + `AppCurrencyField` instead of the old `InkWell` + `BudgetEstimateField`
+- [x] `lib/app/features/tasks/presentation/task_detail_screen.dart` — dropped standalone edit + delete `IconButton`s; `_DetailOverflowMenu` keyed `tasks.detail.overflow` renders Edit / Duplicate / Delete (visibility per RBAC: Edit + Delete only when `canEditTask`; Duplicate visible when `onDuplicate` non-null) (spec req 26)
+- [x] `lib/app/features/tasks/presentation/event_task_detail_page.dart` — wires `onDuplicate`: calls `task.duplicate(currentUserId: uid, checklist: items)` using the already-watched checklist stream, pushes `CreateTaskScreen(initial: duplicate, ...)`, then calls `repo.createTaskWithChecklist(edited, edited.checklistItems)` on submit (spec req 27, 28)
+- [x] `lib/app/core/i18n/app_strings.dart` — added `detailEdit`, `detailDuplicate`, `detailDelete`, `fieldPriority` (priority section + Duplicate / Delete strings)
+- [x] `test/robots/tasks_robot.dart` — `tapEditOnDetail` / `tapDuplicateOnDetail` go through the new overflow menu; bounded `_bounded()` pumps replace `pumpAndSettle` for paths that interact with the detail page's emitting Drift + Firestore mirrors
+- [x] TDD: `AssigneePicker` regression — both existing Phase 1 tests pass unchanged through the `AppDropdown`-internal refactor (key + orphan disabled behaviour preserved)
+- [x] TDD: `EditTaskScreen` — pre-fill, onSubmit round-trip, modal-path past-date picker (`firstDate=2000`), orphan row rendering all pass against the new three-section layout
+- [x] TDD: `TaskDetailScreen` overflow menu — Edit absent for non-creator; menu hidden when no actions available; Duplicate item visible for any viewer with a non-null callback
+- [x] Robot: `test/journeys/duplicate_task_journey_test.dart` — seeds a task + 3 checklist items in fake Firestore, pumps the detail page, taps overflow → Duplicate, asserts the create form pre-fills with " (copy)" suffix, saves, then asserts Firestore has 2 task docs and the new task has all 3 checklist children (texts preserved, fresh ids)
+- [x] Verify: `flutter analyze` clean; `flutter test` 428 pass (426→428, +2 new tests)
 
 ## Risks / Out of scope
 

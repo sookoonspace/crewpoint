@@ -144,6 +144,14 @@ abstract class TasksStrings {
   // Empty states.
   String get emptyNoTasksYet;
   String get emptyNoMatch;
+
+  // Detail screen overflow menu.
+  String get detailEdit;
+  String get detailDuplicate;
+  String get detailDelete;
+
+  // Form labels.
+  String get fieldPriority;
 }
 
 abstract class ErrorStrings {
@@ -281,6 +289,18 @@ class _EnglishTasksStrings extends TasksStrings {
 
   @override
   String get emptyNoMatch => 'No tasks match this filter';
+
+  @override
+  String get detailEdit => 'Edit';
+
+  @override
+  String get detailDuplicate => 'Duplicate';
+
+  @override
+  String get detailDelete => 'Delete';
+
+  @override
+  String get fieldPriority => 'Priority';
 }
 
 class _EnglishAuthStrings extends AuthStrings {

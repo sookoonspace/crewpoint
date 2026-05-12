@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_radius.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/widgets/forms/app_dropdown.dart';
 
 /// Picks an assignee from a list of member UIDs.
 ///
-/// Display names hydrate via `usersByIdProvider` upstream and arrive here as
-/// the `displayNames` map. UIDs without an entry fall back to a truncated
-/// preview (`abcdefghij…`).
+/// Public API is unchanged — `memberIds`, `displayNames`, `orphanAssigneeId`,
+/// `selected`, `onChanged`, and the canonical `Key('tasks.create.assignee')`
+/// all behave identically. Internals now delegate to `AppDropdown<String?>`
+/// (built on `DropdownButtonFormField`) so this picker rides the form kit's
+/// styling + keyboard navigation + Form integration.
+///
+/// The disabled "(no longer in event)" orphan row is still rendered when
+/// `orphanAssigneeId` is non-null and absent from `memberIds`.
 class AssigneePicker extends StatelessWidget {
   const AssigneePicker({
     super.key,
@@ -36,49 +39,26 @@ class AssigneePicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InputDecorator(
-      decoration: const InputDecoration(
-        labelText: 'Assignee',
-        prefixIcon: Icon(Icons.person_outline),
-        border: OutlineInputBorder(borderRadius: AppRadius.borderLg),
-        contentPadding: EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: 0,
-        ),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String?>(
-          key: const Key('tasks.create.assignee'),
-          isExpanded: true,
-          value: selected,
-          hint: const Text(
-            'Unassigned',
-            style: TextStyle(color: AppColors.mediumGrey),
+    final orphan = orphanAssigneeId;
+    final hasOrphan = orphan != null && !memberIds.contains(orphan);
+    return AppDropdown<String?>(
+      key: const Key('tasks.create.assignee'),
+      labelText: 'Assignee',
+      hintText: 'Unassigned',
+      prefixIcon: const Icon(Icons.person_outline),
+      value: selected,
+      onChanged: onChanged,
+      items: [
+        const AppDropdownItem<String?>(value: null, label: 'Unassigned'),
+        for (final id in memberIds)
+          AppDropdownItem<String?>(value: id, label: _label(id)),
+        if (hasOrphan)
+          AppDropdownItem<String?>(
+            value: orphan,
+            label: '${_label(orphan)} (no longer in event)',
+            enabled: false,
           ),
-          items: [
-            const DropdownMenuItem<String?>(
-              value: null,
-              child: Text('Unassigned'),
-            ),
-            for (final id in memberIds)
-              DropdownMenuItem<String?>(value: id, child: Text(_label(id))),
-            if (orphanAssigneeId != null &&
-                !memberIds.contains(orphanAssigneeId))
-              DropdownMenuItem<String?>(
-                value: orphanAssigneeId,
-                enabled: false,
-                child: Text(
-                  '${_label(orphanAssigneeId!)} (no longer in event)',
-                  style: const TextStyle(
-                    color: AppColors.mediumGrey,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ),
-          ],
-          onChanged: onChanged,
-        ),
-      ),
+      ],
     );
   }
 }

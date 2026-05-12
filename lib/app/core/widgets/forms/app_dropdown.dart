@@ -53,6 +53,10 @@ class AppDropdown<T> extends StatelessWidget {
     return DropdownButtonFormField<T>(
       initialValue: value,
       onChanged: enabled ? onChanged : null,
+      // Without isExpanded, long labels (e.g., AssigneePicker's orphan
+      // "(no longer in event)" row) push the inner Row past its parent's
+      // width and overflow. Expanding lets the dropdown clip cleanly.
+      isExpanded: true,
       decoration: InputDecoration(
         labelText: labelText,
         hintText: hintText,

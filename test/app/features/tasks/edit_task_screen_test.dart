@@ -64,6 +64,14 @@ void main() {
   testWidgets('onSubmit emits updated TaskModel preserving id + eventId', (
     tester,
   ) async {
+    // Tall viewport so the three AppFormSections + inline calendar +
+    // save button all fit without scrolling — keeps the test focused on
+    // the submit contract.
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     TaskModel? submitted;
     await tester.pumpWidget(
       MaterialApp(
@@ -93,29 +101,32 @@ void main() {
     expect(submitted!.budgetEstimate, 25.0);
   });
 
-  testWidgets('accepts past due-date via picker (firstDate override)', (
+  testWidgets('accepts past due-date (modal path) — firstDate=DateTime(2000)', (
     tester,
   ) async {
+    // Narrow viewport → AppDateField uses the modal path.
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     await tester.pumpWidget(
       MaterialApp(
-        home: EditTaskScreen(event: event, initial: initial),
+        home: EditTaskScreen(
+          event: event,
+          initial: initial.copyWith(dueDate: DateTime(2010, 1, 1)),
+        ),
       ),
     );
 
-    await tester.tap(find.byKey(const Key('tasks.edit.dueDate')));
+    // Tap the trigger row → modal picker opens (firstDate=2000 allows
+    // the pre-filled past date).
+    await tester.ensureVisible(find.byKey(const Key('tasks.edit.dueDate')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('forms.date.trigger')));
     await tester.pumpAndSettle();
-
-    // Picker is open. The pre-filled value (2026-07-01) is in the future
-    // from test time; switching to back-navigation should work without
-    // hitting a firstDate clamp. We assert the dialog opened — full
-    // calendar interaction is fragile in widget tests; the absence of a
-    // throw plus presence of the picker confirms firstDate accepts past
-    // dates.
     expect(find.byType(DatePickerDialog), findsOneWidget);
 
-    // Close picker; no assertion needed on selection — the regression
-    // we're guarding against is the picker refusing to open at all when
-    // initial date is before DateTime.now().
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
   });
