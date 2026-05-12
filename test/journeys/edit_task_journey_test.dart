@@ -46,7 +46,8 @@ void main() {
 
       final robot = TasksRobot(tester);
 
-      expect(find.byKey(const Key('tasks.detail.edit')), findsOneWidget);
+      // Edit lives inside the new overflow menu now.
+      expect(find.byKey(const Key('tasks.detail.overflow')), findsOneWidget);
       await robot.tapEditOnDetail();
       expect(find.byKey(const Key('tasks.edit.budget')), findsOneWidget);
 

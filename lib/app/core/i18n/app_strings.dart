@@ -29,6 +29,7 @@ abstract class AppStrings {
 
   AuthStrings get auth;
   ErrorStrings get errors;
+  TasksStrings get tasks;
 
   /// Static English fallback. Used by service-layer code that has no
   /// `BuildContext` in scope (e.g. `firebaseAuthErrorMessage`). UI code
@@ -81,6 +82,78 @@ abstract class AuthStrings {
   String get legalFooterSuffix; // e.g. "."
 }
 
+/// User-facing strings for the Tasks feature.
+///
+/// Phase 1 seeds the class with the labels the form-kit foundation needs;
+/// later phases extend it with filter chip labels, sort/group menu labels,
+/// priority pill labels, empty-state copy, and the `(copy)` suffix. All new
+/// task-screen literals MUST land here rather than being hardcoded in
+/// widgets — see `ai_specs/tasks-ux-overhaul-spec.md` `<boundaries>` i18n
+/// contract.
+abstract class TasksStrings {
+  const TasksStrings();
+
+  // Form section headers (used by Create / Edit task screens).
+  String get sectionDetails;
+  String get sectionAssignment;
+  String get sectionTimingAndBudget;
+
+  // Tile pills.
+  String get overdueBadge;
+  String get priorityNone;
+  String get priorityLow;
+  String get priorityMedium;
+  String get priorityHigh;
+
+  // Tasks-screen filter bar.
+  String get searchHint;
+  String get sortBy;
+  String get groupBy;
+  String get clearFilters;
+
+  // Filter chips.
+  String get filterChipMine;
+  String get filterChipOverdue;
+  String get filterChipHasBudget;
+
+  // Status labels (filter chips + status grouping headers).
+  String get statusTodo;
+  String get statusInProgress;
+  String get statusDone;
+
+  // Sort menu items.
+  String get sortDueDate;
+  String get sortPriority;
+  String get sortCreated;
+  String get sortTitle;
+
+  // Group toggle items.
+  String get groupStatus;
+  String get groupAssignee;
+  String get groupDueWindow;
+
+  // Due-window group headers.
+  String get dueWindowToday;
+  String get dueWindowThisWeek;
+  String get dueWindowLater;
+  String get dueWindowNoDueDate;
+
+  // Assignee group fallback.
+  String get assigneeUnassigned;
+
+  // Empty states.
+  String get emptyNoTasksYet;
+  String get emptyNoMatch;
+
+  // Detail screen overflow menu.
+  String get detailEdit;
+  String get detailDuplicate;
+  String get detailDelete;
+
+  // Form labels.
+  String get fieldPriority;
+}
+
 abstract class ErrorStrings {
   const ErrorStrings();
 
@@ -113,6 +186,121 @@ class _EnglishStrings extends AppStrings {
 
   @override
   ErrorStrings get errors => const _EnglishErrorStrings();
+
+  @override
+  TasksStrings get tasks => const _EnglishTasksStrings();
+}
+
+class _EnglishTasksStrings extends TasksStrings {
+  const _EnglishTasksStrings();
+
+  @override
+  String get sectionDetails => 'Details';
+
+  @override
+  String get sectionAssignment => 'Assignment';
+
+  @override
+  String get sectionTimingAndBudget => 'Timing & Budget';
+
+  @override
+  String get overdueBadge => 'Overdue';
+
+  @override
+  String get priorityNone => 'None';
+
+  @override
+  String get priorityLow => 'Low';
+
+  @override
+  String get priorityMedium => 'Medium';
+
+  @override
+  String get priorityHigh => 'High';
+
+  @override
+  String get searchHint => 'Search tasks';
+
+  @override
+  String get sortBy => 'Sort by';
+
+  @override
+  String get groupBy => 'Group by';
+
+  @override
+  String get clearFilters => 'Clear filters';
+
+  @override
+  String get filterChipMine => 'Mine';
+
+  @override
+  String get filterChipOverdue => 'Overdue';
+
+  @override
+  String get filterChipHasBudget => 'Has budget';
+
+  @override
+  String get statusTodo => 'To Do';
+
+  @override
+  String get statusInProgress => 'In Progress';
+
+  @override
+  String get statusDone => 'Done';
+
+  @override
+  String get sortDueDate => 'Due date';
+
+  @override
+  String get sortPriority => 'Priority';
+
+  @override
+  String get sortCreated => 'Created';
+
+  @override
+  String get sortTitle => 'Title';
+
+  @override
+  String get groupStatus => 'Status';
+
+  @override
+  String get groupAssignee => 'Assignee';
+
+  @override
+  String get groupDueWindow => 'Due window';
+
+  @override
+  String get dueWindowToday => 'Today';
+
+  @override
+  String get dueWindowThisWeek => 'This week';
+
+  @override
+  String get dueWindowLater => 'Later';
+
+  @override
+  String get dueWindowNoDueDate => 'No due date';
+
+  @override
+  String get assigneeUnassigned => 'Unassigned';
+
+  @override
+  String get emptyNoTasksYet => 'No tasks yet';
+
+  @override
+  String get emptyNoMatch => 'No tasks match this filter';
+
+  @override
+  String get detailEdit => 'Edit';
+
+  @override
+  String get detailDuplicate => 'Duplicate';
+
+  @override
+  String get detailDelete => 'Delete';
+
+  @override
+  String get fieldPriority => 'Priority';
 }
 
 class _EnglishAuthStrings extends AuthStrings {

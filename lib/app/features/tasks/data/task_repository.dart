@@ -62,9 +62,23 @@ class TaskRepository implements ITaskRepository {
   @override
   Stream<List<TaskModel>> watchTasksByEventId(String eventId) {
     _ensureFirestoreMirror(eventId);
-    return _tasksDao
-        .watchTasksByEventId(eventId)
-        .map((rows) => rows.map(_toDomain).toList());
+    return _tasksDao.watchTasksByEventId(eventId).asyncMap(_hydrate);
+  }
+
+  /// Loads checklist rows for the supplied task rows in a single batched
+  /// query and merges them into the returned [TaskModel]s. Fixes a
+  /// pre-existing bug where the list path emitted `TaskModel.checklistItems`
+  /// as an empty list (the checklist subcollection mirror lives on the
+  /// detail page) — without this join the new progress bar on `TaskTile`
+  /// would never render.
+  Future<List<TaskModel>> _hydrate(List<Task> rows) async {
+    if (rows.isEmpty) return const [];
+    final ids = rows.map((r) => r.id).toList(growable: false);
+    final byTaskId = await _checklistDao.itemsByTaskIds(ids);
+    return rows.map((row) {
+      final items = byTaskId[row.id] ?? const <TaskChecklistItem>[];
+      return _toDomain(row, items);
+    }).toList();
   }
 
   void _ensureFirestoreMirror(String eventId) {
@@ -299,7 +313,7 @@ class TaskRepository implements ITaskRepository {
   Future<List<TaskModel>> getTasksByEventId(String eventId) async {
     try {
       final rows = await _tasksDao.tasksByEventId(eventId);
-      return rows.map(_toDomain).toList();
+      return _hydrate(rows);
     } catch (e, st) {
       log('Failed to get tasks', error: e, stackTrace: st, name: 'tasks');
       return [];
@@ -314,6 +328,52 @@ class TaskRepository implements ITaskRepository {
       return true;
     } catch (e, st) {
       log('Failed to create task', error: e, stackTrace: st, name: 'tasks');
+      return false;
+    }
+  }
+
+  /// Creates a task plus its checklist in a single atomic Firestore
+  /// `WriteBatch`. Used by the Duplicate flow so a copied task's
+  /// checklist either lands fully or not at all — no half-populated
+  /// duplicates if the batch fails mid-way.
+  Future<bool> createTaskWithChecklist(
+    TaskModel task,
+    List<ChecklistItem> items,
+  ) async {
+    try {
+      final batch = _firestore.batch();
+      batch.set(_tasksRef(task.eventId).doc(task.id), _toFirestore(task));
+      for (final item in items) {
+        batch.set(_checklistRef(task.eventId, task.id).doc(item.id), {
+          'text': item.text,
+          'isCompleted': item.isCompleted,
+          'sortOrder': item.sortOrder,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+      await batch.commit();
+
+      // Mirror to Drift after the batch commits.
+      await _upsertDrift(task);
+      for (final item in items) {
+        await _checklistDao.upsert(
+          TaskChecklistItemsCompanion.insert(
+            id: item.id,
+            taskId: task.id,
+            content: item.text,
+            isCompleted: Value(item.isCompleted),
+            sortOrder: Value(item.sortOrder),
+          ),
+        );
+      }
+      return true;
+    } catch (e, st) {
+      log(
+        'Failed to create task with checklist',
+        error: e,
+        stackTrace: st,
+        name: 'tasks',
+      );
       return false;
     }
   }
@@ -430,20 +490,22 @@ class TaskRepository implements ITaskRepository {
     budgetEstimate: (data['budgetEstimate'] as num?)?.toDouble(),
   );
 
-  TaskModel _toDomain(Task row) => TaskModel(
-    id: row.id,
-    eventId: row.eventId,
-    title: row.title,
-    description: row.description,
-    assigneeId: row.assigneeId,
-    createdBy: row.createdBy,
-    status: _parseStatus(row.status),
-    priority: row.priority,
-    dueDate: row.dueDate,
-    completedAt: row.completedAt,
-    completedBy: row.completedBy,
-    budgetEstimate: row.budgetEstimate,
-  );
+  TaskModel _toDomain(Task row, [List<TaskChecklistItem> items = const []]) =>
+      TaskModel(
+        id: row.id,
+        eventId: row.eventId,
+        title: row.title,
+        description: row.description,
+        assigneeId: row.assigneeId,
+        createdBy: row.createdBy,
+        status: _parseStatus(row.status),
+        priority: row.priority,
+        dueDate: row.dueDate,
+        completedAt: row.completedAt,
+        completedBy: row.completedBy,
+        budgetEstimate: row.budgetEstimate,
+        checklistItems: items.map(_checklistRowToDomain).toList(),
+      );
 
   TaskStatus _parseStatus(String? status) => switch (status) {
     'inProgress' => TaskStatus.inProgress,

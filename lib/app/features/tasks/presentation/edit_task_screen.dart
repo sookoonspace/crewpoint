@@ -1,26 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
-import 'package:crewpoint_app/app/core/widgets/custom_text_field.dart';
 import 'package:crewpoint_app/app/core/widgets/form_card_shell.dart';
+import 'package:crewpoint_app/app/core/widgets/forms/app_currency_field.dart';
+import 'package:crewpoint_app/app/core/widgets/forms/app_date_field.dart';
+import 'package:crewpoint_app/app/core/widgets/forms/app_form_section.dart';
+import 'package:crewpoint_app/app/core/widgets/forms/app_radio_group.dart';
+import 'package:crewpoint_app/app/core/widgets/forms/app_text_field.dart';
 import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/widgets/assignee_picker.dart';
-import 'package:crewpoint_app/app/features/tasks/presentation/widgets/budget_estimate_field.dart';
 
-/// Edit screen for an existing task. Mirrors `CreateTaskScreen` shape:
-/// pure presentation, emits the updated `TaskModel` via `onSubmit`.
+/// Edit screen for an existing task. Mirrors `CreateTaskScreen`: three
+/// `AppFormSection`s (Details / Assignment / Timing & Budget), pure
+/// presentation, emits the updated `TaskModel` via `onSubmit`.
 ///
-/// Differences from create:
-/// - Pre-fills from `initial`
-/// - `firstDate: DateTime(2000)` on due-date picker so past-due tasks can be
-///   re-edited without the picker springing to today
-/// - Renders an orphan assignee (one who left the event) as a disabled row
+/// Past dates work — `AppDateField` defaults to `firstDate: DateTime(2000)`.
 class EditTaskScreen extends StatefulWidget {
   const EditTaskScreen({
     super.key,
@@ -46,6 +45,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
   late final TextEditingController _budgetController;
   late String? _assigneeId;
   late DateTime? _dueDate;
+  late int _priority;
 
   @override
   void initState() {
@@ -59,6 +59,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
     );
     _assigneeId = widget.initial.assigneeId;
     _dueDate = widget.initial.dueDate;
+    _priority = widget.initial.priority;
   }
 
   @override
@@ -69,26 +70,11 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
     super.dispose();
   }
 
-  Future<void> _pickDueDate() async {
-    final initial = _dueDate ?? DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: initial,
-      // Allow past dates so admins can correct mistakes (e.g. a task that
-      // was assigned to "yesterday" by accident).
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
-    );
-    if (picked != null) {
-      setState(() => _dueDate = picked);
-    }
-  }
-
   void _submit() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final localeTag = Localizations.localeOf(context).toLanguageTag();
-    final budget = parseBudgetEstimate(
+    final budget = parseCurrencyInput(
       _budgetController.text,
       locale: localeTag,
     );
@@ -99,6 +85,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
           ? null
           : _descriptionController.text.trim(),
       assigneeId: _assigneeId,
+      priority: _priority,
       dueDate: _dueDate,
       budgetEstimate: budget,
       clearBudgetEstimate: budget == null,
@@ -108,6 +95,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.strings.tasks;
     final orphan =
         widget.initial.assigneeId != null &&
             !widget.event.memberIds.contains(widget.initial.assigneeId)
@@ -134,64 +122,91 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
               key: _formKey,
               child: Column(
                 crossAxisAlignment: .start,
-                spacing: AppSpacing.lg,
+                spacing: AppSpacing.xl,
                 children: [
-                  CustomTextField(
-                    key: const Key('tasks.edit.title'),
-                    hintText: 'Task Title',
-                    controller: _titleController,
-                    prefixIcon: const Icon(Icons.task),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter a title';
-                      }
-                      if (value.trim().length > 120) {
-                        return 'Title must be 120 characters or fewer';
-                      }
-                      return null;
-                    },
-                  ),
-                  CustomTextField(
-                    key: const Key('tasks.edit.description'),
-                    hintText: 'Description (optional)',
-                    controller: _descriptionController,
-                    maxLines: 3,
-                    prefixIcon: const Icon(Icons.description),
-                  ),
-                  AssigneePicker(
-                    memberIds: widget.event.memberIds,
-                    displayNames: widget.displayNames,
-                    orphanAssigneeId: orphan,
-                    selected: _assigneeId,
-                    onChanged: (value) => setState(() => _assigneeId = value),
-                  ),
-                  BudgetEstimateField(
-                    key: const Key('tasks.edit.budget'),
-                    controller: _budgetController,
-                    currencyCode: widget.event.currency,
-                  ),
-                  InkWell(
-                    key: const Key('tasks.edit.dueDate'),
-                    onTap: _pickDueDate,
-                    borderRadius: AppRadius.borderLg,
-                    child: InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: 'Due Date',
-                        prefixIcon: Icon(Icons.calendar_today_outlined),
-                        border: OutlineInputBorder(
-                          borderRadius: AppRadius.borderLg,
+                  AppFormSection(
+                    key: const Key('tasks.edit.section.details'),
+                    title: s.sectionDetails,
+                    child: Column(
+                      crossAxisAlignment: .start,
+                      spacing: AppSpacing.md,
+                      children: [
+                        AppTextField(
+                          key: const Key('tasks.edit.title'),
+                          hintText: 'Task Title',
+                          controller: _titleController,
+                          prefixIcon: const Icon(Icons.task),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Please enter a title';
+                            }
+                            if (value.trim().length > 120) {
+                              return 'Title must be 120 characters or fewer';
+                            }
+                            return null;
+                          },
                         ),
-                      ),
-                      child: Text(
-                        _dueDate == null
-                            ? 'No due date'
-                            : DateFormat.yMMMd().format(_dueDate!),
-                        style: TextStyle(
-                          color: _dueDate == null
-                              ? AppColors.mediumGrey
-                              : AppColors.charcoal,
+                        AppTextField(
+                          key: const Key('tasks.edit.description'),
+                          hintText: 'Description (optional)',
+                          controller: _descriptionController,
+                          maxLines: 3,
+                          prefixIcon: const Icon(Icons.description),
                         ),
-                      ),
+                      ],
+                    ),
+                  ),
+                  AppFormSection(
+                    key: const Key('tasks.edit.section.assignment'),
+                    title: s.sectionAssignment,
+                    child: Column(
+                      crossAxisAlignment: .start,
+                      spacing: AppSpacing.md,
+                      children: [
+                        AssigneePicker(
+                          memberIds: widget.event.memberIds,
+                          displayNames: widget.displayNames,
+                          orphanAssigneeId: orphan,
+                          selected: _assigneeId,
+                          onChanged: (value) =>
+                              setState(() => _assigneeId = value),
+                        ),
+                        AppRadioGroup<int>(
+                          key: const Key('tasks.edit.priority'),
+                          labelText: s.fieldPriority,
+                          value: _priority,
+                          options: [
+                            AppRadioOption(value: 0, label: s.priorityNone),
+                            AppRadioOption(value: 1, label: s.priorityLow),
+                            AppRadioOption(value: 2, label: s.priorityMedium),
+                            AppRadioOption(value: 3, label: s.priorityHigh),
+                          ],
+                          onChanged: (v) => setState(() => _priority = v ?? 0),
+                          direction: Axis.horizontal,
+                        ),
+                      ],
+                    ),
+                  ),
+                  AppFormSection(
+                    key: const Key('tasks.edit.section.timing'),
+                    title: s.sectionTimingAndBudget,
+                    child: Column(
+                      crossAxisAlignment: .start,
+                      spacing: AppSpacing.md,
+                      children: [
+                        AppDateField(
+                          key: const Key('tasks.edit.dueDate'),
+                          labelText: 'Due Date',
+                          value: _dueDate,
+                          onChanged: (v) => setState(() => _dueDate = v),
+                        ),
+                        AppCurrencyField(
+                          key: const Key('tasks.edit.budget'),
+                          controller: _budgetController,
+                          currencyCode: widget.event.currency,
+                          labelText: 'Budget Estimate (optional)',
+                        ),
+                      ],
                     ),
                   ),
                   PrimaryButton(

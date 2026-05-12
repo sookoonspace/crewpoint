@@ -28,4 +28,23 @@ class TaskChecklistItemsDao extends DatabaseAccessor<AppDatabase>
 
   Future<int> deleteByTaskId(String taskId) =>
       (delete(taskChecklistItems)..where((c) => c.taskId.equals(taskId))).go();
+
+  /// Returns a map from `taskId` → ordered checklist items for every task
+  /// id in [taskIds]. Single query — used by `TaskRepository`'s list path
+  /// to populate `TaskModel.checklistItems` without N+1 selects.
+  Future<Map<String, List<TaskChecklistItem>>> itemsByTaskIds(
+    List<String> taskIds,
+  ) async {
+    if (taskIds.isEmpty) return const {};
+    final rows =
+        await (select(taskChecklistItems)
+              ..where((c) => c.taskId.isIn(taskIds))
+              ..orderBy([(c) => OrderingTerm.asc(c.sortOrder)]))
+            .get();
+    final out = <String, List<TaskChecklistItem>>{};
+    for (final row in rows) {
+      out.putIfAbsent(row.taskId, () => []).add(row);
+    }
+    return out;
+  }
 }
