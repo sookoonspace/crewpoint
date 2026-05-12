@@ -64,6 +64,56 @@ void main() {
     });
   });
 
+  group('list path populates checklistItems', () {
+    test(
+      'watchTasksByEventId emits TaskModels with checklistItems joined from Drift',
+      () async {
+        // Seed a task + 2 checklist items via the repository's write paths.
+        const task = TaskModel(
+          id: 'list-task',
+          eventId: 'event-1',
+          title: 'With checklist',
+          createdBy: 'user-1',
+        );
+        await repository.createTask(task);
+        await repository.addChecklistItem(
+          eventId: 'event-1',
+          taskId: 'list-task',
+          id: 'item-1',
+          text: 'Apple',
+          sortOrder: 0,
+        );
+        await repository.addChecklistItem(
+          eventId: 'event-1',
+          taskId: 'list-task',
+          id: 'item-2',
+          text: 'Banana',
+          sortOrder: 1,
+        );
+
+        final tasks = await repository.getTasksByEventId('event-1');
+        final hydrated = tasks.firstWhere((t) => t.id == 'list-task');
+        expect(hydrated.checklistItems, hasLength(2));
+        expect(hydrated.checklistItems.map((i) => i.id), ['item-1', 'item-2']);
+        expect(hydrated.checklistItems.map((i) => i.text), ['Apple', 'Banana']);
+      },
+    );
+
+    test('tasks without checklist still emit with empty list', () async {
+      const task = TaskModel(
+        id: 'no-checklist',
+        eventId: 'event-1',
+        title: 'Plain',
+        createdBy: 'user-1',
+      );
+      await repository.createTask(task);
+
+      final tasks = await repository.getTasksByEventId('event-1');
+      final hydrated = tasks.firstWhere((t) => t.id == 'no-checklist');
+      expect(hydrated.checklistItems, isEmpty);
+    });
+  });
+
   group('budget round-trip through Firestore + Drift', () {
     test('persists null, zero, and positive budgetEstimate', () async {
       for (final budget in <double?>[null, 0, 75.25]) {
@@ -89,6 +139,86 @@ void main() {
         final hydrated = fromDrift.firstWhere((t) => t.id == task.id);
         expect(hydrated.budgetEstimate, budget);
       }
+    });
+  });
+
+  group('createTaskWithChecklist', () {
+    test('writes parent task + N checklist children atomically', () async {
+      const task = TaskModel(
+        id: 'task-dup',
+        eventId: 'event-1',
+        title: 'Duped task',
+        createdBy: 'user-1',
+        checklistItems: [
+          ChecklistItem(id: 'i1', text: 'Apple'),
+          ChecklistItem(id: 'i2', text: 'Banana', isCompleted: true),
+        ],
+      );
+
+      final ok = await repository.createTaskWithChecklist(
+        task,
+        task.checklistItems,
+      );
+      expect(ok, isTrue);
+
+      // Parent task doc exists.
+      final parent = await firestore
+          .collection('events')
+          .doc('event-1')
+          .collection('tasks')
+          .doc('task-dup')
+          .get();
+      expect(parent.exists, isTrue);
+      expect(parent.data()!['title'], 'Duped task');
+
+      // Checklist children exist with the right shape.
+      final children = await firestore
+          .collection('events')
+          .doc('event-1')
+          .collection('tasks')
+          .doc('task-dup')
+          .collection('checklist')
+          .get();
+      expect(children.docs.length, 2);
+      final byId = {for (final d in children.docs) d.id: d.data()};
+      expect(byId['i1']!['text'], 'Apple');
+      expect(byId['i1']!['isCompleted'], false);
+      expect(byId['i2']!['text'], 'Banana');
+      expect(byId['i2']!['isCompleted'], true);
+
+      // Drift mirror reflects both task + items.
+      final fromDrift = await repository.getTasksByEventId('event-1');
+      final hydrated = fromDrift.firstWhere((t) => t.id == 'task-dup');
+      expect(hydrated.checklistItems.map((i) => i.id), ['i1', 'i2']);
+    });
+
+    test('empty checklist is valid (writes only the parent)', () async {
+      const task = TaskModel(
+        id: 'task-empty',
+        eventId: 'event-1',
+        title: 'No items',
+        createdBy: 'user-1',
+      );
+
+      final ok = await repository.createTaskWithChecklist(task, const []);
+      expect(ok, isTrue);
+
+      final parent = await firestore
+          .collection('events')
+          .doc('event-1')
+          .collection('tasks')
+          .doc('task-empty')
+          .get();
+      expect(parent.exists, isTrue);
+
+      final children = await firestore
+          .collection('events')
+          .doc('event-1')
+          .collection('tasks')
+          .doc('task-empty')
+          .collection('checklist')
+          .get();
+      expect(children.docs, isEmpty);
     });
   });
 

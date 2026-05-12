@@ -61,6 +61,9 @@ dependencies:
   share_plus: ^10.1.4
   url_launcher: ^6.3.1
   clock: ^1.1.1
+  # Grapheme-aware string ops (TaskModel.duplicate truncation). Ships
+  # with Flutter; declared explicitly to satisfy depend_on_referenced.
+  characters: ^1.4.0
 
   # Reporting (PDF + CSV exports)
   pdf: ^3.11.0

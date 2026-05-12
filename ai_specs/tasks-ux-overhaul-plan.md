@@ -57,23 +57,24 @@ Tasks UX overhaul: form-kit foundation → remaining kit widgets → data-layer 
 - [x] TDD: `AppDateField` clearable — clear icon fires `onChanged(null)`
 - [x] Verify: `flutter analyze` clean; `flutter test` 374 pass
 
-### Phase 3: Data layer fix + pure logic
+### Phase 3: Data layer fix + pure logic ✓
 
 - **Goal**: Populate `TaskModel.checklistItems` in list path (fixes pre-existing X/Y bug), add `createTaskWithChecklist` for Duplicate, add `TasksFilter`/`applyTasksFilter`/`groupTasks`/`_startOfDay`/`TaskModel.duplicate` factories.
-- [ ] `lib/app/core/database/daos/task_checklist_items_dao.dart` — add `Future<Map<String, List<TaskChecklistItem>>> itemsByEventId(String eventId)` (single SELECT joining tasks→items, returning a `task_id`→items map) (spec req 11a)
-- [ ] `lib/app/features/tasks/data/task_repository.dart` — `watchTasksByEventId` now joins via `itemsByEventId(eventId)` before `_toDomain`; `_toDomain` accepts the items list (spec req 11a/11b)
-- [ ] `lib/app/features/tasks/data/task_repository.dart` — `Future<bool> createTaskWithChecklist(TaskModel task, List<ChecklistItem> items)` using Firestore `WriteBatch` (parent task doc + N checklist children atomic); on success mirror to Drift via existing daos (spec req 28)
-- [ ] `lib/app/features/tasks/domain/models/task.dart` — `TaskModel.duplicate({required String currentUserId, required List<ChecklistItem> checklist})`: new UUID, grapheme-aware truncation `title.characters.take(113).toString() + ' (copy)'`, preserved fields, fresh checklist UUIDs, status=todo, completedAt/By=null (spec req 27)
-- [ ] `lib/app/features/tasks/application/tasks_filter.dart` — `TasksFilter` value object (no `sortAscending`), `TasksSortKey`, `TasksGroupBy`, `TasksGroup`; `_startOfDay(DateTime)` helper; pure `applyTasksFilter` + `groupTasks` functions; `clock.now()` injected via the `now:` param (spec req 15–18, CI3)
-- [ ] TDD: `_startOfDay` zeroes time component
-- [ ] TDD: `applyTasksFilter` — each predicate independently + composition; null fields don't throw
-- [ ] TDD: `applyTasksFilter` — sort direction per `TasksSortKey` per req 17a; tie-break `id` asc; nulls last; stability check (identical input ⇒ identical output)
-- [ ] TDD: `applyTasksFilter` with `withClock(Clock.fixed(...))` — overdue predicate flips at start-of-day, not at the dueDate timestamp; same-day at 02:00 UTC == same result as 23:00 UTC
-- [ ] TDD: `groupTasks` — status / assignee / dueWindow buckets in spec'd order; empty buckets omitted; orphan-assignee handled
-- [ ] TDD: `TaskModel.duplicate` — new id, ` (copy)` suffix grapheme-truncated to ≤120 chars (test with an emoji at boundary), preserved fields, fresh checklist UUIDs, status reset
-- [ ] TDD: `TaskRepository.watchTasksByEventId` returns `TaskModel`s with `checklistItems` populated (regression covers latent X/Y bug)
-- [ ] TDD: `TaskRepository.createTaskWithChecklist` writes parent + N children atomically; mocked Firestore failure leaves nothing written; success mirrors to Drift
-- [ ] Verify: `flutter analyze && flutter test`
+- [x] `lib/app/core/database/daos/task_checklist_items_dao.dart` — `Future<Map<String, List<TaskChecklistItem>>> itemsByTaskIds(List<String>)` (single batched SELECT with `IN`)
+- [x] `lib/app/features/tasks/data/task_repository.dart` — `watchTasksByEventId` + `getTasksByEventId` both flow through `_hydrate(rows)` which calls `itemsByTaskIds` and merges into each `_toDomain(row, items)` (spec req 11a/11b)
+- [x] `lib/app/features/tasks/data/task_repository.dart` — `Future<bool> createTaskWithChecklist(TaskModel task, List<ChecklistItem> items)` using Firestore `WriteBatch` (parent task doc + N checklist children atomic); on success mirrors to Drift via existing daos (spec req 28)
+- [x] `lib/app/features/tasks/domain/models/task.dart` — `TaskModel.duplicate({required String currentUserId, required List<ChecklistItem> checklist})` with grapheme-aware `title.characters.take(113).toString() + ' (copy)'`, preserved fields, fresh checklist UUIDs, status=todo, completedAt/By=null (spec req 27)
+- [x] `lib/app/features/tasks/application/tasks_filter.dart` — `TasksFilter` value object (no `sortAscending`), `TasksSortKey`, `TasksGroupBy`, `TasksGroup`; `startOfDay(DateTime)` helper; pure `applyTasksFilter` + `groupTasks` functions; time-aware predicates take `now:` parameter (spec req 15–18, **CI3** seam)
+- [x] `pubspec.yaml` — `characters: ^1.4.0` declared explicitly (was transitive)
+- [x] TDD: `startOfDay` zeroes time component; same-day midnight is identity
+- [x] TDD: `applyTasksFilter` — each predicate independently + composition; null fields don't throw
+- [x] TDD: `applyTasksFilter` — sort direction per `TasksSortKey` per req 17a; tie-break `id` asc; nulls last; stability check
+- [x] TDD: `applyTasksFilter` — overdue flips at start-of-day (same-day at 02:00 UTC and 23:00 UTC both NOT overdue; next-day IS overdue). `clock.now()` not needed at the function level — `now:` parameter is the seam (CI3 satisfied)
+- [x] TDD: `groupTasks` — status / assignee / dueWindow buckets in spec'd order; empty buckets omitted; orphan-assignee handled with truncated UID fallback
+- [x] TDD: `TaskModel.duplicate` — new id, `(copy)` suffix grapheme-truncated to ≤120 chars (rocket emoji boundary test confirms no surrogate split), preserved fields, fresh checklist UUIDs, status reset
+- [x] TDD: `TaskRepository.watchTasksByEventId` returns `TaskModel`s with `checklistItems` populated (regression covers latent X/Y bug); empty checklist still emits empty list
+- [x] TDD: `TaskRepository.createTaskWithChecklist` writes parent + N children atomically; success mirrors to Drift; empty checklist valid
+- [x] Verify: `flutter analyze` clean; `flutter test` 405 pass (374→405, +31 new)
 
 ### Phase 4: TaskTile redesign
 

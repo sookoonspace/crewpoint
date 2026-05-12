@@ -1,3 +1,6 @@
+import 'package:characters/characters.dart';
+import 'package:uuid/uuid.dart';
+
 /// Domain model for a task within an event.
 class TaskModel {
   const TaskModel({
@@ -86,6 +89,50 @@ class TaskModel {
       isOwner ||
       isAdmin ||
       (currentUserId != null && createdBy == currentUserId);
+
+  /// Returns a fresh `TaskModel` that's a duplicate of this one, ready
+  /// for the Tasks overflow → Duplicate flow to push into the Create
+  /// screen.
+  ///
+  /// Rules:
+  /// - New UUID; `eventId` preserved.
+  /// - Title gets `" (copy)"` appended. The original is truncated via
+  ///   grapheme-aware `characters.take(113)` so emoji aren't split and
+  ///   the final string stays ≤ 120 chars.
+  /// - `description`, `assigneeId`, `dueDate`, `priority`, `budgetEstimate`
+  ///   preserved.
+  /// - `createdBy` becomes `currentUserId` (the user spawning the copy).
+  /// - Status resets to `todo`; `completedAt` / `completedBy` cleared.
+  /// - Each checklist item gets a fresh UUID; text + completion +
+  ///   sortOrder preserved.
+  TaskModel duplicate({
+    required String currentUserId,
+    required List<ChecklistItem> checklist,
+  }) {
+    const uuid = Uuid();
+    final truncated = title.characters.take(113).toString();
+    return TaskModel(
+      id: uuid.v4(),
+      eventId: eventId,
+      title: '$truncated (copy)',
+      description: description,
+      assigneeId: assigneeId,
+      createdBy: currentUserId,
+      status: TaskStatus.todo,
+      priority: priority,
+      dueDate: dueDate,
+      budgetEstimate: budgetEstimate,
+      checklistItems: [
+        for (final item in checklist)
+          ChecklistItem(
+            id: uuid.v4(),
+            text: item.text,
+            isCompleted: item.isCompleted,
+            sortOrder: item.sortOrder,
+          ),
+      ],
+    );
+  }
 }
 
 enum TaskStatus {
