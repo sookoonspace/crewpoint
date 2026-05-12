@@ -29,6 +29,7 @@ abstract class AppStrings {
 
   AuthStrings get auth;
   ErrorStrings get errors;
+  TasksStrings get tasks;
 
   /// Static English fallback. Used by service-layer code that has no
   /// `BuildContext` in scope (e.g. `firebaseAuthErrorMessage`). UI code
@@ -81,6 +82,23 @@ abstract class AuthStrings {
   String get legalFooterSuffix; // e.g. "."
 }
 
+/// User-facing strings for the Tasks feature.
+///
+/// Phase 1 seeds the class with the labels the form-kit foundation needs;
+/// later phases extend it with filter chip labels, sort/group menu labels,
+/// priority pill labels, empty-state copy, and the `(copy)` suffix. All new
+/// task-screen literals MUST land here rather than being hardcoded in
+/// widgets — see `ai_specs/tasks-ux-overhaul-spec.md` `<boundaries>` i18n
+/// contract.
+abstract class TasksStrings {
+  const TasksStrings();
+
+  // Form section headers (used by Create / Edit task screens).
+  String get sectionDetails;
+  String get sectionAssignment;
+  String get sectionTimingAndBudget;
+}
+
 abstract class ErrorStrings {
   const ErrorStrings();
 
@@ -113,6 +131,22 @@ class _EnglishStrings extends AppStrings {
 
   @override
   ErrorStrings get errors => const _EnglishErrorStrings();
+
+  @override
+  TasksStrings get tasks => const _EnglishTasksStrings();
+}
+
+class _EnglishTasksStrings extends TasksStrings {
+  const _EnglishTasksStrings();
+
+  @override
+  String get sectionDetails => 'Details';
+
+  @override
+  String get sectionAssignment => 'Assignment';
+
+  @override
+  String get sectionTimingAndBudget => 'Timing & Budget';
 }
 
 class _EnglishAuthStrings extends AuthStrings {

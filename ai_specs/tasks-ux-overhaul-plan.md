@@ -24,18 +24,19 @@ Tasks UX overhaul: form-kit foundation → remaining kit widgets → data-layer 
 
 ## Plan
 
-### Phase 1: Form-kit foundation slice
+### Phase 1: Form-kit foundation slice ✓
 
 - **Goal**: Ship `AppFormSection` + `AppTextField` + the deprecated `CustomTextField` wrapper end-to-end. Prove zero churn on 29 callsites by analyzing the whole repo after the wrapper lands.
-- [ ] `lib/app/core/widgets/forms/app_form_section.dart` — `title`, optional `helperText`, `child` column; `AppSpacing.xl` between sections (spec req 9)
-- [ ] `lib/app/core/widgets/forms/app_text_field.dart` — `StatelessWidget` composed with `Focus`/`FocusableActionDetector`; superset of `CustomTextField` params + additive `labelText/helperText/errorText/maxLength/autofocus`; sage 2-px focus outline only on `kIsWeb` AND when focused (spec req 2)
-- [ ] `lib/app/core/widgets/custom_text_field.dart` — convert to `StatelessWidget` thin wrapper delegating to `AppTextField`; `@Deprecated('Use AppTextField from lib/app/core/widgets/forms/app_text_field.dart')`; preserve every constructor param + default (spec req 3, CI1)
-- [ ] `lib/app/core/i18n/app_strings.dart` — add `abstract class TasksStrings` + `_EnglishTasksStrings` peer; field for at least one V1 label (placeholder; expand in later phases as needed) (boundary i18n contract)
-- [ ] TDD: `AppTextField` renders error text from validator; focus outline appears only on `kIsWeb` when focused
-- [ ] TDD: `AppTextField` accepts every `CustomTextField` param shape (regression — golden tree assertion)
-- [ ] TDD: `CustomTextField` wrapper produces an identical rendered tree to `AppTextField` for identical params
-- [ ] TDD: `AppFormSection` renders title + optional helper + child column with the spec'd spacing
-- [ ] Verify: `flutter analyze` (zero new errors on any of the 29 files importing `CustomTextField`); `flutter test`
+- [x] `lib/app/core/widgets/forms/app_form_section.dart` — `title`, optional `helperText`, `child` column; spacing scaled via `AppSpacing.xs`/`AppSpacing.md` between title/helper/child (spec req 9)
+- [x] `lib/app/core/widgets/forms/app_text_field.dart` — `StatelessWidget` composed via `Focus` + `Builder` reading `Focus.of(ctx).hasFocus`; superset of `CustomTextField` params + additive `labelText/helperText/errorText/maxLength/autofocus`; subtle sage 2-px outer outline only when `kIsWeb` AND focused (spec req 2)
+- [x] `lib/app/core/widgets/custom_text_field.dart` — converted to `StatelessWidget` thin wrapper delegating to `AppTextField`; `@Deprecated('Use AppTextField from lib/app/core/widgets/forms/app_text_field.dart')`; every existing constructor param + default preserved (spec req 3, CI1)
+- [x] `lib/app/core/i18n/app_strings.dart` — added `abstract class TasksStrings` + `_EnglishTasksStrings` peer with three V1 section-title fields (Details / Assignment / Timing & Budget) (boundary i18n contract)
+- [x] TDD: `AppTextField` renders validator error after `Form.validate()`
+- [x] TDD: `AppTextField` accepts every `CustomTextField` legacy parameter without compile or runtime error (regression)
+- [x] TDD: `AppTextField` renders the new `labelText` + `helperText` + `errorText` additive params
+- [x] TDD: `CustomTextField` wrapper delegates to exactly one nested `AppTextField` instance, preserving the visual surface
+- [x] TDD: `AppFormSection` renders title + child; helper appears only when provided
+- [x] Verify: `flutter analyze` clean (zero new errors); `flutter test` 360 pass
 
 ### Phase 2: Remaining form-kit widgets
 

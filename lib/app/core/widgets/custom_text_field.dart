@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/widgets/forms/app_text_field.dart';
 
+/// Deprecated: use [AppTextField] from
+/// `lib/app/core/widgets/forms/app_text_field.dart` directly.
+///
+/// `CustomTextField` is kept as a thin wrapper so the 29 pre-existing
+/// call sites continue to compile without modification. New screens
+/// should reach for `AppTextField` and the rest of the forms kit.
+@Deprecated(
+  'Use AppTextField from lib/app/core/widgets/forms/app_text_field.dart',
+)
 class CustomTextField extends StatelessWidget {
   const CustomTextField({
     super.key,
@@ -32,52 +40,18 @@ class CustomTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
+    return AppTextField(
+      hintText: hintText,
       controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
       onChanged: onChanged,
       validator: validator,
+      prefixIcon: prefixIcon,
+      suffixIcon: suffixIcon,
       maxLines: maxLines,
       enabled: enabled,
-      style: const TextStyle(color: AppColors.charcoal),
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hintText,
-        hintStyle: const TextStyle(color: AppColors.mediumGrey),
-        labelStyle: const TextStyle(color: AppColors.darkGrey),
-        prefixIcon: prefixIcon,
-        suffixIcon: suffixIcon,
-        filled: true,
-        fillColor: AppColors.offWhite,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.lightGrey),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.lightGrey),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.sage, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.terracotta),
-        ),
-        errorStyle: const TextStyle(color: AppColors.terracotta),
-        disabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: AppColors.lightGrey.withValues(alpha: 0.5),
-          ),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.md,
-        ),
-      ),
+      label: label,
     );
   }
 }
