@@ -97,6 +97,13 @@ abstract class TasksStrings {
   String get sectionDetails;
   String get sectionAssignment;
   String get sectionTimingAndBudget;
+
+  // Tile pills.
+  String get overdueBadge;
+  String get priorityNone;
+  String get priorityLow;
+  String get priorityMedium;
+  String get priorityHigh;
 }
 
 abstract class ErrorStrings {
@@ -147,6 +154,21 @@ class _EnglishTasksStrings extends TasksStrings {
 
   @override
   String get sectionTimingAndBudget => 'Timing & Budget';
+
+  @override
+  String get overdueBadge => 'Overdue';
+
+  @override
+  String get priorityNone => 'None';
+
+  @override
+  String get priorityLow => 'Low';
+
+  @override
+  String get priorityMedium => 'Medium';
+
+  @override
+  String get priorityHigh => 'High';
 }
 
 class _EnglishAuthStrings extends AuthStrings {

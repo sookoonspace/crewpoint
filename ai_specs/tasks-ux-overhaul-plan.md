@@ -76,18 +76,18 @@ Tasks UX overhaul: form-kit foundation → remaining kit widgets → data-layer 
 - [x] TDD: `TaskRepository.createTaskWithChecklist` writes parent + N children atomically; success mirrors to Drift; empty checklist valid
 - [x] Verify: `flutter analyze` clean; `flutter test` 405 pass (374→405, +31 new)
 
-### Phase 4: TaskTile redesign
+### Phase 4: TaskTile redesign ✓
 
 - **Goal**: Tile gets progress bar (gated on data + `status != done`), overdue badge (`clock.now()`), priority pill.
-- [ ] `lib/app/features/tasks/presentation/widgets/task_tile.dart` — add `import 'package:clock/clock.dart';`; new `Container` linear progress bar below title row (height 3, foreground = stripe colour, background = `lightGrey` at 30 % alpha); hidden when `checklistItems.isEmpty` OR `status == done` (spec req 11, 14, CI3)
-- [ ] `lib/app/features/tasks/presentation/widgets/task_tile.dart` — Overdue pill via `_startOfDay(dueDate) < _startOfDay(clock.now()) && status != done`; key `tasks.tile.${id}.overdueBadge`; terracotta bg, white text, `labelSmall` (spec req 12)
-- [ ] `lib/app/features/tasks/presentation/widgets/task_tile.dart` — Priority pill for `priority > 0`; key `tasks.tile.${id}.priorityBadge`; labels Low/Medium/High; colours sageLight/charcoal/terracotta (spec req 13)
-- [ ] `lib/app/core/i18n/app_strings.dart` — add fields for Overdue, Low, Medium, High labels to `TasksStrings`
-- [ ] TDD: progress bar visible only when `checklistItems.isNotEmpty && status != done`; bar fraction equals `completed/total` (width-ratio assertion via `Container.constraints`)
-- [ ] TDD: progress bar hidden when `status == done` even with partial checklist (edge case 33b)
-- [ ] TDD: overdue badge — 3 statuses × 3 dates (yesterday / today / tomorrow) under `withClock(Clock.fixed(...))`; badge appears only for `dueDate < startOfDay(now) && status != done`
-- [ ] TDD: priority pill — absent for `priority == 0`; present with correct label/colour for 1/2/3
-- [ ] Verify: `flutter analyze && flutter test`
+- [x] `lib/app/features/tasks/presentation/widgets/task_tile.dart` — `clock` import; new `_ProgressBar` widget below title row (height 3, foreground = stripe colour, background `lightGrey` at 30 % alpha); hidden when `checklistItems.isEmpty` OR `status == done` (spec req 11, 14, CI3)
+- [x] `lib/app/features/tasks/presentation/widgets/task_tile.dart` — Overdue pill via `startOfDay(dueDate) < startOfDay(clock.now()) && status != done`; key `tasks.tile.${id}.overdueBadge`; terracotta bg, white text, `labelSmall` (spec req 12)
+- [x] `lib/app/features/tasks/presentation/widgets/task_tile.dart` — Priority pill for `priority > 0`; key `tasks.tile.${id}.priorityBadge`; labels Low/Medium/High via `context.strings.tasks.priorityLow/Medium/High`; colours sageLight/charcoal/terracotta (spec req 13)
+- [x] `lib/app/core/i18n/app_strings.dart` — added `overdueBadge` + `priorityNone/Low/Medium/High` to `TasksStrings` and `_EnglishTasksStrings`
+- [x] TDD: progress bar visible only when `checklistItems.isNotEmpty && status != done`; bar fraction equals `completed/total` (asserted via `FractionallySizedBox.widthFactor`)
+- [x] TDD: progress bar hidden when `status == done` even with partial checklist (edge case 33b)
+- [x] TDD: overdue badge — 4 cases (null dueDate, same-day late at 23:30, yesterday with todo, yesterday with done) under `withClock(Clock.fixed(...))`; badge appears only for past-due + non-done
+- [x] TDD: priority pill — absent for `priority == 0`; present with correct label for 1/2/3
+- [x] Verify: `flutter analyze` clean; `flutter test` 416 pass (405→416, +11 new)
 
 ### Phase 5: Tasks screen overhaul
 
