@@ -82,12 +82,12 @@ Build a shared `EmptyStatePlaceholder` widget (lottie + title + subtitle + optio
 ### Phase 5: Chat + Budget tab stubs; drop `_PlaceholderScreen`
 
 - **Goal**: Replace the remaining two `_PlaceholderScreen` stubs with branded `EmptyStatePlaceholder` screens and delete the now-dead class. Pure follow-up — depends on Phase 1's widget.
-- [ ] `lib/app/features/chat/presentation/chat_tab_placeholder_screen.dart` — `StatelessWidget`; AppBar title from `context.strings.chat.tabEmptyTitle`; body `EmptyStatePlaceholder(title: tabEmptyTitle, subtitle: tabEmptySubtitle, ctaLabel: openDashboardCta, onCta: () => context.go(AppRoutes.dashboard))`
-- [ ] `lib/app/features/budget/presentation/budget_tab_placeholder_screen.dart` — same shape, `BudgetStrings.tabEmpty*`
-- [ ] `lib/app/core/i18n/app_strings.dart` — add `ChatStrings` (`tabEmptyTitle`, `tabEmptySubtitle`) + `BudgetStrings` (same fields) sub-objects + English impls; wire into `AppStrings`
-- [ ] `lib/app/core/router/app_router.dart` — replace `/chat` and `/budget` branches' `_PlaceholderScreen(...)` with the two new screens; **delete** the `_PlaceholderScreen` class (line 274) since no callers remain
-- [ ] TDD: each tab screen renders `EmptyStatePlaceholder` with the expected title key; CTA fires the navigation seam
-- [ ] Verify: `flutter analyze` clean; `flutter test`; grep confirms `_PlaceholderScreen` class is gone (`! grep -r "_PlaceholderScreen" lib/`)
+- [x] `lib/app/features/chat/presentation/chat_tab_placeholder_screen.dart` — `StatelessWidget`; AppBar title "Chat"; body `EmptyStatePlaceholder(title: tabEmptyTitle, subtitle: tabEmptySubtitle, ctaLabel: openDashboardCta, onCta: () => context.go(AppRoutes.dashboard))` (optional `onOpenDashboard` test seam mirrors `MyTasksScreen`)
+- [x] `lib/app/features/budget/presentation/budget_tab_placeholder_screen.dart` — same shape, `BudgetStrings.tabEmpty*`
+- [x] `lib/app/core/i18n/app_strings.dart` — add `ChatStrings` (`tabEmptyTitle`, `tabEmptySubtitle`) + `BudgetStrings` (same fields) sub-objects + English impls; wire into `AppStrings`
+- [x] `lib/app/core/router/app_router.dart` — replace `/chat` and `/budget` branches' `_PlaceholderScreen(...)` with the two new screens; **delete** the `_PlaceholderScreen` class since no callers remain
+- [x] TDD: each tab screen renders `EmptyStatePlaceholder` with the expected title key; CTA fires the navigation seam
+- [x] Verify: `flutter analyze` clean; `flutter test`; grep confirms `_PlaceholderScreen` class is gone (`! grep -r "_PlaceholderScreen" lib/`)
 
 ## Risks / Out of scope
 

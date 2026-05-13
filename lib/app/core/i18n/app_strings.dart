@@ -31,6 +31,8 @@ abstract class AppStrings {
   ErrorStrings get errors;
   TasksStrings get tasks;
   DashboardStrings get dashboard;
+  ChatStrings get chat;
+  BudgetStrings get budget;
 
   /// Static English fallback. Used by service-layer code that has no
   /// `BuildContext` in scope (e.g. `firebaseAuthErrorMessage`). UI code
@@ -174,6 +176,22 @@ abstract class DashboardStrings {
   String get joinWithCode;
 }
 
+/// User-facing strings for the cross-event Chat tab placeholder.
+abstract class ChatStrings {
+  const ChatStrings();
+
+  String get tabEmptyTitle;
+  String get tabEmptySubtitle;
+}
+
+/// User-facing strings for the cross-event Budget tab placeholder.
+abstract class BudgetStrings {
+  const BudgetStrings();
+
+  String get tabEmptyTitle;
+  String get tabEmptySubtitle;
+}
+
 abstract class ErrorStrings {
   const ErrorStrings();
 
@@ -212,6 +230,34 @@ class _EnglishStrings extends AppStrings {
 
   @override
   DashboardStrings get dashboard => const _EnglishDashboardStrings();
+
+  @override
+  ChatStrings get chat => const _EnglishChatStrings();
+
+  @override
+  BudgetStrings get budget => const _EnglishBudgetStrings();
+}
+
+class _EnglishChatStrings extends ChatStrings {
+  const _EnglishChatStrings();
+
+  @override
+  String get tabEmptyTitle => 'Chat is coming soon';
+
+  @override
+  String get tabEmptySubtitle =>
+      'Open an event from the Dashboard to chat with your crew.';
+}
+
+class _EnglishBudgetStrings extends BudgetStrings {
+  const _EnglishBudgetStrings();
+
+  @override
+  String get tabEmptyTitle => 'Budget is coming soon';
+
+  @override
+  String get tabEmptySubtitle =>
+      'Open an event from the Dashboard to track expenses.';
 }
 
 class _EnglishDashboardStrings extends DashboardStrings {

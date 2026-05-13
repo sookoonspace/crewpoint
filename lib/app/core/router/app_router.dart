@@ -20,7 +20,9 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/edit_event_scr
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/member_management_screen.dart';
 import 'package:crewpoint_app/app/features/onboarding/presentation/onboarding_screen.dart';
+import 'package:crewpoint_app/app/features/budget/presentation/budget_tab_placeholder_screen.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/event_budget_page.dart';
+import 'package:crewpoint_app/app/features/chat/presentation/chat_tab_placeholder_screen.dart';
 import 'package:crewpoint_app/app/features/chat/presentation/event_chat_page.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/event_task_detail_page.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/event_tasks_page.dart';
@@ -222,7 +224,7 @@ GoRouter createRouter({
             routes: [
               GoRoute(
                 path: AppRoutes.chat,
-                builder: (_, _) => const _PlaceholderScreen(title: 'Chat'),
+                builder: (_, _) => const ChatTabPlaceholderScreen(),
               ),
             ],
           ),
@@ -230,7 +232,7 @@ GoRouter createRouter({
             routes: [
               GoRoute(
                 path: AppRoutes.budget,
-                builder: (_, _) => const _PlaceholderScreen(title: 'Budget'),
+                builder: (_, _) => const BudgetTabPlaceholderScreen(),
               ),
             ],
           ),
@@ -269,21 +271,6 @@ String _resolveEventId(GoRouterState state) {
   if (fromParam != null && fromParam.isNotEmpty) return fromParam;
   final match = RegExp(r'/event/([^/]+)').firstMatch(state.matchedLocation);
   return match?.group(1) ?? '';
-}
-
-/// Temporary placeholder until real screens are built.
-class _PlaceholderScreen extends StatelessWidget {
-  const _PlaceholderScreen({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(child: Text(title)),
-    );
-  }
 }
 
 /// Friendly fallback for unmatched routes. Replaces GoRouter's default
