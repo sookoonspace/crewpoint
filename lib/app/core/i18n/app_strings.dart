@@ -147,6 +147,15 @@ abstract class TasksStrings {
   String get emptyNoTasksHelp;
   String get emptyNoMatch;
 
+  // Cross-event "My Tasks" tab.
+  String get myTasksAppBarTitle;
+  String get myTasksEmptyTitle;
+  String get myTasksEmptySubtitle;
+  String get myTasksEmptySubtitleNoEvents;
+  String get openDashboardCta;
+  String get createFromDashboardCta;
+  String get signInRequiredTitle;
+
   // Detail screen overflow menu.
   String get detailEdit;
   String get detailDuplicate;
@@ -319,6 +328,29 @@ class _EnglishTasksStrings extends TasksStrings {
 
   @override
   String get emptyNoMatch => 'No tasks match this filter';
+
+  @override
+  String get myTasksAppBarTitle => 'My Tasks';
+
+  @override
+  String get myTasksEmptyTitle => 'No tasks assigned to you';
+
+  @override
+  String get myTasksEmptySubtitle =>
+      'Open an event from the Dashboard to view or create tasks.';
+
+  @override
+  String get myTasksEmptySubtitleNoEvents =>
+      'Create an event from the Dashboard to get started.';
+
+  @override
+  String get openDashboardCta => 'Open Dashboard';
+
+  @override
+  String get createFromDashboardCta => 'Create an event';
+
+  @override
+  String get signInRequiredTitle => 'Sign in to view your tasks';
 
   @override
   String get detailEdit => 'Edit';

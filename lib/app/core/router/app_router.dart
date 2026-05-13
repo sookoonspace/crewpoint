@@ -24,6 +24,7 @@ import 'package:crewpoint_app/app/features/budget/presentation/event_budget_page
 import 'package:crewpoint_app/app/features/chat/presentation/event_chat_page.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/event_task_detail_page.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/event_tasks_page.dart';
+import 'package:crewpoint_app/app/features/tasks/presentation/my_tasks_screen.dart';
 
 /// Route paths.
 abstract final class AppRoutes {
@@ -213,7 +214,7 @@ GoRouter createRouter({
             routes: [
               GoRoute(
                 path: AppRoutes.tasks,
-                builder: (_, _) => const _PlaceholderScreen(title: 'Tasks'),
+                builder: (_, _) => const MyTasksScreen(),
               ),
             ],
           ),

@@ -63,21 +63,21 @@ Build a shared `EmptyStatePlaceholder` widget (lottie + title + subtitle + optio
 ### Phase 4: `MyTasksScreen` at `/tasks`
 
 - **Goal**: Consume Phase 3 provider; render loading / empty-with-events / empty-no-events / null-uid / non-empty branches; wire route. Robot journey test for the screen-level empty-state CTA flow.
-- [ ] `lib/app/features/tasks/presentation/my_tasks_screen.dart` — `ConsumerWidget`. Reads `currentUserIdProvider` first; null → short-circuit `EmptyStatePlaceholder(title: signInRequiredTitle)`, NO family invocation (spec req 8 + 21). Non-null → `myAssignedTasksProvider(uid).when(...)`:
+- [x] `lib/app/features/tasks/presentation/my_tasks_screen.dart` — `ConsumerWidget`. Reads `currentUserIdProvider` first; null → short-circuit `EmptyStatePlaceholder(title: signInRequiredTitle)`, NO family invocation (spec req 8 + 21). Non-null → `myAssignedTasksProvider(uid).when(...)`:
   - `loading: () => LoadingAnimation()` (existing widget at `lib/app/core/widgets/loading_animation.dart`)
   - `error: (e, st) => EmptyStatePlaceholder(title: 'Could not load tasks', subtitle: e.toString(), lottieAsset: 'assets/animations/error.json')` + `developer.log(name: 'tasks.myTasks')`
   - `data: rows` → empty → `EmptyStatePlaceholder` with copy/CTA adapting to event count (req 23 — events present → `myTasksEmptySubtitle` + `openDashboardCta`; zero events → `myTasksEmptySubtitleNoEvents` + `createFromDashboardCta`). Both CTAs `() => context.go(AppRoutes.dashboard)`.
   - `data: rows` non-empty → `ListView`, grouped by event via `TasksGroupHeader(label: event.title)` then `TaskTile`s. Tap → `context.push('/dashboard/event/${row.event.id}/tasks/${row.task.id}')`. Each tile passes `currencyCode: row.event.currency`.
-- [ ] AppBar title from `context.strings.tasks.myTasksAppBarTitle` — no literals
-- [ ] `lib/app/core/i18n/app_strings.dart` — extend `TasksStrings` with `myTasksAppBarTitle, myTasksEmptyTitle, myTasksEmptySubtitle, myTasksEmptySubtitleNoEvents, openDashboardCta, createFromDashboardCta, signInRequiredTitle`
-- [ ] `lib/app/core/router/app_router.dart` — replace `/tasks` branch's `_PlaceholderScreen(title: 'Tasks')` (line 215) with `const MyTasksScreen()`. Do NOT delete `_PlaceholderScreen` yet (Phase 5 cleans it up).
-- [ ] TDD: loading branch → `LoadingAnimation` visible; no empty state, no list
-- [ ] TDD: empty-with-events → `myTasksEmptySubtitle` + `openDashboardCta` text rendered
-- [ ] TDD: empty-no-events → `myTasksEmptySubtitleNoEvents` + `createFromDashboardCta`
-- [ ] TDD: null-uid short-circuit → `signInRequiredTitle` rendered; `myAssignedTasksProvider` NEVER subscribed (assert via override counter)
-- [ ] TDD: non-empty → one `TasksGroupHeader` per distinct event; tile `onTap` fires the captured `context.push(...)` (override navigation seam)
-- [ ] Robot: `test/journeys/tasks_tab_empty_state_journey_test.dart` — screen-level scope per spec (pump `MyTasksScreen` in minimal `ProviderScope` + `MaterialApp`; seed `data: []` + zero events; assert empty state visible; tap CTA → captured callback fires). Full `StatefulShellRoute` harness deferred per spec.
-- [ ] Verify: `flutter analyze && flutter test`
+- [x] AppBar title from `context.strings.tasks.myTasksAppBarTitle` — no literals
+- [x] `lib/app/core/i18n/app_strings.dart` — extend `TasksStrings` with `myTasksAppBarTitle, myTasksEmptyTitle, myTasksEmptySubtitle, myTasksEmptySubtitleNoEvents, openDashboardCta, createFromDashboardCta, signInRequiredTitle`
+- [x] `lib/app/core/router/app_router.dart` — replace `/tasks` branch's `_PlaceholderScreen(title: 'Tasks')` (line 215) with `const MyTasksScreen()`. Do NOT delete `_PlaceholderScreen` yet (Phase 5 cleans it up).
+- [x] TDD: loading branch → `LoadingAnimation` visible; no empty state, no list
+- [x] TDD: empty-with-events → `myTasksEmptySubtitle` + `openDashboardCta` text rendered
+- [x] TDD: empty-no-events → `myTasksEmptySubtitleNoEvents` + `createFromDashboardCta`
+- [x] TDD: null-uid short-circuit → `signInRequiredTitle` rendered; `myAssignedTasksProvider` NEVER subscribed (assert via override counter)
+- [x] TDD: non-empty → one `TasksGroupHeader` per distinct event; tile `onTap` fires the captured `context.push(...)` (override navigation seam — exposed as `onOpenTask` constructor param; `onOpenDashboard` covers the CTA)
+- [x] Robot: `test/journeys/tasks_tab_empty_state_journey_test.dart` — screen-level scope per spec (pump `MyTasksScreen` in minimal `ProviderScope` + `MaterialApp`; seed `data: []` + zero events; assert empty state visible; tap CTA → captured callback fires). Full `StatefulShellRoute` harness deferred per spec.
+- [x] Verify: `flutter analyze && flutter test`
 
 ### Phase 5: Chat + Budget tab stubs; drop `_PlaceholderScreen`
 
