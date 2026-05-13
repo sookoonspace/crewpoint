@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
+import 'package:crewpoint_app/app/core/widgets/empty_state_placeholder.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/event_card.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/join_event_sheet.dart';
 
@@ -48,7 +50,15 @@ class DashboardScreen extends ConsumerWidget {
             ),
           ),
           data: (events) {
-            if (events.isEmpty) return const _EmptyState();
+            if (events.isEmpty) {
+              final s = context.strings.dashboard;
+              return EmptyStatePlaceholder(
+                title: s.noEventsTitle,
+                subtitle: s.noEventsSubtitle,
+                ctaLabel: s.joinWithCode,
+                onCta: () => JoinEventSheet.show(context: context),
+              );
+            }
             return ListView.separated(
               key: const Key('dashboard.events.list'),
               padding: EdgeInsets.symmetric(
@@ -71,38 +81,6 @@ class DashboardScreen extends ConsumerWidget {
         backgroundColor: AppColors.sage,
         foregroundColor: AppColors.white,
         child: const Icon(Icons.add),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: .center,
-        spacing: AppSpacing.lg,
-        children: [
-          const Icon(Icons.event_note, size: 64, color: AppColors.lightGrey),
-          Text('No events yet', style: Theme.of(context).textTheme.titleMedium),
-          Text(
-            'Create an event or join one with a code',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          OutlinedButton.icon(
-            onPressed: () => JoinEventSheet.show(context: context),
-            icon: const Icon(Icons.login_rounded),
-            label: const Text('Join with Code'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.sage,
-              side: const BorderSide(color: AppColors.sage),
-            ),
-          ),
-        ],
       ),
     );
   }

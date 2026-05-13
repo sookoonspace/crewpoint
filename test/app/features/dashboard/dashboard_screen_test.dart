@@ -9,6 +9,16 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/dashboard_scre
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/event_card.dart';
 
 void main() {
+  // Empty-state branch renders an `EmptyStatePlaceholder` whose lottie
+  // animation loops forever — `pumpAndSettle` would hang. Bounded pumps
+  // let the stream emit + the lottie loader resolve (or fall through to
+  // its errorBuilder) without waiting for animation to settle.
+  Future<void> pumpFrames(WidgetTester tester) async {
+    for (var i = 0; i < 3; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+  }
+
   testWidgets(
     'renders the empty state when dashboardEventsProvider emits an empty list',
     (tester) async {
@@ -22,7 +32,7 @@ void main() {
           child: const MaterialApp(home: DashboardScreen()),
         ),
       );
-      await tester.pumpAndSettle();
+      await pumpFrames(tester);
 
       expect(find.text('No events yet'), findsOneWidget);
       expect(find.text('Join with Code'), findsOneWidget);
@@ -41,7 +51,7 @@ void main() {
         child: const MaterialApp(home: DashboardScreen()),
       ),
     );
-    await tester.pumpAndSettle();
+    await pumpFrames(tester);
 
     expect(find.byIcon(Icons.login_rounded), findsWidgets);
   });
@@ -99,8 +109,9 @@ void main() {
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-    // Resolve so the test exits cleanly.
+    // Resolve so the test exits cleanly. Empty list → EmptyStatePlaceholder
+    // with looping lottie, so use bounded pumps instead of pumpAndSettle.
     controller.add(const []);
-    await tester.pumpAndSettle();
+    await pumpFrames(tester);
   });
 }

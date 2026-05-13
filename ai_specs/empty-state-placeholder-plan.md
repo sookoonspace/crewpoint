@@ -28,15 +28,15 @@ Build a shared `EmptyStatePlaceholder` widget (lottie + title + subtitle + optio
 ### Phase 1: `EmptyStatePlaceholder` widget + dashboard migration (thin vertical slice)
 
 - **Goal**: Ship the shared widget end-to-end through ONE call site (the dashboard "no events" state) so the API + i18n flow are proven before scaling.
-- [ ] `lib/app/core/widgets/empty_state_placeholder.dart` — `StatelessWidget`; public API per spec req 1 (`title, subtitle?, ctaLabel?, onCta?, ctaKey?, lottieAsset = 'assets/animations/empty_state.json', iconFallback = Icons.inbox_outlined, lottieHeight = 160`); `Lottie.asset(..., errorBuilder: ...)` + dedupe-once `developer.log(name: 'empty-state')`; vertical layout per spec req 5; test-stable keys per req 7
-- [ ] `lib/app/core/i18n/app_strings.dart` — add `DashboardStrings` sub-object (`noEventsTitle`, `noEventsSubtitle`, `joinWithCode`); wire into `AppStrings` + `_EnglishStrings` impls
-- [ ] `lib/app/features/dashboard/presentation/dashboard_screen.dart` — replace private `_EmptyState` body with `EmptyStatePlaceholder(...)`; CTA fires `JoinEventSheet.show(context: context)`; delete the private class
-- [ ] TDD: widget renders title + optional subtitle + optional CTA via `emptyState.title`/`subtitle`/`cta` keys; CTA tap fires `onCta`
-- [ ] TDD: when `ctaLabel`/`onCta` null → no button rendered
-- [ ] TDD: bad `lottieAsset` path → after ≥ 3 × 50 ms pumps, `emptyState.iconFallback` Icon visible (NO `pumpAndSettle` — lottie loops; spec validation block)
-- [ ] TDD: `ctaKey` forwarded onto the OutlinedButton (passthrough assertion)
-- [ ] TDD: dashboard "no events" state still renders new widget; Join button still present + tappable
-- [ ] Verify: `flutter analyze` clean (only pre-existing `TableMigration` warning); `flutter test test/app/core/widgets/empty_state_placeholder_test.dart test/app/features/dashboard/`
+- [x] `lib/app/core/widgets/empty_state_placeholder.dart` — `StatelessWidget`; public API per spec req 1 (`title, subtitle?, ctaLabel?, onCta?, ctaKey?, lottieAsset = 'assets/animations/empty_state.json', iconFallback = Icons.inbox_outlined, lottieHeight = 160`); `Lottie.asset(..., errorBuilder: ...)` + dedupe-once `developer.log(name: 'empty-state')`; vertical layout per spec req 5; test-stable keys per req 7
+- [x] `lib/app/core/i18n/app_strings.dart` — add `DashboardStrings` sub-object (`noEventsTitle`, `noEventsSubtitle`, `joinWithCode`); wire into `AppStrings` + `_EnglishStrings` impls
+- [x] `lib/app/features/dashboard/presentation/dashboard_screen.dart` — replace private `_EmptyState` body with `EmptyStatePlaceholder(...)`; CTA fires `JoinEventSheet.show(context: context)`; delete the private class
+- [x] TDD: widget renders title + optional subtitle + optional CTA via `emptyState.title`/`subtitle`/`cta` keys; CTA tap fires `onCta`
+- [x] TDD: when `ctaLabel`/`onCta` null → no button rendered
+- [x] TDD: bad `lottieAsset` path → after ≥ 3 × 50 ms pumps, `emptyState.iconFallback` Icon visible (NO `pumpAndSettle` — lottie loops; spec validation block)
+- [x] TDD: `ctaKey` forwarded onto the OutlinedButton (passthrough assertion)
+- [x] TDD: dashboard "no events" state still renders new widget; Join button still present + tappable
+- [x] Verify: `flutter analyze` clean (only pre-existing `TableMigration` warning); `flutter test test/app/core/widgets/empty_state_placeholder_test.dart test/app/features/dashboard/`
 
 ### Phase 2: Migrate `task_list_screen` empty states + extract `TasksGroupHeader`
 

@@ -30,6 +30,7 @@ abstract class AppStrings {
   AuthStrings get auth;
   ErrorStrings get errors;
   TasksStrings get tasks;
+  DashboardStrings get dashboard;
 
   /// Static English fallback. Used by service-layer code that has no
   /// `BuildContext` in scope (e.g. `firebaseAuthErrorMessage`). UI code
@@ -154,6 +155,15 @@ abstract class TasksStrings {
   String get fieldPriority;
 }
 
+/// User-facing strings for the Dashboard feature (events list + empty state).
+abstract class DashboardStrings {
+  const DashboardStrings();
+
+  String get noEventsTitle;
+  String get noEventsSubtitle;
+  String get joinWithCode;
+}
+
 abstract class ErrorStrings {
   const ErrorStrings();
 
@@ -189,6 +199,22 @@ class _EnglishStrings extends AppStrings {
 
   @override
   TasksStrings get tasks => const _EnglishTasksStrings();
+
+  @override
+  DashboardStrings get dashboard => const _EnglishDashboardStrings();
+}
+
+class _EnglishDashboardStrings extends DashboardStrings {
+  const _EnglishDashboardStrings();
+
+  @override
+  String get noEventsTitle => 'No events yet';
+
+  @override
+  String get noEventsSubtitle => 'Create an event or join one with a code';
+
+  @override
+  String get joinWithCode => 'Join with Code';
 }
 
 class _EnglishTasksStrings extends TasksStrings {
