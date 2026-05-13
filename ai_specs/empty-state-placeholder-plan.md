@@ -41,12 +41,12 @@ Build a shared `EmptyStatePlaceholder` widget (lottie + title + subtitle + optio
 ### Phase 2: Migrate `task_list_screen` empty states + extract `TasksGroupHeader`
 
 - **Goal**: Migrate the per-event Tasks list empty state without breaking the Phase 5 key contracts (`tasks.list.emptyState`, `tasks.list.emptyState.clear`). Extract `_GroupHeader` to a shared `TasksGroupHeader` so the upcoming `MyTasksScreen` reuses it.
-- [ ] `lib/app/features/tasks/presentation/widgets/tasks_group_header.dart` — extract Phase 5's `_GroupHeader` (label + sage thin divider; existing visual unchanged); public API `TasksGroupHeader({Key? key, required String label})`
-- [ ] `lib/app/features/tasks/presentation/task_list_screen.dart` — delete private `_GroupHeader`; consume `TasksGroupHeader`. Delete private `_EmptyState`; replace with `EmptyStatePlaceholder` wrapped in `KeyedSubtree(key: const Key('tasks.list.emptyState'))` so the outer key survives. CTA case uses `ctaKey: const Key('tasks.list.emptyState.clear')`. Branch on `filter.hasActiveFilters`: active → `emptyNoMatch` + Clear; inactive → `emptyNoTasksYet` + new `emptyNoTasksHelp` subtitle, no CTA
-- [ ] `lib/app/core/i18n/app_strings.dart` — extend `TasksStrings` + `_EnglishTasksStrings` with `emptyNoTasksHelp` ("Tap + to create your first task")
-- [ ] TDD: existing Phase 5 tests (`test/app/features/tasks/task_list_screen_test.dart`) pass UNCHANGED — regression on both outer + inner keys
-- [ ] TDD: `TasksGroupHeader` renders label + sage divider; existing `task_list_screen` group header tests still find `Key('tasks.list.groupHeader.${key}')` (the key contract is parent-applied, unaffected by extraction)
-- [ ] Verify: `flutter analyze && flutter test test/app/features/tasks/`
+- [x] `lib/app/features/tasks/presentation/widgets/tasks_group_header.dart` — extract Phase 5's `_GroupHeader` (label + sage thin divider; existing visual unchanged); public API `TasksGroupHeader({Key? key, required String label})`
+- [x] `lib/app/features/tasks/presentation/task_list_screen.dart` — delete private `_GroupHeader`; consume `TasksGroupHeader`. Delete private `_EmptyState`; replace with `EmptyStatePlaceholder` wrapped in `KeyedSubtree(key: const Key('tasks.list.emptyState'))` so the outer key survives. CTA case uses `ctaKey: const Key('tasks.list.emptyState.clear')`. Branch on `filter.hasActiveFilters`: active → `emptyNoMatch` + Clear; inactive → `emptyNoTasksYet` + new `emptyNoTasksHelp` subtitle, no CTA
+- [x] `lib/app/core/i18n/app_strings.dart` — extend `TasksStrings` + `_EnglishTasksStrings` with `emptyNoTasksHelp` ("Tap + to create your first task")
+- [x] TDD: existing Phase 5 tests (`test/app/features/tasks/task_list_screen_test.dart`) pass UNCHANGED — regression on both outer + inner keys
+- [x] TDD: `TasksGroupHeader` renders label + sage divider; existing `task_list_screen` group header tests still find `Key('tasks.list.groupHeader.${key}')` (the key contract is parent-applied, unaffected by extraction)
+- [x] Verify: `flutter analyze && flutter test test/app/features/tasks/`
 
 ### Phase 3: `myAssignedTasksProvider` (pure Riverpod composition)
 

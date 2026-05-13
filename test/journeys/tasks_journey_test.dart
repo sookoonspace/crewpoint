@@ -23,7 +23,11 @@ void main() {
     await harness.seed();
 
     await tester.pumpWidget(harness.buildApp());
-    await tester.pumpAndSettle();
+    // Task list empty state now renders the `EmptyStatePlaceholder` whose
+    // lottie animation loops forever — pumpAndSettle would hang.
+    for (var i = 0; i < 3; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
 
     final robot = TasksRobot(tester);
     robot.expectEmptyState();

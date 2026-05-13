@@ -4,11 +4,13 @@ import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
+import 'package:crewpoint_app/app/core/widgets/empty_state_placeholder.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/application/tasks_filter.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/widgets/task_tile.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/widgets/tasks_filter_bar.dart';
+import 'package:crewpoint_app/app/features/tasks/presentation/widgets/tasks_group_header.dart';
 
 /// Tasks screen: filter bar + grouped list + empty state + FAB.
 ///
@@ -72,13 +74,19 @@ class TaskListScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Expanded(
               child: isEmpty
-                  ? _EmptyState(
-                      hasActiveFilters: filter.hasActiveFilters,
-                      onClearFilters: () =>
-                          onFilterChanged(const TasksFilter()),
-                      noTasksLabel: s.emptyNoTasksYet,
-                      noMatchLabel: s.emptyNoMatch,
-                      clearLabel: s.clearFilters,
+                  ? KeyedSubtree(
+                      key: const Key('tasks.list.emptyState'),
+                      child: filter.hasActiveFilters
+                          ? EmptyStatePlaceholder(
+                              title: s.emptyNoMatch,
+                              ctaLabel: s.clearFilters,
+                              onCta: () => onFilterChanged(const TasksFilter()),
+                              ctaKey: const Key('tasks.list.emptyState.clear'),
+                            )
+                          : EmptyStatePlaceholder(
+                              title: s.emptyNoTasksYet,
+                              subtitle: s.emptyNoTasksHelp,
+                            ),
                     )
                   : ListView(
                       key: const Key('tasks.list'),
@@ -90,7 +98,7 @@ class TaskListScreen extends StatelessWidget {
                       ),
                       children: [
                         for (final group in groups) ...[
-                          _GroupHeader(
+                          TasksGroupHeader(
                             key: Key('tasks.list.groupHeader.${group.key}'),
                             label: group.label,
                           ),
@@ -122,73 +130,6 @@ class TaskListScreen extends StatelessWidget {
         backgroundColor: AppColors.sage,
         foregroundColor: AppColors.white,
         child: const Icon(Icons.add),
-      ),
-    );
-  }
-}
-
-class _GroupHeader extends StatelessWidget {
-  const _GroupHeader({super.key, required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.xs),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: AppColors.charcoal,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Container(height: 1, color: AppColors.sage.withValues(alpha: 0.25)),
-        ],
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({
-    required this.hasActiveFilters,
-    required this.onClearFilters,
-    required this.noTasksLabel,
-    required this.noMatchLabel,
-    required this.clearLabel,
-  });
-
-  final bool hasActiveFilters;
-  final VoidCallback onClearFilters;
-  final String noTasksLabel;
-  final String noMatchLabel;
-  final String clearLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      key: const Key('tasks.list.emptyState'),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            hasActiveFilters ? noMatchLabel : noTasksLabel,
-            style: const TextStyle(color: AppColors.mediumGrey),
-          ),
-          if (hasActiveFilters) ...[
-            const SizedBox(height: AppSpacing.sm),
-            TextButton(
-              key: const Key('tasks.list.emptyState.clear'),
-              onPressed: onClearFilters,
-              child: Text(clearLabel),
-            ),
-          ],
-        ],
       ),
     );
   }

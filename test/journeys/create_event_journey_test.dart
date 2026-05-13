@@ -23,7 +23,11 @@ void main() {
       addTearDown(() async => harness.database.close());
 
       await tester.pumpWidget(harness.buildApp());
-      await tester.pumpAndSettle();
+      // Dashboard's empty state now renders an `EmptyStatePlaceholder`
+      // whose lottie animation loops forever — pumpAndSettle would hang.
+      for (var i = 0; i < 3; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
 
       final robot = CreateEventRobot(tester);
       robot.expectEmptyDashboard();

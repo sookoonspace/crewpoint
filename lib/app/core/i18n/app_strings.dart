@@ -144,6 +144,7 @@ abstract class TasksStrings {
 
   // Empty states.
   String get emptyNoTasksYet;
+  String get emptyNoTasksHelp;
   String get emptyNoMatch;
 
   // Detail screen overflow menu.
@@ -312,6 +313,9 @@ class _EnglishTasksStrings extends TasksStrings {
 
   @override
   String get emptyNoTasksYet => 'No tasks yet';
+
+  @override
+  String get emptyNoTasksHelp => 'Tap + to create your first task';
 
   @override
   String get emptyNoMatch => 'No tasks match this filter';
