@@ -51,14 +51,14 @@ Build a shared `EmptyStatePlaceholder` widget (lottie + title + subtitle + optio
 ### Phase 3: `myAssignedTasksProvider` (pure Riverpod composition)
 
 - **Goal**: Compose existing `dashboardEventsProvider` + `taskListProvider(eventId)` into a cross-event aggregate. No UI yet — just the provider + value class + comprehensive tests. CI on stream-folding semantics.
-- [ ] `lib/app/features/tasks/application/my_assigned_tasks_provider.dart` — `MyAssignedTaskRow { final TaskModel task; final EventModel event; }` (plain Dart immutable class, two `final` fields). `final myAssignedTasksProvider = Provider.family<AsyncValue<List<MyAssignedTaskRow>>, String>((ref, uid) {...})` per spec req 9: `ref.watch(dashboardEventsProvider)` → for each event `ref.watch(taskListProvider(event.id))` → filter by `assigneeId == uid` → flatten → `AsyncValue.data(rows)`. Any input `loading` → `loading()`; any input `error` → `error(...)`.
-- [ ] TDD: composition — two events seeded via overrides, one task each, only one matches uid → returns single row with correct `task` + `event` references
-- [ ] TDD: filter — task with mismatching `assigneeId` excluded even when in user's event
-- [ ] TDD: ordering — events follow `dashboardEventsProvider` order; tasks within an event follow source-list order
-- [ ] TDD: loading propagation — when ANY input is `AsyncValue.loading()`, provider returns `loading()`
-- [ ] TDD: error propagation — when `dashboardEventsProvider` errors → `error(...)`; when any `taskListProvider(...)` errors → `error(...)`
-- [ ] TDD: empty events list → empty data list, NOT loading or error
-- [ ] Verify: `flutter analyze && flutter test test/app/features/tasks/my_assigned_tasks_provider_test.dart`
+- [x] `lib/app/features/tasks/application/my_assigned_tasks_provider.dart` — `MyAssignedTaskRow { final TaskModel task; final EventModel event; }` (plain Dart immutable class, two `final` fields). `final myAssignedTasksProvider = Provider.family<AsyncValue<List<MyAssignedTaskRow>>, String>((ref, uid) {...})` per spec req 9: `ref.watch(dashboardEventsProvider)` → for each event `ref.watch(taskListProvider(event.id))` → filter by `assigneeId == uid` → flatten → `AsyncValue.data(rows)`. Any input `loading` → `loading()`; any input `error` → `error(...)`.
+- [x] TDD: composition — two events seeded via overrides, one task each, only one matches uid → returns single row with correct `task` + `event` references
+- [x] TDD: filter — task with mismatching `assigneeId` excluded even when in user's event
+- [x] TDD: ordering — events follow `dashboardEventsProvider` order; tasks within an event follow source-list order
+- [x] TDD: loading propagation — when ANY input is `AsyncValue.loading()`, provider returns `loading()`
+- [x] TDD: error propagation — when `dashboardEventsProvider` errors → `error(...)`; when any `taskListProvider(...)` errors → `error(...)`
+- [x] TDD: empty events list → empty data list, NOT loading or error
+- [x] Verify: `flutter analyze && flutter test test/app/features/tasks/my_assigned_tasks_provider_test.dart`
 
 ### Phase 4: `MyTasksScreen` at `/tasks`
 
