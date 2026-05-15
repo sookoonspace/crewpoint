@@ -39,24 +39,24 @@ Ship cross-event Chat Global Inbox + Budget Financial Ledger; replace empty Chat
 ### Phase 1: Chat inbox thin slice — `globalInboxProvider` + `ChatInboxScreen` + route rewire (no unread yet)
 
 - **Goal**: Ship cross-event chat composition end-to-end with the simplest possible row (event title + last sender + last message snippet + relative timestamp). Replace the `ChatTabPlaceholderScreen`. Prove the slice works before layering unread tracking on top.
-- [ ] `lib/app/features/chat/application/global_inbox_provider.dart` — `InboxRow { final EventModel event; final ChatMessageModel? lastMessage; }` (Phase 1 fields only). `final globalInboxProvider = Provider.family<AsyncValue<List<InboxRow>>, String>((ref, uid) {...})` per spec req 1–2: filter `event.status == active`, fold `dashboardEventsProvider` + `chatMessagesProvider(event.id)`, skip events with empty message lists, sort by `lastMessage.timestamp` desc, manual `AsyncValue` fold (loading-short-circuit, error-short-circuit, empty events → `AsyncData([])`).
-- [ ] `lib/app/features/chat/presentation/chat_inbox_screen.dart` — `ConsumerWidget` mirroring `MyTasksScreen` exactly: null-uid → `EmptyStatePlaceholder(title: signInRequiredTitle)`, no family invocation. Non-null → `globalInboxProvider(uid).when(...)`. Optional `onOpenChat` + `onOpenDashboard` seams (typedef `OpenChatCallback = void Function(BuildContext, InboxRow)`). Production fallthrough: `context.push('/dashboard/event/${row.event.id}/chat')` + `context.go(AppRoutes.dashboard)`. AppBar title `s.chat.inboxAppBarTitle` — no literals.
-- [ ] `lib/app/features/chat/presentation/widgets/inbox_tile.dart` — `StatelessWidget` Phase 1 shape: 40 px sage circle disc with first-letter avatar, event title (titleSmall, charcoal, w500), "{senderName}: {text trimmed to 60 chars}" subtitle, relative timestamp. Key: `Key('chat.inbox.tile.${row.event.id}')`. NO unread badge / urgent indicator yet (Phase 2).
-- [ ] `lib/app/core/i18n/app_strings.dart` — extend `ChatStrings` + `_EnglishChatStrings` with `inboxAppBarTitle`, `inboxEmptyTitle`, `inboxEmptySubtitle`, `inboxEmptyNoEventsSubtitle`, `inboxErrorTitle`, `inboxLastMessagePrefix(senderName, text)`. Keep existing `tabEmptyTitle`/`tabEmptySubtitle` for now (deleted with placeholder screen in this phase).
-- [ ] `lib/app/core/router/app_router.dart` — replace `/chat` branch's `ChatTabPlaceholderScreen` with `const ChatInboxScreen()`. Delete `ChatTabPlaceholderScreen` import.
-- [ ] Delete `lib/app/features/chat/presentation/chat_tab_placeholder_screen.dart` + `test/app/features/chat/chat_tab_placeholder_screen_test.dart` (req 27).
-- [ ] TDD: `globalInboxProvider` composition — 2 active + 1 archived event; assert archived excluded, rows sorted by last-message timestamp desc, `lastMessage` references the correct message
-- [ ] TDD: `globalInboxProvider` skips events with empty message lists (no row, no error)
-- [ ] TDD: `globalInboxProvider` loading propagation — any input `AsyncLoading` → `AsyncLoading`
-- [ ] TDD: `globalInboxProvider` error propagation — events error OR any per-event chat stream errors → `AsyncError`
-- [ ] TDD: `globalInboxProvider` empty events list → `AsyncData([])`, no inner family providers subscribed
-- [ ] TDD: `ChatInboxScreen` loading branch → `LoadingAnimation`; no list, no empty state
-- [ ] TDD: `ChatInboxScreen` empty-with-events → `inboxEmptySubtitle` + `openDashboardCta`
-- [ ] TDD: `ChatInboxScreen` empty-no-events → `inboxEmptyNoEventsSubtitle` + `createFromDashboardCta`
-- [ ] TDD: `ChatInboxScreen` null-uid → `signInRequiredTitle`; `globalInboxProvider` NEVER subscribed (counter-override)
-- [ ] TDD: `ChatInboxScreen` non-empty → one `InboxTile` per row; tap → `onOpenChat` seam fires with the right event
-- [ ] TDD: `InboxTile` renders title + sender prefix + snippet truncated; "You: ..." prefix when last message senderId == current uid
-- [ ] Verify: `flutter analyze` clean; `flutter test test/app/features/chat/ test/app/core/router/`
+- [x] `lib/app/features/chat/application/global_inbox_provider.dart` — `InboxRow { final EventModel event; final ChatMessageModel? lastMessage; }` (Phase 1 fields only). `final globalInboxProvider = Provider.family<AsyncValue<List<InboxRow>>, String>((ref, uid) {...})` per spec req 1–2: filter `event.status == active`, fold `dashboardEventsProvider` + `chatMessagesProvider(event.id)`, skip events with empty message lists, sort by `lastMessage.timestamp` desc, manual `AsyncValue` fold (loading-short-circuit, error-short-circuit, empty events → `AsyncData([])`).
+- [x] `lib/app/features/chat/presentation/chat_inbox_screen.dart` — `ConsumerWidget` mirroring `MyTasksScreen` exactly: null-uid → `EmptyStatePlaceholder(title: signInRequiredTitle)`, no family invocation. Non-null → `globalInboxProvider(uid).when(...)`. Optional `onOpenChat` + `onOpenDashboard` seams (typedef `OpenChatCallback = void Function(BuildContext, InboxRow)`). Production fallthrough: `context.push('/dashboard/event/${row.event.id}/chat')` + `context.go(AppRoutes.dashboard)`. AppBar title `s.chat.inboxAppBarTitle` — no literals.
+- [x] `lib/app/features/chat/presentation/widgets/inbox_tile.dart` — `StatelessWidget` Phase 1 shape: 40 px sage circle disc with first-letter avatar, event title (titleSmall, charcoal, w500), "{senderName}: {text trimmed to 60 chars}" subtitle, relative timestamp. Key: `Key('chat.inbox.tile.${row.event.id}')`. NO unread badge / urgent indicator yet (Phase 2).
+- [x] `lib/app/core/i18n/app_strings.dart` — extend `ChatStrings` + `_EnglishChatStrings` with `inboxAppBarTitle`, `inboxEmptyTitle`, `inboxEmptySubtitle`, `inboxEmptyNoEventsSubtitle`, `inboxErrorTitle`, `inboxLastMessagePrefix(senderName, text)`. Existing `tabEmptyTitle`/`tabEmptySubtitle` fields removed in this phase (placeholder screen is its only consumer).
+- [x] `lib/app/core/router/app_router.dart` — replace `/chat` branch's `ChatTabPlaceholderScreen` with `const ChatInboxScreen()`. Delete `ChatTabPlaceholderScreen` import.
+- [x] Delete `lib/app/features/chat/presentation/chat_tab_placeholder_screen.dart` + `test/app/features/chat/chat_tab_placeholder_screen_test.dart` (req 27).
+- [x] TDD: `globalInboxProvider` composition — 2 active + 1 archived event; assert archived excluded, rows sorted by last-message timestamp desc, `lastMessage` references the correct message
+- [x] TDD: `globalInboxProvider` skips events with empty message lists (no row, no error)
+- [x] TDD: `globalInboxProvider` loading propagation — any input `AsyncLoading` → `AsyncLoading`
+- [x] TDD: `globalInboxProvider` error propagation — events error OR any per-event chat stream errors → `AsyncError`
+- [x] TDD: `globalInboxProvider` empty events list → `AsyncData([])`, no inner family providers subscribed
+- [x] TDD: `ChatInboxScreen` loading branch → `LoadingAnimation`; no list, no empty state
+- [x] TDD: `ChatInboxScreen` empty-with-events → `inboxEmptySubtitle` + `openDashboardCta`
+- [x] TDD: `ChatInboxScreen` empty-no-events → `inboxEmptyNoEventsSubtitle` + `createFromDashboardCta`
+- [x] TDD: `ChatInboxScreen` null-uid → `signInRequiredTitle`; `globalInboxProvider` NEVER subscribed (counter-override)
+- [x] TDD: `ChatInboxScreen` non-empty → one `InboxTile` per row; tap → `onOpenChat` seam fires with the right event
+- [x] TDD: `InboxTile` renders title + sender prefix + snippet truncated; "You: ..." prefix when last message senderId == current uid
+- [x] Verify: `flutter analyze` clean; `flutter test test/app/features/chat/ test/app/core/router/`
 
 ### Phase 2: Chat read tracking — Drift `chat_reads` + repo + unread + urgent + backfill
 

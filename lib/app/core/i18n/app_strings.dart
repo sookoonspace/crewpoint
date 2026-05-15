@@ -176,12 +176,23 @@ abstract class DashboardStrings {
   String get joinWithCode;
 }
 
-/// User-facing strings for the cross-event Chat tab placeholder.
+/// User-facing strings for the cross-event Chat tab — the Global Inbox.
 abstract class ChatStrings {
   const ChatStrings();
 
-  String get tabEmptyTitle;
-  String get tabEmptySubtitle;
+  // Global inbox surface.
+  String get inboxAppBarTitle;
+  String get inboxEmptyTitle;
+  String get inboxEmptySubtitle;
+  String get inboxEmptyNoEventsSubtitle;
+  String get inboxErrorTitle;
+
+  /// Templated last-message prefix used in inbox rows. When the message's
+  /// sender is the current user, `senderName` should be "You".
+  String inboxLastMessagePrefix({
+    required String senderName,
+    required String text,
+  });
 }
 
 /// User-facing strings for the cross-event Budget tab placeholder.
@@ -242,11 +253,27 @@ class _EnglishChatStrings extends ChatStrings {
   const _EnglishChatStrings();
 
   @override
-  String get tabEmptyTitle => 'Chat is coming soon';
+  String get inboxAppBarTitle => 'Chat';
 
   @override
-  String get tabEmptySubtitle =>
-      'Open an event from the Dashboard to chat with your crew.';
+  String get inboxEmptyTitle => 'No messages yet';
+
+  @override
+  String get inboxEmptySubtitle =>
+      'Open an event from the Dashboard to start chatting.';
+
+  @override
+  String get inboxEmptyNoEventsSubtitle =>
+      'Create or join an event to chat with your crew.';
+
+  @override
+  String get inboxErrorTitle => 'Could not load your inbox';
+
+  @override
+  String inboxLastMessagePrefix({
+    required String senderName,
+    required String text,
+  }) => '$senderName: $text';
 }
 
 class _EnglishBudgetStrings extends BudgetStrings {

@@ -22,7 +22,7 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/member_managem
 import 'package:crewpoint_app/app/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/budget_tab_placeholder_screen.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/event_budget_page.dart';
-import 'package:crewpoint_app/app/features/chat/presentation/chat_tab_placeholder_screen.dart';
+import 'package:crewpoint_app/app/features/chat/presentation/chat_inbox_screen.dart';
 import 'package:crewpoint_app/app/features/chat/presentation/event_chat_page.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/event_task_detail_page.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/event_tasks_page.dart';
@@ -224,7 +224,7 @@ GoRouter createRouter({
             routes: [
               GoRoute(
                 path: AppRoutes.chat,
-                builder: (_, _) => const ChatTabPlaceholderScreen(),
+                builder: (_, _) => const ChatInboxScreen(),
               ),
             ],
           ),
