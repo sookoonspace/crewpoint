@@ -20,7 +20,7 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/edit_event_scr
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/member_management_screen.dart';
 import 'package:crewpoint_app/app/features/onboarding/presentation/onboarding_screen.dart';
-import 'package:crewpoint_app/app/features/budget/presentation/budget_tab_placeholder_screen.dart';
+import 'package:crewpoint_app/app/features/budget/presentation/budget_ledger_screen.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/event_budget_page.dart';
 import 'package:crewpoint_app/app/features/chat/presentation/chat_inbox_screen.dart';
 import 'package:crewpoint_app/app/features/chat/presentation/event_chat_page.dart';
@@ -232,7 +232,7 @@ GoRouter createRouter({
             routes: [
               GoRoute(
                 path: AppRoutes.budget,
-                builder: (_, _) => const BudgetTabPlaceholderScreen(),
+                builder: (_, _) => const BudgetLedgerScreen(),
               ),
             ],
           ),

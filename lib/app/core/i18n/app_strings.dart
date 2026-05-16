@@ -199,12 +199,22 @@ abstract class ChatStrings {
   });
 }
 
-/// User-facing strings for the cross-event Budget tab placeholder.
+/// User-facing strings for the cross-event Budget tab — the Financial Ledger.
 abstract class BudgetStrings {
   const BudgetStrings();
 
-  String get tabEmptyTitle;
-  String get tabEmptySubtitle;
+  // Ledger surface.
+  String get ledgerAppBarTitle;
+  String get ledgerHeroOwedToYouLabel;
+  String get ledgerHeroYouOweLabel;
+  String get ledgerDebtsHeader;
+  String get ledgerAllSettledMessage;
+  String get ledgerRecentExpensesHeader;
+  String get ledgerEmptyTitle;
+  String get ledgerEmptyNoEventsSubtitle;
+  String get ledgerEmptySubtitle;
+  String get ledgerErrorTitle;
+  String get multiCurrencyDisclaimer;
 }
 
 abstract class ErrorStrings {
@@ -287,11 +297,40 @@ class _EnglishBudgetStrings extends BudgetStrings {
   const _EnglishBudgetStrings();
 
   @override
-  String get tabEmptyTitle => 'Budget is coming soon';
+  String get ledgerAppBarTitle => 'Budget';
 
   @override
-  String get tabEmptySubtitle =>
-      'Open an event from the Dashboard to track expenses.';
+  String get ledgerHeroOwedToYouLabel => 'You are owed';
+
+  @override
+  String get ledgerHeroYouOweLabel => 'You owe';
+
+  @override
+  String get ledgerDebtsHeader => 'Settle up';
+
+  @override
+  String get ledgerAllSettledMessage => "You're all settled up.";
+
+  @override
+  String get ledgerRecentExpensesHeader => 'Recent expenses';
+
+  @override
+  String get ledgerEmptyTitle => 'No balances yet';
+
+  @override
+  String get ledgerEmptyNoEventsSubtitle =>
+      'Create an event from the Dashboard to start tracking expenses.';
+
+  @override
+  String get ledgerEmptySubtitle =>
+      'Open an event from the Dashboard to log an expense.';
+
+  @override
+  String get ledgerErrorTitle => 'Could not load your ledger';
+
+  @override
+  String get multiCurrencyDisclaimer =>
+      'Totals are approximate when events use different currencies.';
 }
 
 class _EnglishDashboardStrings extends DashboardStrings {
