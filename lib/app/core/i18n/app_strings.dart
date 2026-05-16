@@ -187,6 +187,10 @@ abstract class ChatStrings {
   String get inboxEmptyNoEventsSubtitle;
   String get inboxErrorTitle;
 
+  /// Semantics label for the urgent-badge surface — spoken by screen
+  /// readers when the row carries the terracotta-highlighted badge.
+  String get inboxUrgentBadgeLabel;
+
   /// Templated last-message prefix used in inbox rows. When the message's
   /// sender is the current user, `senderName` should be "You".
   String inboxLastMessagePrefix({
@@ -268,6 +272,9 @@ class _EnglishChatStrings extends ChatStrings {
 
   @override
   String get inboxErrorTitle => 'Could not load your inbox';
+
+  @override
+  String get inboxUrgentBadgeLabel => 'Urgent unread';
 
   @override
   String inboxLastMessagePrefix({

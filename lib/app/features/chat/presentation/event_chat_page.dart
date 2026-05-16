@@ -24,6 +24,21 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
   bool _isSending = false;
   bool _lastSendFailed = false;
 
+  @override
+  void initState() {
+    super.initState();
+    // Mark the event as read on first frame so the global inbox's unread
+    // count clears. Fire-and-forget — failures are swallowed by the repo.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final auth = ref.read(authProvider);
+      if (auth is! Authenticated) return;
+      ref
+          .read(chatRepositoryProvider)
+          .markEventRead(auth.user.uid, widget.event.id);
+    });
+  }
+
   Future<void> _send(String text, {bool isHighPriority = false}) async {
     final auth = ref.read(authProvider);
     if (auth is! Authenticated) return;

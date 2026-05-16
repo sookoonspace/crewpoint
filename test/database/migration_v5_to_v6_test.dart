@@ -67,22 +67,23 @@ void main() {
       expect(results.single.data['id'], 't-1');
       expect(results.single.data['budget_estimate'], isNull);
 
-      // Confirm the schema version moved.
+      // Confirm the schema version moved. The current head is v7
+      // (chat-reads table); a v5-shaped DB cascades through both v5→v6
+      // and v6→v7 onUpgrade steps and lands at 7.
       final version = raw.select('PRAGMA user_version').first.values.first;
-      expect(version, 6);
+      expect(version, 7);
 
       await db.close();
     },
   );
 
   test('Migrator.addColumn step is part of onUpgrade(from=5)', () {
-    // Smoke check: AppDatabase.schemaVersion is 6 (regression for accidental
-    // bump without a matching onUpgrade step).
+    // Compile-time check that Migrator is in scope (satisfies analyzer
+    // import of drift package). Head schemaVersion check moved to the
+    // v6→v7 test.
     final db = AppDatabase(NativeDatabase.memory());
-    expect(db.schemaVersion, 6);
+    expect(db.schemaVersion, greaterThanOrEqualTo(7));
     db.close();
-    // Confirm Migrator exists (compile-time check; satisfies analyzer
-    // import of drift package).
     expect(Migrator, isNotNull);
   });
 }

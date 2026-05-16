@@ -229,4 +229,196 @@ void main() {
     expect(rows, hasLength(1));
     expect(rows.single.event.id, 'evt-a');
   });
+
+  test(
+    'unreadCount counts only other-sender messages newer than lastReadAt',
+    () async {
+      // 2 messages from alex (both after lastReadAt) + 1 from me + 1 from
+      // alex before lastReadAt = expected unreadCount == 2.
+      final lastRead = DateTime(2026, 5, 11, 12);
+      final mineNewer = ChatMessageModel(
+        id: 'm-mine',
+        eventId: 'evt-a',
+        senderId: 'me',
+        text: 'My reply',
+        timestamp: DateTime(2026, 5, 12, 13),
+      );
+      final alexOldBeforeRead = ChatMessageModel(
+        id: 'm-old',
+        eventId: 'evt-a',
+        senderId: 'alex',
+        text: 'Old',
+        timestamp: DateTime(2026, 5, 10, 8),
+      );
+      final alexNew1 = ChatMessageModel(
+        id: 'm-new-1',
+        eventId: 'evt-a',
+        senderId: 'alex',
+        text: 'See you',
+        timestamp: DateTime(2026, 5, 12, 14),
+      );
+      final alexNew2 = ChatMessageModel(
+        id: 'm-new-2',
+        eventId: 'evt-a',
+        senderId: 'alex',
+        text: 'Bring snacks',
+        timestamp: DateTime(2026, 5, 13, 9),
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          dashboardEventsProvider.overrideWith(
+            (ref) => Stream.value(const [eventA]),
+          ),
+          chatMessagesProvider.overrideWith(
+            (ref, eventId) => Stream.value([
+              alexOldBeforeRead,
+              mineNewer,
+              alexNew1,
+              alexNew2,
+            ]),
+          ),
+          eventChatReadStateProvider.overrideWith(
+            (ref, arg) => Stream.value(lastRead),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final result = await _readAfterPump(container, 'me');
+      final row = result.requireValue.single;
+      expect(row.unreadCount, 2);
+    },
+  );
+
+  test(
+    'unreadCount equals message count from other senders when lastReadAt is null',
+    () async {
+      final m1 = ChatMessageModel(
+        id: 'm-1',
+        eventId: 'evt-a',
+        senderId: 'alex',
+        text: 'a',
+        timestamp: DateTime(2026, 5, 12),
+      );
+      final m2 = ChatMessageModel(
+        id: 'm-2',
+        eventId: 'evt-a',
+        senderId: 'alex',
+        text: 'b',
+        timestamp: DateTime(2026, 5, 13),
+      );
+      final m3 = ChatMessageModel(
+        id: 'm-3',
+        eventId: 'evt-a',
+        senderId: 'me',
+        text: 'reply',
+        timestamp: DateTime(2026, 5, 14),
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          dashboardEventsProvider.overrideWith(
+            (ref) => Stream.value(const [eventA]),
+          ),
+          chatMessagesProvider.overrideWith(
+            (ref, eventId) => Stream.value([m1, m2, m3]),
+          ),
+          // Provider emits null → user has never opened the chat.
+          eventChatReadStateProvider.overrideWith(
+            (ref, arg) => Stream.value(null),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final result = await _readAfterPump(container, 'me');
+      final row = result.requireValue.single;
+      // m1 + m2 are from alex; m3 is from me → expected 2.
+      expect(row.unreadCount, 2);
+    },
+  );
+
+  test(
+    'hasUrgentUnread is true iff an unread message has isHighPriority=true',
+    () async {
+      final urgent = ChatMessageModel(
+        id: 'm-urgent',
+        eventId: 'evt-a',
+        senderId: 'alex',
+        text: 'Need help',
+        timestamp: DateTime(2026, 5, 13, 9),
+        isHighPriority: true,
+      );
+      final normal = ChatMessageModel(
+        id: 'm-normal',
+        eventId: 'evt-a',
+        senderId: 'alex',
+        text: 'fyi',
+        timestamp: DateTime(2026, 5, 13, 10),
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          dashboardEventsProvider.overrideWith(
+            (ref) => Stream.value(const [eventA]),
+          ),
+          chatMessagesProvider.overrideWith(
+            (ref, eventId) => Stream.value([urgent, normal]),
+          ),
+          eventChatReadStateProvider.overrideWith(
+            (ref, arg) => Stream.value(null),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final result = await _readAfterPump(container, 'me');
+      final row = result.requireValue.single;
+      expect(row.hasUrgentUnread, isTrue);
+    },
+  );
+
+  test(
+    'hasUrgentUnread is false when the urgent message is older than lastReadAt',
+    () async {
+      final readBoundary = DateTime(2026, 5, 14);
+      final urgent = ChatMessageModel(
+        id: 'm-urgent',
+        eventId: 'evt-a',
+        senderId: 'alex',
+        text: 'Need help',
+        timestamp: DateTime(2026, 5, 13, 9), // BEFORE readBoundary
+        isHighPriority: true,
+      );
+      final normalNewer = ChatMessageModel(
+        id: 'm-normal',
+        eventId: 'evt-a',
+        senderId: 'alex',
+        text: 'hi',
+        timestamp: DateTime(2026, 5, 15, 8),
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          dashboardEventsProvider.overrideWith(
+            (ref) => Stream.value(const [eventA]),
+          ),
+          chatMessagesProvider.overrideWith(
+            (ref, eventId) => Stream.value([urgent, normalNewer]),
+          ),
+          eventChatReadStateProvider.overrideWith(
+            (ref, arg) => Stream.value(readBoundary),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final result = await _readAfterPump(container, 'me');
+      final row = result.requireValue.single;
+      // unread is just `normalNewer`, not urgent.
+      expect(row.unreadCount, 1);
+      expect(row.hasUrgentUnread, isFalse);
+    },
+  );
 }

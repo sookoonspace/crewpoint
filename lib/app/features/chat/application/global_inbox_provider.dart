@@ -4,17 +4,35 @@ import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart'
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
 /// One row of the cross-event inbox — an event plus its chronologically
-/// latest chat message. Read-state (unread + urgent flags) lands in Phase 2.
+/// latest chat message, with read-state derived counts.
 class InboxRow {
-  const InboxRow({required this.event, this.lastMessage});
+  const InboxRow({
+    required this.event,
+    this.lastMessage,
+    this.unreadCount = 0,
+    this.hasUrgentUnread = false,
+  });
 
   final EventModel event;
   final ChatMessageModel? lastMessage;
+  final int unreadCount;
+  final bool hasUrgentUnread;
 }
 
+/// Per-(uid, eventId) last-read timestamp stream. Wraps
+/// `ChatRepository.watchLastRead` so the inbox composer can fold it.
+final eventChatReadStateProvider =
+    StreamProvider.family<DateTime?, ({String uid, String eventId})>((
+      ref,
+      arg,
+    ) {
+      final repo = ref.watch(chatRepositoryProvider);
+      return repo.watchLastRead(arg.uid, arg.eventId);
+    });
+
 /// Cross-event chat inbox. Composes the user's active events with each
-/// event's message stream and emits a flat row list sorted by the latest
-/// message timestamp desc.
+/// event's message stream + per-event read state into a flat list of
+/// rows sorted by latest-message timestamp desc.
 ///
 /// Archived events are excluded (no point messaging on a closed trip).
 /// Events whose message list is empty are excluded from the data list —
@@ -51,7 +69,33 @@ final globalInboxProvider = Provider.family<AsyncValue<List<InboxRow>>, String>(
       final latest = messages.reduce(
         (a, b) => a.timestamp.isAfter(b.timestamp) ? a : b,
       );
-      rows.add(InboxRow(event: event, lastMessage: latest));
+
+      final readAsync = ref.watch(
+        eventChatReadStateProvider((uid: uid, eventId: event.id)),
+      );
+      final lastReadAt = readAsync.value;
+      // Note: we tolerate the reads stream still being in `loading`
+      // (lastReadAt stays null) — that just means we treat everything
+      // as unread until the first emission arrives. The Drift cache
+      // resolves this within microseconds on cold start.
+
+      final unread = messages.where(
+        (m) =>
+            m.senderId != uid &&
+            (lastReadAt == null || m.timestamp.isAfter(lastReadAt)),
+      );
+      final unreadCount = unread.length;
+      final hasUrgentUnread =
+          unreadCount > 0 && unread.any((m) => m.isHighPriority);
+
+      rows.add(
+        InboxRow(
+          event: event,
+          lastMessage: latest,
+          unreadCount: unreadCount,
+          hasUrgentUnread: hasUrgentUnread,
+        ),
+      );
     }
     rows.sort((a, b) {
       final ta =

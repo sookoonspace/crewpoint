@@ -19,16 +19,49 @@ typedef OpenChatCallback = void Function(BuildContext context, InboxRow row);
 /// Cross-event Chat tab — the Global Inbox. Renders a row per active
 /// event that has at least one message; tapping a row pushes into the
 /// event-scoped chat page.
-class ChatInboxScreen extends ConsumerWidget {
+class ChatInboxScreen extends ConsumerStatefulWidget {
   const ChatInboxScreen({super.key, this.onOpenChat, this.onOpenDashboard});
 
   final OpenChatCallback? onOpenChat;
   final VoidCallback? onOpenDashboard;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ChatInboxScreen> createState() => _ChatInboxScreenState();
+}
+
+class _ChatInboxScreenState extends ConsumerState<ChatInboxScreen> {
+  /// One-shot guard so the first-launch backfill only fires once per
+  /// inbox session (i.e., once per `dashboardEventsProvider` data
+  /// emission for a given uid).
+  bool _didBackfill = false;
+
+  void _maybeBackfill(String uid) {
+    if (_didBackfill) return;
+    final eventsAsync = ref.read(dashboardEventsProvider);
+    final events = eventsAsync.value;
+    if (events == null) return; // wait for events to settle
+    _didBackfill = true;
+    // Fire-and-forget; repo swallows + logs failures.
+    ref
+        .read(chatRepositoryProvider)
+        .backfillReadStateForExistingEvents(uid, events);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final s = context.strings;
     final uid = ref.watch(currentUserIdProvider);
+
+    // Touch dashboardEventsProvider so the listener wakes up when events
+    // emit; then queue a post-frame backfill (Riverpod forbids triggering
+    // dependency reads mid-build via `ref.read` of a method that updates
+    // state synchronously, so we defer to the next microtask).
+    if (uid != null && !_didBackfill) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _maybeBackfill(uid);
+      });
+    }
 
     return Scaffold(
       backgroundColor: AppColors.cream,
@@ -61,7 +94,7 @@ class ChatInboxScreen extends ConsumerWidget {
                     return _ChatInboxList(
                       rows: rows,
                       currentUserId: uid,
-                      onOpenChat: onOpenChat,
+                      onOpenChat: widget.onOpenChat,
                     );
                   },
                 ),

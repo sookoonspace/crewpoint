@@ -6,7 +6,7 @@ import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/features/chat/application/global_inbox_provider.dart';
 
 /// Cross-event inbox row — event title + last message snippet +
-/// relative timestamp. Unread badge + urgent highlight land in Phase 2.
+/// relative timestamp + unread badge + urgent (terracotta + bell) highlight.
 class InboxTile extends StatelessWidget {
   const InboxTile({
     super.key,
@@ -36,11 +36,15 @@ class InboxTile extends StatelessWidget {
   String _firstLetter(String s) =>
       s.isEmpty ? '?' : s.characters.first.toUpperCase();
 
+  String _badgeLabel(int count) => count > 99 ? '99+' : '$count';
+
   @override
   Widget build(BuildContext context) {
     final s = context.strings;
     final theme = Theme.of(context);
     final last = row.lastMessage;
+    final isUnread = row.unreadCount > 0;
+    final isUrgent = row.hasUrgentUnread;
 
     final senderName = last == null
         ? ''
@@ -81,14 +85,31 @@ class InboxTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    row.event.title,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      color: AppColors.charcoal,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    children: [
+                      if (isUrgent) ...[
+                        Icon(
+                          Icons.notification_important_outlined,
+                          key: Key('chat.inbox.tile.${row.event.id}.urgent'),
+                          size: 16,
+                          color: AppColors.terracotta,
+                        ),
+                        const SizedBox(width: 4),
+                      ],
+                      Flexible(
+                        child: Text(
+                          row.event.title,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: AppColors.charcoal,
+                            fontWeight: isUnread
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                   if (last != null) ...[
                     const SizedBox(height: 2),
@@ -106,11 +127,44 @@ class InboxTile extends StatelessWidget {
             ),
             if (last != null) ...[
               const SizedBox(width: AppSpacing.sm),
-              Text(
-                _formatTimestamp(last.timestamp),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: AppColors.mediumGrey,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    _formatTimestamp(last.timestamp),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: AppColors.mediumGrey,
+                    ),
+                  ),
+                  if (isUnread) ...[
+                    const SizedBox(height: 4),
+                    Semantics(
+                      label: s.chat.inboxUrgentBadgeLabel,
+                      child: Container(
+                        key: Key('chat.inbox.tile.${row.event.id}.badge'),
+                        constraints: const BoxConstraints(
+                          minWidth: 20,
+                          minHeight: 20,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        decoration: BoxDecoration(
+                          color: isUrgent
+                              ? AppColors.terracotta
+                              : AppColors.sage,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          _badgeLabel(row.unreadCount),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: AppColors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ],
           ],

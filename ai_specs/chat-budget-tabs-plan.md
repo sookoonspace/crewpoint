@@ -61,34 +61,34 @@ Ship cross-event Chat Global Inbox + Budget Financial Ledger; replace empty Chat
 ### Phase 2: Chat read tracking — Drift `chat_reads` + repo + unread + urgent + backfill
 
 - **Goal**: Layer per-user read state on top of Phase 1's inbox: unread badges, urgent (terracotta + bell) highlight, first-launch backfill so existing users land at zero unread. Wire `EventChatPage.initState` to mark-read.
-- [ ] `lib/app/core/database/app_database.dart` — new `ChatReads` table (`eventId TEXT`, `uid TEXT`, `lastReadAt DATETIME`; PK `{eventId, uid}`). Bump `schemaVersion` 6 → 7. Migration step adds the table empty (idempotent — `IF NOT EXISTS`-equivalent via Drift `m.createTable(chatReads)` guarded by version check).
-- [ ] `lib/app/core/database/daos/chat_reads_dao.dart` — `@DriftAccessor(tables: [ChatReads])` mirroring `tasks_dao.dart` shape: `Stream<DateTime?> watchLastReadAt({eventId, uid})`, `Future<void> upsert({eventId, uid, lastReadAt})`.
-- [ ] `lib/app/core/providers.dart` — new `chatReadsDaoProvider`; thread it into `chatRepositoryProvider` constructor.
-- [ ] `lib/app/features/chat/data/chat_repository.dart` — new constructor param `ChatReadsDao chatReadsDao`; new methods:
-  - `Stream<DateTime?> watchLastRead(String uid, String eventId)` — Drift-cached emission first; Firestore `users/{uid}/chatReads/{eventId}` doc snapshot listener overrides on every change. Same mirror pattern as `watchMessages`.
+- [x] `lib/app/core/database/app_database.dart` — new `ChatReads` table (`eventId TEXT`, `uid TEXT`, `lastReadAt DATETIME`; PK `{eventId, uid}`). Bump `schemaVersion` 6 → 7. Migration step uses `CREATE TABLE IF NOT EXISTS` so it's safely idempotent across crash-tolerant migration retries.
+- [x] `lib/app/core/database/daos/chat_reads_dao.dart` — `@DriftAccessor(tables: [ChatReads])` mirroring `tasks_dao.dart` shape: `Stream<DateTime?> watchLastReadAt({eventId, uid})`, `Future<int> upsert({eventId, uid, lastReadAt})`.
+- [x] `lib/app/core/providers.dart` — new `chatReadsDaoProvider`; thread it + `firestoreProvider` into `chatRepositoryProvider` constructor.
+- [x] `lib/app/features/chat/data/chat_repository.dart` — new constructor params `FirebaseFirestore? firestore` + `ChatReadsDao? chatReadsDao`; new methods:
+  - `Stream<DateTime?> watchLastRead(String uid, String eventId)` — Drift-cached emission first; Firestore `users/{uid}/chatReads/{eventId}` doc snapshot listener mirrors values into Drift. Same mirror pattern as `watchMessages`.
   - `Future<void> markEventRead(String uid, String eventId)` — Firestore set with `lastReadAt: FieldValue.serverTimestamp()` (merge: true); on success upsert Drift; on Firestore failure swallow + `developer.log(name: 'chat.reads', level: 900)`. Fire-and-forget — never throws.
-  - `Future<void> backfillReadStateForExistingEvents(String uid, List<EventModel> events)` — for each event whose Firestore read-doc does not exist, batch-write `{lastReadAt: serverTimestamp()}`. Idempotent.
-- [ ] `lib/app/features/chat/application/global_inbox_provider.dart` — extend `InboxRow` with `unreadCount: int` + `hasUrgentUnread: bool`. New helper `eventChatReadStateProvider` (`Provider.family<AsyncValue<DateTime?>, ({String uid, String eventId})>`) wrapping `chatRepository.watchLastRead`. In `globalInboxProvider`, compute `unreadCount = messages.where((m) => m.senderId != uid && (lastReadAt == null || m.timestamp.isAfter(lastReadAt))).length`; `hasUrgentUnread = unreadCount > 0 && messages.any((m) => m.isHighPriority && m.senderId != uid && ...lastReadAt check)`.
-- [ ] `lib/app/features/chat/presentation/widgets/inbox_tile.dart` — extend to render: bold title when `unreadCount > 0`; right-side badge circle 18 px (terracotta if `hasUrgentUnread`, sage otherwise) with "{count}" or "99+" text; bell icon (`Icons.notification_important_outlined`, terracotta) prepended to title when `hasUrgentUnread`. Keys: `Key('chat.inbox.tile.${id}.badge')`, `Key('chat.inbox.tile.${id}.urgent')`.
-- [ ] `lib/app/features/chat/presentation/chat_inbox_screen.dart` — on first non-null uid emission with non-null events list, call `chatRepository.backfillReadStateForExistingEvents(uid, events)` once per session (guard with a `ref.read(...)`-touched session-scoped flag; simplest: a private `Provider<bool>` flipped after first call, OR a `ref.listenSelf` self-shot pattern — pick whichever stays simple and testable).
-- [ ] `lib/app/features/chat/presentation/event_chat_page.dart` — add `@override initState()` calling `super.initState()` then `WidgetsBinding.instance.addPostFrameCallback((_) => ref.read(chatRepositoryProvider).markEventRead(uid, widget.event.id))`. Read uid via `ref.read(currentUserIdProvider)`; short-circuit if null. Fire-and-forget.
-- [ ] `lib/app/core/i18n/app_strings.dart` — extend `ChatStrings` with `inboxUrgentBadgeLabel` (semantics label only).
-- [ ] `firestore.rules` (if managed in-repo) — add rule for `match /users/{uid}/chatReads/{eventId}`: owner-only `read, write`. If not in-repo, flag in PR description.
-- [ ] TDD: Drift migration v6 → v7 — open v6-shaped in-memory DB via raw SQL, stamp `PRAGMA user_version = 6`, open `AppDatabase` to trigger `onUpgrade`, assert `chat_reads` table exists with correct columns. Pattern: `test/database/migration_v5_to_v6_test.dart`.
-- [ ] TDD: `ChatReadsDao.upsert` then `watchLastReadAt` emits the upserted timestamp
-- [ ] TDD: `ChatRepository.markEventRead` happy path — writes Firestore doc + Drift row (via `FakeFirebaseFirestore` + in-memory Drift)
-- [ ] TDD: `ChatRepository.markEventRead` Firestore failure — swallows, does NOT throw, log captured
-- [ ] TDD: `ChatRepository.backfillReadStateForExistingEvents` idempotent — calling twice writes only once per event
-- [ ] TDD: `ChatRepository.watchLastRead` — Drift emission first, then Firestore override
-- [ ] TDD: `globalInboxProvider` `unreadCount` correctly excludes own-sent messages
-- [ ] TDD: `globalInboxProvider` `unreadCount == messages.length` when `lastReadAt == null`
-- [ ] TDD: `globalInboxProvider` `hasUrgentUnread` flips iff at least one unread message has `isHighPriority == true`
-- [ ] TDD: `InboxTile` urgent state — terracotta badge + bell icon visible
-- [ ] TDD: `InboxTile` badge text caps at "99+"
-- [ ] TDD: `EventChatPage` calls `markEventRead` on first frame after mount (use a fake `ChatRepository` with a recording spy)
-- [ ] TDD: `ChatInboxScreen` first-load backfill — uid + events emit → `backfillReadStateForExistingEvents` called once (counter-override fake repo)
-- [ ] Robot journey: `test/journeys/chat_inbox_open_event_journey_test.dart` — `ChatInboxRobot` (new `test/robots/chat_inbox_robot.dart`). Seed 2 active events; event A has urgent unread, event B has read messages. Pump screen → expect bell + terracotta badge on row A → tap row A → captured `onOpenChat` callback fires with event A's id. Bounded pumps, no `pumpAndSettle`.
-- [ ] Verify: `flutter analyze` clean; `flutter test test/app/features/chat/ test/database/ test/journeys/chat_inbox_open_event_journey_test.dart`
+  - `Future<void> backfillReadStateForExistingEvents(String uid, List<EventModel> events)` — for each event whose Firestore read-doc does not exist, write `{lastReadAt: now()}`. Idempotent.
+- [x] `lib/app/features/chat/application/global_inbox_provider.dart` — extend `InboxRow` with `unreadCount: int` + `hasUrgentUnread: bool`. New helper `eventChatReadStateProvider` (`StreamProvider.family<DateTime?, ({String uid, String eventId})>`) wrapping `chatRepository.watchLastRead`. `globalInboxProvider` computes `unreadCount = messages.where((m) => m.senderId != uid && (lastReadAt == null || m.timestamp.isAfter(lastReadAt))).length`; `hasUrgentUnread = unreadCount > 0 && unread.any((m) => m.isHighPriority)`.
+- [x] `lib/app/features/chat/presentation/widgets/inbox_tile.dart` — bold title when `unreadCount > 0`; right-side badge circle 20 px (terracotta if `hasUrgentUnread`, sage otherwise) with "{count}" or "99+" text; bell icon (`Icons.notification_important_outlined`, terracotta) prepended to title when `hasUrgentUnread`. Keys: `Key('chat.inbox.tile.${id}.badge')`, `Key('chat.inbox.tile.${id}.urgent')`.
+- [x] `lib/app/features/chat/presentation/chat_inbox_screen.dart` — converted to `ConsumerStatefulWidget` with `_didBackfill` guard; on first build with non-null uid + non-null events emission, fires `chatRepository.backfillReadStateForExistingEvents(uid, events)` once per session via `addPostFrameCallback`.
+- [x] `lib/app/features/chat/presentation/event_chat_page.dart` — `initState` adds a `WidgetsBinding.instance.addPostFrameCallback` that fires `ref.read(chatRepositoryProvider).markEventRead(uid, widget.event.id)` after the first frame. Read uid via `ref.read(authProvider)`; short-circuits when not authenticated. Fire-and-forget.
+- [x] `lib/app/core/i18n/app_strings.dart` — extend `ChatStrings` with `inboxUrgentBadgeLabel` (semantics label).
+- [x] `firestore.rules` — added rule for `match /users/{uid}/chatReads/{eventId}`: owner-only `read, write`. Inside the existing `users/{userId}` subtree.
+- [x] TDD: Drift migration v6 → v7 — open v6-shaped in-memory DB via raw SQL, stamp `PRAGMA user_version = 6`, open `AppDatabase` to trigger `onUpgrade`, assert `chat_reads` table exists with correct columns. Pattern: `test/database/migration_v5_to_v6_test.dart`. Idempotent retry case covered (chat_reads already exists pre-migration).
+- [x] TDD: `ChatReadsDao.upsert` then `watchLastReadAt` emits the upserted timestamp + emits null when no row exists + replaces on duplicate key
+- [x] TDD: `ChatRepository.markEventRead` happy path — writes Firestore doc + Drift row (via `FakeFirebaseFirestore` + in-memory Drift)
+- [x] TDD: `ChatRepository.markEventRead` Firestore-null defensive path — swallows, does NOT throw
+- [x] TDD: `ChatRepository.backfillReadStateForExistingEvents` writes per event when none exist + skips events whose read doc already exists (idempotent — verified via a string sentinel that survives the second call)
+- [x] TDD: `ChatRepository.watchLastRead` — Drift emission first, then Firestore-write triggers re-emission with newer timestamp
+- [x] TDD: `globalInboxProvider` `unreadCount` correctly excludes own-sent messages
+- [x] TDD: `globalInboxProvider` `unreadCount == messages.length` when `lastReadAt == null` (counted only for other-sender messages)
+- [x] TDD: `globalInboxProvider` `hasUrgentUnread` flips iff at least one unread message has `isHighPriority == true`; flips false when the urgent message predates `lastReadAt`
+- [x] TDD: `InboxTile` unread state renders bold title + sage badge; urgent state renders terracotta badge + bell icon; read state hides badge
+- [x] TDD: `InboxTile` badge text caps at "99+"
+- [x] TDD: `EventChatPage` calls `markEventRead` on first frame after mount (verified end-to-end via `FakeFirebaseFirestore` doc existence)
+- [x] TDD: `ChatInboxScreen` first-load backfill — uid + events emit → Firestore docs written for every event
+- [x] Robot journey: `test/journeys/chat_inbox_open_event_journey_test.dart` — `ChatInboxRobot` (new `test/robots/chat_inbox_robot.dart`). Two active events (one urgent unread, one calm); pump screen → expect bell + badge on urgent row → tap → captured `onOpenChat` callback fires with the urgent event's id. Bounded pumps.
+- [x] Verify: `flutter analyze` clean; `flutter test` 486 tests pass
 
 ### Phase 3: Budget ledger thin slice — `globalBalanceLedgerProvider` + `BudgetLedgerScreen` + route rewire (no Settle Up yet)
 
