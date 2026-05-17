@@ -215,6 +215,14 @@ abstract class BudgetStrings {
   String get ledgerEmptySubtitle;
   String get ledgerErrorTitle;
   String get multiCurrencyDisclaimer;
+
+  // Settle Up surface (Phase 4).
+  String get ledgerSettleUpCta;
+  String settleUpFallbackTitle(String recipientName);
+  String get settleUpFallbackCopyAmount;
+  String get settleUpFallbackCopyHandle;
+  String get settleUpFallbackMarkPaid;
+  String get settleUpContactLoadError;
 }
 
 abstract class ErrorStrings {
@@ -331,6 +339,24 @@ class _EnglishBudgetStrings extends BudgetStrings {
   @override
   String get multiCurrencyDisclaimer =>
       'Totals are approximate when events use different currencies.';
+
+  @override
+  String get ledgerSettleUpCta => 'Settle Up';
+
+  @override
+  String settleUpFallbackTitle(String recipientName) => 'Pay $recipientName';
+
+  @override
+  String get settleUpFallbackCopyAmount => 'Copy amount';
+
+  @override
+  String get settleUpFallbackCopyHandle => 'Copy handle';
+
+  @override
+  String get settleUpFallbackMarkPaid => 'Mark paid in event budget';
+
+  @override
+  String get settleUpContactLoadError => 'Could not load contact info';
 }
 
 class _EnglishDashboardStrings extends DashboardStrings {

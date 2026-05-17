@@ -31,8 +31,10 @@ import 'package:crewpoint_app/app/features/profile/data/firestore_user_repositor
 import 'package:crewpoint_app/app/features/profile/domain/repositories/i_user_repository.dart';
 import 'package:crewpoint_app/app/core/services/i_chat_service.dart';
 import 'package:crewpoint_app/app/core/services/url_launcher_service.dart';
+import 'package:crewpoint_app/app/features/budget/application/settle_up_controller.dart';
 import 'package:crewpoint_app/app/features/budget/data/expense_repository.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
+import 'package:crewpoint_app/app/features/budget/presentation/widgets/settle_up_fallback_sheet.dart';
 import 'package:crewpoint_app/app/features/chat/data/chat_repository.dart';
 import 'package:crewpoint_app/app/features/chat/data/firestore_chat_service.dart';
 import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
@@ -249,6 +251,17 @@ final chatMessagesProvider =
 final urlLauncherProvider = Provider<IUrlLauncher>(
   (_) => const UrlLauncherService(),
 );
+
+/// Settle-Up controller — picks a `PayLinkBuilder` deep link based on
+/// the counterparty's `paymentMethod`, falls back to a manual sheet
+/// when no link is available or the launch fails.
+final settleUpControllerProvider = Provider<SettleUpController>((ref) {
+  return SettleUpController(
+    userRepository: ref.watch(userRepositoryProvider),
+    urlLauncher: ref.watch(urlLauncherProvider),
+    showFallback: SettleUpFallbackSheet.show,
+  );
+});
 
 /// Platform-aware file-export seam (PDF + CSV downloads).
 ///

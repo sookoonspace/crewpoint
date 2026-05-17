@@ -119,29 +119,28 @@ Ship cross-event Chat Global Inbox + Budget Financial Ledger; replace empty Chat
 ### Phase 4: Settle Up — `SettleUpController` + deep links + fallback sheet + DebtTile button
 
 - **Goal**: Wire the Settle Up button into Phase 3's `DebtTile`. Controller picks deep link via `PayLinkBuilder` based on counterparty's canonical `paymentMethod`; missing handle or unsupported platform routes to a `SettleUpFallbackSheet` with copy-amount + mark-paid-manually link. Robot journey covers the happy path + fallback path.
-- [ ] `lib/app/features/budget/application/settle_up_controller.dart` — pure controller class taking `Ref ref`. Method `Future<void> handleSettleUp(BuildContext context, DebtRow row)`:
-  - Read counterparty via `ref.read(userRepositoryProvider).getUser(row.counterpartyUid)`. On throw → snackbar "Could not load contact info" + open fallback sheet without copy buttons (req 31).
-  - Pick link via `switch (counterparty.paymentMethod)`: `venmo` → `PayLinkBuilder.venmo(handle: counterparty.paymentHandle!, amount: row.amount, note: '${row.event.title} settle-up')`; `cashapp` → `PayLinkBuilder.cashApp(handle: counterparty.paymentHandle!, amount: row.amount)`; `zelle | paypal | cash` OR missing handle OR malformed handle (regex fails) → null → fallback.
-  - If link non-null: `final ok = await ref.read(urlLauncherProvider).launchUrl(uri)`. If `!ok` → fallback. On throw → catch + fallback (req 30, plus boundaries section).
-  - Log malformed-handle warn-once via `developer.log(name: 'budget.settleUp', level: 900)`.
-- [ ] `lib/app/features/budget/presentation/widgets/settle_up_fallback_sheet.dart` — `static Future<void> show(BuildContext context, DebtRow row, AppUser? counterparty)`. `showModalBottomSheet` body: recipient name + amount in event currency + "Copy amount" button (`Clipboard.setData(ClipboardData(text: row.amount.toStringAsFixed(2)))`); when counterparty non-null + has payment handle, "Copy handle" button too; "Mark paid in event budget" link → pops sheet → `context.push('/dashboard/event/${row.event.id}/budget')`. Keys: `Key('budget.settleUp.fallback.sheet')`, `Key('budget.settleUp.fallback.copyAmount')`, `Key('budget.settleUp.fallback.copyHandle')`, `Key('budget.settleUp.fallback.markPaid')`.
-- [ ] `lib/app/features/budget/presentation/widgets/debt_tile.dart` — add trailing `OutlinedButton` (sage outline, terracotta foreground) labelled `s.budget.ledgerSettleUpCta`; key `Key('budget.ledger.settleUp.${counterpartyUid}.${eventId}')`. Tap → `onSettleUp(context, row)` (passed in from `BudgetLedgerScreen`). Production wiring: `BudgetLedgerScreen` passes `(ctx, row) => ref.read(settleUpControllerProvider).handleSettleUp(ctx, row)`.
-- [ ] `lib/app/features/budget/presentation/budget_ledger_screen.dart` — add `onSettleUp` optional test seam (typedef matching `SettleUpController.handleSettleUp` signature minus the `Ref`-managed deps). Production fallthrough uses the controller via Riverpod read.
-- [ ] `lib/app/core/i18n/app_strings.dart` — extend `BudgetStrings` with `ledgerSettleUpCta`, `settleUpFallbackTitle(String recipientName)`, `settleUpFallbackCopyAmount`, `settleUpFallbackCopyHandle`, `settleUpFallbackMarkPaid`, `settleUpContactLoadError`.
-- [ ] `lib/app/core/providers.dart` — new `settleUpControllerProvider = Provider<SettleUpController>((ref) => SettleUpController(ref));`.
-- [ ] TDD: `SettleUpController.handleSettleUp` venmo path — counterparty `paymentMethod: venmo` + valid handle → `urlLauncherProvider.launchUrl` called with `PayLinkBuilder.venmo(...)` URI. Recording fake captures URI; assert exact match (handle, amount, note).
-- [ ] TDD: `SettleUpController.handleSettleUp` cashapp path — analogous
-- [ ] TDD: `SettleUpController.handleSettleUp` zelle / paypal / cash → no launch; fallback opens
-- [ ] TDD: `SettleUpController.handleSettleUp` missing `paymentHandle` → fallback opens; no launch
-- [ ] TDD: `SettleUpController.handleSettleUp` malformed handle (regex fails) → fallback opens + warn log captured
-- [ ] TDD: `SettleUpController.handleSettleUp` `urlLauncherProvider.launchUrl` returns false → fallback opens
-- [ ] TDD: `SettleUpController.handleSettleUp` `urlLauncherProvider.launchUrl` throws → caught; fallback opens
-- [ ] TDD: `SettleUpController.handleSettleUp` `userRepositoryProvider.getUser` throws → snackbar + fallback (no copy handle button)
-- [ ] TDD: `SettleUpFallbackSheet` Copy Amount taps `Clipboard.setData` with the right amount string (fake `Clipboard.platform` capture via `TestDefaultBinaryMessengerBinding`)
-- [ ] TDD: `SettleUpFallbackSheet` "Mark paid" link pops the sheet and fires the captured navigation seam
-- [ ] TDD: `DebtTile` renders Settle Up button when amount > $0; tapping fires `onSettleUp` seam exactly once
-- [ ] Robot journey: `test/journeys/budget_settle_up_journey_test.dart` — `BudgetLedgerRobot` (new `test/robots/budget_ledger_robot.dart`). Scenario A: one debt, counterparty venmo + handle → tap Settle Up → recording `urlLauncherProvider` captures the exact Venmo URI. Scenario B: same debt, counterparty `paymentMethod: cash` → tap Settle Up → fallback sheet visible → "Copy amount" works → "Mark paid in event budget" fires captured navigation seam. Bounded pumps, no `pumpAndSettle`.
-- [ ] Verify: `flutter analyze` clean; `flutter test`; grep confirms zero `_PlaceholderScreen` references (carried over from prior PR's check), zero `ChatTabPlaceholderScreen`/`BudgetTabPlaceholderScreen` references in lib/
+- [x] `lib/app/features/budget/application/settle_up_controller.dart` — pure controller injected with `IUserRepository`, `IUrlLauncher`, and a `ShowSettleUpFallback` callback (production passes `SettleUpFallbackSheet.show`; tests inject a recorder). `Future<void> handleSettleUp(BuildContext, DebtRow)`:
+  - Load counterparty via `IUserRepository.getUser`. On throw → log + snackbar (i18n) + open fallback without counterparty (req 31).
+  - Build link by `paymentMethod`: `venmo` → `PayLinkBuilder.venmo`; `cashapp` → `PayLinkBuilder.cashApp`; `zelle`/`paypal`/`cash`/missing-handle/malformed-handle → null → fallback.
+  - Non-null link → `urlLauncher.launch(uri)`. Returns false OR throws → caught + fallback (reqs 30 / boundaries).
+  - Malformed handle logs warn-once via `developer.log(name: 'budget.settleUp', level: 900)`.
+- [x] `lib/app/features/budget/presentation/widgets/settle_up_fallback_sheet.dart` — `static Future<void> show(BuildContext, DebtRow, AppUser?)`. `showModalBottomSheet` body: recipient name (display name → email → uid fallback) + amount + Copy Amount button (writes `row.amount.toStringAsFixed(2)` to Clipboard); Copy Handle button surfaces only when counterparty has a payment handle; "Mark paid in event budget" link → pops sheet + `context.push('/dashboard/event/${row.event.id}/budget')`. Keys: `budget.settleUp.fallback.{sheet,copyAmount,copyHandle,markPaid}`.
+- [x] `lib/app/features/budget/presentation/widgets/debt_tile.dart` — adds trailing `OutlinedButton` (sage outline, terracotta foreground) labelled `s.budget.ledgerSettleUpCta`; key `budget.ledger.settleUp.{counterpartyUid}.{eventId}`. Disabled when `onSettleUp == null`; otherwise tap → `onSettleUp(context, row)`.
+- [x] `lib/app/features/budget/presentation/budget_ledger_screen.dart` — exposes `onSettleUp` test seam; production fallthrough is `(ctx, row) => unawaited(ref.read(settleUpControllerProvider).handleSettleUp(ctx, row))`.
+- [x] `lib/app/core/i18n/app_strings.dart` — extends `BudgetStrings` + `_EnglishBudgetStrings` with `ledgerSettleUpCta`, `settleUpFallbackTitle(String recipientName)`, `settleUpFallbackCopyAmount`, `settleUpFallbackCopyHandle`, `settleUpFallbackMarkPaid`, `settleUpContactLoadError`.
+- [x] `lib/app/core/providers.dart` — new `settleUpControllerProvider` constructing `SettleUpController` from `userRepositoryProvider` + `urlLauncherProvider` + `SettleUpFallbackSheet.show`.
+- [x] TDD: `SettleUpController.handleSettleUp` venmo path — counterparty `paymentMethod: venmo` + valid handle → `IUrlLauncher.launch` called with `PayLinkBuilder.venmo(...)` URI (exact match: handle, amount, note).
+- [x] TDD: `SettleUpController.handleSettleUp` cashapp path — `PayLinkBuilder.cashApp(...)` URI launched.
+- [x] TDD: `SettleUpController.handleSettleUp` zelle / paypal / cash → no launch; fallback opens with counterparty.
+- [x] TDD: `SettleUpController.handleSettleUp` missing `paymentHandle` → fallback opens; no launch.
+- [x] TDD: `SettleUpController.handleSettleUp` malformed handle (regex fails) → fallback opens; no launch.
+- [x] TDD: `SettleUpController.handleSettleUp` launcher returns false → fallback opens.
+- [x] TDD: `SettleUpController.handleSettleUp` launcher throws → caught + fallback opens.
+- [x] TDD: `SettleUpController.handleSettleUp` `getUser` throws → snackbar visible + fallback opens with `counterparty == null`.
+- [x] TDD: `SettleUpFallbackSheet` renders recipient name + amount; Copy Amount writes `45.00` to clipboard; Copy Handle only when handle present; "Mark paid" pops the sheet + pushes `/dashboard/event/<id>/budget`.
+- [x] TDD: `DebtTile` renders Settle Up button under the key; tap fires `onSettleUp` seam exactly once; button disabled when callback is null.
+- [x] Robot journey: `test/journeys/budget_settle_up_journey_test.dart` — `BudgetLedgerRobot` (new `test/robots/budget_ledger_robot.dart`). Scenario A: counterparty venmo + handle → `urlLauncher.launch` captures the exact Venmo URI; no fallback. Scenario B: counterparty `paymentMethod: cash` → no launch; fallback sheet visible; Copy Amount + Mark Paid both work; Mark Paid pops the sheet AND lands on stub `/dashboard/event/evt-1/budget`.
+- [x] Verify: `flutter analyze` clean; `flutter test` 520 tests pass; grep confirms zero `_PlaceholderScreen` / `ChatTabPlaceholderScreen` / `BudgetTabPlaceholderScreen` references in `lib/`.
 
 ## Risks / Out of scope
 

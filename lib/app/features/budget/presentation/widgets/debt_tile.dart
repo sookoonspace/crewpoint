@@ -2,14 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/features/budget/application/global_balance_ledger_provider.dart';
 
-/// Phase 3 shape: counterparty avatar + name + event chip + amount in
-/// event currency. Settle Up button lands in Phase 4.
+/// Settle-up tap callback. Production wires this to
+/// `SettleUpController.handleSettleUp`; tests inject a recorder.
+typedef OnSettleUp = void Function(BuildContext context, DebtRow row);
+
+/// Counterparty avatar + name + event chip + amount + Settle Up button.
 class DebtTile extends StatelessWidget {
-  const DebtTile({super.key, required this.row});
+  const DebtTile({super.key, required this.row, this.onSettleUp});
 
   final DebtRow row;
+  final OnSettleUp? onSettleUp;
 
   String _firstLetter(String s) =>
       s.isEmpty ? '?' : s.characters.first.toUpperCase();
@@ -59,12 +64,35 @@ class DebtTile extends StatelessWidget {
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
-          Text(
-            amountText,
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: AppColors.terracotta,
-              fontWeight: FontWeight.w700,
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                amountText,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: AppColors.terracotta,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              OutlinedButton(
+                key: Key(
+                  'budget.ledger.settleUp.${row.counterpartyUid}.${row.event.id}',
+                ),
+                onPressed: onSettleUp == null
+                    ? null
+                    : () => onSettleUp!(context, row),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.terracotta,
+                  side: const BorderSide(color: AppColors.sage),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.xs,
+                  ),
+                ),
+                child: Text(context.strings.budget.ledgerSettleUpCta),
+              ),
+            ],
           ),
         ],
       ),

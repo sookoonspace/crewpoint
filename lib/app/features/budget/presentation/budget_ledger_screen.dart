@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
@@ -23,12 +24,19 @@ typedef OpenEventBudgetCallback =
     void Function(BuildContext context, EventModel event);
 
 /// Cross-event Budget tab — the Financial Ledger. Hero (owed/you-owe),
-/// debts breakdown, recent expenses feed. Settle Up button lands in
-/// Phase 4 of the plan.
+/// debts breakdown with Settle Up actions, recent expenses feed.
 class BudgetLedgerScreen extends ConsumerWidget {
-  const BudgetLedgerScreen({super.key, this.onOpenEventBudget});
+  const BudgetLedgerScreen({
+    super.key,
+    this.onOpenEventBudget,
+    this.onSettleUp,
+  });
 
   final OpenEventBudgetCallback? onOpenEventBudget;
+
+  /// Optional test seam — production wiring uses
+  /// `settleUpControllerProvider.handleSettleUp`.
+  final OnSettleUp? onSettleUp;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -66,6 +74,15 @@ class BudgetLedgerScreen extends ConsumerWidget {
                       ledger: ledger,
                       strings: s,
                       onOpenEventBudget: onOpenEventBudget,
+                      onSettleUp:
+                          onSettleUp ??
+                          (ctx, row) {
+                            unawaited(
+                              ref
+                                  .read(settleUpControllerProvider)
+                                  .handleSettleUp(ctx, row),
+                            );
+                          },
                     );
                   },
                 ),
@@ -79,11 +96,13 @@ class _LedgerBody extends ConsumerWidget {
     required this.ledger,
     required this.strings,
     this.onOpenEventBudget,
+    this.onSettleUp,
   });
 
   final LedgerSummary ledger;
   final AppStrings strings;
   final OpenEventBudgetCallback? onOpenEventBudget;
+  final OnSettleUp? onSettleUp;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -114,6 +133,7 @@ class _LedgerBody extends ConsumerWidget {
                 'budget.ledger.debt.${debt.counterpartyUid}.${debt.event.id}',
               ),
               row: debt,
+              onSettleUp: onSettleUp,
             ),
         ] else
           LedgerAllSettledChip(message: strings.budget.ledgerAllSettledMessage),
