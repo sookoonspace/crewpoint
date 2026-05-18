@@ -92,6 +92,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: SegmentedFilterBar<DashboardFilter>(
                 key: const Key('dashboard.filter'),
                 selected: _filter,
+                equalWidth: true,
                 segments: [
                   SegmentedFilterSegment(
                     value: DashboardFilter.upcoming,

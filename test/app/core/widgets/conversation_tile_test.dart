@@ -98,4 +98,25 @@ void main() {
     await tester.tap(find.byType(ConversationTile));
     expect(taps, 1);
   });
+
+  testWidgets('wraps content in a Card for the elevated-tile look', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      const ConversationTile(
+        emoji: '🏔️',
+        title: 'Tahoe Ski Trip',
+        preview: 'Bo: Just found a cabin',
+        timestamp: '2m',
+      ),
+    );
+    expect(
+      find.descendant(
+        of: find.byType(ConversationTile),
+        matching: find.byType(Card),
+      ),
+      findsOneWidget,
+    );
+  });
 }

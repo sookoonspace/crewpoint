@@ -9,6 +9,10 @@ import 'package:crewpoint_app/app/core/widgets/screen_header.dart';
 import 'package:crewpoint_app/app/core/widgets/segmented_filter_bar.dart';
 import 'package:crewpoint_app/app/core/widgets/settings_row.dart';
 import 'package:crewpoint_app/app/core/widgets/stat_triplet.dart';
+import 'package:crewpoint_app/app/features/budget/application/global_balance_ledger_provider.dart';
+import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
+import 'package:crewpoint_app/app/features/budget/presentation/widgets/debt_tile.dart';
+import 'package:crewpoint_app/app/features/budget/presentation/widgets/recent_expense_tile.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
 enum _Pill { all, todo, doing, done }
@@ -144,6 +148,50 @@ void main() {
         icon: Icons.notifications_none_rounded,
         title: 'Notifications',
         subtitle: 'All alerts on — tap to configure',
+      ),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('DebtTile survives TextScaler 2.0', (tester) async {
+    const event = EventModel(
+      id: 'evt-1',
+      title: 'Tahoe Trip — long enough title to push the layout',
+      creatorId: 'me',
+      memberIds: ['me', 'alex'],
+      currency: 'USD',
+    );
+    const debt = DebtRow(
+      counterpartyUid: 'alex',
+      event: event,
+      amount: 123.45,
+      currency: 'USD',
+    );
+    await pumpScaled(tester, const DebtTile(row: debt));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('RecentExpenseTile survives TextScaler 2.0', (tester) async {
+    const event = EventModel(
+      id: 'evt-1',
+      title: 'Tahoe Trip',
+      creatorId: 'me',
+      memberIds: ['me', 'alex'],
+      currency: 'USD',
+    );
+    const expense = ExpenseModel(
+      id: 'exp-1',
+      eventId: 'evt-1',
+      payerId: 'me',
+      amount: 45,
+      description: 'Pizza delivery for the entire crew on opening night',
+    );
+    await pumpScaled(
+      tester,
+      RecentExpenseTile(
+        row: const RecentExpenseRow(expense: expense, event: event),
+        currentUserId: 'me',
+        onTap: () {},
       ),
     );
     expect(tester.takeException(), isNull);

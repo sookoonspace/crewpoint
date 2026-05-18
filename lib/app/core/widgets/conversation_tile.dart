@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
@@ -34,95 +35,112 @@ class ConversationTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final hasUnread = unreadCount > 0;
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.md,
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(emoji, style: const TextStyle(fontSize: AppSizes.emojiChat)),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      if (isUrgent) ...[
-                        const _UrgentBadge(),
-                        const SizedBox(width: 6),
-                      ],
-                      Flexible(
-                        child: Text(
-                          title,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: hasUnread || isUrgent
-                                ? FontWeight.w700
-                                : FontWeight.w500,
+    return Card(
+      elevation: 0,
+      color: AppColors.white,
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.xs,
+      ),
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: AppSizes.emojiChat)),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        if (isUrgent) ...[
+                          const _UrgentBadge(),
+                          const SizedBox(width: 6),
+                        ],
+                        Flexible(
+                          child: Text(
+                            title,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: hasUnread || isUrgent
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      preview,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: isUrgent
+                            ? AppColors.statusUrgentFg
+                            : AppColors.darkGrey,
+                        fontWeight: isUrgent
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 80),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      timestamp,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: AppColors.darkGrey,
+                      ),
+                    ),
+                    if (hasUnread) ...[
+                      const SizedBox(height: 4),
+                      Container(
+                        key: const Key('conversation.tile.unreadPill'),
+                        constraints: const BoxConstraints(
+                          minWidth: 22,
+                          minHeight: 22,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        decoration: BoxDecoration(
+                          color: isUrgent
+                              ? AppColors.statusUrgentFg
+                              : AppColors.charcoal,
+                          borderRadius: BorderRadius.circular(11),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          _unreadLabel(),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: AppColors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    preview,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: isUrgent
-                          ? AppColors.statusUrgentFg
-                          : AppColors.darkGrey,
-                      fontWeight: isUrgent ? FontWeight.w600 : FontWeight.w400,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  timestamp,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: AppColors.darkGrey,
-                  ),
+                  ],
                 ),
-                if (hasUnread) ...[
-                  const SizedBox(height: 4),
-                  Container(
-                    key: const Key('conversation.tile.unreadPill'),
-                    constraints: const BoxConstraints(
-                      minWidth: 22,
-                      minHeight: 22,
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                    decoration: BoxDecoration(
-                      color: isUrgent
-                          ? AppColors.statusUrgentFg
-                          : AppColors.charcoal,
-                      borderRadius: BorderRadius.circular(11),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      _unreadLabel(),
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: AppColors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );

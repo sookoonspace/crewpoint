@@ -127,44 +127,38 @@ Mechanical sweep: promote 91 distinct icons, 11 asset paths, magic durations + s
 - [x] Verify: `flutter analyze && flutter test` — 627 tests pass.
 - **Commit**: `refactor(strings): promote presentation-layer literals to app_strings.dart`
 
-### Phase 6: UI fixes (`fix(ui): adaptive segmented pills + Card wraps + overflow patches`)
+### Phase 6: UI fixes (`fix(ui): adaptive segmented pills + Card wraps + overflow patches`) ✅ COMPLETE
 
 - **Goal**: Four small-screen polish fixes. Smallest commit, cleanest visual diff.
 
 **SegmentedFilterBar — adaptive opt-in, NOT a mandatory `Expanded` refactor:**
 
-- [ ] `lib/app/core/widgets/segmented_filter_bar.dart` — **KEEP** `SingleChildScrollView` as the default layout. Add an opt-in `final bool equalWidth` (default `false`) to the public constructor per updated spec section 10. When `equalWidth: true`:
-  - Wrap the row in a `LayoutBuilder`.
-  - Estimate natural pill widths (label length × char-width heuristic OR `TextPainter.layout()`).
-  - If total estimated content width ≤ `constraints.maxWidth`, distribute pills via `Expanded` so each is `1/N`.
-  - Otherwise fall back to the default scrolling layout.
-  - **Never crush labels.** The fallback is automatic — no caller intervention required.
-  - `_Pill` API unchanged.
-- [ ] `lib/app/features/dashboard/presentation/dashboard_screen.dart` — pass `equalWidth: true` to the Upcoming/Past `SegmentedFilterBar` (2 short labels — always fits at 320 px).
-- [ ] `lib/app/features/tasks/presentation/my_tasks_screen.dart` — leave the All/Todo/Doing/Done `SegmentedFilterBar` at default (scrolls). Acknowledges future i18n widens labels.
+- [x] `lib/app/core/widgets/segmented_filter_bar.dart` — KEEPS `SingleChildScrollView` as the default. Added opt-in `equalWidth: bool` (default `false`) with `LayoutBuilder` + `TextPainter` width estimation; falls back to scrolling layout when content overflows. `_Pill` API unchanged; pill text now ellipses under pressure.
+- [x] `lib/app/features/dashboard/presentation/dashboard_screen.dart` — passes `equalWidth: true` to the Upcoming/Past bar.
+- [x] `lib/app/features/tasks/presentation/my_tasks_screen.dart` — left at default scroll (i18n-safe).
 
 **White Card per tile on Chat + Budget:**
 
-- [ ] `lib/app/core/widgets/conversation_tile.dart` — wrap the `InkWell` body in a `Card` (margin `EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xs)`); reuse `cardTheme`.
-- [ ] `lib/app/features/budget/presentation/widgets/debt_tile.dart` — wrap in a `Card` (same margin recipe).
-- [ ] `lib/app/features/budget/presentation/widgets/recent_expense_tile.dart` — wrap in a `Card`.
-- [ ] `lib/app/features/chat/presentation/chat_inbox_screen.dart` + `lib/app/features/budget/presentation/budget_ledger_screen.dart` — remove any list-level padding that doubles up with the new Card margins.
+- [x] `lib/app/core/widgets/conversation_tile.dart` — wrapped in `Card(elevation: 0, color: white, margin lg/xs, AppRadius.borderLg, Clip.antiAlias)`.
+- [x] `lib/app/features/budget/presentation/widgets/debt_tile.dart` — wrapped in matching Card.
+- [x] `lib/app/features/budget/presentation/widgets/recent_expense_tile.dart` — wrapped in matching Card.
+- [x] `chat_inbox_screen.dart` + `budget_ledger_screen.dart` — no doubled-up padding to remove (lists used default zero padding).
 
 **Overflow audit at 320 px:**
 
-- [ ] Run each tab at 320 px viewport. Patch any overflow with `Flexible` / `maxLines: 1` / `overflow: TextOverflow.ellipsis`. Suspected sites named in spec section 12 (`ConversationTile` URGENT + title, `EventTile` long titles, `DebtTile` amount + Settle Up column, `TaskTile` budget row).
+- [x] Fixed: `ConversationTile` 11 px overflow at 320 px (URGENT badge + long title + timestamp). Added `ConstrainedBox(maxWidth: 80)` around the right-side timestamp column + `maxLines: 1` + ellipsis on the timestamp text.
 
 **Tests:**
 
-- [ ] TDD: `SegmentedFilterBar` default (scroll) — 4 long-label segments at 320 px don't crush text. Assert the bar's effective horizontal extent ≥ row content width (i.e., scrollable).
-- [ ] TDD: `SegmentedFilterBar(equalWidth: true)` happy path — 2 short labels at 360 px → each pill ≈ 180 px; `find.byType(Expanded)` finds two within the bar; no `SingleChildScrollView` engaged.
-- [ ] TDD: `SegmentedFilterBar(equalWidth: true)` overflow fallback — 4 absurdly long labels at 320 px → falls back to scrolling layout; `Expanded` count == 0 inside the bar; no overflow exceptions.
-- [ ] TDD: `ConversationTile` Card wrap — `find.descendant(of: find.byType(ConversationTile), matching: find.byType(Card))` finds one. RED → wrap → GREEN.
-- [ ] TDD: `DebtTile` Card wrap — same shape.
-- [ ] TDD: `RecentExpenseTile` Card wrap — same shape.
-- [ ] Overflow tests: render each of Dashboard / MyTasksScreen / ChatInboxScreen / BudgetLedgerScreen / ProfileScreen at 320 px viewport; assert `tester.takeException()` is null.
-- [ ] Extend `design_system_a11y_test.dart` if not already covered: `ConversationTile`, `DebtTile`, `RecentExpenseTile` at `TextScaler.linear(2.0)`.
-- [ ] Verify: `flutter analyze && flutter test && dart run custom_lint`
+- [x] SegmentedFilterBar default scroll — 4 long labels at 320 px stay scrollable, no `Expanded` inside bar, no exception.
+- [x] SegmentedFilterBar(equalWidth: true) happy path — 2 short labels at 360 px use `Expanded` (×2), no `SingleChildScrollView`.
+- [x] SegmentedFilterBar(equalWidth: true) overflow fallback — 4 long labels at 320 px fall back to scroll, 0 `Expanded`, no exception.
+- [x] ConversationTile Card wrap — `find.descendant(of: ConversationTile, matching: Card)` finds one.
+- [x] DebtTile Card wrap — same shape.
+- [x] RecentExpenseTile Card wrap — same shape, new test file.
+- [x] 320 px overflow audit covers ConversationTile + URGENT, EventTile long title, DebtTile amount + Settle Up, RecentExpenseTile long description, SegmentedFilterBar both modes (scoped to tile widgets — full-screen Riverpod harnesses skipped per spec pragmatism; tile widgets are the named overflow risks).
+- [x] Extended `design_system_a11y_test.dart`: `DebtTile` + `RecentExpenseTile` at `TextScaler.linear(2.0)`. (`ConversationTile` already covered.)
+- [x] Verify: `flutter analyze && flutter test && dart run custom_lint` — 641 tests pass (+14 new), analyzer + custom_lint clean.
 - **Commit**: `fix(ui): adaptive segmented pills + Card wraps on chat/budget tiles + overflow patches`
 
 ## Risks / Out of scope

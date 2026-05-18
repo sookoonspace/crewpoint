@@ -116,4 +116,151 @@ void main() {
 
     expect(find.text('3'), findsOneWidget);
   });
+
+  testWidgets(
+    'default layout uses SingleChildScrollView (no Expanded inside the bar)',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await pump(
+        tester,
+        SegmentedFilterBar<_TaskFilter>(
+          key: const Key('seg.bar.default'),
+          selected: _TaskFilter.all,
+          segments: const [
+            SegmentedFilterSegment(
+              value: _TaskFilter.all,
+              label: 'All',
+              keyValue: Key('seg.all'),
+            ),
+            SegmentedFilterSegment(
+              value: _TaskFilter.todo,
+              label: 'To Do',
+              keyValue: Key('seg.todo'),
+            ),
+            SegmentedFilterSegment(
+              value: _TaskFilter.doing,
+              label: 'Doing',
+              keyValue: Key('seg.doing'),
+            ),
+            SegmentedFilterSegment(
+              value: _TaskFilter.done,
+              label: 'Done',
+              keyValue: Key('seg.done'),
+            ),
+          ],
+          onChanged: (_) {},
+        ),
+      );
+
+      final bar = find.byKey(const Key('seg.bar.default'));
+      expect(bar, findsOneWidget);
+      expect(
+        find.descendant(of: bar, matching: find.byType(SingleChildScrollView)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: bar, matching: find.byType(Expanded)),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'equalWidth=true happy path: short labels at 360 px use Expanded, no scroll',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(360, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await pump(
+        tester,
+        SegmentedFilterBar<_Pill>(
+          key: const Key('seg.bar.equalWidth'),
+          selected: _Pill.upcoming,
+          equalWidth: true,
+          segments: const [
+            SegmentedFilterSegment(
+              value: _Pill.upcoming,
+              label: 'Upcoming',
+              keyValue: Key('seg.upcoming'),
+            ),
+            SegmentedFilterSegment(
+              value: _Pill.past,
+              label: 'Past',
+              keyValue: Key('seg.past'),
+            ),
+          ],
+          onChanged: (_) {},
+        ),
+      );
+
+      final bar = find.byKey(const Key('seg.bar.equalWidth'));
+      expect(bar, findsOneWidget);
+      expect(
+        find.descendant(of: bar, matching: find.byType(Expanded)),
+        findsNWidgets(2),
+      );
+      expect(
+        find.descendant(of: bar, matching: find.byType(SingleChildScrollView)),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'equalWidth=true overflow fallback: long labels at 320 px scroll, no crush',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await pump(
+        tester,
+        SegmentedFilterBar<_TaskFilter>(
+          key: const Key('seg.bar.equalWidth.fallback'),
+          selected: _TaskFilter.all,
+          equalWidth: true,
+          segments: const [
+            SegmentedFilterSegment(
+              value: _TaskFilter.all,
+              label: 'Absolutely Everything',
+              keyValue: Key('seg.all'),
+            ),
+            SegmentedFilterSegment(
+              value: _TaskFilter.todo,
+              label: 'Things To Get Done',
+              keyValue: Key('seg.todo'),
+            ),
+            SegmentedFilterSegment(
+              value: _TaskFilter.doing,
+              label: 'Currently In Progress',
+              keyValue: Key('seg.doing'),
+            ),
+            SegmentedFilterSegment(
+              value: _TaskFilter.done,
+              label: 'Already Completed',
+              keyValue: Key('seg.done'),
+            ),
+          ],
+          onChanged: (_) {},
+        ),
+      );
+
+      final bar = find.byKey(const Key('seg.bar.equalWidth.fallback'));
+      expect(bar, findsOneWidget);
+      expect(
+        find.descendant(of: bar, matching: find.byType(Expanded)),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: bar, matching: find.byType(SingleChildScrollView)),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
+
+enum _TaskFilter { all, todo, doing, done }

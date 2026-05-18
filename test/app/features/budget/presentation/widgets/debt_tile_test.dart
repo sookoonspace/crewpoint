@@ -66,4 +66,18 @@ void main() {
     final button = tester.widget<OutlinedButton>(find.byType(OutlinedButton));
     expect(button.onPressed, isNull);
   });
+
+  testWidgets('wraps content in a Card for the elevated-tile look', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: DebtTile(row: _debt)),
+      ),
+    );
+    expect(
+      find.descendant(of: find.byType(DebtTile), matching: find.byType(Card)),
+      findsOneWidget,
+    );
+  });
 }

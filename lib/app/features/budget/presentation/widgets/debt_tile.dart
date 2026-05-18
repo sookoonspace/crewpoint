@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/widgets/money_text.dart';
@@ -22,76 +23,85 @@ class DebtTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(
+    return Card(
+      elevation: 0,
+      color: AppColors.white,
+      margin: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
-        vertical: AppSpacing.sm,
+        vertical: AppSpacing.xs,
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          CircleAvatar(
-            radius: 18,
-            backgroundColor: AppColors.sage,
-            child: Text(
-              _firstLetter(row.counterpartyUid),
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: AppColors.charcoal,
-                fontWeight: FontWeight.w600,
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.sm,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: AppColors.sage,
+              child: Text(
+                _firstLetter(row.counterpartyUid),
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: AppColors.charcoal,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  row.counterpartyUid,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    color: AppColors.charcoal,
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    row.counterpartyUid,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: AppColors.charcoal,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  const SizedBox(height: 2),
+                  _EventChip(label: row.event.title),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                MoneyText(
+                  amount: row.amount,
+                  currencyCode: row.currency,
+                  sign: MoneySign.youOwe,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-                const SizedBox(height: 2),
-                _EventChip(label: row.event.title),
+                const SizedBox(height: AppSpacing.xs),
+                OutlinedButton(
+                  key: Key(
+                    'budget.ledger.settleUp.${row.counterpartyUid}.${row.event.id}',
+                  ),
+                  onPressed: onSettleUp == null
+                      ? null
+                      : () => onSettleUp!(context, row),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.terracotta,
+                    side: const BorderSide(color: AppColors.sage),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.xs,
+                    ),
+                  ),
+                  child: Text(context.strings.budget.ledgerSettleUpCta),
+                ),
               ],
             ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              MoneyText(
-                amount: row.amount,
-                currencyCode: row.currency,
-                sign: MoneySign.youOwe,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              OutlinedButton(
-                key: Key(
-                  'budget.ledger.settleUp.${row.counterpartyUid}.${row.event.id}',
-                ),
-                onPressed: onSettleUp == null
-                    ? null
-                    : () => onSettleUp!(context, row),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.terracotta,
-                  side: const BorderSide(color: AppColors.sage),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.xs,
-                  ),
-                ),
-                child: Text(context.strings.budget.ledgerSettleUpCta),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
