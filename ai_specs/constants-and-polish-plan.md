@@ -25,13 +25,13 @@ Mechanical sweep: promote 91 distinct icons, 11 asset paths, magic durations + s
 ### Phase 1: Foundation tokens (`AppIcons`, `AppAssets`, `AppDurations`, `AppSizes`)
 
 - **Goal**: Four new token files only; no other files touched. Inert but compile-clean.
-- [ ] `lib/app/core/constants/app_icons.dart` — `abstract final class AppIcons` with grouped sections (Navigation / Status / Actions / Payment / Chevrons / Domain / States). Apply normalisation rule: nav unselected = `_outlined`, nav selected = filled, all `_rounded` collapse to default, calendar family → `calendar_today`. Document each variant collapse inline.
-- [ ] `lib/app/core/constants/app_assets.dart` — `abstract final class AppAssets` with 6 lottie paths + 2 legal paths (`legalPrivacyPolicy`, `legalTermsOfService`).
-- [ ] `lib/app/core/constants/app_durations.dart` — `abstract final class AppDurations` with `fast` (150), `medium` (250), `slow` (350), `snackbar` (4 s). NO `pumpFrame` — test-only durations stay in test helpers.
-- [ ] `lib/app/core/constants/app_sizes.dart` — `abstract final class AppSizes`: `iconXs..iconXl`, `avatarSm..avatarXl`, `emojiTile/emojiChat/emojiStat`, `settingsRowIndent`, `progressRingSize`. NO `iconHero` (single caller, stays inline).
-- [ ] TDD: `app_icons_test.dart` — assert representative sample resolves to expected `IconData` (e.g., `expect(AppIcons.navHome, Icons.dashboard_outlined)`, `expect(AppIcons.statusDone, Icons.check_circle)`, `expect(AppIcons.actionLogout, Icons.logout)`).
-- [ ] TDD: `app_assets_test.dart` — assert each path string (e.g., `expect(AppAssets.lottieError, 'assets/animations/error.json')`).
-- [ ] Verify: `flutter analyze && flutter test`
+- [x] `lib/app/core/constants/app_icons.dart` — `abstract final class AppIcons` with grouped sections (Navigation / Status / Actions / Payment / Chevrons / Domain / States). Apply normalisation rule: nav unselected = `_outlined`, nav selected = filled, all `_rounded` collapse to default, calendar family → `calendar_today`. Document each variant collapse inline.
+- [x] `lib/app/core/constants/app_assets.dart` — `abstract final class AppAssets` with 6 lottie paths + 2 legal paths (`legalPrivacyPolicy`, `legalTermsOfService`).
+- [x] `lib/app/core/constants/app_durations.dart` — `abstract final class AppDurations` with `fast` (150), `medium` (250), `slow` (350), `snackbar` (4 s). NO `pumpFrame` — test-only durations stay in test helpers.
+- [x] `lib/app/core/constants/app_sizes.dart` — `abstract final class AppSizes`: `iconXs..iconXl`, `avatarSm..avatarXl`, `emojiTile/emojiChat/emojiStat`, `settingsRowIndent`, `progressRingSize`. NO `iconHero` (single caller, stays inline).
+- [x] TDD: `app_icons_test.dart` — assert representative sample resolves to expected `IconData` (e.g., `expect(AppIcons.navHome, Icons.dashboard_outlined)`, `expect(AppIcons.statusDone, Icons.check_circle)`, `expect(AppIcons.actionLogout, Icons.logout)`).
+- [x] TDD: `app_assets_test.dart` — assert each path string (e.g., `expect(AppAssets.lottieError, 'assets/animations/error.json')`).
+- [x] Verify: `flutter analyze && flutter test`
 - **Commit**: `feat(constants): add AppIcons / AppAssets / AppDurations / AppSizes`
 
 ### Phase 2: Icon sweep (`refactor(icons): migrate all Icons.X to AppIcons`)
