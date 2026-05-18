@@ -4,7 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 /// Intent-centric helpers for the cross-event Budget Ledger.
 ///
 /// Selectors must match the widgets under test:
-/// - `Key('budget.ledger.hero.{owedToYou,youOwe,multiCurrency}')`
+/// - `Key('budget.balance')` — the new BalanceTile (replaces hero strip)
+/// - `Key('balance.tile.{owedToYou,youOwe,disclaimer,allSettled,ratioBar}')`
 /// - `Key('budget.ledger.debt.{counterpartyUid}.{eventId}')`
 /// - `Key('budget.ledger.settleUp.{counterpartyUid}.{eventId}')`
 /// - `Key('budget.ledger.allSettled')`

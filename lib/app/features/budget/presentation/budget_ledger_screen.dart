@@ -11,9 +11,10 @@ import 'package:crewpoint_app/app/core/router/app_router.dart';
 import 'package:crewpoint_app/app/core/widgets/empty_state_placeholder.dart';
 import 'package:crewpoint_app/app/core/widgets/loading_animation.dart';
 import 'package:crewpoint_app/app/features/budget/application/global_balance_ledger_provider.dart';
+import 'package:crewpoint_app/app/core/widgets/balance_tile.dart';
+import 'package:crewpoint_app/app/core/widgets/screen_header.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/debt_tile.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/ledger_all_settled_chip.dart';
-import 'package:crewpoint_app/app/features/budget/presentation/widgets/ledger_hero_strip.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/recent_expense_tile.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
@@ -45,47 +46,54 @@ class BudgetLedgerScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.cream,
-      appBar: AppBar(
-        title: Text(s.budget.ledgerAppBarTitle),
-        backgroundColor: AppColors.cream,
-        elevation: 0,
-      ),
-      body: uid == null
-          ? EmptyStatePlaceholder(title: s.tasks.signInRequiredTitle)
-          : ref
-                .watch(globalBalanceLedgerProvider(uid))
-                .when(
-                  loading: () => const Center(child: LoadingAnimation()),
-                  error: (error, stackTrace) {
-                    developer.log(
-                      'Failed to load budget ledger',
-                      name: 'budget.ledger',
-                      error: error,
-                      stackTrace: stackTrace,
-                    );
-                    return EmptyStatePlaceholder(
-                      title: s.budget.ledgerErrorTitle,
-                      subtitle: error.toString(),
-                      lottieAsset: 'assets/animations/error.json',
-                    );
-                  },
-                  data: (ledger) {
-                    return _LedgerBody(
-                      ledger: ledger,
-                      strings: s,
-                      onOpenEventBudget: onOpenEventBudget,
-                      onSettleUp:
-                          onSettleUp ??
-                          (ctx, row) {
-                            unawaited(
-                              ref
-                                  .read(settleUpControllerProvider)
-                                  .handleSettleUp(ctx, row),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ScreenHeader(title: s.budget.ledgerAppBarTitle),
+            Expanded(
+              child: uid == null
+                  ? EmptyStatePlaceholder(title: s.tasks.signInRequiredTitle)
+                  : ref
+                        .watch(globalBalanceLedgerProvider(uid))
+                        .when(
+                          loading: () =>
+                              const Center(child: LoadingAnimation()),
+                          error: (error, stackTrace) {
+                            developer.log(
+                              'Failed to load budget ledger',
+                              name: 'budget.ledger',
+                              error: error,
+                              stackTrace: stackTrace,
+                            );
+                            return EmptyStatePlaceholder(
+                              title: s.budget.ledgerErrorTitle,
+                              subtitle: error.toString(),
+                              lottieAsset: 'assets/animations/error.json',
                             );
                           },
-                    );
-                  },
-                ),
+                          data: (ledger) {
+                            return _LedgerBody(
+                              ledger: ledger,
+                              strings: s,
+                              onOpenEventBudget: onOpenEventBudget,
+                              onSettleUp:
+                                  onSettleUp ??
+                                  (ctx, row) {
+                                    unawaited(
+                                      ref
+                                          .read(settleUpControllerProvider)
+                                          .handleSettleUp(ctx, row),
+                                    );
+                                  },
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -119,10 +127,14 @@ class _LedgerBody extends ConsumerWidget {
     return ListView(
       key: const Key('budget.ledger.list'),
       children: [
-        LedgerHeroStrip(
+        BalanceTile(
+          key: const Key('budget.balance'),
           owedToYou: ledger.totalOwedToYou,
           youOwe: ledger.totalYouOwe,
-          showMultiCurrencyDisclaimer: hasMixedCurrency,
+          currencyCode: 'USD',
+          multiCurrencyDisclaimer: hasMixedCurrency
+              ? strings.budget.multiCurrencyDisclaimer
+              : null,
         ),
         // Debts section.
         if (ledger.debts.isNotEmpty) ...[

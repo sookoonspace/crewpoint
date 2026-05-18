@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/widgets/money_text.dart';
 import 'package:crewpoint_app/app/features/budget/application/global_balance_ledger_provider.dart';
 
 /// Chronological row in the cross-event "Recent expenses" feed.
@@ -39,10 +40,6 @@ class RecentExpenseTile extends StatelessWidget {
     final theme = Theme.of(context);
     final exp = row.expense;
     final payerLabel = exp.payerId == currentUserId ? 'You' : exp.payerId;
-    final amountText = NumberFormat.simpleCurrency(
-      name: row.event.currency,
-    ).format(exp.amount);
-
     return InkWell(
       key: Key('budget.ledger.recentExpense.${exp.id}'),
       onTap: onTap,
@@ -93,10 +90,10 @@ class RecentExpenseTile extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  amountText,
+                MoneyText(
+                  amount: exp.amount,
+                  currencyCode: row.event.currency,
                   style: theme.textTheme.titleSmall?.copyWith(
-                    color: AppColors.charcoal,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

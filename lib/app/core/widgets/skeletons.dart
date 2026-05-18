@@ -90,6 +90,90 @@ class _MyTasksRowSkeleton extends StatelessWidget {
   }
 }
 
+/// Placeholder matching the layout of `ConversationTile` — emoji slot +
+/// stacked title/preview blocks + small trailing column.
+class ConversationTileSkeleton extends StatelessWidget {
+  const ConversationTileSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
+      child: Row(
+        children: [
+          SkeletonBox(width: 32, height: 32, radius: 16),
+          SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SkeletonBox(width: 140, height: 14),
+                SizedBox(height: AppSpacing.xs),
+                SkeletonBox(width: 200, height: 10),
+              ],
+            ),
+          ),
+          SizedBox(width: AppSpacing.md),
+          SkeletonBox(width: 32, height: 12),
+        ],
+      ),
+    );
+  }
+}
+
+/// Placeholder matching the layout of `BalanceTile` — two big-number
+/// blocks with a thin ratio-bar placeholder beneath.
+class BalanceTileSkeleton extends StatelessWidget {
+  const BalanceTileSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Card(
+      margin: EdgeInsets.symmetric(
+        horizontal: AppSpacing.xl,
+        vertical: AppSpacing.md,
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SkeletonBox(width: 80, height: 10),
+                      SizedBox(height: AppSpacing.xs),
+                      SkeletonBox(width: 120, height: 28),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      SkeletonBox(width: 60, height: 10),
+                      SizedBox(height: AppSpacing.xs),
+                      SkeletonBox(width: 100, height: 28),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: AppSpacing.md),
+            SkeletonBox(width: double.infinity, height: 6, radius: 4),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// Placeholder matching the layout of `EventTile` so the Dashboard list
 /// doesn't reflow when real data arrives.
 class EventTileSkeleton extends StatelessWidget {

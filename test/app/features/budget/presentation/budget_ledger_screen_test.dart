@@ -157,14 +157,8 @@ void main() {
       );
       await _pumpFrames(tester);
 
-      expect(
-        find.byKey(const Key('budget.ledger.hero.youOwe')),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(const Key('budget.ledger.hero.owedToYou')),
-        findsOneWidget,
-      );
+      expect(find.byKey(const Key('balance.tile.youOwe')), findsOneWidget);
+      expect(find.byKey(const Key('balance.tile.owedToYou')), findsOneWidget);
       expect(
         find.byKey(const Key('budget.ledger.debt.alex.evt-1')),
         findsOneWidget,
@@ -303,10 +297,7 @@ void main() {
       );
       await _pumpFrames(tester);
 
-      expect(
-        find.byKey(const Key('budget.ledger.hero.multiCurrency')),
-        findsOneWidget,
-      );
+      expect(find.byKey(const Key('balance.tile.disclaimer')), findsOneWidget);
     },
   );
 }

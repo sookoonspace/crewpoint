@@ -6,8 +6,9 @@ import 'package:crewpoint_app/app/features/chat/application/global_inbox_provide
 ///
 /// Selector contract — declared by the widgets under test:
 /// - `Key('chat.inbox.tile.{eventId}')` — the row's tap target
-/// - `Key('chat.inbox.tile.{eventId}.badge')` — unread badge container
-/// - `Key('chat.inbox.tile.{eventId}.urgent')` — terracotta bell icon
+/// - `Key('conversation.tile.unreadPill')` — unread count pill (per-row,
+///   found via `find.descendant` of the row key above)
+/// - `Key('conversation.tile.urgentBadge')` — urgent flag (same)
 class ChatInboxRobot {
   ChatInboxRobot(this.tester);
 
@@ -32,28 +33,46 @@ class ChatInboxRobot {
 
   void expectUrgent(String eventId) {
     expect(
-      find.byKey(Key('chat.inbox.tile.$eventId.urgent')),
+      find.descendant(
+        of: find.byKey(Key('chat.inbox.tile.$eventId')),
+        matching: find.byKey(const Key('conversation.tile.urgentBadge')),
+      ),
       findsOneWidget,
       reason:
-          'Expected event $eventId to render the urgent bell icon. '
+          'Expected event $eventId to render the URGENT badge. '
           'Check the row\'s hasUrgentUnread flag.',
     );
   }
 
   void expectNotUrgent(String eventId) {
     expect(
-      find.byKey(Key('chat.inbox.tile.$eventId.urgent')),
+      find.descendant(
+        of: find.byKey(Key('chat.inbox.tile.$eventId')),
+        matching: find.byKey(const Key('conversation.tile.urgentBadge')),
+      ),
       findsNothing,
-      reason: 'Expected event $eventId NOT to render the urgent bell icon.',
+      reason: 'Expected event $eventId NOT to render the URGENT badge.',
     );
   }
 
   void expectUnreadBadge(String eventId) {
-    expect(find.byKey(Key('chat.inbox.tile.$eventId.badge')), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(Key('chat.inbox.tile.$eventId')),
+        matching: find.byKey(const Key('conversation.tile.unreadPill')),
+      ),
+      findsOneWidget,
+    );
   }
 
   void expectNoUnreadBadge(String eventId) {
-    expect(find.byKey(Key('chat.inbox.tile.$eventId.badge')), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byKey(Key('chat.inbox.tile.$eventId')),
+        matching: find.byKey(const Key('conversation.tile.unreadPill')),
+      ),
+      findsNothing,
+    );
   }
 
   /// Holder for the screen's `onOpenChat` capture used by journey

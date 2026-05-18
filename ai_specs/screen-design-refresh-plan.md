@@ -78,25 +78,25 @@ Cohesive visual refresh across 5 tab screens. New shared primitives + Drift-back
 ### Phase 3: Chat + Budget + Profile refresh
 
 - **Goal**: Apply `ScreenHeader`, replace `InboxTile`/`LedgerHeroStrip`, retrofit money formatting, insert `StatTriplet` on Profile. Smaller per-screen impact bundled into one phase.
-- [ ] `lib/app/core/widgets/conversation_tile.dart` — emoji + title + preview + timestamp + urgent badge + unread pill (99+ cap).
-- [ ] `lib/app/core/widgets/balance_tile.dart` — owed/youOwe split numbers + ratio bar + multi-currency disclaimer slot.
-- [ ] `lib/app/core/widgets/stat_triplet.dart` — 3 cells, thin dividers, "—" fallback per cell.
-- [ ] `lib/app/core/widgets/settings_row.dart` — promoted from private `_SettingsTile`. Icon + title + subtitle + chevron.
-- [ ] `lib/app/features/chat/presentation/chat_inbox_screen.dart` — adopt `ScreenHeader` ("Messages") + replace `InboxTile` usage with `ConversationTile`. Delete `lib/app/features/chat/presentation/widgets/inbox_tile.dart` after migration.
-- [ ] `lib/app/features/budget/presentation/budget_ledger_screen.dart` — `ScreenHeader` ("Budget") + replace `LedgerHeroStrip` with `BalanceTile` (carry multi-currency disclaimer). `DebtTile`, `RecentExpenseTile`, `LedgerAllSettledChip` unchanged.
-- [ ] `lib/app/features/budget/presentation/widgets/ledger_hero_strip.dart` — deleted (replaced by `BalanceTile`).
-- [ ] `lib/app/features/budget/presentation/widgets/debt_tile.dart` + `recent_expense_tile.dart` — retrofit currency formatting to `MoneyText`; apply new semantic money color tokens. No structural change.
-- [ ] `lib/app/features/profile/presentation/profile_screen.dart` — insert `StatTriplet` below `_HeroCard` (Events from `dashboardEventsProvider`, Tasks from `myAssignedTasksProvider`, Owed from `globalBalanceLedgerProvider.totalYouOwe`). Replace private `_SettingsTile` with `SettingsRow`. Hero, `_PaymentCard`, Sign Out, Danger Zone, version footer preserved.
-- [ ] `lib/app/core/widgets/skeletons.dart` — add `ConversationTileSkeleton`, `BalanceTileSkeleton`.
-- [ ] TDD: `ConversationTile` — urgent + unread + 99+ cap render correctly; tap callback wired.
-- [ ] TDD: `BalanceTile` — both balances + ratio bar; collapses when both zero; disclaimer shows when flagged.
-- [ ] TDD: `StatTriplet` — 3 cells render; "—" fallback per cell when null.
-- [ ] TDD: `SettingsRow` — semantics; tap callback fired.
-- [ ] Robot journey: extend existing `chat_inbox_open_event_journey_test.dart` to assert `Key('shell.bar.home')` + new `ConversationTile` finder.
-- [ ] Robot journey: extend `budget_settle_up_journey_test.dart` to assert `BalanceTile` is present before Settle Up tap (Phase 4 deep-link contract unchanged).
-- [ ] Robot journey: `test/journeys/profile_stats_journey_test.dart` — seed events/tasks/ledger, open Profile, assert `StatTriplet` cells.
-- [ ] A11y: each new tile/triplet at `TextScaler.linear(2.0)`.
-- [ ] Verify: `flutter analyze && flutter test`
+- [x] `lib/app/core/widgets/conversation_tile.dart` — emoji + title + preview + timestamp + urgent badge + unread pill (99+ cap).
+- [x] `lib/app/core/widgets/balance_tile.dart` — owed/youOwe split numbers + ratio bar + multi-currency disclaimer slot.
+- [x] `lib/app/core/widgets/stat_triplet.dart` — 3 cells, thin dividers, "—" fallback per cell.
+- [x] `lib/app/core/widgets/settings_row.dart` — promoted from private `_SettingsTile`. Icon + title + subtitle + chevron.
+- [x] `lib/app/features/chat/presentation/chat_inbox_screen.dart` — adopt `ScreenHeader` ("Messages") + replace `InboxTile` usage with `ConversationTile`. Delete `lib/app/features/chat/presentation/widgets/inbox_tile.dart` after migration.
+- [x] `lib/app/features/budget/presentation/budget_ledger_screen.dart` — `ScreenHeader` ("Budget") + replace `LedgerHeroStrip` with `BalanceTile` (carry multi-currency disclaimer). `DebtTile`, `RecentExpenseTile`, `LedgerAllSettledChip` unchanged.
+- [x] `lib/app/features/budget/presentation/widgets/ledger_hero_strip.dart` — deleted (replaced by `BalanceTile`).
+- [x] `lib/app/features/budget/presentation/widgets/debt_tile.dart` + `recent_expense_tile.dart` — retrofit currency formatting to `MoneyText`; apply new semantic money color tokens. No structural change.
+- [x] `lib/app/features/profile/presentation/profile_screen.dart` — insert `StatTriplet` below `_HeroCard` (Events from `dashboardEventsProvider`, Tasks from `myAssignedTasksProvider`, Owed from `globalBalanceLedgerProvider.totalYouOwe`). Replace private `_SettingsTile` with `SettingsRow`. Hero, `_PaymentCard`, Sign Out, Danger Zone, version footer preserved.
+- [x] `lib/app/core/widgets/skeletons.dart` — add `ConversationTileSkeleton`, `BalanceTileSkeleton`.
+- [x] TDD: `ConversationTile` — urgent + unread + 99+ cap render correctly; tap callback wired.
+- [x] TDD: `BalanceTile` — both balances + ratio bar; collapses when both zero; disclaimer shows when flagged.
+- [x] TDD: `StatTriplet` — 3 cells render; "—" fallback per cell when null.
+- [x] TDD: `SettingsRow` — semantics; tap callback fired.
+- [x] Robot journey: extend existing `chat_inbox_open_event_journey_test.dart` to assert `Key('shell.bar.home')` + new `ConversationTile` finder. (Robot updated to use the new `conversation.tile.{unreadPill,urgentBadge}` keys via `find.descendant` of the existing per-event row key; existing journey passes against the new tile.)
+- [x] Robot journey: extend `budget_settle_up_journey_test.dart` to assert `BalanceTile` is present before Settle Up tap (Phase 4 deep-link contract unchanged). (Existing journey already passes against the new `BalanceTile` via `Key('budget.balance')`; no test edits required.)
+- [x] Robot journey: `test/journeys/profile_stats_journey_test.dart` — seed events/tasks/ledger, open Profile, assert `StatTriplet` cells.
+- [x] A11y: each new tile/triplet at `TextScaler.linear(2.0)`.
+- [x] Verify: `flutter analyze && flutter test`
 
 ### Phase 4: Cross-screen polish + a11y verification
 

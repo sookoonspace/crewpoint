@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
+import 'package:crewpoint_app/app/core/widgets/money_text.dart';
 import 'package:crewpoint_app/app/features/budget/application/global_balance_ledger_provider.dart';
 
 /// Settle-up tap callback. Production wires this to
@@ -22,10 +22,6 @@ class DebtTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final amountText = NumberFormat.simpleCurrency(
-      name: row.currency,
-    ).format(row.amount);
-
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
@@ -67,10 +63,11 @@ class DebtTile extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                amountText,
+              MoneyText(
+                amount: row.amount,
+                currencyCode: row.currency,
+                sign: MoneySign.youOwe,
                 style: theme.textTheme.titleMedium?.copyWith(
-                  color: AppColors.terracotta,
                   fontWeight: FontWeight.w700,
                 ),
               ),

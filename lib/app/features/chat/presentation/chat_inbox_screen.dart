@@ -3,14 +3,17 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/router/app_router.dart';
+import 'package:crewpoint_app/app/core/widgets/conversation_tile.dart';
 import 'package:crewpoint_app/app/core/widgets/empty_state_placeholder.dart';
 import 'package:crewpoint_app/app/core/widgets/loading_animation.dart';
+import 'package:crewpoint_app/app/core/widgets/screen_header.dart';
 import 'package:crewpoint_app/app/features/chat/application/global_inbox_provider.dart';
-import 'package:crewpoint_app/app/features/chat/presentation/widgets/inbox_tile.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/event_type_emoji.dart';
 
 /// Test seam for opening an event chat from an inbox row. Tests inject a
 /// capturing callback; production falls through to `context.push`.
@@ -65,39 +68,48 @@ class _ChatInboxScreenState extends ConsumerState<ChatInboxScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.cream,
-      appBar: AppBar(
-        title: Text(s.chat.inboxAppBarTitle),
-        backgroundColor: AppColors.cream,
-        elevation: 0,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ScreenHeader(title: s.chat.inboxAppBarTitle),
+            Expanded(
+              child: uid == null
+                  ? EmptyStatePlaceholder(title: s.tasks.signInRequiredTitle)
+                  : ref
+                        .watch(globalInboxProvider(uid))
+                        .when(
+                          loading: () =>
+                              const Center(child: LoadingAnimation()),
+                          error: (error, stackTrace) {
+                            developer.log(
+                              'Failed to load chat inbox',
+                              name: 'chat.inbox',
+                              error: error,
+                              stackTrace: stackTrace,
+                            );
+                            return EmptyStatePlaceholder(
+                              title: s.chat.inboxErrorTitle,
+                              subtitle: error.toString(),
+                              lottieAsset: 'assets/animations/error.json',
+                            );
+                          },
+                          data: (rows) {
+                            if (rows.isEmpty) {
+                              return _ChatInboxEmptyState(strings: s);
+                            }
+                            return _ChatInboxList(
+                              rows: rows,
+                              currentUserId: uid,
+                              onOpenChat: widget.onOpenChat,
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
       ),
-      body: uid == null
-          ? EmptyStatePlaceholder(title: s.tasks.signInRequiredTitle)
-          : ref
-                .watch(globalInboxProvider(uid))
-                .when(
-                  loading: () => const Center(child: LoadingAnimation()),
-                  error: (error, stackTrace) {
-                    developer.log(
-                      'Failed to load chat inbox',
-                      name: 'chat.inbox',
-                      error: error,
-                      stackTrace: stackTrace,
-                    );
-                    return EmptyStatePlaceholder(
-                      title: s.chat.inboxErrorTitle,
-                      subtitle: error.toString(),
-                      lottieAsset: 'assets/animations/error.json',
-                    );
-                  },
-                  data: (rows) {
-                    if (rows.isEmpty) return _ChatInboxEmptyState(strings: s);
-                    return _ChatInboxList(
-                      rows: rows,
-                      currentUserId: uid,
-                      onOpenChat: widget.onOpenChat,
-                    );
-                  },
-                ),
     );
   }
 }
@@ -113,6 +125,29 @@ class _ChatInboxList extends StatelessWidget {
   final String currentUserId;
   final OpenChatCallback? onOpenChat;
 
+  String _truncate(String text, int max) =>
+      text.length <= max ? text : '${text.substring(0, max).trimRight()}…';
+
+  String _formatTimestamp(DateTime when) {
+    final now = DateTime.now();
+    final diff = now.difference(when);
+    if (diff.inMinutes < 1) return 'now';
+    if (diff.inHours < 1) return '${diff.inMinutes}m';
+    if (diff.inHours < 24) return '${diff.inHours}h';
+    if (diff.inDays == 1) return 'Yesterday';
+    if (diff.inDays < 30) return '${diff.inDays}d';
+    return DateFormat.MMMd().format(when);
+  }
+
+  String _previewLine(InboxRow row) {
+    final last = row.lastMessage;
+    if (last == null) return '';
+    final senderName = last.senderId == currentUserId
+        ? 'You'
+        : (last.senderName ?? last.senderId);
+    return '$senderName: ${_truncate(last.text, 60)}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
@@ -120,17 +155,25 @@ class _ChatInboxList extends StatelessWidget {
       itemCount: rows.length,
       itemBuilder: (_, index) {
         final row = rows[index];
-        return InboxTile(
-          row: row,
-          currentUserId: currentUserId,
-          onTap: () {
-            final cb = onOpenChat;
-            if (cb != null) {
-              cb(context, row);
-            } else {
-              context.push('/dashboard/event/${row.event.id}/chat');
-            }
-          },
+        final last = row.lastMessage;
+        return KeyedSubtree(
+          key: Key('chat.inbox.tile.${row.event.id}'),
+          child: ConversationTile(
+            emoji: emojiForEventType(row.event.eventType),
+            title: row.event.title,
+            preview: _previewLine(row),
+            timestamp: last == null ? '' : _formatTimestamp(last.timestamp),
+            unreadCount: row.unreadCount,
+            isUrgent: row.hasUrgentUnread,
+            onTap: () {
+              final cb = onOpenChat;
+              if (cb != null) {
+                cb(context, row);
+              } else {
+                context.push('/dashboard/event/${row.event.id}/chat');
+              }
+            },
+          ),
         );
       },
     );
