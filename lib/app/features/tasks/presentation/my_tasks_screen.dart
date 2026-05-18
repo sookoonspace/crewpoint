@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:crewpoint_app/app/core/constants/app_assets.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
@@ -100,7 +101,7 @@ class _MyTasksScreenState extends ConsumerState<MyTasksScreen> {
                       return EmptyStatePlaceholder(
                         title: 'Could not load tasks',
                         subtitle: error.toString(),
-                        lottieAsset: 'assets/animations/error.json',
+                        lottieAsset: AppAssets.lottieError,
                       );
                     },
                     data: (allRows) {

@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
+import 'package:crewpoint_app/app/core/constants/app_assets.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
@@ -214,7 +215,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             spacing: AppSpacing.lg,
             children: [
               Lottie.asset(
-                'assets/animations/success.json',
+                AppAssets.lottieSuccess,
                 width: 120,
                 height: 120,
                 errorBuilder: (_, _, _) => const Icon(
@@ -291,7 +292,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               child:
                                   (_picked == null && currentPhotoUrl == null)
                                   ? Lottie.asset(
-                                      'assets/animations/profile.json',
+                                      AppAssets.lottieProfile,
                                       width: 64,
                                       height: 64,
                                       errorBuilder: (_, _, _) => const Icon(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:crewpoint_app/app/core/constants/app_assets.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 
@@ -34,7 +35,7 @@ class NetworkImageWithPlaceholder extends StatelessWidget {
     this.fit = BoxFit.cover,
   }) : isCircular = true,
        placeholderIcon = AppIcons.navProfileFilled,
-       lottieAsset = 'assets/animations/profile.json';
+       lottieAsset = AppAssets.lottieProfile;
 
   @override
   Widget build(BuildContext context) {

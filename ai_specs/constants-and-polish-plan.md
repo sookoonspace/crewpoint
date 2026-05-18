@@ -55,20 +55,20 @@ Mechanical sweep: promote 91 distinct icons, 11 asset paths, magic durations + s
 - [x] Verify: `flutter analyze && flutter test`
 - **Commit**: `refactor(icons): migrate all Icons.X usages to AppIcons (normalise variants)`
 
-### Phase 3: Asset path sweep (`refactor(assets): migrate to AppAssets`)
+### Phase 3: Asset path sweep (`refactor(assets): migrate to AppAssets`) ✅ COMPLETE
 
 - **Goal**: Every hardcoded `'assets/...'` string in `lib/` references `AppAssets.X`.
-- [ ] `lib/app/core/widgets/loading_animation.dart` — `AppAssets.lottieLoading`.
-- [ ] `lib/app/core/widgets/empty_state_placeholder.dart` — default `lottieAsset` → `AppAssets.lottieEmptyState`.
-- [ ] `lib/app/core/widgets/network_image_with_placeholder.dart` — `AppAssets.lottieProfile`.
-- [ ] `lib/app/features/tasks/presentation/my_tasks_screen.dart` — `AppAssets.lottieError`.
-- [ ] `lib/app/features/chat/presentation/chat_inbox_screen.dart` — `AppAssets.lottieError`.
-- [ ] `lib/app/features/budget/presentation/budget_ledger_screen.dart` — `AppAssets.lottieError`.
-- [ ] `lib/app/features/profile/presentation/edit_profile_screen.dart` — `AppAssets.lottieSuccess` + `AppAssets.lottieProfile`.
-- [ ] `lib/app/features/profile/presentation/widgets/sign_out_sheet.dart` — `AppAssets.lottieSignOut`.
-- [ ] `lib/app/features/profile/presentation/privacy_dashboard_screen.dart` — `AppAssets.legalPrivacyPolicy` + `AppAssets.legalTermsOfService`.
-- [ ] Acceptance grep: `grep -rn "'assets/" lib/ | grep -v constants/app_assets.dart` returns zero.
-- [ ] Verify: `flutter analyze && flutter test`
+- [x] `lib/app/core/widgets/loading_animation.dart` — `AppAssets.lottieLoading`.
+- [x] `lib/app/core/widgets/empty_state_placeholder.dart` — default `lottieAsset` → `AppAssets.lottieEmptyState`.
+- [x] `lib/app/core/widgets/network_image_with_placeholder.dart` — `AppAssets.lottieProfile`.
+- [x] `lib/app/features/tasks/presentation/my_tasks_screen.dart` — `AppAssets.lottieError`.
+- [x] `lib/app/features/chat/presentation/chat_inbox_screen.dart` — `AppAssets.lottieError`.
+- [x] `lib/app/features/budget/presentation/budget_ledger_screen.dart` — `AppAssets.lottieError`.
+- [x] `lib/app/features/profile/presentation/edit_profile_screen.dart` — `AppAssets.lottieSuccess` + `AppAssets.lottieProfile`.
+- [x] `lib/app/features/profile/presentation/widgets/sign_out_sheet.dart` — `AppAssets.lottieSignOut`.
+- [x] `lib/app/features/profile/presentation/privacy_dashboard_screen.dart` — `AppAssets.legalPrivacyPolicy` + `AppAssets.legalTermsOfService`.
+- [x] Acceptance grep: `grep -rn "'assets/" lib/ | grep -v constants/app_assets.dart` returns zero.
+- [x] Verify: `flutter analyze && flutter test`
 - **Commit**: `refactor(assets): migrate hardcoded asset paths to AppAssets`
 
 ### Phase 4: Duration + size sweep (`refactor(constants): migrate to AppDurations + AppSizes`)

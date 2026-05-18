@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:crewpoint_app/app/core/constants/app_assets.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
@@ -96,7 +97,7 @@ class _ChatInboxScreenState extends ConsumerState<ChatInboxScreen> {
                             return EmptyStatePlaceholder(
                               title: s.chat.inboxErrorTitle,
                               subtitle: error.toString(),
-                              lottieAsset: 'assets/animations/error.json',
+                              lottieAsset: AppAssets.lottieError,
                             );
                           },
                           data: (rows) {

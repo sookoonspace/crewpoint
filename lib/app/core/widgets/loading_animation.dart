@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:crewpoint_app/app/core/constants/app_assets.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 
 /// Lottie-based loading animation.
@@ -15,7 +16,7 @@ class LoadingAnimation extends StatelessWidget {
       width: size,
       height: size,
       child: Lottie.asset(
-        'assets/animations/loading.json',
+        AppAssets.lottieLoading,
         width: size,
         height: size,
         fit: BoxFit.contain,

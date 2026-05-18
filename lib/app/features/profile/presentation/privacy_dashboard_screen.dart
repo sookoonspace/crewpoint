@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crewpoint_app/app/core/constants/app_assets.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
@@ -181,7 +182,7 @@ class PrivacyDashboardScreen extends StatelessWidget {
                     MaterialPageRoute<void>(
                       builder: (_) => MarkdownRenderScreen(
                         title: 'Privacy Policy',
-                        assetPath: 'assets/legal/privacy-policy.md',
+                        assetPath: AppAssets.legalPrivacyPolicy,
                         hostedUrl: '${AppFlavor.current.legalBaseUrl}/privacy',
                       ),
                     ),
@@ -203,7 +204,7 @@ class PrivacyDashboardScreen extends StatelessWidget {
                     MaterialPageRoute<void>(
                       builder: (_) => MarkdownRenderScreen(
                         title: 'Terms of Service',
-                        assetPath: 'assets/legal/terms-of-service.md',
+                        assetPath: AppAssets.legalTermsOfService,
                         hostedUrl: '${AppFlavor.current.legalBaseUrl}/terms',
                       ),
                     ),

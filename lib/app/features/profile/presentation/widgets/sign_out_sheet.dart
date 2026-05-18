@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:crewpoint_app/app/core/constants/app_assets.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
@@ -51,7 +52,7 @@ class SignOutSheet extends StatelessWidget {
 
           // Lottie animation
           Lottie.asset(
-            'assets/animations/sign_out.json',
+            AppAssets.lottieSignOut,
             width: 80,
             height: 80,
             errorBuilder: (_, _, _) => const Icon(
