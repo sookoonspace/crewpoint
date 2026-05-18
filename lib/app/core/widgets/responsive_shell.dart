@@ -62,12 +62,9 @@ class ResponsiveShell extends StatelessWidget {
       extended: true,
       destinations: const [
         NavigationRailDestination(
-          icon: Icon(
-            Icons.dashboard_outlined,
-            key: Key('shell.rail.dashboard'),
-          ),
+          icon: Icon(Icons.dashboard_outlined, key: Key('shell.rail.home')),
           selectedIcon: Icon(Icons.dashboard),
-          label: Text('Dashboard'),
+          label: Text('Home'),
         ),
         NavigationRailDestination(
           icon: Icon(Icons.task_outlined, key: Key('shell.rail.tasks')),
@@ -116,10 +113,10 @@ class ResponsiveShell extends StatelessWidget {
       onDestinationSelected: onDestinationSelected,
       destinations: const [
         NavigationDestination(
-          key: Key('shell.bar.dashboard'),
+          key: Key('shell.bar.home'),
           icon: Icon(Icons.dashboard_outlined),
           selectedIcon: Icon(Icons.dashboard),
-          label: 'Dashboard',
+          label: 'Home',
         ),
         NavigationDestination(
           key: Key('shell.bar.tasks'),

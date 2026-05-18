@@ -7,6 +7,7 @@ import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/event_card.dart';
+import 'package:crewpoint_app/app/features/tasks/application/event_task_counts_provider.dart';
 
 void main() {
   // Empty-state branch renders an `EmptyStatePlaceholder` whose lottie
@@ -78,11 +79,16 @@ void main() {
       ProviderScope(
         overrides: [
           dashboardEventsProvider.overrideWith((ref) => Stream.value(events)),
+          // Drift stream would never settle in widget tests; stub a finite
+          // emission so each EventCard's ring resolves to zeros.
+          eventTaskCountsProvider.overrideWith(
+            (ref, eventId) => Stream.value((todo: 0, doing: 0, done: 0)),
+          ),
         ],
         child: const MaterialApp(home: DashboardScreen()),
       ),
     );
-    await tester.pumpAndSettle();
+    await pumpFrames(tester);
 
     expect(find.byKey(const Key('dashboard.events.list')), findsOneWidget);
     expect(find.byType(EventCard), findsNWidgets(2));

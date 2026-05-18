@@ -3,6 +3,18 @@ import 'package:google_fonts/google_fonts.dart';
 
 /// Centralized typography using Poppins for headings and Inter for body text.
 abstract final class AppTypography {
+  /// Tabular-figures style for numbers that line up vertically (balance
+  /// tile, stat triplet, money text). Width-stable digits so a "$15" → "$150"
+  /// transition doesn't shift adjacent layout. Inter ships proportional
+  /// figures by default; the OpenType `tnum` feature swaps in monospaced
+  /// digits without changing letterform.
+  static TextStyle numberDisplay({Color? color}) => GoogleFonts.inter(
+    fontSize: 28,
+    fontWeight: FontWeight.w600,
+    color: color,
+    fontFeatures: const [FontFeature.tabularFigures()],
+  );
+
   static TextTheme textTheme(Brightness brightness) {
     final color = brightness == Brightness.light
         ? const Color(0xFF2D3436)
@@ -65,8 +77,12 @@ abstract final class AppTypography {
         height: 1.4,
         letterSpacing: 0.15,
       ),
+      // Body default raised 14→16 to clear the "any age" readability floor.
+      // Existing screens that need the smaller variant should use bodySmall (12)
+      // explicitly; bodyLarge stays at 16 (matches bodyMedium now — same size,
+      // bodyMedium remains the Material 3 default for `Text` without style).
       bodyMedium: GoogleFonts.inter(
-        fontSize: 14,
+        fontSize: 16,
         fontWeight: FontWeight.w400,
         color: color,
         height: 1.4,

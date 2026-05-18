@@ -27,37 +27,37 @@ Cohesive visual refresh across 5 tab screens. New shared primitives + Drift-back
 ### Phase 1: Foundation tokens + Dashboard vertical slice
 
 - **Goal**: Prove the design language end-to-end on Home with progress rings on every event tile, sourced from Drift. Nav rename in same commit.
-- [ ] `lib/app/core/constants/app_colors.dart` — add `statusTodoFg/Bg`, `statusDoingFg/Bg`, `statusDoneFg/Bg`, `statusUrgentFg/Bg`, `moneyOwedToYouFg`, `moneyYouOweFg`. Measured contrast comment per surface (white/offWhite/cream/surfaceDarkElevated).
-- [ ] `lib/app/core/constants/app_typography.dart` — body 14→16; add `numberDisplay` (tabular figures).
-- [ ] `lib/app/core/theme/app_theme.dart` — wire updated typography; verify component themes unchanged.
-- [ ] `lib/app/core/widgets/status_badge.dart` — icon+color+label, 5 variants.
-- [ ] `lib/app/core/widgets/progress_ring.dart` — three-arc, `{done}/{total}` label, `—` for total=0, semantics announce all three counts.
-- [ ] `lib/app/core/widgets/task_progress_summary.dart` — `ProgressRing` + row of 3 `StatusBadge`s.
-- [ ] `lib/app/core/widgets/section_label.dart` — promoted from private profile `_SectionHeader`.
-- [ ] `lib/app/core/widgets/screen_header.dart` — title + optional subtitle/timestamp + trailing actions slot. Renders below `EmailUnverifiedBanner` (no top safe-area ownership).
-- [ ] `lib/app/core/widgets/segmented_filter_bar.dart` — single-select pill bar; optional count badge per pill.
-- [ ] `lib/app/core/widgets/skeletons.dart` — `EventTileSkeleton`, plus shared shimmer primitive.
-- [ ] `lib/app/features/dashboard/domain/event_type_emoji.dart` — `EventType→String` map (trip 🏔️, project 📋, social 🎉, custom 📌).
-- [ ] `lib/app/core/database/daos/tasks_dao.dart` — add `Stream<({int todo, int doing, int done})> watchCountsByEventId(String eventId)`. Reactive via Drift `.watch()`. Implementation: derive from existing `watchTasksByEventId(eventId)` mapped to status counts (cheapest, matches DAO style) OR `customSelect("SELECT SUM(CASE WHEN status='todo' THEN 1 ELSE 0 END) AS todo, ... FROM tasks WHERE event_id = ?", readsFrom: {tasks}).watchSingle()`. Either way, the result is a `Stream` backed by `.watch()`, not a `Future`.
-- [ ] `lib/app/features/tasks/application/event_task_counts_provider.dart` — `StreamProvider.family<({int todo, int doing, int done}), String>` reading the new DAO stream. Drift-only; no Firestore subscription opened. Mirrors the existing `taskListProvider` shape (lib/app/core/providers.dart:176). Disposes the stream when no widget watches it.
-- [ ] `lib/app/core/widgets/event_tile.dart` — emoji + title + date range + "{N} members" badge + compact `TaskProgressSummary`. Stateless; consumes counts via parameter (host widget watches provider).
-- [ ] `lib/app/features/dashboard/presentation/widgets/event_card.dart` — rewrite contents to host `EventTile` and `ref.watch(eventTaskCountsProvider(event.id))`. As a `StreamProvider`, the value rebuilds the tile whenever the Drift `tasks` table mutates — no manual invalidation. Handle `AsyncValue.loading` (ring shows "—") and `error` (ring shows "—" + dev log).
-- [ ] `lib/app/features/dashboard/presentation/dashboard_screen.dart` — adopt `ScreenHeader` (greeting via `clock.now()` + Join trailing action), `SegmentedFilterBar` (Upcoming/Past), inline "+ Create Event" button, remove FAB. Greeting first-name helper extracted as pure function `String greetingFirstName(String?)`.
-- [ ] `lib/app/core/widgets/responsive_shell.dart` — rename label "Dashboard"→"Home" AND keys `shell.bar.dashboard`→`shell.bar.home`, `shell.rail.dashboard`→`shell.rail.home`. Both `NavigationBar` and `NavigationRail`.
-- [ ] Grep + update every test asserting `shell.bar.dashboard`, `shell.rail.dashboard`, or label text "Dashboard". Same commit.
-- [ ] TDD: `ProgressRing` happy path (done:3, doing:2, todo:5 → "3/10"); zero-total fallback ("—", no div-by-zero); semantics announce.
-- [ ] TDD: `StatusBadge` exhaustive variant render (icon+color+label per variant).
-- [ ] TDD: `TaskProgressSummary` composition (one ring, three badges, correct counts).
-- [ ] TDD: `TasksDao.watchCountsByEventId` against seeded in-memory database — initial emission for zero tasks, mixed three statuses, all-done; **re-emits** after `insertTask` / `updateTask` / `deleteTaskById` to confirm reactivity (the test must `await` a second event from the stream after a write — proves it's not a one-shot Future).
-- [ ] TDD: `eventTaskCountsProvider` (StreamProvider.family) — initial value via `AsyncValue.data`; second emission after a write reaches consumer; provider disposes the upstream stream when no longer listened.
-- [ ] TDD: `EventType→emoji` map exhaustive (all four enum values).
-- [ ] TDD: `greetingFirstName` — null, empty, single-name, multi-name, RTL-safe.
-- [ ] TDD: `EventTile` renders emoji + title + date range + member count + ring at provided counts.
-- [ ] TDD: `dashboard_screen.dart` widget test — header greeting visible (with `withClock` for "Good morning"), Upcoming/Past pills present, FAB absent, "+ Create Event" button present, error-state retry button calls provider invalidation.
-- [ ] Robot: extend `test/robots/` with `dashboard_robot.dart` covering open + segmented filter switch + event tile assertions including progress label.
-- [ ] Robot journey: `test/journeys/dashboard_home_journey_test.dart` — seed Drift with one event + 2/1/3 tasks → assert tile renders "3/6" via `Key('event.tile.<id>.progress.label')`. Use renamed `Key('shell.bar.home')`.
-- [ ] A11y: `progress_ring`, `event_tile`, `screen_header` widget tests at `TextScaler.linear(2.0)` — no overflow.
-- [ ] Verify: `flutter analyze && flutter test`
+- [x] `lib/app/core/constants/app_colors.dart` — add `statusTodoFg/Bg`, `statusDoingFg/Bg`, `statusDoneFg/Bg`, `statusUrgentFg/Bg`, `moneyOwedToYouFg`, `moneyYouOweFg`. Measured contrast comment per surface (white/offWhite/cream/surfaceDarkElevated).
+- [x] `lib/app/core/constants/app_typography.dart` — body 14→16; add `numberDisplay` (tabular figures).
+- [x] `lib/app/core/theme/app_theme.dart` — wire updated typography; verify component themes unchanged.
+- [x] `lib/app/core/widgets/status_badge.dart` — icon+color+label, 5 variants.
+- [x] `lib/app/core/widgets/progress_ring.dart` — three-arc, `{done}/{total}` label, `—` for total=0, semantics announce all three counts.
+- [x] `lib/app/core/widgets/task_progress_summary.dart` — `ProgressRing` + row of 3 `StatusBadge`s.
+- [x] `lib/app/core/widgets/section_label.dart` — promoted from private profile `_SectionHeader`.
+- [x] `lib/app/core/widgets/screen_header.dart` — title + optional subtitle/timestamp + trailing actions slot. Renders below `EmailUnverifiedBanner` (no top safe-area ownership).
+- [x] `lib/app/core/widgets/segmented_filter_bar.dart` — single-select pill bar; optional count badge per pill.
+- [x] `lib/app/core/widgets/skeletons.dart` — `EventTileSkeleton`, plus shared shimmer primitive.
+- [x] `lib/app/features/dashboard/domain/event_type_emoji.dart` — `EventType→String` map (trip 🏔️, project 📋, social 🎉, custom 📌).
+- [x] `lib/app/core/database/daos/tasks_dao.dart` — add `Stream<({int todo, int doing, int done})> watchCountsByEventId(String eventId)`. Reactive via Drift `.watch()`. Implementation: derive from existing `watchTasksByEventId(eventId)` mapped to status counts (cheapest, matches DAO style) OR `customSelect("SELECT SUM(CASE WHEN status='todo' THEN 1 ELSE 0 END) AS todo, ... FROM tasks WHERE event_id = ?", readsFrom: {tasks}).watchSingle()`. Either way, the result is a `Stream` backed by `.watch()`, not a `Future`.
+- [x] `lib/app/features/tasks/application/event_task_counts_provider.dart` — `StreamProvider.family<({int todo, int doing, int done}), String>` reading the new DAO stream. Drift-only; no Firestore subscription opened. Mirrors the existing `taskListProvider` shape (lib/app/core/providers.dart:176). Disposes the stream when no widget watches it.
+- [x] `lib/app/core/widgets/event_tile.dart` — emoji + title + date range + "{N} members" badge + compact `TaskProgressSummary`. Stateless; consumes counts via parameter (host widget watches provider).
+- [x] `lib/app/features/dashboard/presentation/widgets/event_card.dart` — rewrite contents to host `EventTile` and `ref.watch(eventTaskCountsProvider(event.id))`. As a `StreamProvider`, the value rebuilds the tile whenever the Drift `tasks` table mutates — no manual invalidation. Handle `AsyncValue.loading` (ring shows "—") and `error` (ring shows "—" + dev log).
+- [x] `lib/app/features/dashboard/presentation/dashboard_screen.dart` — adopt `ScreenHeader` (greeting via `clock.now()` + Join trailing action), `SegmentedFilterBar` (Upcoming/Past), inline "+ Create Event" button, remove FAB. Greeting first-name helper extracted as pure function `String greetingFirstName(String?)`.
+- [x] `lib/app/core/widgets/responsive_shell.dart` — rename label "Dashboard"→"Home" AND keys `shell.bar.dashboard`→`shell.bar.home`, `shell.rail.dashboard`→`shell.rail.home`. Both `NavigationBar` and `NavigationRail`.
+- [x] Grep + update every test asserting `shell.bar.dashboard`, `shell.rail.dashboard`, or label text "Dashboard". Same commit.
+- [x] TDD: `ProgressRing` happy path (done:3, doing:2, todo:5 → "3/10"); zero-total fallback ("—", no div-by-zero); semantics announce.
+- [x] TDD: `StatusBadge` exhaustive variant render (icon+color+label per variant).
+- [x] TDD: `TaskProgressSummary` composition (one ring, three badges, correct counts).
+- [x] TDD: `TasksDao.watchCountsByEventId` against seeded in-memory database — initial emission for zero tasks, mixed three statuses, all-done; **re-emits** after `insertTask` / `updateTask` / `deleteTaskById` to confirm reactivity (the test must `await` a second event from the stream after a write — proves it's not a one-shot Future).
+- [x] TDD: `eventTaskCountsProvider` (StreamProvider.family) — initial value via `AsyncValue.data`; second emission after a write reaches consumer; provider disposes the upstream stream when no longer listened.
+- [x] TDD: `EventType→emoji` map exhaustive (all four enum values).
+- [x] TDD: `greetingFirstName` — null, empty, single-name, multi-name, RTL-safe.
+- [x] TDD: `EventTile` renders emoji + title + date range + member count + ring at provided counts.
+- [x] TDD: `dashboard_screen.dart` widget test — header greeting visible (with `withClock` for "Good morning"), Upcoming/Past pills present, FAB absent, "+ Create Event" button present, error-state retry button calls provider invalidation.
+- [x] Robot: extend `test/robots/` with `dashboard_robot.dart` covering open + segmented filter switch + event tile assertions including progress label.
+- [x] Robot journey: `test/journeys/dashboard_home_journey_test.dart` — seed Drift with one event + 2/1/3 tasks → assert tile renders "3/6" via `Key('event.tile.<id>.progress.label')`. Use renamed `Key('shell.bar.home')`.
+- [x] A11y: `progress_ring`, `event_tile`, `screen_header` widget tests at `TextScaler.linear(2.0)` — no overflow.
+- [x] Verify: `flutter analyze && flutter test`
 
 ### Phase 2: MyTasksScreen — progress strip + segmented filter
 

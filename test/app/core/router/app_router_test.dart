@@ -67,7 +67,7 @@ void main() {
     await tester.pumpWidget(_wrapWithProviders(router));
     await _pumpFrames(tester);
 
-    expect(find.text('Dashboard'), findsWidgets);
+    expect(find.text('Home'), findsWidgets);
   });
 
   testWidgets('redirects to onboarding when not complete', (tester) async {
@@ -102,8 +102,8 @@ void main() {
       await _pumpFrames(tester);
 
       expect(
-        find.text('Events'),
-        findsWidgets,
+        find.byKey(const Key('dashboard.action.createEvent')),
+        findsOneWidget,
         reason: 'tapping Go home navigates to the dashboard',
       );
     },
@@ -198,7 +198,10 @@ void main() {
         // EmptyStatePlaceholder lottie — bounded pumps instead of settle.
         await _pumpFrames(tester);
 
-        expect(find.text('Events'), findsWidgets);
+        expect(
+          find.byKey(const Key('dashboard.action.createEvent')),
+          findsOneWidget,
+        );
       },
     );
   });
