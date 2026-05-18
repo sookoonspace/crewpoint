@@ -53,7 +53,7 @@ class TaskListScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.cream,
       appBar: AppBar(
-        title: const Text('Tasks'),
+        title: Text(s.tasksAppBarTitle),
         backgroundColor: AppColors.cream,
         elevation: 0,
         actions: [
@@ -61,7 +61,7 @@ class TaskListScreen extends StatelessWidget {
             IconButton(
               key: const Key('tasks.export.pdf'),
               icon: const Icon(AppIcons.actionShare),
-              tooltip: 'Export PDF',
+              tooltip: s.exportPdfTooltip,
               onPressed: onExportPdf,
             ),
         ],

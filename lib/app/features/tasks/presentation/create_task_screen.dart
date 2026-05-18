@@ -111,7 +111,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
     return Scaffold(
       backgroundColor: AppColors.cream,
       appBar: AppBar(
-        title: const Text('Create Task'),
+        title: Text(s.createTaskTitle),
         backgroundColor: AppColors.cream,
         elevation: 0,
       ),
@@ -139,7 +139,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                       children: [
                         AppTextField(
                           key: const Key('tasks.create.title'),
-                          hintText: 'Task Title',
+                          hintText: s.taskTitleHint,
                           controller: _titleController,
                           prefixIcon: const Icon(AppIcons.navTasksFilled),
                           validator: (value) {
@@ -154,7 +154,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                         ),
                         AppTextField(
                           key: const Key('tasks.create.description'),
-                          hintText: 'Description (optional)',
+                          hintText: s.descriptionOptionalHint,
                           controller: _descriptionController,
                           maxLines: 3,
                           prefixIcon: const Icon(AppIcons.description),
@@ -201,21 +201,21 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                       children: [
                         AppDateField(
                           key: const Key('tasks.create.dueDate'),
-                          labelText: 'Due Date',
+                          labelText: s.dueDateLabel,
                           value: _dueDate,
                           onChanged: (v) => setState(() => _dueDate = v),
                         ),
                         AppCurrencyField(
                           controller: _budgetController,
                           currencyCode: widget.event.currency,
-                          labelText: 'Budget Estimate (optional)',
+                          labelText: s.budgetEstimateLabel,
                         ),
                       ],
                     ),
                   ),
                   PrimaryButton(
                     key: const Key('tasks.create.save'),
-                    label: 'Create Task',
+                    label: s.createTaskCta,
                     onPressed: _submit,
                   ),
                 ],

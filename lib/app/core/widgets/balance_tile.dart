@@ -3,6 +3,7 @@ import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/app_typography.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/widgets/money_text.dart';
 
 /// Hero balance summary for the Budget Ledger.
@@ -89,6 +90,7 @@ class _SplitNumbers extends StatelessWidget {
       letterSpacing: 0.6,
       fontWeight: FontWeight.w600,
     );
+    final s = context.strings.budget;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,7 +99,10 @@ class _SplitNumbers extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('You are owed'.toUpperCase(), style: labelStyle),
+              Text(
+                s.balanceTileYouAreOwedLabel.toUpperCase(),
+                style: labelStyle,
+              ),
               const SizedBox(height: 2),
               MoneyText(
                 key: const Key('balance.tile.owedToYou'),
@@ -121,7 +126,7 @@ class _SplitNumbers extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('You owe'.toUpperCase(), style: labelStyle),
+              Text(s.balanceTileYouOweLabel.toUpperCase(), style: labelStyle),
               const SizedBox(height: 2),
               MoneyText(
                 key: const Key('balance.tile.youOwe'),

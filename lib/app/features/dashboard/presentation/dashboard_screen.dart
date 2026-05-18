@@ -23,11 +23,11 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/join_e
 
 enum DashboardFilter { upcoming, past }
 
-String _greetingPrefix(DateTime now) {
+String _greetingPrefix(DashboardStrings s, DateTime now) {
   final h = now.hour;
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
+  if (h < 12) return s.greetingMorning;
+  if (h < 17) return s.greetingAfternoon;
+  return s.greetingEvening;
 }
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -58,7 +58,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
     final now = clock.now();
     final firstName = greetingFirstName(displayName);
-    final greeting = '${_greetingPrefix(now)}, $firstName 👋';
+    final s = context.strings.dashboard;
+    final greeting = '${_greetingPrefix(s, now)}, $firstName 👋';
     final dateLine = DateFormat('EEEE, MMM d').format(now);
 
     return Scaffold(
@@ -75,7 +76,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               actions: [
                 IconButton(
                   key: const Key('dashboard.header.joinEvent'),
-                  tooltip: 'Join Event',
+                  tooltip: s.joinEventTooltip,
                   icon: const Icon(AppIcons.joinEvent),
                   onPressed: () => JoinEventSheet.show(context: context),
                 ),
@@ -91,16 +92,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: SegmentedFilterBar<DashboardFilter>(
                 key: const Key('dashboard.filter'),
                 selected: _filter,
-                segments: const [
+                segments: [
                   SegmentedFilterSegment(
                     value: DashboardFilter.upcoming,
-                    label: 'Upcoming',
-                    keyValue: Key('dashboard.filter.upcoming'),
+                    label: s.filterUpcoming,
+                    keyValue: const Key('dashboard.filter.upcoming'),
                   ),
                   SegmentedFilterSegment(
                     value: DashboardFilter.past,
-                    label: 'Past',
-                    keyValue: Key('dashboard.filter.past'),
+                    label: s.filterPast,
+                    keyValue: const Key('dashboard.filter.past'),
                   ),
                 ],
                 onChanged: (v) => setState(() => _filter = v),
@@ -117,7 +118,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   key: const Key('dashboard.action.createEvent'),
                   onPressed: () => context.push('/dashboard/create'),
                   icon: const Icon(AppIcons.actionAdd),
-                  label: const Text('Create Event'),
+                  label: Text(s.createEventCta),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.charcoal,
                     foregroundColor: AppColors.white,
@@ -154,7 +155,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         )
                         .toList();
                     if (partitioned.isEmpty) {
-                      final s = context.strings.dashboard;
                       return EmptyStatePlaceholder(
                         title: s.noEventsTitle,
                         subtitle: s.noEventsSubtitle,
@@ -176,8 +176,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       itemBuilder: (_, index) {
                         if (index == 0) {
                           final label = _filter == DashboardFilter.upcoming
-                              ? '${partitioned.length} UPCOMING EVENTS'
-                              : '${partitioned.length} PAST EVENTS';
+                              ? s.upcomingEventsHeader(partitioned.length)
+                              : s.pastEventsHeader(partitioned.length);
                           return Padding(
                             padding: const EdgeInsets.only(
                               bottom: AppSpacing.sm,
@@ -211,6 +211,7 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.strings.dashboard;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
@@ -219,7 +220,7 @@ class _ErrorState extends StatelessWidget {
           spacing: AppSpacing.md,
           children: [
             Text(
-              "We couldn't load your events.",
+              s.errorLoading,
               style: Theme.of(
                 context,
               ).textTheme.bodyMedium?.copyWith(color: AppColors.darkGrey),
@@ -229,7 +230,7 @@ class _ErrorState extends StatelessWidget {
               key: const Key('dashboard.error.retry'),
               onPressed: onRetry,
               icon: const Icon(AppIcons.actionRetry),
-              label: const Text('Try again'),
+              label: Text(s.retryCta),
             ),
           ],
         ),

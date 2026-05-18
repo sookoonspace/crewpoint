@@ -33,6 +33,8 @@ abstract class AppStrings {
   DashboardStrings get dashboard;
   ChatStrings get chat;
   BudgetStrings get budget;
+  ProfileStrings get profile;
+  NavStrings get nav;
 
   /// Static English fallback. Used by service-layer code that has no
   /// `BuildContext` in scope (e.g. `firebaseAuthErrorMessage`). UI code
@@ -165,6 +167,23 @@ abstract class TasksStrings {
 
   // Form labels.
   String get fieldPriority;
+
+  // Event-scoped tasks screen (TaskListScreen).
+  String get tasksAppBarTitle;
+  String get exportPdfTooltip;
+
+  // Create / Edit task screens.
+  String get createTaskTitle;
+  String get editTaskTitle;
+  String get taskTitleHint;
+  String get descriptionOptionalHint;
+  String get dueDateLabel;
+  String get budgetEstimateLabel;
+  String get createTaskCta;
+  String get saveChangesCta;
+
+  // Checklist editor.
+  String get checklistAddHint;
 }
 
 /// User-facing strings for the Dashboard feature (events list + empty state).
@@ -174,6 +193,25 @@ abstract class DashboardStrings {
   String get noEventsTitle;
   String get noEventsSubtitle;
   String get joinWithCode;
+
+  // Header / hero greeting.
+  String get greetingMorning;
+  String get greetingAfternoon;
+  String get greetingEvening;
+  String get joinEventTooltip;
+
+  // Filter pills (segmented bar).
+  String get filterUpcoming;
+  String get filterPast;
+
+  // CTA + list section headers.
+  String get createEventCta;
+  String upcomingEventsHeader(int count);
+  String pastEventsHeader(int count);
+
+  // Error state.
+  String get errorLoading;
+  String get retryCta;
 }
 
 /// User-facing strings for the cross-event Chat tab — the Global Inbox.
@@ -197,6 +235,15 @@ abstract class ChatStrings {
     required String senderName,
     required String text,
   });
+
+  // Event-scoped chat screen (ChatScreen).
+  String get chatAppBarTitle;
+  String get chatEmptyMessage;
+  String get messageInputHint;
+  String get sendFailedHint;
+
+  /// Rendered as a small terracotta pill on rows marked critical/urgent.
+  String get urgentBadge;
 }
 
 /// User-facing strings for the cross-event Budget tab — the Financial Ledger.
@@ -223,6 +270,59 @@ abstract class BudgetStrings {
   String get settleUpFallbackCopyHandle;
   String get settleUpFallbackMarkPaid;
   String get settleUpContactLoadError;
+
+  /// Uppercase labels used by `BalanceTile` (same copy as ledgerHero*).
+  String get balanceTileYouAreOwedLabel;
+  String get balanceTileYouOweLabel;
+}
+
+/// User-facing strings for the Profile feature (profile screen + settings).
+abstract class ProfileStrings {
+  const ProfileStrings();
+
+  // Hero card.
+  String get heroTitle;
+  String get heroUserFallback;
+  String get editProfileCta;
+
+  // Stat triplet.
+  String get statsEvents;
+  String get statsTasks;
+  String get statsOwed;
+
+  // Section headers + rows.
+  String get settingsSection;
+  String get paymentSection;
+  String get notifications;
+  String get privacyDashboard;
+  String get signOut;
+  String get deleteAccount;
+
+  // Payment card.
+  String get addPaymentMethod;
+  String get addPaymentMethodSubtitle;
+  String get paymentMethodVenmo;
+  String get paymentMethodZelle;
+  String get paymentMethodCashApp;
+  String get paymentMethodPayPal;
+  String get paymentMethodCash;
+  String get paymentMethodOther;
+  String get paymentMethodGeneric;
+
+  // Version footer (e.g. "CrewPoint v1.2.3 (45)").
+  String appVersionLabel({required String version, required String build});
+}
+
+/// User-facing strings for the bottom navigation / responsive shell.
+abstract class NavStrings {
+  const NavStrings();
+
+  String get home;
+  String get tasks;
+  String get chat;
+  String get budget;
+  String get profile;
+  String get signOutTooltip;
 }
 
 abstract class ErrorStrings {
@@ -269,6 +369,12 @@ class _EnglishStrings extends AppStrings {
 
   @override
   BudgetStrings get budget => const _EnglishBudgetStrings();
+
+  @override
+  ProfileStrings get profile => const _EnglishProfileStrings();
+
+  @override
+  NavStrings get nav => const _EnglishNavStrings();
 }
 
 class _EnglishChatStrings extends ChatStrings {
@@ -299,6 +405,22 @@ class _EnglishChatStrings extends ChatStrings {
     required String senderName,
     required String text,
   }) => '$senderName: $text';
+
+  @override
+  String get chatAppBarTitle => 'Chat';
+
+  @override
+  String get chatEmptyMessage =>
+      'No messages yet — be the first to say something.';
+
+  @override
+  String get messageInputHint => 'Type a message...';
+
+  @override
+  String get sendFailedHint => 'Send failed — tap Send again to retry';
+
+  @override
+  String get urgentBadge => 'URGENT';
 }
 
 class _EnglishBudgetStrings extends BudgetStrings {
@@ -357,6 +479,105 @@ class _EnglishBudgetStrings extends BudgetStrings {
 
   @override
   String get settleUpContactLoadError => 'Could not load contact info';
+
+  @override
+  String get balanceTileYouAreOwedLabel => 'You are owed';
+
+  @override
+  String get balanceTileYouOweLabel => 'You owe';
+}
+
+class _EnglishProfileStrings extends ProfileStrings {
+  const _EnglishProfileStrings();
+
+  @override
+  String get heroTitle => 'Profile';
+
+  @override
+  String get heroUserFallback => 'User';
+
+  @override
+  String get editProfileCta => 'Edit Profile';
+
+  @override
+  String get statsEvents => 'Events';
+
+  @override
+  String get statsTasks => 'Tasks';
+
+  @override
+  String get statsOwed => 'Owed';
+
+  @override
+  String get settingsSection => 'SETTINGS';
+
+  @override
+  String get paymentSection => 'PAYMENT';
+
+  @override
+  String get notifications => 'Notifications';
+
+  @override
+  String get privacyDashboard => 'Privacy Dashboard';
+
+  @override
+  String get signOut => 'Sign Out';
+
+  @override
+  String get deleteAccount => 'Delete Account';
+
+  @override
+  String get addPaymentMethod => 'Add payment method';
+
+  @override
+  String get addPaymentMethodSubtitle => 'Let your crew know how to pay you';
+
+  @override
+  String get paymentMethodVenmo => 'Venmo';
+
+  @override
+  String get paymentMethodZelle => 'Zelle';
+
+  @override
+  String get paymentMethodCashApp => 'Cash App';
+
+  @override
+  String get paymentMethodPayPal => 'PayPal';
+
+  @override
+  String get paymentMethodCash => 'Cash';
+
+  @override
+  String get paymentMethodOther => 'Other';
+
+  @override
+  String get paymentMethodGeneric => 'Payment';
+
+  @override
+  String appVersionLabel({required String version, required String build}) =>
+      'CrewPoint v$version${build.isNotEmpty ? ' ($build)' : ''}';
+}
+
+class _EnglishNavStrings extends NavStrings {
+  const _EnglishNavStrings();
+
+  @override
+  String get home => 'Home';
+
+  @override
+  String get tasks => 'Tasks';
+
+  @override
+  String get chat => 'Chat';
+
+  @override
+  String get budget => 'Budget';
+
+  @override
+  String get profile => 'Profile';
+
+  @override
+  String get signOutTooltip => 'Sign out';
 }
 
 class _EnglishDashboardStrings extends DashboardStrings {
@@ -370,6 +591,39 @@ class _EnglishDashboardStrings extends DashboardStrings {
 
   @override
   String get joinWithCode => 'Join with Code';
+
+  @override
+  String get greetingMorning => 'Good morning';
+
+  @override
+  String get greetingAfternoon => 'Good afternoon';
+
+  @override
+  String get greetingEvening => 'Good evening';
+
+  @override
+  String get joinEventTooltip => 'Join Event';
+
+  @override
+  String get filterUpcoming => 'Upcoming';
+
+  @override
+  String get filterPast => 'Past';
+
+  @override
+  String get createEventCta => 'Create Event';
+
+  @override
+  String upcomingEventsHeader(int count) => '$count UPCOMING EVENTS';
+
+  @override
+  String pastEventsHeader(int count) => '$count PAST EVENTS';
+
+  @override
+  String get errorLoading => "We couldn't load your events.";
+
+  @override
+  String get retryCta => 'Try again';
 }
 
 class _EnglishTasksStrings extends TasksStrings {
@@ -508,6 +762,39 @@ class _EnglishTasksStrings extends TasksStrings {
 
   @override
   String get fieldPriority => 'Priority';
+
+  @override
+  String get tasksAppBarTitle => 'Tasks';
+
+  @override
+  String get exportPdfTooltip => 'Export PDF';
+
+  @override
+  String get createTaskTitle => 'Create Task';
+
+  @override
+  String get editTaskTitle => 'Edit Task';
+
+  @override
+  String get taskTitleHint => 'Task Title';
+
+  @override
+  String get descriptionOptionalHint => 'Description (optional)';
+
+  @override
+  String get dueDateLabel => 'Due Date';
+
+  @override
+  String get budgetEstimateLabel => 'Budget Estimate (optional)';
+
+  @override
+  String get createTaskCta => 'Create Task';
+
+  @override
+  String get saveChangesCta => 'Save changes';
+
+  @override
+  String get checklistAddHint => 'Add item';
 }
 
 class _EnglishAuthStrings extends AuthStrings {

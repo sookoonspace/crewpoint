@@ -8,6 +8,7 @@ import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/network_image_with_placeholder.dart';
 import 'package:crewpoint_app/app/core/widgets/settings_row.dart';
@@ -56,6 +57,8 @@ class ProfileScreen extends ConsumerWidget {
       orElse: () => null,
     );
 
+    final s = context.strings.profile;
+
     return Scaffold(
       backgroundColor: AppColors.cream,
       body: CustomScrollView(
@@ -66,9 +69,9 @@ class ProfileScreen extends ConsumerWidget {
               key: const Key('profile.statTriplet'),
               child: StatTriplet(
                 cells: [
-                  StatCell(value: eventsValue(), label: 'Events'),
-                  StatCell(value: tasksValue(), label: 'Tasks'),
-                  StatCell(value: owedValue(), label: 'Owed'),
+                  StatCell(value: eventsValue(), label: s.statsEvents),
+                  StatCell(value: tasksValue(), label: s.statsTasks),
+                  StatCell(value: owedValue(), label: s.statsOwed),
                 ],
               ),
             ),
@@ -95,14 +98,14 @@ class ProfileScreen extends ConsumerWidget {
                     ),
 
                     // Settings
-                    const _SectionHeader(label: 'SETTINGS'),
+                    _SectionHeader(label: s.settingsSection),
                     const SizedBox(height: AppSpacing.sm),
                     _SectionCard(
                       children: [
                         SettingsRow(
                           key: const Key('profile.privacyDashboard.tile'),
                           icon: AppIcons.privacy,
-                          title: 'Privacy Dashboard',
+                          title: s.privacyDashboard,
                           onTap: () => context.push(AppRoutes.privacyDashboard),
                         ),
                         const Divider(
@@ -111,7 +114,7 @@ class ProfileScreen extends ConsumerWidget {
                         ),
                         SettingsRow(
                           icon: AppIcons.notifications,
-                          title: 'Notifications',
+                          title: s.notifications,
                           onTap: () {},
                         ),
                       ],
@@ -120,7 +123,7 @@ class ProfileScreen extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.xl),
 
                     // Payment
-                    const _SectionHeader(label: 'PAYMENT'),
+                    _SectionHeader(label: s.paymentSection),
                     const SizedBox(height: AppSpacing.sm),
                     _PaymentCard(user: user),
 
@@ -140,7 +143,7 @@ class ProfileScreen extends ConsumerWidget {
                               ref.read(authProvider.notifier).signOut(),
                         ),
                         icon: const Icon(AppIcons.actionLogout),
-                        label: const Text('Sign Out'),
+                        label: Text(s.signOut),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.terracotta,
                           side: const BorderSide(
@@ -215,7 +218,7 @@ class _HeroCard extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    'Profile',
+                    context.strings.profile.heroTitle,
                     style: Theme.of(
                       context,
                     ).textTheme.titleLarge?.copyWith(color: AppColors.offWhite),
@@ -244,7 +247,7 @@ class _HeroCard extends StatelessWidget {
 
               // Name
               Text(
-                user?.displayName ?? 'User',
+                user?.displayName ?? context.strings.profile.heroUserFallback,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   color: AppColors.offWhite,
                   fontWeight: FontWeight.w600,
@@ -274,7 +277,7 @@ class _HeroCard extends StatelessWidget {
                     vertical: AppSpacing.md,
                   ),
                 ),
-                child: const Text('Edit Profile'),
+                child: Text(context.strings.profile.editProfileCta),
               ),
             ],
           ),
@@ -342,20 +345,21 @@ class _PaymentCard extends StatelessWidget {
     _ => AppIcons.paymentGeneric,
   };
 
-  String _methodLabel(String? method) => switch (method) {
-    'venmo' => 'Venmo',
-    'zelle' => 'Zelle',
-    'cashapp' => 'Cash App',
-    'paypal' => 'PayPal',
-    'cash' => 'Cash',
-    'other' => 'Other',
-    _ => 'Payment',
+  String _methodLabel(ProfileStrings s, String? method) => switch (method) {
+    'venmo' => s.paymentMethodVenmo,
+    'zelle' => s.paymentMethodZelle,
+    'cashapp' => s.paymentMethodCashApp,
+    'paypal' => s.paymentMethodPayPal,
+    'cash' => s.paymentMethodCash,
+    'other' => s.paymentMethodOther,
+    _ => s.paymentMethodGeneric,
   };
 
   @override
   Widget build(BuildContext context) {
     final hasPayment =
         user?.paymentMethod != null && user!.paymentMethod!.isNotEmpty;
+    final s = context.strings.profile;
 
     return Card(
       elevation: 0,
@@ -376,16 +380,16 @@ class _PaymentCard extends StatelessWidget {
         ),
         title: hasPayment
             ? Text(
-                '${_methodLabel(user?.paymentMethod)}: ${user?.paymentHandle ?? ''}',
+                '${_methodLabel(s, user?.paymentMethod)}: ${user?.paymentHandle ?? ''}',
               )
-            : const Text(
-                'Add payment method',
-                style: TextStyle(color: AppColors.sage),
+            : Text(
+                s.addPaymentMethod,
+                style: const TextStyle(color: AppColors.sage),
               ),
         subtitle: hasPayment
             ? null
             : Text(
-                'Let your crew know how to pay you',
+                s.addPaymentMethodSubtitle,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -420,9 +424,9 @@ class _DangerCard extends StatelessWidget {
           AppIcons.actionDeletePermanent,
           color: AppColors.terracotta,
         ),
-        title: const Text(
-          'Delete Account',
-          style: TextStyle(color: AppColors.terracotta),
+        title: Text(
+          context.strings.profile.deleteAccount,
+          style: const TextStyle(color: AppColors.terracotta),
         ),
         trailing: const Icon(
           AppIcons.chevronRight,
@@ -447,7 +451,10 @@ class _AppVersion extends StatelessWidget {
         final buildNumber = snapshot.data?.buildNumber ?? '';
         return Center(
           child: Text(
-            'CrewPoint v$version${buildNumber.isNotEmpty ? ' ($buildNumber)' : ''}',
+            context.strings.profile.appVersionLabel(
+              version: version,
+              build: buildNumber,
+            ),
             style: Theme.of(context).textTheme.bodySmall,
           ),
         );

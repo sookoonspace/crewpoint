@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 
 /// Adaptive navigation shell.
 ///
@@ -37,6 +38,7 @@ class ResponsiveShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.strings.nav;
     return LayoutBuilder(
       builder: (context, constraints) {
         final useRail = constraints.maxWidth >= _railBreakpoint;
@@ -44,48 +46,48 @@ class ResponsiveShell extends StatelessWidget {
           body: Row(
             children: [
               if (useRail) ...[
-                _buildRail(),
+                _buildRail(s),
                 const VerticalDivider(thickness: 1, width: 1),
               ],
               Expanded(key: _bodyKey, child: body),
             ],
           ),
-          bottomNavigationBar: useRail ? null : _buildBar(),
+          bottomNavigationBar: useRail ? null : _buildBar(s),
         );
       },
     );
   }
 
-  NavigationRail _buildRail() {
+  NavigationRail _buildRail(NavStrings s) {
     return NavigationRail(
       selectedIndex: currentIndex,
       onDestinationSelected: onDestinationSelected,
       extended: true,
-      destinations: const [
+      destinations: [
         NavigationRailDestination(
-          icon: Icon(AppIcons.navHome, key: Key('shell.rail.home')),
-          selectedIcon: Icon(AppIcons.navHomeFilled),
-          label: Text('Home'),
+          icon: const Icon(AppIcons.navHome, key: Key('shell.rail.home')),
+          selectedIcon: const Icon(AppIcons.navHomeFilled),
+          label: Text(s.home),
         ),
         NavigationRailDestination(
-          icon: Icon(AppIcons.navTasks, key: Key('shell.rail.tasks')),
-          selectedIcon: Icon(AppIcons.navTasksFilled),
-          label: Text('Tasks'),
+          icon: const Icon(AppIcons.navTasks, key: Key('shell.rail.tasks')),
+          selectedIcon: const Icon(AppIcons.navTasksFilled),
+          label: Text(s.tasks),
         ),
         NavigationRailDestination(
-          icon: Icon(AppIcons.navChat, key: Key('shell.rail.chat')),
-          selectedIcon: Icon(AppIcons.navChatFilled),
-          label: Text('Chat'),
+          icon: const Icon(AppIcons.navChat, key: Key('shell.rail.chat')),
+          selectedIcon: const Icon(AppIcons.navChatFilled),
+          label: Text(s.chat),
         ),
         NavigationRailDestination(
-          icon: Icon(AppIcons.navBudget, key: Key('shell.rail.budget')),
-          selectedIcon: Icon(AppIcons.navBudgetFilled),
-          label: Text('Budget'),
+          icon: const Icon(AppIcons.navBudget, key: Key('shell.rail.budget')),
+          selectedIcon: const Icon(AppIcons.navBudgetFilled),
+          label: Text(s.budget),
         ),
         NavigationRailDestination(
-          icon: Icon(AppIcons.navProfile, key: Key('shell.rail.profile')),
-          selectedIcon: Icon(AppIcons.navProfileFilled),
-          label: Text('Profile'),
+          icon: const Icon(AppIcons.navProfile, key: Key('shell.rail.profile')),
+          selectedIcon: const Icon(AppIcons.navProfileFilled),
+          label: Text(s.profile),
         ),
       ],
       trailing: Expanded(
@@ -95,7 +97,7 @@ class ResponsiveShell extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 16),
             child: IconButton(
               key: const Key('shell.rail.signOut'),
-              tooltip: 'Sign out',
+              tooltip: s.signOutTooltip,
               icon: const Icon(AppIcons.actionLogout),
               onPressed: onSignOut,
             ),
@@ -105,40 +107,40 @@ class ResponsiveShell extends StatelessWidget {
     );
   }
 
-  NavigationBar _buildBar() {
+  NavigationBar _buildBar(NavStrings s) {
     return NavigationBar(
       selectedIndex: currentIndex,
       onDestinationSelected: onDestinationSelected,
-      destinations: const [
+      destinations: [
         NavigationDestination(
-          key: Key('shell.bar.home'),
-          icon: Icon(AppIcons.navHome),
-          selectedIcon: Icon(AppIcons.navHomeFilled),
-          label: 'Home',
+          key: const Key('shell.bar.home'),
+          icon: const Icon(AppIcons.navHome),
+          selectedIcon: const Icon(AppIcons.navHomeFilled),
+          label: s.home,
         ),
         NavigationDestination(
-          key: Key('shell.bar.tasks'),
-          icon: Icon(AppIcons.navTasks),
-          selectedIcon: Icon(AppIcons.navTasksFilled),
-          label: 'Tasks',
+          key: const Key('shell.bar.tasks'),
+          icon: const Icon(AppIcons.navTasks),
+          selectedIcon: const Icon(AppIcons.navTasksFilled),
+          label: s.tasks,
         ),
         NavigationDestination(
-          key: Key('shell.bar.chat'),
-          icon: Icon(AppIcons.navChat),
-          selectedIcon: Icon(AppIcons.navChatFilled),
-          label: 'Chat',
+          key: const Key('shell.bar.chat'),
+          icon: const Icon(AppIcons.navChat),
+          selectedIcon: const Icon(AppIcons.navChatFilled),
+          label: s.chat,
         ),
         NavigationDestination(
-          key: Key('shell.bar.budget'),
-          icon: Icon(AppIcons.navBudget),
-          selectedIcon: Icon(AppIcons.navBudgetFilled),
-          label: 'Budget',
+          key: const Key('shell.bar.budget'),
+          icon: const Icon(AppIcons.navBudget),
+          selectedIcon: const Icon(AppIcons.navBudgetFilled),
+          label: s.budget,
         ),
         NavigationDestination(
-          key: Key('shell.bar.profile'),
-          icon: Icon(AppIcons.navProfile),
-          selectedIcon: Icon(AppIcons.navProfileFilled),
-          label: 'Profile',
+          key: const Key('shell.bar.profile'),
+          icon: const Icon(AppIcons.navProfile),
+          selectedIcon: const Icon(AppIcons.navProfileFilled),
+          label: s.profile,
         ),
       ],
     );

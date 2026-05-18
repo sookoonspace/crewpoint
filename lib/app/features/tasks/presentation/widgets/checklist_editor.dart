@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 
 /// Add / toggle / delete checklist items. Reorder is a backlog item.
@@ -90,9 +91,9 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
                 child: TextField(
                   key: const Key('tasks.detail.checklist.add'),
                   controller: _addController,
-                  decoration: const InputDecoration(
-                    hintText: 'Add item',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    hintText: context.strings.tasks.checklistAddHint,
+                    border: const OutlineInputBorder(),
                     isDense: true,
                   ),
                   onSubmitted: (_) => _submitNew(),

@@ -106,7 +106,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
     return Scaffold(
       backgroundColor: AppColors.cream,
       appBar: AppBar(
-        title: const Text('Edit Task'),
+        title: Text(s.editTaskTitle),
         backgroundColor: AppColors.cream,
         elevation: 0,
       ),
@@ -134,7 +134,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                       children: [
                         AppTextField(
                           key: const Key('tasks.edit.title'),
-                          hintText: 'Task Title',
+                          hintText: s.taskTitleHint,
                           controller: _titleController,
                           prefixIcon: const Icon(AppIcons.navTasksFilled),
                           validator: (value) {
@@ -149,7 +149,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                         ),
                         AppTextField(
                           key: const Key('tasks.edit.description'),
-                          hintText: 'Description (optional)',
+                          hintText: s.descriptionOptionalHint,
                           controller: _descriptionController,
                           maxLines: 3,
                           prefixIcon: const Icon(AppIcons.description),
@@ -197,7 +197,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                       children: [
                         AppDateField(
                           key: const Key('tasks.edit.dueDate'),
-                          labelText: 'Due Date',
+                          labelText: s.dueDateLabel,
                           value: _dueDate,
                           onChanged: (v) => setState(() => _dueDate = v),
                         ),
@@ -205,14 +205,14 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                           key: const Key('tasks.edit.budget'),
                           controller: _budgetController,
                           currencyCode: widget.event.currency,
-                          labelText: 'Budget Estimate (optional)',
+                          labelText: s.budgetEstimateLabel,
                         ),
                       ],
                     ),
                   ),
                   PrimaryButton(
                     key: const Key('tasks.edit.save'),
-                    label: 'Save changes',
+                    label: s.saveChangesCta,
                     onPressed: _submit,
                   ),
                 ],

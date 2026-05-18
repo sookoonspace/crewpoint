@@ -4,6 +4,7 @@ import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
 import 'package:crewpoint_app/app/features/chat/presentation/widgets/critical_alert_modal.dart';
@@ -89,10 +90,11 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.strings.chat;
     return Scaffold(
       backgroundColor: AppColors.cream,
       appBar: AppBar(
-        title: const Text('Chat'),
+        title: Text(s.chatAppBarTitle),
         backgroundColor: AppColors.cream,
         elevation: 0,
         actions: [
@@ -115,11 +117,11 @@ class _ChatScreenState extends State<ChatScreen> {
           children: [
             Expanded(
               child: widget.messages.isEmpty
-                  ? const Center(
-                      key: Key('chat.list.empty'),
+                  ? Center(
+                      key: const Key('chat.list.empty'),
                       child: Text(
-                        'No messages yet — be the first to say something.',
-                        style: TextStyle(color: AppColors.mediumGrey),
+                        s.chatEmptyMessage,
+                        style: const TextStyle(color: AppColors.mediumGrey),
                       ),
                     )
                   : ListView.builder(
@@ -191,6 +193,7 @@ class _MessageInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.strings.chat;
     return Container(
       padding: EdgeInsets.only(
         left: AppSpacing.lg,
@@ -217,7 +220,7 @@ class _MessageInput extends StatelessWidget {
                   ),
                   const SizedBox(width: AppSpacing.xs),
                   Text(
-                    'Send failed — tap Send again to retry',
+                    s.sendFailedHint,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: AppColors.terracotta,
                     ),
@@ -233,8 +236,8 @@ class _MessageInput extends StatelessWidget {
                   key: const Key('chat.composer.input'),
                   controller: controller,
                   enabled: !isSending,
-                  decoration: const InputDecoration(
-                    hintText: 'Type a message...',
+                  decoration: InputDecoration(
+                    hintText: s.messageInputHint,
                     border: InputBorder.none,
                   ),
                   textInputAction: TextInputAction.send,

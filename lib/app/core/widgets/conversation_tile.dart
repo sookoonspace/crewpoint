@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/widgets/status_badge.dart';
 
 /// Chat inbox row — emoji + title + last-message preview + timestamp +
@@ -133,9 +134,9 @@ class _UrgentBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const KeyedSubtree(
-      key: Key('conversation.tile.urgentBadge'),
-      child: StatusBadge.urgent(label: 'URGENT'),
+    return KeyedSubtree(
+      key: const Key('conversation.tile.urgentBadge'),
+      child: StatusBadge.urgent(label: context.strings.chat.urgentBadge),
     );
   }
 }
