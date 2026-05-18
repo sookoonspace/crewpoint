@@ -31,6 +31,65 @@ class SkeletonBox extends StatelessWidget {
   }
 }
 
+/// Header skeleton: a single section label + 3 stacked row blocks that
+/// approximate the height/shape of `MyTasksScreen` rows.
+class MyTasksSkeleton extends StatelessWidget {
+  const MyTasksSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.xl,
+        vertical: AppSpacing.lg,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SkeletonBox(width: 140, height: 12),
+          SizedBox(height: AppSpacing.md),
+          _MyTasksRowSkeleton(),
+          SizedBox(height: AppSpacing.sm),
+          _MyTasksRowSkeleton(),
+          SizedBox(height: AppSpacing.sm),
+          _MyTasksRowSkeleton(),
+        ],
+      ),
+    );
+  }
+}
+
+class _MyTasksRowSkeleton extends StatelessWidget {
+  const _MyTasksRowSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Row(
+        children: [
+          SkeletonBox(width: 24, height: 24, radius: 12),
+          SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SkeletonBox(width: 180, height: 14),
+                SizedBox(height: AppSpacing.xs),
+                SkeletonBox(width: 120, height: 10),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Placeholder matching the layout of `EventTile` so the Dashboard list
 /// doesn't reflow when real data arrives.
 class EventTileSkeleton extends StatelessWidget {

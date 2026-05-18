@@ -1,9 +1,9 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
+import 'package:crewpoint_app/app/core/widgets/money_text.dart';
 import 'package:crewpoint_app/app/features/tasks/application/tasks_filter.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 
@@ -148,11 +148,10 @@ class TaskTile extends StatelessWidget {
                       ),
                     ),
                     if (task.budgetEstimate != null)
-                      Text(
+                      MoneyText(
                         key: Key('tasks.tile.${task.id}.budget'),
-                        NumberFormat.simpleCurrency(
-                          name: currencyCode,
-                        ).format(task.budgetEstimate),
+                        amount: task.budgetEstimate!,
+                        currencyCode: currencyCode,
                         style: Theme.of(context).textTheme.labelSmall,
                       ),
                     if (_showProgressBar)

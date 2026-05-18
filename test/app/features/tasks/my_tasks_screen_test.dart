@@ -6,8 +6,8 @@ import 'package:crewpoint_app/app/core/widgets/loading_animation.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/application/my_assigned_tasks_provider.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
+import 'package:crewpoint_app/app/core/widgets/section_label.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/my_tasks_screen.dart';
-import 'package:crewpoint_app/app/features/tasks/presentation/widgets/tasks_group_header.dart';
 
 /// Lottie animations loop forever — use bounded pumps, not pumpAndSettle.
 Future<void> _pumpFrames(WidgetTester tester) async {
@@ -183,10 +183,21 @@ void main() {
       );
       await _pumpFrames(tester);
 
-      // One header per distinct event.
-      expect(find.byType(TasksGroupHeader), findsNWidgets(2));
-      expect(find.text('Tahoe Trip'), findsOneWidget);
-      expect(find.text('Project Sync'), findsOneWidget);
+      // One SectionLabel header per distinct event (groupHeader keys still
+      // present so robot tests can target them by event id).
+      expect(find.byType(SectionLabel), findsNWidgets(2));
+      expect(
+        find.byKey(const Key('myTasks.groupHeader.evt-a')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('myTasks.groupHeader.evt-b')),
+        findsOneWidget,
+      );
+      // SectionLabel uppercases its text — assert via case-insensitive
+      // match because the wireframe shows "TAHOE TRIP" all caps.
+      expect(find.textContaining('TAHOE TRIP'), findsOneWidget);
+      expect(find.textContaining('PROJECT SYNC'), findsOneWidget);
       // Both task tiles render.
       expect(find.byKey(const Key('tasks.tile.t-a')), findsOneWidget);
       expect(find.byKey(const Key('tasks.tile.t-b')), findsOneWidget);

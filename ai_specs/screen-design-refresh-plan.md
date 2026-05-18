@@ -62,18 +62,18 @@ Cohesive visual refresh across 5 tab screens. New shared primitives + Drift-back
 ### Phase 2: MyTasksScreen — progress strip + segmented filter
 
 - **Goal**: New filter model (All/Todo/Doing/Done + Overdue toggle), aggregate progress, grouped rows. Existing `TaskTile` kept; only currency retrofit.
-- [ ] `lib/app/features/tasks/application/my_tasks_filter.dart` — `MyTasksFilter({segment, overdue})` + `MyTasksSegment` enum + `copyWith`. Session-local.
-- [ ] `lib/app/core/widgets/money_text.dart` — currency code + `MoneySign` enum + tabular figures + "$—" fallback when code empty.
-- [ ] `lib/app/features/tasks/presentation/widgets/task_tile.dart` — replace `NumberFormat.simpleCurrency(...)` budget label with `MoneyText`. No structural change.
-- [ ] `lib/app/features/tasks/presentation/my_tasks_screen.dart` — adopt `ScreenHeader` ("My Tasks"), `TaskProgressSummary` strip computed from current filter, `SegmentedFilterBar` (All/Todo/Doing/Done) + Overdue toggle pill (`StatusBadge.urgent` count badge), replace `TasksGroupHeader` with `SectionLabel`. Keep existing adaptive `_MyTasksEmptyState` (extend copy for "no matches for filter" branch).
-- [ ] `lib/app/core/widgets/skeletons.dart` — add `MyTasksSkeleton` (header row + 3 grouped rows).
-- [ ] TDD: `MyTasksFilter.apply(List<MyAssignedTaskRow>)` pure function — segment partition (Todo/Doing/Done by status; All passes through); Overdue intersects with each segment; uses `clock.now()` for overdue boundary.
-- [ ] TDD: `MyTasksScreen` widget — progress strip totals match filtered list; tapping pill changes active state; tapping Overdue toggles; empty-state copy adapts to filter vs no-tasks-at-all.
-- [ ] TDD: `MoneyText` — owedToYou color = sageDark, youOwe color = terracottaDark, neutral = onSurface; "$—" when code empty.
-- [ ] Robot: extend `test/robots/tasks_robot.dart` with `tapSegment`, `tapOverdueToggle`, `expectSummary(done, doing, todo)`.
-- [ ] Robot journey: `test/journeys/my_tasks_progress_journey_test.dart` — seed assigned tasks, assert progress strip totals + filter pill effect.
-- [ ] A11y: `MoneyText`, `SegmentedFilterBar`, screen at `TextScaler.linear(2.0)`.
-- [ ] Verify: `flutter analyze && flutter test`
+- [x] `lib/app/features/tasks/application/my_tasks_filter.dart` — `MyTasksFilter({segment, overdue})` + `MyTasksSegment` enum + `copyWith`. Session-local.
+- [x] `lib/app/core/widgets/money_text.dart` — currency code + `MoneySign` enum + tabular figures + "$—" fallback when code empty.
+- [x] `lib/app/features/tasks/presentation/widgets/task_tile.dart` — replace `NumberFormat.simpleCurrency(...)` budget label with `MoneyText`. No structural change.
+- [x] `lib/app/features/tasks/presentation/my_tasks_screen.dart` — adopt `ScreenHeader` ("My Tasks"), `TaskProgressSummary` strip computed from current filter, `SegmentedFilterBar` (All/Todo/Doing/Done) + Overdue toggle pill (`StatusBadge.urgent` count badge), replace `TasksGroupHeader` with `SectionLabel`. Keep existing adaptive `_MyTasksEmptyState` (extend copy for "no matches for filter" branch).
+- [x] `lib/app/core/widgets/skeletons.dart` — add `MyTasksSkeleton` (header row + 3 grouped rows).
+- [x] TDD: `MyTasksFilter.apply(List<MyAssignedTaskRow>)` pure function — segment partition (Todo/Doing/Done by status; All passes through); Overdue intersects with each segment; uses `clock.now()` for overdue boundary.
+- [x] TDD: `MyTasksScreen` widget — progress strip totals match filtered list; tapping pill changes active state; tapping Overdue toggles; empty-state copy adapts to filter vs no-tasks-at-all.
+- [x] TDD: `MoneyText` — owedToYou color = sageDark, youOwe color = terracottaDark, neutral = onSurface; "$—" when code empty.
+- [x] Robot: extend `test/robots/tasks_robot.dart` with `tapSegment`, `tapOverdueToggle`, `expectSummary(done, doing, todo)`.
+- [x] Robot journey: `test/journeys/my_tasks_progress_journey_test.dart` — seed assigned tasks, assert progress strip totals + filter pill effect.
+- [x] A11y: `MoneyText`, `SegmentedFilterBar`, screen at `TextScaler.linear(2.0)`.
+- [x] Verify: `flutter analyze && flutter test`
 
 ### Phase 3: Chat + Budget + Profile refresh
 

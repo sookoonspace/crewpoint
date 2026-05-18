@@ -102,4 +102,37 @@ class TasksRobot {
     await tester.tap(find.byKey(const Key('tasks.edit.save')));
     await _bounded();
   }
+
+  // ===== Global MyTasks tab helpers =====
+
+  /// Taps a `SegmentedFilterBar` pill on `MyTasksScreen`. `segment` is
+  /// one of "all", "todo", "doing", "done".
+  Future<void> tapSegment(String segment) async {
+    await tester.tap(find.byKey(Key('myTasks.filter.$segment')));
+    await _bounded();
+  }
+
+  /// Toggles the Overdue pill on `MyTasksScreen`.
+  Future<void> tapOverdueToggle() async {
+    await tester.tap(find.byKey(const Key('myTasks.filter.overdueToggle')));
+    await _bounded();
+  }
+
+  /// Asserts the progress strip at the top of `MyTasksScreen` shows the
+  /// expected counts (formatted as "{done}/{total}").
+  void expectSummary({
+    required int done,
+    required int doing,
+    required int todo,
+  }) {
+    final total = done + doing + todo;
+    final label = total == 0 ? '—' : '$done/$total';
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('tasks.header.summary')),
+        matching: find.text(label),
+      ),
+      findsOneWidget,
+    );
+  }
 }
