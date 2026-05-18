@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
+import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
 
@@ -76,7 +77,7 @@ class MessageBubble extends StatelessWidget {
                 children: [
                   const Icon(
                     AppIcons.actionSwap,
-                    size: 14,
+                    size: AppSizes.iconXs,
                     color: AppColors.sage,
                   ),
                   Text(
@@ -98,7 +99,7 @@ class MessageBubble extends StatelessWidget {
                 children: [
                   const Icon(
                     AppIcons.priorityHigh,
-                    size: 14,
+                    size: AppSizes.iconXs,
                     color: AppColors.terracotta,
                   ),
                   Text(

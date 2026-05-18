@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 
 /// Compact three-arc progress ring with a centered "{done}/{total}" label.
 ///
@@ -17,7 +18,7 @@ class ProgressRing extends StatelessWidget {
     required this.todo,
     required this.doing,
     required this.done,
-    this.size = 48,
+    this.size = AppSizes.progressRingSize,
     this.strokeWidth = 5,
   });
 

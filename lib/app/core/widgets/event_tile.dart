@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/widgets/task_progress_summary.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/event_type_emoji.dart';
@@ -54,7 +55,7 @@ class EventTile extends StatelessWidget {
             children: [
               Text(
                 emojiForEventType(event.eventType),
-                style: const TextStyle(fontSize: 32),
+                style: const TextStyle(fontSize: AppSizes.emojiTile),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(

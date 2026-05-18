@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
+import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
@@ -300,7 +301,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                           const Icon(
                             AppIcons.statusError,
                             color: AppColors.terracotta,
-                            size: 20,
+                            size: AppSizes.iconMd,
                           ),
                           const SizedBox(width: AppSpacing.sm),
                           Expanded(

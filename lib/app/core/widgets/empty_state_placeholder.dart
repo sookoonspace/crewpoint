@@ -5,6 +5,7 @@ import 'package:lottie/lottie.dart';
 import 'package:crewpoint_app/app/core/constants/app_assets.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
+import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 
 /// Branded "nothing here" surface. Lottie animation + title + optional
@@ -40,7 +41,7 @@ class EmptyStatePlaceholder extends StatelessWidget {
     return Icon(
       iconFallback,
       key: const Key('emptyState.iconFallback'),
-      size: 64,
+      size: AppSizes.iconHero,
       color: AppColors.lightGrey,
     );
   }

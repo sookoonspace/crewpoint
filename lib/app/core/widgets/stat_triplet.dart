@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/app_typography.dart';
 
@@ -59,7 +60,7 @@ class _Cell extends StatelessWidget {
           cell.value ?? '—',
           style: AppTypography.numberDisplay(
             color: AppColors.charcoal,
-          ).copyWith(fontSize: 22),
+          ).copyWith(fontSize: AppSizes.emojiStat),
         ),
         const SizedBox(height: 2),
         Text(

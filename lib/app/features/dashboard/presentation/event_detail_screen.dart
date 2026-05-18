@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
+import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
@@ -66,7 +67,7 @@ class _DetailRow extends StatelessWidget {
     return Row(
       spacing: AppSpacing.md,
       children: [
-        Icon(icon, size: 20, color: AppColors.mediumGrey),
+        Icon(icon, size: AppSizes.iconMd, color: AppColors.mediumGrey),
         Column(
           crossAxisAlignment: .start,
           children: [

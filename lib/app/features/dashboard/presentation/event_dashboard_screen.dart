@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
+import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
@@ -244,7 +245,7 @@ class _EventHero extends StatelessWidget {
                   children: [
                     const Icon(
                       AppIcons.calendar,
-                      size: 14,
+                      size: AppSizes.iconXs,
                       color: AppColors.sageLight,
                     ),
                     Text(

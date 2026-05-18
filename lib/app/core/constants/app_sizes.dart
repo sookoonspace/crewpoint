@@ -17,6 +17,8 @@ abstract final class AppSizes {
   static const double iconMd = 20;
   static const double iconLg = 24;
   static const double iconXl = 32;
+  static const double iconHero =
+      64; // 3 callers — empty state, event_guard, router error
 
   // ===== Avatar radii =====
   // Each value confirmed via grep to have ≥ 2 call sites in lib/.

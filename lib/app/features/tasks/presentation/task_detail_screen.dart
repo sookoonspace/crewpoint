@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
+import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
@@ -107,7 +108,7 @@ class TaskDetailScreen extends StatelessWidget {
                   children: [
                     Icon(
                       AppIcons.cloudOff,
-                      size: 16,
+                      size: AppSizes.iconSm,
                       color: AppColors.mediumGrey,
                     ),
                     Text(
@@ -133,7 +134,7 @@ class TaskDetailScreen extends StatelessWidget {
                   children: [
                     const Icon(
                       AppIcons.calendar,
-                      size: 16,
+                      size: AppSizes.iconSm,
                       color: AppColors.mediumGrey,
                     ),
                     Text(
@@ -184,7 +185,11 @@ class _AssigneeRow extends StatelessWidget {
     return Row(
       spacing: AppSpacing.sm,
       children: [
-        const Icon(AppIcons.navProfile, size: 16, color: AppColors.mediumGrey),
+        const Icon(
+          AppIcons.navProfile,
+          size: AppSizes.iconSm,
+          color: AppColors.mediumGrey,
+        ),
         Text('Assigned to $label'),
         if (!stillInEvent)
           const Padding(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
+import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
@@ -47,7 +48,7 @@ class _SocialButton extends StatelessWidget {
       height: 48,
       child: OutlinedButton.icon(
         onPressed: onPressed,
-        icon: Icon(icon, size: 24),
+        icon: Icon(icon, size: AppSizes.iconLg),
         label: Text(label),
         style: OutlinedButton.styleFrom(
           shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),

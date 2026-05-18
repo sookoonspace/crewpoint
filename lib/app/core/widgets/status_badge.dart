@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
+import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 
 /// Pill-shaped status label that always pairs an icon with a color, so
@@ -91,7 +92,7 @@ class StatusBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: foreground),
+          Icon(icon, size: AppSizes.iconXs, color: foreground),
           const SizedBox(width: 4),
           Text(label, style: labelStyle),
           if (count != null) ...[

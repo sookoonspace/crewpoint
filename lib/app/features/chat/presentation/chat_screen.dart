@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
+import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
@@ -211,7 +212,7 @@ class _MessageInput extends StatelessWidget {
                 children: [
                   const Icon(
                     AppIcons.statusError,
-                    size: 14,
+                    size: AppSizes.iconXs,
                     color: AppColors.terracotta,
                   ),
                   const SizedBox(width: AppSpacing.xs),

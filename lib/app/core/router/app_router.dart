@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
+import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/event_guard.dart';
@@ -308,7 +309,7 @@ class _RouterErrorScreen extends StatelessWidget {
               children: [
                 const Icon(
                   AppIcons.errorCompass,
-                  size: 64,
+                  size: AppSizes.iconHero,
                   color: AppColors.sage,
                 ),
                 Text(

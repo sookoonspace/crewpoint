@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
+import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/widgets/money_text.dart';
@@ -193,7 +194,11 @@ class _StatusChip extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
-      child: Icon(icon, color: enabled ? color : AppColors.lightGrey, size: 24),
+      child: Icon(
+        icon,
+        color: enabled ? color : AppColors.lightGrey,
+        size: AppSizes.iconLg,
+      ),
     );
   }
 }

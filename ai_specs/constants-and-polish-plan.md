@@ -71,20 +71,21 @@ Mechanical sweep: promote 91 distinct icons, 11 asset paths, magic durations + s
 - [x] Verify: `flutter analyze && flutter test`
 - **Commit**: `refactor(assets): migrate hardcoded asset paths to AppAssets`
 
-### Phase 4: Duration + size sweep (`refactor(constants): migrate to AppDurations + AppSizes`)
+### Phase 4: Duration + size sweep (`refactor(constants): migrate to AppDurations + AppSizes`) ✅ COMPLETE
 
 - **Goal**: Magic durations and sizes in widget code route through the new token files. One-off layout literals (skeleton dimensions) stay inline.
-- [ ] Grep `lib/` for `Duration(milliseconds:` and `Duration(seconds:`; replace 150/250/350 ms occurrences with `AppDurations.fast/medium/slow`; replace 4-second snackbar durations with `AppDurations.snackbar`.
-- [ ] `lib/app/core/widgets/status_badge.dart` — icon size 14 → `AppSizes.iconXs`.
-- [ ] `lib/app/core/widgets/forms/app_date_field.dart` — clear-button icon size 18 → `AppSizes.iconSm`.
-- [ ] `lib/app/core/widgets/event_tile.dart` — emoji font size 32 → `AppSizes.emojiTile`.
-- [ ] `lib/app/core/widgets/conversation_tile.dart` — emoji font size 28 → `AppSizes.emojiChat`.
-- [ ] `lib/app/core/widgets/stat_triplet.dart` — number font size 22 → `AppSizes.emojiStat` (re-purposed as "tile number scale" if better-named) OR leave inline if it's the only `numberDisplay` consumer.
-- [ ] `lib/app/core/widgets/progress_ring.dart` — default `size: 48` → `AppSizes.progressRingSize`.
-- [ ] `lib/app/features/profile/presentation/profile_screen.dart` — divider `indent: 56` → `AppSizes.settingsRowIndent`.
-- [ ] CircleAvatar radii (16/18/20/42) — grep call sites; promote multi-use values to `AppSizes.avatar*`. Skip single-callers.
-- [ ] **Test sweep** (mandatory, in-commit): re-run `flutter test`. No test-finder regressions expected (tests don't grep sizes/durations), but a green suite is the gate.
-- [ ] Verify: `flutter analyze && flutter test`
+- [x] Grep `lib/` for `Duration(milliseconds:` and `Duration(seconds:`; replace 150/250/350 ms occurrences with `AppDurations.fast/medium/slow`; replace 4-second snackbar durations with `AppDurations.snackbar`. **No production callers found** — `AppDurations` remains forward-looking only.
+- [x] `lib/app/core/widgets/status_badge.dart` — icon size 14 → `AppSizes.iconXs`.
+- [x] `lib/app/core/widgets/forms/app_date_field.dart` — clear-button icon size 18 → left inline (deliberate between-tier value used in 5+ sites).
+- [x] `lib/app/core/widgets/event_tile.dart` — emoji font size 32 → `AppSizes.emojiTile`.
+- [x] `lib/app/core/widgets/conversation_tile.dart` — emoji font size 28 → `AppSizes.emojiChat`.
+- [x] `lib/app/core/widgets/stat_triplet.dart` — number font size 22 → `AppSizes.emojiStat`.
+- [x] `lib/app/core/widgets/progress_ring.dart` — default `size: 48` → `AppSizes.progressRingSize`.
+- [x] `lib/app/features/profile/presentation/profile_screen.dart` — divider `indent: 56` → `AppSizes.settingsRowIndent`.
+- [x] Icon sizes 14/16/20/24/64 routed through `AppSizes.iconXs/Sm/Md/Lg/Hero`; promoted `iconHero = 64` to AppSizes (3 callers: empty state, event_guard, router error).
+- [x] CircleAvatar radii — single-callers left inline.
+- [x] **Test sweep** (mandatory, in-commit): re-run `flutter test`. 627 tests pass.
+- [x] Verify: `flutter analyze && flutter test`
 - **Commit**: `refactor(constants): migrate magic durations + sizes to AppDurations + AppSizes`
 
 ### Phase 5: Strings audit + sub-object growth (`refactor(strings): promote literals to app_strings.dart`)

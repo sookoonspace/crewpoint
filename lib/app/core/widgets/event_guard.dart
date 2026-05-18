@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
+import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
@@ -173,7 +174,11 @@ class _EventNotFoundScreenState extends State<EventNotFoundScreen> {
               mainAxisSize: MainAxisSize.min,
               spacing: AppSpacing.lg,
               children: [
-                const Icon(AppIcons.eventBusy, size: 64, color: AppColors.sage),
+                const Icon(
+                  AppIcons.eventBusy,
+                  size: AppSizes.iconHero,
+                  color: AppColors.sage,
+                ),
                 Text(
                   "We couldn't find that event",
                   style: Theme.of(context).textTheme.titleMedium,

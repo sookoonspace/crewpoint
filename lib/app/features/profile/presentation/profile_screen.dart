@@ -5,6 +5,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
+import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
@@ -104,7 +105,10 @@ class ProfileScreen extends ConsumerWidget {
                           title: 'Privacy Dashboard',
                           onTap: () => context.push(AppRoutes.privacyDashboard),
                         ),
-                        const Divider(height: 1, indent: 56),
+                        const Divider(
+                          height: 1,
+                          indent: AppSizes.settingsRowIndent,
+                        ),
                         SettingsRow(
                           icon: AppIcons.notifications,
                           title: 'Notifications',
