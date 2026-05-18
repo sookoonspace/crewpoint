@@ -9,10 +9,10 @@ import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/router/app_router.dart';
 import 'package:crewpoint_app/app/core/widgets/empty_state_placeholder.dart';
-import 'package:crewpoint_app/app/core/widgets/loading_animation.dart';
 import 'package:crewpoint_app/app/features/budget/application/global_balance_ledger_provider.dart';
 import 'package:crewpoint_app/app/core/widgets/balance_tile.dart';
 import 'package:crewpoint_app/app/core/widgets/screen_header.dart';
+import 'package:crewpoint_app/app/core/widgets/skeletons.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/debt_tile.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/ledger_all_settled_chip.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/recent_expense_tile.dart';
@@ -58,8 +58,10 @@ class BudgetLedgerScreen extends ConsumerWidget {
                   : ref
                         .watch(globalBalanceLedgerProvider(uid))
                         .when(
-                          loading: () =>
-                              const Center(child: LoadingAnimation()),
+                          loading: () => ListView(
+                            key: const Key('budget.ledger.loading'),
+                            children: const [BalanceTileSkeleton()],
+                          ),
                           error: (error, stackTrace) {
                             developer.log(
                               'Failed to load budget ledger',

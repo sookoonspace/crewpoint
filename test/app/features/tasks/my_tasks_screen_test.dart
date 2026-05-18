@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
-import 'package:crewpoint_app/app/core/widgets/loading_animation.dart';
+import 'package:crewpoint_app/app/core/widgets/section_label.dart';
+import 'package:crewpoint_app/app/core/widgets/skeletons.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/application/my_assigned_tasks_provider.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
-import 'package:crewpoint_app/app/core/widgets/section_label.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/my_tasks_screen.dart';
 
 /// Lottie animations loop forever — use bounded pumps, not pumpAndSettle.
@@ -18,7 +18,7 @@ Future<void> _pumpFrames(WidgetTester tester) async {
 
 void main() {
   testWidgets(
-    'loading branch — renders LoadingAnimation, no empty state, no list',
+    'loading branch — renders MyTasksSkeleton, no empty state, no list',
     (tester) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -35,7 +35,7 @@ void main() {
       );
       await _pumpFrames(tester);
 
-      expect(find.byType(LoadingAnimation), findsOneWidget);
+      expect(find.byType(MyTasksSkeleton), findsOneWidget);
       expect(find.byKey(const Key('emptyState.title')), findsNothing);
     },
   );
@@ -123,7 +123,7 @@ void main() {
       await _pumpFrames(tester);
 
       expect(find.text('Sign in to view your tasks'), findsOneWidget);
-      expect(find.byType(LoadingAnimation), findsNothing);
+      expect(find.byType(MyTasksSkeleton), findsNothing);
       expect(
         dashboardSubscriptions,
         0,

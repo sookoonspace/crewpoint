@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
-import 'package:crewpoint_app/app/core/widgets/loading_animation.dart';
+import 'package:crewpoint_app/app/core/widgets/skeletons.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/budget_ledger_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
@@ -15,7 +15,7 @@ Future<void> _pumpFrames(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('loading branch — renders LoadingAnimation, no empty state', (
+  testWidgets('loading branch — renders BalanceTileSkeleton, no empty state', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -31,7 +31,7 @@ void main() {
     );
     await _pumpFrames(tester);
 
-    expect(find.byType(LoadingAnimation), findsOneWidget);
+    expect(find.byType(BalanceTileSkeleton), findsOneWidget);
     expect(find.byKey(const Key('emptyState.title')), findsNothing);
   });
 

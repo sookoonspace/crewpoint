@@ -10,8 +10,8 @@ import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/router/app_router.dart';
 import 'package:crewpoint_app/app/core/widgets/conversation_tile.dart';
 import 'package:crewpoint_app/app/core/widgets/empty_state_placeholder.dart';
-import 'package:crewpoint_app/app/core/widgets/loading_animation.dart';
 import 'package:crewpoint_app/app/core/widgets/screen_header.dart';
+import 'package:crewpoint_app/app/core/widgets/skeletons.dart';
 import 'package:crewpoint_app/app/features/chat/application/global_inbox_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/event_type_emoji.dart';
 
@@ -80,8 +80,12 @@ class _ChatInboxScreenState extends ConsumerState<ChatInboxScreen> {
                   : ref
                         .watch(globalInboxProvider(uid))
                         .when(
-                          loading: () =>
-                              const Center(child: LoadingAnimation()),
+                          loading: () => ListView.builder(
+                            key: const Key('chat.inbox.loading'),
+                            itemCount: 4,
+                            itemBuilder: (_, _) =>
+                                const ConversationTileSkeleton(),
+                          ),
                           error: (error, stackTrace) {
                             developer.log(
                               'Failed to load chat inbox',

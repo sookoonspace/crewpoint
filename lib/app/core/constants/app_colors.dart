@@ -71,4 +71,9 @@ abstract final class AppColors {
   static const Color moneyOwedToYouFg = sageDark; // identical to statusDoneFg
   static const Color moneyYouOweFg =
       terracottaDark; // identical to statusUrgentFg
+
+  // Info — neutral blue used by `StatusBadge.info` only. Foreground reuses
+  // [info]; background is a 10%-alpha tint kept as a separate token so no
+  // screen code reaches for a raw `Color(0x...)` literal.
+  static const Color statusInfoBg = Color(0x1A74B9FF);
 }

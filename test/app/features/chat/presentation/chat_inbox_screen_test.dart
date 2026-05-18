@@ -7,7 +7,7 @@ import 'package:crewpoint_app/app/core/database/app_database.dart';
 import 'package:crewpoint_app/app/core/database/daos/chat_messages_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/chat_reads_dao.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
-import 'package:crewpoint_app/app/core/widgets/loading_animation.dart';
+import 'package:crewpoint_app/app/core/widgets/skeletons.dart';
 import 'package:crewpoint_app/app/features/chat/application/global_inbox_provider.dart';
 import 'package:crewpoint_app/app/features/chat/data/chat_repository.dart';
 import 'package:crewpoint_app/app/features/chat/data/firestore_chat_service.dart';
@@ -79,30 +79,31 @@ class _ChatInboxTestBaseline {
 }
 
 void main() {
-  testWidgets('loading branch — renders LoadingAnimation; no empty state', (
-    tester,
-  ) async {
-    final base = _ChatInboxTestBaseline.create();
-    addTearDown(base.cleanup);
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          ...base.baseOverrides.cast(),
-          currentUserIdProvider.overrideWith((ref) => 'uid-1'),
-          dashboardEventsProvider.overrideWith(
-            (ref) => const Stream<List<EventModel>>.empty(),
-          ),
-        ],
-        child: const MaterialApp(home: ChatInboxScreen()),
-      ),
-    );
-    await _pumpFrames(tester);
+  testWidgets(
+    'loading branch — renders ConversationTileSkeleton; no empty state',
+    (tester) async {
+      final base = _ChatInboxTestBaseline.create();
+      addTearDown(base.cleanup);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ...base.baseOverrides.cast(),
+            currentUserIdProvider.overrideWith((ref) => 'uid-1'),
+            dashboardEventsProvider.overrideWith(
+              (ref) => const Stream<List<EventModel>>.empty(),
+            ),
+          ],
+          child: const MaterialApp(home: ChatInboxScreen()),
+        ),
+      );
+      await _pumpFrames(tester);
 
-    expect(find.byType(LoadingAnimation), findsOneWidget);
-    expect(find.byKey(const Key('emptyState.title')), findsNothing);
+      expect(find.byType(ConversationTileSkeleton), findsAtLeastNWidgets(1));
+      expect(find.byKey(const Key('emptyState.title')), findsNothing);
 
-    await _teardownTree(tester);
-  });
+      await _teardownTree(tester);
+    },
+  );
 
   testWidgets(
     'empty-with-events branch — inboxEmptySubtitle + openDashboardCta',

@@ -61,7 +61,7 @@ class StatusBadge extends StatelessWidget {
         icon: Icons.info_outline,
         label: label,
         foreground: AppColors.info,
-        background: const Color(0x1A74B9FF),
+        background: AppColors.statusInfoBg,
         count: count,
       );
 

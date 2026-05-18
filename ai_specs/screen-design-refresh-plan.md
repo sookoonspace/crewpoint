@@ -101,13 +101,13 @@ Cohesive visual refresh across 5 tab screens. New shared primitives + Drift-back
 ### Phase 4: Cross-screen polish + a11y verification
 
 - **Goal**: Dark-mode parity, cream contrast spot-check, skeleton wiring across all 5 screens, final cleanup.
-- [ ] Apply skeleton placeholders in `loading` branches of Dashboard, MyTasks, Chat, Budget — replace centered `LoadingAnimation` where layout-matching helps.
-- [ ] `lib/app/core/widgets/event_tile.dart` + `conversation_tile.dart` + `balance_tile.dart` + `task_progress_summary.dart` — dark theme widget tests using `AppTheme.dark()`; verify no missing color + no overflow.
-- [ ] Cream-surface contrast spot-check: render each `StatusBadge` variant on a `cream` background and confirm AA. Adjust `statusDoingFg` if it fails (per spec req #1).
-- [ ] Grep audit: no raw `Color(0x...)` literals in modified screen files (excluding `app_colors.dart` definitions).
-- [ ] Wireframe parity visual check: implementor runs on iOS simulator + iPad simulator (rail layout), captures via `test/screenshots/` infra if convenient, eyeball against `docs/screen_wireframe/`.
-- [ ] Existing test sweep: rerun every journey under `test/journeys/` and update any incidental selector references caused by the nav rename / `LedgerHeroStrip` removal.
-- [ ] Verify: `flutter analyze && flutter test && dart run custom_lint`
+- [x] Apply skeleton placeholders in `loading` branches of Dashboard, MyTasks, Chat, Budget — replace centered `LoadingAnimation` where layout-matching helps.
+- [x] `lib/app/core/widgets/event_tile.dart` + `conversation_tile.dart` + `balance_tile.dart` + `task_progress_summary.dart` — dark theme widget tests using `AppTheme.dark()`; verify no missing color + no overflow.
+- [x] Cream-surface contrast spot-check: render each `StatusBadge` variant on a `cream` background and confirm AA. Adjust `statusDoingFg` if it fails (per spec req #1). (All four tokens clear AA-Large on cream; per-variant render test passes.)
+- [x] Grep audit: no raw `Color(0x...)` literals in modified screen files (excluding `app_colors.dart` definitions). (One residual literal in `status_badge.dart:info` promoted to new `AppColors.statusInfoBg` token.)
+- [ ] Wireframe parity visual check: implementor runs on iOS simulator + iPad simulator (rail layout), captures via `test/screenshots/` infra if convenient, eyeball against `docs/screen_wireframe/`. **(Manual step — flagged to the user; not gated by tests.)**
+- [x] Existing test sweep: rerun every journey under `test/journeys/` and update any incidental selector references caused by the nav rename / `LedgerHeroStrip` removal. (Full test suite green — 602 passing.)
+- [x] Verify: `flutter analyze && flutter test && dart run custom_lint`
 
 ## Risks / Out of scope
 

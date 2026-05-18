@@ -11,10 +11,10 @@ import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/router/app_router.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/core/widgets/empty_state_placeholder.dart';
-import 'package:crewpoint_app/app/core/widgets/loading_animation.dart';
 import 'package:crewpoint_app/app/core/widgets/screen_header.dart';
 import 'package:crewpoint_app/app/core/widgets/section_label.dart';
 import 'package:crewpoint_app/app/core/widgets/segmented_filter_bar.dart';
+import 'package:crewpoint_app/app/core/widgets/skeletons.dart';
 import 'package:crewpoint_app/app/core/widgets/status_badge.dart';
 import 'package:crewpoint_app/app/core/widgets/task_progress_summary.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/event_type_emoji.dart';
@@ -89,7 +89,7 @@ class _MyTasksScreenState extends ConsumerState<MyTasksScreen> {
             : ref
                   .watch(myAssignedTasksProvider(uid))
                   .when(
-                    loading: () => const Center(child: LoadingAnimation()),
+                    loading: () => const MyTasksSkeleton(),
                     error: (error, stackTrace) {
                       developer.log(
                         'Failed to load assigned tasks',

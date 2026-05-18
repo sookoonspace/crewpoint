@@ -13,6 +13,7 @@ import 'package:crewpoint_app/app/core/widgets/empty_state_placeholder.dart';
 import 'package:crewpoint_app/app/core/widgets/screen_header.dart';
 import 'package:crewpoint_app/app/core/widgets/section_label.dart';
 import 'package:crewpoint_app/app/core/widgets/segmented_filter_bar.dart';
+import 'package:crewpoint_app/app/core/widgets/skeletons.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/greeting_first_name.dart';
 import 'package:crewpoint_app/app/features/profile/application/current_user_doc_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
@@ -129,8 +130,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 key: const Key('dashboard.body.clamped'),
                 maxWidth: 720,
                 child: eventsAsync.when(
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
+                  loading: () => ListView.separated(
+                    key: const Key('dashboard.events.loading'),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: Breakpoints.screenHorizontalPadding(context),
+                      vertical: AppSpacing.lg,
+                    ),
+                    itemCount: 3,
+                    separatorBuilder: (_, _) =>
+                        const SizedBox(height: AppSpacing.sm),
+                    itemBuilder: (_, _) => const EventTileSkeleton(),
+                  ),
                   error: (e, _) => _ErrorState(
                     onRetry: () => ref.invalidate(dashboardEventsProvider),
                   ),
