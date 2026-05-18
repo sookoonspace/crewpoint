@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 
 /// Sage-tinted info chip rendered in the debts section when the user
@@ -29,7 +30,7 @@ class LedgerAllSettledChip extends StatelessWidget {
         child: Row(
           children: [
             const Icon(
-              Icons.check_circle_outline,
+              AppIcons.statusDoneOutline,
               color: AppColors.sage,
               size: 20,
             ),

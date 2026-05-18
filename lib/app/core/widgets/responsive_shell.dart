@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 
 /// Adaptive navigation shell.
 ///
@@ -62,31 +63,28 @@ class ResponsiveShell extends StatelessWidget {
       extended: true,
       destinations: const [
         NavigationRailDestination(
-          icon: Icon(Icons.dashboard_outlined, key: Key('shell.rail.home')),
-          selectedIcon: Icon(Icons.dashboard),
+          icon: Icon(AppIcons.navHome, key: Key('shell.rail.home')),
+          selectedIcon: Icon(AppIcons.navHomeFilled),
           label: Text('Home'),
         ),
         NavigationRailDestination(
-          icon: Icon(Icons.task_outlined, key: Key('shell.rail.tasks')),
-          selectedIcon: Icon(Icons.task),
+          icon: Icon(AppIcons.navTasks, key: Key('shell.rail.tasks')),
+          selectedIcon: Icon(AppIcons.navTasksFilled),
           label: Text('Tasks'),
         ),
         NavigationRailDestination(
-          icon: Icon(Icons.chat_outlined, key: Key('shell.rail.chat')),
-          selectedIcon: Icon(Icons.chat),
+          icon: Icon(AppIcons.navChat, key: Key('shell.rail.chat')),
+          selectedIcon: Icon(AppIcons.navChatFilled),
           label: Text('Chat'),
         ),
         NavigationRailDestination(
-          icon: Icon(
-            Icons.account_balance_wallet_outlined,
-            key: Key('shell.rail.budget'),
-          ),
-          selectedIcon: Icon(Icons.account_balance_wallet),
+          icon: Icon(AppIcons.navBudget, key: Key('shell.rail.budget')),
+          selectedIcon: Icon(AppIcons.navBudgetFilled),
           label: Text('Budget'),
         ),
         NavigationRailDestination(
-          icon: Icon(Icons.person_outline, key: Key('shell.rail.profile')),
-          selectedIcon: Icon(Icons.person),
+          icon: Icon(AppIcons.navProfile, key: Key('shell.rail.profile')),
+          selectedIcon: Icon(AppIcons.navProfileFilled),
           label: Text('Profile'),
         ),
       ],
@@ -98,7 +96,7 @@ class ResponsiveShell extends StatelessWidget {
             child: IconButton(
               key: const Key('shell.rail.signOut'),
               tooltip: 'Sign out',
-              icon: const Icon(Icons.logout),
+              icon: const Icon(AppIcons.actionLogout),
               onPressed: onSignOut,
             ),
           ),
@@ -114,32 +112,32 @@ class ResponsiveShell extends StatelessWidget {
       destinations: const [
         NavigationDestination(
           key: Key('shell.bar.home'),
-          icon: Icon(Icons.dashboard_outlined),
-          selectedIcon: Icon(Icons.dashboard),
+          icon: Icon(AppIcons.navHome),
+          selectedIcon: Icon(AppIcons.navHomeFilled),
           label: 'Home',
         ),
         NavigationDestination(
           key: Key('shell.bar.tasks'),
-          icon: Icon(Icons.task_outlined),
-          selectedIcon: Icon(Icons.task),
+          icon: Icon(AppIcons.navTasks),
+          selectedIcon: Icon(AppIcons.navTasksFilled),
           label: 'Tasks',
         ),
         NavigationDestination(
           key: Key('shell.bar.chat'),
-          icon: Icon(Icons.chat_outlined),
-          selectedIcon: Icon(Icons.chat),
+          icon: Icon(AppIcons.navChat),
+          selectedIcon: Icon(AppIcons.navChatFilled),
           label: 'Chat',
         ),
         NavigationDestination(
           key: Key('shell.bar.budget'),
-          icon: Icon(Icons.account_balance_wallet_outlined),
-          selectedIcon: Icon(Icons.account_balance_wallet),
+          icon: Icon(AppIcons.navBudget),
+          selectedIcon: Icon(AppIcons.navBudgetFilled),
           label: 'Budget',
         ),
         NavigationDestination(
           key: Key('shell.bar.profile'),
-          icon: Icon(Icons.person_outline),
-          selectedIcon: Icon(Icons.person),
+          icon: Icon(AppIcons.navProfile),
+          selectedIcon: Icon(AppIcons.navProfileFilled),
           label: 'Profile',
         ),
       ],

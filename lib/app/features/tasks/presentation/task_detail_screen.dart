@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
@@ -105,7 +106,7 @@ class TaskDetailScreen extends StatelessWidget {
                   spacing: AppSpacing.sm,
                   children: [
                     Icon(
-                      Icons.cloud_off,
+                      AppIcons.cloudOff,
                       size: 16,
                       color: AppColors.mediumGrey,
                     ),
@@ -131,7 +132,7 @@ class TaskDetailScreen extends StatelessWidget {
                   spacing: AppSpacing.sm,
                   children: [
                     const Icon(
-                      Icons.calendar_today,
+                      AppIcons.calendar,
                       size: 16,
                       color: AppColors.mediumGrey,
                     ),
@@ -183,7 +184,7 @@ class _AssigneeRow extends StatelessWidget {
     return Row(
       spacing: AppSpacing.sm,
       children: [
-        const Icon(Icons.person_outline, size: 16, color: AppColors.mediumGrey),
+        const Icon(AppIcons.navProfile, size: 16, color: AppColors.mediumGrey),
         Text('Assigned to $label'),
         if (!stillInEvent)
           const Padding(
@@ -253,7 +254,7 @@ class _DetailOverflowMenu extends StatelessWidget {
     final s = context.strings.tasks;
     return PopupMenuButton<_DetailAction>(
       key: const Key('tasks.detail.overflow'),
-      icon: const Icon(Icons.more_vert),
+      icon: const Icon(AppIcons.actionMore),
       onSelected: (action) {
         switch (action) {
           case _DetailAction.edit:

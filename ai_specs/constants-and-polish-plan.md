@@ -34,25 +34,25 @@ Mechanical sweep: promote 91 distinct icons, 11 asset paths, magic durations + s
 - [x] Verify: `flutter analyze && flutter test`
 - **Commit**: `feat(constants): add AppIcons / AppAssets / AppDurations / AppSizes`
 
-### Phase 2: Icon sweep (`refactor(icons): migrate all Icons.X to AppIcons`)
+### Phase 2: Icon sweep (`refactor(icons): migrate all Icons.X to AppIcons`) ✅ COMPLETE
 
 - **Goal**: Every `Icons.X` in `lib/` (excluding `app_icons.dart`) routes through `AppIcons`. Variant normalisation applied atomically. Tests updated in-commit.
-- [ ] Grep + migrate: `grep -rln "Icons\." lib/ | grep -v app_icons.dart` — every file becomes a touch site. Apply normalisation per spec rules.
-- [ ] `lib/app/core/widgets/responsive_shell.dart` — highest-density file (5 nav unselected + 5 nav selected icons); start here as canary to confirm naming convention reads well in real code.
-- [ ] `lib/app/core/widgets/status_badge.dart` — 5 variants → `AppIcons.statusTodo/Doing/Done/Urgent/Info`. Also drop magic icon size (defer to Phase 4).
-- [ ] `lib/app/features/profile/presentation/profile_screen.dart` — payment method icons → `AppIcons.payment<Method>`; danger-zone icons → `AppIcons.actionDeletePermanent`; settings rows → `AppIcons.notifications` / `AppIcons.privacy`.
-- [ ] `lib/app/features/dashboard/presentation/widgets/join_event_sheet.dart` + `dashboard_screen.dart` — `joinEvent`, `actionAdd`, `actionRetry`.
-- [ ] `lib/app/features/budget/presentation/widgets/settle_up_fallback_sheet.dart` + `debt_tile.dart` + `expense_tile.dart` + `expense_modal.dart` + `receipt_viewer.dart` + `settle_sheet.dart` — payment + copy + close glyphs.
-- [ ] `lib/app/features/tasks/presentation/widgets/task_tile.dart` + `assignee_picker.dart` + `budget_estimate_field.dart` + `checklist_editor.dart` + `tasks_filter_bar.dart` + `task_list_screen.dart` + `create_task_screen.dart` + `edit_task_screen.dart` + `task_detail_screen.dart` + `event_task_detail_page.dart` — status + action + sort + group glyphs.
-- [ ] `lib/app/features/chat/presentation/chat_screen.dart` + `widgets/critical_alert_modal.dart` + `widgets/dispute_sheet.dart` + `widgets/message_bubble.dart` — chat-specific glyphs.
-- [ ] `lib/app/features/auth/presentation/**/*.dart` — auth icons (google, apple, email, lock, etc.).
-- [ ] `lib/app/features/onboarding/presentation/onboarding_screen.dart` — domain glyphs.
-- [ ] `lib/app/features/profile/presentation/{edit_profile_screen,privacy_dashboard_screen,markdown_render_screen,widgets/*}.dart`.
-- [ ] `lib/app/core/router/app_router.dart` (`_RouterErrorScreen`) — `errorCompass`, `navHome`.
-- [ ] Remaining sites: `lib/app/core/widgets/forms/app_date_field.dart` (`actionClear`); `lib/app/core/widgets/network_image_with_placeholder.dart`; `lib/app/core/widgets/empty_state_placeholder.dart` (`imageBroken` fallback).
-- [ ] **Test sweep** (mandatory, in-commit): grep `test/` for `find.byIcon` (16 sites). For each match, verify the asserted glyph survived normalisation. Update tests that referenced normalised variants (`login_rounded` → `login`, `warning_amber_rounded` → `warning_amber`). Commit body lists every test file touched.
-- [ ] Acceptance grep: `grep -rn "Icons\." lib/ | grep -v constants/app_icons.dart` returns zero.
-- [ ] Verify: `flutter analyze && flutter test`
+- [x] Grep + migrate: `grep -rln "Icons\." lib/ | grep -v app_icons.dart` — every file becomes a touch site. Apply normalisation per spec rules.
+- [x] `lib/app/core/widgets/responsive_shell.dart` — highest-density file (5 nav unselected + 5 nav selected icons); start here as canary to confirm naming convention reads well in real code.
+- [x] `lib/app/core/widgets/status_badge.dart` — 5 variants → `AppIcons.statusTodo/Doing/Done/Urgent/Info`. Also drop magic icon size (defer to Phase 4).
+- [x] `lib/app/features/profile/presentation/profile_screen.dart` — payment method icons → `AppIcons.payment<Method>`; danger-zone icons → `AppIcons.actionDeletePermanent`; settings rows → `AppIcons.notifications` / `AppIcons.privacy`.
+- [x] `lib/app/features/dashboard/presentation/widgets/join_event_sheet.dart` + `dashboard_screen.dart` — `joinEvent`, `actionAdd`, `actionRetry`.
+- [x] `lib/app/features/budget/presentation/widgets/settle_up_fallback_sheet.dart` + `debt_tile.dart` + `expense_tile.dart` + `expense_modal.dart` + `receipt_viewer.dart` + `settle_sheet.dart` — payment + copy + close glyphs.
+- [x] `lib/app/features/tasks/presentation/widgets/task_tile.dart` + `assignee_picker.dart` + `budget_estimate_field.dart` + `checklist_editor.dart` + `tasks_filter_bar.dart` + `task_list_screen.dart` + `create_task_screen.dart` + `edit_task_screen.dart` + `task_detail_screen.dart` + `event_task_detail_page.dart` — status + action + sort + group glyphs.
+- [x] `lib/app/features/chat/presentation/chat_screen.dart` + `widgets/critical_alert_modal.dart` + `widgets/dispute_sheet.dart` + `widgets/message_bubble.dart` — chat-specific glyphs.
+- [x] `lib/app/features/auth/presentation/**/*.dart` — auth icons (google, apple, email, lock, etc.).
+- [x] `lib/app/features/onboarding/presentation/onboarding_screen.dart` — domain glyphs.
+- [x] `lib/app/features/profile/presentation/{edit_profile_screen,privacy_dashboard_screen,markdown_render_screen,widgets/*}.dart`.
+- [x] `lib/app/core/router/app_router.dart` (`_RouterErrorScreen`) — `errorCompass`, `navHome`.
+- [x] Remaining sites: `lib/app/core/widgets/forms/app_date_field.dart` (`actionClear`); `lib/app/core/widgets/network_image_with_placeholder.dart`; `lib/app/core/widgets/empty_state_placeholder.dart` (`imageBroken` fallback).
+- [x] **Test sweep** (mandatory, in-commit): grep `test/` for `find.byIcon` (16 sites). For each match, verify the asserted glyph survived normalisation. Update tests that referenced normalised variants (`login_rounded` → `login`, `warning_amber_rounded` → `warning_amber`). Commit body lists every test file touched.
+- [x] Acceptance grep: `grep -rn "Icons\." lib/ | grep -v constants/app_icons.dart` returns zero.
+- [x] Verify: `flutter analyze && flutter test`
 - **Commit**: `refactor(icons): migrate all Icons.X usages to AppIcons (normalise variants)`
 
 ### Phase 3: Asset path sweep (`refactor(assets): migrate to AppAssets`)

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
 
@@ -64,9 +65,7 @@ class MessageBubble extends StatelessWidget {
           if (!_isSettlement && !isCurrentUser && message.senderName != null)
             Text(
               message.senderName!,
-              style: Theme.of(
-                context,
-              ).textTheme.labelSmall,
+              style: Theme.of(context).textTheme.labelSmall,
             ),
           if (_isSettlement)
             Padding(
@@ -76,7 +75,7 @@ class MessageBubble extends StatelessWidget {
                 spacing: AppSpacing.xs,
                 children: [
                   const Icon(
-                    Icons.swap_horiz_rounded,
+                    AppIcons.actionSwap,
                     size: 14,
                     color: AppColors.sage,
                   ),
@@ -98,7 +97,7 @@ class MessageBubble extends StatelessWidget {
                 spacing: AppSpacing.xs,
                 children: [
                   const Icon(
-                    Icons.priority_high,
+                    AppIcons.priorityHigh,
                     size: 14,
                     color: AppColors.terracotta,
                   ),

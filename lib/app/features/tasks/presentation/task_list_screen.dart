@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
@@ -59,7 +60,7 @@ class TaskListScreen extends StatelessWidget {
           if (onExportPdf != null)
             IconButton(
               key: const Key('tasks.export.pdf'),
-              icon: const Icon(Icons.ios_share),
+              icon: const Icon(AppIcons.actionShare),
               tooltip: 'Export PDF',
               onPressed: onExportPdf,
             ),
@@ -129,7 +130,7 @@ class TaskListScreen extends StatelessWidget {
         onPressed: onCreateTask,
         backgroundColor: AppColors.sage,
         foregroundColor: AppColors.white,
-        child: const Icon(Icons.add),
+        child: const Icon(AppIcons.actionAdd),
       ),
     );
   }

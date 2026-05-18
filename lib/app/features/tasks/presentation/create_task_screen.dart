@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
@@ -140,7 +141,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                           key: const Key('tasks.create.title'),
                           hintText: 'Task Title',
                           controller: _titleController,
-                          prefixIcon: const Icon(Icons.task),
+                          prefixIcon: const Icon(AppIcons.navTasksFilled),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'Please enter a title';
@@ -156,7 +157,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                           hintText: 'Description (optional)',
                           controller: _descriptionController,
                           maxLines: 3,
-                          prefixIcon: const Icon(Icons.description),
+                          prefixIcon: const Icon(AppIcons.description),
                         ),
                       ],
                     ),

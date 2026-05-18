@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 
 /// Branded "nothing here" surface. Lottie animation + title + optional
@@ -17,7 +18,7 @@ class EmptyStatePlaceholder extends StatelessWidget {
     this.onCta,
     this.ctaKey,
     this.lottieAsset = 'assets/animations/empty_state.json',
-    this.iconFallback = Icons.inbox_outlined,
+    this.iconFallback = AppIcons.inbox,
     this.lottieHeight = 160,
   });
 

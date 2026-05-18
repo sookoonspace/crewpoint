@@ -55,7 +55,8 @@ void main() {
     );
     await pumpFrames(tester);
 
-    expect(find.byIcon(Icons.login_rounded), findsWidgets);
+    // login_rounded normalised to Icons.login via AppIcons.joinEvent.
+    expect(find.byIcon(Icons.login), findsWidgets);
   });
 
   testWidgets('renders EventCards when dashboardEventsProvider emits events', (

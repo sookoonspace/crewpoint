@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
@@ -75,7 +76,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 IconButton(
                   key: const Key('dashboard.header.joinEvent'),
                   tooltip: 'Join Event',
-                  icon: const Icon(Icons.login_rounded),
+                  icon: const Icon(AppIcons.joinEvent),
                   onPressed: () => JoinEventSheet.show(context: context),
                 ),
               ],
@@ -115,7 +116,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 child: ElevatedButton.icon(
                   key: const Key('dashboard.action.createEvent'),
                   onPressed: () => context.push('/dashboard/create'),
-                  icon: const Icon(Icons.add),
+                  icon: const Icon(AppIcons.actionAdd),
                   label: const Text('Create Event'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.charcoal,
@@ -227,7 +228,7 @@ class _ErrorState extends StatelessWidget {
             OutlinedButton.icon(
               key: const Key('dashboard.error.retry'),
               onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
+              icon: const Icon(AppIcons.actionRetry),
               label: const Text('Try again'),
             ),
           ],

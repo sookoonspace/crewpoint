@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/services/account_deletion_service.dart';
@@ -247,16 +248,16 @@ class _ReAuthStep extends StatelessWidget {
                 hintText: 'Password',
                 controller: passwordController,
                 obscureText: true,
-                prefixIcon: const Icon(Icons.lock_outline),
+                prefixIcon: const Icon(AppIcons.authPassword),
               ),
             ],
           ),
           AuthProviderType.google => const _ProviderReAuthPrompt(
-            icon: Icons.g_mobiledata,
+            icon: AppIcons.authGoogle,
             label: 'Sign in with Google to confirm',
           ),
           AuthProviderType.apple => const _ProviderReAuthPrompt(
-            icon: Icons.apple,
+            icon: AppIcons.authApple,
             label: 'Sign in with Apple to confirm',
           ),
           AuthProviderType.unknown => const Text(

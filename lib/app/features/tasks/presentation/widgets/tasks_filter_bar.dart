@@ -17,6 +17,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/features/tasks/application/tasks_filter.dart';
@@ -94,7 +95,7 @@ class _TasksFilterBarState extends State<TasksFilterBar> {
               onChanged: (v) => _emit(f.copyWith(query: v)),
               decoration: InputDecoration(
                 hintText: s.searchHint,
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: const Icon(AppIcons.actionSearch),
                 border: const OutlineInputBorder(),
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(
@@ -200,7 +201,11 @@ class _TasksFilterBarState extends State<TasksFilterBar> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.sort, size: 18, color: AppColors.darkGrey),
+                    const Icon(
+                      AppIcons.actionSort,
+                      size: 18,
+                      color: AppColors.darkGrey,
+                    ),
                     const SizedBox(width: AppSpacing.xs),
                     Text(
                       '${s.sortBy}: ${_sortLabel(s, f.sortKey)}',

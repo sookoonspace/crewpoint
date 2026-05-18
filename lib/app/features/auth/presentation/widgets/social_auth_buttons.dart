@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
@@ -15,12 +16,12 @@ class SocialAuthButtons extends ConsumerWidget {
       children: [
         _SocialButton(
           label: context.strings.auth.continueWithGoogle,
-          icon: Icons.g_mobiledata,
+          icon: AppIcons.authGoogle,
           onPressed: () => ref.read(authProvider.notifier).signInWithGoogle(),
         ),
         _SocialButton(
           label: context.strings.auth.continueWithApple,
-          icon: Icons.apple,
+          icon: AppIcons.authApple,
           onPressed: () => ref.read(authProvider.notifier).signInWithApple(),
         ),
       ],

@@ -16,6 +16,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 
@@ -82,7 +83,7 @@ class AppCurrencyField extends StatelessWidget {
         labelText: labelText,
         helperText: helperText,
         prefixText: '${_symbol()} ',
-        prefixIcon: const Icon(Icons.account_balance_wallet_outlined),
+        prefixIcon: const Icon(AppIcons.navBudget),
         border: const OutlineInputBorder(borderRadius: AppRadius.borderLg),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,

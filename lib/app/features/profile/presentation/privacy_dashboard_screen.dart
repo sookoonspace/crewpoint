@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
@@ -89,7 +90,7 @@ class PrivacyDashboardScreen extends StatelessWidget {
                 spacing: AppSpacing.md,
                 children: [
                   const Icon(
-                    Icons.info_outline,
+                    AppIcons.statusInfo,
                     color: AppColors.sage,
                     size: 20,
                   ),
@@ -116,7 +117,7 @@ class PrivacyDashboardScreen extends StatelessWidget {
                   if (i > 0) const Divider(height: 1, indent: 56),
                   ListTile(
                     leading: const Icon(
-                      Icons.block_rounded,
+                      AppIcons.blocked,
                       color: AppColors.mediumGrey,
                       size: 20,
                     ),
@@ -141,7 +142,7 @@ class PrivacyDashboardScreen extends StatelessWidget {
                   if (i > 0) const Divider(height: 1, indent: 56),
                   ListTile(
                     leading: const Icon(
-                      Icons.extension_outlined,
+                      AppIcons.extension,
                       color: AppColors.darkGrey,
                       size: 20,
                     ),
@@ -168,12 +169,12 @@ class PrivacyDashboardScreen extends StatelessWidget {
                 ListTile(
                   key: const Key('privacyDashboard.legal.privacy'),
                   leading: const Icon(
-                    Icons.policy_outlined,
+                    AppIcons.privacyPolicy,
                     color: AppColors.darkGrey,
                   ),
                   title: const Text('Privacy Policy'),
                   trailing: const Icon(
-                    Icons.chevron_right,
+                    AppIcons.chevronRight,
                     color: AppColors.mediumGrey,
                   ),
                   onTap: () => Navigator.of(context).push<void>(
@@ -190,12 +191,12 @@ class PrivacyDashboardScreen extends StatelessWidget {
                 ListTile(
                   key: const Key('privacyDashboard.legal.terms'),
                   leading: const Icon(
-                    Icons.gavel_outlined,
+                    AppIcons.terms,
                     color: AppColors.darkGrey,
                   ),
                   title: const Text('Terms of Service'),
                   trailing: const Icon(
-                    Icons.chevron_right,
+                    AppIcons.chevronRight,
                     color: AppColors.mediumGrey,
                   ),
                   onTap: () => Navigator.of(context).push<void>(
@@ -276,17 +277,12 @@ class _DataRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       leading: Icon(
-        isRequired ? Icons.check_circle : Icons.circle_outlined,
+        isRequired ? AppIcons.statusDone : AppIcons.circleOutlined,
         color: isRequired ? AppColors.sage : AppColors.mediumGrey,
         size: 20,
       ),
       title: Text(field),
-      subtitle: Text(
-        purpose,
-        style: Theme.of(
-          context,
-        ).textTheme.bodySmall,
-      ),
+      subtitle: Text(purpose, style: Theme.of(context).textTheme.bodySmall),
       trailing: isRequired
           ? Text(
               'Required',
@@ -294,12 +290,7 @@ class _DataRow extends StatelessWidget {
                 context,
               ).textTheme.labelSmall?.copyWith(color: AppColors.darkGrey),
             )
-          : Text(
-              'Optional',
-              style: Theme.of(
-                context,
-              ).textTheme.labelSmall,
-            ),
+          : Text('Optional', style: Theme.of(context).textTheme.labelSmall),
       dense: true,
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/widgets/forms/app_dropdown.dart';
 
 /// Picks an assignee from a list of member UIDs.
@@ -45,7 +46,7 @@ class AssigneePicker extends StatelessWidget {
       key: const Key('tasks.create.assignee'),
       labelText: 'Assignee',
       hintText: 'Unassigned',
-      prefixIcon: const Icon(Icons.person_outline),
+      prefixIcon: const Icon(AppIcons.navProfile),
       value: selected,
       onChanged: onChanged,
       items: [

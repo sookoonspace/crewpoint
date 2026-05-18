@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 
 /// Displays a network image with loading shimmer and error fallback.
 /// Use [isCircular] for avatars.
@@ -11,7 +12,7 @@ class NetworkImageWithPlaceholder extends StatelessWidget {
     this.width = 104,
     this.height = 104,
     this.isCircular = false,
-    this.placeholderIcon = Icons.image,
+    this.placeholderIcon = AppIcons.image,
     this.lottieAsset,
     this.fit = BoxFit.cover,
   });
@@ -32,7 +33,7 @@ class NetworkImageWithPlaceholder extends StatelessWidget {
     this.height = 104,
     this.fit = BoxFit.cover,
   }) : isCircular = true,
-       placeholderIcon = Icons.person,
+       placeholderIcon = AppIcons.navProfileFilled,
        lottieAsset = 'assets/animations/profile.json';
 
   @override

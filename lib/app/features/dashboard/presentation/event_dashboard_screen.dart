@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
@@ -74,7 +75,7 @@ class EventDashboardScreen extends StatelessWidget {
                         padding: const EdgeInsets.only(top: AppSpacing.md),
                         child: _QuickLinkCard(
                           key: const Key('eventDashboard.inviteMembers.tile'),
-                          icon: Icons.person_add_rounded,
+                          icon: AppIcons.memberAdd,
                           label: 'Invite Members',
                           subtitle: 'Share a code to add people',
                           color: AppColors.terracotta,
@@ -92,7 +93,7 @@ class EventDashboardScreen extends StatelessWidget {
                   // Quick-link cards. No `extra:` payload — child routes
                   // resolve the event by id via EventGuard.
                   _QuickLinkCard(
-                    icon: Icons.chat_rounded,
+                    icon: AppIcons.navChatFilled,
                     label: 'Chat',
                     subtitle: 'Messages & alerts',
                     color: AppColors.sage,
@@ -101,7 +102,7 @@ class EventDashboardScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   _QuickLinkCard(
-                    icon: Icons.account_balance_wallet_rounded,
+                    icon: AppIcons.navBudgetFilled,
                     label: 'Budget',
                     subtitle: 'Expenses & settlements',
                     color: AppColors.terracotta,
@@ -110,7 +111,7 @@ class EventDashboardScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   _QuickLinkCard(
-                    icon: Icons.task_alt_rounded,
+                    icon: AppIcons.statusDone,
                     label: 'Tasks',
                     subtitle: 'To-dos & assignments',
                     color: AppColors.charcoal,
@@ -179,7 +180,7 @@ class _EventHero extends StatelessWidget {
                 children: [
                   IconButton(
                     icon: const Icon(
-                      Icons.arrow_back,
+                      AppIcons.actionBack,
                       color: AppColors.offWhite,
                     ),
                     onPressed: () => context.pop(),
@@ -194,7 +195,7 @@ class _EventHero extends StatelessWidget {
                       return IconButton(
                         key: const Key('event.dashboard.settingsIcon'),
                         icon: const Icon(
-                          Icons.settings_outlined,
+                          AppIcons.actionSettings,
                           color: AppColors.offWhite,
                         ),
                         onPressed: () =>
@@ -242,7 +243,7 @@ class _EventHero extends StatelessWidget {
                   spacing: AppSpacing.sm,
                   children: [
                     const Icon(
-                      Icons.calendar_today,
+                      AppIcons.calendar,
                       size: 14,
                       color: AppColors.sageLight,
                     ),
@@ -314,9 +315,12 @@ class _MembersPreview extends StatelessWidget {
         ),
       ),
       child: ListTile(
-        leading: const Icon(Icons.group_outlined, color: AppColors.sage),
+        leading: const Icon(AppIcons.members, color: AppColors.sage),
         title: Text('$memberCount member${memberCount != 1 ? 's' : ''}'),
-        trailing: const Icon(Icons.chevron_right, color: AppColors.mediumGrey),
+        trailing: const Icon(
+          AppIcons.chevronRight,
+          color: AppColors.mediumGrey,
+        ),
         onTap: onTap,
         shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
       ),
@@ -364,7 +368,10 @@ class _QuickLinkCard extends StatelessWidget {
         ),
         title: Text(label),
         subtitle: Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
-        trailing: const Icon(Icons.chevron_right, color: AppColors.mediumGrey),
+        trailing: const Icon(
+          AppIcons.chevronRight,
+          color: AppColors.mediumGrey,
+        ),
         onTap: onTap,
         shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
       ),
@@ -596,12 +603,12 @@ class _EventActionsState extends State<_EventActions> {
             ),
             child: ListTile(
               leading: const Icon(
-                Icons.logout_rounded,
+                AppIcons.actionLogout,
                 color: AppColors.charcoal,
               ),
               title: const Text('Leave Event'),
               trailing: const Icon(
-                Icons.chevron_right,
+                AppIcons.chevronRight,
                 color: AppColors.mediumGrey,
               ),
               onTap: _leaveEvent,
@@ -625,7 +632,7 @@ class _EventActionsState extends State<_EventActions> {
             ),
             child: ListTile(
               leading: const Icon(
-                Icons.delete_forever,
+                AppIcons.actionDeletePermanent,
                 color: AppColors.terracotta,
               ),
               title: const Text(
@@ -633,7 +640,7 @@ class _EventActionsState extends State<_EventActions> {
                 style: TextStyle(color: AppColors.terracotta),
               ),
               trailing: const Icon(
-                Icons.chevron_right,
+                AppIcons.chevronRight,
                 color: AppColors.terracottaLight,
               ),
               onTap: _deleteEvent,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 
@@ -54,7 +55,7 @@ class SignOutSheet extends StatelessWidget {
             width: 80,
             height: 80,
             errorBuilder: (_, _, _) => const Icon(
-              Icons.waving_hand_rounded,
+              AppIcons.wavingHand,
               size: 48,
               color: AppColors.charcoal,
             ),
@@ -70,9 +71,7 @@ class SignOutSheet extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           Text(
             'Your local data will be preserved for next time.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium,
+            style: Theme.of(context).textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.xl),

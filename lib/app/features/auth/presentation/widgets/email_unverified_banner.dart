@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart' show authProvider;
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
@@ -39,7 +40,7 @@ class EmailUnverifiedBanner extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
-          const Icon(Icons.mark_email_unread, color: AppColors.charcoal),
+          const Icon(AppIcons.emailUnread, color: AppColors.charcoal),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

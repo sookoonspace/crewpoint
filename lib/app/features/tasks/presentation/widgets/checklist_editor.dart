@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 
@@ -102,7 +103,10 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
               IconButton(
                 key: const Key('tasks.detail.checklist.add.submit'),
                 onPressed: _submitNew,
-                icon: const Icon(Icons.add_circle, color: AppColors.sage),
+                icon: const Icon(
+                  AppIcons.actionAddCircle,
+                  color: AppColors.sage,
+                ),
               ),
             ],
           ),
@@ -194,7 +198,7 @@ class _ChecklistRowState extends State<_ChecklistRow> {
             key: Key('tasks.detail.checklist.item.${widget.item.id}.delete'),
             onPressed: widget.onDelete,
             icon: const Icon(
-              Icons.close,
+              AppIcons.actionClose,
               size: 18,
               color: AppColors.mediumGrey,
             ),

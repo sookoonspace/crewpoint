@@ -36,7 +36,7 @@ void main() {
     tester,
   ) async {
     await pump(tester, const StatusBadge.urgent(label: 'Urgent'));
-    final icon = tester.widget<Icon>(find.byIcon(Icons.warning_amber_rounded));
+    final icon = tester.widget<Icon>(find.byIcon(Icons.warning_amber));
     expect(icon.color, AppColors.statusUrgentFg);
   });
 

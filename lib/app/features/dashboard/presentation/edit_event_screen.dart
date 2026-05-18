@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
@@ -144,7 +145,7 @@ class _EditEventScreenState extends State<EditEventScreen> {
                     key: const Key('editEvent.title'),
                     hintText: 'Title',
                     controller: _titleController,
-                    prefixIcon: const Icon(Icons.event),
+                    prefixIcon: const Icon(AppIcons.event),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
                         return 'Please enter a title';
@@ -160,18 +161,18 @@ class _EditEventScreenState extends State<EditEventScreen> {
                     hintText: 'Description (optional)',
                     controller: _descriptionController,
                     maxLines: 3,
-                    prefixIcon: const Icon(Icons.description_outlined),
+                    prefixIcon: const Icon(AppIcons.markdown),
                   ),
                   ListTile(
                     key: const Key('editEvent.startDate'),
-                    leading: const Icon(Icons.calendar_today),
+                    leading: const Icon(AppIcons.calendar),
                     title: const Text('Start Date'),
                     subtitle: Text(
                       _startDate != null ? df.format(_startDate!) : 'Optional',
                     ),
                     trailing: _startDate != null
                         ? IconButton(
-                            icon: const Icon(Icons.clear, size: 18),
+                            icon: const Icon(AppIcons.actionClear, size: 18),
                             onPressed: () => setState(() => _startDate = null),
                           )
                         : null,
@@ -188,14 +189,14 @@ class _EditEventScreenState extends State<EditEventScreen> {
                   ),
                   ListTile(
                     key: const Key('editEvent.endDate'),
-                    leading: const Icon(Icons.calendar_month),
+                    leading: const Icon(AppIcons.calendar),
                     title: const Text('End Date'),
                     subtitle: Text(
                       _endDate != null ? df.format(_endDate!) : 'Optional',
                     ),
                     trailing: _endDate != null
                         ? IconButton(
-                            icon: const Icon(Icons.clear, size: 18),
+                            icon: const Icon(AppIcons.actionClear, size: 18),
                             onPressed: () => setState(() => _endDate = null),
                           )
                         : null,

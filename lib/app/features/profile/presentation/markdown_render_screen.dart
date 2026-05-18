@@ -6,6 +6,7 @@ import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:yaml/yaml.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
@@ -146,7 +147,7 @@ class _RenderedMarkdown extends StatelessWidget {
           OutlinedButton.icon(
             key: const Key('legal.viewHosted'),
             onPressed: onLaunchHosted,
-            icon: const Icon(Icons.open_in_new, size: 16),
+            icon: const Icon(AppIcons.actionOpenInNew, size: 16),
             label: const Text('View hosted version'),
           ),
         ],
@@ -200,7 +201,11 @@ class _LoadFailure extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_off, size: 48, color: AppColors.mediumGrey),
+            const Icon(
+              AppIcons.cloudOff,
+              size: 48,
+              color: AppColors.mediumGrey,
+            ),
             const SizedBox(height: AppSpacing.md),
             const Text(
               'Could not load this document right now.',
@@ -210,7 +215,7 @@ class _LoadFailure extends StatelessWidget {
             OutlinedButton.icon(
               key: const Key('legal.fallback.viewOnline'),
               onPressed: onLaunch,
-              icon: const Icon(Icons.open_in_new, size: 16),
+              icon: const Icon(AppIcons.actionOpenInNew, size: 16),
               label: const Text('View online'),
             ),
             const SizedBox(height: AppSpacing.sm),

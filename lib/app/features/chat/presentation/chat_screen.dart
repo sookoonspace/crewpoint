@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
@@ -95,7 +96,10 @@ class _ChatScreenState extends State<ChatScreen> {
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.warning_amber, color: AppColors.terracotta),
+            icon: const Icon(
+              AppIcons.statusUrgent,
+              color: AppColors.terracotta,
+            ),
             onPressed: () => CriticalAlertModal.show(
               context: context,
               onSend: widget.onSendCriticalAlert,
@@ -206,7 +210,7 @@ class _MessageInput extends StatelessWidget {
               child: Row(
                 children: [
                   const Icon(
-                    Icons.error_outline,
+                    AppIcons.statusError,
                     size: 14,
                     color: AppColors.terracotta,
                   ),
@@ -245,7 +249,7 @@ class _MessageInput extends StatelessWidget {
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Icon(Icons.send, color: AppColors.sage),
+                    : const Icon(AppIcons.actionSend, color: AppColors.sage),
               ),
             ],
           ),

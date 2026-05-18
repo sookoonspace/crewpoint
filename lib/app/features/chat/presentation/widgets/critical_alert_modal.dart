@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/widgets/custom_text_field.dart';
 import 'package:crewpoint_app/app/core/widgets/destructive_button.dart';
@@ -65,7 +66,7 @@ class _CriticalAlertModalState extends State<CriticalAlertModal> {
           Row(
             spacing: AppSpacing.sm,
             children: [
-              const Icon(Icons.warning_amber, color: AppColors.terracotta),
+              const Icon(AppIcons.statusUrgent, color: AppColors.terracotta),
               Text(
                 'Send Critical Alert',
                 style: Theme.of(context).textTheme.titleMedium,

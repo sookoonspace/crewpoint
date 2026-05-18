@@ -85,7 +85,10 @@ abstract final class AppIcons {
   // ===== Auth providers =====
   static const IconData authGoogle = Icons.g_mobiledata;
   static const IconData authApple = Icons.apple;
-  static const IconData authEmail = Icons.alternate_email;
+  static const IconData authEmail = Icons.alternate_email; // @-symbol
+  static const IconData authEmailField =
+      Icons.email_outlined; // envelope, for input prefix
+  static const IconData authPassword = Icons.lock_outline;
 
   // ===== Domain nouns =====
   // Calendar family collapsed: calendar_month / _month_rounded / _today_outlined all → calendar_today.

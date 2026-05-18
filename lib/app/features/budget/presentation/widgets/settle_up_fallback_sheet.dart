@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
@@ -86,7 +87,7 @@ class _SheetBody extends StatelessWidget {
           OutlinedButton.icon(
             key: const Key('budget.settleUp.fallback.copyAmount'),
             onPressed: () => Clipboard.setData(ClipboardData(text: _rawAmount)),
-            icon: const Icon(Icons.copy_rounded, color: AppColors.sage),
+            icon: const Icon(AppIcons.actionCopy, color: AppColors.sage),
             label: Text(s.settleUpFallbackCopyAmount),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.charcoal,
@@ -98,7 +99,7 @@ class _SheetBody extends StatelessWidget {
             OutlinedButton.icon(
               key: const Key('budget.settleUp.fallback.copyHandle'),
               onPressed: () => Clipboard.setData(ClipboardData(text: handle)),
-              icon: const Icon(Icons.copy_rounded, color: AppColors.sage),
+              icon: const Icon(AppIcons.actionCopy, color: AppColors.sage),
               label: Text(s.settleUpFallbackCopyHandle),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.charcoal,

@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/widgets/money_text.dart';
@@ -185,9 +186,9 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (color, icon) = switch (status) {
-      TaskStatus.todo => (AppColors.lightGrey, Icons.radio_button_unchecked),
-      TaskStatus.inProgress => (AppColors.sage, Icons.timelapse),
-      TaskStatus.done => (AppColors.sage, Icons.check_circle),
+      TaskStatus.todo => (AppColors.lightGrey, AppIcons.statusTodo),
+      TaskStatus.inProgress => (AppColors.sage, AppIcons.statusDoingAlt),
+      TaskStatus.done => (AppColors.sage, AppIcons.statusDone),
     };
 
     return GestureDetector(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
@@ -65,7 +66,7 @@ class BudgetScreen extends StatelessWidget {
           if (onExportPdf != null || onExportCsv != null)
             PopupMenuButton<String>(
               key: const Key('budget.export.menu'),
-              icon: const Icon(Icons.ios_share),
+              icon: const Icon(AppIcons.actionShare),
               tooltip: 'Export',
               onSelected: (value) {
                 switch (value) {
@@ -163,7 +164,7 @@ class BudgetScreen extends StatelessWidget {
         onPressed: onAddExpense,
         backgroundColor: AppColors.sage,
         foregroundColor: AppColors.white,
-        child: const Icon(Icons.add),
+        child: const Icon(AppIcons.actionAdd),
       ),
     );
   }

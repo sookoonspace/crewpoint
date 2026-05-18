@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/event_guard.dart';
@@ -306,7 +307,7 @@ class _RouterErrorScreen extends StatelessWidget {
               spacing: AppSpacing.lg,
               children: [
                 const Icon(
-                  Icons.compass_calibration_outlined,
+                  AppIcons.errorCompass,
                   size: 64,
                   color: AppColors.sage,
                 ),
@@ -334,7 +335,7 @@ class _RouterErrorScreen extends StatelessWidget {
                 ElevatedButton.icon(
                   key: const Key('router.error.goHome'),
                   onPressed: () => context.go(AppRoutes.dashboard),
-                  icon: const Icon(Icons.home_outlined),
+                  icon: const Icon(AppIcons.homeOutlined),
                   label: const Text('Go home'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.sage,

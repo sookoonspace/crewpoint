@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
@@ -99,13 +100,13 @@ class ProfileScreen extends ConsumerWidget {
                       children: [
                         SettingsRow(
                           key: const Key('profile.privacyDashboard.tile'),
-                          icon: Icons.privacy_tip_outlined,
+                          icon: AppIcons.privacy,
                           title: 'Privacy Dashboard',
                           onTap: () => context.push(AppRoutes.privacyDashboard),
                         ),
                         const Divider(height: 1, indent: 56),
                         SettingsRow(
-                          icon: Icons.notifications_none_rounded,
+                          icon: AppIcons.notifications,
                           title: 'Notifications',
                           onTap: () {},
                         ),
@@ -134,7 +135,7 @@ class ProfileScreen extends ConsumerWidget {
                           onSignOut: () =>
                               ref.read(authProvider.notifier).signOut(),
                         ),
-                        icon: const Icon(Icons.logout_rounded),
+                        icon: const Icon(AppIcons.actionLogout),
                         label: const Text('Sign Out'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.terracotta,
@@ -329,12 +330,12 @@ class _PaymentCard extends StatelessWidget {
   final AppUser? user;
 
   IconData _methodIcon(String? method) => switch (method) {
-    'venmo' => Icons.payment,
-    'zelle' => Icons.account_balance,
-    'cashapp' => Icons.attach_money,
-    'paypal' => Icons.paypal_outlined,
-    'cash' => Icons.money,
-    _ => Icons.payment_outlined,
+    'venmo' => AppIcons.paymentVenmo,
+    'zelle' => AppIcons.paymentZelle,
+    'cashapp' => AppIcons.paymentCashApp,
+    'paypal' => AppIcons.paymentPayPal,
+    'cash' => AppIcons.paymentCash,
+    _ => AppIcons.paymentGeneric,
   };
 
   String _methodLabel(String? method) => switch (method) {
@@ -366,7 +367,7 @@ class _PaymentCard extends StatelessWidget {
         leading: Icon(
           hasPayment
               ? _methodIcon(user?.paymentMethod)
-              : Icons.add_circle_outline,
+              : AppIcons.actionAddCircle,
           color: hasPayment ? AppColors.darkGrey : AppColors.sage,
         ),
         title: hasPayment
@@ -385,7 +386,10 @@ class _PaymentCard extends StatelessWidget {
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
-        trailing: const Icon(Icons.chevron_right, color: AppColors.mediumGrey),
+        trailing: const Icon(
+          AppIcons.chevronRight,
+          color: AppColors.mediumGrey,
+        ),
         onTap: () => context.push('/profile/edit'),
         shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
       ),
@@ -408,13 +412,16 @@ class _DangerCard extends StatelessWidget {
         side: BorderSide(color: AppColors.terracotta.withValues(alpha: 0.3)),
       ),
       child: ListTile(
-        leading: const Icon(Icons.delete_forever, color: AppColors.terracotta),
+        leading: const Icon(
+          AppIcons.actionDeletePermanent,
+          color: AppColors.terracotta,
+        ),
         title: const Text(
           'Delete Account',
           style: TextStyle(color: AppColors.terracotta),
         ),
         trailing: const Icon(
-          Icons.chevron_right,
+          AppIcons.chevronRight,
           color: AppColors.terracottaLight,
         ),
         onTap: onTap,

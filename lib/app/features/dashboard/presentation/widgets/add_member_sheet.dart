@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/widgets/loading_animation.dart';
@@ -154,7 +155,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
                 spacing: AppSpacing.lg,
                 children: [
                   const Icon(
-                    Icons.wifi_off_rounded,
+                    AppIcons.wifiOff,
                     size: 48,
                     color: AppColors.mediumGrey,
                   ),
@@ -175,9 +176,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
           else if (_code != null) ...[
             Text(
               'Share this code with people you want to invite',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium,
+              style: Theme.of(context).textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),
 
@@ -207,9 +206,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
 
             Text(
               'Tap code to copy \u2022 Expires in 24 hours',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall,
+              style: Theme.of(context).textTheme.bodySmall,
             ),
 
             // Action buttons
@@ -219,7 +216,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: _copyCode,
-                    icon: const Icon(Icons.copy, size: 18),
+                    icon: const Icon(AppIcons.actionCopy, size: 18),
                     label: const Text('Copy'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.charcoal,

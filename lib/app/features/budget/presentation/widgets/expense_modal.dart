@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/services/image_service.dart';
 import 'package:crewpoint_app/app/core/widgets/custom_text_field.dart';
@@ -203,7 +204,7 @@ class _ExpenseModalState extends State<ExpenseModal> {
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
-              prefixIcon: const Icon(Icons.attach_money),
+              prefixIcon: const Icon(AppIcons.currency),
               onChanged: (_) => setState(() {}),
               validator: (value) => ExpenseModal.validateAmountInput(
                 value,
@@ -214,7 +215,7 @@ class _ExpenseModalState extends State<ExpenseModal> {
             CustomTextField(
               hintText: 'Description (optional)',
               controller: _descriptionController,
-              prefixIcon: const Icon(Icons.description),
+              prefixIcon: const Icon(AppIcons.description),
             ),
             Row(
               children: [
@@ -272,7 +273,7 @@ class _ReceiptRow extends StatelessWidget {
       return OutlinedButton.icon(
         key: const Key('budget.expense.receipt.add'),
         onPressed: onPick,
-        icon: const Icon(Icons.camera_alt_outlined),
+        icon: const Icon(AppIcons.camera),
         label: const Text('Add receipt'),
       );
     }
@@ -292,7 +293,7 @@ class _ReceiptRow extends StatelessWidget {
               width: 56,
               height: 56,
               color: AppColors.lightGrey,
-              child: const Icon(Icons.broken_image),
+              child: const Icon(AppIcons.imageBroken),
             ),
           ),
         ),
@@ -300,7 +301,7 @@ class _ReceiptRow extends StatelessWidget {
         IconButton(
           key: const Key('budget.expense.receipt.clear'),
           onPressed: onClear,
-          icon: const Icon(Icons.close),
+          icon: const Icon(AppIcons.actionClose),
         ),
       ],
     );

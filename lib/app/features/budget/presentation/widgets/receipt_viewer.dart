@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 
 /// Full-screen receipt viewer. Tap-to-dismiss. Pinch-to-zoom via [InteractiveViewer].
 class ReceiptViewer extends StatelessWidget {
@@ -36,7 +37,7 @@ class ReceiptViewer extends StatelessWidget {
               key: const Key('budget.receipt.viewer.image'),
               fit: BoxFit.contain,
               errorBuilder: (_, _, _) => const Icon(
-                Icons.broken_image,
+                AppIcons.imageBroken,
                 color: Colors.white54,
                 size: 64,
               ),

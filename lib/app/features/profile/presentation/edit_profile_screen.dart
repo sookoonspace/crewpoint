@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
@@ -45,12 +46,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   static const _paymentMethods = [
-    ('venmo', 'Venmo', Icons.payment),
-    ('zelle', 'Zelle', Icons.account_balance),
-    ('cashapp', 'Cash App', Icons.attach_money),
-    ('paypal', 'PayPal', Icons.paypal_outlined),
-    ('cash', 'Cash', Icons.money),
-    ('other', 'Other', Icons.more_horiz),
+    ('venmo', 'Venmo', AppIcons.paymentVenmo),
+    ('zelle', 'Zelle', AppIcons.paymentZelle),
+    ('cashapp', 'Cash App', AppIcons.paymentCashApp),
+    ('paypal', 'PayPal', AppIcons.paymentPayPal),
+    ('cash', 'Cash', AppIcons.paymentCash),
+    ('other', 'Other', AppIcons.actionMoreHoriz),
   ];
 
   @override
@@ -88,7 +89,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
+              leading: const Icon(AppIcons.photoLibrary),
               title: const Text('Choose from Gallery'),
               onTap: () {
                 Navigator.pop(context);
@@ -96,7 +97,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.camera_alt_outlined),
+              leading: const Icon(AppIcons.camera),
               title: const Text('Take a Photo'),
               onTap: () {
                 Navigator.pop(context);
@@ -217,7 +218,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 width: 120,
                 height: 120,
                 errorBuilder: (_, _, _) => const Icon(
-                  Icons.check_circle,
+                  AppIcons.statusDone,
                   size: 80,
                   color: AppColors.sage,
                 ),
@@ -242,7 +243,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         backgroundColor: AppColors.cream,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close),
+          icon: const Icon(AppIcons.actionClose),
           onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
         ),
       ),
@@ -294,7 +295,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                       width: 64,
                                       height: 64,
                                       errorBuilder: (_, _, _) => const Icon(
-                                        Icons.person,
+                                        AppIcons.navProfileFilled,
                                         size: 48,
                                         color: AppColors.sageLight,
                                       ),
@@ -312,7 +313,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
-                                Icons.camera_alt_rounded,
+                                AppIcons.camera,
                                 size: 18,
                                 color: AppColors.white,
                               ),
@@ -343,7 +344,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     hintText: 'How others see you',
                     controller: _nameController,
                     enabled: !_isSaving,
-                    prefixIcon: const Icon(Icons.person_outline),
+                    prefixIcon: const Icon(AppIcons.navProfile),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
                         return 'Please enter your name';
@@ -371,7 +372,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     initialValue: _selectedPaymentMethod,
                     decoration: InputDecoration(
                       hintText: 'Select payment method',
-                      prefixIcon: const Icon(Icons.payment_outlined),
+                      prefixIcon: const Icon(AppIcons.paymentGeneric),
                       filled: true,
                       fillColor: AppColors.offWhite,
                       border: OutlineInputBorder(
@@ -412,7 +413,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     hintText: '@username, phone, or email',
                     controller: _paymentHandleController,
                     enabled: !_isSaving,
-                    prefixIcon: const Icon(Icons.alternate_email),
+                    prefixIcon: const Icon(AppIcons.authEmail),
                   ),
 
                   const SizedBox(height: AppSpacing.md),
@@ -433,9 +434,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     hintText: 'Venmo handle (optional)',
                     controller: _venmoHandleController,
                     enabled: !_isSaving,
-                    prefixIcon: const Icon(
-                      Icons.account_balance_wallet_outlined,
-                    ),
+                    prefixIcon: const Icon(AppIcons.navBudget),
                     validator: _validateHandle,
                   ),
                   CustomTextField(
@@ -443,7 +442,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     hintText: 'Cash App \$cashtag (optional)',
                     controller: _cashappHandleController,
                     enabled: !_isSaving,
-                    prefixIcon: const Icon(Icons.attach_money),
+                    prefixIcon: const Icon(AppIcons.currency),
                     validator: _validateHandle,
                   ),
 

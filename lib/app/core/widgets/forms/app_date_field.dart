@@ -20,6 +20,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
@@ -75,11 +76,11 @@ class AppDateField extends StatelessWidget {
       child: InputDecorator(
         decoration: InputDecoration(
           labelText: labelText,
-          prefixIcon: const Icon(Icons.calendar_today_outlined),
+          prefixIcon: const Icon(AppIcons.calendar),
           suffixIcon: clearable && value != null
               ? IconButton(
                   key: const Key('forms.date.clear'),
-                  icon: const Icon(Icons.clear, size: 18),
+                  icon: const Icon(AppIcons.actionClear, size: 18),
                   onPressed: () => onChanged(null),
                 )
               : null,
@@ -108,10 +109,7 @@ class AppDateField extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.calendar_today_outlined,
-                color: AppColors.darkGrey,
-              ),
+              const Icon(AppIcons.calendar, color: AppColors.darkGrey),
               const SizedBox(width: AppSpacing.sm),
               if (labelText != null)
                 Expanded(
@@ -128,7 +126,7 @@ class AppDateField extends StatelessWidget {
               if (clearable && value != null)
                 IconButton(
                   key: const Key('forms.date.clear'),
-                  icon: const Icon(Icons.clear, size: 18),
+                  icon: const Icon(AppIcons.actionClear, size: 18),
                   onPressed: () => onChanged(null),
                 ),
             ],

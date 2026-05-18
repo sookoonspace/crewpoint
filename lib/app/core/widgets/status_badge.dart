@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 
 /// Pill-shaped status label that always pairs an icon with a color, so
@@ -18,7 +19,7 @@ class StatusBadge extends StatelessWidget {
   const StatusBadge.todo({Key? key, required String label, int? count})
     : this._(
         key: key,
-        icon: Icons.radio_button_unchecked,
+        icon: AppIcons.statusTodo,
         label: label,
         foreground: AppColors.statusTodoFg,
         background: AppColors.statusTodoBg,
@@ -28,7 +29,7 @@ class StatusBadge extends StatelessWidget {
   const StatusBadge.doing({Key? key, required String label, int? count})
     : this._(
         key: key,
-        icon: Icons.play_circle_outline,
+        icon: AppIcons.statusDoing,
         label: label,
         foreground: AppColors.statusDoingFg,
         background: AppColors.statusDoingBg,
@@ -38,7 +39,7 @@ class StatusBadge extends StatelessWidget {
   const StatusBadge.done({Key? key, required String label, int? count})
     : this._(
         key: key,
-        icon: Icons.check_circle,
+        icon: AppIcons.statusDone,
         label: label,
         foreground: AppColors.statusDoneFg,
         background: AppColors.statusDoneBg,
@@ -48,7 +49,7 @@ class StatusBadge extends StatelessWidget {
   const StatusBadge.urgent({Key? key, required String label, int? count})
     : this._(
         key: key,
-        icon: Icons.warning_amber_rounded,
+        icon: AppIcons.statusUrgent,
         label: label,
         foreground: AppColors.statusUrgentFg,
         background: AppColors.statusUrgentBg,
@@ -58,7 +59,7 @@ class StatusBadge extends StatelessWidget {
   const StatusBadge.info({Key? key, required String label, int? count})
     : this._(
         key: key,
-        icon: Icons.info_outline,
+        icon: AppIcons.statusInfo,
         label: label,
         foreground: AppColors.info,
         background: AppColors.statusInfoBg,

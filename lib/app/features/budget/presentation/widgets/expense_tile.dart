@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/receipt_viewer.dart';
@@ -54,7 +55,7 @@ class ExpenseTile extends StatelessWidget {
                       height: 40,
                       color: AppColors.lightGrey,
                       child: const Icon(
-                        Icons.broken_image,
+                        AppIcons.imageBroken,
                         color: AppColors.mediumGrey,
                         size: 20,
                       ),
@@ -73,7 +74,9 @@ class ExpenseTile extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
-                  expense.isDonation ? Icons.volunteer_activism : Icons.receipt,
+                  expense.isDonation
+                      ? AppIcons.volunteerActivism
+                      : AppIcons.receipt,
                   color: expense.isDonation
                       ? AppColors.sage
                       : AppColors.charcoal,
@@ -134,7 +137,7 @@ class _OverflowMenu extends StatelessWidget {
 
     return PopupMenuButton<_ExpenseAction>(
       key: Key('budget.expense.${expense.id}.overflow'),
-      icon: const Icon(Icons.more_vert, color: AppColors.darkGrey),
+      icon: const Icon(AppIcons.actionMore, color: AppColors.darkGrey),
       onSelected: (action) {
         switch (action) {
           case _ExpenseAction.edit:

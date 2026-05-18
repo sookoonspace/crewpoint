@@ -2,6 +2,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
@@ -101,7 +102,7 @@ class _MemberManagementScreenState
                   AddMemberSheet.show(context: context, eventId: event.id),
               backgroundColor: AppColors.sage,
               foregroundColor: AppColors.white,
-              child: const Icon(Icons.person_add_rounded),
+              child: const Icon(AppIcons.memberAdd),
             )
           : null,
     );
@@ -277,7 +278,7 @@ class _MemberTile extends StatelessWidget {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: AppColors.sageLight.withValues(alpha: 0.3),
-          child: const Icon(Icons.person, color: AppColors.sage),
+          child: const Icon(AppIcons.navProfileFilled, color: AppColors.sage),
         ),
         title: Text(
           displayName != null && displayName!.isNotEmpty

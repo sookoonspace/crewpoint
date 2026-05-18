@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
@@ -195,7 +196,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                     key: const Key('createEvent.title'),
                     hintText: 'What are you planning?',
                     controller: _titleController,
-                    prefixIcon: const Icon(Icons.event),
+                    prefixIcon: const Icon(AppIcons.event),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
                         return 'Please enter a title';
@@ -219,13 +220,13 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                     hintText: 'Details, location, notes... (optional)',
                     controller: _descriptionController,
                     maxLines: 3,
-                    prefixIcon: const Icon(Icons.description_outlined),
+                    prefixIcon: const Icon(AppIcons.markdown),
                   ),
 
                   // Start Date (optional)
                   ListTile(
                     leading: const Icon(
-                      Icons.calendar_today,
+                      AppIcons.calendar,
                       color: AppColors.darkGrey,
                     ),
                     title: const Text('Start Date'),
@@ -241,7 +242,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                     ),
                     trailing: _startDate != null
                         ? IconButton(
-                            icon: const Icon(Icons.clear, size: 18),
+                            icon: const Icon(AppIcons.actionClear, size: 18),
                             onPressed: _isSubmitting
                                 ? null
                                 : () => setState(() => _startDate = null),
@@ -267,7 +268,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                     key: const Key('events.create.currency'),
                     initialValue: _currency,
                     decoration: const InputDecoration(
-                      prefixIcon: Icon(Icons.attach_money),
+                      prefixIcon: Icon(AppIcons.currency),
                       border: OutlineInputBorder(),
                       helperText: 'Cannot be changed after creating the event.',
                     ),
@@ -297,7 +298,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                       child: Row(
                         children: [
                           const Icon(
-                            Icons.error_outline,
+                            AppIcons.statusError,
                             color: AppColors.terracotta,
                             size: 20,
                           ),

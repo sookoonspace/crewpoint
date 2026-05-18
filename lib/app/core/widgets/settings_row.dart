@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 
 /// Settings row used inside a `_SectionCard` on Profile (and elsewhere as
@@ -35,7 +36,7 @@ class SettingsRow extends StatelessWidget {
               key: const Key('settings.row.subtitle'),
               style: textTheme.bodySmall?.copyWith(color: AppColors.darkGrey),
             ),
-      trailing: const Icon(Icons.chevron_right, color: AppColors.mediumGrey),
+      trailing: const Icon(AppIcons.chevronRight, color: AppColors.mediumGrey),
       onTap: onTap,
       shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
     );
