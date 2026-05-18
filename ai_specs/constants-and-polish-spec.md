@@ -120,6 +120,23 @@ Out of scope (explicit follow-ups):
 
 9. **Strings audit + sub-object growth in `app_strings.dart`** (no new file, but the existing file grows): grep `lib/app/features/**/presentation/` and `lib/app/core/widgets/` for raw English string literals shown to the user. For every match that is NOT already a `context.strings.<feature>.<key>` lookup, promote it to the matching strings sub-object in `app_strings.dart`.
 
+   **Strict layer boundary — DO NOT migrate strings outside the widget tree.** The promotion sweep is restricted to:
+   - `lib/app/features/**/presentation/**/*.dart`
+   - `lib/app/core/widgets/**/*.dart`
+
+   The following are **explicitly out of scope** for this audit because they cannot access a `BuildContext` at the call site:
+   - `lib/app/features/**/data/**/*.dart` — repositories, services, mappers.
+   - `lib/app/features/**/domain/**/*.dart` — models, value objects, pure helpers.
+   - `lib/app/features/**/application/**/*.dart` — Riverpod providers / notifiers.
+   - `lib/app/core/services/**/*.dart` — auth, file export, deep-link launchers, etc.
+   - Cloud Functions / `functions/**`.
+
+   Error messages or labels that **originate in the data layer** (e.g., `'Could not save event'` thrown from a repository) must be handled by one of these patterns at the UI layer:
+   - The repository throws a typed exception or returns a `sealed class` result with an enum discriminator; the UI layer (a screen or a widget) maps the discriminator to a `context.strings.<feature>.<errorKey>`.
+   - The repository returns a raw English fallback string (the existing `AppStrings.fallbackEnglish` pattern in `app_strings.dart:41`); the UI layer wraps it with a localised prefix where possible.
+
+   The implementor MUST NOT add a `BuildContext` parameter to a repository / service / notifier to make `context.strings` work there. That is the wrong fix.
+
    **Expected new keys (sample — implementor adds others discovered during the sweep):**
    - `DashboardStrings`: `createEventCta = 'Create Event'`, `retryCta = 'Try again'`, `upcomingEventsHeader(int n) = '$n UPCOMING EVENTS'`, `pastEventsHeader(int n) = '$n PAST EVENTS'`, `errorLoading = "We couldn't load your events."`, greeting prefixes (`'Good morning'` / `'Good afternoon'` / `'Good evening'`).
    - `TasksStrings`: `myTasksTitle = 'My Tasks'`, `filterAll = 'All'`, `filterTodo = 'To Do'`, `filterDoing = 'Doing'`, `filterDone = 'Done'`, `filterOverdue = 'Overdue'`, `noMatches<Segment>(...)` for the no-matches empty-state copy, `taskTitleHint = 'Task Title'`, `descriptionOptionalHint = 'Description (optional)'`, `createTaskCta = 'Create Task'`, `saveChangesCta = 'Save changes'`, `unassignedLabel = 'Unassigned'`, `exportPdfTooltip = 'Export PDF'`.
@@ -133,7 +150,18 @@ Out of scope (explicit follow-ups):
 
 **Functional — UI bug fixes:**
 
-10. **Equal-width segmented pills**: `SegmentedFilterBar` refactored so each pill takes `1/N` of the available horizontal width (`Expanded` per segment). The `SingleChildScrollView` wrapper is removed — the bar never scrolls horizontally. Tapping the active pill remains a no-op. Visual outcome: on Dashboard, "Upcoming" and "Past" pills are exactly 50/50; on `MyTasksScreen`, "All / Todo / Doing / Done" are exactly 25% each.
+10. **Equal-width segmented pills (opt-in, adaptive, NOT a mandatory `Expanded` refactor)**: `SegmentedFilterBar` gains an opt-in `equalWidth: bool` (default `false`). The default behaviour stays exactly what it is today — `SingleChildScrollView` + `MainAxisSize.min` pills sized to content — so text can breathe on small screens and after i18n (e.g., Spanish "En progreso" needs ~6× the width of English "Doing"). Tapping the active pill remains a no-op.
+
+   **`equalWidth: true` (opt-in for 2-segment bars where the labels are short and known):**
+   - Wraps the row in a `LayoutBuilder`. If the natural pill widths (measured via `TextPainter` or estimated from label length × char-width × 1.4 fudge factor) fit within the viewport, distribute pills evenly via `Expanded` so each takes `1/N`.
+   - If the natural widths overflow, fall back to the default scrolling layout. **Never crush labels.**
+   - Per spec section "Maximum 4 segments" (see `<boundaries>`), this opt-in should only be used with ≤ 3 segments in practice. Dashboard's "Upcoming / Past" (2 segments) is the canonical use case.
+
+   **Per-call-site decisions:**
+   - **Dashboard** ("Upcoming / Past") — passes `equalWidth: true`. Two segments with short labels never trigger the overflow fallback.
+   - **MyTasksScreen** ("All / Todo / Doing / Done") — leaves `equalWidth: false` (scrolls). Acknowledges Spanish / French / German translations will be longer than the English baseline.
+
+   Visual outcome: on Dashboard, "Upcoming" and "Past" pills are 50/50 in English; in any translation that makes them too wide, they automatically fall back to scrolling. On `MyTasksScreen`, pills size to content and scroll horizontally as before.
 
 11. **White Card per tile (Chat + Budget)**: `ConversationTile`, `DebtTile`, `RecentExpenseTile` each wrapped in a `Card` (white background, default Material 3 elevation from the existing `cardTheme`, rounded per `AppRadius.borderLg`). Spacing between cards uses `AppSpacing.sm` margins. Visual outcome: tiles read as discrete, elevated rows on the cream scaffold — matching the existing `EventTile` and Profile cards.
 
@@ -171,7 +199,7 @@ Out of scope (explicit follow-ups):
 - **Dark mode** — the new Cards inherit the dark theme's `cardTheme.color`; verify no contrast regression in `surfaceDarkElevated`. Existing dark-mode parity tests cover this.
 - **Tablet rail (≥ 840 px)** — equal-width pills are still equal-width; the row width is now wider, so pills get wider too. Acceptable.
 - **`SegmentedFilterBar` with a single segment** — `Expanded` of one child still works; no special case needed.
-- **`SegmentedFilterBar` segment-count cap** — **maximum 4 segments**. At 320 px width with 4 segments, each pill is ~75 px — already tight on the 48dp tap-target floor. Adding a 5th segment requires splitting the filter into two bars OR reverting to horizontal scroll for that specific instance. Adding a 5th segment without that decision must be caught in code review.
+- **`SegmentedFilterBar` segment-count cap with `equalWidth: true`** — **maximum 3 segments** for the opt-in equal-width mode (`equalWidth: true`). 4+ segments at 320 px width cram below the 48dp tap-target floor even before considering i18n label growth. The default `equalWidth: false` mode (scrolling) has no segment cap. The adaptive fallback in `equalWidth: true` mode automatically reverts to scroll when natural widths overflow, so the cap is a "use intent" rule rather than a hard runtime invariant.
 - **`ConversationTile` competing elements at 320 px** — when URGENT badge + 99+ unread pill + a long event title all need to fit, **the title ellipsises first**. URGENT badge and unread pill stay full-size and readable; the title (`Flexible` + `maxLines: 1` + `overflow: ellipsis`) absorbs the squeeze. URGENT does NOT shrink to icon-only — explicit readability is more valuable than seeing more title characters.
 - **`AppIcons` referencing icons that change between Material versions** — accept stability of `Icons.*` identifiers (Flutter SDK contract).
 
@@ -287,7 +315,7 @@ Each commit is independently green (`flutter analyze` + `flutter test`). Reviewe
 
 - The new Cards must keep tap-target ≥ 48dp (existing `InkWell` + padding inside the Card already meets this).
 - `TextScaler.linear(2.0)` re-run for `ConversationTile`, `DebtTile`, `RecentExpenseTile` (extend existing `design_system_a11y_test.dart` if not already covered).
-- Equal-width pills at 320 px width must still meet 48dp minimum tap target — re-test.
+- `SegmentedFilterBar` at 320 px viewport: each pill ≥ 48dp tap-target floor in BOTH modes (scrolling default + `equalWidth: true` opt-in). When `equalWidth: true` and the natural widths overflow, the bar falls back to scroll so the floor is honoured automatically.
 
 **Post-migration test sweep (mandatory):**
 
