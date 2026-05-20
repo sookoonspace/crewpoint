@@ -2532,21 +2532,250 @@ Tick each cell as you verify it on the device under test. **Allow / deny** is wh
 
 ## §11 Responsive shell
 
-_Section pending — to be authored in Phase 7._
+**~10 min.** The adaptive bottom-bar ↔ rail transition at the 840 px breakpoint. Most relevant on iPad / Android tablet / web.
 
-Covers: Bottom NavigationBar at < 840 px, NavigationRail at ≥ 840 px, route stack survives resize, sign-out tooltip on rail.
+### SHELL-BREAK-01 — Bottom bar at < 840 px
+
+**Pre-conditions**
+- Signed in. App open on a phone-width device OR Web with the browser window < 840 px.
+
+**Steps**
+1. Look at the bottom of the screen.
+
+**Expected**
+- A 5-destination NavigationBar is pinned at the bottom: **Home**, **Tasks**, **Chat**, **Budget**, **Profile**.
+- Each destination shows an icon + label.
+- The active destination has a filled icon variant; inactive destinations use the outlined variant.
+
+**Edge cases to try**
+- Switch destinations rapidly — no flicker, no destination lag.
+- The keyboard appearing (e.g., compose in Chat) does NOT cover the bar — the bar drops with the keyboard.
+
+**Devices** iPhone, Android phone. Web at < 840 px window width.
+
+---
+
+### SHELL-BREAK-02 — Navigation rail at ≥ 840 px
+
+**Pre-conditions**
+- Signed in. App open on an iPad / Android tablet ≥ 840 px wide, OR Web with the browser window ≥ 840 px.
+
+**Steps**
+1. Look at the LEFT edge of the screen.
+
+**Expected**
+- A NavigationRail with the same 5 destinations is pinned at the left, extended mode (icons + labels visible inline).
+- A vertical divider separates the rail from the body.
+- The bottom-bar is NOT shown.
+- A sign-out icon button is pinned to the BOTTOM of the rail with the tooltip **Sign out**. Tapping it signs you out without showing the bottom-sheet confirmation (see `SHELL-OUT-01`).
+
+**Edge cases to try**
+- Hover the sign-out button on web → tooltip **Sign out** appears.
+
+**Devices** iPad, Android tablet (≥ 840 px), Web Chrome / Safari at ≥ 840 px window width.
+
+---
+
+### SHELL-RESIZE-01 — Route stack survives breakpoint transition
+
+**Pre-conditions**
+- Signed in.
+- Web build (easiest test environment for live resize) OR a foldable Android device.
+
+**Steps**
+1. Open the **Tasks** tab.
+2. Scroll halfway down the list.
+3. Resize the browser window from 1200 px → 700 px (cross the 840 px breakpoint).
+4. Observe the navigation switching from rail → bar.
+
+**Expected**
+- The Tasks list stays at the same scroll position.
+- The Tasks tab remains selected (no jump to Home).
+- No flicker, no widget tree teardown of the body.
+
+**Edge cases to try**
+- Reverse: resize from 700 px → 1200 px → rail re-appears.
+- Cross the breakpoint while a modal sheet is open → sheet stays open.
+
+**Devices** Web Chrome, Web Safari. Tablet rail to phone bar transition is the foldable / Stage Manager / Split View scenario on hardware.
+
+---
+
+### SHELL-OUT-01 — Rail sign-out (skips bottom sheet)
+
+**Pre-conditions**
+- Signed in. On rail (≥ 840 px).
+
+**Steps**
+1. Tap the sign-out icon button at the bottom of the rail.
+
+**Expected**
+- The app signs out immediately and navigates to the auth gate, **without** showing the bottom-sheet confirmation from `AUTH-OUT-01`.
+
+**Edge cases to try**
+- This is by design — the rail's sign-out is a "no friction" exit point. Document under Known Limitations if a tester reports it as a missing confirmation.
+
+**Devices** iPad, Android tablet, Web Chrome / Safari at ≥ 840 px.
+
+---
 
 ## §12 Accessibility
 
-_Section pending — to be authored in Phase 7._
+**~15 min.** Dynamic Type, VoiceOver / TalkBack pass, 320 px small-screen overflow audit.
 
-Covers: Dynamic Type 200% on every tab, VoiceOver / TalkBack on Dashboard + Tasks, 320 px overflow audit (ConversationTile + EventTile + DebtTile + TaskTile).
+### A11Y-TS-01 — Dynamic Type at 200% per tab
+
+**Pre-conditions**
+- Signed in.
+- Device set to maximum system text scale (200% on iOS via Settings → Display & Brightness → Text Size, then Accessibility → Display & Text Size; ~Large Font Size on Android via Accessibility settings).
+
+**Steps**
+1. Open the app fresh after changing the system text scale.
+2. Visit each tab in turn: **Home**, **Tasks**, **Chat**, **Budget**, **Profile**.
+
+**Expected**
+- All text scales up gracefully on every tab.
+- No `RenderFlex overflowed` exceptions (no yellow + black "RenderFlex overflowed by N pixels" warnings).
+- Tile-style components (`ConversationTile`, `EventTile`, `DebtTile`, `TaskTile`) wrap or shrink gracefully — no clipped text.
+- The progress ring + status badges remain readable.
+
+**Edge cases to try**
+- Combine 200% scale + 320 px viewport (Safari responsive mode) — see `A11Y-OVR-01`.
+- The Dashboard `Upcoming` / `Past` pills may automatically fall back from `equalWidth: true` to scrolling layout when labels exceed the available width — that's correct behavior, not a bug.
+
+**Devices** All.
+
+---
+
+### A11Y-VO-01 — VoiceOver / TalkBack pass
+
+**Pre-conditions**
+- Signed in.
+- iOS: enable VoiceOver via Settings → Accessibility, OR triple-click side button.
+- Android: enable TalkBack via Settings → Accessibility.
+
+**Steps**
+1. Navigate through the **Home** tab using VoiceOver swipe gestures.
+2. Focus on the `ProgressRing` on an EventTile.
+3. Focus on the `StatusBadge` on a TaskTile (open the Tasks tab → focus on a task).
+4. Focus on the URGENT badge on a ConversationTile (Chat tab — needs an urgent unread row).
+
+**Expected**
+- The screen reader announces meaningful labels:
+  - ProgressRing: "N of M tasks done" (or similar — see `progress_ring.dart` for the actual `Semantics` label).
+  - StatusBadge: announces the status text + count if any.
+  - URGENT badge: announces "URGENT".
+- Tapping with VoiceOver works the same as tapping without — buttons / tiles all fire their `onTap`.
+
+**Edge cases to try**
+- Switch tab focus with VoiceOver swipes — current tab is announced.
+- The auth gate works with VoiceOver — input fields are labeled.
+
+**Devices** iPhone (VoiceOver), Android (TalkBack), iPad (VoiceOver). Web: NVDA / VoiceOver Safari support varies — out of scope unless specifically requested.
+
+---
+
+### A11Y-OVR-01 — 320 px small-screen overflow audit
+
+**Pre-conditions**
+- Signed in.
+- Test environment that can render at exactly 320 px width:
+  - iPhone SE 1st gen (320 × 568).
+  - Safari → Develop → Enter Responsive Design Mode → set viewport width to 320 px.
+  - Chrome DevTools → Device Toolbar → custom width 320 px.
+
+**Steps**
+1. Set viewport / device to 320 px width.
+2. Visit each tab and inspect the tiles named below.
+
+**Expected**
+- `ConversationTile` (Chat tab) with URGENT badge + long event title + long unread count → no overflow.
+- `EventTile` (Home tab) with a long event title + member count + progress ring → no overflow.
+- `DebtTile` (Budget tab) with a long counterparty name + large amount + Settle Up button → no overflow.
+- `TaskTile` (Tasks tab) with a long title + budget pill + priority pill + overdue badge → no overflow.
+
+**Edge cases to try**
+- Combine 320 px width + 200% text scale (worst case) — some `RenderFlex overflowed` warnings may appear; document them as **known limitations** for v1 with a screenshot rather than blocking ship.
+
+**Devices** iPhone SE (real hardware), Web Safari / Chrome at 320 px.
+
+---
 
 ## §13 Offline + sync
 
-_Section pending — to be authored in Phase 7._
+**~10 min.** Airplane-mode behavior + pending-writes badge + resume-from-cold-start.
 
-Covers: Airplane-mode toggle, "Will sync when online" badge, sync on reconnect, cold-start resume after offline edit.
+### SYNC-OFFLINE-01 — "Will sync when online" badge
+
+**Pre-conditions**
+- Signed in.
+- Open a task detail screen (`TASK-DET-01`).
+
+**Steps**
+1. Put the device in airplane mode (or disable Wi-Fi + cellular).
+2. Toggle the task's status (`TASK-STAT-01`) — e.g. tap to flip from **To Do** to **In Progress**.
+3. Return to the task detail screen.
+
+**Expected**
+- A small row appears above the description with a "cloud off" icon and the literal text **Will sync when online** in medium-grey.
+- The task's optimistic UI shows the new status; locally cached state reflects the change.
+
+**Edge cases to try**
+- Force-quit + reopen while still offline → the optimistic change persists; badge still shows.
+- Restore network → the badge disappears within ~10 s as the pending Firestore write commits.
+
+**Devices** iPhone, Android, iPad rail. Web: simulate offline via DevTools → Network → Offline.
+
+---
+
+### SYNC-RES-01 — Cold-start resume after offline edit
+
+**Pre-conditions**
+- Signed in.
+- Open the Tasks tab in an event.
+
+**Steps**
+1. Put the device in airplane mode.
+2. Create a task (`TASK-CRE-01`) — title `Offline Cold Start Resume Test`.
+3. Verify the task appears in the local list (optimistic create).
+4. Force-quit the app.
+5. Wait ~5 s.
+6. Restore network.
+7. Re-open the app.
+
+**Expected**
+- The task is still present in the list after cold start (Drift cache).
+- Within ~10 s after reconnect, the task syncs to Firestore — verify by signing in on a second device or checking the Firebase staging console (Appendix B).
+- The task is NOT duplicated (single create, single Firestore doc).
+
+**Edge cases to try**
+- The same flow but with a status toggle instead of create.
+- Repeated offline edits across multiple events → all sync in order on reconnect.
+
+**Devices** iPhone, Android. Web: not fully supported — IndexedDB persistence has known caveats in Private Mode (see Appendix D).
+
+---
+
+### SYNC-NET-01 — Network failure mid-write (generic catch-all)
+
+**Pre-conditions**
+- Signed in.
+
+**Steps**
+1. With a flaky network connection (or DevTools throttling on Web), attempt any mutating action: create event, create task, send message, log expense.
+
+**Expected**
+- The app either:
+  - Optimistically applies the change locally + queues the Firestore write to sync when network returns (see `SYNC-OFFLINE-01`), OR
+  - Shows a terracotta snackbar (e.g. **Failed to create task**, **Could not update status**, **Failed to add expense**, etc.) and rejects the optimistic change.
+- No crash, no silent failure.
+
+**Edge cases to try**
+- Repeated failures in sequence → no compounding error state; each retry is independent.
+
+**Devices** All.
+
+---
 
 ---
 
@@ -2596,16 +2825,163 @@ Notes:            <anything else — recent actions, suspected trigger, console 
 
 ## Appendix A — Reading device logs
 
-_Appendix pending — to be authored in Phase 7. Will cover: iOS Console (Window → Devices and Simulators), Android `flutter logs` and `adb logcat *:E flutter:V` (NOT `grep -i crewpoint` — Flutter doesn't tag logs with the app name), Web DevTools console + Network tab, and the `developer.log` tag list (`chat.inbox`, `budget.ledger`, `fcm`, `tasks.myTasks`)._
+This appendix is for technical testers (devs / QA). Non-technical testers can skip it — the bug-report template (§14) lets the dev team triage without log snippets.
+
+### iOS
+
+- Connect the device via USB.
+- Open Xcode → **Window** → **Devices and Simulators**.
+- Select the device on the left.
+- Click **Open Console**.
+- Filter the console by **process: Runner** to see only this app's output.
+- What to look for:
+  - **Red exception traces** — `══╡ EXCEPTION CAUGHT BY ...` blocks.
+  - **Firebase HTTP errors** — 4xx / 5xx responses from `firestore.googleapis.com` or `firebasestorage.googleapis.com`.
+  - `developer.log` tags emitted by the app — common ones: `chat.inbox`, `budget.ledger`, `budget.settleUp`, `fcm`, `tasks.myTasks`, `auth.legal`, `events`, `profile`.
+
+### Android
+
+Pick whichever fits your setup:
+
+- **Easiest:** `flutter logs` (run from the project root in a terminal while a device is connected via USB or wireless ADB). Shows Flutter-tagged log output cleanly.
+- **More control:** `adb logcat *:E flutter:V` — shows all errors at level E plus all flutter-tagged output at level V.
+- **Filter by app:** `adb logcat --pid=$(adb shell pidof -s app.sookoon.crewpoint)` — only this app's lines (replace package name if the staging build uses a different applicationId).
+
+> 🚫 **Do NOT run `adb logcat | grep -i crewpoint`** — Flutter doesn't tag logs with the app's package name. The tag is `flutter` (or whatever `developer.log(name: ...)` value the app passed). You'll see nothing and conclude (wrongly) that the app is silent.
+
+What to look for: same as iOS — red exception traces, Firebase 4xx/5xx, and the `developer.log` tag list above.
+
+### Web
+
+- Chrome / Edge: F12 → **Console** tab (for app logs) + **Network** tab (for Firestore / Storage / Functions HTTP traffic).
+- Safari: **Develop** → **Show Web Inspector** → **Console** + **Network**.
+- What to look for:
+  - Console errors (red rows).
+  - Firestore reconnect storms (lots of `wss://...firestore.googleapis.com` reconnects with non-2xx).
+  - Cloud Function 4xx/5xx responses (`onCall` endpoints under `*.cloudfunctions.net`).
+
+### What a useful log snippet looks like in a bug report
+
+When you paste log output into the bug template's `Notes:` field, include:
+
+- The minute leading up to the bug.
+- The first ~10 lines of any exception trace.
+- The HTTP method + URL + response code of any non-2xx Firebase call near the bug.
+
+Don't dump 1000s of lines — pick the 20 lines around the error.
+
+---
 
 ## Appendix B — Firebase staging console
 
-_Appendix pending — to be authored in Phase 7._
+This appendix is for testers with read access to the staging Firebase project. If the dev team hasn't given you access, **skip it** — your bug reports should describe app behavior, not Firestore state.
+
+### Access
+
+- Console URL: `<Insert Firebase Console URL for the staging project — typically https://console.firebase.google.com/project/<staging-project-id>/overview>`.
+- Sign in with your team Google account.
+- The dev team must add you to the staging project as **Viewer** (read-only is sufficient for QA).
+
+### What to inspect
+
+| Section | Path | What you're verifying |
+|---------|------|-----------------------|
+| **Authentication → Users** | top-nav | Test accounts exist + `emailVerified` flag is set as expected. |
+| **Firestore → Data** | top-nav | `events/{eventId}` — title, currency, memberIds, adminIds, creatorId, EventStatus (active / archived). |
+| | | `events/{eventId}/tasks/{taskId}` — task fields (status, assigneeId, dueDate, priority, budgetEstimate, checklistItems). |
+| | | `events/{eventId}/messages/{messageId}` — chat messages with `senderId`, `text`, `isHighPriority`, `timestamp`. |
+| | | `events/{eventId}/expenses/{expenseId}` — expenses + splits + payment + receiptPath. |
+| | | `users/{uid}` — public user doc (displayName, photoUrl, paymentMethod, paymentHandle, venmoHandle, cashappHandle). |
+| | | `users/{uid}/private/profile.fcmTokens` — per-device FCM tokens (`PUSH-PERM-01`). |
+| **Storage** | top-nav | `users/{uid}/profile.jpg` (avatar uploads from `PROF-PHOTO-01/02`); receipt images (`BUD-RECEIPT-01`). |
+| **Functions** | top-nav | Recent invocations + duration + error rate. Look for `deleteUserAccount`, `deleteEvent`, `removeEventMember`, `promoteToAdmin`, `demoteAdmin`, `joinEvent`, `generateInviteCode`, `markTaskComplete`, `disputeSettlement`, `onUrgentMessageCreated`. |
+
+### Common verifications mid-test
+
+- After `AUTH-DEL-01`: the user doc should be deleted from `users/{uid}`; the auth user gone from **Authentication**.
+- After `EV-DEL-01`: `events/{eventId}` is gone; all subcollections (tasks/messages/expenses) are cascaded.
+- After `EV-MEM-04` (Promote to admin): `events/{eventId}.adminIds` array contains the promoted uid.
+- After `PUSH-URG-01`: a recent `onUrgentMessageCreated` invocation in Functions logs.
+
+---
 
 ## Appendix C — Settle Up deep-link reference
 
-_Appendix pending — to be authored in Phase 7. Will cover both native scheme + web-fallback URIs per provider (Venmo, Cash App, Zelle, PayPal), sourced from `lib/app/features/budget/data/pay_link_builder.dart`._
+Source of truth: `lib/app/features/budget/data/pay_link_builder.dart` (note `data/`, NOT `application/`).
+
+> ⚠️ **v1 has deep-link support for VENMO and CASH APP ONLY.** Zelle, PayPal, Cash, Other, missing `paymentHandle`, and invalid `paymentHandle` all fall through to the manual fallback sheet (`LED-FALL-01`). There is NO Zelle URI and NO PayPal URI in v1.
+
+### Venmo
+
+| Variant | URI template |
+|---------|--------------|
+| Native scheme (iOS / Android) | `venmo://paycharge?txn=pay&recipients=<handle>&amount=<x.xx>&note=<note>` |
+| HTTPS fallback (when native launch fails) | `https://venmo.com/<handle>?txn=pay&amount=<x.xx>&note=<note>` |
+
+**Pick rule** (cross-event ledger via `SettleUpController`):
+1. Try the native scheme first.
+2. If `urlLauncher.launch(uri)` returns false or throws, fall through to the manual fallback sheet.
+
+**Pick rule** (event-scoped via `event_budget_page._launchVenmo`):
+1. Try the native scheme.
+2. If the launch fails, retry with the HTTPS fallback URL.
+3. If that also fails, the pending-settlement notifier holds the state.
+
+### Cash App
+
+| Variant | URI template |
+|---------|--------------|
+| Universal link | `https://cash.app/$<handle>/<x.xx>` |
+
+There is no separate native scheme for Cash App in v1 — the universal link works on both iOS and Android via the Cash App's app-link handler.
+
+### Zelle / PayPal / Cash / Other / null
+
+**No URI is built.** Tapping **Settle Up** opens the manual `SettleUpFallbackSheet` with **Copy amount** + **Copy handle** + **Mark paid in event budget** buttons (`LED-FALL-01`).
+
+### Handle validation
+
+The handle must match `^[A-Za-z0-9_-]{1,30}$`. Invalid handles (spaces, special chars, > 30 chars):
+- In the event-scoped Settle sheet: snackbar **That payment handle looks invalid**, no launch.
+- In the cross-event ledger: silently falls back to the manual sheet.
+
+### Note length
+
+The Venmo `note` parameter is truncated to 60 chars by `_truncateNote`.
+
+---
 
 ## Appendix D — Known v1 limitations
 
-_Appendix pending — to be authored in Phase 7. Will list intentional gaps the tester should NOT report as bugs._
+This is the canonical list of intentional gaps. **Do NOT file bugs for any item below.** If a tester is unsure whether something is a bug or a known limitation, ping the dev team before filing.
+
+### UI / UX
+
+- **Notifications row in Profile is a deliberate no-op** — the tile is visible to reserve the slot for future notification-preference UI. The tap is bound to `() {}` in `profile_screen.dart`. (`PROF-NOTIF-01`)
+- **Singular / plural section headers** — "1 UPCOMING EVENTS" uses the plural template; this is an i18n caveat documented in `HOME-LIST-01`. ICU pluralization is deferred to a future round.
+- **Onboarding "Get Started" copy and most event-scoped page snackbars are still hardcoded English** — the i18n promotion sweep (Phase 5 of `constants-and-polish`) is scoped to `presentation/` widget trees only; deeper rounds are deferred.
+- **Relative timestamp abbreviations** (`m` / `h` / `d` / `yesterday` / `now`) are English-only. Documented in `INBOX-TIME-01`.
+- **Rail sign-out skips the bottom-sheet confirmation** that bottom-nav sign-out shows — by design (`SHELL-OUT-01`).
+- **iPhone SE small-screen (320 px) + 200% Dynamic Type** may produce occasional RenderFlex warnings on a few tiles; capture with a screenshot if seen but don't block ship (`A11Y-OVR-01`).
+- **Web Safari Private Mode** disables IndexedDB; Firestore persistence falls back to memory-only. Test in normal browsing mode unless explicitly verifying private-mode behavior.
+
+### Auth
+
+- **Apple sign-in is not surfaced on Android** — the Apple Auth Provider requires native iOS context. Web + iOS phone are the only Apple surfaces in v1 (`AUTH-APPLE-01`).
+- **Web uses `signInWithPopup`, not `signInWithProvider`** — the popup-blocked error path is web-only (`AUTH-WEB-01`).
+
+### Settle Up / payments
+
+- **v1 has deep-link support for VENMO and CASH APP ONLY** — Zelle / PayPal / Cash / Other / null `paymentMethod` ALL fall through to the manual fallback sheet (`LED-FALL-01`). This is by design; deeper provider support is post-v1.
+
+### Sync / push
+
+- **Web push notifications are NOT in v1 scope** — `firebase_messaging` web is not configured. Mark `§7.5` rows N/A for Web Chrome / Web Safari.
+
+### Misc
+
+- **The pre-existing `TableMigration` analyzer warning** in `lib/app/core/database/app_database.dart:172` is expected — not introduced by recent work. Don't report it.
+- **`AppDurations` token file exists with no production callers** — it's forward-looking (Phase 4 of `constants-and-polish` deliberately left durations inline; no regression).
+- **No `flutter_localizations` is wired in v1** — every label in the app is English. Non-English locale testing is out of scope.
+
+---
