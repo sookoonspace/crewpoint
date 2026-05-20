@@ -2094,15 +2094,441 @@ Tick each cell as you verify it on the device under test. **Allow / deny** is wh
 
 ## §9 Budget — event-scoped
 
-_Section pending — to be authored in Phase 6._
+**~25 min.** Inside an event, tap the **Budget** quick-link. Covers Total + Balances + Settle Up + Expenses CRUD + receipt upload + PDF/CSV export.
 
-Covers: Add expense, edit, delete, receipt viewer, splits, payment expenses, PDF export, CSV export.
+### BUD-LAYOUT-01 — Budget screen layout
+
+**Pre-conditions**
+- Signed in to an event with ≥ 2 members and ≥ 1 expense.
+
+**Steps**
+1. Open the event → tap **Budget**.
+
+**Expected**
+- App bar reads **Budget**.
+- Top: **Total Expenses** card showing the currency-formatted sum (e.g., **$245.50**).
+- Below, three sections each with a dark-grey letterspaced caps header:
+  - **BALANCES** — one row per member, sorted high → low. Positive (sage) shows **\<name\> is owed +$N**; negative (terracotta) shows **\<name\> owes -$N**; zero shows **\<name\> settled $0**.
+  - **SETTLE UP** — one row per outstanding settlement, formatted **\<from\> pays \<to\>** with amount in terracotta + a **Settle** text button.
+  - **EXPENSES** — list of `ExpenseTile`s for non-payment expenses (`!isPayment`).
+- A sage **+** FAB at the bottom-right opens the Expense modal (`BUD-EXP-01`).
+- A top-right share icon (tooltip **Export**) opens a menu with **Export PDF** + **Export CSV** options.
+
+**Edge cases to try**
+- Empty expenses → the EXPENSES section shows **No expenses yet** in a centered light placeholder.
+- Single-member event (just you) → the **BALANCES** section is hidden (memberIds.length > 1 is the gate).
+
+**Devices** All.
+
+---
+
+### BUD-EXP-01 — Add expense (with split + donation toggle)
+
+**Pre-conditions**
+- Signed in to an event.
+
+**Steps**
+1. Tap the sage **+** FAB.
+2. Expense modal opens as a bottom sheet titled **Add Expense**.
+3. Type a value into **Amount ($)** (hint dynamically uses the event currency symbol — e.g., **Amount (€)** for an EUR event).
+4. Type a description in **Description (optional)**.
+5. (Optional) Toggle **Donate this cost** ON — when on, splits exclude the payer.
+6. (Optional) Tap **Add receipt** outlined button → see `BUD-RECEIPT-01`.
+7. Observe the live split helper text below: **Split: \<symbol\>\<per-person-amount\> per person (\<N\> people)**.
+8. Tap **Add Expense**.
+
+**Expected**
+- The modal dismisses.
+- The new expense appears at the top of the **EXPENSES** list.
+- Balances recompute: payer net positive (or zero if donation), all other members net negative.
+
+**Edge cases to try**
+- Amount empty → validator error **Enter an amount**.
+- Non-numeric amount → validator error **Invalid amount**.
+- Amount < 0.01 → validator error **Amount must be at least 0.01**.
+- Amount > 10000000 → validator error **Amount must be at most 10000000**.
+- Toggle **Donate this cost** ON in a 4-member event → split shows **3 people** (excludes payer).
+- Network failure during create → snackbar **Failed to add expense** (terracotta).
+
+**Devices** All.
+
+---
+
+### BUD-EXP-EDIT-01 — Edit expense
+
+**Pre-conditions**
+- Signed in as creator / owner / admin of the expense (any of the three has `canEdit`).
+- ≥ 1 expense exists.
+
+**Steps**
+1. On an `ExpenseTile`, tap the overflow ⋮ → **Edit**.
+2. Expense modal opens titled **Edit Expense**, pre-filled with the expense's current values.
+3. Change the amount or description.
+4. Tap **Save changes** (the primary button label switches from **Add Expense** to **Save changes** in edit mode).
+
+**Expected**
+- Modal dismisses.
+- The expense tile reflects the new values.
+- Balances re-compute.
+
+**Edge cases to try**
+- Sign in as a non-creator non-admin member → the overflow ⋮ does NOT show **Edit**.
+- Network failure → snackbar **Could not update expense** (terracotta).
+
+**Devices** All.
+
+---
+
+### BUD-EXP-DEL-01 — Delete expense
+
+**Pre-conditions**
+- Signed in as creator / owner / admin.
+- ≥ 1 expense exists.
+
+**Steps**
+1. On an `ExpenseTile`, tap the overflow ⋮ → **Delete** (terracotta).
+2. A confirmation dialog appears titled **Delete this expense?**.
+3. Tap the terracotta delete button.
+
+**Expected**
+- The tile disappears from the EXPENSES list.
+- Balances recompute.
+
+**Edge cases to try**
+- Cancel mid-dialog → no deletion.
+- Network failure → snackbar **Could not delete expense** (terracotta).
+
+**Devices** All.
+
+---
+
+### BUD-RECEIPT-01 — Receipt upload + viewer
+
+**Pre-conditions**
+- Signed in.
+- In the Add or Edit Expense modal.
+
+**Steps**
+1. Tap **Add receipt** (outlined button with a camera icon).
+2. The system image picker opens (gallery or camera per OS dialog).
+3. Pick an image.
+4. A receipt preview row appears: 56 × 56 thumbnail + the text **Receipt attached** + a close ✕ icon to clear.
+5. Tap **Add Expense** (or **Save changes** in edit mode) to commit.
+6. After save, tap the expense tile's small receipt thumbnail (if surfaced — drafter verifies the entry point) → full-screen **ReceiptViewer** opens.
+
+**Expected**
+- The thumbnail appears in the modal.
+- After save, the receipt is uploaded to Firebase Storage and the expense doc gets a `receiptPath`.
+- ReceiptViewer renders the full-resolution image; tap outside / back to dismiss.
+
+**Edge cases to try**
+- Cancel the picker → no thumbnail change.
+- Tap the close ✕ on the thumbnail → preview cleared.
+- Image loading failure in the picker preview → falls back to a broken-image icon placeholder.
+
+**Devices** iPhone (gallery + camera). Android (gallery + camera). iPad rail (gallery only on most models). Web: file picker (no camera).
+
+---
+
+### BUD-SETTLE-01 — Event-scoped Settle Up (Pay with Venmo / Cash App / Copy)
+
+**Pre-conditions**
+- Signed in.
+- You owe at least one other member (you appear as the `from` on a settlement row).
+- The counterparty has `venmoHandle` and/or `cashappHandle` set in their Profile.
+
+**Steps**
+1. On Budget, in the SETTLE UP section, tap the **Settle** text button on the row where you're the `from`.
+2. A bottom sheet opens with:
+   - The amount in large headline type.
+   - A subtitle reading **\<You-or-fromName\> pay \<toName-or-"them"\>** (e.g., **You pay Alex**).
+   - A sage filled button: **Pay with Venmo** (or **No Venmo handle** disabled if the counterparty has no Venmo handle).
+   - An outlined button: **Pay with Cash App** (or **No Cash App handle** disabled).
+   - A text button: **Copy payment details**.
+3. Tap **Pay with Venmo** (if the counterparty has a Venmo handle).
+
+**Expected**
+- The Venmo app deep link (`venmo://paycharge?txn=pay&recipients=\<handle\>&amount=\<x.xx\>&note=\<event title\> settle`) launches.
+- If Venmo isn't installed, the app falls back to `https://venmo.com/\<handle\>?...` in the system browser.
+- After returning to the app: a dialog appears titled **Did you send the payment?** with buttons **Not yet** + **Yes, recorded**. Tap **Yes, recorded** → the settlement is recorded as a payment expense.
+
+**Edge cases to try**
+- Tap **Pay with Cash App** → opens `https://cash.app/$\<handle\>/\<amount\>`.
+- Tap **Copy payment details** → snackbar **Copied — paste it where you settle** and the system clipboard now holds **\<symbol\>\<amount\> to \<recipient name or uid\> for \<event title\>**.
+- Counterparty handle contains invalid characters → snackbar **That payment handle looks invalid** (terracotta); no launch.
+- Counterparty has neither handle → both buttons are disabled; only the **Copy payment details** path works.
+
+**Devices** iPhone (Venmo / Cash App both work natively). Android (Venmo / Cash App apps must be installed; otherwise web fallback opens). Web: deep links open in a new tab or fall back to the web URL.
+
+---
+
+### BUD-EXPORT-01 — Export PDF / Export CSV
+
+**Pre-conditions**
+- Signed in.
+- At least one expense in the event.
+
+**Steps**
+1. On Budget, tap the top-right share icon (tooltip **Export**).
+2. A menu appears with **Export PDF** + **Export CSV**.
+3. Pick one.
+
+**Expected**
+- A file is generated and offered through the system share sheet (iOS / Android) or downloaded (Web).
+- PDF: human-readable report of expenses + balances.
+- CSV: machine-readable spreadsheet, one row per expense.
+
+**Edge cases to try**
+- Generation failure → snackbar **Couldn't generate report** (terracotta).
+
+**Devices** All.
+
+---
 
 ## §10 Budget ledger — cross-event
 
-_Section pending — to be authored in Phase 6._
+**~25 min.** The **Budget** tab, top-level. Cross-event ledger with BalanceTile + Debts + Recent Expenses + Settle Up.
 
-Covers: BalanceTile owed/owe split, multi-currency disclaimer, debts breakdown, **Settle Up — 4 deep-link paths + fallback** (Venmo native + web, Cash App, Zelle fallback, PayPal), recent expenses feed.
+### LED-LAYOUT-01 — Ledger layout
+
+**Pre-conditions**
+- Signed in.
+- You have ≥ 2 events with expenses.
+
+**Steps**
+1. Tap the **Budget** tab.
+
+**Expected**
+- Header: **Budget** title in the standard ScreenHeader.
+- Body, top to bottom:
+  - **BalanceTile** showing the **YOU ARE OWED** column (sage) + **YOU OWE** column (terracotta) split, each with a money value. Currency: USD by default.
+  - **Settle up** section header (sage) → list of `DebtTile` cards, each wrapped in an elevated white Card per Phase-6 polish.
+  - **Recent expenses** section header → list of `RecentExpenseTile` cards.
+
+**Edge cases to try**
+- Pull-to-refresh (if implemented) — both BalanceTile and debt list reload.
+
+**Devices** All.
+
+---
+
+### LED-CUR-01 — Multi-currency disclaimer (BUD-CUR-01)
+
+**Pre-conditions**
+- Signed in.
+- ≥ 1 event uses USD, ≥ 1 event uses a non-USD currency (e.g., EUR or GBP), and each has at least one expense.
+
+**Steps**
+1. Tap **Budget**.
+2. Inspect the area just below the BalanceTile hero.
+
+**Expected**
+- A small disclaimer line reads **Totals are approximate when events use different currencies.**
+
+**Edge cases to try**
+- Sign in to an account where every event is USD → the disclaimer is NOT shown.
+- Add an EUR expense to a fresh event → return to **Budget** → disclaimer appears.
+
+**Devices** All.
+
+---
+
+### LED-ALLSETTLED-01 — "All settled" chip
+
+**Pre-conditions**
+- Signed in.
+- You have 0 outstanding debts across every event.
+
+**Steps**
+1. Tap **Budget**.
+
+**Expected**
+- The Settle Up section shows a sage **You're all settled up.** chip instead of debt rows.
+- The Recent expenses section still renders if there are recent expenses.
+
+**Edge cases to try**
+- Create a new debt → return → the chip is replaced by debt rows.
+
+**Devices** All.
+
+---
+
+### LED-DEBT-01 — DebtTile layout + Settle Up CTA
+
+**Pre-conditions**
+- Signed in.
+- You owe at least one counterparty in any event.
+
+**Steps**
+1. Tap **Budget**.
+2. In Settle up, find the relevant DebtTile.
+
+**Expected**
+- Avatar circle with the counterparty's first letter (sage background, charcoal letter).
+- Counterparty display name (or UID fallback).
+- An event chip with the event title.
+- Right-side: money amount in **You owe** style (terracotta with a `-` sign) + an outlined **Settle Up** button below the amount.
+- Each tile is wrapped in an elevated white **Card** (per Phase-6 polish).
+
+**Edge cases to try**
+- Counterparty with a very long display name → name truncates with an ellipsis.
+
+**Devices** All.
+
+---
+
+### LED-SETTLE-01 — Settle Up — Venmo deep link
+
+**Pre-conditions**
+- Signed in.
+- Counterparty's Profile has `paymentMethod: venmo` AND a non-empty `paymentHandle` (e.g., `@alex-test`).
+
+**Steps**
+1. On a DebtTile for that counterparty, tap **Settle Up**.
+
+**Expected**
+- The Venmo app deep link fires: `venmo://paycharge?txn=pay&recipients=\<handle\>&amount=\<x.xx\>&note=\<event title\> settle-up`.
+- If Venmo isn't installed (or the launch fails), the controller falls back to the manual fallback sheet (`LED-FALL-01`).
+
+**Edge cases to try**
+- Counterparty's `paymentHandle` is invalid (contains spaces, special chars, > 30 chars) → no deep link fires; fallback sheet opens instead.
+
+**Devices** iPhone (Venmo native). Android (Venmo native). Web: deep links may not launch — fallback sheet opens.
+
+---
+
+### LED-SETTLE-02 — Settle Up — Cash App universal link
+
+**Pre-conditions**
+- Counterparty's Profile has `paymentMethod: cashapp` AND a non-empty `paymentHandle`.
+
+**Steps**
+1. Tap **Settle Up** on the DebtTile.
+
+**Expected**
+- The Cash App universal link opens: `https://cash.app/$\<handle\>/\<amount\>` (formatted to 2 decimals).
+- iOS: opens in the Cash App if installed; otherwise in the system browser.
+- Android: same behavior.
+- Web: opens in a new tab.
+
+**Edge cases to try**
+- Invalid `paymentHandle` → no launch; fallback sheet opens.
+
+**Devices** All.
+
+---
+
+### LED-FALL-01 — Settle Up — fallback sheet (Zelle / PayPal / Cash / Other / no handle)
+
+> 📌 **Correction to spec:** v1 has **deep-link support for Venmo and Cash App only**. Zelle, PayPal, Cash, Other, or a missing `paymentMethod` ALL fall through to the manual fallback sheet — there is no Zelle or PayPal deep link in v1, contrary to early drafts of the spec.
+
+**Pre-conditions**
+- Counterparty's Profile has ONE of these:
+  - `paymentMethod: zelle` / `paypal` / `cash` / `other` / null with any handle.
+  - Any `paymentMethod` but no `paymentHandle` set.
+  - Any `paymentMethod` with an invalid `paymentHandle` (e.g., `bad handle!`).
+
+**Steps**
+1. Tap **Settle Up** on the DebtTile.
+
+**Expected**
+- The manual fallback bottom sheet (`SettleUpFallbackSheet`) opens with:
+  - Title: **Pay \<counterparty display name\>**
+  - Large amount in terracotta (e.g., **$45.00**).
+  - **Copy amount** outlined button (always present).
+  - **Copy handle** outlined button (only if counterparty has a non-empty handle).
+  - **Mark paid in event budget** text button at the bottom — tapping it dismisses the sheet and navigates to `/dashboard/event/{eventId}/budget`.
+
+**Edge cases to try**
+- Tap **Copy amount** → the raw amount (e.g. `45.00`) is on the clipboard.
+- Tap **Copy handle** (if visible) → counterparty's handle is on the clipboard.
+- Tap **Mark paid in event budget** → app navigates to the event's per-event budget screen where the tester can record the payment via `BUD-SETTLE-01`.
+
+**Devices** All.
+
+---
+
+### LED-SETTLE-ERR-01 — Counterparty user-doc load failure
+
+**Pre-conditions**
+- Signed in. You owe a counterparty.
+- A way to force `userRepository.getUser` to throw (e.g., network failure right after tap).
+
+**Steps**
+1. Tap **Settle Up** with a flaky network.
+
+**Expected**
+- A snackbar appears with the text **Could not load contact info**.
+- The fallback sheet opens with the counterparty's name shown as the UID (null counterparty data) — the user can still **Copy amount** and **Mark paid**.
+
+**Edge cases to try**
+- Restore network, retry → succeeds with full counterparty data.
+
+**Devices** All.
+
+---
+
+### LED-RECENT-01 — Recent expenses feed
+
+**Pre-conditions**
+- Signed in.
+- ≥ 1 expense recorded across any of your events in the last 30 days.
+
+**Steps**
+1. Tap **Budget**.
+2. Scroll to the **Recent expenses** section.
+
+**Expected**
+- Each row is a `RecentExpenseTile` wrapped in an elevated Card (per Phase-6 polish).
+- Row layout: avatar with payer's first letter + description (or `\<payer\> paid` fallback if no description) + event title (medium-grey small text) + amount on the right + relative timestamp below the amount.
+- Relative timestamps follow the same ladder as `INBOX-TIME-01`: **now** / **\<N\>m** / **\<N\>h** / **yesterday** (lowercase here) / **\<N\>d** / **\<Mon\> \<D\>**.
+
+**Edge cases to try**
+- Tap a row → navigates to the event's per-event budget screen for that expense's event (`/dashboard/event/{eventId}/budget`).
+- The "You" prefix doesn't apply here — `RecentExpenseTile` shows **You** as the payer label only when `payerId == currentUserId`.
+
+**Devices** All.
+
+---
+
+### LED-EMPTY-01 — Adaptive empty states
+
+**Pre-conditions**
+- Signed in.
+
+**Steps**
+1. **Path A (no balances, but has events)**: account belongs to events but no event has any expenses with splits affecting you.
+2. **Path B (no events at all)**: fresh account, no events.
+
+**Expected**
+- Path A: empty placeholder **No balances yet** + subtitle **Open an event from the Dashboard to log an expense.** + CTA **Open Dashboard** → goes to Home.
+- Path B: same title + subtitle **Create an event from the Dashboard to start tracking expenses.** + CTA **Create an event** → goes to Home.
+
+**Edge cases to try**
+- Add an expense in any event → return → empty state replaced by ledger.
+
+**Devices** All.
+
+---
+
+### LED-ERR-01 — Ledger error state
+
+**Pre-conditions**
+- Signed in.
+- A way to force `globalBalanceLedgerProvider` into error (network failure + cold start before cache loads).
+
+**Steps**
+1. Trigger the error state.
+
+**Expected**
+- An EmptyStatePlaceholder appears with title **Could not load your ledger** + the underlying error message as subtitle + a Lottie error animation.
+
+**Edge cases to try**
+- Restore network → screen recovers without restart.
+
+**Devices** iPhone, Android, Tablet rail. Web: simulate offline via DevTools.
+
+---
 
 ## §11 Responsive shell
 
