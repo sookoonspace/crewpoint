@@ -1182,15 +1182,487 @@ Tick each cell as you verify it on the device under test. **Allow / deny** is wh
 
 ## §5 Tasks — event-scoped
 
-_Section pending — to be authored in Phase 4._
+**~30 min.** Inside an event you opened from **Home**, tap the **Tasks** quick-link. Tests below cover create / status cycle / edit / duplicate / delete / checklist / filter bar / sort / group / PDF export.
 
-Covers: Create task, status cycle, edit, duplicate, delete, checklist editor, filter bar, sort, group, export PDF, validators, unauthorized-status snackbar.
+### TASK-CRE-01 — Create task (full form)
+
+**Pre-conditions**
+- Signed in. You're an owner / admin / member of the event (any role can create).
+- Open the event → Tasks list (app bar reads **Tasks**).
+
+**Steps**
+1. Tap the sage **+** FAB at the bottom-right of the Tasks list.
+2. The Create Task screen opens with app bar title **Create Task**. Three sections render: **Details**, **Assignment**, **Timing & Budget**.
+3. **Details** section:
+   - Type a title (1-120 chars) in the field with hint **Task Title**.
+   - (Optional) Type a description in the field with hint **Description (optional)** (3 lines).
+4. **Assignment** section:
+   - Tap the **Assignee** dropdown (hint: **Unassigned**); pick a member from the event roster.
+   - Pick a **Priority** radio row: **None** / **Low** / **Medium** / **High**.
+5. **Timing & Budget** section:
+   - (Optional) Tap **Due Date** to pick a date. (Date-only — no time of day.)
+   - (Optional) Type a number into **Budget Estimate (optional)**. The currency symbol prefix mirrors the event's currency.
+6. Tap **Create Task** at the bottom.
+
+**Expected**
+- After ~1-3 s you pop back to the Tasks list.
+- The new task tile appears at the top of the appropriate group (Status group by default → under **To Do**).
+- The tile shows the title, the assignee's initials (or **Unassigned**), the priority pill if non-None, the due-date pill if set, and the budget pill if set.
+
+**Edge cases to try**
+- Submit with **Title** empty → validator error **Please enter a title**.
+- Submit with **Title** > 120 chars → validator error **Title must be 120 characters or fewer**.
+- Tap the dropdown's **Unassigned** option → task created with no assignee → tile shows **Unassigned**.
+- Cancel mid-form (back button) → no task created.
+- Network failure during submit → snackbar **Failed to create task** (terracotta).
+
+**Devices** All.
+
+---
+
+### TASK-CRE-02 — Create task with checklist items
+
+**Pre-conditions**
+- Signed in.
+
+**Steps**
+1. Open Create Task (`TASK-CRE-01` steps 1-2).
+2. Scroll past the three form sections; the checklist editor isn't on Create — checklist items are added AFTER creation, on the Task Detail screen. _(Drafter: verify against `create_task_screen.dart` — if a checklist field IS present, document it here.)_
+
+> 📌 Skip this test if Create Task does not surface a checklist editor in v1. Use `TASK-CHK-01` after creation instead.
+
+**Devices** All.
+
+---
+
+### TASK-STAT-01 — Status cycle (todo → doing → done)
+
+**Pre-conditions**
+- Signed in.
+- The task is assigned to you, OR you're an admin / owner of the event (`canChangeStatus` permission).
+
+**Steps**
+1. On the Tasks list, find your task tile (status **To Do**).
+2. Tap the status chip on the tile (left-side colored stripe area).
+3. The chip cycles to **In Progress** (sage stripe).
+4. Tap again → cycles to **Done** (sageDark stripe).
+5. Tap again → cycles back to **To Do**.
+
+**Expected**
+- Each tap commits the new status via `updateStatus` on `taskRepositoryProvider`; the tile re-renders with the new color stripe within ~1 s.
+- The group header recomputes (the task may move to a new group if grouped by Status).
+- If the task has a checklist, when status flips to **Done** the progress bar disappears (avoids the "60% bar under a done icon" inconsistency).
+
+**Edge cases to try**
+- Network failure mid-tap → snackbar **Could not update status** (terracotta); the optimistic UI may revert.
+- Try to tap on a task you can't change (you're not the assignee and not an admin) → snackbar **Only the assignee or an admin can change this** (covered in `TASK-PERM-01`).
+
+**Devices** All.
+
+---
+
+### TASK-PERM-01 — Unauthorized status change snackbar
+
+**Pre-conditions**
+- Signed in as a non-assignee non-admin member.
+- A task in the event is assigned to someone else.
+
+**Steps**
+1. Tap the status chip on a task that's NOT assigned to you.
+
+**Expected**
+- A terracotta snackbar appears with the literal text **Only the assignee or an admin can change this**.
+- The task status does NOT change.
+
+**Edge cases to try**
+- Try the same tap on an unassigned task — the snackbar fires (`canChangeStatus` requires the actor to be the assignee OR an admin; no assignee + non-admin = denied).
+- Sign back in as an admin → tap the same task's status chip → it cycles normally (no snackbar).
+
+**Devices** All.
+
+---
+
+### TASK-DET-01 — Task detail screen + status badge
+
+**Pre-conditions**
+- Signed in.
+- At least one task exists in the event.
+
+**Steps**
+1. From the Tasks list, tap a task tile.
+2. The Task Detail screen opens with the task title as the app bar title.
+
+**Expected**
+- A pill badge near the top shows the current status: **To Do** (light grey on charcoal), **In Progress** (white on sage), or **Done** (white on sageDark).
+- The description (if any) renders below.
+- If assignee is set, a row reads **Assigned to \<display name\>** (falls back to a truncated UID).
+- If due-date is set, a row reads **Due \<Mon\> \<D\>, \<YYYY\>**.
+- If the task is **Done** and has a completedAt timestamp, a row reads **Completed \<date\> by \<name-or-uid\>**.
+- An overflow menu (⋮) in the top-right surfaces three items: **Edit**, **Duplicate**, **Delete** (only visible options for your role).
+- A checklist editor is rendered below.
+
+**Edge cases to try**
+- If the assignee has left the event, the assignee row shows the small italic **(no longer in event)** annotation in terracotta.
+- If you're offline + you toggled status earlier, a "Will sync when online" row may appear above the status badge.
+
+**Devices** All.
+
+---
+
+### TASK-EDIT-01 — Edit task
+
+**Pre-conditions**
+- Signed in as creator / owner / admin (`canEdit`).
+- On the Task Detail screen.
+
+**Steps**
+1. Tap the overflow ⋮ → **Edit**.
+2. Edit Task screen opens with app bar title **Edit Task** and the same 3-section form, pre-filled with the task's current values.
+3. Change the title (or any other field).
+4. Tap **Save changes** at the bottom.
+
+**Expected**
+- After ~1-3 s you pop back to the Task Detail screen.
+- The new values are visible.
+
+**Edge cases to try**
+- Validator errors as in `TASK-CRE-01`.
+- Network failure → snackbar **Could not save changes** (terracotta).
+- Sign in as a non-creator non-admin member → the overflow ⋮ does NOT show **Edit** for them (canEdit is false).
+
+**Devices** All.
+
+---
+
+### TASK-DUP-01 — Duplicate task
+
+**Pre-conditions**
+- Signed in (any role can duplicate — the new task gets your uid as createdBy).
+- On the Task Detail screen of a task with ≥ 1 checklist item.
+
+**Steps**
+1. Tap the overflow ⋮ → **Duplicate**.
+2. The Create Task screen opens, pre-filled with the source task's fields, BUT with the title suffixed with ` (copy)` (per `TaskModel.duplicate`).
+3. (Optional) Edit any of the pre-filled fields.
+4. Tap **Create Task**.
+
+**Expected**
+- A new task appears in the Tasks list with the ` (copy)` suffix.
+- The new task carries every checklist item from the source (per `createTaskWithChecklist`).
+- Your uid is the new task's `createdBy`.
+
+**Edge cases to try**
+- Network failure → snackbar **Could not duplicate task** (terracotta).
+- Duplicate a task you don't have edit rights to → the new task still creates (any viewer can duplicate; the copy is under YOUR createdBy).
+
+**Devices** All.
+
+---
+
+### TASK-DEL-01 — Delete task
+
+**Pre-conditions**
+- Signed in as creator / owner / admin (`canEdit`).
+- On the Task Detail screen.
+
+**Steps**
+1. Tap the overflow ⋮ → **Delete** (terracotta).
+2. A dialog appears with:
+   - Title: **Delete this task?**
+   - Body: **This cannot be undone. Members will lose the task and any checklist items.**
+   - Buttons: **Cancel** + **Delete** (terracotta).
+3. Tap **Delete**.
+
+**Expected**
+- The dialog dismisses.
+- You navigate back to the Tasks list.
+- The task is gone from the list.
+
+**Edge cases to try**
+- Tap **Cancel** → no deletion, dialog dismisses.
+- Network failure → task stays in the list; no snackbar fires explicitly (the screen-pop only happens on success).
+
+**Devices** All.
+
+---
+
+### TASK-CHK-01 — Checklist editor (add / edit / delete)
+
+**Pre-conditions**
+- Signed in as creator / owner / admin (full checklist permissions).
+- On the Task Detail screen.
+
+**Steps**
+1. Scroll to the checklist editor below the metadata.
+2. (Add) In the inline field with hint **Add item**, type `Pack sunscreen` and tap the sage add (+) button on the right.
+3. (Toggle) Tap the checkbox of any existing item → strikethrough applies.
+4. (Edit text) Tap the pencil affordance on an existing item → inline editing; type new text, tap done.
+5. (Delete) Tap the delete affordance on an existing item → item disappears.
+
+**Expected**
+- Add appends the new item to the end (sortOrder = items.length).
+- Toggle flips `isCompleted`; the progress bar on the parent task tile updates next time you return to the list.
+- Edit + delete propagate via `updateChecklistItem` / `deleteChecklistItem` on the repo.
+- Maximum of **25 items per task** (`ChecklistEditor.maxItems`) — the add affordance is hidden when at the limit.
+- Maximum **120 chars per item** (`maxItemLength`).
+
+**Edge cases to try**
+- Try to add a 26th item → add field hidden / disabled.
+- Sign in as the assignee (not creator/admin): only the toggle is available; the add / edit-text / delete affordances are hidden.
+- Sign in as a non-assignee non-admin viewer: NONE of the checklist affordances are interactive (read-only).
+
+**Devices** All.
+
+---
+
+### TASK-FILT-01 — Filter bar (search + chips)
+
+**Pre-conditions**
+- Signed in. At least 5 tasks exist with varied status / assignee / dueDate / budget.
+
+**Steps**
+1. On the Tasks list, find the **TasksFilterBar** above the list. It has 4 zones:
+   1. Search row (hint **Search tasks**).
+   2. Filter chips: **Mine**, **Overdue**, **Has budget**, **To Do**, **In Progress**, **Done**.
+   3. Sort menu (covered in `TASK-SORT-01`).
+   4. Group toggle (covered in `TASK-GRP-01`).
+2. Type a partial title into the search row → the list narrows in real time as you type.
+3. Tap **Mine** → list narrows to tasks assigned to you (chip turns sage with ~25% alpha).
+4. Tap **Mine** again to deselect.
+5. Tap **Overdue** → list narrows to tasks with a due date before today (chip turns terracotta with ~25% alpha).
+6. Tap **Has budget** → list narrows to tasks with a non-null `budgetEstimate`.
+7. Tap **To Do**, then **In Progress**, then **Done** in turn → these are multi-select status chips.
+
+**Expected**
+- Each chip toggles independently; multiple can be active simultaneously.
+- The list re-filters on every chip change; if nothing matches, the empty-match placeholder shows (covered in `TASK-EMPTY-01`).
+
+**Edge cases to try**
+- Tap **Mine** + **Overdue** simultaneously → intersection.
+- Clear all → all tasks visible.
+- Type a search query that matches nothing → empty-match placeholder.
+
+**Devices** All.
+
+---
+
+### TASK-SORT-01 — Sort menu
+
+**Pre-conditions**
+- Signed in. ≥ 3 tasks.
+
+**Steps**
+1. In the filter bar, tap the sort row reading **Sort by: \<current key\>** (with a sort icon prefix).
+2. A popup menu appears with 4 options: **Due date**, **Priority**, **Created**, **Title**.
+3. Pick each in turn.
+
+**Expected**
+- The list re-sorts immediately; the sort row's "\<current key\>" updates to the chosen option's label.
+- **Due date**: ascending, no-due-date last.
+- **Priority**: descending (High → None).
+- **Created**: descending (newest first).
+- **Title**: ascending alphabetical.
+
+**Edge cases to try**
+- Combine with a filter chip → sorted within the filtered set.
+
+**Devices** All.
+
+---
+
+### TASK-GRP-01 — Group toggle
+
+**Pre-conditions**
+- Signed in. ≥ 3 tasks with varied status / assignee / due window.
+
+**Steps**
+1. In the filter bar, find the segmented group-toggle on the right: **Status** / **Assignee** / **Due window**.
+2. Tap **Assignee** → list groups by assignee with a header per assignee display name; **Unassigned** group at the bottom.
+3. Tap **Due window** → list groups by **Today**, **This week**, **Later**, **No due date**.
+4. Tap **Status** → list groups by **To Do** / **In Progress** / **Done**.
+
+**Expected**
+- Group headers render at the top of each section.
+- Tasks re-arrange under the new headers immediately.
+
+**Edge cases to try**
+- Empty group sections do not render headers.
+
+**Devices** All.
+
+---
+
+### TASK-EMPTY-01 — Empty states
+
+**Pre-conditions**
+- Signed in.
+
+**Steps**
+1. Open a new event with no tasks → list shows **No tasks yet** title + **Tap + to create your first task** subtitle.
+2. With tasks present, apply a filter that matches none → list shows **No tasks match this filter** with a **Clear filters** CTA.
+3. Tap **Clear filters** → all filters reset; full list visible.
+
+**Expected**
+- Both empty states render in the body where the list would be.
+- The clear-filters CTA fires `setState(() => filter = TasksFilter())` (resets every chip + search + sort + group).
+
+**Devices** All.
+
+---
+
+### TASK-EXP-01 — Export PDF
+
+**Pre-conditions**
+- Signed in.
+- At least one task in the event.
+
+**Steps**
+1. From the Tasks list, find the top-right action button (looks like a share icon).
+2. Long-press to confirm the tooltip reads **Export PDF**.
+3. Tap it.
+
+**Expected**
+- A PDF is generated by `runTaskPdfExport` via `taskRepositoryProvider`'s exporter seam.
+- iOS / Android: the system share sheet opens with a `.pdf` file attached. Save / share as desired.
+- Web: a `.pdf` file downloads to the browser's downloads folder.
+
+**Edge cases to try**
+- Generation failure → snackbar **Couldn't generate report** (terracotta).
+
+**Devices** All.
+
+---
 
 ## §6 My Tasks — cross-event
 
-_Section pending — to be authored in Phase 4._
+**~10 min.** The Tasks tab, top-level. Shows tasks assigned to YOU across every event you belong to.
 
-Covers: All / To Do / Doing / Done segmented filter, Overdue badge toggle, progress summary, grouped list by event, adaptive empty states, sign-in-required state.
+### MYT-LAYOUT-01 — Layout sanity
+
+**Pre-conditions**
+- Signed in.
+- You are assigned to ≥ 1 task in ≥ 1 event.
+
+**Steps**
+1. Tap the **Tasks** tab.
+
+**Expected**
+- Header: **My Tasks** title in the standard ScreenHeader.
+- Below the header: a **TaskProgressSummary** strip showing todo / doing / done counts of YOUR filtered tasks.
+- Below the strip: the SegmentedFilterBar (default scroll layout, NOT equalWidth — to support i18n widening). Segments: **All**, **To Do**, **Doing**, **Done**.
+- Below the segments: an independent **Overdue** badge (urgent style, terracotta) with a count. Tapping toggles its filter.
+- The list below groups your tasks by event with a `SectionLabel` per event (`{emoji}  {event title}`).
+
+**Edge cases to try**
+- Pinch-zoom is disabled.
+
+**Devices** All.
+
+---
+
+### MYT-FILT-01 — Segmented filter (All / To Do / Doing / Done)
+
+**Pre-conditions**
+- Signed in.
+- You have tasks across multiple statuses.
+
+**Steps**
+1. From the Tasks tab, tap each segment in turn: **All** → **To Do** → **Doing** → **Done**.
+
+**Expected**
+- The list re-filters to only tasks in the picked status.
+- The progress summary strip ALSO re-narrows to the picked status (a Doing-filter shows only doing counts).
+- The default layout is scrollable (NOT equalWidth) — verify the bar is in a `SingleChildScrollView` and the 4 segments don't get crushed at 320 px.
+
+**Edge cases to try**
+- 320 px viewport — 4 long-ish labels stay scrollable, no crush.
+- 200% text scale — 4 segments may need to scroll; no overflow exception.
+
+**Devices** All.
+
+---
+
+### MYT-OVR-01 — Overdue toggle
+
+**Pre-conditions**
+- Signed in.
+- You have ≥ 1 overdue task (`dueDate` is past + status != done).
+
+**Steps**
+1. Below the segmented filter, tap the **Overdue** badge (terracotta urgent style with a numeric count).
+
+**Expected**
+- The badge brightens to full opacity (it's at ~0.55 opacity when off).
+- The list narrows to overdue tasks only.
+- Combining with a segment filter (e.g., **To Do** + Overdue) intersects the predicates.
+- Tap again to deselect → returns to full opacity off state.
+
+**Edge cases to try**
+- No overdue tasks → the count badge reads 0 but the toggle is still tappable.
+
+**Devices** All.
+
+---
+
+### MYT-EMPTY-01 — Adaptive empty states
+
+**Pre-conditions**
+- Signed in.
+
+**Steps**
+1. **Path A (no tasks assigned, but you have events)**: sign in with an account that has 0 assigned tasks across all its events.
+2. **Path B (no events at all)**: sign in with a brand-new account that has no events.
+3. **Path C (no match)**: with tasks present, pick the **Done** segment but with all tasks still under **To Do**.
+
+**Expected**
+- Path A: empty placeholder **No tasks assigned to you** + subtitle **Open an event from the Dashboard to view or create tasks.** + CTA **Open Dashboard** → goes to Home.
+- Path B: same title + subtitle **Create an event from the Dashboard to get started.** + CTA **Create an event** → goes to Home.
+- Path C: a centered light note (no Lottie) reading **No tasks match "To Do" yet.** (using the segment label). If Overdue is on: **No overdue tasks match "To Do".**
+
+**Edge cases to try**
+- The empty placeholder's CTA navigation goes to `/dashboard` (Home tab) — verify it doesn't navigate to a deleted route.
+
+**Devices** All.
+
+---
+
+### MYT-SIGN-01 — Sign-in-required
+
+**Pre-conditions**
+- Signed out.
+
+**Steps**
+1. Tap the **Tasks** tab.
+
+**Expected**
+- Empty placeholder with title **Sign in to view your tasks**. No CTA (the user is already past the auth gate by definition; this is an edge case during token expiry / sign-out flicker).
+
+**Edge cases to try**
+- Sign in → the screen recovers to the data state without restart.
+
+**Devices** All.
+
+---
+
+### MYT-NAV-01 — Tap to open task detail
+
+**Pre-conditions**
+- Signed in.
+- ≥ 1 task assigned to you.
+
+**Steps**
+1. Tap any row in the Tasks list.
+
+**Expected**
+- Navigates to `/dashboard/event/{eventId}/tasks/{taskId}` — the same Task Detail screen tested in `TASK-DET-01`, scoped to the right event.
+- Status changes are NOT directly toggleable from the My Tasks tile (`canChangeStatus: false` is passed in `_MyTasksList`); status changes must go through Task Detail or the event-scoped Tasks list.
+
+**Edge cases to try**
+- Use the device back button → returns to the **Tasks** tab with the same scroll position.
+
+**Devices** All.
+
+---
 
 ## §7 Chat — event-scoped
 
