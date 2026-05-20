@@ -694,15 +694,491 @@ Every numbered test in this guide follows the same shape:
 
 ## §3 Dashboard (Home)
 
-_Section pending — to be authored in Phase 3._
+**~15 min.** The Home tab — greeting, Upcoming / Past pill filter, Create Event CTA, Join Event tooltip, empty state, error state.
 
-Covers: greeting, Upcoming / Past pill split, Create Event CTA, Join Event tooltip, empty state, error state retry, greeting first-name edge cases.
+### HOME-GRT-01 — Time-of-day greeting + date
+
+**Pre-conditions**
+- Signed in.
+- Your Profile display name is set (e.g., `Alex Rivera`).
+
+**Steps**
+1. Tap the **Home** tab.
+2. Look at the header.
+
+**Expected**
+- Header line 1: a greeting that follows the pattern **\<time-of-day\>, \<first-name\> 👋**, where:
+  - Before 12:00 → **Good morning**
+  - 12:00 – 16:59 → **Good afternoon**
+  - 17:00 onward → **Good evening**
+  - First name = the first whitespace-separated token of your display name (so `Alex Rivera` → `Alex`).
+- Header line 2: today's date formatted as **\<Day-of-week\>, \<Mon\> \<D\>** (e.g., **Wednesday, May 20**).
+
+**Edge cases to try**
+- Change the device clock (or just open the app at different times) and confirm the prefix flips.
+
+**Devices** All.
+
+---
+
+### HOME-GRT-02 — Greeting first-name edge cases
+
+**Pre-conditions**
+- Signed in. You can edit your Profile display name (see `PROF-EDIT-01`).
+
+**Steps**
+1. Open **Edit Profile**, set **Display Name** to one of the following values one at a time, save, return to **Home**:
+   - `Émile 😀` _(diacritic + emoji in name)_
+   - `A` _(single character)_
+   - `Mary-Anne Schmidt-Williams` _(hyphenated multi-word)_
+   - (empty string — clear the field) _(only possible if the validator allows it; if it rejects, skip this variant)_
+   - `   ` _(whitespace only — again, only if the validator allows it)_
+
+**Expected**
+- For each: the greeting renders gracefully with no layout overflow and no exception.
+- For `Émile 😀` → greeting reads **Good \<time-of-day\>, Émile 😀 👋** (whole token, including the emoji).
+- For `A` → greeting reads **Good \<time-of-day\>, A 👋**.
+- For `Mary-Anne Schmidt-Williams` → greeting takes the first whitespace-separated token: **Good \<time-of-day\>, Mary-Anne 👋**.
+- For empty / whitespace-only display name → greeting falls back to **Good \<time-of-day\>, there 👋**.
+
+**Edge cases to try**
+- Single Right-to-left character in name (Arabic / Hebrew letter) → greeting still renders.
+- Very long single-token name (~30+ chars) → greeting either fits on one line with ellipsis, or wraps gracefully; no overflow exception.
+
+**Devices** All. _(Drafter cites `lib/app/features/dashboard/domain/greeting_first_name.dart` for testers who want to sanity-check the parser logic.)_
+
+---
+
+### HOME-FILT-01 — Upcoming / Past pill split (equalWidth)
+
+**Pre-conditions**
+- Signed in. You have at least 1 event (run `EV-CRE-01` first if not).
+
+**Steps**
+1. On **Home**, observe the pair of pills below the header: **Upcoming** and **Past**.
+2. Tap **Past** if you're on Upcoming, then back to **Upcoming**.
+
+**Expected**
+- The two pills split the available width roughly 50 / 50 (the bar uses `equalWidth: true` — both labels are short, so the LayoutBuilder distributes them via `Expanded`).
+- The active pill has a charcoal background + white label; the inactive pill has a white background + charcoal label.
+- Switching pills repartitions the events list below by date: events whose end-or-start date is today or later show under **Upcoming**; the rest show under **Past**.
+
+**Edge cases to try**
+- On iPhone SE (320 px width), the equalWidth fallback may kick in if the device's text scale + label widths exceed the viewport. Verify there's no overflow and labels never truncate to ellipsis on default font scale. _(see also `A11Y-OVR-01` in §12.)_
+- Bump system text scaling to 200% — pills should still render without overflow exception (they may fall back to scrolling layout under extreme scaling — that's correct, not a bug).
+
+**Devices** All.
+
+---
+
+### HOME-CRE-01 — Create Event CTA visible
+
+**Pre-conditions**
+- Signed in.
+
+**Steps**
+1. On **Home**, find the wide charcoal button under the filter pills.
+
+**Expected**
+- The button reads **Create Event** with a leading `+` icon.
+- Tap → navigates to the Create Event screen (covered in `EV-CRE-01` in §4).
+
+**Edge cases to try**
+- Tap rapidly twice — no duplicate navigation, no crash.
+
+**Devices** All.
+
+---
+
+### HOME-JOIN-01 — Join Event tooltip + sheet
+
+**Pre-conditions**
+- Signed in.
+- Another staging user has generated an invite code via `EV-MEM-02` (or the dev team provided one).
+
+**Steps**
+1. On **Home**, find the small icon button in the top-right of the header (looks like a person-plus / link icon).
+2. Long-press the icon (mobile) or hover (web/tablet rail) → tooltip reads **Join Event**.
+3. Tap the icon. A bottom sheet appears with:
+   - Title: **Join Event**
+   - Subtitle: **Enter the 6-character code shared by the event organizer**
+   - A 6-character code input field (hint: `------`).
+   - **Join Event** primary button at the bottom.
+4. Type the 6-character code into the field (the input UPPERCASES letters as you type).
+5. Tap **Join Event**.
+
+**Expected**
+- After ~1-3 s the sheet dismisses and a snackbar appears: **You joined the event!**.
+- The new event appears in your **Upcoming** list.
+
+**Edge cases to try**
+- Type a code that doesn't exist → error message appears in red below the input.
+- Type fewer than 6 chars → **Join Event** button can be tapped but the server rejects; an error appears.
+- Cancel the sheet by swiping down → no join attempt, no snackbar.
+
+**Devices** All.
+
+---
+
+### HOME-EMPTY-01 — Empty state
+
+**Pre-conditions**
+- Signed in.
+- You have ZERO events. (Easiest: create a fresh throwaway account via `AUTH-SIGNUP-01` and don't create or join anything.)
+
+**Steps**
+1. Tap **Home**.
+
+**Expected**
+- The list area renders the empty state placeholder:
+  - Title: **No events yet**
+  - Subtitle: **Create an event or join one with a code**
+  - CTA: **Join with Code** (tappable — opens the same Join Event sheet from `HOME-JOIN-01`).
+
+**Edge cases to try**
+- Tap **Join with Code** CTA → Join Event sheet opens.
+
+**Devices** All.
+
+---
+
+### HOME-ERR-01 — Error state + retry
+
+**Pre-conditions**
+- Signed in.
+- A way to force the events provider into an error (network failure during initial load; airplane mode + sign-in + tap Home before the cache loads).
+
+**Steps**
+1. Put the device in airplane mode while signed out.
+2. Sign in (if the cached auth lets you) or restart the app.
+3. Tap **Home** before any cached events render.
+
+**Expected**
+- The body shows centered text **We couldn't load your events.** in dark grey.
+- Below the text, an outlined button reads **Try again** with a refresh icon.
+- Tap **Try again** → the provider re-invalidates; if network is restored, events appear; if still offline, the error state stays.
+
+**Edge cases to try**
+- Restore network → tap **Try again** → events load.
+- Restore network → wait without tapping → the auto-revalidation may not fire; tester reports whether the screen recovers without explicit retry.
+
+**Devices** iPhone, Android, Tablet rail (airplane mode is the easiest trigger). Web: simulate offline via DevTools → Network → Offline.
+
+---
+
+### HOME-LIST-01 — Section header counts
+
+**Pre-conditions**
+- Signed in.
+- You have at least 1 Upcoming event AND at least 1 Past event.
+
+**Steps**
+1. On **Home**, tap **Upcoming**. Observe the section header above the list.
+2. Tap **Past**. Observe the section header.
+
+**Expected**
+- Upcoming header reads **\<N\> UPCOMING EVENTS** in dark-grey letterspaced caps, where N is the number of upcoming events.
+- Past header reads **\<N\> PAST EVENTS** similarly.
+- Singular and plural use the same template (so 1 event reads `1 UPCOMING EVENTS`) — that's a known i18n caveat, not a bug.
+
+**Edge cases to try**
+- Create another event → header count increments by 1.
+
+**Devices** All.
+
+---
 
 ## §4 Event lifecycle
 
-_Section pending — to be authored in Phase 3._
+**~25 min.** Create, edit, archive, leave, delete; member management; admin role transitions.
 
-Covers: **Role permission matrix** (owner / admin / member), Create event, Edit event, Archive event, Leave event, Delete event, Members screen, Promote to admin, Demote admin.
+### Role permission matrix
+
+Tick each cell as you verify it on the device under test. **Allow / deny** is what the app's UI should expose — if a role can perform the action via the UI without an error, mark allowed; if the UI hides the affordance or a snackbar denies it, mark denied.
+
+| Action | Owner | Admin | Member |
+|--------|:-----:|:-----:|:------:|
+| Edit event details (settings gear → Edit Event screen) | ☐ allow | ☐ allow | ☐ deny |
+| Archive Event toggle (event dashboard) | ☐ allow | ☐ allow | ☐ deny |
+| Delete Event (event dashboard danger zone) | ☐ allow | ☐ deny | ☐ deny |
+| Leave Event | ✗ (owner cannot leave — must delete) | ☐ allow | ☐ allow |
+| Regenerate invite code (Add Member sheet) | ☐ allow | ☐ allow | ☐ deny |
+| Remove other member | ☐ allow | ☐ allow (cannot remove owner) | ☐ deny |
+| Promote member to admin | ☐ allow | ☐ deny | ☐ deny |
+| Demote admin to member | ☐ allow | ☐ deny | ☐ deny |
+| Edit any task in event (`canEditTask`) | ☐ allow | ☐ allow | ☐ deny (own/assigned only) |
+| Change any task status (`canChangeStatus`) | ☐ allow | ☐ allow | ☐ deny (own/assigned only — verify via snackbar `Only the assignee or an admin can change this`) |
+| Edit any expense | ☐ allow | ☐ allow | ☐ deny (own only) |
+| Delete any expense | ☐ allow | ☐ allow | ☐ deny (own only) |
+
+> 📌 The role checks live in `lib/app/features/dashboard/domain/models/event.dart` (`isOwner`, `isAdmin`, `isMember` — admin is implicitly anyone who is owner OR in `adminIds`). The task-permission checks live in the `TaskModel` (`canChangeStatus`). Tasks and expenses rows in this matrix are verified in §5 and §9; this matrix is the cross-reference. Settings-gear visibility uses `event.isAdmin(uid)`, which is true for the owner — so owners DO see the gear despite the spec earlier framing it as "owner-only".
+
+---
+
+### EV-CRE-01 — Create event
+
+**Pre-conditions**
+- Signed in.
+
+**Steps**
+1. On **Home**, tap **Create Event** (or tap the FAB on event dashboard if you're already in an event).
+2. The Create Event screen appears with app bar title **Create Event**.
+3. Pick an **Event Type** chip from the row: **Trip**, **Project**, **Social**, or **Custom** (the chip you tap turns sage with white text). _(There is NO emoji selector — selection is by ChoiceChip with the type label.)_
+4. Type a title (1-200 chars) into the field labeled **Title** with hint **What are you planning?**
+5. (Optional) Type a description into the field labeled **Description** with hint **Details, location, notes... (optional)**.
+6. (Optional) Tap **Start Date** row. The picker subtitle reads **Optional — tap to set**. Pick a date; the row now shows the date and gains a clear (✕) button on the right.
+7. The **Currency** dropdown defaults to **USD**. Tap it → menu shows 7 options: **USD**, **EUR**, **GBP**, **CAD**, **AUD**, **JPY**, **INR**. Helper text below the dropdown reads **Cannot be changed after creating the event.**
+8. Tap **Create Event** at the bottom.
+
+**Expected**
+- After ~1-3 s the screen pops back to **Home**.
+- A snackbar appears with the text **Event created** and an action button **Share invite** (visible for ~6 s).
+- The new event appears at the top of the **Upcoming** list (because its start date is today or later, or it has no start date).
+- Tapping the snackbar's **Share invite** action before it disappears opens the Add Member sheet (`EV-MEM-02`).
+
+**Edge cases to try**
+- Submit with **Title** empty → validator error: **Please enter a title**.
+- Submit with **Title** > 200 chars → validator error: **Title must be under 200 characters**.
+- Network failure during submit → error box appears with text **Couldn't create event — try again**; the submit button is re-enabled for retry.
+- Sign-in expires mid-form → inline error: **Sign-in required to create an event.**.
+
+**Devices** All.
+
+> 📌 **The Create Event form does NOT have an end-date field.** End date is editable only after creation, via Edit Event (`EV-EDIT-01`). If the dev team adds an end-date field in a later build, the field will appear here and this note becomes stale — flag it.
+
+---
+
+### EV-EDIT-01 — Edit event (settings gear, owner + admin)
+
+**Pre-conditions**
+- Signed in as an owner OR admin of an event with ≥ 1 other member.
+
+**Steps**
+1. From **Home**, tap the event tile to open the event dashboard.
+2. In the top-right of the event header, find the settings gear icon ⚙️ (visible only if you're owner or admin).
+3. Tap the gear → Edit Event screen opens with app bar title **Edit Event**.
+4. The screen exposes:
+   - The same row of ChoiceChips for event type (**Trip** / **Project** / **Social** / **Custom**).
+   - **Title** field (hint **Title**).
+   - **Description** field (hint **Description (optional)**).
+   - **Start Date** ListTile (subtitle **Optional** if unset; date string if set).
+   - **End Date** ListTile (subtitle **Optional** if unset).
+   - **Archived** SwitchListTile (subtitle **Event is read-only** when on, otherwise the subtitle reads the active-state copy).
+5. Change the title to something new, e.g. append ` — edited` to the existing title.
+6. Tap **Save** (or the equivalent save action — verify with the actual button label on screen; drafter: if a label other than `Save` is rendered, file as a bug or update this step).
+
+**Expected**
+- After ~1-3 s you pop back to the event dashboard.
+- The header now shows the new title.
+- Open **Home** → the event tile reflects the new title.
+
+**Edge cases to try**
+- Sign in as a Member (not owner/admin) → open the event → the settings gear is **NOT visible** in the header. Mark this row as `deny` in the role matrix.
+- Set **Start Date** > **End Date** → validator shows an inline date error.
+- Toggle **Archived** ON via this screen — should produce the same effect as the event-dashboard Archive Event switch (covered in `EV-ARCH-01`).
+
+**Devices** All.
+
+---
+
+### EV-ARCH-01 — Archive Event toggle
+
+**Pre-conditions**
+- Signed in as owner or admin of an event.
+
+**Steps**
+1. Open the event dashboard. Scroll to the section that contains the actions cards.
+2. Find the **Archive Event** SwitchListTile.
+   - When **OFF** the subtitle reads **Archive to make read-only**.
+   - When **ON** the subtitle reads **Event is archived (read-only)**.
+3. Toggle **ON**.
+
+**Expected**
+- The switch flips to ON instantly (optimistic update).
+- The event header (in the gradient hero) now shows a small terracotta **Archived** pill.
+- The event status is now `EventStatus.archived` in Firestore.
+- **The event does NOT move to the Past filter on Home.** Past / Upcoming is partitioned by **date** (`startDate` / `endDate` vs today), not by archive state. An archived event whose start date is in the future still shows under **Upcoming**.
+- Read-only effect: archived events should reject mutating actions (verify with task status change attempts in §5). _(Drafter: confirm against actual archive-read-only contract in code — this is a spec-level promise that may not be fully enforced in v1.)_
+
+**Edge cases to try**
+- Toggle OFF → subtitle returns to **Archive to make read-only**; pill disappears.
+- Trigger a failure (airplane mode while toggling) → snackbar: **Could not update archive status**.
+- Sign in as a Member → archive switch is **NOT visible** on the event dashboard.
+
+**Devices** All.
+
+> ⚠️ **Common phantom bug to avoid filing:** archived events staying under **Upcoming** is NOT a bug — Past / Upcoming is date-driven only.
+
+---
+
+### EV-LEAVE-01 — Leave Event (members + admins, NOT owner)
+
+**Pre-conditions**
+- Signed in as a non-owner member (or admin) of an event.
+
+**Steps**
+1. Open the event dashboard.
+2. Scroll to the **Leave Event** action card (with a left-arrow icon).
+3. Tap **Leave Event**. A dialog appears with:
+   - Title: **Leave Event?**
+   - Body: **You will lose access to this event. Your past messages and expenses will remain.**
+   - Buttons: **Cancel** + **Leave** (terracotta).
+4. Tap **Leave**.
+
+**Expected**
+- After ~2-3 s you navigate back to **Home**.
+- The event is no longer in your Upcoming or Past list.
+- The Cloud Function `removeEventMember` ran successfully.
+- The other event members can still see the event; in the Members screen, you no longer appear.
+
+**Edge cases to try**
+- Cancel mid-dialog → no navigation, you stay in the event.
+- Network failure → snackbar: **Failed to leave event**.
+- Sign in as the OWNER → the **Leave Event** card is NOT visible (you cannot leave your own event; delete it instead).
+
+**Devices** All.
+
+---
+
+### EV-MEM-01 — Members screen + roles
+
+**Pre-conditions**
+- Signed in to an event with ≥ 2 members.
+
+**Steps**
+1. On the event dashboard, tap the members card. Title reads **\<N\> member** (singular) or **\<N\> members** (plural).
+2. The Members screen opens with app bar title **Members (\<N\>)**.
+3. Each row shows: avatar circle, display name (or UID fallback), and a role label: **Owner** (sage), **Admin** (info-blue), or **Member** (grey).
+4. Note: the floating action button (FAB) at the bottom-right is visible only if you're owner or admin — it opens the Add Member sheet.
+
+**Expected**
+- The owner row always shows **Owner** in sage.
+- Admins show **Admin** in info-blue.
+- Other members show **Member** in grey.
+- Your own row has no "remove" action.
+- For non-owner non-self rows, owners and admins see a remove affordance; admins cannot remove the owner.
+- For non-owner non-self rows, owners see a promote/demote affordance; admins do NOT see it.
+
+**Edge cases to try**
+- Sign in as a plain Member → open Members screen → no FAB, no remove or promote affordances on any row.
+
+**Devices** All.
+
+---
+
+### EV-MEM-02 — Add member by code
+
+**Pre-conditions**
+- Signed in as owner or admin of an event.
+
+**Steps**
+1. Open Members screen (`EV-MEM-01`). Tap the sage **+** FAB at the bottom-right.
+2. The Add Member bottom sheet appears.
+3. The first state shows a loader with the text **Generating code...**.
+4. After ~1-2 s the loader is replaced by the 6-character code in large type, plus a row with a **Copy** button (with a copy icon) and a **Generate New Code** outline button below.
+5. Tap **Copy**.
+
+**Expected**
+- A snackbar appears with the text **Code copied to clipboard**.
+- The system clipboard now holds the 6-character code.
+- Share the code with another staging account; that account uses `HOME-JOIN-01` to join.
+
+**Edge cases to try**
+- Tap **Generate New Code** → loader reappears briefly; a new 6-char code replaces the old one. The OLD code stops working (an attempt to join with it produces an error).
+- Network failure during initial generation → error state with a **Try Again** button.
+
+**Devices** All.
+
+---
+
+### EV-MEM-03 — Remove member
+
+**Pre-conditions**
+- Signed in as owner or admin.
+- The event has ≥ 2 non-owner members.
+
+**Steps**
+1. Open Members screen.
+2. Tap the remove affordance on a non-owner non-self row.
+3. A dialog appears with:
+   - Title: **Remove Member?**
+   - Body: **They will lose access to this event. Their past messages and expenses will remain.**
+   - Buttons: **Cancel** + **Remove** (terracotta).
+4. Tap **Remove**.
+
+**Expected**
+- The row processes (~1-2 s) then disappears from the list.
+- Snackbar: **Member removed** (on sage background).
+- The member count in the app bar decrements.
+
+**Edge cases to try**
+- Cancel the dialog → no change.
+- Network failure → snackbar: **Failed to remove member**.
+- Try to remove the OWNER → no remove affordance is shown on the owner row even for an admin.
+
+**Devices** All.
+
+---
+
+### EV-MEM-04 — Promote to admin / Demote admin (OWNER ONLY)
+
+**Pre-conditions**
+- Signed in as the OWNER of an event with ≥ 1 non-owner member.
+
+**Steps**
+1. Open Members screen.
+2. Tap the promote affordance on a Member row.
+
+**Expected**
+- After ~1-2 s, snackbar: **Promoted to admin** (sage background).
+- The row's role label flips from **Member** (grey) to **Admin** (info-blue).
+3. Tap the same row's demote affordance.
+- After ~1-2 s, snackbar: **Demoted to member** (sage background).
+- The role label flips back to **Member**.
+
+**Edge cases to try**
+- Network failure during promote → snackbar: **Failed to promote**.
+- Network failure during demote → snackbar: **Failed to demote admin**.
+- Sign in as an Admin (not owner) → the promote / demote affordance is **NOT visible** on any row.
+
+**Devices** All.
+
+---
+
+### EV-DEL-01 — Delete Event (destructive — OWNER ONLY, exercise last)
+
+**Pre-conditions**
+- Signed in as the owner of an event you no longer need.
+- **Do NOT** use a shared event the team is testing against — deletion is permanent for all members.
+
+**Steps**
+1. Open the event dashboard.
+2. Scroll to the bottom; find the terracotta-outlined **Delete Event** card (in the danger zone, after Archive + Members + Leave). Visible only if you're the owner.
+3. Tap **Delete Event**. **Step 1 dialog** appears:
+   - Title: **Delete Event?** (in terracotta).
+   - Body: **This will permanently delete the event and all its data: messages, expenses, tasks, and invite codes.** + new paragraph + **This action cannot be undone.**
+   - Buttons: **Cancel** + **Continue** (terracotta).
+4. Tap **Continue**. **Step 2 dialog** appears:
+   - Title: **Are you sure?** (in terracotta).
+   - Body: **All event data will be permanently erased for all members.**
+   - Buttons: **Cancel** + **Delete Forever** (terracotta elevated button).
+5. Tap **Delete Forever**.
+
+**Expected**
+- Loader briefly appears, then you're returned to **Home**.
+- The event no longer appears in your Upcoming or Past list.
+- Other staging members also lose access (the `deleteEvent` Cloud Function wipes the doc + subcollections).
+
+**Edge cases to try**
+- Cancel on either step → no deletion.
+- Network failure → snackbar: **Failed to delete event**.
+- Sign in as Admin (not owner) → **Delete Event** card is **NOT visible**.
+
+**Devices** All.
+
+> 🚨 **Run this test last in §4.** Deletion is permanent. Use a throwaway event you created yourself; never delete the team's shared staging event.
+
+---
 
 ## §5 Tasks — event-scoped
 
