@@ -1666,21 +1666,431 @@ Tick each cell as you verify it on the device under test. **Allow / deny** is wh
 
 ## §7 Chat — event-scoped
 
-_Section pending — to be authored in Phase 5._
+**~20 min.** Inside an event, tap the **Chat** quick-link. Covers send / critical alert / settlement dispute / send-failed retry / empty state.
 
-Covers: Send message, critical-alert modal, settlement dispute sheet, send-failed retry, empty state.
+### CHAT-SEND-01 — Send a message
+
+**Pre-conditions**
+- Signed in as a member of the event.
+- The event has ≥ 2 members (so you can see another user's name in your inbox preview later).
+
+**Steps**
+1. Open the event → tap **Chat**.
+2. App bar reads **Chat**. Below the message list, an input row shows a text field with hint **Type a message...**.
+3. Type a short message, e.g. `Hey crew, packing list ready?`.
+4. Tap the send icon button (right side of the input).
+
+**Expected**
+- The message appears at the bottom of the chat list within ~1-2 s as a charcoal-on-cream bubble aligned to the right (your own message).
+- The send field clears.
+- The keyboard stays open for follow-up messages.
+
+**Edge cases to try**
+- Submit with the field empty → no message sent, no snackbar.
+- Send a very long message (~500 chars) → bubble wraps gracefully.
+- Tap the send icon while a previous send is in flight (`isSending: true`) → the input is disabled; no duplicate send.
+
+**Devices** All.
+
+---
+
+### CHAT-EMPTY-01 — Empty chat state
+
+**Pre-conditions**
+- Signed in.
+- Open the Chat for an event with zero messages (a freshly created event).
+
+**Steps**
+1. Open the event → tap **Chat**.
+
+**Expected**
+- The body shows centered text **No messages yet — be the first to say something.** in medium grey.
+- The input row is still active at the bottom — type + send works as in `CHAT-SEND-01`.
+
+**Edge cases to try**
+- Send one message → the empty state disappears and the message renders as a bubble.
+
+**Devices** All.
+
+---
+
+### CHAT-FAIL-01 — Send-failed inline error + retry
+
+**Pre-conditions**
+- Signed in. In an event Chat.
+
+**Steps**
+1. Put the device in airplane mode.
+2. Type a message and tap send.
+
+**Expected**
+- After a short delay, an inline row appears just above the input with a terracotta error icon and the text **Send failed — tap Send again to retry**.
+- The input field re-enables; you can tap send to retry.
+
+**Edge cases to try**
+- Restore network → tap send again → message goes out, error row disappears.
+- Send multiple messages while offline — each fail; the error row stays visible until the next success.
+
+**Devices** All.
+
+---
+
+### CHAT-URG-01 — Critical alert modal (send urgent)
+
+**Pre-conditions**
+- Signed in.
+- In an event Chat.
+
+**Steps**
+1. Tap the urgent icon (looks like a warning) in the chat's app bar (terracotta-colored, right side of **Chat** title).
+2. A bottom sheet appears with title **Send Critical Alert** (with the urgent icon as prefix).
+3. Below the title, four predefined option rows:
+   - **Emergency - Everyone stop and check in**
+   - **Meeting point changed - Check details**
+   - **Weather alert - Take shelter**
+   - **Schedule changed - Check new times**
+4. Tap any one. The row gets a terracotta-tinted background + a terracotta border.
+5. Tap the terracotta **Send Alert** button at the bottom.
+
+**Expected**
+- The sheet dismisses.
+- The alert appears in the chat as a normal bubble BUT with a **Critical Alert** label above the text (terracotta with the priority-high icon).
+- All other members of the event receive a push notification (covered in §7.5).
+
+**Edge cases to try**
+- Type into **Or type a custom alert...** field — selection clears on any of the predefined options.
+- Tap a predefined option after typing → the custom field clears.
+- Tap **Send Alert** with both empty → no send (silent no-op per `_send` guard).
+
+**Devices** All.
+
+---
+
+### CHAT-DISP-01 — Settlement dispute sheet
+
+**Pre-conditions**
+- Signed in.
+- An event chat that contains at least one settlement-kind message (created when a user taps Settle Up → marks paid; or seeded by the dev team).
+
+**Steps**
+1. Find a settlement-kind bubble in the chat (visually different from regular messages — typically sage-tinted with a coin / handshake glyph; tester confirms the exact visual treatment in the build).
+2. Tap the settlement bubble.
+3. A bottom sheet opens with:
+   - Title: **Settlement**
+   - Summary line (e.g. **You settled $25 with Alex**).
+   - Subtitle: **Disputing will remove this settlement and restore the balance.**
+   - Sage filled button: **All good — keep it**
+   - Terracotta outlined button: **Dispute this settlement**
+
+**Expected**
+- Tap **All good — keep it** → sheet dismisses, no action.
+- Tap **Dispute this settlement** → sheet dismisses + Cloud Function `disputeSettlement` fires.
+  - On success: sage snackbar **Settlement disputed**.
+  - On failure: terracotta snackbar **Could not dispute — try again**.
+
+**Edge cases to try**
+- Tap a regular (non-settlement) message → sheet does NOT appear.
+- Dispute a settlement that was already disputed → behavior is server-driven; verify the snackbar text matches one of the two expected outcomes.
+
+**Devices** All.
+
+---
 
 ## §7.5 Push notifications + deep-link
 
-_Section pending — to be authored in Phase 5._
+**~15 min.** V1 wires FCM end-to-end via `lib/app/core/services/fcm_service.dart` + `fcm_handler.dart` + `fcm_gateway.dart`, plus the Cloud Function `onUrgentMessageCreated` (`functions/src/events/onUrgentMessageCreated.ts`). Tests below need TWO staging accounts and at least one phone-form-factor device (simulator push delivery is unreliable; prefer real hardware).
 
-Covers: Permission grant, urgent message → push arrives, tap from background, tap from killed state, non-urgent silent, web N/A.
+> 🔧 **Notification payload (for technical testers):**
+> - Title: **🚨 Urgent in \<event title\>**
+> - Body: the alert text, truncated to 80 chars with an ellipsis suffix `…`.
+> - Data: `eventId`, `deepLink: /dashboard/event/{eventId}/chat`, `messageId`.
+
+### PUSH-PERM-01 — Permission grant on first run
+
+**Pre-conditions**
+- Fresh install (no prior notification grant on this device for the app).
+
+**Steps**
+1. Sign in for the first time on this build.
+
+**Expected**
+- iOS / Android prompts for notification permission within a short window after sign-in.
+- Grant → the device's FCM token is written to `users/{uid}/private/profile.fcmTokens` (technical testers can verify in Firestore via [Appendix B](#appendix-b--firebase-staging-console)).
+
+**Edge cases to try**
+- Deny the permission → no token is written; no notifications arrive in the rest of §7.5 (those tests should be marked N/A or skipped).
+- Re-grant via OS Settings later → the token is written on next app foreground.
+
+**Devices** iPhone, Android, Tablet rail. Web: N/A — `firebase_messaging` web support is not configured in v1.
+
+---
+
+### PUSH-URG-01 — Urgent message → push arrives
+
+**Pre-conditions**
+- TWO staging accounts: **A** (recipient — your device) and **B** (sender — second device or simulator).
+- Both accounts are members of the same event.
+- A's device has notifications granted (`PUSH-PERM-01`).
+
+**Steps**
+1. On device A: sign in as A → app is backgrounded (swipe up to background; or fully terminate for `PUSH-COLD-01`).
+2. On device B: sign in as B → open the event chat → fire a Critical Alert via `CHAT-URG-01`.
+3. Wait up to ~30 s.
+
+**Expected**
+- Device A receives a system notification:
+  - Title: **🚨 Urgent in \<event title\>** (the title is prefixed with the 🚨 emoji).
+  - Body: the alert text (e.g. **Emergency - Everyone stop and check in**), truncated to 80 chars with `…` if longer.
+- The notification appears in the system notification shade.
+
+**Edge cases to try**
+- Send a NON-critical message from B (`CHAT-SEND-01`) → no notification arrives on A. The `onUrgentMessageCreated` Cloud Function fires only when `data.isHighPriority === true`.
+- Send a Critical Alert from A's OWN account → A does NOT get a notification (the function skips the sender).
+- Verify only event members receive the notification — non-members don't.
+
+**Devices** iPhone, Android. Tablet rail: same as phone (FCM works on any iOS/Android device with notification permission). Web: N/A.
+
+---
+
+### PUSH-FG-01 — Foreground delivery (in-app banner, not system notification)
+
+**Pre-conditions**
+- Same as `PUSH-URG-01` setup.
+- Device A has the app open in the foreground but is NOT on the event chat screen for the target event (e.g., browsing Home or Profile or a different event).
+
+**Steps**
+1. From device B, fire a Critical Alert in the shared event.
+
+**Expected**
+- Device A's app shows an in-app banner (NOT a system notification) within ~30 s, surfacing the title + body.
+- Tapping the banner deep-links to the event's chat screen (`/dashboard/event/{eventId}/chat`).
+
+**Edge cases to try**
+- Device A is ON the target event's chat screen when the alert fires → the foreground banner is **suppressed** (no in-app banner; the message just appears in the chat list). This is per `FcmHandler.handleForegroundMessage` which suppresses banners for the current event.
+
+**Devices** iPhone, Android. Web N/A.
+
+---
+
+### PUSH-BG-01 — Tap from background
+
+**Pre-conditions**
+- Device A's app is BACKGROUNDED (not killed — the app's process is still running, just not foregrounded).
+- A push notification from `PUSH-URG-01` is in the notification shade.
+
+**Steps**
+1. Pull down the notification shade.
+2. Tap the **🚨 Urgent in \<event title\>** notification.
+
+**Expected**
+- The app foregrounds.
+- It deep-links directly to the correct event chat screen (`/dashboard/event/{eventId}/chat`) — bypassing Home / Tasks / wherever the user was before.
+
+**Edge cases to try**
+- Tap a notification for an event you've since left → the app navigates to `/dashboard/event/{eventId}/chat` but the screen may show an empty / error state because you no longer have access. That's a graceful failure, not a bug.
+
+**Devices** iPhone, Android. Web N/A.
+
+---
+
+### PUSH-COLD-01 — Tap from killed state (cold start deep-link)
+
+**Pre-conditions**
+- Device A's app is FULLY TERMINATED (swipe up + flick away on iOS; force-stop on Android).
+- A push notification from `PUSH-URG-01` is in the notification shade.
+
+**Steps**
+1. Tap the notification.
+
+**Expected**
+- The app cold-starts.
+- After the auth gate / splash, it deep-links to the correct event chat screen — NOT to Home / Tasks default.
+
+**Edge cases to try**
+- Tap a stale notification (the event was deleted in the meantime) → the app cold-starts and shows a graceful "event not found" state instead of crashing.
+
+**Devices** iPhone, Android. Web N/A.
+
+---
 
 ## §8 Chat inbox — cross-event
 
-_Section pending — to be authored in Phase 5._
+**~10 min.** The Chat tab, top-level. Cross-event inbox of conversation rows.
 
-Covers: Inbox app bar, ConversationTile cards, unread pill, URGENT badge, last-message preview, timestamp formatting, tap to open, adaptive empty states.
+### INBOX-LAYOUT-01 — Inbox layout
+
+**Pre-conditions**
+- Signed in.
+- You have ≥ 2 events with at least one chat message each.
+
+**Steps**
+1. Tap the **Chat** tab.
+
+**Expected**
+- Header: **Chat** title in the standard ScreenHeader (NOT the event-scoped **Chat** app bar — same word, different context).
+- Below the header: a scrollable list of conversation rows, one per event with ≥ 1 message.
+- Each conversation row is wrapped in an **elevated Card** (white background, rounded corners, ~16 px horizontal margin, ~4 px vertical margin) — verifies the Phase-6 polish from `cohesive design refresh + cross-event tabs + constants centralization`.
+- Each row shows:
+  - Left: event emoji (per event type — e.g. ✈️ for Trip, 🎯 for Project, 🎉 for Social, 📌 for Custom).
+  - Center: event title (bold if unread or urgent) + last-message preview (one line, truncated).
+  - Right: relative timestamp + unread pill (if any).
+
+**Edge cases to try**
+- Pull-to-refresh (if implemented) → reloads the inbox.
+
+**Devices** All.
+
+---
+
+### INBOX-UNREAD-01 — Unread pill + cap at 99+
+
+**Pre-conditions**
+- Signed in.
+- A second staging account has sent ≥ 1 message to a shared event since the last time you opened that event's chat.
+
+**Steps**
+1. Tap **Chat** tab. Find the conversation row for that event.
+
+**Expected**
+- The row's right side shows a small dark-charcoal pill with the unread count (e.g., **3**).
+- The event title and last-message preview render in bold weight.
+- Have a second account send 100+ messages → unread pill caps at **99+** (per `_unreadLabel` in `ConversationTile`).
+
+**Edge cases to try**
+- Tap the row → opens the event chat → the read state clears via `markEventRead` post-frame.
+- Return to the **Chat** tab → the pill is gone and the row reverts to non-bold weight.
+
+**Devices** All.
+
+---
+
+### INBOX-URG-01 — URGENT badge
+
+**Pre-conditions**
+- Signed in.
+- A second staging account has sent a Critical Alert (urgent) to a shared event AND you haven't opened that chat yet.
+
+**Steps**
+1. Tap **Chat** tab. Find the affected conversation row.
+
+**Expected**
+- A small terracotta **URGENT** badge appears to the left of the event title.
+- The title is bold; the last-message preview text is also in a terracotta-tinted heavier weight.
+- The unread pill (if also present) is **terracotta** (not charcoal) to reinforce urgency.
+
+**Edge cases to try**
+- Tap the row → opens chat → on return, the URGENT badge is gone (`markEventRead` clears the urgent flag along with the unread state).
+
+**Devices** All.
+
+---
+
+### INBOX-PREVIEW-01 — Last-message preview "You: ..." prefix
+
+**Pre-conditions**
+- Signed in.
+- You are the most recent sender in a shared event.
+
+**Steps**
+1. Send a message in an event chat.
+2. Return to the **Chat** tab.
+
+**Expected**
+- The conversation row for that event shows the last-message preview prefixed with **You:** (e.g., `You: Packing list ready?`).
+- Long previews truncate at ~60 chars with `…`.
+
+**Edge cases to try**
+- A second account sends a message after yours → the preview now reads **\<their display name\>: \<their text\>**, with the prefix being their actual display name (NOT "You").
+- When `displayName` is null for the sender, the prefix falls back to their UID.
+
+**Devices** All.
+
+---
+
+### INBOX-TIME-01 — Timestamp formatting
+
+**Pre-conditions**
+- Signed in.
+- Events with messages of various recency: <1 min, <1 h, <24 h, yesterday, <30 d, >30 d.
+
+**Steps**
+1. Tap **Chat**. Inspect each row's timestamp on the right.
+
+**Expected**
+- < 1 minute ago: **now**
+- < 1 hour ago: **\<N\>m**
+- < 24 hours ago: **\<N\>h**
+- 1 day ago: **Yesterday**
+- < 30 days ago: **\<N\>d**
+- ≥ 30 days ago: **\<Mon\> \<D\>** (e.g. **Apr 12**)
+
+**Edge cases to try**
+- Pull-to-refresh (if implemented) — relative timestamps recompute.
+- The relative labels are English-only in v1 (see Appendix D Known Limitations) — don't file as a bug for non-English locales.
+
+**Devices** All.
+
+---
+
+### INBOX-TAP-01 — Tap to open event chat
+
+**Pre-conditions**
+- Signed in.
+- ≥ 1 conversation row in the inbox.
+
+**Steps**
+1. Tap any conversation row.
+
+**Expected**
+- Navigates to `/dashboard/event/{eventId}/chat` — the event-scoped chat screen tested in §7.
+- The unread + URGENT state on the row clears (via `markEventRead` on first frame).
+- Use the device back button → returns to **Chat** tab with the same scroll position.
+
+**Edge cases to try**
+- Tap a row whose event you've since left → graceful "event not found" or empty chat state.
+
+**Devices** All.
+
+---
+
+### INBOX-EMPTY-01 — Adaptive empty states
+
+**Pre-conditions**
+- Signed in.
+
+**Steps**
+1. **Path A (no messages, but has events)**: account belongs to events but no event has any messages.
+2. **Path B (no events at all)**: fresh account, no events.
+
+**Expected**
+- Path A: empty placeholder **No messages yet** + subtitle **Open an event from the Dashboard to start chatting.** + CTA **Open Dashboard** → goes to Home.
+- Path B: same title + subtitle **Create or join an event to chat with your crew.** + CTA **Create an event** → goes to Home.
+
+**Edge cases to try**
+- The CTA navigates to `/dashboard` (Home tab).
+
+**Devices** All.
+
+---
+
+### INBOX-ERR-01 — Inbox error state
+
+**Pre-conditions**
+- Signed in.
+- A way to force the `globalInboxProvider` into error (typically airplane mode + cold start before the cache loads).
+
+**Steps**
+1. Trigger the error state (network failure + restart).
+
+**Expected**
+- The body shows an EmptyStatePlaceholder with title **Could not load your inbox** and the underlying error message as the subtitle, plus an error Lottie animation.
+
+**Edge cases to try**
+- Restore network → the screen recovers without restart.
+
+**Devices** iPhone, Android, Tablet rail. Web: simulate offline via DevTools.
+
+---
 
 ## §9 Budget — event-scoped
 
