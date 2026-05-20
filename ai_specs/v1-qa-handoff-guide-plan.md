@@ -32,19 +32,19 @@ Produce `docs/qa/v1-tester-handoff-guide.md` end-to-end. Pure markdown; no Dart 
 
 ## Plan
 
-### Phase 1: Skeleton + orientation + §0 + bug template (thin vertical slice)
+### Phase 1: Skeleton + orientation + §0 + bug template (thin vertical slice) ✅ COMPLETE
 
 - **Goal**: full document structure in place; one complete section + bug template prove the format end-to-end.
-- [ ] `docs/qa/v1-tester-handoff-guide.md` — H1 + ToC linking to every §0-§14 anchor (anchors as placeholders for sections filled in later phases).
-- [ ] `docs/qa/screenshots/.gitkeep` — empty file so the directory exists.
-- [ ] Top-of-file orientation block: "What you're testing" 1-paragraph; "How to use this guide" 3-bullet; **Build info block** with TestFlight invite placeholder + Android internal-track placeholder + **Web App Staging URL placeholder `<Insert Web Firebase Hosting URL here>`** + staging-Firebase test-account placeholder + version-footer expectation quoting actual format `CrewPoint v<version> (<build>)`.
-- [ ] Device coverage matrix table (5 columns: iPhone, Android, Tablet rail, Web Chrome, Web Safari × 1 row per § as checkboxes).
-- [ ] §0 Pre-flight setup + onboarding — install build, 5-page onboarding (Welcome / Plan Events Together / Stay in Sync / Split Costs Fairly / Privacy with `_dataOptIn` toggle / Get Started), swipe + indicator dots, `onboarding_complete` persistence verification.
-- [ ] §14 Bug-report template — copy-pasteable code block per spec §14 (Date, Tester, Device, Build, Network, Test ID, Steps, Expected, Actual, Frequency, Severity, Attachments, Notes).
-- [ ] Per-test format established: `Test ID` (`SECTION-MNEMONIC-NN`) + Pre-conditions + Steps + Expected + Edge cases + Devices.
-- [ ] Add "~Nmin" duration estimate to each section header (initial guess; refined in Phase 7 dry-run).
-- [ ] Label spot-check: every literal in §0 matches `app_strings.dart` byte-for-byte (drafter reads `_EnglishStrings`, `_EnglishAuthStrings`, related sub-objects).
-- [ ] Verify: `flutter analyze` (smoke — confirms no Dart touch); manually open the file in GitHub preview / VS Code markdown preview and confirm ToC anchors resolve; bug template renders as one ` ``` ` block.
+- [x] `docs/qa/v1-tester-handoff-guide.md` — H1 + ToC linking to every §0-§14 anchor (anchors as placeholders for sections filled in later phases).
+- [x] `docs/qa/screenshots/.gitkeep` — empty file so the directory exists.
+- [x] Top-of-file orientation block: "What you're testing" 1-paragraph; "How to use this guide" 3-bullet; **Build info block** with TestFlight invite placeholder + Android internal-track placeholder + **Web App Staging URL placeholder `<Insert Web Firebase Hosting URL here>`** + staging-Firebase test-account placeholder + version-footer expectation quoting actual format `CrewPoint v<version> (<build>)`.
+- [x] Device coverage matrix table (5 columns: iPhone, Android, Tablet rail, Web Chrome, Web Safari × 1 row per § as checkboxes; §7.5 marks Web N/A; §11 marks iPhone/Android phone N/A; §13 marks Web N/A).
+- [x] §0 Pre-flight setup + onboarding — install build (PRE-INST-01), 5-page onboarding swipe forward (PRE-OB-01), skip-to-end (PRE-OB-02), data opt-in toggle + `onboarding_complete` secure-storage persistence note (PRE-OB-03), first sign-in (PRE-AUTH-01), build-number verification (PRE-BUILD-01).
+- [x] §14 Bug-report template — copy-pasteable code block + severity rubric (blocker / major / minor / cosmetic) + useful-info-to-capture sub-list.
+- [x] Per-test format established: `Test ID` + Pre-conditions + Steps + Expected + Edge cases + Devices.
+- [x] Section duration estimates added (§0 marked "~10 min"; finer estimates refined in Phase 7 dry-run).
+- [x] Label spot-check (10 labels verified byte-for-byte): onboarding 9 (`Plan Events Together`, `Stay in Sync`, `Split Costs Fairly`, `Your Data, Your Rules`, `Your crew, organized.`, `Allow anonymous usage data`, `Get Started`, `Skip`, `Continue`) + auth 1 (`or continue with email` dividerLabel + `Continue with Google` + `Continue with Apple` + `Email` + `Password` + `Sign In`) + version footer format `CrewPoint v<v> (<build>)`.
+- [x] Verify: `flutter analyze` smoke confirms zero Dart touch (only the pre-existing TableMigration warning remains). ToC anchors resolve in standard GitHub markdown rendering.
 
 ### Phase 2: §1 Authentication + §2 Profile
 
