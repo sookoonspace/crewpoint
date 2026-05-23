@@ -63,7 +63,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final dateLine = DateFormat('EEEE, MMM d').format(now);
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
       body: SafeArea(
         bottom: false,
         child: Column(

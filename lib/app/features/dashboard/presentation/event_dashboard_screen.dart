@@ -24,7 +24,6 @@ class EventDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.cream,
       body: CustomScrollView(
         slivers: [
           // Hero

@@ -57,10 +57,8 @@ class BudgetScreen extends StatelessWidget {
     final symbol = _currencySymbol(currency);
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
       appBar: AppBar(
         title: const Text('Budget'),
-        backgroundColor: AppColors.cream,
         elevation: 0,
         actions: [
           if (onExportPdf != null || onExportCsv != null)

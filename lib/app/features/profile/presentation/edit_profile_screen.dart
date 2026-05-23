@@ -208,7 +208,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
     if (_showSuccess) {
       return Scaffold(
-        backgroundColor: AppColors.cream,
         body: Center(
           child: Column(
             mainAxisSize: .min,
@@ -238,10 +237,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
       appBar: AppBar(
         title: const Text('Edit Profile'),
-        backgroundColor: AppColors.cream,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(AppIcons.actionClose),

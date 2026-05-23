@@ -160,19 +160,15 @@ class _EventTasksPageState extends ConsumerState<EventTasksPage> {
         );
       },
       loading: () => Scaffold(
-        backgroundColor: AppColors.cream,
         appBar: AppBar(
           title: const Text('Tasks'),
-          backgroundColor: AppColors.cream,
           elevation: 0,
         ),
         body: const Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => Scaffold(
-        backgroundColor: AppColors.cream,
         appBar: AppBar(
           title: const Text('Tasks'),
-          backgroundColor: AppColors.cream,
           elevation: 0,
         ),
         body: Center(child: Text('Error: $e')),

@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_assets.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/router/app_router.dart';
@@ -68,7 +67,6 @@ class _ChatInboxScreenState extends ConsumerState<ChatInboxScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
       body: SafeArea(
         bottom: false,
         child: Column(

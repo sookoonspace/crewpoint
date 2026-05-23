@@ -62,7 +62,6 @@ class ProfileScreen extends ConsumerWidget {
     final s = context.strings.profile;
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(child: _HeroCard(user: user)),
@@ -309,7 +308,7 @@ class _SectionHeader extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: AppColors.darkGrey,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
           letterSpacing: 1.2,
           fontWeight: FontWeight.w600,
         ),
@@ -325,13 +324,14 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Card(
       elevation: 0,
-      color: AppColors.white,
+      color: colors.surfaceContainerHighest,
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.borderLg,
         side: BorderSide(
-          color: AppColors.lightGrey.withValues(alpha: 0.7),
+          color: colors.outline.withValues(alpha: 0.4),
           width: 0.5,
         ),
       ),
@@ -371,13 +371,14 @@ class _PaymentCard extends StatelessWidget {
         user?.paymentMethod != null && user!.paymentMethod!.isNotEmpty;
     final s = context.strings.profile;
 
+    final colors = Theme.of(context).colorScheme;
     return Card(
       elevation: 0,
-      color: AppColors.white,
+      color: colors.surfaceContainerHighest,
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.borderLg,
         side: BorderSide(
-          color: AppColors.lightGrey.withValues(alpha: 0.7),
+          color: colors.outline.withValues(alpha: 0.4),
           width: 0.5,
         ),
       ),
@@ -386,11 +387,12 @@ class _PaymentCard extends StatelessWidget {
           hasPayment
               ? _methodIcon(user?.paymentMethod)
               : AppIcons.actionAddCircle,
-          color: hasPayment ? AppColors.darkGrey : AppColors.sage,
+          color: hasPayment ? colors.onSurfaceVariant : AppColors.sage,
         ),
         title: hasPayment
             ? Text(
                 '${_methodLabel(s, user?.paymentMethod)}: ${user?.paymentHandle ?? ''}',
+                style: TextStyle(color: colors.onSurface),
               )
             : Text(
                 s.addPaymentMethod,
@@ -400,14 +402,11 @@ class _PaymentCard extends StatelessWidget {
             ? null
             : Text(
                 s.addPaymentMethodSubtitle,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
               ),
-        trailing: const Icon(
-          AppIcons.chevronRight,
-          color: AppColors.mediumGrey,
-        ),
+        trailing: Icon(AppIcons.chevronRight, color: colors.onSurfaceVariant),
         onTap: () => context.push('/profile/edit'),
         shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
       ),
@@ -424,7 +423,7 @@ class _DangerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 0,
-      color: AppColors.white,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.borderLg,
         side: BorderSide(color: AppColors.terracotta.withValues(alpha: 0.3)),
@@ -459,33 +458,26 @@ class _ThemeRow extends ConsumerWidget {
       ThemeMode.light => s.themeModeLight,
       ThemeMode.dark => s.themeModeDark,
     };
-    final theme = Theme.of(context);
-    return ListTile(
+    final colors = Theme.of(context).colorScheme;
+    return SettingsRow(
       key: const Key('profile.theme.row'),
-      leading: const Icon(
-        Icons.brightness_6_outlined,
-        color: AppColors.charcoal,
-      ),
-      title: Text(
-        s.themeRowTitle,
-        style: theme.textTheme.bodyLarge?.copyWith(color: AppColors.charcoal),
-      ),
+      icon: Icons.brightness_6_outlined,
+      title: s.themeRowTitle,
+      onTap: () => ThemeSwitcherSheet.show(context),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             label,
             key: const Key('profile.theme.row.trailing'),
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: AppColors.darkGrey,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
           ),
           const SizedBox(width: AppSpacing.xs),
-          const Icon(AppIcons.chevronRight, color: AppColors.mediumGrey),
+          Icon(AppIcons.chevronRight, color: colors.onSurfaceVariant),
         ],
       ),
-      onTap: () => ThemeSwitcherSheet.show(context),
-      shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
     );
   }
 }

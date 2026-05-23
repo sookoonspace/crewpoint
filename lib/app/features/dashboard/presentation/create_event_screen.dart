@@ -136,10 +136,8 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.cream,
       appBar: AppBar(
         title: const Text('Create Event'),
-        backgroundColor: AppColors.cream,
         elevation: 0,
       ),
       body: SingleChildScrollView(

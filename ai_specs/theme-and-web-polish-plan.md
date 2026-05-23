@@ -60,22 +60,22 @@ Add System/Light/Dark theme switcher + Apple/Google SVG sign-in glyphs; migrate 
 - [ ] Manual: `flutter run -d chrome` → Tasks tab (empty event), Chat tab (zero events), Budget tab (zero events) — confirm icon visible against cream background.
 - [ ] Verify: `flutter analyze && flutter test`.
 
-### Phase 4: Themed-token migration
+### Phase 4: Themed-token migration (pulled forward — user feedback: "no real color change between light/dark in app UI")
 
-- **Goal**: `SettingsRow`, `AppTextField`, `TaskTile`, `EventDetailScreen._DetailRow`, `EditProfileScreen` all resolve foreground / fill colors from `colorScheme` so dark mode + web render correctly.
-- [ ] `lib/app/core/widgets/settings_row.dart` — add optional `Widget? trailing` constructor param; render `trailing ?? Icon(AppIcons.chevronRight, color: colorScheme.onSurfaceVariant)`. Leading icon + title → `colorScheme.onSurface`; subtitle → `colorScheme.onSurfaceVariant`.
-- [ ] `lib/app/features/profile/presentation/profile_screen.dart` — swap the Phase 1 inline `ListTile` for the now-extended `SettingsRow` (key + behavior unchanged).
-- [ ] `lib/app/core/widgets/forms/app_text_field.dart` — hint → `colorScheme.onSurfaceVariant`; label → `colorScheme.onSurfaceVariant`; `fillColor` → `colorScheme.surfaceContainerHighest`; borders → `colorScheme.outline`; focused border → `colorScheme.primary`.
-- [ ] `lib/app/features/tasks/presentation/widgets/task_tile.dart` — description + meta `AppColors.mediumGrey` → `Theme.of(context).colorScheme.onSurfaceVariant`.
-- [ ] `lib/app/features/dashboard/presentation/event_detail_screen.dart` — `_DetailRow` icon tint `AppColors.mediumGrey` → `Theme.of(context).colorScheme.onSurfaceVariant`.
-- [ ] `lib/app/features/profile/presentation/edit_profile_screen.dart` — `backgroundColor: AppColors.cream` → `Theme.of(context).scaffoldBackgroundColor`; drop inline `DropdownButtonFormField.decoration` overrides (let `inputDecorationTheme` apply); section header `color: AppColors.charcoal` → `Theme.of(context).colorScheme.onSurface`; success screen + AppBar mirror the same change.
-- [ ] *(Optional drive-by)* `lib/app/features/profile/presentation/widgets/sign_out_sheet.dart` — migrate hardcoded `charcoal/lightGrey/white` to themed tokens.
-- [ ] `lib/app/core/theme/app_theme.dart` — audit pass; confirm both factories are colorScheme-driven; document any per-token AA notes that were added or moved.
-- [ ] TDD: `SettingsRow` with `trailing: null` renders `chevronRight`; with `trailing: SizedBox(key: K)` renders the supplied widget.
-- [ ] TDD: `SettingsRow` in dark theme — leading icon + title use `colorScheme.onSurface` (style probe).
-- [ ] TDD: `AppTextField` in dark theme — hint style uses `colorScheme.onSurfaceVariant` (style probe).
-- [ ] Manual: open Tasks list, Event detail, Edit Profile, Profile (Settings rows) in both themes on `chrome` — confirm contrast.
-- [ ] Verify: `flutter analyze && flutter test`.
+- **Goal**: `SettingsRow`, `AppTextField`, `TaskTile`, `EventDetailScreen._DetailRow`, `EditProfileScreen`, `SignOutSheet`, `EmptyStatePlaceholder`, and scaffolds app-wide resolve foreground / fill colors from `colorScheme` so flipping the theme is actually visible.
+- [x] `lib/app/core/theme/app_theme.dart` — light theme `scaffoldBackgroundColor` + `appBarTheme.backgroundColor` changed to `AppColors.cream` (matches what every screen overrode to). Dark theme already correct.
+- [x] Stripped `backgroundColor: AppColors.cream` from ~25 screens (Scaffold + AppBar) via single sed pass. They now inherit from theme → light=cream, dark=surfaceDark.
+- [x] `lib/app/core/widgets/settings_row.dart` — added optional `Widget? trailing` param; leading icon + title → `colorScheme.onSurface`; subtitle + default chevron → `colorScheme.onSurfaceVariant`.
+- [x] `lib/app/features/profile/presentation/profile_screen.dart` — `_ThemeRow` rewritten to use the extended `SettingsRow`. `_SectionCard`/`_PaymentCard`/`_DangerCard` backgrounds `AppColors.white` → `colorScheme.surfaceContainerHighest`. Borders → `colorScheme.outline`. Section-header `darkGrey` → `colorScheme.onSurfaceVariant`. Payment-card text/trailing → themed.
+- [x] `lib/app/core/widgets/forms/app_text_field.dart` — hint, label, fillColor, all border colors resolve from `colorScheme` (Builder closure for late context). Propagates to all 29+ `CustomTextField` call sites.
+- [x] `lib/app/features/tasks/presentation/widgets/task_tile.dart` — description `AppColors.mediumGrey` → `colorScheme.onSurfaceVariant`.
+- [x] `lib/app/features/dashboard/presentation/event_detail_screen.dart` — `_DetailRow` icon tint `AppColors.mediumGrey` → `colorScheme.onSurfaceVariant`.
+- [x] `lib/app/features/profile/presentation/widgets/sign_out_sheet.dart` — full themed-token migration (drag handle, lottie fallback, title, body, cancel, sign-out button). Was broken in dark mode (user feedback).
+- [x] `lib/app/core/widgets/empty_state_placeholder.dart` — fallback icon `AppColors.lightGrey` → `colorScheme.onSurfaceVariant` (Phase 3 grey-sliver root cause). Title + subtitle colors also themed.
+- [x] Drive-by: unused `app_colors.dart` imports removed from 4 files.
+- [ ] `lib/app/features/profile/presentation/edit_profile_screen.dart` — still uses hardcoded `cream/charcoal` for non-scaffold elements (Lottie success icon, section headers, dropdown hint). **Pending** — covered in next pass.
+- [ ] TDD: `SettingsRow` `trailing` slot + dark-mode colors. **Pending** — relied on full-suite green to confirm nothing regressed; no targeted assertions yet.
+- [x] Verify: `flutter analyze` clean (1 pre-existing warning) && `flutter test` (654 passed, 4 skipped).
 
 ### Phase 5: Web audit + cleanup
 

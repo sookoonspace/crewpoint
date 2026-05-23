@@ -50,10 +50,8 @@ class EventTaskDetailPage extends ConsumerWidget {
             .firstWhere((t) => true, orElse: () => null);
         if (task == null) {
           return Scaffold(
-            backgroundColor: AppColors.cream,
             appBar: AppBar(
               title: const Text('Task'),
-              backgroundColor: AppColors.cream,
               elevation: 0,
             ),
             body: const Center(child: Text('Task not found')),
@@ -240,19 +238,15 @@ class EventTaskDetailPage extends ConsumerWidget {
                 : null,
           ),
           loading: () => Scaffold(
-            backgroundColor: AppColors.cream,
             appBar: AppBar(
               title: Text(task.title),
-              backgroundColor: AppColors.cream,
               elevation: 0,
             ),
             body: const Center(child: CircularProgressIndicator()),
           ),
           error: (e, _) => Scaffold(
-            backgroundColor: AppColors.cream,
             appBar: AppBar(
               title: Text(task.title),
-              backgroundColor: AppColors.cream,
               elevation: 0,
             ),
             body: Center(child: Text('Checklist error: $e')),
@@ -260,19 +254,15 @@ class EventTaskDetailPage extends ConsumerWidget {
         );
       },
       loading: () => Scaffold(
-        backgroundColor: AppColors.cream,
         appBar: AppBar(
           title: const Text('Task'),
-          backgroundColor: AppColors.cream,
           elevation: 0,
         ),
         body: const Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => Scaffold(
-        backgroundColor: AppColors.cream,
         appBar: AppBar(
           title: const Text('Task'),
-          backgroundColor: AppColors.cream,
           elevation: 0,
         ),
         body: Center(child: Text('Error: $e')),

@@ -51,11 +51,8 @@ class TaskListScreen extends StatelessWidget {
     final s = context.strings.tasks;
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
       appBar: AppBar(
         title: Text(s.tasksAppBarTitle),
-        backgroundColor: AppColors.cream,
-        elevation: 0,
         actions: [
           if (onExportPdf != null)
             IconButton(

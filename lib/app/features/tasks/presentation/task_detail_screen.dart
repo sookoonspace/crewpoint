@@ -74,10 +74,8 @@ class TaskDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.cream,
       appBar: AppBar(
         title: Text(task.title),
-        backgroundColor: AppColors.cream,
         elevation: 0,
         actions: [
           if (canEditTask || onDuplicate != null)

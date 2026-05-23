@@ -46,7 +46,6 @@ class BudgetLedgerScreen extends ConsumerWidget {
     final uid = ref.watch(currentUserIdProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
       body: SafeArea(
         bottom: false,
         child: Column(

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:crewpoint_app/app/core/constants/app_assets.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 
 /// Sign-out confirmation bottom sheet with Lottie animation.
+///
+/// Colors resolve from `Theme.of(context).colorScheme` so the sheet
+/// renders correctly under either theme.
 class SignOutSheet extends StatelessWidget {
   const SignOutSheet({super.key, this.onSignOut});
 
@@ -29,6 +31,8 @@ class SignOutSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     return Padding(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.xl,
@@ -37,47 +41,44 @@ class SignOutSheet extends StatelessWidget {
         MediaQuery.viewPaddingOf(context).bottom + AppSpacing.xl,
       ),
       child: Column(
-        mainAxisSize: .min,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Drag handle
           Container(
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: AppColors.lightGrey,
+              color: colors.outline,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
 
-          // Lottie animation
           Lottie.asset(
             AppAssets.lottieSignOut,
             width: 80,
             height: 80,
-            errorBuilder: (_, _, _) => const Icon(
-              AppIcons.wavingHand,
-              size: 48,
-              color: AppColors.charcoal,
-            ),
+            errorBuilder: (_, _, _) =>
+                Icon(AppIcons.wavingHand, size: 48, color: colors.onSurface),
           ),
           const SizedBox(height: AppSpacing.lg),
 
           Text(
             'Sign out of CrewPoint?',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: colors.onSurface,
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             'Your local data will be preserved for next time.',
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colors.onSurfaceVariant,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.xl),
 
-          // Buttons
           Row(
             spacing: AppSpacing.md,
             children: [
@@ -85,8 +86,8 @@ class SignOutSheet extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: () => Navigator.of(context).pop(),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.charcoal,
-                    side: const BorderSide(color: AppColors.lightGrey),
+                    foregroundColor: colors.onSurface,
+                    side: BorderSide(color: colors.outline),
                     shape: const RoundedRectangleBorder(
                       borderRadius: AppRadius.borderLg,
                     ),
@@ -104,8 +105,8 @@ class SignOutSheet extends StatelessWidget {
                     onSignOut?.call();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.charcoal,
-                    foregroundColor: AppColors.white,
+                    backgroundColor: colors.primary,
+                    foregroundColor: colors.onPrimary,
                     shape: const RoundedRectangleBorder(
                       borderRadius: AppRadius.borderLg,
                     ),

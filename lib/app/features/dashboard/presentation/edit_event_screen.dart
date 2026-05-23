@@ -102,10 +102,8 @@ class _EditEventScreenState extends State<EditEventScreen> {
   Widget build(BuildContext context) {
     final df = DateFormat.yMMMd();
     return Scaffold(
-      backgroundColor: AppColors.cream,
       appBar: AppBar(
         title: const Text('Edit Event'),
-        backgroundColor: AppColors.cream,
         elevation: 0,
       ),
       body: SingleChildScrollView(

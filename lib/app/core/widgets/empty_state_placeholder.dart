@@ -37,12 +37,12 @@ class EmptyStatePlaceholder extends StatelessWidget {
   /// the console on every rebuild.
   static final Set<String> _loggedAssets = <String>{};
 
-  Widget _buildFallbackIcon() {
+  Widget _buildFallbackIcon(BuildContext context) {
     return Icon(
       iconFallback,
       key: const Key('emptyState.iconFallback'),
       size: AppSizes.iconHero,
-      color: AppColors.lightGrey,
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
     );
   }
 
@@ -64,20 +64,20 @@ class EmptyStatePlaceholder extends StatelessWidget {
             SizedBox(
               height: lottieHeight,
               child: asset == null
-                  ? _buildFallbackIcon()
+                  ? _buildFallbackIcon(context)
                   : Lottie.asset(
                       asset,
                       key: const Key('emptyState.lottie'),
                       height: lottieHeight,
                       repeat: true,
-                      errorBuilder: (_, _, _) {
+                      errorBuilder: (ctx, _, _) {
                         if (_loggedAssets.add(asset)) {
                           developer.log(
                             'Lottie asset failed: $asset',
                             name: 'empty-state',
                           );
                         }
-                        return _buildFallbackIcon();
+                        return _buildFallbackIcon(ctx);
                       },
                     ),
             ),
@@ -85,9 +85,9 @@ class EmptyStatePlaceholder extends StatelessWidget {
             Text(
               title,
               key: const Key('emptyState.title'),
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(color: AppColors.charcoal),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
               textAlign: TextAlign.center,
             ),
             if (subtitleText != null) ...[
@@ -95,9 +95,9 @@ class EmptyStatePlaceholder extends StatelessWidget {
               Text(
                 subtitleText,
                 key: const Key('emptyState.subtitle'),
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGrey),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,

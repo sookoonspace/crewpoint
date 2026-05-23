@@ -298,7 +298,6 @@ class _RouterErrorScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
       body: SafeArea(
         child: Center(
           child: Padding(

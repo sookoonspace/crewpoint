@@ -25,7 +25,6 @@ class SettleUpFallbackSheet {
   ) {
     return showModalBottomSheet<void>(
       context: context,
-      backgroundColor: AppColors.cream,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),

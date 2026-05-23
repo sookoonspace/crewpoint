@@ -409,19 +409,15 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
         );
       },
       loading: () => Scaffold(
-        backgroundColor: AppColors.cream,
         appBar: AppBar(
           title: const Text('Budget'),
-          backgroundColor: AppColors.cream,
           elevation: 0,
         ),
         body: const Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => Scaffold(
-        backgroundColor: AppColors.cream,
         appBar: AppBar(
           title: const Text('Budget'),
-          backgroundColor: AppColors.cream,
           elevation: 0,
         ),
         body: Center(child: Text('Error: $e')),

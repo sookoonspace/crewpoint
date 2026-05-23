@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
@@ -104,10 +103,8 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
         : null;
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
       appBar: AppBar(
         title: Text(s.editTaskTitle),
-        backgroundColor: AppColors.cream,
         elevation: 0,
       ),
       body: SingleChildScrollView(

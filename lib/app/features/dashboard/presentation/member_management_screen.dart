@@ -48,10 +48,8 @@ class _MemberManagementScreenState
     );
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
       appBar: AppBar(
         title: Text('Members (${event.memberIds.length})'),
-        backgroundColor: AppColors.cream,
         elevation: 0,
       ),
       body: ContentMaxWidth(

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
@@ -67,7 +66,11 @@ class _DetailRow extends StatelessWidget {
     return Row(
       spacing: AppSpacing.md,
       children: [
-        Icon(icon, size: AppSizes.iconMd, color: AppColors.mediumGrey),
+        Icon(
+          icon,
+          size: AppSizes.iconMd,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
         Column(
           crossAxisAlignment: .start,
           children: [

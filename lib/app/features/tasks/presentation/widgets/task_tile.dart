@@ -108,7 +108,11 @@ class TaskTile extends StatelessWidget {
                             Text(
                               task.description!,
                               style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: AppColors.mediumGrey),
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),

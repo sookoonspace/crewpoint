@@ -46,10 +46,8 @@ class PrivacyDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.cream,
       appBar: AppBar(
         title: const Text('Privacy Dashboard'),
-        backgroundColor: AppColors.cream,
         elevation: 0,
       ),
       body: ContentMaxWidth(

@@ -135,7 +135,6 @@ class _ProgressScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: AppColors.cream,
       body: Center(child: CircularProgressIndicator()),
     );
   }
@@ -165,7 +164,6 @@ class _EventNotFoundScreenState extends State<EventNotFoundScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.cream,
       body: SafeArea(
         child: Center(
           child: Padding(

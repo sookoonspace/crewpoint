@@ -92,10 +92,8 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     final s = context.strings.chat;
     return Scaffold(
-      backgroundColor: AppColors.cream,
       appBar: AppBar(
         title: Text(s.chatAppBarTitle),
-        backgroundColor: AppColors.cream,
         elevation: 0,
         actions: [
           IconButton(

@@ -79,70 +79,75 @@ class AppTextField extends StatelessWidget {
 
   Widget _buildField(bool focused) {
     final showWebRing = kIsWeb && focused;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 100),
-      curve: Curves.easeOut,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: showWebRing
-              ? AppColors.sage.withValues(alpha: 0.45)
-              : Colors.transparent,
-          width: 2,
-        ),
-      ),
-      padding: const EdgeInsets.all(2),
-      child: TextFormField(
-        controller: controller,
-        obscureText: obscureText,
-        keyboardType: keyboardType,
-        onChanged: onChanged,
-        validator: validator,
-        maxLines: maxLines,
-        maxLength: maxLength,
-        autofocus: autofocus,
-        enabled: enabled,
-        style: const TextStyle(color: AppColors.charcoal),
-        decoration: InputDecoration(
-          labelText: labelText ?? label,
-          hintText: hintText,
-          helperText: helperText,
-          errorText: errorText,
-          hintStyle: const TextStyle(color: AppColors.mediumGrey),
-          labelStyle: const TextStyle(color: AppColors.darkGrey),
-          prefixIcon: prefixIcon,
-          suffixIcon: suffixIcon,
-          filled: true,
-          fillColor: AppColors.offWhite,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: AppColors.lightGrey),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: AppColors.lightGrey),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: AppColors.sage, width: 2),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: AppColors.terracotta),
-          ),
-          errorStyle: const TextStyle(color: AppColors.terracotta),
-          disabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-              color: AppColors.lightGrey.withValues(alpha: 0.5),
+    return Builder(
+      builder: (ctx) {
+        final colors = Theme.of(ctx).colorScheme;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 100),
+          curve: Curves.easeOut,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: showWebRing
+                  ? AppColors.sage.withValues(alpha: 0.45)
+                  : Colors.transparent,
+              width: 2,
             ),
           ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.md,
+          padding: const EdgeInsets.all(2),
+          child: TextFormField(
+            controller: controller,
+            obscureText: obscureText,
+            keyboardType: keyboardType,
+            onChanged: onChanged,
+            validator: validator,
+            maxLines: maxLines,
+            maxLength: maxLength,
+            autofocus: autofocus,
+            enabled: enabled,
+            style: TextStyle(color: colors.onSurface),
+            decoration: InputDecoration(
+              labelText: labelText ?? label,
+              hintText: hintText,
+              helperText: helperText,
+              errorText: errorText,
+              hintStyle: TextStyle(color: colors.onSurfaceVariant),
+              labelStyle: TextStyle(color: colors.onSurfaceVariant),
+              prefixIcon: prefixIcon,
+              suffixIcon: suffixIcon,
+              filled: true,
+              fillColor: colors.surfaceContainerHighest,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colors.outline),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colors.outline),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colors.primary, width: 2),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colors.error),
+              ),
+              errorStyle: TextStyle(color: colors.error),
+              disabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: colors.outline.withValues(alpha: 0.5),
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.md,
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
