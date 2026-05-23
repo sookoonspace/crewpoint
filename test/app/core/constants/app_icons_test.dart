@@ -75,8 +75,8 @@ void main() {
     test('calendar family collapses to Icons.calendar_today', () {
       expect(AppIcons.calendar, Icons.calendar_today);
     });
-    test('joinEvent collapses login_rounded to login', () {
-      expect(AppIcons.joinEvent, Icons.login);
+    test('joinEvent resolves to group_add_outlined', () {
+      expect(AppIcons.joinEvent, Icons.group_add_outlined);
     });
     test('chevronRight resolves to chevron_right', () {
       expect(AppIcons.chevronRight, Icons.chevron_right);

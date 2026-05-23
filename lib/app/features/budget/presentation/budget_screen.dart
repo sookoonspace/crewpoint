@@ -66,7 +66,7 @@ class BudgetScreen extends StatelessWidget {
           if (onExportPdf != null || onExportCsv != null)
             PopupMenuButton<String>(
               key: const Key('budget.export.menu'),
-              icon: const Icon(AppIcons.actionShare),
+              icon: Icon(AppIcons.actionShare),
               tooltip: 'Export',
               onSelected: (value) {
                 switch (value) {

@@ -298,6 +298,13 @@ abstract class ProfileStrings {
   String get signOut;
   String get deleteAccount;
 
+  // Theme switcher (Settings row + sheet).
+  String get themeRowTitle;
+  String get themeModeSystem;
+  String get themeModeLight;
+  String get themeModeDark;
+  String get themeModeSystemSubtitle;
+
   // Payment card.
   String get addPaymentMethod;
   String get addPaymentMethodSubtitle;
@@ -525,6 +532,21 @@ class _EnglishProfileStrings extends ProfileStrings {
 
   @override
   String get deleteAccount => 'Delete Account';
+
+  @override
+  String get themeRowTitle => 'Theme';
+
+  @override
+  String get themeModeSystem => 'System';
+
+  @override
+  String get themeModeLight => 'Light';
+
+  @override
+  String get themeModeDark => 'Dark';
+
+  @override
+  String get themeModeSystemSubtitle => 'Follow device';
 
   @override
   String get addPaymentMethod => 'Add payment method';

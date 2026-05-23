@@ -60,7 +60,7 @@ class TaskListScreen extends StatelessWidget {
           if (onExportPdf != null)
             IconButton(
               key: const Key('tasks.export.pdf'),
-              icon: const Icon(AppIcons.actionShare),
+              icon: Icon(AppIcons.actionShare),
               tooltip: s.exportPdfTooltip,
               onPressed: onExportPdf,
             ),

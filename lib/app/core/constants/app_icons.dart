@@ -50,21 +50,20 @@ abstract final class AppIcons {
   // ===== Actions (verbs) =====
   // _rounded collapses to default (logout_rounded → logout, copy_rounded → copy).
   static const IconData actionAdd = Icons.add;
-  static const IconData actionAddCircle =
-      Icons.add_circle_outline; // outlined per rule
+  static const IconData actionAddCircle = Icons.add_circle_outline;
   static const IconData actionEdit = Icons.edit;
   static const IconData actionDelete = Icons.delete;
   static const IconData actionDeletePermanent = Icons.delete_forever;
   static const IconData actionClose = Icons.close;
   static const IconData actionClear = Icons.clear;
-  static const IconData actionCopy = Icons.copy; // was _rounded
+  static const IconData actionCopy = Icons.copy; 
   static const IconData actionMore = Icons.more_vert;
   static const IconData actionMoreHoriz = Icons.more_horiz;
   static const IconData actionOpenInNew = Icons.open_in_new;
   static const IconData actionRetry = Icons.refresh;
   static const IconData actionSearch = Icons.search;
-  static const IconData actionLogout = Icons.logout; // was _rounded
-  static const IconData actionShare = Icons.ios_share;
+  static const IconData actionLogout = Icons.logout; 
+  static final IconData actionShare = Icons.adaptive.share; // Automatically adapts to iOS vs Android
   static const IconData actionSend = Icons.send;
   static const IconData actionBack = Icons.arrow_back;
   static const IconData actionSettings = Icons.settings_outlined;
@@ -83,11 +82,11 @@ abstract final class AppIcons {
   static const IconData chevronRight = Icons.chevron_right;
 
   // ===== Auth providers =====
-  static const IconData authGoogle = Icons.g_mobiledata;
+ // Note: Material Icons do not contain brand logos. Avoid g_mobiledata (cellular icon).
+  static const IconData authGoogle = Icons.account_circle_outlined; // TODO: Replace with SVG asset
   static const IconData authApple = Icons.apple;
-  static const IconData authEmail = Icons.alternate_email; // @-symbol
-  static const IconData authEmailField =
-      Icons.email_outlined; // envelope, for input prefix
+  static const IconData authEmail = Icons.alternate_email; 
+  static const IconData authEmailField = Icons.email_outlined; 
   static const IconData authPassword = Icons.lock_outline;
 
   // ===== Domain nouns =====
@@ -102,10 +101,10 @@ abstract final class AppIcons {
   static const IconData notifications = Icons.notifications_none_rounded;
   static const IconData privacy = Icons.privacy_tip_outlined;
   static const IconData privacyPolicy = Icons.policy_outlined;
-  static const IconData terms = Icons.gavel_outlined;
+  static const IconData terms = Icons.article_outlined; // closest match to "document/legal" icon
   static const IconData currency = Icons.attach_money;
   static const IconData joinEvent =
-      Icons.login; // was login_rounded; collapsed to default
+      Icons.group_add_outlined; // was login_rounded; collapsed to default
   static const IconData markdown = Icons.description_outlined;
   static const IconData description = Icons.description;
   static const IconData image = Icons.image;

@@ -18,8 +18,10 @@ import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/budget/application/global_balance_ledger_provider.dart';
 import 'package:crewpoint_app/app/features/profile/application/current_user_doc_provider.dart';
+import 'package:crewpoint_app/app/core/theme/theme_mode_provider.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/widgets/delete_account_dialog.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/widgets/sign_out_sheet.dart';
+import 'package:crewpoint_app/app/features/profile/presentation/widgets/theme_switcher_sheet.dart';
 import 'package:crewpoint_app/app/features/tasks/application/my_assigned_tasks_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -108,6 +110,14 @@ class ProfileScreen extends ConsumerWidget {
                           title: s.privacyDashboard,
                           onTap: () => context.push(AppRoutes.privacyDashboard),
                         ),
+                        const Divider(
+                          height: 1,
+                          indent: AppSizes.settingsRowIndent,
+                        ),
+                        // Inline ListTile so the SettingsRow.trailing
+                        // extension can land in Phase 4 without blocking
+                        // this vertical slice.
+                        _ThemeRow(),
                         const Divider(
                           height: 1,
                           indent: AppSizes.settingsRowIndent,
@@ -435,6 +445,47 @@ class _DangerCard extends StatelessWidget {
         onTap: onTap,
         shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
       ),
+    );
+  }
+}
+
+class _ThemeRow extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mode = ref.watch(themeModeProvider);
+    final s = context.strings.profile;
+    final label = switch (mode) {
+      ThemeMode.system => s.themeModeSystem,
+      ThemeMode.light => s.themeModeLight,
+      ThemeMode.dark => s.themeModeDark,
+    };
+    final theme = Theme.of(context);
+    return ListTile(
+      key: const Key('profile.theme.row'),
+      leading: const Icon(
+        Icons.brightness_6_outlined,
+        color: AppColors.charcoal,
+      ),
+      title: Text(
+        s.themeRowTitle,
+        style: theme.textTheme.bodyLarge?.copyWith(color: AppColors.charcoal),
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            key: const Key('profile.theme.row.trailing'),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: AppColors.darkGrey,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          const Icon(AppIcons.chevronRight, color: AppColors.mediumGrey),
+        ],
+      ),
+      onTap: () => ThemeSwitcherSheet.show(context),
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
     );
   }
 }

@@ -1,17 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/router/app_router.dart';
 import 'package:crewpoint_app/app/core/router/current_route_provider.dart';
 import 'package:crewpoint_app/app/core/services/firebase_service.dart';
 import 'package:crewpoint_app/app/core/theme/app_theme.dart';
+import 'package:crewpoint_app/app/core/theme/theme_mode_provider.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await FirebaseService.initialize();
-  runApp(const ProviderScope(child: MyApp()));
+  // SharedPreferences is resolved BEFORE runApp so themeModeProvider's
+  // build() can read the persisted choice synchronously — no first-frame
+  // flash in the wrong theme.
+  final prefs = await SharedPreferences.getInstance();
+  runApp(
+    ProviderScope(
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends ConsumerStatefulWidget {
@@ -76,10 +87,15 @@ class _MyAppState extends ConsumerState<MyApp> {
     ref.listen<AuthState>(authProvider, (_, _) => _routerRefresh.refresh());
     ref.listen<bool>(onboardingProvider, (_, _) => _routerRefresh.refresh());
 
+    // Theme rebuilds happen via MaterialApp — NOT through _RouterRefresh.
+    // The router instance is intentionally preserved across theme flips.
+    final themeMode = ref.watch(themeModeProvider);
+
     return MaterialApp.router(
       title: 'CrewPoint',
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
+      themeMode: themeMode,
       routerConfig: _router,
     );
   }

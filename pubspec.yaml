@@ -14,6 +14,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   google_fonts: ^6.2.1
   lottie: ^3.3.1
+  flutter_svg: ^2.0.0
   # flutter_markdown was archived by the Flutter team in 2024;
   # flutter_markdown_plus is the actively-maintained drop-in
   # successor (last release 2025-12-28; supports Flutter 3.27.1+).
@@ -49,6 +50,8 @@ dependencies:
   # Security
   envied: ^1.1.1
   flutter_secure_storage: ^9.2.4
+  # Theme preference persistence (non-sensitive — secure_storage is overkill).
+  shared_preferences: ^2.3.0
 
   # Utilities
   image_picker: ^1.1.2
@@ -104,3 +107,4 @@ flutter:
   assets:
     - assets/animations/
     - assets/legal/
+    - assets/images/auth/
