@@ -41,13 +41,12 @@ Add System/Light/Dark theme switcher + Apple/Google SVG sign-in glyphs; migrate 
 ### Phase 2: Apple/Google SVG brand glyphs on sign-in
 
 - **Goal**: AuthGate buttons render brand SVGs at 24 px; Apple glyph swaps black/white per theme brightness; Google G stays multi-color.
-- [ ] `lib/app/features/auth/presentation/widgets/social_auth_buttons.dart` — replace `Icon(icon, size: AppSizes.iconLg)` with `SizedBox(width: 24, height: 24, child: SvgPicture.asset(asset, placeholderBuilder: (_) => Icon(fallback)))`. Apple: `Theme.of(context).brightness == Brightness.dark ? 'assets/images/auth/Apple_logo_white.svg' : 'assets/images/auth/Apple_logo_black.svg'`, fallback `Icons.apple`. Google: `'assets/images/auth/google_logo.svg'`, fallback `Icons.account_circle_outlined`. Keys: `auth.button.google`, `auth.button.apple`, `auth.button.google.icon`, `auth.button.apple.icon`.
-- [ ] `lib/app/core/constants/app_icons.dart` — delete `authGoogle` + `authApple` entries (no longer referenced).
-- [ ] TDD: under light theme, Apple `SvgPicture` resolves to `Apple_logo_black.svg`; under dark theme, `Apple_logo_white.svg` (assert via `tester.widget<SvgPicture>(finder).bytesLoader` asset name — no pixel snapshot).
-- [ ] TDD: Google `SvgPicture` always resolves to `google_logo.svg` regardless of brightness.
-- [ ] Robot: extend `test/robots/auth_robot.dart` (create if missing) — render `AuthGateScreen` in light + dark; assert both brand buttons exist with the right asset paths.
-- [ ] Manual: `flutter run -d chrome` + iOS sim — verify glyphs render crisply in both themes.
-- [ ] Verify: `flutter analyze && flutter test`.
+- [x] `lib/app/features/auth/presentation/widgets/social_auth_buttons.dart` — `SvgPicture.asset` (24 × 24, `AppSizes.iconLg`) inside `OutlinedButton.icon`; Apple resolves per brightness; `placeholderBuilder` returns the Material glyph fallback + `developer.log(name: 'auth.brand')`. Keys: `auth.button.google`, `auth.button.apple`, `auth.button.google.icon`, `auth.button.apple.icon`.
+- [x] `lib/app/core/constants/app_icons.dart` — `authGoogle/authApple` **kept** (re-discovered as still in use by `delete_account_dialog.dart`'s re-auth prompts where a plain glyph is appropriate). Doc-comment updated to explain the divergence: sign-in uses SVG; secondary surfaces use IconData.
+- [x] TDD: Apple light → `Apple_logo_black.svg`; Apple dark → `Apple_logo_white.svg`; Google light + dark → `google_logo.svg`; both buttons render with stable keys. All assertions via `tester.widget<SvgPicture>(...).bytesLoader.assetName` (no pixel snapshots).
+- [ ] ~~Robot: extend `test/robots/auth_robot.dart`~~ — widget tests already cover the SVG-asset-resolution-per-brightness; a robot here would duplicate without adding journey value.
+- [ ] Manual: `flutter run -d chrome` + iOS sim — verify glyphs render crisply in both themes. **Pending user verification (no automated visual snapshot — see status report).**
+- [x] Verify: `flutter analyze` (1 pre-existing TableMigration warning) && `flutter test` (654 passed, 4 skipped).
 
 ### Phase 3: Empty-state web fix (fallback color first, then Lottie discovery)
 

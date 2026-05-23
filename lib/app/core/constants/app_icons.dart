@@ -56,14 +56,15 @@ abstract final class AppIcons {
   static const IconData actionDeletePermanent = Icons.delete_forever;
   static const IconData actionClose = Icons.close;
   static const IconData actionClear = Icons.clear;
-  static const IconData actionCopy = Icons.copy; 
+  static const IconData actionCopy = Icons.copy;
   static const IconData actionMore = Icons.more_vert;
   static const IconData actionMoreHoriz = Icons.more_horiz;
   static const IconData actionOpenInNew = Icons.open_in_new;
   static const IconData actionRetry = Icons.refresh;
   static const IconData actionSearch = Icons.search;
-  static const IconData actionLogout = Icons.logout; 
-  static final IconData actionShare = Icons.adaptive.share; // Automatically adapts to iOS vs Android
+  static const IconData actionLogout = Icons.logout;
+  static final IconData actionShare =
+      Icons.adaptive.share; // Automatically adapts to iOS vs Android
   static const IconData actionSend = Icons.send;
   static const IconData actionBack = Icons.arrow_back;
   static const IconData actionSettings = Icons.settings_outlined;
@@ -82,11 +83,14 @@ abstract final class AppIcons {
   static const IconData chevronRight = Icons.chevron_right;
 
   // ===== Auth providers =====
- // Note: Material Icons do not contain brand logos. Avoid g_mobiledata (cellular icon).
-  static const IconData authGoogle = Icons.account_circle_outlined; // TODO: Replace with SVG asset
+  // Sign-in screen uses the SVG brand marks from `assets/images/auth/`
+  // (see social_auth_buttons.dart). These IconData tokens are reserved
+  // for secondary surfaces (e.g. delete_account_dialog re-auth prompts)
+  // where a plain Material glyph is appropriate.
+  static const IconData authGoogle = Icons.account_circle_outlined;
   static const IconData authApple = Icons.apple;
-  static const IconData authEmail = Icons.alternate_email; 
-  static const IconData authEmailField = Icons.email_outlined; 
+  static const IconData authEmail = Icons.alternate_email;
+  static const IconData authEmailField = Icons.email_outlined;
   static const IconData authPassword = Icons.lock_outline;
 
   // ===== Domain nouns =====
@@ -101,7 +105,8 @@ abstract final class AppIcons {
   static const IconData notifications = Icons.notifications_none_rounded;
   static const IconData privacy = Icons.privacy_tip_outlined;
   static const IconData privacyPolicy = Icons.policy_outlined;
-  static const IconData terms = Icons.article_outlined; // closest match to "document/legal" icon
+  static const IconData terms =
+      Icons.article_outlined; // closest match to "document/legal" icon
   static const IconData currency = Icons.attach_money;
   static const IconData joinEvent =
       Icons.group_add_outlined; // was login_rounded; collapsed to default
