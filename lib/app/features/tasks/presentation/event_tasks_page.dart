@@ -118,10 +118,16 @@ class _EventTasksPageState extends ConsumerState<EventTasksPage> {
 
     return asyncTasks.when(
       data: (tasks) {
+        // Prefer displayName, fall back to email when not set.
         final memberNames = asyncUsers.maybeWhen(
           data: (users) => {
             for (final entry in users.entries)
-              entry.key: entry.value.displayName ?? '',
+              entry.key: () {
+                final name = entry.value.displayName;
+                if (name != null && name.isNotEmpty) return name;
+                if (entry.value.email.isNotEmpty) return entry.value.email;
+                return '';
+              }(),
           },
           orElse: () => <String, String>{},
         );
@@ -160,17 +166,11 @@ class _EventTasksPageState extends ConsumerState<EventTasksPage> {
         );
       },
       loading: () => Scaffold(
-        appBar: AppBar(
-          title: const Text('Tasks'),
-          elevation: 0,
-        ),
+        appBar: AppBar(title: const Text('Tasks'), elevation: 0),
         body: const Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => Scaffold(
-        appBar: AppBar(
-          title: const Text('Tasks'),
-          elevation: 0,
-        ),
+        appBar: AppBar(title: const Text('Tasks'), elevation: 0),
         body: Center(child: Text('Error: $e')),
       ),
     );

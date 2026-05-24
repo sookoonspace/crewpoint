@@ -106,6 +106,8 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
         final name = entry.value.displayName;
         if (name != null && name.isNotEmpty) {
           memberNames[entry.key] = name;
+        } else if (entry.value.email.isNotEmpty) {
+          memberNames[entry.key] = entry.value.email;
         }
       }
     });
@@ -122,17 +124,11 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
         onTapSettlement: _onDispute,
       ),
       loading: () => Scaffold(
-        appBar: AppBar(
-          title: const Text('Chat'),
-          elevation: 0,
-        ),
+        appBar: AppBar(title: const Text('Chat'), elevation: 0),
         body: const Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => Scaffold(
-        appBar: AppBar(
-          title: const Text('Chat'),
-          elevation: 0,
-        ),
+        appBar: AppBar(title: const Text('Chat'), elevation: 0),
         body: Center(child: Text('Error: $e')),
       ),
     );

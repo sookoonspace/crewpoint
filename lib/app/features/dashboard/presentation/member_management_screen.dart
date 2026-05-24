@@ -39,10 +39,18 @@ class _MemberManagementScreenState
     final isAdmin = event.isAdmin(currentUserId);
 
     final asyncUsers = ref.watch(usersByIdProvider(event.memberIds));
+    // displayName when set, email as second fallback. Empty string
+    // signals "no resolved label" so downstream renders "Unknown
+    // member" or similar.
     final displayNames = asyncUsers.maybeWhen(
       data: (users) => {
         for (final entry in users.entries)
-          entry.key: entry.value.displayName ?? '',
+          entry.key: () {
+            final name = entry.value.displayName;
+            if (name != null && name.isNotEmpty) return name;
+            if (entry.value.email.isNotEmpty) return entry.value.email;
+            return '';
+          }(),
       },
       orElse: () => const <String, String>{},
     );
