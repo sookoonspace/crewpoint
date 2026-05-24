@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/core/constants/app_assets.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/router/app_router.dart';
@@ -53,7 +54,10 @@ class BudgetLedgerScreen extends ConsumerWidget {
             ScreenHeader(title: s.budget.ledgerAppBarTitle),
             Expanded(
               child: uid == null
-                  ? EmptyStatePlaceholder(title: s.tasks.signInRequiredTitle)
+                  ? EmptyStatePlaceholder(
+                      title: s.tasks.signInRequiredTitle,
+                      iconFallback: AppIcons.lock,
+                    )
                   : ref
                         .watch(globalBalanceLedgerProvider(uid))
                         .when(
@@ -72,6 +76,7 @@ class BudgetLedgerScreen extends ConsumerWidget {
                               title: s.budget.ledgerErrorTitle,
                               subtitle: error.toString(),
                               lottieAsset: AppAssets.lottieError,
+                              iconFallback: AppIcons.statusError,
                             );
                           },
                           data: (ledger) {
@@ -213,6 +218,7 @@ class _LedgerEmptyState extends ConsumerWidget {
       ctaLabel: hasEvents
           ? strings.tasks.openDashboardCta
           : strings.tasks.createFromDashboardCta,
+      iconFallback: AppIcons.navBudget,
       onCta: () => context.go(AppRoutes.dashboard),
     );
   }

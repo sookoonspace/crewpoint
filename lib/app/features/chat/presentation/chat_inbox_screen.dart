@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_assets.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/router/app_router.dart';
@@ -75,7 +76,10 @@ class _ChatInboxScreenState extends ConsumerState<ChatInboxScreen> {
             ScreenHeader(title: s.chat.inboxAppBarTitle),
             Expanded(
               child: uid == null
-                  ? EmptyStatePlaceholder(title: s.tasks.signInRequiredTitle)
+                  ? EmptyStatePlaceholder(
+                      title: s.tasks.signInRequiredTitle,
+                      iconFallback: AppIcons.lock,
+                    )
                   : ref
                         .watch(globalInboxProvider(uid))
                         .when(
@@ -96,6 +100,7 @@ class _ChatInboxScreenState extends ConsumerState<ChatInboxScreen> {
                               title: s.chat.inboxErrorTitle,
                               subtitle: error.toString(),
                               lottieAsset: AppAssets.lottieError,
+                              iconFallback: AppIcons.statusError,
                             );
                           },
                           data: (rows) {
@@ -204,6 +209,7 @@ class _ChatInboxEmptyState extends ConsumerWidget {
       ctaLabel: hasEvents
           ? strings.tasks.openDashboardCta
           : strings.tasks.createFromDashboardCta,
+      iconFallback: AppIcons.navChat,
       onCta: () {
         // No onOpenDashboard seam here because the empty state owns its
         // navigation; the parent's seam is for the tile tap.

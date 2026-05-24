@@ -159,6 +159,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         title: s.noEventsTitle,
                         subtitle: s.noEventsSubtitle,
                         ctaLabel: s.joinWithCode,
+                        iconFallback: AppIcons.event,
                         onCta: () => JoinEventSheet.show(context: context),
                       );
                     }
@@ -221,9 +222,9 @@ class _ErrorState extends StatelessWidget {
           children: [
             Text(
               s.errorLoading,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
             OutlinedButton.icon(

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/core/constants/app_assets.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
@@ -84,7 +85,10 @@ class _MyTasksScreenState extends ConsumerState<MyTasksScreen> {
       body: SafeArea(
         bottom: false,
         child: uid == null
-            ? EmptyStatePlaceholder(title: s.signInRequiredTitle)
+            ? EmptyStatePlaceholder(
+                title: s.signInRequiredTitle,
+                iconFallback: AppIcons.lock,
+              )
             : ref
                   .watch(myAssignedTasksProvider(uid))
                   .when(
@@ -100,6 +104,7 @@ class _MyTasksScreenState extends ConsumerState<MyTasksScreen> {
                         title: 'Could not load tasks',
                         subtitle: error.toString(),
                         lottieAsset: AppAssets.lottieError,
+                        iconFallback: AppIcons.statusError,
                       );
                     },
                     data: (allRows) {
@@ -333,6 +338,7 @@ class _MyTasksEmptyState extends ConsumerWidget {
       ctaLabel: hasEvents
           ? strings.openDashboardCta
           : strings.createFromDashboardCta,
+      iconFallback: AppIcons.statusDone,
       onCta: () {
         final cb = onOpenDashboard;
         if (cb != null) {
@@ -370,9 +376,9 @@ class _NoMatchesEmptyState extends StatelessWidget {
         child: Text(
           message,
           textAlign: TextAlign.center,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ),
     );

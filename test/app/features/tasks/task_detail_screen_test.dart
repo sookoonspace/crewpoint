@@ -144,7 +144,7 @@ void main() {
     expect(find.textContaining('by user-2'), findsNothing);
   });
 
-  testWidgets('falls back to truncated UID when assigneeName is null', (
+  testWidgets('falls back to "Unknown member" when assigneeName is null', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -158,7 +158,9 @@ void main() {
         ),
       ),
     );
-    expect(find.text('Assigned to user-2'), findsOneWidget);
+    // When the assignee's displayName isn't resolved, the screen now
+    // shows a friendly "Unknown member" label instead of leaking the UID.
+    expect(find.text('Assigned to Unknown member'), findsOneWidget);
   });
 
   testWidgets(

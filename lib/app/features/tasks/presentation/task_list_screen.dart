@@ -80,10 +80,12 @@ class TaskListScreen extends StatelessWidget {
                               ctaLabel: s.clearFilters,
                               onCta: () => onFilterChanged(const TasksFilter()),
                               ctaKey: const Key('tasks.list.emptyState.clear'),
+                              iconFallback: AppIcons.statusDone,
                             )
                           : EmptyStatePlaceholder(
                               title: s.emptyNoTasksYet,
                               subtitle: s.emptyNoTasksHelp,
+                              iconFallback: AppIcons.statusDone,
                             ),
                     )
                   : ListView(

@@ -68,7 +68,7 @@ class TaskDetailScreen extends StatelessWidget {
     if (completedByName != null && completedByName!.isNotEmpty) {
       return completedByName!;
     }
-    return uid.length > 8 ? uid.substring(0, 8) : uid;
+    return 'Unknown member';
   }
 
   @override
@@ -177,11 +177,13 @@ class _AssigneeRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Display name comes from the Firestore user doc; when it hasn't
+    // been set (or hasn't synced yet) we show a neutral label rather
+    // than the raw UID. Exposing UIDs in the UI is both ugly and a
+    // mild privacy leak.
     final label = (displayName != null && displayName!.isNotEmpty)
         ? displayName!
-        : (assigneeId.length > 10
-              ? '${assigneeId.substring(0, 10)}…'
-              : assigneeId);
+        : 'Unknown member';
     return Row(
       spacing: AppSpacing.sm,
       children: [
