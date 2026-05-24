@@ -40,7 +40,10 @@ class EmailUnverifiedBanner extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
-          const Icon(AppIcons.emailUnread, color: AppColors.charcoal),
+          Icon(
+            AppIcons.emailUnread,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

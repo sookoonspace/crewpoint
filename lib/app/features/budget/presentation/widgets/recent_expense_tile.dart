@@ -43,7 +43,7 @@ class RecentExpenseTile extends StatelessWidget {
     final payerLabel = exp.payerId == currentUserId ? 'You' : exp.payerId;
     return Card(
       elevation: 0,
-      color: AppColors.white,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       margin: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.xs,

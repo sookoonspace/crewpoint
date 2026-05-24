@@ -40,7 +40,7 @@ class LedgerAllSettledChip extends StatelessWidget {
                 message,
                 style: Theme.of(
                   context,
-                ).textTheme.bodyMedium?.copyWith(color: AppColors.charcoal),
+                ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface),
               ),
             ),
           ],

@@ -178,7 +178,7 @@ class _TotalCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 0,
-      color: AppColors.white,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.borderLg,
         side: BorderSide(
@@ -194,7 +194,7 @@ class _TotalCard extends StatelessWidget {
               'Total Expenses',
               style: Theme.of(
                 context,
-              ).textTheme.labelMedium?.copyWith(color: AppColors.darkGrey),
+              ).textTheme.labelMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
@@ -249,7 +249,7 @@ class _BalancesCard extends StatelessWidget {
 
     return Card(
       elevation: 0,
-      color: AppColors.white,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.borderLg,
         side: BorderSide(
@@ -347,7 +347,7 @@ class _SettleUpCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 0,
-      color: AppColors.white,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.borderLg,
         side: BorderSide(

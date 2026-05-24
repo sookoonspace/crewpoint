@@ -137,7 +137,10 @@ class _OverflowMenu extends StatelessWidget {
 
     return PopupMenuButton<_ExpenseAction>(
       key: Key('budget.expense.${expense.id}.overflow'),
-      icon: const Icon(AppIcons.actionMore, color: AppColors.darkGrey),
+      icon: Icon(
+        AppIcons.actionMore,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
       onSelected: (action) {
         switch (action) {
           case _ExpenseAction.edit:

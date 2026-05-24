@@ -102,7 +102,7 @@ class SettleSheet extends StatelessWidget {
             '${fromName ?? 'You'} pay ${toName ?? 'them'}',
             style: Theme.of(
               context,
-            ).textTheme.bodyLarge?.copyWith(color: AppColors.darkGrey),
+            ).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
           ElevatedButton.icon(
             key: const Key('budget.settle.venmo'),

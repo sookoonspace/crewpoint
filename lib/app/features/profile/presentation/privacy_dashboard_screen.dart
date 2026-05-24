@@ -248,7 +248,7 @@ class _SectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 0,
-      color: AppColors.white,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.borderLg,
         side: BorderSide(
@@ -287,7 +287,7 @@ class _DataRow extends StatelessWidget {
               'Required',
               style: Theme.of(
                 context,
-              ).textTheme.labelSmall?.copyWith(color: AppColors.darkGrey),
+              ).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
             )
           : Text('Optional', style: Theme.of(context).textTheme.labelSmall),
       dense: true,

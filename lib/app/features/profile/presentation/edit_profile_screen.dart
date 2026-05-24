@@ -334,9 +334,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   // Display Name
                   Text(
                     'Display Name',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelLarge?.copyWith(color: AppColors.charcoal),
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                   CustomTextField(
                     hintText: 'How others see you',
@@ -356,9 +356,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   // Payment section header
                   Text(
                     'Payment Info',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelLarge?.copyWith(color: AppColors.charcoal),
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                   Text(
                     'Optional — helps your crew settle up with you',
@@ -393,7 +393,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             child: Row(
                               spacing: AppSpacing.sm,
                               children: [
-                                Icon(m.$3, size: 20, color: AppColors.charcoal),
+                                Icon(
+                                  m.$3,
+                                  size: 20,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
+                                ),
                                 Text(m.$2),
                               ],
                             ),
@@ -419,9 +425,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   // Deep-link handles for one-tap settle
                   Text(
                     'Settle handles',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelLarge?.copyWith(color: AppColors.charcoal),
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                   Text(
                     'Used by the Venmo / CashApp deep-link buttons in Budget',

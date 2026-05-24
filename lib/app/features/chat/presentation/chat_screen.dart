@@ -119,7 +119,9 @@ class _ChatScreenState extends State<ChatScreen> {
                       key: const Key('chat.list.empty'),
                       child: Text(
                         s.chatEmptyMessage,
-                        style: const TextStyle(color: AppColors.mediumGrey),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     )
                   : ListView.builder(

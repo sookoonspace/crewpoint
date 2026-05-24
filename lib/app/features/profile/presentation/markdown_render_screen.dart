@@ -5,7 +5,6 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:yaml/yaml.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
@@ -71,10 +70,7 @@ class _MarkdownRenderScreenState extends State<MarkdownRenderScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: Text(widget.title), elevation: 0),
       body: FutureBuilder<_MarkdownDoc?>(
         future: _doc,
         builder: (context, snap) {
@@ -176,7 +172,7 @@ class _StampLine extends StatelessWidget {
             ),
             TextSpan(
               text: value,
-              style: const TextStyle(color: AppColors.charcoal),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
             ),
           ],
         ),
@@ -219,7 +215,10 @@ class _LoadFailure extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Text(
               hostedUrl,
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 12,
+              ),
             ),
           ],
         ),

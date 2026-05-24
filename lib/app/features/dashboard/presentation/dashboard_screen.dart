@@ -223,7 +223,7 @@ class _ErrorState extends StatelessWidget {
               s.errorLoading,
               style: Theme.of(
                 context,
-              ).textTheme.bodyMedium?.copyWith(color: AppColors.darkGrey),
+              ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
               textAlign: TextAlign.center,
             ),
             OutlinedButton.icon(

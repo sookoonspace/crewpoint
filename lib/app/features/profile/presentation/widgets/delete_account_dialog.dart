@@ -289,7 +289,7 @@ class _ProviderReAuthPrompt extends StatelessWidget {
         Row(
           spacing: AppSpacing.sm,
           children: [
-            Icon(icon, color: AppColors.charcoal),
+            Icon(icon, color: Theme.of(context).colorScheme.onSurface),
             Text(label, style: Theme.of(context).textTheme.bodyMedium),
           ],
         ),

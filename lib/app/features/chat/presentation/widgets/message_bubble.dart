@@ -115,7 +115,13 @@ class MessageBubble extends StatelessWidget {
           Text(
             message.text,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: !_isSettlement && isCurrentUser ? AppColors.white : null,
+              // White text is only safe on the sageDark "own message"
+              // bubble. High-priority + settlement bubbles use pale
+              // backgrounds where white would be invisible, so fall
+              // through to the themed default (onSurface).
+              color: isCurrentUser && !message.isHighPriority && !_isSettlement
+                  ? AppColors.white
+                  : Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ],

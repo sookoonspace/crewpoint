@@ -57,7 +57,7 @@ class DisputeSheet extends StatelessWidget {
             textAlign: TextAlign.center,
             style: Theme.of(
               context,
-            ).textTheme.bodyMedium?.copyWith(color: AppColors.darkGrey),
+            ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
           Text(
             'Disputing will remove this settlement and restore the balance.',

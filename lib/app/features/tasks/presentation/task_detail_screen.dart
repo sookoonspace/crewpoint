@@ -109,9 +109,11 @@ class TaskDetailScreen extends StatelessWidget {
                       size: AppSizes.iconSm,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
-                    const Text(
+                    Text(
                       'Will sync when online',
-                      style: TextStyle(color: AppColors.mediumGrey),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),

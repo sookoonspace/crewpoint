@@ -306,7 +306,7 @@ class _MembersPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 0,
-      color: AppColors.white,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.borderLg,
         side: BorderSide(
@@ -348,7 +348,7 @@ class _QuickLinkCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 0,
-      color: AppColors.white,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.borderLg,
         side: BorderSide(
@@ -545,7 +545,7 @@ class _EventActionsState extends State<_EventActions> {
         if (isAdmin || isOwner)
           Card(
             elevation: 0,
-            color: AppColors.white,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             shape: RoundedRectangleBorder(
               borderRadius: AppRadius.borderLg,
               side: BorderSide(
@@ -593,7 +593,7 @@ class _EventActionsState extends State<_EventActions> {
         if (!isOwner)
           Card(
             elevation: 0,
-            color: AppColors.white,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             shape: RoundedRectangleBorder(
               borderRadius: AppRadius.borderLg,
               side: BorderSide(
@@ -623,7 +623,7 @@ class _EventActionsState extends State<_EventActions> {
           const SizedBox(height: AppSpacing.lg),
           Card(
             elevation: 0,
-            color: AppColors.white,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             shape: RoundedRectangleBorder(
               borderRadius: AppRadius.borderLg,
               side: BorderSide(

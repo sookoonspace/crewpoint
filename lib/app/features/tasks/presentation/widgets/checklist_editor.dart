@@ -188,8 +188,8 @@ class _ChecklistRowState extends State<_ChecklistRow> {
                           ? TextDecoration.lineThrough
                           : null,
                       color: widget.item.isCompleted
-                          ? AppColors.mediumGrey
-                          : null,
+                          ? Theme.of(context).colorScheme.onSurfaceVariant
+                          : Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ),

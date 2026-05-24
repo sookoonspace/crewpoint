@@ -136,10 +136,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create Event'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Create Event'), elevation: 0),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(
           horizontal: Breakpoints.screenHorizontalPadding(context),
@@ -158,9 +155,9 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                   // Event Type
                   Text(
                     'Event Type',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelLarge?.copyWith(color: AppColors.charcoal),
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                   Wrap(
                     spacing: AppSpacing.sm,
@@ -176,7 +173,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                         labelStyle: TextStyle(
                           color: isSelected
                               ? AppColors.white
-                              : AppColors.charcoal,
+                              : Theme.of(context).colorScheme.onSurface,
                         ),
                       );
                     }).toList(),
@@ -187,9 +184,9 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                   // Title
                   Text(
                     'Title',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelLarge?.copyWith(color: AppColors.charcoal),
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                   CustomTextField(
                     key: const Key('createEvent.title'),
@@ -210,9 +207,9 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                   // Description
                   Text(
                     'Description',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelLarge?.copyWith(color: AppColors.charcoal),
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                   CustomTextField(
                     key: const Key('createEvent.description'),
@@ -235,8 +232,8 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                           : 'Optional — tap to set',
                       style: TextStyle(
                         color: _startDate != null
-                            ? AppColors.charcoal
-                            : AppColors.mediumGrey,
+                            ? Theme.of(context).colorScheme.onSurface
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                     trailing: _startDate != null
@@ -250,7 +247,9 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                     onTap: _isSubmitting ? null : _pickDate,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
-                      side: const BorderSide(color: AppColors.lightGrey),
+                      side: BorderSide(
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
                     ),
                   ),
 
@@ -259,9 +258,9 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                   // Currency (immutable after creation)
                   Text(
                     'Currency',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelLarge?.copyWith(color: AppColors.charcoal),
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                   DropdownButtonFormField<String>(
                     key: const Key('events.create.currency'),

@@ -25,7 +25,7 @@ class DebtTile extends StatelessWidget {
     final theme = Theme.of(context);
     return Card(
       elevation: 0,
-      color: AppColors.white,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       margin: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.xs,
@@ -124,7 +124,7 @@ class _EventChip extends StatelessWidget {
         label,
         style: Theme.of(
           context,
-        ).textTheme.labelSmall?.copyWith(color: AppColors.charcoal),
+        ).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurface),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
