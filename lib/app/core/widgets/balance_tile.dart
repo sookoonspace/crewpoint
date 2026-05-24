@@ -60,7 +60,7 @@ class BalanceTile extends StatelessWidget {
                 multiCurrencyDisclaimer!,
                 key: const Key('balance.tile.disclaimer'),
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppColors.darkGrey,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontStyle: FontStyle.italic,
                 ),
               ),
@@ -86,7 +86,7 @@ class _SplitNumbers extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final labelStyle = Theme.of(context).textTheme.labelMedium?.copyWith(
-      color: AppColors.darkGrey,
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
       letterSpacing: 0.6,
       fontWeight: FontWeight.w600,
     );
@@ -120,7 +120,7 @@ class _SplitNumbers extends StatelessWidget {
           width: 1,
           height: 40,
           margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          color: AppColors.lightGrey,
+          color: Theme.of(context).colorScheme.outline,
         ),
         Expanded(
           child: Column(
@@ -196,7 +196,7 @@ class _AllSettledLine extends StatelessWidget {
       _formatZero(),
       key: const Key('balance.tile.allSettled'),
       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-        color: AppColors.darkGrey,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
         fontWeight: FontWeight.w600,
       ),
     );

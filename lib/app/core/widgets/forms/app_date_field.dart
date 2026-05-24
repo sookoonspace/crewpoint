@@ -19,7 +19,6 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
@@ -89,7 +88,9 @@ class AppDateField extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color: value == null ? AppColors.mediumGrey : AppColors.charcoal,
+            color: value == null
+                ? Theme.of(context).colorScheme.onSurfaceVariant
+                : Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ),
@@ -97,11 +98,12 @@ class AppDateField extends StatelessWidget {
   }
 
   Widget _inline(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.offWhite,
+        color: colors.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.lightGrey),
+        border: Border.all(color: colors.outline),
       ),
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
@@ -109,14 +111,14 @@ class AppDateField extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(AppIcons.calendar, color: AppColors.darkGrey),
+              Icon(AppIcons.calendar, color: colors.onSurfaceVariant),
               const SizedBox(width: AppSpacing.sm),
               if (labelText != null)
                 Expanded(
                   child: Text(
                     labelText!,
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: AppColors.charcoal,
+                      color: colors.onSurface,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

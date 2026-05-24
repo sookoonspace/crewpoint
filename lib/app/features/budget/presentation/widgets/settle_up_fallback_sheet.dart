@@ -69,7 +69,7 @@ class _SheetBody extends StatelessWidget {
           Text(
             s.settleUpFallbackTitle(_recipientLabel),
             style: theme.textTheme.titleLarge?.copyWith(
-              color: AppColors.charcoal,
+              color: Theme.of(context).colorScheme.onSurface,
               fontWeight: FontWeight.w700,
             ),
           ),

@@ -7,7 +7,6 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 
 class AppRadioOption<T> {
@@ -60,7 +59,7 @@ class AppRadioGroup<T> extends StatelessWidget {
                   Text(
                     opt.subtitle!,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: AppColors.mediumGrey,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
               ],
@@ -95,7 +94,7 @@ class AppRadioGroup<T> extends StatelessWidget {
           Text(
             labelText!,
             style: theme.textTheme.labelLarge?.copyWith(
-              color: AppColors.charcoal,
+              color: theme.colorScheme.onSurface,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -104,7 +103,7 @@ class AppRadioGroup<T> extends StatelessWidget {
           Text(
             helperText!,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: AppColors.mediumGrey,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ],

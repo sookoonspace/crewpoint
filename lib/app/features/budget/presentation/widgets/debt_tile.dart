@@ -45,7 +45,7 @@ class DebtTile extends StatelessWidget {
               child: Text(
                 _firstLetter(row.counterpartyUid),
                 style: theme.textTheme.titleSmall?.copyWith(
-                  color: AppColors.charcoal,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -58,7 +58,7 @@ class DebtTile extends StatelessWidget {
                   Text(
                     row.counterpartyUid,
                     style: theme.textTheme.titleSmall?.copyWith(
-                      color: AppColors.charcoal,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

@@ -115,9 +115,9 @@ class PrivacyDashboardScreen extends StatelessWidget {
                 for (var i = 0; i < _notCollected.length; i++) ...[
                   if (i > 0) const Divider(height: 1, indent: 56),
                   ListTile(
-                    leading: const Icon(
+                    leading: Icon(
                       AppIcons.blocked,
-                      color: AppColors.mediumGrey,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       size: 20,
                     ),
                     title: Text(
@@ -140,16 +140,16 @@ class PrivacyDashboardScreen extends StatelessWidget {
                 for (var i = 0; i < _dependencies.length; i++) ...[
                   if (i > 0) const Divider(height: 1, indent: 56),
                   ListTile(
-                    leading: const Icon(
+                    leading: Icon(
                       AppIcons.extension,
-                      color: AppColors.darkGrey,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       size: 20,
                     ),
                     title: Text(_dependencies[i].$1),
                     subtitle: Text(
                       _dependencies[i].$2,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.mediumGrey,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                     dense: true,
@@ -167,14 +167,14 @@ class PrivacyDashboardScreen extends StatelessWidget {
               children: [
                 ListTile(
                   key: const Key('privacyDashboard.legal.privacy'),
-                  leading: const Icon(
+                  leading: Icon(
                     AppIcons.privacyPolicy,
-                    color: AppColors.darkGrey,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   title: const Text('Privacy Policy'),
-                  trailing: const Icon(
+                  trailing: Icon(
                     AppIcons.chevronRight,
-                    color: AppColors.mediumGrey,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   onTap: () => Navigator.of(context).push<void>(
                     MaterialPageRoute<void>(
@@ -189,14 +189,14 @@ class PrivacyDashboardScreen extends StatelessWidget {
                 const Divider(height: 1, indent: 56),
                 ListTile(
                   key: const Key('privacyDashboard.legal.terms'),
-                  leading: const Icon(
+                  leading: Icon(
                     AppIcons.terms,
-                    color: AppColors.darkGrey,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   title: const Text('Terms of Service'),
-                  trailing: const Icon(
+                  trailing: Icon(
                     AppIcons.chevronRight,
-                    color: AppColors.mediumGrey,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   onTap: () => Navigator.of(context).push<void>(
                     MaterialPageRoute<void>(
@@ -230,7 +230,7 @@ class _SectionLabel extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: AppColors.darkGrey,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
           letterSpacing: 1.2,
           fontWeight: FontWeight.w600,
         ),

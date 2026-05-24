@@ -151,7 +151,7 @@ class _WelcomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.charcoal,
+      color: Theme.of(context).colorScheme.onSurface,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
       child: Column(
         mainAxisAlignment: .center,
@@ -263,7 +263,7 @@ class _PrivacyPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.charcoal,
+      color: Theme.of(context).colorScheme.onSurface,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
       child: Column(
         mainAxisAlignment: .center,

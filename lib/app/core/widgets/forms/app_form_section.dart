@@ -13,7 +13,6 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 
 class AppFormSection extends StatelessWidget {
@@ -41,7 +40,7 @@ class AppFormSection extends StatelessWidget {
           Text(
             title,
             style: theme.textTheme.labelLarge?.copyWith(
-              color: AppColors.charcoal,
+              color: theme.colorScheme.onSurface,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -50,7 +49,7 @@ class AppFormSection extends StatelessWidget {
             Text(
               helperText!,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: AppColors.mediumGrey,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],

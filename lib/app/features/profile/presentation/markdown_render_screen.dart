@@ -169,8 +169,8 @@ class _StampLine extends StatelessWidget {
           children: [
             TextSpan(
               text: '$label: ',
-              style: const TextStyle(
-                color: AppColors.darkGrey,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -199,10 +199,10 @@ class _LoadFailure extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               AppIcons.cloudOff,
               size: 48,
-              color: AppColors.mediumGrey,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: AppSpacing.md),
             const Text(
@@ -219,7 +219,7 @@ class _LoadFailure extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Text(
               hostedUrl,
-              style: const TextStyle(color: AppColors.mediumGrey, fontSize: 12),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
             ),
           ],
         ),

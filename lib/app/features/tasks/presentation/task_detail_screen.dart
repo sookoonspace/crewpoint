@@ -101,15 +101,15 @@ class TaskDetailScreen extends StatelessWidget {
             children: [
               _StatusBadge(status: task.status),
               if (hasPendingWrites)
-                const Row(
+                Row(
                   spacing: AppSpacing.sm,
                   children: [
                     Icon(
                       AppIcons.cloudOff,
                       size: AppSizes.iconSm,
-                      color: AppColors.mediumGrey,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
-                    Text(
+                    const Text(
                       'Will sync when online',
                       style: TextStyle(color: AppColors.mediumGrey),
                     ),
@@ -130,10 +130,10 @@ class TaskDetailScreen extends StatelessWidget {
                 Row(
                   spacing: AppSpacing.sm,
                   children: [
-                    const Icon(
+                    Icon(
                       AppIcons.calendar,
                       size: AppSizes.iconSm,
-                      color: AppColors.mediumGrey,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     Text(
                       'Due ${DateFormat.yMMMd().format(task.dueDate!)}',
@@ -183,10 +183,10 @@ class _AssigneeRow extends StatelessWidget {
     return Row(
       spacing: AppSpacing.sm,
       children: [
-        const Icon(
+        Icon(
           AppIcons.navProfile,
           size: AppSizes.iconSm,
-          color: AppColors.mediumGrey,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
         Text('Assigned to $label'),
         if (!stillInEvent)

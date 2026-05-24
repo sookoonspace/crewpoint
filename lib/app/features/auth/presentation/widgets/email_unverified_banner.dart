@@ -48,15 +48,15 @@ class EmailUnverifiedBanner extends ConsumerWidget {
               children: [
                 Text(
                   context.strings.auth.verifyBannerTitle,
-                  style: const TextStyle(
-                    color: AppColors.charcoal,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
                   context.strings.auth.verifyBannerBody(user.email),
-                  style: const TextStyle(
-                    color: AppColors.charcoal,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 12,
                   ),
                 ),

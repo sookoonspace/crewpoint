@@ -48,7 +48,7 @@ class EventDashboardScreen extends StatelessWidget {
                     Text(
                       event.description!,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.darkGrey,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xl),
@@ -114,7 +114,7 @@ class EventDashboardScreen extends StatelessWidget {
                     icon: AppIcons.statusDone,
                     label: 'Tasks',
                     subtitle: 'To-dos & assignments',
-                    color: AppColors.charcoal,
+                    color: Theme.of(context).colorScheme.onSurface,
                     onTap: () =>
                         context.push('/dashboard/event/${event.id}/tasks'),
                   ),
@@ -317,9 +317,9 @@ class _MembersPreview extends StatelessWidget {
       child: ListTile(
         leading: const Icon(AppIcons.members, color: AppColors.sage),
         title: Text('$memberCount member${memberCount != 1 ? 's' : ''}'),
-        trailing: const Icon(
+        trailing: Icon(
           AppIcons.chevronRight,
-          color: AppColors.mediumGrey,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
         onTap: onTap,
         shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
@@ -368,9 +368,9 @@ class _QuickLinkCard extends StatelessWidget {
         ),
         title: Text(label),
         subtitle: Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
-        trailing: const Icon(
+        trailing: Icon(
           AppIcons.chevronRight,
-          color: AppColors.mediumGrey,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
         onTap: onTap,
         shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
@@ -602,14 +602,14 @@ class _EventActionsState extends State<_EventActions> {
               ),
             ),
             child: ListTile(
-              leading: const Icon(
+              leading: Icon(
                 AppIcons.actionLogout,
-                color: AppColors.charcoal,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
               title: const Text('Leave Event'),
-              trailing: const Icon(
+              trailing: Icon(
                 AppIcons.chevronRight,
-                color: AppColors.mediumGrey,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               onTap: _leaveEvent,
               shape: const RoundedRectangleBorder(

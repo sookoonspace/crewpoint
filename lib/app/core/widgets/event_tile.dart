@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/widgets/task_progress_summary.dart';
@@ -73,14 +72,14 @@ class EventTile extends StatelessWidget {
                       Text(
                         _dateRange(),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.darkGrey,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     const SizedBox(height: 2),
                     Text(
                       _memberCount(),
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: AppColors.darkGrey,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],

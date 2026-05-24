@@ -224,9 +224,9 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
 
                   // Start Date (optional)
                   ListTile(
-                    leading: const Icon(
+                    leading: Icon(
                       AppIcons.calendar,
-                      color: AppColors.darkGrey,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     title: const Text('Start Date'),
                     subtitle: Text(

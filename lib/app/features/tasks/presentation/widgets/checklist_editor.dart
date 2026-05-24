@@ -198,10 +198,10 @@ class _ChecklistRowState extends State<_ChecklistRow> {
           IconButton(
             key: Key('tasks.detail.checklist.item.${widget.item.id}.delete'),
             onPressed: widget.onDelete,
-            icon: const Icon(
+            icon: Icon(
               AppIcons.actionClose,
               size: 18,
-              color: AppColors.mediumGrey,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
       ],

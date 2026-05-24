@@ -40,7 +40,7 @@ class ProgressRing extends StatelessWidget {
   Widget build(BuildContext context) {
     final labelStyle = Theme.of(context).textTheme.labelMedium?.copyWith(
       fontWeight: FontWeight.w600,
-      color: AppColors.charcoal,
+      color: Theme.of(context).colorScheme.onSurface,
     );
 
     return Semantics(

@@ -159,8 +159,9 @@ class _Pill<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = isActive ? AppColors.charcoal : AppColors.white;
-    final fg = isActive ? AppColors.white : AppColors.charcoal;
+    final colors = Theme.of(context).colorScheme;
+    final bg = isActive ? colors.primary : colors.surfaceContainerHighest;
+    final fg = isActive ? colors.onPrimary : colors.onSurface;
     final labelStyle = Theme.of(
       context,
     ).textTheme.labelLarge?.copyWith(color: fg, fontWeight: FontWeight.w600);

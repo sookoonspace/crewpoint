@@ -34,10 +34,11 @@ class ConversationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     final hasUnread = unreadCount > 0;
     return Card(
       elevation: 0,
-      color: AppColors.white,
+      color: colors.surfaceContainerHighest,
       margin: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.xs,
@@ -86,7 +87,7 @@ class ConversationTile extends StatelessWidget {
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: isUrgent
                             ? AppColors.statusUrgentFg
-                            : AppColors.darkGrey,
+                            : colors.onSurfaceVariant,
                         fontWeight: isUrgent
                             ? FontWeight.w600
                             : FontWeight.w400,
@@ -108,7 +109,7 @@ class ConversationTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.labelSmall?.copyWith(
-                        color: AppColors.darkGrey,
+                        color: colors.onSurfaceVariant,
                       ),
                     ),
                     if (hasUnread) ...[
@@ -123,14 +124,14 @@ class ConversationTile extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: isUrgent
                               ? AppColors.statusUrgentFg
-                              : AppColors.charcoal,
+                              : colors.primary,
                           borderRadius: BorderRadius.circular(11),
                         ),
                         alignment: Alignment.center,
                         child: Text(
                           _unreadLabel(),
                           style: theme.textTheme.labelSmall?.copyWith(
-                            color: AppColors.white,
+                            color: colors.onPrimary,
                             fontWeight: FontWeight.w700,
                           ),
                         ),

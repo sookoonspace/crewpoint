@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/app_typography.dart';
@@ -53,13 +52,14 @@ class _Cell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           cell.value ?? '—',
           style: AppTypography.numberDisplay(
-            color: AppColors.charcoal,
+            color: colors.onSurface,
           ).copyWith(fontSize: AppSizes.emojiStat),
         ),
         const SizedBox(height: 2),
@@ -67,7 +67,7 @@ class _Cell extends StatelessWidget {
           cell.label,
           style: Theme.of(
             context,
-          ).textTheme.bodySmall?.copyWith(color: AppColors.darkGrey),
+          ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
         ),
       ],
     );
@@ -82,7 +82,7 @@ class _Divider extends StatelessWidget {
     return Container(
       width: 1,
       margin: const EdgeInsets.symmetric(vertical: 6),
-      color: AppColors.lightGrey,
+      color: Theme.of(context).colorScheme.outline,
     );
   }
 }

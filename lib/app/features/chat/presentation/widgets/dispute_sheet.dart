@@ -59,10 +59,10 @@ class DisputeSheet extends StatelessWidget {
               context,
             ).textTheme.bodyMedium?.copyWith(color: AppColors.darkGrey),
           ),
-          const Text(
+          Text(
             'Disputing will remove this settlement and restore the balance.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.mediumGrey, fontSize: 12),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
           ),
           FilledButton(
             key: const Key('chat.dispute.cancel'),

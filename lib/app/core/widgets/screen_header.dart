@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 
 /// Cream-friendly header used at the top of each tab screen. Renders title +
@@ -20,7 +19,8 @@ class ScreenHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.xl,
@@ -39,13 +39,14 @@ class ScreenHeader extends StatelessWidget {
                   Text(
                     subtitle!,
                     style: textTheme.bodySmall?.copyWith(
-                      color: AppColors.darkGrey,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 Text(
                   title,
                   style: textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
               ],

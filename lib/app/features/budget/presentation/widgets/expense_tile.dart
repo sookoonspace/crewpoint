@@ -54,9 +54,9 @@ class ExpenseTile extends StatelessWidget {
                       width: 40,
                       height: 40,
                       color: AppColors.lightGrey,
-                      child: const Icon(
+                      child: Icon(
                         AppIcons.imageBroken,
-                        color: AppColors.mediumGrey,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         size: 20,
                       ),
                     ),

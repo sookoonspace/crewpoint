@@ -201,10 +201,10 @@ class _TasksFilterBarState extends State<TasksFilterBar> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
+                    Icon(
                       AppIcons.actionSort,
                       size: 18,
-                      color: AppColors.darkGrey,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: AppSpacing.xs),
                     Text(

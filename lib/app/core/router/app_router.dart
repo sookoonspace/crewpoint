@@ -326,7 +326,7 @@ class _RouterErrorScreen extends StatelessWidget {
                     'Tried: $attemptedLocation',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.darkGrey,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontFamily: 'monospace',
                     ),
                   ),

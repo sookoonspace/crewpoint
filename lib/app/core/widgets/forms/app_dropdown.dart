@@ -91,8 +91,8 @@ class AppDropdown<T> extends StatelessWidget {
                 item.label,
                 style: TextStyle(
                   color: item.enabled
-                      ? AppColors.charcoal
-                      : AppColors.mediumGrey,
+                      ? Theme.of(context).colorScheme.onSurface
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ),

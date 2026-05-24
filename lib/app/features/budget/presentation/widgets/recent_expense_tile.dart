@@ -67,7 +67,7 @@ class RecentExpenseTile extends StatelessWidget {
                 child: Text(
                   _firstLetter(payerLabel),
                   style: theme.textTheme.labelMedium?.copyWith(
-                    color: AppColors.charcoal,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -79,7 +79,7 @@ class RecentExpenseTile extends StatelessWidget {
                     Text(
                       exp.description ?? '$payerLabel paid',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: AppColors.charcoal,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -88,7 +88,7 @@ class RecentExpenseTile extends StatelessWidget {
                     Text(
                       row.event.title,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppColors.mediumGrey,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -111,7 +111,7 @@ class RecentExpenseTile extends StatelessWidget {
                   Text(
                     _formatTimestamp(exp.createdAt),
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: AppColors.mediumGrey,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],

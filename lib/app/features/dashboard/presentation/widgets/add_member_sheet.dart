@@ -154,15 +154,15 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
               child: Column(
                 spacing: AppSpacing.lg,
                 children: [
-                  const Icon(
+                  Icon(
                     AppIcons.wifiOff,
                     size: 48,
-                    color: AppColors.mediumGrey,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   Text(
                     _errorMessage!,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.mediumGrey,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -198,7 +198,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
                   style: Theme.of(context).textTheme.displaySmall?.copyWith(
                     letterSpacing: 10,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.charcoal,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ),
