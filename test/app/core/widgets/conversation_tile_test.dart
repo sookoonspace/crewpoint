@@ -7,17 +7,17 @@ void main() {
     return tester.pumpWidget(MaterialApp(home: Scaffold(body: child)));
   }
 
-  testWidgets('renders emoji + title + preview + timestamp', (tester) async {
+  testWidgets('renders icon + title + preview + timestamp', (tester) async {
     await pump(
       tester,
       const ConversationTile(
-        emoji: '🏔️',
+        icon: Icons.luggage_outlined,
         title: 'Tahoe Ski Trip',
         preview: 'Bo: Just found a cabin with a view',
         timestamp: '2m',
       ),
     );
-    expect(find.text('🏔️'), findsOneWidget);
+    expect(find.byIcon(Icons.luggage_outlined), findsOneWidget);
     expect(find.text('Tahoe Ski Trip'), findsOneWidget);
     expect(find.text('Bo: Just found a cabin with a view'), findsOneWidget);
     expect(find.text('2m'), findsOneWidget);
@@ -27,7 +27,7 @@ void main() {
     await pump(
       tester,
       const ConversationTile(
-        emoji: '🎉',
+        icon: Icons.people_alt_outlined,
         title: 'NYC New Year',
         preview: 'Casey: Deposit due',
         timestamp: '18m',
@@ -41,7 +41,7 @@ void main() {
     await pump(
       tester,
       const ConversationTile(
-        emoji: '🎉',
+        icon: Icons.people_alt_outlined,
         title: 'NYC New Year',
         preview: 'Lots of unread',
         timestamp: '18m',
@@ -56,7 +56,7 @@ void main() {
     await pump(
       tester,
       const ConversationTile(
-        emoji: '🏖️',
+        icon: Icons.beach_access_outlined,
         title: 'Beach Weekend',
         preview: "You: I'll Venmo everyone.",
         timestamp: 'Yesterday',
@@ -69,7 +69,7 @@ void main() {
     await pump(
       tester,
       const ConversationTile(
-        emoji: '🎉',
+        icon: Icons.people_alt_outlined,
         title: 'NYC New Year',
         preview: 'URGENT: Venue deposit due',
         timestamp: '18m',
@@ -88,7 +88,7 @@ void main() {
     await pump(
       tester,
       ConversationTile(
-        emoji: '📋',
+        icon: Icons.assignment_outlined,
         title: 'Project',
         preview: 'Hello',
         timestamp: '1h',
@@ -105,7 +105,7 @@ void main() {
     await pump(
       tester,
       const ConversationTile(
-        emoji: '🏔️',
+        icon: Icons.luggage_outlined,
         title: 'Tahoe Ski Trip',
         preview: 'Bo: Just found a cabin',
         timestamp: '2m',

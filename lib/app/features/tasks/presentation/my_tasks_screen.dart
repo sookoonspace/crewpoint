@@ -257,7 +257,7 @@ class _MyTasksList extends StatelessWidget {
           _EventGroup(
             eventId: row.event.id,
             title: row.event.title,
-            emoji: emojiForEventType(row.event.eventType),
+            icon: iconForEventType(row.event.eventType),
           ),
         );
       }
@@ -278,7 +278,17 @@ class _MyTasksList extends StatelessWidget {
               top: AppSpacing.sm,
               bottom: AppSpacing.xs,
             ),
-            child: SectionLabel('${group.emoji}  ${group.title}'),
+            child: Row(
+              children: [
+                Icon(
+                  group.icon,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Expanded(child: SectionLabel(group.title)),
+              ],
+            ),
           ),
           for (final row in group.rows)
             TaskTile(
@@ -304,14 +314,10 @@ class _MyTasksList extends StatelessWidget {
 }
 
 class _EventGroup {
-  _EventGroup({
-    required this.eventId,
-    required this.title,
-    required this.emoji,
-  });
+  _EventGroup({required this.eventId, required this.title, required this.icon});
   final String eventId;
   final String title;
-  final String emoji;
+  final IconData icon;
   final List<MyAssignedTaskRow> rows = <MyAssignedTaskRow>[];
 }
 

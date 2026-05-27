@@ -6,13 +6,13 @@ import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/widgets/status_badge.dart';
 
-/// Chat inbox row — emoji + title + last-message preview + timestamp +
+/// Chat inbox row — icon + title + last-message preview + timestamp +
 /// optional urgent badge + optional unread pill. Stateless and parameter-
 /// driven; the screen (or a Riverpod-watching wrapper) supplies the values.
 class ConversationTile extends StatelessWidget {
   const ConversationTile({
     super.key,
-    required this.emoji,
+    required this.icon,
     required this.title,
     required this.preview,
     required this.timestamp,
@@ -21,7 +21,7 @@ class ConversationTile extends StatelessWidget {
     this.onTap,
   });
 
-  final String emoji;
+  final IconData icon;
   final String title;
   final String preview;
   final String timestamp;
@@ -55,7 +55,11 @@ class ConversationTile extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(emoji, style: const TextStyle(fontSize: AppSizes.emojiChat)),
+              Icon(
+                icon,
+                size: AppSizes.emojiChat,
+                color: colors.onSurfaceVariant,
+              ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(

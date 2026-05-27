@@ -19,13 +19,13 @@ void main() {
     return tester.pumpWidget(MaterialApp(home: Scaffold(body: child)));
   }
 
-  testWidgets('renders emoji, title, member count badge, and ring label', (
+  testWidgets('renders icon, title, member count badge, and ring label', (
     tester,
   ) async {
     await pump(tester, EventTile(event: event, todo: 2, doing: 1, done: 3));
 
-    // Emoji derived from EventType.trip.
-    expect(find.text('🏔️'), findsOneWidget);
+    // Icon derived from EventType.trip.
+    expect(find.byIcon(Icons.luggage_outlined), findsOneWidget);
     // Title.
     expect(find.text('Tahoe Ski Trip'), findsOneWidget);
     // Member count badge (3 ids → "3 members").

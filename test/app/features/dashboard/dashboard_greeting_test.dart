@@ -39,23 +39,25 @@ void main() {
     emailVerified: true,
   );
 
-  testWidgets('renders "Good morning, Alex 👋" when the clock is before noon', (
+  testWidgets('renders "Good morning, Alex" when the clock is before noon', (
     tester,
   ) async {
     await withClock(Clock.fixed(DateTime(2026, 5, 17, 8)), () async {
       await tester.pumpWidget(_harness(user: user, events: const []));
       await _pumpFrames(tester);
-      expect(find.text('Good morning, Alex 👋'), findsOneWidget);
+      // The 👋 emoji was removed from the greeting string because some
+      // fonts rendered it as a missing-glyph box on iOS.
+      expect(find.text('Good morning, Alex'), findsOneWidget);
     });
   });
 
-  testWidgets('falls back to "Good afternoon, there 👋" with no displayName', (
+  testWidgets('falls back to "Good afternoon, there" with no displayName', (
     tester,
   ) async {
     await withClock(Clock.fixed(DateTime(2026, 5, 17, 14)), () async {
       await tester.pumpWidget(_harness(user: null, events: const []));
       await _pumpFrames(tester);
-      expect(find.text('Good afternoon, there 👋'), findsOneWidget);
+      expect(find.text('Good afternoon, there'), findsOneWidget);
     });
   });
 

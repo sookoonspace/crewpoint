@@ -167,7 +167,7 @@ class _ChatInboxList extends StatelessWidget {
         return KeyedSubtree(
           key: Key('chat.inbox.tile.${row.event.id}'),
           child: ConversationTile(
-            emoji: emojiForEventType(row.event.eventType),
+            icon: iconForEventType(row.event.eventType),
             title: row.event.title,
             preview: _previewLine(row),
             timestamp: last == null ? '' : _formatTimestamp(last.timestamp),

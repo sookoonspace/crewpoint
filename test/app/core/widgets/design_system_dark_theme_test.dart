@@ -39,7 +39,7 @@ void main() {
     await pumpDark(
       tester,
       const ConversationTile(
-        emoji: '🎉',
+        icon: Icons.people_alt_outlined,
         title: 'NYC New Year',
         preview: 'URGENT: Venue deposit due',
         timestamp: '18m',

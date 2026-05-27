@@ -59,7 +59,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final now = clock.now();
     final firstName = greetingFirstName(displayName);
     final s = context.strings.dashboard;
-    final greeting = '${_greetingPrefix(s, now)}, $firstName 👋';
+    // Greeting uses a Material wave icon rather than the 👋 emoji —
+    // some fonts (Poppins via GoogleFonts) and the iOS Simulator render
+    // the emoji as a "missing glyph" box.
+    final greeting = '${_greetingPrefix(s, now)}, $firstName';
     final dateLine = DateFormat('EEEE, MMM d').format(now);
 
     return Scaffold(

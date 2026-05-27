@@ -102,7 +102,7 @@ void main() {
     await pumpScaled(
       tester,
       const ConversationTile(
-        emoji: '🎉',
+        icon: Icons.people_alt_outlined,
         title: 'NYC New Year — long enough to push the layout',
         preview: 'URGENT: Venue deposit due next Friday by 5pm',
         timestamp: '18m',

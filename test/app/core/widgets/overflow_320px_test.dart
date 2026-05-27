@@ -32,7 +32,7 @@ void main() {
       await pumpAt320(
         tester,
         const ConversationTile(
-          emoji: '🎉',
+          icon: Icons.people_alt_outlined,
           title: 'NYC New Year Eve 2026 — long enough title to push',
           preview: 'Casey: Deposit due Friday at 5pm',
           timestamp: 'Yesterday',

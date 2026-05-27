@@ -52,9 +52,10 @@ class EventTile extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                emojiForEventType(event.eventType),
-                style: const TextStyle(fontSize: AppSizes.emojiTile),
+              Icon(
+                iconForEventType(event.eventType),
+                size: AppSizes.emojiTile,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
