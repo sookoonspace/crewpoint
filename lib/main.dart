@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:crewpoint_app/app/core/env/app_flavor.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/router/app_router.dart';
 import 'package:crewpoint_app/app/core/router/current_route_provider.dart';
@@ -12,7 +13,10 @@ import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await FirebaseService.initialize();
+  // `AppFlavor.current` reads --dart-define=FLAVOR=... at launch and
+  // defaults to dev when the define is missing (tests, ad-hoc runs).
+  // launch.json passes the matching --dart-define-from-file=.env.<flavor>.
+  await FirebaseService.initialize(flavor: AppFlavor.current);
   // SharedPreferences is resolved BEFORE runApp so themeModeProvider's
   // build() can read the persisted choice synchronously — no first-frame
   // flash in the wrong theme.

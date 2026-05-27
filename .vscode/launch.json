@@ -1,0 +1,113 @@
+{
+  // CrewPoint launch configurations.
+  //
+  // Three flavors (dev / stg / prod) × two modes (debug / profile) +
+  // a release variant for prod. Each config wires the corresponding
+  // .env.<flavor> file via --dart-define-from-file and sets the
+  // FLAVOR define that `AppFlavor.current` reads. Pick from the
+  // VS Code "Run and Debug" panel (Cmd+Shift+D).
+  //
+  // Debug runs show all `dart:developer` logs (incl. our
+  // `name: 'profile'` diagnostics for the user-resolution path) in
+  // the Debug Console.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "CrewPoint dev (debug)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "flutterMode": "debug",
+      "args": [
+        "--flavor",
+        "dev",
+        "--dart-define-from-file=.env.dev",
+        "--dart-define=FLAVOR=dev"
+      ]
+    },
+    {
+      "name": "CrewPoint dev (profile)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "flutterMode": "profile",
+      "args": [
+        "--flavor",
+        "dev",
+        "--dart-define-from-file=.env.dev",
+        "--dart-define=FLAVOR=dev"
+      ]
+    },
+    {
+      "name": "CrewPoint stg (debug)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "flutterMode": "debug",
+      "args": [
+        "--flavor",
+        "stg",
+        "--dart-define-from-file=.env.stg",
+        "--dart-define=FLAVOR=stg"
+      ]
+    },
+    {
+      "name": "CrewPoint stg (profile)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "flutterMode": "profile",
+      "args": [
+        "--flavor",
+        "stg",
+        "--dart-define-from-file=.env.stg",
+        "--dart-define=FLAVOR=stg"
+      ]
+    },
+    {
+      "name": "CrewPoint prod (debug)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "flutterMode": "debug",
+      "args": [
+        "--flavor",
+        "prod",
+        "--dart-define-from-file=.env.prod",
+        "--dart-define=FLAVOR=prod"
+      ]
+    },
+    {
+      "name": "CrewPoint prod (release)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "flutterMode": "release",
+      "args": [
+        "--flavor",
+        "prod",
+        "--dart-define-from-file=.env.prod",
+        "--dart-define=FLAVOR=prod"
+      ]
+    },
+    {
+      "name": "CrewPoint dev (web — chrome)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "flutterMode": "debug",
+      "deviceId": "chrome",
+      "args": [
+        "--dart-define-from-file=.env.dev",
+        "--dart-define=FLAVOR=dev"
+      ]
+    },
+    {
+      "name": "Flutter: run all tests",
+      "request": "launch",
+      "type": "dart",
+      "program": "test/",
+      "args": ["--reporter", "expanded"]
+    }
+  ]
+}
