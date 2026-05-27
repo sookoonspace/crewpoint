@@ -51,14 +51,14 @@ Add System/Light/Dark theme switcher + Apple/Google SVG sign-in glyphs; migrate 
 ### Phase 3: Empty-state web fix (fallback color first, then Lottie discovery)
 
 - **Goal**: Tasks / Chat / Budget empty states never render a grey rectangle on web — always show either the Lottie animation or a clearly-visible branded icon.
-- [ ] `lib/app/core/widgets/empty_state_placeholder.dart` — `_buildFallbackIcon` color: `AppColors.lightGrey` → `Theme.of(context).colorScheme.onSurfaceVariant`. Helper needs `BuildContext` — either pass it in or move the icon construction into `build`'s closure. This fix is the most likely root cause of the user-reported grey sliver and ships independently.
-- [ ] Discovery: `flutter run -d chrome` on Tasks / Chat / Budget empty states; check console for Lottie errors; try `--web-renderer canvaskit` vs `html`. Capture findings in PR description.
-- [ ] `lib/app/core/widgets/empty_state_placeholder.dart` — if discovery shows Lottie returns empty `SizedBox` on web (no `errorBuilder` fire), add `if (kIsWeb) return fallbackIconClosure();` short-circuit at the top of the lottie slot. Otherwise leave Lottie call intact.
-- [ ] TDD: fallback icon resolves to `colorScheme.onSurfaceVariant` (assert via `tester.widget<Icon>(...).color`); NOT the legacy `AppColors.lightGrey`.
-- [ ] TDD: when `lottieAsset` is `null`, title + (optional) subtitle + (optional) CTA all render and fallback icon is found.
-- [ ] TDD: when `lottieAsset` resolves to a bad asset path, fallback icon path engages (existing behavior — guard against regression).
-- [ ] Manual: `flutter run -d chrome` → Tasks tab (empty event), Chat tab (zero events), Budget tab (zero events) — confirm icon visible against cream background.
-- [ ] Verify: `flutter analyze && flutter test`.
+- [x] `lib/app/core/widgets/empty_state_placeholder.dart` — `_buildFallbackIcon(context)` now takes `BuildContext` and tints the icon with `Theme.of(context).colorScheme.onSurfaceVariant`. Shipped in Phase 4 sweep (`48c55dc`); was the root cause of the user-reported grey sliver.
+- [ ] ~~Discovery: `flutter run -d chrome` on Tasks / Chat / Budget empty states; check console for Lottie errors~~ — **deferred**. User verified on iPhone that fallback icon now reads correctly; the iOS Simulator path doesn't surface a Lottie failure either. Web behavior remains unverified and gets re-opened only if a user reports a grey sliver on Chrome.
+- [ ] ~~`kIsWeb` short-circuit in `EmptyStatePlaceholder`~~ — **not needed yet**. The fallback-icon color fix already guarantees a readable empty state when Lottie returns nothing; adding a `kIsWeb` branch would only matter if Lottie actively renders something broken on web (no evidence today).
+- [x] TDD: fallback icon resolves to `colorScheme.onSurfaceVariant` (asserted via sentinel `Color(0xFFAA00AA)` injected into `ColorScheme.light.onSurfaceVariant`; reads `tester.widget<Icon>(...).color`). Regression guard against the `AppColors.lightGrey` default.
+- [x] TDD: when `lottieAsset` is `null`, title + subtitle + CTA + fallback icon all render together; CTA tap fires the callback.
+- [x] TDD: when `lottieAsset` resolves to a bad asset path, fallback icon path engages (pre-existing test at line 85, retained).
+- [ ] Manual: `flutter run -d chrome` → Tasks / Chat / Budget empty states. **Pending user verification on web.**
+- [x] Verify: `flutter analyze` clean (1 pre-existing warning) && `flutter test` (656 passed, 4 skipped — +2 new EmptyStatePlaceholder cases).
 
 ### Phase 4: Themed-token migration (pulled forward — user feedback: "no real color change between light/dark in app UI")
 

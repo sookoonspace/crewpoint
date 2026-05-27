@@ -102,6 +102,66 @@ void main() {
     expect(find.byKey(const Key('emptyState.iconFallback')), findsOneWidget);
   });
 
+  testWidgets(
+    'with lottieAsset: null, title + subtitle + CTA + fallback icon all render',
+    (tester) async {
+      var taps = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: EmptyStatePlaceholder(
+              title: 'No events yet',
+              subtitle: 'Create or join one',
+              ctaLabel: 'Join with Code',
+              onCta: () => taps++,
+              lottieAsset: null,
+            ),
+          ),
+        ),
+      );
+      await pumpFrames(tester);
+
+      expect(find.byKey(const Key('emptyState.title')), findsOneWidget);
+      expect(find.byKey(const Key('emptyState.subtitle')), findsOneWidget);
+      expect(find.byKey(const Key('emptyState.cta')), findsOneWidget);
+      expect(find.byKey(const Key('emptyState.iconFallback')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('emptyState.cta')));
+      await pumpFrames(tester);
+      expect(taps, 1);
+    },
+  );
+
+  testWidgets(
+    'fallback icon color resolves from colorScheme.onSurfaceVariant',
+    (tester) async {
+      // Sentinel onSurfaceVariant so the assertion can't accidentally
+      // match the legacy AppColors.lightGrey (#DFE6E9).
+      const sentinel = Color(0xFFAA00AA);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(
+            colorScheme: const ColorScheme.light(onSurfaceVariant: sentinel),
+          ),
+          // lottieAsset: null short-circuits straight to the fallback icon
+          // without waiting for the Lottie loader.
+          home: const Scaffold(
+            body: EmptyStatePlaceholder(
+              title: 'No events yet',
+              lottieAsset: null,
+            ),
+          ),
+        ),
+      );
+      await pumpFrames(tester);
+
+      final iconWidget = tester.widget<Icon>(
+        find.byKey(const Key('emptyState.iconFallback')),
+      );
+      expect(iconWidget.color, sentinel);
+    },
+  );
+
   testWidgets('forwards ctaKey onto the OutlinedButton', (tester) async {
     var taps = 0;
     const legacyKey = Key('legacy.empty.clear');
