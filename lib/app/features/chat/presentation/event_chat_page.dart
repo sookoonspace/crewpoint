@@ -99,7 +99,9 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
     }
 
     final asyncMessages = ref.watch(chatMessagesProvider(widget.event.id));
-    final asyncUsers = ref.watch(usersByIdProvider(widget.event.memberIds));
+    final asyncUsers = ref.watch(
+      usersByIdProvider(usersByIds(widget.event.memberIds)),
+    );
     final memberNames = <String, String>{};
     asyncUsers.whenData((users) {
       for (final entry in users.entries) {

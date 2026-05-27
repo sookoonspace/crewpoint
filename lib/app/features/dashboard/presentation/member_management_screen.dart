@@ -38,7 +38,9 @@ class _MemberManagementScreenState
     final isOwner = event.isOwner(currentUserId);
     final isAdmin = event.isAdmin(currentUserId);
 
-    final asyncUsers = ref.watch(usersByIdProvider(event.memberIds));
+    final asyncUsers = ref.watch(
+      usersByIdProvider(usersByIds(event.memberIds)),
+    );
     // displayName when set, email as second fallback. Empty string
     // signals "no resolved label" so downstream renders "Unknown
     // member" or similar.

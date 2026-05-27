@@ -114,7 +114,9 @@ class _EventTasksPageState extends ConsumerState<EventTasksPage> {
     }
 
     final asyncTasks = ref.watch(taskListProvider(widget.event.id));
-    final asyncUsers = ref.watch(usersByIdProvider(widget.event.memberIds));
+    final asyncUsers = ref.watch(
+      usersByIdProvider(usersByIds(widget.event.memberIds)),
+    );
 
     return asyncTasks.when(
       data: (tasks) {

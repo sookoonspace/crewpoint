@@ -268,7 +268,9 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
     }
 
     final asyncExpenses = ref.watch(expenseListProvider(widget.event.id));
-    final asyncUsers = ref.watch(usersByIdProvider(widget.event.memberIds));
+    final asyncUsers = ref.watch(
+      usersByIdProvider(usersByIds(widget.event.memberIds)),
+    );
     final repo = ref.watch(expenseRepositoryProvider);
     final imageService = ref.watch(imageServiceProvider);
     final symbol = _currencySymbol(widget.event.currency);

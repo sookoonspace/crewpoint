@@ -79,7 +79,11 @@ class EventTaskDetailPage extends ConsumerWidget {
               !event.memberIds.contains(task.completedBy))
             task.completedBy!,
         ];
-        final asyncUsers = ref.watch(usersByIdProvider(uidsToResolve));
+        // usersByIds() converts the fresh List into a stable comma-joined
+        // key so Riverpod cache-hits across rebuilds. See provider docs.
+        final asyncUsers = ref.watch(
+          usersByIdProvider(usersByIds(uidsToResolve)),
+        );
         // displayName when set, email as second fallback. TaskDetailScreen
         // shows "Unknown member" if even this is null/empty (offline or
         // user doc not yet hydrated).
