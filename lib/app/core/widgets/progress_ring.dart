@@ -60,6 +60,7 @@ class ProgressRing extends StatelessWidget {
                 doing: doing,
                 done: done,
                 strokeWidth: strokeWidth,
+                trackColor: Theme.of(context).colorScheme.outline,
               ),
             ),
             Text(_label, style: labelStyle),
@@ -76,12 +77,14 @@ class _RingPainter extends CustomPainter {
     required this.doing,
     required this.done,
     required this.strokeWidth,
+    required this.trackColor,
   });
 
   final int todo;
   final int doing;
   final int done;
   final double strokeWidth;
+  final Color trackColor;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -92,7 +95,7 @@ class _RingPainter extends CustomPainter {
     final track = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
-      ..color = AppColors.lightGrey;
+      ..color = trackColor;
     canvas.drawArc(rect, 0, 2 * math.pi, false, track);
 
     final total = todo + doing + done;
@@ -120,5 +123,6 @@ class _RingPainter extends CustomPainter {
       old.todo != todo ||
       old.doing != doing ||
       old.done != done ||
-      old.strokeWidth != strokeWidth;
+      old.strokeWidth != strokeWidth ||
+      old.trackColor != trackColor;
 }

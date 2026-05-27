@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 
 /// Static placeholder block — no shimmer animation. Lightweight, themable
@@ -24,7 +23,7 @@ class SkeletonBox extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: AppColors.lightGrey.withValues(alpha: 0.6),
+        color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(radius),
       ),
     );

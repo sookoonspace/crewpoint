@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 
 class SegmentedFilterSegment<T> {
@@ -179,7 +178,7 @@ class _Pill<T> extends StatelessWidget {
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: AppColors.lightGrey),
+          border: Border.all(color: colors.outline),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

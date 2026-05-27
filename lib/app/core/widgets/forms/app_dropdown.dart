@@ -57,19 +57,22 @@ class AppDropdown<T> extends StatelessWidget {
       // "(no longer in event)" row) push the inner Row past its parent's
       // width and overflow. Expanding lets the dropdown clip cleanly.
       isExpanded: true,
+      // Fill + border colors resolve from `colorScheme` so dark mode
+      // flips them. `AppColors.sage` for the focused border stays as a
+      // brand accent (same in both themes).
       decoration: InputDecoration(
         labelText: labelText,
         hintText: hintText,
         prefixIcon: prefixIcon,
         filled: true,
-        fillColor: AppColors.offWhite,
+        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.lightGrey),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.lightGrey),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

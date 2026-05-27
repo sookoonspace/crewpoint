@@ -82,11 +82,13 @@ Add System/Light/Dark theme switcher + Apple/Google SVG sign-in glyphs; migrate 
 ### Phase 5: Web audit + cleanup
 
 - **Goal**: 12-route web sweep captures any remaining contrast leaks; PR includes screenshot evidence.
-- [ ] Capture light + dark screenshots at 390 × 844 (mobile-web) for the 12 routes listed in spec `<validation>` — `/auth`, `/dashboard`, `/dashboard/event/:id`, `/dashboard/event/:id/tasks`, `/dashboard/event/:id/tasks/:taskId`, `/dashboard/event/:id/chat`, `/dashboard/event/:id/budget`, `/tasks`, `/chat`, `/budget`, `/profile`, `/profile/edit`. Spot-check 768 + 1280 widths.
-- [ ] For each low-contrast or hardcoded-color leak found: migrate to `colorScheme` tokens in the same PR; cap scope per spec out-of-scope (no onboarding/hero gradient changes).
-- [ ] Grep: no NEW `AppColors.charcoal` / `AppColors.mediumGrey` / `AppColors.cream` foreground or scaffold references outside `app_theme.dart`. Use `git diff main -- lib | grep AppColors`.
-- [ ] Attach screenshot set to PR description; call out any deliberate deferrals as follow-ups.
-- [ ] Verify: `flutter analyze && flutter test`.
+- [ ] ~~Capture light + dark screenshots at 390 × 844 for 12 routes~~ — **deferred to follow-up PR**. No programmatic capture path; user has already manually verified the iOS Simulator (Light + Dark) end-to-end. Web verification stays open until a user reports a chrome-specific issue.
+- [x] For each remaining leak found: migrate to `colorScheme` tokens. Triaged `git diff main -- lib` against the gate:
+  - **Migrated**: `app_dropdown.dart` (fillColor + border), `segmented_filter_bar.dart` (border), `skeletons.dart` (SkeletonBox placeholder fill), `progress_ring.dart` (ring track — threaded via constructor since the painter has no BuildContext), `settle_up_fallback_sheet.dart` (foregroundColor on two OutlinedButton.icons).
+  - **Intentional brand surfaces (kept)**: `AppTheme.light/dark` builders (the canonical source); onboarding `_FeaturePage` cream/charcoal backgrounds (deliberate brand pages); `task_tile.dart` status pill colors (todo = lightGrey, priorityHigh = terracotta, priorityMedium = charcoal/white — these are status semantic colors); `dashboard_screen.dart` Create Event button (charcoal in both themes by design); `settle_up_fallback_sheet.dart` sage accents on `Icons.actionCopy` and the OutlinedButton border (brand accent in both themes).
+- [x] Grep gate: `git diff main -- lib | grep -E "AppColors\.(charcoal|mediumGrey|cream|darkGrey|lightGrey)"` — only intentional brand colors and theme builders remain.
+- [ ] ~~Attach screenshot set to PR description~~ — see screenshot deferral above. PR description lists the explicit deferrals.
+- [x] Verify: `flutter analyze` clean (1 pre-existing TableMigration warning) && `flutter test` (658 passed, 4 skipped).
 
 ## Risks / Out of scope
 

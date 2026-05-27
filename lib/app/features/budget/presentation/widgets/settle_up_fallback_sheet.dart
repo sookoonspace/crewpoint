@@ -89,7 +89,7 @@ class _SheetBody extends StatelessWidget {
             icon: const Icon(AppIcons.actionCopy, color: AppColors.sage),
             label: Text(s.settleUpFallbackCopyAmount),
             style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.charcoal,
+              foregroundColor: Theme.of(context).colorScheme.onSurface,
               side: const BorderSide(color: AppColors.sage),
             ),
           ),
@@ -101,7 +101,7 @@ class _SheetBody extends StatelessWidget {
               icon: const Icon(AppIcons.actionCopy, color: AppColors.sage),
               label: Text(s.settleUpFallbackCopyHandle),
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.charcoal,
+                foregroundColor: Theme.of(context).colorScheme.onSurface,
                 side: const BorderSide(color: AppColors.sage),
               ),
             ),
