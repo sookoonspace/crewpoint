@@ -365,26 +365,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
 
-                  // Payment Method dropdown
+                  // Payment Method dropdown — fillColor/borderSide come
+                  // from inputDecorationTheme so dark mode flips them.
                   DropdownButtonFormField<String>(
                     initialValue: _selectedPaymentMethod,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       hintText: 'Select payment method',
-                      prefixIcon: const Icon(AppIcons.paymentGeneric),
-                      filled: true,
-                      fillColor: AppColors.offWhite,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: AppColors.lightGrey,
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: AppColors.lightGrey,
-                        ),
-                      ),
+                      prefixIcon: Icon(AppIcons.paymentGeneric),
                     ),
                     items: _paymentMethods
                         .map(

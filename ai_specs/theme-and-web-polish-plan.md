@@ -73,9 +73,11 @@ Add System/Light/Dark theme switcher + Apple/Google SVG sign-in glyphs; migrate 
 - [x] `lib/app/features/profile/presentation/widgets/sign_out_sheet.dart` — full themed-token migration (drag handle, lottie fallback, title, body, cancel, sign-out button). Was broken in dark mode (user feedback).
 - [x] `lib/app/core/widgets/empty_state_placeholder.dart` — fallback icon `AppColors.lightGrey` → `colorScheme.onSurfaceVariant` (Phase 3 grey-sliver root cause). Title + subtitle colors also themed.
 - [x] Drive-by: unused `app_colors.dart` imports removed from 4 files.
-- [ ] `lib/app/features/profile/presentation/edit_profile_screen.dart` — still uses hardcoded `cream/charcoal` for non-scaffold elements (Lottie success icon, section headers, dropdown hint). **Pending** — covered in next pass.
-- [ ] TDD: `SettingsRow` `trailing` slot + dark-mode colors. **Pending** — relied on full-suite green to confirm nothing regressed; no targeted assertions yet.
-- [x] Verify: `flutter analyze` clean (1 pre-existing warning) && `flutter test` (654 passed, 4 skipped).
+- [x] `lib/app/features/profile/presentation/edit_profile_screen.dart` — Payment Method dropdown's inline `fillColor: AppColors.offWhite` + `borderSide: AppColors.lightGrey` overrides dropped; the dropdown now inherits `inputDecorationTheme` (light = offWhite/lightGrey, dark = surfaceDarkElevated/darkGrey). Lottie success icon + "Profile updated!" title intentionally stay `AppColors.sage` — brand success color, same in both themes. Avatar's `charcoalDark` backgroundColor is the no-photo placeholder fill behind the Lottie profile animation; kept as a fixed brand surface.
+- [x] TDD: `SettingsRow` `trailing` slot + dark-mode colors — two new targeted assertions in `settings_row_test.dart`:
+  - Custom `trailing` widget replaces the default chevron (regression guard for the API extension Phase 1 needed).
+  - Leading icon + title resolve from `colorScheme.onSurface`; subtitle + default chevron resolve from `colorScheme.onSurfaceVariant` — sentinel colors `0xFFAA00AA` / `0xFF00AABB` injected into the ColorScheme so neither default tints nor legacy `AppColors.*` can accidentally match.
+- [x] Verify: `flutter analyze` clean (1 pre-existing warning) && `flutter test` (full suite green).
 
 ### Phase 5: Web audit + cleanup
 
