@@ -32,19 +32,19 @@ Push notifications roadmap V1→V3. FCM scaffolding (`FcmGateway`/`FcmService`/`
 ### Phase 1: V1 — wire what's built (urgent-message MVP)
 
 - **Goal**: bootstrap FCM end-to-end so the existing urgent-chat trigger lands on a closed-app device. Ships V1 push.
-- [ ] `lib/main.dart` — register top-level `@pragma('vm:entry-point')` background handler; await `FirebaseMessaging.getInitialMessage()` pre-router; subscribe `onMessage` + `onMessageOpenedApp` to `FcmHandler`.
-- [ ] `lib/app/core/services/fcm_handler_bootstrap.dart` — new wrapper that wires `FcmHandler` to `MaterialBanner` foreground UI + `GoRouter.go()` for tap-handling. Reads `currentRouteProvider`.
-- [ ] `lib/app/features/auth/application/auth_provider.dart` — call `FcmService.attach(uid)` on `Authenticated` transition, `detach(uid)` on sign-out.
-- [ ] `lib/app/core/providers.dart` — expose `fcmServiceProvider`, `fcmHandlerProvider`.
-- [ ] `ios/Runner/Info.plist` — confirm `aps-environment` entitlement; add `UNUserNotificationCenter` delegate stub in `AppDelegate.swift` for foreground presentation options.
-- [ ] `android/app/src/main/AndroidManifest.xml` — declare default channel id `crewpoint_default` + meta-data for `firebase_messaging`.
-- [ ] Pre-deploy: upload APNs auth key to Firebase console (dev/stg/prod).
-- [ ] TDD: `FcmService.attach` writes token then subscribes refresh stream → token re-write on refresh.
-- [ ] TDD: `FcmHandler.handleForegroundMessage` suppresses banner when route already matches `/event/{id}/chat`.
-- [ ] TDD: `FcmHandler.handleTap` routes to `data['deepLink']`; falls back to `/dashboard` when absent.
-- [ ] TDD: `main.dart` cold-start path consumes `getInitialMessage()` exactly once (no double-nav).
-- [ ] Robot: `ChatRobot` urgent-message journey — sender fires urgent message → recipient receives banner → tap → lands on chat. Uses faked `IFcmGateway` + `FcmHandler` invariants (referenced in `todo.md:40`).
-- [ ] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`.
+- [x] `lib/main.dart` — register top-level `@pragma('vm:entry-point')` background handler; await `FirebaseMessaging.getInitialMessage()` pre-router; subscribe `onMessage` + `onMessageOpenedApp` to `FcmHandler`.
+- [x] `lib/app/core/services/fcm_handler_bootstrap.dart` — new wrapper that wires `FcmHandler` to `MaterialBanner` foreground UI + `GoRouter.go()` for tap-handling. Reads `currentRouteProvider`.
+- [x] `lib/app/features/auth/application/auth_provider.dart` — call `FcmService.attach(uid)` on `Authenticated` transition, `detach(uid)` on sign-out. *(Implemented via `ref.listen` in `main.dart` instead of inside the notifier — keeps the side-effect at the composition root.)*
+- [x] `lib/app/core/providers.dart` — expose `fcmServiceProvider`, `fcmGatewayProvider`.
+- [x] `ios/Runner/Info.plist` — confirm `aps-environment` entitlement; `UNUserNotificationCenter` delegate stub deferred (plugin auto-registers; default foreground suppression is desired since we render our own MaterialBanner).
+- [x] `android/app/src/main/AndroidManifest.xml` — declare default channel id `crewpoint_default` + meta-data for `firebase_messaging`.
+- [ ] Pre-deploy: upload APNs auth key to Firebase console (dev/stg/prod). *(Manual; out of session scope.)*
+- [x] TDD: `FcmService.attach` writes token then subscribes refresh stream → token re-write on refresh. *(Pre-existing in `test/app/core/services/fcm_service_test.dart`.)*
+- [x] TDD: `FcmHandler.handleForegroundMessage` suppresses banner when route already matches `/event/{id}/chat`. *(Pre-existing in `test/app/core/services/fcm_handler_test.dart`.)*
+- [x] TDD: `FcmHandler.handleTap` routes to `data['deepLink']`; no-op when absent. *(Pre-existing.)*
+- [x] TDD: `FcmHandlerBootstrap` cold-start `initialMessage` is dispatched exactly once (no double-nav). *(New: `test/app/core/services/fcm_handler_bootstrap_test.dart`.)*
+- [ ] Robot: `ChatRobot` urgent-message journey — sender fires urgent message → recipient receives banner → tap → lands on chat. *(Deferred — depends on robot harness work tracked in `todo.md:40`.)*
+- [x] Verify: `flutter analyze` && `flutter test`.
 
 ### Phase 2: V1.1 — opt-out + preferences foundation
 

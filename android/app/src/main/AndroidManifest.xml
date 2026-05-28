@@ -30,6 +30,14 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- Default FCM notification channel for V1. firebase_messaging
+             auto-creates a channel matching this id the first time a push
+             lands; declaring it here also lets Android route data-only
+             pushes to a labelled channel instead of "Miscellaneous". -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="crewpoint_default" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

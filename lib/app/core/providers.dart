@@ -16,6 +16,8 @@ import 'package:crewpoint_app/app/core/database/daos/expenses_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/task_checklist_items_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/tasks_dao.dart';
 import 'package:crewpoint_app/app/core/services/account_deletion_service.dart';
+import 'package:crewpoint_app/app/core/services/fcm_gateway.dart';
+import 'package:crewpoint_app/app/core/services/fcm_service.dart';
 import 'package:crewpoint_app/app/core/services/file_export_service.dart';
 import 'package:crewpoint_app/app/core/services/file_export_service_native.dart'
     if (dart.library.html) 'package:crewpoint_app/app/core/services/file_export_service_web.dart';
@@ -96,6 +98,19 @@ final imageServiceProvider = Provider<IImageService>(
 final userRepositoryProvider = Provider<IUserRepository>(
   (_) => FirestoreUserRepository(),
 );
+
+/// `firebase_messaging` test seam.
+final fcmGatewayProvider = Provider<IFcmGateway>((_) => FirebaseFcmGateway());
+
+/// Owns the FCM token lifecycle (`attach(uid)` / `detach(uid)`).
+final fcmServiceProvider = Provider<FcmService>((ref) {
+  final service = FcmService(
+    gateway: ref.watch(fcmGatewayProvider),
+    userRepository: ref.watch(userRepositoryProvider),
+  );
+  ref.onDispose(service.dispose);
+  return service;
+});
 
 /// Account deletion service.
 final accountDeletionServiceProvider = Provider<AccountDeletionService>(
