@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/services/fcm_gateway.dart';
 import 'package:crewpoint_app/app/core/services/fcm_service.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
+import 'package:crewpoint_app/app/features/profile/domain/models/notification_prefs.dart';
 import 'package:crewpoint_app/app/features/profile/domain/repositories/i_user_repository.dart';
 
 class _FakeFcmGateway implements IFcmGateway {
@@ -53,6 +54,12 @@ class _FakeUserRepo implements IUserRepository {
   final List<({String uid, String token})> added = [];
   final List<({String uid, String token})> removed = [];
 
+  /// What [getNotificationPrefs] should return for the next call. Tests
+  /// mutate this to verify FcmService skips attach when pushEnabled is
+  /// false.
+  NotificationPrefs prefs = const NotificationPrefs();
+  final List<NotificationPrefs> updates = [];
+
   @override
   Future<void> addFcmToken({required String uid, required String token}) async {
     added.add((uid: uid, token: token));
@@ -88,6 +95,18 @@ class _FakeUserRepo implements IUserRepository {
     String? photoUrl,
     List<String> providerIds = const [],
   }) async {}
+
+  @override
+  Future<NotificationPrefs> getNotificationPrefs(String uid) async => prefs;
+
+  @override
+  Future<void> updateNotificationPrefs({
+    required String uid,
+    required NotificationPrefs prefs,
+  }) async {
+    updates.add(prefs);
+    this.prefs = prefs;
+  }
 }
 
 void main() {
@@ -149,6 +168,35 @@ void main() {
       expect(repo.removed, hasLength(1));
       expect(repo.removed.first.token, 'fcm-token-A');
       expect(gateway.deleted, isTrue);
+    },
+  );
+
+  test(
+    'attach() short-circuits when notificationPrefs.pushEnabled is false',
+    () async {
+      repo.prefs = const NotificationPrefs(pushEnabled: false);
+
+      final ok = await service.attach(uid: 'u1');
+
+      expect(ok, isFalse);
+      expect(gateway.permissionCalls, 0);
+      expect(gateway.getTokenCalls, 0);
+      expect(repo.added, isEmpty);
+    },
+  );
+
+  test(
+    'attach() proceeds when pushEnabled true but urgentChat false',
+    () async {
+      // urgentChat is enforced server-side (in the CF); on the device we
+      // still want a token so the user can receive other categories later
+      // and so toggling urgentChat back on doesn't require a re-attach.
+      repo.prefs = const NotificationPrefs(urgentChat: false);
+
+      final ok = await service.attach(uid: 'u1');
+
+      expect(ok, isTrue);
+      expect(repo.added, hasLength(1));
     },
   );
 }

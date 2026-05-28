@@ -122,9 +122,11 @@ class ProfileScreen extends ConsumerWidget {
                           indent: AppSizes.settingsRowIndent,
                         ),
                         SettingsRow(
+                          key: const Key('profile.notifications.tile'),
                           icon: AppIcons.notifications,
                           title: s.notifications,
-                          onTap: () {},
+                          onTap: () =>
+                              context.push(AppRoutes.notificationSettings),
                         ),
                       ],
                     ),

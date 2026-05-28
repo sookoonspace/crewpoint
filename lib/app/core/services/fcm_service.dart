@@ -24,9 +24,17 @@ class FcmService {
   String? _currentToken;
   String? _attachedUid;
 
-  /// Returns true if a token was successfully written.
+  /// Returns true if a token was successfully written. Short-circuits when
+  /// the user's [NotificationPrefs.pushEnabled] is false — neither the
+  /// OS permission prompt nor the token write fires, so we don't end up
+  /// holding a token the user has explicitly disabled.
   Future<bool> attach({required String uid}) async {
     try {
+      final prefs = await _userRepository.getNotificationPrefs(uid);
+      if (!prefs.pushEnabled) {
+        log('FCM attach skipped — push disabled by user $uid', name: 'fcm');
+        return false;
+      }
       final granted = await _gateway.requestPermission();
       if (!granted) {
         log('FCM permission denied for $uid', name: 'fcm');

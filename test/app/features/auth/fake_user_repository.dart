@@ -1,4 +1,5 @@
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
+import 'package:crewpoint_app/app/features/profile/domain/models/notification_prefs.dart';
 import 'package:crewpoint_app/app/features/profile/domain/repositories/i_user_repository.dart';
 
 /// Hand-rolled fake [IUserRepository] for `AuthNotifier` tests.
@@ -60,6 +61,16 @@ class FakeUserRepository implements IUserRepository {
   Future<void> removeFcmToken({
     required String uid,
     required String token,
+  }) async {}
+
+  @override
+  Future<NotificationPrefs> getNotificationPrefs(String uid) async =>
+      const NotificationPrefs();
+
+  @override
+  Future<void> updateNotificationPrefs({
+    required String uid,
+    required NotificationPrefs prefs,
   }) async {}
 }
 

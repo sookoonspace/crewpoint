@@ -49,6 +49,12 @@ export const onUrgentMessageCreated = onDocumentCreated(
     // Collect tokens for every recipient except the sender, tracking which
     // (uid, token) pair to prune if FCM rejects it. Post Fix 1.B Option A
     // fcmTokens lives in users/{uid}/private/profile, not the public doc.
+    //
+    // V1.1 (Phase 2): respect notificationPrefs. A recipient is skipped if
+    // either the master `pushEnabled` flag is false or the per-category
+    // `urgentChat` flag is false. Both default to true when the doc /
+    // field is missing so existing accounts keep receiving urgent pushes
+    // until they explicitly opt out.
     type TokenOwner = {uid: string; token: string};
     const owners: TokenOwner[] = [];
     for (const uid of memberIds) {
@@ -59,8 +65,22 @@ export const onUrgentMessageCreated = onDocumentCreated(
         .collection("private")
         .doc("profile")
         .get();
+      const privateData = privateSnap.data();
+      const prefs =
+        (privateData?.notificationPrefs as
+          | {pushEnabled?: unknown; urgentChat?: unknown}
+          | undefined) ?? {};
+      const pushEnabled = prefs.pushEnabled !== false;
+      const urgentChat = prefs.urgentChat !== false;
+      if (!pushEnabled || !urgentChat) {
+        logger.info(
+          `Skipping urgent push for ${uid}` +
+            ` (pushEnabled=${pushEnabled}, urgentChat=${urgentChat})`
+        );
+        continue;
+      }
       const tokens =
-        (privateSnap.data()?.fcmTokens as string[] | undefined) ?? [];
+        (privateData?.fcmTokens as string[] | undefined) ?? [];
       for (const token of tokens) {
         owners.push({uid, token});
       }
