@@ -16,6 +16,7 @@ import 'package:crewpoint_app/app/features/profile/presentation/notification_set
 import 'package:crewpoint_app/app/features/profile/presentation/privacy_dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/profile_screen.dart';
 import 'package:crewpoint_app/app/features/auth/presentation/auth_gate_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/application/unread_badge_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/create_event_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
@@ -117,20 +118,32 @@ GoRouter createRouter({
       GoRoute(path: AppRoutes.auth, builder: (_, _) => const AuthGateScreen()),
       StatefulShellRoute.indexedStack(
         builder: (_, _, navigationShell) => Consumer(
-          builder: (_, ref, _) => ResponsiveShell(
-            currentIndex: navigationShell.currentIndex,
-            onDestinationSelected: (index) => navigationShell.goBranch(
-              index,
-              initialLocation: index == navigationShell.currentIndex,
-            ),
-            onSignOut: () => ref.read(authProvider.notifier).signOut(),
-            body: Column(
-              children: [
-                const EmailUnverifiedBanner(),
-                Expanded(child: navigationShell),
-              ],
-            ),
-          ),
+          builder: (_, ref, _) {
+            // Signed-out users see no badges (currentUserIdProvider is null
+            // before auth resolves). UnreadBadgeCounts() defaults to zero
+            // so the un-badged path keeps the same widget identity.
+            final uid = ref.watch(currentUserIdProvider);
+            final badges = uid == null
+                ? const UnreadBadgeCounts()
+                : ref.watch(unreadBadgeProvider(uid));
+            return ResponsiveShell(
+              currentIndex: navigationShell.currentIndex,
+              onDestinationSelected: (index) => navigationShell.goBranch(
+                index,
+                initialLocation: index == navigationShell.currentIndex,
+              ),
+              onSignOut: () => ref.read(authProvider.notifier).signOut(),
+              tasksBadge: badges.tasks,
+              chatBadge: badges.chat,
+              budgetBadge: badges.budget,
+              body: Column(
+                children: [
+                  const EmailUnverifiedBanner(),
+                  Expanded(child: navigationShell),
+                ],
+              ),
+            );
+          },
         ),
         branches: [
           StatefulShellBranch(

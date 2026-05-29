@@ -80,14 +80,21 @@ Push notifications roadmap V1→V3. FCM scaffolding (`FcmGateway`/`FcmService`/`
 - [ ] TDD: `FcmHandler.handleTap` routes a task-detail deep-link payload to `/dashboard/event/{eid}/tasks/{tid}` (covered by existing data-driven dispatch — verify no regression with a focused test). *(Skipped — `FcmHandler.handleTap` is purely data-driven against `data['deepLink']`; any string the server sends is routed verbatim. Existing tests in `fcm_handler_test.dart` already prove the dispatch contract.)*
 - [x] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions run build` && `npm --prefix functions test`. *(1 pre-existing analyzer warning; 677 flutter tests pass, 4 skipped; 75 CF tests pass.)*
 
-### Phase 3b: V2 — badges + unread aggregation (deferred)
+### Phase 3b: V2 — badges + unread aggregation
 
 - **Goal**: visible unread counts on bottom-nav tabs + OS app icon. Pure client work over existing data streams; no new CFs.
-- [ ] `lib/app/features/dashboard/application/unread_badge_provider.dart` — aggregate provider summing per-event unread chat + open task assignments + pending settlement requests; exposes total + per-tab counts.
-- [ ] `lib/app/core/widgets/bottom_nav_badge.dart` — extend bottom-nav shell to render `Badge` on Tasks/Chat/Budget tabs from `unreadBadgeProvider`.
-- [ ] `lib/app/core/services/app_badge_service.dart` — wrap `flutter_app_badger` (or equivalent); update OS badge from `unreadBadgeProvider` listen. Clear on app foreground + on relevant screen view.
-- [ ] TDD: `unreadBadgeProvider` re-emits when task assignment / unread message stream updates.
-- [ ] Verify: `flutter analyze` && `flutter test`.
+- [x] `lib/app/features/dashboard/application/unread_badge_provider.dart` — aggregate `Provider.family<UnreadBadgeCounts, String>` folding `myAssignedTasksProvider` (tasks where `status != done`) + `globalInboxProvider` (events w/ `unreadCount > 0`) + `globalBalanceLedgerProvider` (open debt rows). Exposes per-tab counts + `total` + `hasAny`. Loading/error from any source contributes 0 (badge UX is non-blocking).
+- [x] `lib/app/core/widgets/bottom_nav_badge.dart` — *Implemented inline in `responsive_shell.dart` via a `_badged()` helper rather than a separate file. Plan name preserved as reference; actual location is the shell.* `ResponsiveShell` now accepts `tasksBadge`/`chatBadge`/`budgetBadge` ints; wraps icons in Material 3 `Badge` when count > 0; clamps to `"99+"` at ≥100. Wired from `app_router.dart` Consumer via `unreadBadgeProvider`.
+- [ ] `lib/app/core/services/app_badge_service.dart` — wrap `flutter_app_badger` (or equivalent); update OS badge from `unreadBadgeProvider` listen. Clear on app foreground + on relevant screen view. *(Deferred to Phase 3b.1 — requires a new pubspec dep + iOS pod regen + OEM-variant Android badging which is its own focused unit of work. In-app bottom-nav badges deliver the primary user value.)*
+- [x] TDD: `unreadBadgeProvider` re-emits when task assignment / unread message stream updates. *(Covered by `unread_badge_provider_test.dart` — 7 tests covering all-zero, per-source counting, loading/error suppression, and explicit re-emit on upstream invalidation.)*
+- [x] Verify: `flutter analyze` && `flutter test`. *(1 pre-existing warning; 688 flutter tests pass, 4 skipped.)*
+
+### Phase 3b.1: V2 — OS app-icon badge (deferred follow-up)
+
+- **Goal**: mirror the `unreadBadgeProvider.total` to the OS launcher icon so users see the count without opening the app.
+- [ ] `pubspec.yaml` — add `flutter_app_badge_control: ^X` (or chosen equivalent).
+- [ ] `lib/app/core/services/app_badge_service.dart` — `Notifier<int>` that listens to `unreadBadgeProvider.total` and calls the package's `update(count)` / `removeBadge()`. Clears on app foreground via `AppLifecycleSource`.
+- [ ] TDD: service writes `total` to the badge platform channel; clears on `AppLifecycleState.resumed` when total == 0.
 
 ### Phase 3c: V2 — remaining categories + Android channels + iOS actions (deferred)
 

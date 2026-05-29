@@ -8,12 +8,18 @@ void main() {
     ValueChanged<int>? onDestinationSelected,
     VoidCallback? onSignOut,
     Widget? body,
+    int tasksBadge = 0,
+    int chatBadge = 0,
+    int budgetBadge = 0,
   }) {
     return MaterialApp(
       home: ResponsiveShell(
         currentIndex: currentIndex,
         onDestinationSelected: onDestinationSelected ?? (_) {},
         onSignOut: onSignOut ?? () {},
+        tasksBadge: tasksBadge,
+        chatBadge: chatBadge,
+        budgetBadge: budgetBadge,
         body: body ?? const SizedBox.shrink(),
       ),
     );
@@ -101,5 +107,56 @@ void main() {
 
     expect(find.byType(NavigationRail), findsOneWidget);
     expect(controller.offset, equals(1234.0));
+  });
+
+  group('badges', () {
+    testWidgets('zero counts render no Badge widgets on the bar', (
+      tester,
+    ) async {
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.binding.setSurfaceSize(const Size(600, 800));
+      await tester.pumpWidget(buildSubject());
+
+      expect(find.byKey(const Key('shell.bar.tasks.badge')), findsNothing);
+      expect(find.byKey(const Key('shell.bar.chat.badge')), findsNothing);
+      expect(find.byKey(const Key('shell.bar.budget.badge')), findsNothing);
+    });
+
+    testWidgets('non-zero counts render Badge with the numeric label on bar', (
+      tester,
+    ) async {
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.binding.setSurfaceSize(const Size(600, 800));
+      await tester.pumpWidget(
+        buildSubject(tasksBadge: 3, chatBadge: 1, budgetBadge: 2),
+      );
+
+      expect(find.byKey(const Key('shell.bar.tasks.badge')), findsOneWidget);
+      expect(find.byKey(const Key('shell.bar.chat.badge')), findsOneWidget);
+      expect(find.byKey(const Key('shell.bar.budget.badge')), findsOneWidget);
+
+      expect(find.text('3'), findsOneWidget);
+      expect(find.text('1'), findsOneWidget);
+      expect(find.text('2'), findsOneWidget);
+    });
+
+    testWidgets('counts ≥ 100 clamp to "99+"', (tester) async {
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.binding.setSurfaceSize(const Size(600, 800));
+      await tester.pumpWidget(buildSubject(chatBadge: 137));
+
+      expect(find.text('99+'), findsOneWidget);
+      expect(find.text('137'), findsNothing);
+    });
+
+    testWidgets('badges render on the rail at wide widths', (tester) async {
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.binding.setSurfaceSize(const Size(1280, 800));
+      await tester.pumpWidget(buildSubject(tasksBadge: 5));
+
+      expect(find.byType(NavigationRail), findsOneWidget);
+      expect(find.byKey(const Key('shell.rail.tasks.badge')), findsOneWidget);
+      expect(find.text('5'), findsOneWidget);
+    });
   });
 }
