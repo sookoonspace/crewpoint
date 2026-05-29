@@ -37,6 +37,10 @@ class NotificationPrefsNotifier extends AsyncNotifier<NotificationPrefs> {
     await _update((prefs) => prefs.copyWith(urgentChat: value));
   }
 
+  Future<void> setTaskUpdates(bool value) async {
+    await _update((prefs) => prefs.copyWith(taskUpdates: value));
+  }
+
   Future<void> _update(
     NotificationPrefs Function(NotificationPrefs prefs) transform,
   ) async {

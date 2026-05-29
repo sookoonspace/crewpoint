@@ -1,20 +1,18 @@
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import {logger} from "firebase-functions/v2";
 import * as admin from "firebase-admin";
+import {sendCategorizedPush} from "../notifications/sendPush";
 
 const db = admin.firestore();
-
-const FCM_BATCH_SIZE = 500;
 
 /**
  * onUrgentMessageCreated — Firestore trigger that fans out a push when an
  * urgent (high-priority) chat message is created.
  *
- * - Ignores non-urgent messages
- * - Loads the event to find recipient member ids
- * - Resolves their `fcmTokens`, skipping the sender
- * - sendEachForMulticast in 500-token chunks
- * - Prunes tokens that fail with `messaging/registration-token-not-registered`
+ * Phase 3a refactor: token resolution + per-recipient pref filtering +
+ * batched send + dead-token pruning now lives in `sendCategorizedPush`.
+ * This trigger only carries the urgent-specific shape — the title prefix,
+ * body truncation, and the chat deep-link.
  *
  * Best-effort: this trigger is not retried on failure (urgent push should
  * not fire twice from a retry storm).
@@ -46,113 +44,22 @@ export const onUrgentMessageCreated = onDocumentCreated(
     const memberIds: string[] = eventData.memberIds || [];
     const eventTitle = (eventData.title as string | undefined) ?? "Event";
 
-    // Collect tokens for every recipient except the sender, tracking which
-    // (uid, token) pair to prune if FCM rejects it. Post Fix 1.B Option A
-    // fcmTokens lives in users/{uid}/private/profile, not the public doc.
-    //
-    // V1.1 (Phase 2): respect notificationPrefs. A recipient is skipped if
-    // either the master `pushEnabled` flag is false or the per-category
-    // `urgentChat` flag is false. Both default to true when the doc /
-    // field is missing so existing accounts keep receiving urgent pushes
-    // until they explicitly opt out.
-    type TokenOwner = {uid: string; token: string};
-    const owners: TokenOwner[] = [];
-    for (const uid of memberIds) {
-      if (uid === senderId) continue;
-      const privateSnap = await db
-        .collection("users")
-        .doc(uid)
-        .collection("private")
-        .doc("profile")
-        .get();
-      const privateData = privateSnap.data();
-      const prefs =
-        (privateData?.notificationPrefs as
-          | {pushEnabled?: unknown; urgentChat?: unknown}
-          | undefined) ?? {};
-      const pushEnabled = prefs.pushEnabled !== false;
-      const urgentChat = prefs.urgentChat !== false;
-      if (!pushEnabled || !urgentChat) {
-        logger.info(
-          `Skipping urgent push for ${uid}` +
-            ` (pushEnabled=${pushEnabled}, urgentChat=${urgentChat})`
-        );
-        continue;
-      }
-      const tokens =
-        (privateData?.fcmTokens as string[] | undefined) ?? [];
-      for (const token of tokens) {
-        owners.push({uid, token});
-      }
-    }
-    if (owners.length === 0) {
-      logger.info(`No FCM recipients for urgent message ${messageId}`);
-      return;
-    }
+    const truncatedBody =
+      text.length > 80 ? text.substring(0, 80) + "…" : text;
 
-    const truncatedBody = text.length > 80 ? text.substring(0, 80) + "…" : text;
-    const notification = {
+    const result = await sendCategorizedPush({
+      recipientUids: memberIds,
+      senderId,
+      category: "chat_urgent",
       title: `🚨 Urgent in ${eventTitle}`,
       body: truncatedBody,
-    };
-    const messageData = {
-      eventId,
-      messageId,
       deepLink: `/dashboard/event/${eventId}/chat`,
-    };
-
-    // Chunk by FCM_BATCH_SIZE and send.
-    const messaging = admin.messaging();
-    const deadTokens: TokenOwner[] = [];
-    for (let i = 0; i < owners.length; i += FCM_BATCH_SIZE) {
-      const chunk = owners.slice(i, i + FCM_BATCH_SIZE);
-      const response = await messaging.sendEachForMulticast({
-        tokens: chunk.map((o) => o.token),
-        notification,
-        data: messageData,
-      });
-      response.responses.forEach((res, idx) => {
-        if (res.success) return;
-        const code = res.error?.code ?? "";
-        if (
-          code === "messaging/registration-token-not-registered" ||
-          code === "messaging/invalid-argument"
-        ) {
-          deadTokens.push(chunk[idx]);
-        }
-      });
-    }
-
-    // Prune dead tokens — write to users/{uid}/private/profile.
-    if (deadTokens.length > 0) {
-      const byUid = new Map<string, string[]>();
-      for (const owner of deadTokens) {
-        const list = byUid.get(owner.uid) ?? [];
-        list.push(owner.token);
-        byUid.set(owner.uid, list);
-      }
-      const batch = db.batch();
-      for (const [uid, tokens] of byUid) {
-        batch.set(
-          db
-            .collection("users")
-            .doc(uid)
-            .collection("private")
-            .doc("profile"),
-          {
-            fcmTokens: admin.firestore.FieldValue.arrayRemove(...tokens),
-          },
-          {merge: true}
-        );
-      }
-      await batch.commit();
-      logger.info(
-        `Pruned ${deadTokens.length} dead FCM tokens for ${byUid.size} users`
-      );
-    }
+      extraData: {eventId, messageId},
+    });
 
     logger.info(
-      `Urgent push sent to ${owners.length} tokens for ${messageId}`
+      `Urgent push for ${messageId}:` +
+        ` ${result.attempted} attempted, ${result.skipped} skipped`
     );
   }
 );

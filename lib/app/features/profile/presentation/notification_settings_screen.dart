@@ -102,6 +102,15 @@ class _PrefsForm extends ConsumerWidget {
           onChanged: (v) =>
               _safeUpdate(context, () => controller.setUrgentChat(v)),
         ),
+        AppSwitchTile(
+          key: const Key('notifSettings.taskUpdates.tile'),
+          title: 'Task assignments',
+          subtitle: 'When someone assigns a task to you.',
+          value: prefs.taskUpdates,
+          enabled: prefs.pushEnabled,
+          onChanged: (v) =>
+              _safeUpdate(context, () => controller.setTaskUpdates(v)),
+        ),
       ],
     );
   }

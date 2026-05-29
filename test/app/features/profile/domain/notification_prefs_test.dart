@@ -8,6 +8,7 @@ void main() {
 
       expect(prefs.pushEnabled, isTrue);
       expect(prefs.urgentChat, isTrue);
+      expect(prefs.taskUpdates, isTrue);
     });
 
     test('returns defaults when map is empty', () {
@@ -15,26 +16,31 @@ void main() {
 
       expect(prefs.pushEnabled, isTrue);
       expect(prefs.urgentChat, isTrue);
+      expect(prefs.taskUpdates, isTrue);
     });
 
     test('respects explicit false flags', () {
       final prefs = NotificationPrefs.fromMap(const {
         'pushEnabled': false,
         'urgentChat': false,
+        'taskUpdates': false,
       });
 
       expect(prefs.pushEnabled, isFalse);
       expect(prefs.urgentChat, isFalse);
+      expect(prefs.taskUpdates, isFalse);
     });
 
     test('ignores keys with wrong types instead of throwing', () {
       final prefs = NotificationPrefs.fromMap(const {
         'pushEnabled': 'yes', // bogus type — should fall back to default
         'urgentChat': 0,
+        'taskUpdates': 'maybe',
       });
 
       expect(prefs.pushEnabled, isTrue);
       expect(prefs.urgentChat, isTrue);
+      expect(prefs.taskUpdates, isTrue);
     });
   });
 
@@ -44,13 +50,25 @@ void main() {
 
       final map = prefs.toMap();
 
-      expect(map, {'pushEnabled': true, 'urgentChat': true});
+      expect(map, {
+        'pushEnabled': true,
+        'urgentChat': true,
+        'taskUpdates': true,
+      });
     });
 
     test('serialises non-defaults', () {
-      const prefs = NotificationPrefs(pushEnabled: false, urgentChat: false);
+      const prefs = NotificationPrefs(
+        pushEnabled: false,
+        urgentChat: false,
+        taskUpdates: false,
+      );
 
-      expect(prefs.toMap(), {'pushEnabled': false, 'urgentChat': false});
+      expect(prefs.toMap(), {
+        'pushEnabled': false,
+        'urgentChat': false,
+        'taskUpdates': false,
+      });
     });
   });
 
@@ -62,6 +80,16 @@ void main() {
 
       expect(next.pushEnabled, isTrue);
       expect(next.urgentChat, isFalse);
+      expect(next.taskUpdates, isTrue);
+    });
+
+    test('copyWith taskUpdates leaves urgentChat untouched', () {
+      const prefs = NotificationPrefs();
+
+      final next = prefs.copyWith(taskUpdates: false);
+
+      expect(next.urgentChat, isTrue);
+      expect(next.taskUpdates, isFalse);
     });
   });
 }

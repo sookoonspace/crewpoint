@@ -94,7 +94,7 @@ Future<void> _pumpScreen(WidgetTester tester, _InMemoryUserRepo repo) async {
 
 void main() {
   group('NotificationSettingsScreen', () {
-    testWidgets('renders master + urgent tiles with defaults (both ON)', (
+    testWidgets('renders master + category tiles with defaults (all ON)', (
       tester,
     ) async {
       final repo = _InMemoryUserRepo();
@@ -108,13 +108,16 @@ void main() {
         find.byKey(const Key('notifSettings.urgentChat.tile')),
         findsOneWidget,
       );
+      expect(
+        find.byKey(const Key('notifSettings.taskUpdates.tile')),
+        findsOneWidget,
+      );
 
       final tiles = tester
           .widgetList<SwitchListTile>(find.byType(SwitchListTile))
           .toList();
-      expect(tiles.length, 2);
-      expect(tiles[0].value, isTrue);
-      expect(tiles[1].value, isTrue);
+      expect(tiles.length, 3);
+      expect(tiles.every((t) => t.value == true), isTrue);
     });
 
     testWidgets('toggling master OFF persists pushEnabled=false', (
@@ -131,17 +134,35 @@ void main() {
       expect(repo.prefs.pushEnabled, isFalse);
     });
 
-    testWidgets('urgent tile is disabled when master is OFF', (tester) async {
+    testWidgets('category tiles are disabled when master is OFF', (
+      tester,
+    ) async {
       final repo = _InMemoryUserRepo()
         ..prefs = const NotificationPrefs(pushEnabled: false);
       await _pumpScreen(tester, repo);
 
-      // Find the SwitchListTile rendered by the urgent AppSwitchTile.
       final tiles = tester
           .widgetList<SwitchListTile>(find.byType(SwitchListTile))
           .toList();
-      // Layout order: [master, urgent].
+      // Layout order: [master, urgentChat, taskUpdates].
       expect(tiles[1].onChanged, isNull);
+      expect(tiles[2].onChanged, isNull);
+    });
+
+    testWidgets('toggling taskUpdates OFF persists taskUpdates=false', (
+      tester,
+    ) async {
+      final repo = _InMemoryUserRepo();
+      await _pumpScreen(tester, repo);
+
+      await tester.tap(find.byKey(const Key('notifSettings.taskUpdates.tile')));
+      await tester.pumpAndSettle();
+
+      expect(repo.updates, isNotEmpty);
+      expect(repo.updates.last.taskUpdates, isFalse);
+      // Other flags stay true — copyWith semantics.
+      expect(repo.updates.last.pushEnabled, isTrue);
+      expect(repo.updates.last.urgentChat, isTrue);
     });
   });
 }

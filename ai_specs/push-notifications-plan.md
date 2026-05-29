@@ -65,26 +65,44 @@ Push notifications roadmap V1→V3. FCM scaffolding (`FcmGateway`/`FcmService`/`
 - [ ] Robot: navigate Profile → Notifications → toggle master off → confirm token removed from Firestore (faked). *(Deferred — robot harness work tracked in `todo.md:40`. Widget-level coverage above stands in.)*
 - [x] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`.
 
-### Phase 3: V2 — categories, channels, badges, deep-link map
+### Phase 3a: V2 — categorized push foundation + task-assigned slice
 
-- **Goal**: expand to task/event/payment notifications; correct Android channels + iOS categories; in-app badge counts.
-- [ ] `lib/app/core/services/notification_channels.dart` — declare Android channels: `crewpoint_chat_urgent`, `crewpoint_chat_general`, `crewpoint_tasks`, `crewpoint_events`, `crewpoint_payments`. Importance ladder. Register via platform channel call in `FcmService.attach()`.
-- [ ] `ios/Runner/AppDelegate.swift` — register `UNNotificationCategory` set matching server payload `category` field. Action buttons for `MARK_DONE` (tasks), `VIEW_EXPENSE` (payments).
-- [ ] `functions/src/notifications/sendPush.ts` — extract shared `sendCategorizedPush(recipientUids, category, payload)` helper. Per-recipient pref check + per-channel `android.notification.channelId` + iOS `apns.payload.aps.category` + `apns.payload.aps.thread-id` for grouping.
-- [ ] `functions/src/events/onTaskAssigned.ts` — Firestore trigger on `events/{eid}/tasks/{tid}.assignedTo` change → push to assignee.
-- [ ] `functions/src/events/onTaskDueScheduled.ts` — scheduled (Pub/Sub `every 15 minutes`) — scan tasks w/ `dueAt within next 24h && !reminderSent`, push, set `reminderSent=true`.
+- **Goal**: ship one new notification category end-to-end. Lays the shared CF helper that every future category reuses; proves the assignee-receives-push path on a real Firestore trigger.
+- [x] `functions/src/notifications/sendPush.ts` — new shared `sendCategorizedPush({recipientUids, senderId, category, title, body, deepLink, extraData})`. Per-recipient pref check + category→Android channel id + iOS `apns.payload.aps.thread-id`. Batched send w/ dead-token pruning. Single source of truth for FCM fan-out.
+- [x] `functions/src/events/onUrgentMessageCreated.ts` — migrated to call `sendCategorizedPush(category: 'chat_urgent')`. Inline token-pruning / send loop removed; CF is now ~60 lines vs. the previous ~140.
+- [x] `functions/src/events/onTaskAssigned.ts` — Firestore `onDocumentWritten` trigger on `events/{eid}/tasks/{tid}`. Fires only when `assigneeId` transitions to a new non-empty uid (handles both task create + reassignment). Skips self-assignment. Pushes with `deepLink: /dashboard/event/{eid}/tasks/{tid}`.
+- [x] `functions/src/index.ts` — export `onTaskAssigned`.
+- [x] `lib/app/features/profile/domain/models/notification_prefs.dart` — add `taskUpdates` field (default true). Round-trip in `fromMap` / `toMap` / `copyWith`.
+- [x] `lib/app/features/profile/application/notification_prefs_provider.dart` — add `setTaskUpdates(bool)` action.
+- [x] `lib/app/features/profile/presentation/notification_settings_screen.dart` — surface "Task assignments" tile under Categories; disabled when master is OFF.
+- [x] TDD: `NotificationPrefs.taskUpdates` defaults true, round-trips through `fromMap`/`toMap`, copyWith respects it. *(Covered by `notification_prefs_test.dart` — 8 tests pass.)*
+- [x] TDD: `NotificationSettingsScreen` toggling task-updates persists via repo. *(Covered by `notification_settings_screen_test.dart` — 4 tests pass including new "toggling taskUpdates OFF persists taskUpdates=false" + "category tiles are disabled when master is OFF".)*
+- [ ] TDD: `FcmHandler.handleTap` routes a task-detail deep-link payload to `/dashboard/event/{eid}/tasks/{tid}` (covered by existing data-driven dispatch — verify no regression with a focused test). *(Skipped — `FcmHandler.handleTap` is purely data-driven against `data['deepLink']`; any string the server sends is routed verbatim. Existing tests in `fcm_handler_test.dart` already prove the dispatch contract.)*
+- [x] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions run build` && `npm --prefix functions test`. *(1 pre-existing analyzer warning; 677 flutter tests pass, 4 skipped; 75 CF tests pass.)*
+
+### Phase 3b: V2 — badges + unread aggregation (deferred)
+
+- **Goal**: visible unread counts on bottom-nav tabs + OS app icon. Pure client work over existing data streams; no new CFs.
+- [ ] `lib/app/features/dashboard/application/unread_badge_provider.dart` — aggregate provider summing per-event unread chat + open task assignments + pending settlement requests; exposes total + per-tab counts.
+- [ ] `lib/app/core/widgets/bottom_nav_badge.dart` — extend bottom-nav shell to render `Badge` on Tasks/Chat/Budget tabs from `unreadBadgeProvider`.
+- [ ] `lib/app/core/services/app_badge_service.dart` — wrap `flutter_app_badger` (or equivalent); update OS badge from `unreadBadgeProvider` listen. Clear on app foreground + on relevant screen view.
+- [ ] TDD: `unreadBadgeProvider` re-emits when task assignment / unread message stream updates.
+- [ ] Verify: `flutter analyze` && `flutter test`.
+
+### Phase 3c: V2 — remaining categories + Android channels + iOS actions (deferred)
+
+- **Goal**: add the rest of the V2 category catalog + platform polish.
+- [ ] `lib/app/core/services/notification_channels.dart` — declare Android channels: `crewpoint_chat_urgent`, `crewpoint_chat_general`, `crewpoint_tasks`, `crewpoint_events`, `crewpoint_payments`. Importance ladder. Register via MethodChannel from `FcmService.attach()`.
+- [ ] `android/app/src/main/kotlin/.../MainActivity.kt` — MethodChannel handler that calls `NotificationManager.createNotificationChannel(...)`. Required because Flutter has no first-party API to declare channels.
+- [ ] `ios/Runner/AppDelegate.swift` — register `UNNotificationCategory` set; action buttons for `MARK_DONE` (tasks), `VIEW_EXPENSE` (payments).
+- [ ] `functions/src/events/onTaskDueScheduled.ts` — Pub/Sub scheduled (`every 15 minutes`) — scan tasks with `dueAt within next 24h && !reminderSent`, push via `sendCategorizedPush(category: 'task_due')`, set `reminderSent=true`. Required infra: Pub/Sub API enabled + cost monitoring.
 - [ ] `functions/src/events/onExpenseCreated.ts` — push to event members except payer; deep-link `/dashboard/event/{eid}/budget`.
 - [ ] `functions/src/events/onSettlementDisputed.ts` — push to debtor/creditor; deep-link `/dashboard/event/{eid}/budget`.
 - [ ] `functions/src/events/onMemberJoined.ts` — push to admins (event invite acceptance).
-- [ ] `lib/app/features/dashboard/application/unread_badge_provider.dart` — aggregate provider: sums per-event unread counts (chat) + open task assignments + pending settlement requests → exposes total + per-tab counts.
-- [ ] `lib/app/core/widgets/bottom_nav_badge.dart` — extend bottom-nav shell to render `Badge` on Tasks/Chat/Budget tabs from `unreadBadgeProvider`.
-- [ ] `lib/app/core/services/app_badge_service.dart` — wrap `flutter_app_badger` (or equivalent); update OS badge from `unreadBadgeProvider` listen. Clear on app foreground + on relevant screen view.
-- [ ] `lib/app/core/services/fcm_handler.dart` — extend deep-link table: `/dashboard/event/{eid}/tasks`, `/.../tasks/{tid}`, `/.../budget`, `/.../budget/disputes/{settlementId}`, `/dashboard` (invite).
-- [ ] `lib/app/features/profile/presentation/notification_settings_screen.dart` — surface remaining category toggles wired to V2 categories.
-- [ ] TDD: `unreadBadgeProvider` re-emits when task assignment / unread message stream updates.
+- [ ] `lib/app/features/profile/domain/models/notification_prefs.dart` — add `eventUpdates`, `payments` fields.
+- [ ] `lib/app/features/profile/presentation/notification_settings_screen.dart` — surface remaining category toggles.
 - [ ] TDD: `sendCategorizedPush` writes correct `android.notification.channelId` per category.
 - [ ] TDD: `onTaskDueScheduled` marks `reminderSent` exactly once (idempotency).
-- [ ] TDD: `FcmHandler.handleTap` routes each category's deep-link to the right go_router path.
 - [ ] Robot: assignee receives task-assigned push → tap → lands on task detail → mark done from notification action → task state updates.
 - [ ] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`.
 
