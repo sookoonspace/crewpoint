@@ -2,6 +2,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
@@ -37,20 +38,28 @@ class _MemberManagementScreenState
     final isOwner = event.isOwner(currentUserId);
     final isAdmin = event.isAdmin(currentUserId);
 
-    final asyncUsers = ref.watch(usersByIdProvider(event.memberIds));
+    final asyncUsers = ref.watch(
+      usersByIdProvider(usersByIds(event.memberIds)),
+    );
+    // displayName when set, email as second fallback. Empty string
+    // signals "no resolved label" so downstream renders "Unknown
+    // member" or similar.
     final displayNames = asyncUsers.maybeWhen(
       data: (users) => {
         for (final entry in users.entries)
-          entry.key: entry.value.displayName ?? '',
+          entry.key: () {
+            final name = entry.value.displayName;
+            if (name != null && name.isNotEmpty) return name;
+            if (entry.value.email.isNotEmpty) return entry.value.email;
+            return '';
+          }(),
       },
       orElse: () => const <String, String>{},
     );
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
       appBar: AppBar(
         title: Text('Members (${event.memberIds.length})'),
-        backgroundColor: AppColors.cream,
         elevation: 0,
       ),
       body: ContentMaxWidth(
@@ -101,7 +110,7 @@ class _MemberManagementScreenState
                   AddMemberSheet.show(context: context, eventId: event.id),
               backgroundColor: AppColors.sage,
               foregroundColor: AppColors.white,
-              child: const Icon(Icons.person_add_rounded),
+              child: const Icon(AppIcons.memberAdd),
             )
           : null,
     );
@@ -266,7 +275,7 @@ class _MemberTile extends StatelessWidget {
 
     return Card(
       elevation: 0,
-      color: AppColors.white,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.borderLg,
         side: BorderSide(
@@ -277,7 +286,7 @@ class _MemberTile extends StatelessWidget {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: AppColors.sageLight.withValues(alpha: 0.3),
-          child: const Icon(Icons.person, color: AppColors.sage),
+          child: const Icon(AppIcons.navProfileFilled, color: AppColors.sage),
         ),
         title: Text(
           displayName != null && displayName!.isNotEmpty

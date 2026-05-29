@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
@@ -101,12 +102,12 @@ class SettleSheet extends StatelessWidget {
             '${fromName ?? 'You'} pay ${toName ?? 'them'}',
             style: Theme.of(
               context,
-            ).textTheme.bodyLarge?.copyWith(color: AppColors.darkGrey),
+            ).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
           ElevatedButton.icon(
             key: const Key('budget.settle.venmo'),
             onPressed: _hasVenmo ? onPayVenmo : null,
-            icon: const Icon(Icons.account_balance_wallet_outlined),
+            icon: const Icon(AppIcons.navBudget),
             label: Text(_hasVenmo ? 'Pay with Venmo' : 'No Venmo handle'),
             style: ElevatedButton.styleFrom(
               minimumSize: const Size.fromHeight(48),
@@ -117,7 +118,7 @@ class SettleSheet extends StatelessWidget {
           OutlinedButton.icon(
             key: const Key('budget.settle.cashapp'),
             onPressed: _hasCashApp ? onPayCashApp : null,
-            icon: const Icon(Icons.attach_money),
+            icon: const Icon(AppIcons.currency),
             label: Text(
               _hasCashApp ? 'Pay with Cash App' : 'No Cash App handle',
             ),
@@ -128,7 +129,7 @@ class SettleSheet extends StatelessWidget {
           TextButton.icon(
             key: const Key('budget.settle.copy'),
             onPressed: onCopyDetails,
-            icon: const Icon(Icons.copy_rounded),
+            icon: const Icon(AppIcons.actionCopy),
             label: const Text('Copy payment details'),
           ),
         ],

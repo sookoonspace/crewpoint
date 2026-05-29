@@ -1,59 +1,50 @@
-import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
+import 'dart:developer' as developer;
 
-class EventCard extends StatelessWidget {
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:crewpoint_app/app/core/widgets/event_tile.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
+import 'package:crewpoint_app/app/features/tasks/application/event_task_counts_provider.dart';
+
+/// Dashboard event row. Thin Riverpod adapter — watches
+/// `eventTaskCountsProvider(event.id)` and forwards counts to the pure
+/// `EventTile`. The StreamProvider rebuilds this widget whenever the Drift
+/// `tasks` table mutates, so the ring stays current without manual
+/// invalidation.
+class EventCard extends ConsumerWidget {
   const EventCard({super.key, required this.event, this.onTap});
 
   final EventModel event;
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
-    final dateFormat = DateFormat.yMMMd();
-    return Card(
-      child: InkWell(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final countsAsync = ref.watch(eventTaskCountsProvider(event.id));
+    return countsAsync.when(
+      data: (counts) => EventTile(
+        event: event,
+        todo: counts.todo,
+        doing: counts.doing,
+        done: counts.done,
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: .start,
-            spacing: AppSpacing.xs,
-            children: [
-              Text(event.title, style: Theme.of(context).textTheme.titleMedium),
-              if (event.description != null)
-                Text(
-                  event.description!,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              if (event.startDate != null)
-                Row(
-                  spacing: AppSpacing.sm,
-                  children: [
-                    const Icon(
-                      Icons.calendar_today,
-                      size: 14,
-                      color: AppColors.mediumGrey,
-                    ),
-                    Text(
-                      dateFormat.format(event.startDate!),
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: AppColors.mediumGrey,
-                      ),
-                    ),
-                  ],
-                ),
-            ],
-          ),
-        ),
       ),
+      loading: () =>
+          EventTile(event: event, todo: 0, doing: 0, done: 0, onTap: onTap),
+      error: (error, stack) {
+        developer.log(
+          'eventTaskCountsProvider failed for event ${event.id}',
+          name: 'dashboard.eventCard',
+          error: error,
+          stackTrace: stack,
+        );
+        return EventTile(
+          event: event,
+          todo: 0,
+          doing: 0,
+          done: 0,
+          onTap: onTap,
+        );
+      },
     );
   }
 }

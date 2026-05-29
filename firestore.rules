@@ -156,6 +156,17 @@ service cloud.firestore {
         allow read, write: if request.auth != null
           && request.auth.uid == userId;
       }
+
+      // Per-user chat read-state. Powers the global inbox unread badges
+      // — `users/{uid}/chatReads/{eventId}` carries `lastReadAt`. Only
+      // the owning uid may read/write; other users (even co-event
+      // members) have no business seeing when someone last opened a
+      // chat. ChatRepository.markEventRead / backfillReadStateForExistingEvents
+      // / watchLastRead all go through this path.
+      match /chatReads/{eventId} {
+        allow read, write: if request.auth != null
+          && request.auth.uid == userId;
+      }
     }
   }
 }

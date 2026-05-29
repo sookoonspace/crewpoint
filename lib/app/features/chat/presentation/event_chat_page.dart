@@ -24,6 +24,21 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
   bool _isSending = false;
   bool _lastSendFailed = false;
 
+  @override
+  void initState() {
+    super.initState();
+    // Mark the event as read on first frame so the global inbox's unread
+    // count clears. Fire-and-forget — failures are swallowed by the repo.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final auth = ref.read(authProvider);
+      if (auth is! Authenticated) return;
+      ref
+          .read(chatRepositoryProvider)
+          .markEventRead(auth.user.uid, widget.event.id);
+    });
+  }
+
   Future<void> _send(String text, {bool isHighPriority = false}) async {
     final auth = ref.read(authProvider);
     if (auth is! Authenticated) return;
@@ -84,13 +99,17 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
     }
 
     final asyncMessages = ref.watch(chatMessagesProvider(widget.event.id));
-    final asyncUsers = ref.watch(usersByIdProvider(widget.event.memberIds));
+    final asyncUsers = ref.watch(
+      usersByIdProvider(usersByIds(widget.event.memberIds)),
+    );
     final memberNames = <String, String>{};
     asyncUsers.whenData((users) {
       for (final entry in users.entries) {
         final name = entry.value.displayName;
         if (name != null && name.isNotEmpty) {
           memberNames[entry.key] = name;
+        } else if (entry.value.email.isNotEmpty) {
+          memberNames[entry.key] = entry.value.email;
         }
       }
     });
@@ -107,21 +126,11 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
         onTapSettlement: _onDispute,
       ),
       loading: () => Scaffold(
-        backgroundColor: AppColors.cream,
-        appBar: AppBar(
-          title: const Text('Chat'),
-          backgroundColor: AppColors.cream,
-          elevation: 0,
-        ),
+        appBar: AppBar(title: const Text('Chat'), elevation: 0),
         body: const Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => Scaffold(
-        backgroundColor: AppColors.cream,
-        appBar: AppBar(
-          title: const Text('Chat'),
-          backgroundColor: AppColors.cream,
-          elevation: 0,
-        ),
+        appBar: AppBar(title: const Text('Chat'), elevation: 0),
         body: Center(child: Text('Error: $e')),
       ),
     );

@@ -10,6 +10,7 @@ import 'package:crewpoint_app/app/core/database/app_database.dart';
 import 'package:crewpoint_app/app/core/database/connection/native.dart'
     if (dart.library.html) 'package:crewpoint_app/app/core/database/connection/web.dart';
 import 'package:crewpoint_app/app/core/database/daos/chat_messages_dao.dart';
+import 'package:crewpoint_app/app/core/database/daos/chat_reads_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/expense_splits_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/expenses_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/task_checklist_items_dao.dart';
@@ -30,8 +31,10 @@ import 'package:crewpoint_app/app/features/profile/data/firestore_user_repositor
 import 'package:crewpoint_app/app/features/profile/domain/repositories/i_user_repository.dart';
 import 'package:crewpoint_app/app/core/services/i_chat_service.dart';
 import 'package:crewpoint_app/app/core/services/url_launcher_service.dart';
+import 'package:crewpoint_app/app/features/budget/application/settle_up_controller.dart';
 import 'package:crewpoint_app/app/features/budget/data/expense_repository.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
+import 'package:crewpoint_app/app/features/budget/presentation/widgets/settle_up_fallback_sheet.dart';
 import 'package:crewpoint_app/app/features/chat/data/chat_repository.dart';
 import 'package:crewpoint_app/app/features/chat/data/firestore_chat_service.dart';
 import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
@@ -219,11 +222,18 @@ final chatServiceProvider = Provider<IChatService>(
   (ref) => FirestoreChatService(firestore: ref.watch(firestoreProvider)),
 );
 
+/// `chat_reads` DAO — backs the global inbox unread badges.
+final chatReadsDaoProvider = Provider<ChatReadsDao>(
+  (ref) => ChatReadsDao(ref.watch(databaseProvider)),
+);
+
 /// Chat repository — wraps the chat service with a Drift cache.
 final chatRepositoryProvider = Provider<ChatRepository>((ref) {
   final repo = ChatRepository(
     chatService: ref.watch(chatServiceProvider),
     chatMessagesDao: ChatMessagesDao(ref.watch(databaseProvider)),
+    firestore: ref.watch(firestoreProvider),
+    chatReadsDao: ref.watch(chatReadsDaoProvider),
   );
   ref.onDispose(repo.dispose);
   return repo;
@@ -241,6 +251,17 @@ final chatMessagesProvider =
 final urlLauncherProvider = Provider<IUrlLauncher>(
   (_) => const UrlLauncherService(),
 );
+
+/// Settle-Up controller — picks a `PayLinkBuilder` deep link based on
+/// the counterparty's `paymentMethod`, falls back to a manual sheet
+/// when no link is available or the launch fails.
+final settleUpControllerProvider = Provider<SettleUpController>((ref) {
+  return SettleUpController(
+    userRepository: ref.watch(userRepositoryProvider),
+    urlLauncher: ref.watch(urlLauncherProvider),
+    showFallback: SettleUpFallbackSheet.show,
+  );
+});
 
 /// Platform-aware file-export seam (PDF + CSV downloads).
 ///

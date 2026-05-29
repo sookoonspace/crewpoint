@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +7,7 @@ import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
+import 'package:crewpoint_app/app/features/tasks/application/tasks_filter.dart';
 import 'package:crewpoint_app/app/features/tasks/data/task_export_pipeline.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/create_task_screen.dart';
@@ -23,7 +25,7 @@ class EventTasksPage extends ConsumerStatefulWidget {
 }
 
 class _EventTasksPageState extends ConsumerState<EventTasksPage> {
-  TaskStatus? _filter;
+  TasksFilter _filter = const TasksFilter();
 
   String? _currentUserId() {
     final auth = ref.read(authProvider);
@@ -112,29 +114,52 @@ class _EventTasksPageState extends ConsumerState<EventTasksPage> {
     }
 
     final asyncTasks = ref.watch(taskListProvider(widget.event.id));
-    final asyncUsers = ref.watch(usersByIdProvider(widget.event.memberIds));
+    final asyncUsers = ref.watch(
+      usersByIdProvider(usersByIds(widget.event.memberIds)),
+    );
 
     return asyncTasks.when(
       data: (tasks) {
+        // Prefer displayName, fall back to email when not set.
         final memberNames = asyncUsers.maybeWhen(
           data: (users) => {
             for (final entry in users.entries)
-              entry.key: entry.value.displayName ?? '',
+              entry.key: () {
+                final name = entry.value.displayName;
+                if (name != null && name.isNotEmpty) return name;
+                if (entry.value.email.isNotEmpty) return entry.value.email;
+                return '';
+              }(),
           },
           orElse: () => <String, String>{},
         );
+        // Pure filter → sort → group using the Phase 3 helpers. `clock.now()`
+        // keeps overdue / due-window deterministic under withClock(...) in
+        // robot journey tests.
+        final filtered = applyTasksFilter(
+          tasks,
+          _filter,
+          currentUserId: uid,
+          now: clock.now(),
+        );
+        final groups = groupTasks(
+          filtered,
+          _filter.groupBy,
+          now: clock.now(),
+          assigneeNames: memberNames,
+        );
+
         return TaskListScreen(
-          tasks: tasks,
+          groups: groups,
           event: widget.event,
           currentUserId: uid,
-          selectedFilter: _filter,
-          onFilterChanged: (status) => setState(() => _filter = status),
+          filter: _filter,
+          onFilterChanged: (next) => setState(() => _filter = next),
           onCreateTask: () => _onCreate(memberNames),
           onStatusChanged: _onStatusChanged,
           onUnauthorizedStatusTap: _onUnauthorizedTap,
           onExportPdf: () => _exportPdf(tasks, memberNames),
           onTaskTap: (task) {
-            // Detail screen lands in Phase 2.
             context.push(
               '/dashboard/event/${widget.event.id}/tasks/${task.id}',
               extra: task,
@@ -143,21 +168,11 @@ class _EventTasksPageState extends ConsumerState<EventTasksPage> {
         );
       },
       loading: () => Scaffold(
-        backgroundColor: AppColors.cream,
-        appBar: AppBar(
-          title: const Text('Tasks'),
-          backgroundColor: AppColors.cream,
-          elevation: 0,
-        ),
+        appBar: AppBar(title: const Text('Tasks'), elevation: 0),
         body: const Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => Scaffold(
-        backgroundColor: AppColors.cream,
-        appBar: AppBar(
-          title: const Text('Tasks'),
-          backgroundColor: AppColors.cream,
-          elevation: 0,
-        ),
+        appBar: AppBar(title: const Text('Tasks'), elevation: 0),
         body: Center(child: Text('Error: $e')),
       ),
     );

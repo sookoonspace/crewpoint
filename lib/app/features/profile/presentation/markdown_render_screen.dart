@@ -5,7 +5,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:yaml/yaml.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
@@ -70,12 +70,7 @@ class _MarkdownRenderScreenState extends State<MarkdownRenderScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.cream,
-      appBar: AppBar(
-        title: Text(widget.title),
-        backgroundColor: AppColors.cream,
-        elevation: 0,
-      ),
+      appBar: AppBar(title: Text(widget.title), elevation: 0),
       body: FutureBuilder<_MarkdownDoc?>(
         future: _doc,
         builder: (context, snap) {
@@ -146,7 +141,7 @@ class _RenderedMarkdown extends StatelessWidget {
           OutlinedButton.icon(
             key: const Key('legal.viewHosted'),
             onPressed: onLaunchHosted,
-            icon: const Icon(Icons.open_in_new, size: 16),
+            icon: const Icon(AppIcons.actionOpenInNew, size: 16),
             label: const Text('View hosted version'),
           ),
         ],
@@ -170,14 +165,14 @@ class _StampLine extends StatelessWidget {
           children: [
             TextSpan(
               text: '$label: ',
-              style: const TextStyle(
-                color: AppColors.darkGrey,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
               ),
             ),
             TextSpan(
               text: value,
-              style: const TextStyle(color: AppColors.charcoal),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
             ),
           ],
         ),
@@ -200,7 +195,11 @@ class _LoadFailure extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_off, size: 48, color: AppColors.mediumGrey),
+            Icon(
+              AppIcons.cloudOff,
+              size: 48,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: AppSpacing.md),
             const Text(
               'Could not load this document right now.',
@@ -210,13 +209,16 @@ class _LoadFailure extends StatelessWidget {
             OutlinedButton.icon(
               key: const Key('legal.fallback.viewOnline'),
               onPressed: onLaunch,
-              icon: const Icon(Icons.open_in_new, size: 16),
+              icon: const Icon(AppIcons.actionOpenInNew, size: 16),
               label: const Text('View online'),
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
               hostedUrl,
-              style: const TextStyle(color: AppColors.mediumGrey, fontSize: 12),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 12,
+              ),
             ),
           ],
         ),

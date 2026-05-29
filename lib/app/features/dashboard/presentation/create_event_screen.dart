@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
+import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
@@ -134,12 +136,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.cream,
-      appBar: AppBar(
-        title: const Text('Create Event'),
-        backgroundColor: AppColors.cream,
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Create Event'), elevation: 0),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(
           horizontal: Breakpoints.screenHorizontalPadding(context),
@@ -158,9 +155,9 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                   // Event Type
                   Text(
                     'Event Type',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelLarge?.copyWith(color: AppColors.charcoal),
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                   Wrap(
                     spacing: AppSpacing.sm,
@@ -176,7 +173,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                         labelStyle: TextStyle(
                           color: isSelected
                               ? AppColors.white
-                              : AppColors.charcoal,
+                              : Theme.of(context).colorScheme.onSurface,
                         ),
                       );
                     }).toList(),
@@ -187,15 +184,15 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                   // Title
                   Text(
                     'Title',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelLarge?.copyWith(color: AppColors.charcoal),
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                   CustomTextField(
                     key: const Key('createEvent.title'),
                     hintText: 'What are you planning?',
                     controller: _titleController,
-                    prefixIcon: const Icon(Icons.event),
+                    prefixIcon: const Icon(AppIcons.event),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
                         return 'Please enter a title';
@@ -210,23 +207,23 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                   // Description
                   Text(
                     'Description',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelLarge?.copyWith(color: AppColors.charcoal),
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                   CustomTextField(
                     key: const Key('createEvent.description'),
                     hintText: 'Details, location, notes... (optional)',
                     controller: _descriptionController,
                     maxLines: 3,
-                    prefixIcon: const Icon(Icons.description_outlined),
+                    prefixIcon: const Icon(AppIcons.markdown),
                   ),
 
                   // Start Date (optional)
                   ListTile(
-                    leading: const Icon(
-                      Icons.calendar_today,
-                      color: AppColors.darkGrey,
+                    leading: Icon(
+                      AppIcons.calendar,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     title: const Text('Start Date'),
                     subtitle: Text(
@@ -235,13 +232,13 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                           : 'Optional — tap to set',
                       style: TextStyle(
                         color: _startDate != null
-                            ? AppColors.charcoal
-                            : AppColors.mediumGrey,
+                            ? Theme.of(context).colorScheme.onSurface
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                     trailing: _startDate != null
                         ? IconButton(
-                            icon: const Icon(Icons.clear, size: 18),
+                            icon: const Icon(AppIcons.actionClear, size: 18),
                             onPressed: _isSubmitting
                                 ? null
                                 : () => setState(() => _startDate = null),
@@ -250,7 +247,9 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                     onTap: _isSubmitting ? null : _pickDate,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
-                      side: const BorderSide(color: AppColors.lightGrey),
+                      side: BorderSide(
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
                     ),
                   ),
 
@@ -259,15 +258,15 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                   // Currency (immutable after creation)
                   Text(
                     'Currency',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelLarge?.copyWith(color: AppColors.charcoal),
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                   DropdownButtonFormField<String>(
                     key: const Key('events.create.currency'),
                     initialValue: _currency,
                     decoration: const InputDecoration(
-                      prefixIcon: Icon(Icons.attach_money),
+                      prefixIcon: Icon(AppIcons.currency),
                       border: OutlineInputBorder(),
                       helperText: 'Cannot be changed after creating the event.',
                     ),
@@ -297,9 +296,9 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                       child: Row(
                         children: [
                           const Icon(
-                            Icons.error_outline,
+                            AppIcons.statusError,
                             color: AppColors.terracotta,
-                            size: 20,
+                            size: AppSizes.iconMd,
                           ),
                           const SizedBox(width: AppSpacing.sm),
                           Expanded(

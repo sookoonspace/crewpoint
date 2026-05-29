@@ -35,36 +35,42 @@ void main() {
         ),
       );
 
-      expect(find.byKey(const Key('tasks.detail.delete')), findsNothing);
+      expect(find.byKey(const Key('tasks.detail.overflow')), findsNothing);
       expect(find.byKey(const Key('tasks.detail.checklist.add')), findsNothing);
     },
   );
 
-  testWidgets('creator sees delete button + add-checklist field', (
-    tester,
-  ) async {
-    var deletePressed = false;
-    await tester.pumpWidget(
-      MaterialApp(
-        home: TaskDetailScreen(
-          task: task,
-          event: event,
-          checklist: const [],
-          canEditTask: true,
-          canChangeStatus: true,
-          onDelete: () => deletePressed = true,
-          onChecklistAdd: (_, _) {},
+  testWidgets(
+    'creator: overflow menu shows Edit + Delete; tapping Delete fires callback',
+    (tester) async {
+      var deletePressed = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: TaskDetailScreen(
+            task: task,
+            event: event,
+            checklist: const [],
+            canEditTask: true,
+            canChangeStatus: true,
+            onDelete: () => deletePressed = true,
+            onChecklistAdd: (_, _) {},
+          ),
         ),
-      ),
-    );
+      );
 
-    expect(find.byKey(const Key('tasks.detail.delete')), findsOneWidget);
-    expect(find.byKey(const Key('tasks.detail.checklist.add')), findsOneWidget);
+      expect(find.byKey(const Key('tasks.detail.overflow')), findsOneWidget);
+      expect(
+        find.byKey(const Key('tasks.detail.checklist.add')),
+        findsOneWidget,
+      );
 
-    await tester.tap(find.byKey(const Key('tasks.detail.delete')));
-    await tester.pump();
-    expect(deletePressed, isTrue);
-  });
+      await tester.tap(find.byKey(const Key('tasks.detail.overflow')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('tasks.detail.overflow.delete')));
+      await tester.pumpAndSettle();
+      expect(deletePressed, isTrue);
+    },
+  );
 
   testWidgets('shows "no longer in event" when assignee is removed', (
     tester,
@@ -138,7 +144,7 @@ void main() {
     expect(find.textContaining('by user-2'), findsNothing);
   });
 
-  testWidgets('falls back to truncated UID when assigneeName is null', (
+  testWidgets('falls back to "Unknown member" when assigneeName is null', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -152,44 +158,91 @@ void main() {
         ),
       ),
     );
-    expect(find.text('Assigned to user-2'), findsOneWidget);
+    // When the assignee's displayName isn't resolved, the screen now
+    // shows a friendly "Unknown member" label instead of leaking the UID.
+    expect(find.text('Assigned to Unknown member'), findsOneWidget);
   });
 
-  testWidgets('pencil edit action visible only when canEditTask is true', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: TaskDetailScreen(
-          task: task,
-          event: event,
-          checklist: [],
-          canEditTask: false,
-          canChangeStatus: false,
+  testWidgets(
+    'overflow menu Edit visible only when canEditTask; tapping fires onEdit',
+    (tester) async {
+      // No edit, no duplicate → no overflow menu at all.
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: TaskDetailScreen(
+            task: task,
+            event: event,
+            checklist: [],
+            canEditTask: false,
+            canChangeStatus: false,
+          ),
         ),
-      ),
-    );
-    expect(find.byKey(const Key('tasks.detail.edit')), findsNothing);
+      );
+      expect(find.byKey(const Key('tasks.detail.overflow')), findsNothing);
 
-    var editPressed = false;
-    await tester.pumpWidget(
-      MaterialApp(
-        home: TaskDetailScreen(
-          task: task,
-          event: event,
-          checklist: const [],
-          canEditTask: true,
-          canChangeStatus: true,
-          onEdit: () => editPressed = true,
+      var editPressed = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: TaskDetailScreen(
+            task: task,
+            event: event,
+            checklist: const [],
+            canEditTask: true,
+            canChangeStatus: true,
+            onEdit: () => editPressed = true,
+          ),
         ),
-      ),
-    );
-    expect(find.byKey(const Key('tasks.detail.edit')), findsOneWidget);
+      );
+      expect(find.byKey(const Key('tasks.detail.overflow')), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('tasks.detail.edit')));
-    await tester.pump();
-    expect(editPressed, isTrue);
-  });
+      await tester.tap(find.byKey(const Key('tasks.detail.overflow')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('tasks.detail.overflow.edit')));
+      await tester.pumpAndSettle();
+      expect(editPressed, isTrue);
+    },
+  );
+
+  testWidgets(
+    'Duplicate menu item visible for any viewer (non-creator) when onDuplicate set',
+    (tester) async {
+      var duplicatePressed = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: TaskDetailScreen(
+            task: task,
+            event: event,
+            checklist: const [],
+            canEditTask: false, // non-creator non-admin
+            canChangeStatus: false,
+            onDuplicate: () => duplicatePressed = true,
+          ),
+        ),
+      );
+
+      // Overflow menu still renders because onDuplicate is non-null.
+      expect(find.byKey(const Key('tasks.detail.overflow')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('tasks.detail.overflow')));
+      await tester.pumpAndSettle();
+
+      // Edit + Delete absent (canEditTask=false); only Duplicate appears.
+      expect(find.byKey(const Key('tasks.detail.overflow.edit')), findsNothing);
+      expect(
+        find.byKey(const Key('tasks.detail.overflow.delete')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const Key('tasks.detail.overflow.duplicate')),
+        findsOneWidget,
+      );
+
+      await tester.tap(
+        find.byKey(const Key('tasks.detail.overflow.duplicate')),
+      );
+      await tester.pumpAndSettle();
+      expect(duplicatePressed, isTrue);
+    },
+  );
 
   testWidgets('pending writes indicator renders only when flag is true', (
     tester,

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
+import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/event_guard.dart';
@@ -20,10 +22,13 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/edit_event_scr
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/member_management_screen.dart';
 import 'package:crewpoint_app/app/features/onboarding/presentation/onboarding_screen.dart';
+import 'package:crewpoint_app/app/features/budget/presentation/budget_ledger_screen.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/event_budget_page.dart';
+import 'package:crewpoint_app/app/features/chat/presentation/chat_inbox_screen.dart';
 import 'package:crewpoint_app/app/features/chat/presentation/event_chat_page.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/event_task_detail_page.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/event_tasks_page.dart';
+import 'package:crewpoint_app/app/features/tasks/presentation/my_tasks_screen.dart';
 
 /// Route paths.
 abstract final class AppRoutes {
@@ -213,7 +218,7 @@ GoRouter createRouter({
             routes: [
               GoRoute(
                 path: AppRoutes.tasks,
-                builder: (_, _) => const _PlaceholderScreen(title: 'Tasks'),
+                builder: (_, _) => const MyTasksScreen(),
               ),
             ],
           ),
@@ -221,7 +226,7 @@ GoRouter createRouter({
             routes: [
               GoRoute(
                 path: AppRoutes.chat,
-                builder: (_, _) => const _PlaceholderScreen(title: 'Chat'),
+                builder: (_, _) => const ChatInboxScreen(),
               ),
             ],
           ),
@@ -229,7 +234,7 @@ GoRouter createRouter({
             routes: [
               GoRoute(
                 path: AppRoutes.budget,
-                builder: (_, _) => const _PlaceholderScreen(title: 'Budget'),
+                builder: (_, _) => const BudgetLedgerScreen(),
               ),
             ],
           ),
@@ -270,21 +275,6 @@ String _resolveEventId(GoRouterState state) {
   return match?.group(1) ?? '';
 }
 
-/// Temporary placeholder until real screens are built.
-class _PlaceholderScreen extends StatelessWidget {
-  const _PlaceholderScreen({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(child: Text(title)),
-    );
-  }
-}
-
 /// Friendly fallback for unmatched routes. Replaces GoRouter's default
 /// `_DefaultRouterError` (the "route blob + Home link" page the user
 /// was hitting after the broken account-delete flow).
@@ -308,7 +298,6 @@ class _RouterErrorScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -318,8 +307,8 @@ class _RouterErrorScreen extends StatelessWidget {
               spacing: AppSpacing.lg,
               children: [
                 const Icon(
-                  Icons.compass_calibration_outlined,
-                  size: 64,
+                  AppIcons.errorCompass,
+                  size: AppSizes.iconHero,
                   color: AppColors.sage,
                 ),
                 Text(
@@ -337,7 +326,7 @@ class _RouterErrorScreen extends StatelessWidget {
                     'Tried: $attemptedLocation',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.darkGrey,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontFamily: 'monospace',
                     ),
                   ),
@@ -346,7 +335,7 @@ class _RouterErrorScreen extends StatelessWidget {
                 ElevatedButton.icon(
                   key: const Key('router.error.goHome'),
                   onPressed: () => context.go(AppRoutes.dashboard),
-                  icon: const Icon(Icons.home_outlined),
+                  icon: const Icon(AppIcons.homeOutlined),
                   label: const Text('Go home'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.sage,

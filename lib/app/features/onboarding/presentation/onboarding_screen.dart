@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
@@ -46,7 +47,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             children: const [
               _WelcomePage(),
               _FeaturePage(
-                icon: Icons.calendar_month_rounded,
+                icon: AppIcons.calendar,
                 title: 'Plan Events Together',
                 description:
                     'Assign roles, set dates, and track progress\u2014all in one place.',
@@ -55,7 +56,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 textColor: AppColors.charcoal,
               ),
               _FeaturePage(
-                icon: Icons.chat_rounded,
+                icon: AppIcons.navChatFilled,
                 title: 'Stay in Sync',
                 description:
                     'Real-time messaging with critical alerts\nwhen it matters most.',
@@ -64,7 +65,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 textColor: AppColors.offWhite,
               ),
               _FeaturePage(
-                icon: Icons.account_balance_wallet_rounded,
+                icon: AppIcons.navBudgetFilled,
                 title: 'Split Costs Fairly',
                 description:
                     'Track expenses, upload receipts,\nand see who owes what.',
@@ -150,7 +151,7 @@ class _WelcomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.charcoal,
+      color: Theme.of(context).colorScheme.onSurface,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
       child: Column(
         mainAxisAlignment: .center,
@@ -164,7 +165,7 @@ class _WelcomePage extends StatelessWidget {
               borderRadius: BorderRadius.circular(28),
             ),
             child: const Icon(
-              Icons.hub_rounded,
+              AppIcons.hub,
               size: 64,
               color: AppColors.offWhite,
             ),
@@ -262,7 +263,7 @@ class _PrivacyPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.charcoal,
+      color: Theme.of(context).colorScheme.onSurface,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
       child: Column(
         mainAxisAlignment: .center,
@@ -274,11 +275,7 @@ class _PrivacyPage extends StatelessWidget {
               color: AppColors.sage.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.shield_rounded,
-              size: 72,
-              color: AppColors.sage,
-            ),
+            child: const Icon(AppIcons.shield, size: 72, color: AppColors.sage),
           ),
           const SizedBox(height: AppSpacing.xxl),
           Text(

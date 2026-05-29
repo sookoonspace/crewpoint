@@ -1,20 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
+import 'package:crewpoint_app/app/core/widgets/empty_state_placeholder.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
+import 'package:crewpoint_app/app/features/tasks/application/tasks_filter.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/widgets/task_tile.dart';
+import 'package:crewpoint_app/app/features/tasks/presentation/widgets/tasks_filter_bar.dart';
+import 'package:crewpoint_app/app/features/tasks/presentation/widgets/tasks_group_header.dart';
 
+/// Tasks screen: filter bar + grouped list + empty state + FAB.
+///
+/// Pure presentation — parent (`EventTasksPage`) owns the `TasksFilter`
+/// state and feeds in the already-filtered/sorted `groups` for rendering.
 class TaskListScreen extends StatelessWidget {
   const TaskListScreen({
     super.key,
-    required this.tasks,
+    required this.groups,
     required this.event,
     required this.currentUserId,
-    this.selectedFilter,
-    this.onFilterChanged,
+    required this.filter,
+    required this.onFilterChanged,
     this.onTaskTap,
     this.onStatusChanged,
     this.onCreateTask,
@@ -22,11 +32,11 @@ class TaskListScreen extends StatelessWidget {
     this.onExportPdf,
   });
 
-  final List<TaskModel> tasks;
+  final List<TasksGroup> groups;
   final EventModel event;
   final String currentUserId;
-  final TaskStatus? selectedFilter;
-  final ValueChanged<TaskStatus?>? onFilterChanged;
+  final TasksFilter filter;
+  final ValueChanged<TasksFilter> onFilterChanged;
   final ValueChanged<TaskModel>? onTaskTap;
   final void Function(TaskModel task, TaskStatus newStatus)? onStatusChanged;
   final VoidCallback? onCreateTask;
@@ -35,110 +45,91 @@ class TaskListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final filteredTasks = selectedFilter == null
-        ? tasks
-        : tasks.where((t) => t.status == selectedFilter).toList();
-
     final isOwner = event.isOwner(currentUserId);
     final isAdmin = event.isAdmin(currentUserId);
+    final isEmpty = groups.isEmpty;
+    final s = context.strings.tasks;
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
       appBar: AppBar(
-        title: const Text('Tasks'),
-        backgroundColor: AppColors.cream,
-        elevation: 0,
+        title: Text(s.tasksAppBarTitle),
         actions: [
           if (onExportPdf != null)
             IconButton(
               key: const Key('tasks.export.pdf'),
-              icon: const Icon(Icons.ios_share),
-              tooltip: 'Export PDF',
+              icon: Icon(AppIcons.actionShare),
+              tooltip: s.exportPdfTooltip,
               onPressed: onExportPdf,
             ),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: _FilterBar(
-            selected: selectedFilter,
-            onChanged: onFilterChanged,
-          ),
-        ),
       ),
       body: ContentMaxWidth(
         key: const Key('eventTasks.body.clamped'),
         maxWidth: 720,
-        child: filteredTasks.isEmpty
-            ? const Center(
-                key: Key('tasks.list.empty'),
-                child: Text(
-                  'No tasks yet',
-                  style: TextStyle(color: AppColors.mediumGrey),
-                ),
-              )
-            : ListView.builder(
-                key: const Key('tasks.list'),
-                padding: EdgeInsets.symmetric(
-                  horizontal: Breakpoints.screenHorizontalPadding(context),
-                  vertical: AppSpacing.xl,
-                ),
-                itemCount: filteredTasks.length,
-                itemBuilder: (_, index) {
-                  final task = filteredTasks[index];
-                  final canChange = task.canChangeStatus(
-                    isOwner: isOwner,
-                    isAdmin: isAdmin,
-                    currentUserId: currentUserId,
-                  );
-                  return TaskTile(
-                    task: task,
-                    canChangeStatus: canChange,
-                    currencyCode: event.currency,
-                    onTap: () => onTaskTap?.call(task),
-                    onStatusChanged: (status) =>
-                        onStatusChanged?.call(task, status),
-                    onUnauthorizedTap: onUnauthorizedStatusTap,
-                  );
-                },
-              ),
+        child: Column(
+          children: [
+            TasksFilterBar(filter: filter, onFilterChanged: onFilterChanged),
+            const SizedBox(height: AppSpacing.sm),
+            Expanded(
+              child: isEmpty
+                  ? KeyedSubtree(
+                      key: const Key('tasks.list.emptyState'),
+                      child: filter.hasActiveFilters
+                          ? EmptyStatePlaceholder(
+                              title: s.emptyNoMatch,
+                              ctaLabel: s.clearFilters,
+                              onCta: () => onFilterChanged(const TasksFilter()),
+                              ctaKey: const Key('tasks.list.emptyState.clear'),
+                              iconFallback: AppIcons.statusDone,
+                            )
+                          : EmptyStatePlaceholder(
+                              title: s.emptyNoTasksYet,
+                              subtitle: s.emptyNoTasksHelp,
+                              iconFallback: AppIcons.statusDone,
+                            ),
+                    )
+                  : ListView(
+                      key: const Key('tasks.list'),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: Breakpoints.screenHorizontalPadding(
+                          context,
+                        ),
+                        vertical: AppSpacing.lg,
+                      ),
+                      children: [
+                        for (final group in groups) ...[
+                          TasksGroupHeader(
+                            key: Key('tasks.list.groupHeader.${group.key}'),
+                            label: group.label,
+                          ),
+                          for (final task in group.tasks)
+                            TaskTile(
+                              task: task,
+                              canChangeStatus: task.canChangeStatus(
+                                isOwner: isOwner,
+                                isAdmin: isAdmin,
+                                currentUserId: currentUserId,
+                              ),
+                              currencyCode: event.currency,
+                              onTap: () => onTaskTap?.call(task),
+                              onStatusChanged: (status) =>
+                                  onStatusChanged?.call(task, status),
+                              onUnauthorizedTap: onUnauthorizedStatusTap,
+                            ),
+                          const SizedBox(height: AppSpacing.sm),
+                        ],
+                      ],
+                    ),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         key: const Key('tasks.list.create'),
         onPressed: onCreateTask,
         backgroundColor: AppColors.sage,
         foregroundColor: AppColors.white,
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
-}
-
-class _FilterBar extends StatelessWidget {
-  const _FilterBar({this.selected, this.onChanged});
-
-  final TaskStatus? selected;
-  final ValueChanged<TaskStatus?>? onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Row(
-        spacing: AppSpacing.sm,
-        children: [
-          FilterChip(
-            label: const Text('All'),
-            selected: selected == null,
-            onSelected: (_) => onChanged?.call(null),
-          ),
-          for (final status in TaskStatus.values)
-            FilterChip(
-              label: Text(status.label),
-              selected: selected == status,
-              onSelected: (_) => onChanged?.call(status),
-            ),
-        ],
+        child: const Icon(AppIcons.actionAdd),
       ),
     );
   }

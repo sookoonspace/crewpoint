@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
+import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
@@ -27,18 +28,18 @@ class EventDetailScreen extends StatelessWidget {
               ),
             if (event.startDate != null)
               _DetailRow(
-                icon: Icons.calendar_today,
+                icon: AppIcons.calendar,
                 label: 'Start',
                 value: dateFormat.format(event.startDate!),
               ),
             if (event.endDate != null)
               _DetailRow(
-                icon: Icons.calendar_month,
+                icon: AppIcons.calendar,
                 label: 'End',
                 value: dateFormat.format(event.endDate!),
               ),
             _DetailRow(
-              icon: Icons.flag,
+              icon: AppIcons.flag,
               label: 'Status',
               value: event.status.name,
             ),
@@ -65,16 +66,15 @@ class _DetailRow extends StatelessWidget {
     return Row(
       spacing: AppSpacing.md,
       children: [
-        Icon(icon, size: 20, color: AppColors.mediumGrey),
+        Icon(
+          icon,
+          size: AppSizes.iconMd,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
         Column(
           crossAxisAlignment: .start,
           children: [
-            Text(
-              label,
-              style: Theme.of(
-                context,
-              ).textTheme.labelSmall,
-            ),
+            Text(label, style: Theme.of(context).textTheme.labelSmall),
             Text(value, style: Theme.of(context).textTheme.bodyMedium),
           ],
         ),

@@ -4,11 +4,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
+import 'package:crewpoint_app/app/core/widgets/skeletons.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/event_card.dart';
+import 'package:crewpoint_app/app/features/tasks/application/event_task_counts_provider.dart';
 
 void main() {
+  // Empty-state branch renders an `EmptyStatePlaceholder` whose lottie
+  // animation loops forever — `pumpAndSettle` would hang. Bounded pumps
+  // let the stream emit + the lottie loader resolve (or fall through to
+  // its errorBuilder) without waiting for animation to settle.
+  Future<void> pumpFrames(WidgetTester tester) async {
+    for (var i = 0; i < 3; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+  }
+
   testWidgets(
     'renders the empty state when dashboardEventsProvider emits an empty list',
     (tester) async {
@@ -22,7 +34,7 @@ void main() {
           child: const MaterialApp(home: DashboardScreen()),
         ),
       );
-      await tester.pumpAndSettle();
+      await pumpFrames(tester);
 
       expect(find.text('No events yet'), findsOneWidget);
       expect(find.text('Join with Code'), findsOneWidget);
@@ -41,9 +53,10 @@ void main() {
         child: const MaterialApp(home: DashboardScreen()),
       ),
     );
-    await tester.pumpAndSettle();
+    await pumpFrames(tester);
 
-    expect(find.byIcon(Icons.login_rounded), findsWidgets);
+    // AppIcons.joinEvent → Icons.group_add_outlined.
+    expect(find.byIcon(Icons.group_add_outlined), findsWidgets);
   });
 
   testWidgets('renders EventCards when dashboardEventsProvider emits events', (
@@ -68,11 +81,16 @@ void main() {
       ProviderScope(
         overrides: [
           dashboardEventsProvider.overrideWith((ref) => Stream.value(events)),
+          // Drift stream would never settle in widget tests; stub a finite
+          // emission so each EventCard's ring resolves to zeros.
+          eventTaskCountsProvider.overrideWith(
+            (ref, eventId) => Stream.value((todo: 0, doing: 0, done: 0)),
+          ),
         ],
         child: const MaterialApp(home: DashboardScreen()),
       ),
     );
-    await tester.pumpAndSettle();
+    await pumpFrames(tester);
 
     expect(find.byKey(const Key('dashboard.events.list')), findsOneWidget);
     expect(find.byType(EventCard), findsNWidgets(2));
@@ -81,7 +99,7 @@ void main() {
     expect(find.text('No events yet'), findsNothing);
   });
 
-  testWidgets('shows a progress indicator while events are loading', (
+  testWidgets('shows EventTile skeletons while events are loading', (
     tester,
   ) async {
     final controller = StreamController<List<EventModel>>();
@@ -97,10 +115,11 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(EventTileSkeleton), findsAtLeastNWidgets(1));
 
-    // Resolve so the test exits cleanly.
+    // Resolve so the test exits cleanly. Empty list → EmptyStatePlaceholder
+    // with looping lottie, so use bounded pumps instead of pumpAndSettle.
     controller.add(const []);
-    await tester.pumpAndSettle();
+    await pumpFrames(tester);
   });
 }

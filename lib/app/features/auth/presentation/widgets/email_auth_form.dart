@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
@@ -94,7 +95,7 @@ class _EmailAuthFormState extends ConsumerState<EmailAuthForm> {
             CustomTextField(
               hintText: context.strings.auth.fullNameHint,
               controller: _nameController,
-              prefixIcon: const Icon(Icons.person_outline),
+              prefixIcon: const Icon(AppIcons.navProfile),
               enabled: !isLoading,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
@@ -107,7 +108,7 @@ class _EmailAuthFormState extends ConsumerState<EmailAuthForm> {
             hintText: context.strings.auth.emailHint,
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
-            prefixIcon: const Icon(Icons.email_outlined),
+            prefixIcon: const Icon(AppIcons.authEmailField),
             enabled: !isLoading,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
@@ -123,7 +124,7 @@ class _EmailAuthFormState extends ConsumerState<EmailAuthForm> {
             hintText: context.strings.auth.passwordHint,
             controller: _passwordController,
             obscureText: true,
-            prefixIcon: const Icon(Icons.lock_outline),
+            prefixIcon: const Icon(AppIcons.authPassword),
             enabled: !isLoading,
             validator: (value) {
               if (value == null || value.length < 6) {

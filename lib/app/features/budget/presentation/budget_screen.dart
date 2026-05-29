@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
@@ -56,16 +57,14 @@ class BudgetScreen extends StatelessWidget {
     final symbol = _currencySymbol(currency);
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
       appBar: AppBar(
         title: const Text('Budget'),
-        backgroundColor: AppColors.cream,
         elevation: 0,
         actions: [
           if (onExportPdf != null || onExportCsv != null)
             PopupMenuButton<String>(
               key: const Key('budget.export.menu'),
-              icon: const Icon(Icons.ios_share),
+              icon: Icon(AppIcons.actionShare),
               tooltip: 'Export',
               onSelected: (value) {
                 switch (value) {
@@ -163,7 +162,7 @@ class BudgetScreen extends StatelessWidget {
         onPressed: onAddExpense,
         backgroundColor: AppColors.sage,
         foregroundColor: AppColors.white,
-        child: const Icon(Icons.add),
+        child: const Icon(AppIcons.actionAdd),
       ),
     );
   }
@@ -179,7 +178,7 @@ class _TotalCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 0,
-      color: AppColors.white,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.borderLg,
         side: BorderSide(
@@ -195,7 +194,7 @@ class _TotalCard extends StatelessWidget {
               'Total Expenses',
               style: Theme.of(
                 context,
-              ).textTheme.labelMedium?.copyWith(color: AppColors.darkGrey),
+              ).textTheme.labelMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
@@ -223,7 +222,7 @@ class _SectionLabel extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: AppColors.darkGrey,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
           letterSpacing: 1.2,
           fontWeight: FontWeight.w600,
         ),
@@ -250,7 +249,7 @@ class _BalancesCard extends StatelessWidget {
 
     return Card(
       elevation: 0,
-      color: AppColors.white,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.borderLg,
         side: BorderSide(
@@ -348,7 +347,7 @@ class _SettleUpCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 0,
-      color: AppColors.white,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.borderLg,
         side: BorderSide(

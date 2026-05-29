@@ -34,6 +34,15 @@ Widget _wrapWithProviders(GoRouter router, {List<EventModel>? eventsForRoute}) {
   );
 }
 
+/// Bounded pump — used when landing on a screen that renders the
+/// `EmptyStatePlaceholder` lottie animation (lottie loops forever, so
+/// `pumpAndSettle` would hang).
+Future<void> _pumpFrames(WidgetTester tester) async {
+  for (var i = 0; i < 3; i++) {
+    await tester.pump(const Duration(milliseconds: 50));
+  }
+}
+
 void main() {
   testWidgets('redirects unauthenticated user to auth gate', (tester) async {
     final router = createRouter(
@@ -56,9 +65,9 @@ void main() {
     );
 
     await tester.pumpWidget(_wrapWithProviders(router));
-    await tester.pumpAndSettle();
+    await _pumpFrames(tester);
 
-    expect(find.text('Dashboard'), findsWidgets);
+    expect(find.text('Home'), findsWidgets);
   });
 
   testWidgets('redirects to onboarding when not complete', (tester) async {
@@ -90,11 +99,11 @@ void main() {
       expect(find.text('Something went wrong'), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('router.error.goHome')));
-      await tester.pumpAndSettle();
+      await _pumpFrames(tester);
 
       expect(
-        find.text('Events'),
-        findsWidgets,
+        find.byKey(const Key('dashboard.action.createEvent')),
+        findsOneWidget,
         reason: 'tapping Go home navigates to the dashboard',
       );
     },
@@ -185,9 +194,14 @@ void main() {
         await tester.pump();
 
         await tester.tap(find.byKey(const Key('event.notFound.back')));
-        await tester.pumpAndSettle();
+        // Landing on the dashboard with no events renders the
+        // EmptyStatePlaceholder lottie — bounded pumps instead of settle.
+        await _pumpFrames(tester);
 
-        expect(find.text('Events'), findsWidgets);
+        expect(
+          find.byKey(const Key('dashboard.action.createEvent')),
+          findsOneWidget,
+        );
       },
     );
   });

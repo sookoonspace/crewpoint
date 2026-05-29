@@ -268,17 +268,25 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
     }
 
     final asyncExpenses = ref.watch(expenseListProvider(widget.event.id));
-    final asyncUsers = ref.watch(usersByIdProvider(widget.event.memberIds));
+    final asyncUsers = ref.watch(
+      usersByIdProvider(usersByIds(widget.event.memberIds)),
+    );
     final repo = ref.watch(expenseRepositoryProvider);
     final imageService = ref.watch(imageServiceProvider);
     final symbol = _currencySymbol(widget.event.currency);
 
     return asyncExpenses.when(
       data: (expenses) {
+        // Prefer displayName, fall back to email when not set.
         final memberNames = asyncUsers.maybeWhen(
           data: (users) => {
             for (final entry in users.entries)
-              entry.key: entry.value.displayName ?? '',
+              entry.key: () {
+                final name = entry.value.displayName;
+                if (name != null && name.isNotEmpty) return name;
+                if (entry.value.email.isNotEmpty) return entry.value.email;
+                return '';
+              }(),
           },
           orElse: () => <String, String>{},
         );
@@ -409,21 +417,11 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
         );
       },
       loading: () => Scaffold(
-        backgroundColor: AppColors.cream,
-        appBar: AppBar(
-          title: const Text('Budget'),
-          backgroundColor: AppColors.cream,
-          elevation: 0,
-        ),
+        appBar: AppBar(title: const Text('Budget'), elevation: 0),
         body: const Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => Scaffold(
-        backgroundColor: AppColors.cream,
-        appBar: AppBar(
-          title: const Text('Budget'),
-          backgroundColor: AppColors.cream,
-          elevation: 0,
-        ),
+        appBar: AppBar(title: const Text('Budget'), elevation: 0),
         body: Center(child: Text('Error: $e')),
       ),
     );

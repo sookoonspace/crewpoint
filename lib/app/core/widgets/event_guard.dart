@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
+import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
@@ -133,7 +135,6 @@ class _ProgressScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: AppColors.cream,
       body: Center(child: CircularProgressIndicator()),
     );
   }
@@ -163,7 +164,6 @@ class _EventNotFoundScreenState extends State<EventNotFoundScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.cream,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -173,8 +173,8 @@ class _EventNotFoundScreenState extends State<EventNotFoundScreen> {
               spacing: AppSpacing.lg,
               children: [
                 const Icon(
-                  Icons.event_busy_outlined,
-                  size: 64,
+                  AppIcons.eventBusy,
+                  size: AppSizes.iconHero,
                   color: AppColors.sage,
                 ),
                 Text(
@@ -190,7 +190,7 @@ class _EventNotFoundScreenState extends State<EventNotFoundScreen> {
                 ElevatedButton.icon(
                   key: const Key('event.notFound.back'),
                   onPressed: () => context.go('/dashboard'),
-                  icon: const Icon(Icons.arrow_back),
+                  icon: const Icon(AppIcons.actionBack),
                   label: const Text('Back to events'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.sage,

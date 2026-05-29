@@ -29,9 +29,13 @@ abstract final class AppTheme {
         outline: AppColors.lightGrey,
       ),
       textTheme: textTheme,
-      scaffoldBackgroundColor: AppColors.offWhite,
+      // Cream is the standard light-mode scaffold tint app-wide. Every
+      // screen used to override scaffoldBackgroundColor + appBar to cream;
+      // setting it here means screens can drop those overrides and the
+      // dark-theme override flips them automatically.
+      scaffoldBackgroundColor: AppColors.cream,
       appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.white,
+        backgroundColor: AppColors.cream,
         foregroundColor: AppColors.charcoal,
         elevation: 0,
         centerTitle: true,

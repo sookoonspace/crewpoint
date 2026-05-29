@@ -118,6 +118,18 @@ class ExpenseSplits extends Table {
   Set<Column> get primaryKey => {expenseId, userId};
 }
 
+/// Per-user, per-event last-read timestamp powering the global chat
+/// inbox unread badges. Source of truth is Firestore
+/// (`users/{uid}/chatReads/{eventId}`); this table is the local cache.
+class ChatReads extends Table {
+  TextColumn get eventId => text()();
+  TextColumn get uid => text()();
+  DateTimeColumn get lastReadAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {eventId, uid};
+}
+
 @DriftDatabase(
   tables: [
     Users,
@@ -127,13 +139,14 @@ class ExpenseSplits extends Table {
     ChatMessages,
     Expenses,
     ExpenseSplits,
+    ChatReads,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -160,6 +173,19 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 6) {
         await m.addColumn(tasks, tasks.budgetEstimate);
+      }
+      if (from < 7) {
+        // Idempotent: a prior partial-migration run may have left the
+        // table already present. CREATE TABLE IF NOT EXISTS is the safe
+        // form for crash-tolerant migrations.
+        await customStatement(
+          'CREATE TABLE IF NOT EXISTS chat_reads ('
+          'event_id TEXT NOT NULL, '
+          'uid TEXT NOT NULL, '
+          'last_read_at INTEGER NOT NULL, '
+          'PRIMARY KEY (event_id, uid)'
+          ')',
+        );
       }
     },
   );

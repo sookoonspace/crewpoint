@@ -1,34 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:crewpoint_app/app/core/constants/app_radius.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/widgets/forms/app_currency_field.dart';
 
-/// Locale-aware parser for the task budget estimate.
+/// Re-exported here for backward compatibility with existing imports in
+/// `create_task_screen.dart` and `edit_task_screen.dart`. The parser logic
+/// now lives in `lib/app/core/widgets/forms/app_currency_field.dart`
+/// (renamed from `parseBudgetEstimate` to `parseCurrencyInput`); this
+/// alias keeps existing call sites compiling unchanged.
+double? parseBudgetEstimate(String raw, {required String locale}) =>
+    parseCurrencyInput(raw, locale: locale);
+
+/// `BudgetEstimateField` — task-specific currency input.
 ///
-/// Returns `null` for empty/whitespace input (persists as "no estimate").
-/// Throws [FormatException] for negative, non-numeric, or > 2-decimal input.
-///
-/// Locale is provided as a `BCP-47` tag (e.g. `en_US`, `de_DE`) so the
-/// decimal separator matches what `NumberFormat.simpleCurrency` renders.
-double? parseBudgetEstimate(String raw, {required String locale}) {
-  final trimmed = raw.trim();
-  if (trimmed.isEmpty) return null;
-
-  final format = NumberFormat.decimalPattern(locale);
-  final value = format.tryParse(trimmed);
-  if (value == null) throw const FormatException('not a number');
-  if (value < 0) throw const FormatException('negative');
-
-  final asDouble = value.toDouble();
-  // Round-trip check: > 2 decimals → reject.
-  if (((asDouble * 100).round() - asDouble * 100).abs() > 1e-9) {
-    throw const FormatException('more than 2 decimals');
-  }
-  return asDouble;
-}
-
-/// Form field for the task budget estimate. Prefixes the event currency
-/// symbol and validates via [parseBudgetEstimate].
+/// Thin wrapper around the new reusable `AppCurrencyField` (from the
+/// forms kit). Pre-fills the "Budget Estimate (optional)" label so the
+/// Tasks feature gets consistent copy without each caller passing it.
 class BudgetEstimateField extends StatelessWidget {
   const BudgetEstimateField({
     super.key,
@@ -41,33 +26,10 @@ class BudgetEstimateField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localeTag = Localizations.localeOf(context).toLanguageTag();
-    final symbol = NumberFormat.simpleCurrency(
-      name: currencyCode,
-    ).currencySymbol;
-
-    return TextFormField(
-      key: const Key('tasks.create.budget'),
+    return AppCurrencyField(
       controller: controller,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      decoration: InputDecoration(
-        labelText: 'Budget Estimate (optional)',
-        prefixText: '$symbol ',
-        prefixIcon: const Icon(Icons.account_balance_wallet_outlined),
-        border: const OutlineInputBorder(borderRadius: AppRadius.borderLg),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.md,
-        ),
-      ),
-      validator: (value) {
-        try {
-          parseBudgetEstimate(value ?? '', locale: localeTag);
-          return null;
-        } on FormatException {
-          return 'Estimate must be a non-negative number with up to 2 decimals';
-        }
-      },
+      currencyCode: currencyCode,
+      labelText: 'Budget Estimate (optional)',
     );
   }
 }

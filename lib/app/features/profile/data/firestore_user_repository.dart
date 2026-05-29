@@ -38,7 +38,13 @@ class FirestoreUserRepository implements IUserRepository {
   Future<AppUser?> getUser(String uid) async {
     try {
       final publicDoc = await _usersRef.doc(uid).get();
-      if (!publicDoc.exists) return null;
+      if (!publicDoc.exists) {
+        log(
+          'getUser($uid): public users/$uid doc does not exist',
+          name: 'profile',
+        );
+        return null;
+      }
       final publicData = publicDoc.data()!;
 
       // Attempt to read the private subdoc. For self-reads this
@@ -53,10 +59,28 @@ class FirestoreUserRepository implements IUserRepository {
         if (e.code != 'permission-denied') rethrow;
       }
 
+      // Email lookup order: private subdoc (canonical) → public doc
+      // (legacy / manually-edited entries). The public field isn't
+      // written by `saveProfile` or `createUserIfNotExists`, but if it
+      // exists it's still useful as a non-PII display fallback.
+      final email =
+          (privateData?['email'] as String?) ??
+          (publicData['email'] as String?) ??
+          '';
+
+      final displayName = publicData['displayName'] as String?;
+      if ((displayName == null || displayName.isEmpty) && email.isEmpty) {
+        log(
+          'getUser($uid): no displayName and no email — UI will show '
+          '"Unknown member". Public doc keys: ${publicData.keys.toList()}',
+          name: 'profile',
+        );
+      }
+
       return AppUser(
         uid: uid,
-        email: privateData?['email'] as String? ?? '',
-        displayName: publicData['displayName'] as String?,
+        email: email,
+        displayName: displayName,
         photoUrl: publicData['photoUrl'] as String?,
         paymentMethod: publicData['paymentMethod'] as String?,
         paymentHandle: publicData['paymentHandle'] as String?,

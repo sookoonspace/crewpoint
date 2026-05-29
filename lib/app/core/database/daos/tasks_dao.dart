@@ -29,4 +29,29 @@ class TasksDao extends DatabaseAccessor<AppDatabase> with _$TasksDaoMixin {
 
   Future<int> deleteTaskById(String id) =>
       (delete(tasks)..where((t) => t.id.equals(id))).go();
+
+  /// Reactive stream of per-status counts for one event. Backed by
+  /// Drift's `.watch()` on the `tasks` table, so the result re-emits
+  /// whenever a task row mutates locally (insert / update / delete).
+  /// Used by the Dashboard progress ring.
+  Stream<({int todo, int doing, int done})> watchCountsByEventId(
+    String eventId,
+  ) {
+    return watchTasksByEventId(eventId).map((rows) {
+      var todo = 0;
+      var doing = 0;
+      var done = 0;
+      for (final row in rows) {
+        switch (row.status) {
+          case 'todo':
+            todo++;
+          case 'inProgress':
+            doing++;
+          case 'done':
+            done++;
+        }
+      }
+      return (todo: todo, doing: doing, done: done);
+    });
+  }
 }

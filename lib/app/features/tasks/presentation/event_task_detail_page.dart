@@ -6,6 +6,7 @@ import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
+import 'package:crewpoint_app/app/features/tasks/presentation/create_task_screen.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/edit_task_screen.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/task_detail_screen.dart';
 
@@ -49,12 +50,7 @@ class EventTaskDetailPage extends ConsumerWidget {
             .firstWhere((t) => true, orElse: () => null);
         if (task == null) {
           return Scaffold(
-            backgroundColor: AppColors.cream,
-            appBar: AppBar(
-              title: const Text('Task'),
-              backgroundColor: AppColors.cream,
-              elevation: 0,
-            ),
+            appBar: AppBar(title: const Text('Task'), elevation: 0),
             body: const Center(child: Text('Task not found')),
           );
         }
@@ -83,19 +79,31 @@ class EventTaskDetailPage extends ConsumerWidget {
               !event.memberIds.contains(task.completedBy))
             task.completedBy!,
         ];
-        final asyncUsers = ref.watch(usersByIdProvider(uidsToResolve));
+        // usersByIds() converts the fresh List into a stable comma-joined
+        // key so Riverpod cache-hits across rebuilds. See provider docs.
+        final asyncUsers = ref.watch(
+          usersByIdProvider(usersByIds(uidsToResolve)),
+        );
+        // displayName when set, email as second fallback. TaskDetailScreen
+        // shows "Unknown member" if even this is null/empty (offline or
+        // user doc not yet hydrated).
+        String? labelFor(String uid) => asyncUsers.maybeWhen(
+          data: (users) {
+            final user = users[uid];
+            if (user == null) return null;
+            final name = user.displayName;
+            if (name != null && name.isNotEmpty) return name;
+            if (user.email.isNotEmpty) return user.email;
+            return null;
+          },
+          orElse: () => null,
+        );
         final assigneeName = task.assigneeId == null
             ? null
-            : asyncUsers.maybeWhen(
-                data: (users) => users[task.assigneeId]?.displayName,
-                orElse: () => null,
-              );
+            : labelFor(task.assigneeId!);
         final completedByName = task.completedBy == null
             ? null
-            : asyncUsers.maybeWhen(
-                data: (users) => users[task.completedBy]?.displayName,
-                orElse: () => null,
-              );
+            : labelFor(task.completedBy!);
 
         final displayNamesMap = asyncUsers.maybeWhen(
           data: (users) => {
@@ -138,6 +146,40 @@ class EventTaskDetailPage extends ConsumerWidget {
                     }
                   }
                 : null,
+            onDuplicate: () async {
+              // Reads checklist from the already-watched stream so the
+              // copy carries every item from the source. Any viewer
+              // (creator/admin/member) may duplicate; the new task gets
+              // their uid as createdBy.
+              final duplicate = task.duplicate(
+                currentUserId: uid,
+                checklist: items,
+              );
+              final edited = await Navigator.of(context).push<TaskModel>(
+                MaterialPageRoute(
+                  builder: (_) => CreateTaskScreen(
+                    event: event,
+                    currentUserId: uid,
+                    initial: duplicate,
+                    displayNames: displayNamesMap,
+                    onSubmit: (t) => Navigator.of(context).pop(t),
+                  ),
+                ),
+              );
+              if (edited == null || !context.mounted) return;
+              final ok = await repo.createTaskWithChecklist(
+                edited,
+                edited.checklistItems,
+              );
+              if (!ok && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Could not duplicate task'),
+                    backgroundColor: AppColors.terracotta,
+                  ),
+                );
+              }
+            },
             onDelete: canEdit
                 ? () async {
                     final confirmed = await showDialog<bool>(
@@ -205,41 +247,21 @@ class EventTaskDetailPage extends ConsumerWidget {
                 : null,
           ),
           loading: () => Scaffold(
-            backgroundColor: AppColors.cream,
-            appBar: AppBar(
-              title: Text(task.title),
-              backgroundColor: AppColors.cream,
-              elevation: 0,
-            ),
+            appBar: AppBar(title: Text(task.title), elevation: 0),
             body: const Center(child: CircularProgressIndicator()),
           ),
           error: (e, _) => Scaffold(
-            backgroundColor: AppColors.cream,
-            appBar: AppBar(
-              title: Text(task.title),
-              backgroundColor: AppColors.cream,
-              elevation: 0,
-            ),
+            appBar: AppBar(title: Text(task.title), elevation: 0),
             body: Center(child: Text('Checklist error: $e')),
           ),
         );
       },
       loading: () => Scaffold(
-        backgroundColor: AppColors.cream,
-        appBar: AppBar(
-          title: const Text('Task'),
-          backgroundColor: AppColors.cream,
-          elevation: 0,
-        ),
+        appBar: AppBar(title: const Text('Task'), elevation: 0),
         body: const Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => Scaffold(
-        backgroundColor: AppColors.cream,
-        appBar: AppBar(
-          title: const Text('Task'),
-          backgroundColor: AppColors.cream,
-          elevation: 0,
-        ),
+        appBar: AppBar(title: const Text('Task'), elevation: 0),
         body: Center(child: Text('Error: $e')),
       ),
     );

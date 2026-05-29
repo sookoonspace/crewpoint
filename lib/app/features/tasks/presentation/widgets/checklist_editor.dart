@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 
 /// Add / toggle / delete checklist items. Reorder is a backlog item.
@@ -89,9 +91,9 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
                 child: TextField(
                   key: const Key('tasks.detail.checklist.add'),
                   controller: _addController,
-                  decoration: const InputDecoration(
-                    hintText: 'Add item',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    hintText: context.strings.tasks.checklistAddHint,
+                    border: const OutlineInputBorder(),
                     isDense: true,
                   ),
                   onSubmitted: (_) => _submitNew(),
@@ -102,7 +104,10 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
               IconButton(
                 key: const Key('tasks.detail.checklist.add.submit'),
                 onPressed: _submitNew,
-                icon: const Icon(Icons.add_circle, color: AppColors.sage),
+                icon: const Icon(
+                  AppIcons.actionAddCircle,
+                  color: AppColors.sage,
+                ),
               ),
             ],
           ),
@@ -183,8 +188,8 @@ class _ChecklistRowState extends State<_ChecklistRow> {
                           ? TextDecoration.lineThrough
                           : null,
                       color: widget.item.isCompleted
-                          ? AppColors.mediumGrey
-                          : null,
+                          ? Theme.of(context).colorScheme.onSurfaceVariant
+                          : Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -193,10 +198,10 @@ class _ChecklistRowState extends State<_ChecklistRow> {
           IconButton(
             key: Key('tasks.detail.checklist.item.${widget.item.id}.delete'),
             onPressed: widget.onDelete,
-            icon: const Icon(
-              Icons.close,
+            icon: Icon(
+              AppIcons.actionClose,
               size: 18,
-              color: AppColors.mediumGrey,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
       ],

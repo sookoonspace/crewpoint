@@ -47,7 +47,7 @@ class LegalFooter extends StatelessWidget {
     final auth = context.strings.auth;
     final base = Theme.of(
       context,
-    ).textTheme.bodySmall?.copyWith(color: AppColors.darkGrey);
+    ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant);
     final linkStyle = base?.copyWith(
       color: AppColors.sageDark,
       decoration: TextDecoration.underline,

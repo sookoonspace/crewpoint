@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
+import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/widgets/checklist_editor.dart';
+
+enum _DetailAction { edit, duplicate, delete }
 
 /// Task detail screen — pure presentation. The parent owns mutation wiring and
 /// passes only the callbacks the current user is authorized to use.
@@ -21,6 +26,7 @@ class TaskDetailScreen extends StatelessWidget {
     this.assigneeName,
     this.completedByName,
     this.onEdit,
+    this.onDuplicate,
     this.onDelete,
     this.onChecklistToggle,
     this.onChecklistAdd,
@@ -44,6 +50,10 @@ class TaskDetailScreen extends StatelessWidget {
   /// UID when null. Hydrated upstream by `event_task_detail_page.dart`.
   final String? completedByName;
   final VoidCallback? onEdit;
+
+  /// Optional callback to duplicate the task. Visible to every viewer when
+  /// non-null (any member can spawn a copy under their own `createdBy`).
+  final VoidCallback? onDuplicate;
   final VoidCallback? onDelete;
   final void Function(ChecklistItem item, bool isCompleted)? onChecklistToggle;
   final void Function(String id, String text)? onChecklistAdd;
@@ -58,29 +68,22 @@ class TaskDetailScreen extends StatelessWidget {
     if (completedByName != null && completedByName!.isNotEmpty) {
       return completedByName!;
     }
-    return uid.length > 8 ? uid.substring(0, 8) : uid;
+    return 'Unknown member';
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.cream,
       appBar: AppBar(
         title: Text(task.title),
-        backgroundColor: AppColors.cream,
         elevation: 0,
         actions: [
-          if (canEditTask)
-            IconButton(
-              key: const Key('tasks.detail.edit'),
-              icon: const Icon(Icons.edit_outlined),
-              onPressed: onEdit,
-            ),
-          if (canEditTask)
-            IconButton(
-              key: const Key('tasks.detail.delete'),
-              icon: const Icon(Icons.delete_outline),
-              onPressed: onDelete,
+          if (canEditTask || onDuplicate != null)
+            _DetailOverflowMenu(
+              canEdit: canEditTask,
+              onEdit: onEdit,
+              onDuplicate: onDuplicate,
+              onDelete: onDelete,
             ),
         ],
       ),
@@ -98,17 +101,19 @@ class TaskDetailScreen extends StatelessWidget {
             children: [
               _StatusBadge(status: task.status),
               if (hasPendingWrites)
-                const Row(
+                Row(
                   spacing: AppSpacing.sm,
                   children: [
                     Icon(
-                      Icons.cloud_off,
-                      size: 16,
-                      color: AppColors.mediumGrey,
+                      AppIcons.cloudOff,
+                      size: AppSizes.iconSm,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     Text(
                       'Will sync when online',
-                      style: TextStyle(color: AppColors.mediumGrey),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -127,10 +132,10 @@ class TaskDetailScreen extends StatelessWidget {
                 Row(
                   spacing: AppSpacing.sm,
                   children: [
-                    const Icon(
-                      Icons.calendar_today,
-                      size: 16,
-                      color: AppColors.mediumGrey,
+                    Icon(
+                      AppIcons.calendar,
+                      size: AppSizes.iconSm,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     Text(
                       'Due ${DateFormat.yMMMd().format(task.dueDate!)}',
@@ -172,15 +177,21 @@ class _AssigneeRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Display name comes from the Firestore user doc; when it hasn't
+    // been set (or hasn't synced yet) we show a neutral label rather
+    // than the raw UID. Exposing UIDs in the UI is both ugly and a
+    // mild privacy leak.
     final label = (displayName != null && displayName!.isNotEmpty)
         ? displayName!
-        : (assigneeId.length > 10
-              ? '${assigneeId.substring(0, 10)}…'
-              : assigneeId);
+        : 'Unknown member';
     return Row(
       spacing: AppSpacing.sm,
       children: [
-        const Icon(Icons.person_outline, size: 16, color: AppColors.mediumGrey),
+        Icon(
+          AppIcons.navProfile,
+          size: AppSizes.iconSm,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
         Text('Assigned to $label'),
         if (!stillInEvent)
           const Padding(
@@ -225,6 +236,65 @@ class _StatusBadge extends StatelessWidget {
         status.label,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(color: color),
       ),
+    );
+  }
+}
+
+/// Detail-screen overflow menu. Items in spec'd order:
+/// Edit (canEditTask only) → Duplicate (visible to any viewer with a
+/// non-null callback) → Delete (canEditTask only).
+class _DetailOverflowMenu extends StatelessWidget {
+  const _DetailOverflowMenu({
+    required this.canEdit,
+    required this.onEdit,
+    required this.onDuplicate,
+    required this.onDelete,
+  });
+
+  final bool canEdit;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDuplicate;
+  final VoidCallback? onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.strings.tasks;
+    return PopupMenuButton<_DetailAction>(
+      key: const Key('tasks.detail.overflow'),
+      icon: const Icon(AppIcons.actionMore),
+      onSelected: (action) {
+        switch (action) {
+          case _DetailAction.edit:
+            onEdit?.call();
+          case _DetailAction.duplicate:
+            onDuplicate?.call();
+          case _DetailAction.delete:
+            onDelete?.call();
+        }
+      },
+      itemBuilder: (_) => [
+        if (canEdit)
+          PopupMenuItem<_DetailAction>(
+            key: const Key('tasks.detail.overflow.edit'),
+            value: _DetailAction.edit,
+            child: Text(s.detailEdit),
+          ),
+        if (onDuplicate != null)
+          PopupMenuItem<_DetailAction>(
+            key: const Key('tasks.detail.overflow.duplicate'),
+            value: _DetailAction.duplicate,
+            child: Text(s.detailDuplicate),
+          ),
+        if (canEdit)
+          PopupMenuItem<_DetailAction>(
+            key: const Key('tasks.detail.overflow.delete'),
+            value: _DetailAction.delete,
+            child: Text(
+              s.detailDelete,
+              style: const TextStyle(color: AppColors.terracotta),
+            ),
+          ),
+      ],
     );
   }
 }

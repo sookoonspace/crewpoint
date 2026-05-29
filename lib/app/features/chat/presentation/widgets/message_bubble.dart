@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
+import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
 
@@ -64,9 +66,7 @@ class MessageBubble extends StatelessWidget {
           if (!_isSettlement && !isCurrentUser && message.senderName != null)
             Text(
               message.senderName!,
-              style: Theme.of(
-                context,
-              ).textTheme.labelSmall,
+              style: Theme.of(context).textTheme.labelSmall,
             ),
           if (_isSettlement)
             Padding(
@@ -76,8 +76,8 @@ class MessageBubble extends StatelessWidget {
                 spacing: AppSpacing.xs,
                 children: [
                   const Icon(
-                    Icons.swap_horiz_rounded,
-                    size: 14,
+                    AppIcons.actionSwap,
+                    size: AppSizes.iconXs,
                     color: AppColors.sage,
                   ),
                   Text(
@@ -98,8 +98,8 @@ class MessageBubble extends StatelessWidget {
                 spacing: AppSpacing.xs,
                 children: [
                   const Icon(
-                    Icons.priority_high,
-                    size: 14,
+                    AppIcons.priorityHigh,
+                    size: AppSizes.iconXs,
                     color: AppColors.terracotta,
                   ),
                   Text(
@@ -115,7 +115,13 @@ class MessageBubble extends StatelessWidget {
           Text(
             message.text,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: !_isSettlement && isCurrentUser ? AppColors.white : null,
+              // White text is only safe on the sageDark "own message"
+              // bubble. High-priority + settlement bubbles use pale
+              // backgrounds where white would be invisible, so fall
+              // through to the themed default (onSurface).
+              color: isCurrentUser && !message.isHighPriority && !_isSettlement
+                  ? AppColors.white
+                  : Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ],
