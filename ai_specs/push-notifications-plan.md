@@ -127,19 +127,19 @@ Push notifications roadmap V1→V3. FCM scaffolding (`FcmGateway`/`FcmService`/`
 ### Phase 3c.1: V2 — Android notification-channel foundation
 
 - **Goal**: declare all five categorized channels up front so subsequent slices just route to a channel id. Pure platform plumbing; no new CFs, no new prefs, no UI.
-- [ ] `lib/app/core/services/notification_channels.dart` — `INotificationChannels` test seam + `NoOpNotificationChannels` (default fallback / test fake) + `MethodChannelNotificationChannels` (production). Static registry shipped over MethodChannel `crewpoint/notification_channels`:
+- [x] `lib/app/core/services/notification_channels.dart` — `INotificationChannels` test seam + `NoOpNotificationChannels` (default fallback / test fake) + `MethodChannelNotificationChannels` (production). Static registry shipped over MethodChannel `crewpoint/notification_channels`:
   - `crewpoint_chat_urgent` — IMPORTANCE_HIGH
   - `crewpoint_chat_general` — IMPORTANCE_DEFAULT
   - `crewpoint_tasks` — IMPORTANCE_DEFAULT
   - `crewpoint_events` — IMPORTANCE_DEFAULT
   - `crewpoint_payments` — IMPORTANCE_DEFAULT
-- [ ] `android/app/src/main/kotlin/space/sookoon/crewpoint_app/MainActivity.kt` — override `configureFlutterEngine`; install a `MethodChannel` handler that maps each spec to `NotificationManager.createNotificationChannel(...)`. SDK-O guard.
-- [ ] `lib/app/core/services/fcm_service.dart` — accept optional `INotificationChannels`; call `registerAll()` after permission grant, before token fetch. Defaults to `NoOpNotificationChannels` so existing test setups stay green.
-- [ ] `lib/app/core/providers.dart` — `notificationChannelsProvider` (defaults to `MethodChannelNotificationChannels`); wire into `fcmServiceProvider`.
-- [ ] TDD: `FcmService.attach()` calls `registerAll()` exactly once after permission grant.
-- [ ] TDD: `FcmService.attach()` skips `registerAll()` when permission denied.
-- [ ] TDD: `FcmService.attach()` skips `registerAll()` when `pushEnabled=false`.
-- [ ] Verify: `flutter analyze` && `flutter test`.
+- [x] `android/app/src/main/kotlin/space/sookoon/crewpoint_app/MainActivity.kt` — override `configureFlutterEngine`; install a `MethodChannel` handler that maps each spec to `NotificationManager.createNotificationChannel(...)`. SDK-O guard.
+- [x] `lib/app/core/services/fcm_service.dart` — accept optional `INotificationChannels`; call `registerAll()` after permission grant, before token fetch. Defaults to `NoOpNotificationChannels` so existing test setups stay green.
+- [x] `lib/app/core/providers.dart` — `notificationChannelsProvider` (defaults to `MethodChannelNotificationChannels`); wire into `fcmServiceProvider`.
+- [x] TDD: `FcmService.attach()` calls `registerAll()` exactly once after permission grant. *(`fcm_service_test.dart` — "attach() registers notification channels exactly once after permission grant".)*
+- [x] TDD: `FcmService.attach()` skips `registerAll()` when permission denied. *(`fcm_service_test.dart` — "attach() skips channel registration when permission is denied".)*
+- [x] TDD: `FcmService.attach()` skips `registerAll()` when `pushEnabled=false`. *(`fcm_service_test.dart` — "attach() skips channel registration when pushEnabled is false".)*
+- [x] Verify: `flutter analyze` && `flutter test`. *(1 pre-existing TableMigration warning; 702 tests pass, 4 skipped.)*
 
 ### Phase 3c.2: V2 — `payments` category end-to-end (`onExpenseCreated`)
 

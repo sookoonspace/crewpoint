@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/services/fcm_gateway.dart';
 import 'package:crewpoint_app/app/core/services/fcm_service.dart';
+import 'package:crewpoint_app/app/core/services/notification_channels.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/profile/domain/models/notification_prefs.dart';
 import 'package:crewpoint_app/app/features/profile/domain/repositories/i_user_repository.dart';
@@ -109,15 +110,30 @@ class _FakeUserRepo implements IUserRepository {
   }
 }
 
+class _FakeNotificationChannels implements INotificationChannels {
+  int registerCalls = 0;
+
+  @override
+  Future<void> registerAll() async {
+    registerCalls++;
+  }
+}
+
 void main() {
   late _FakeFcmGateway gateway;
   late _FakeUserRepo repo;
+  late _FakeNotificationChannels channels;
   late FcmService service;
 
   setUp(() {
     gateway = _FakeFcmGateway();
     repo = _FakeUserRepo();
-    service = FcmService(gateway: gateway, userRepository: repo);
+    channels = _FakeNotificationChannels();
+    service = FcmService(
+      gateway: gateway,
+      userRepository: repo,
+      notificationChannels: channels,
+    );
   });
 
   tearDown(() async {
@@ -197,6 +213,40 @@ void main() {
 
       expect(ok, isTrue);
       expect(repo.added, hasLength(1));
+    },
+  );
+
+  test(
+    'attach() registers notification channels exactly once after permission grant',
+    () async {
+      final ok = await service.attach(uid: 'u1');
+
+      expect(ok, isTrue);
+      expect(channels.registerCalls, 1);
+    },
+  );
+
+  test(
+    'attach() skips channel registration when permission is denied',
+    () async {
+      gateway.permissionGranted = false;
+
+      final ok = await service.attach(uid: 'u1');
+
+      expect(ok, isFalse);
+      expect(channels.registerCalls, 0);
+    },
+  );
+
+  test(
+    'attach() skips channel registration when pushEnabled is false',
+    () async {
+      repo.prefs = const NotificationPrefs(pushEnabled: false);
+
+      final ok = await service.attach(uid: 'u1');
+
+      expect(ok, isFalse);
+      expect(channels.registerCalls, 0);
     },
   );
 }

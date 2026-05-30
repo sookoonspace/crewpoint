@@ -20,6 +20,7 @@ import 'package:crewpoint_app/app/core/services/app_badge_service.dart';
 import 'package:crewpoint_app/app/core/services/app_lifecycle_source.dart';
 import 'package:crewpoint_app/app/core/services/fcm_gateway.dart';
 import 'package:crewpoint_app/app/core/services/fcm_service.dart';
+import 'package:crewpoint_app/app/core/services/notification_channels.dart';
 import 'package:crewpoint_app/app/core/services/file_export_service.dart';
 import 'package:crewpoint_app/app/core/services/file_export_service_native.dart'
     if (dart.library.html) 'package:crewpoint_app/app/core/services/file_export_service_web.dart';
@@ -104,11 +105,20 @@ final userRepositoryProvider = Provider<IUserRepository>(
 /// `firebase_messaging` test seam.
 final fcmGatewayProvider = Provider<IFcmGateway>((_) => FirebaseFcmGateway());
 
+/// Android notification-channel declaration adapter. Backed by a Kotlin
+/// `MethodChannel` handler in `MainActivity` that calls
+/// `NotificationManager.createNotificationChannel(...)` per registered
+/// spec. iOS / web / desktop short-circuit inside the adapter.
+final notificationChannelsProvider = Provider<INotificationChannels>(
+  (_) => const MethodChannelNotificationChannels(),
+);
+
 /// Owns the FCM token lifecycle (`attach(uid)` / `detach(uid)`).
 final fcmServiceProvider = Provider<FcmService>((ref) {
   final service = FcmService(
     gateway: ref.watch(fcmGatewayProvider),
     userRepository: ref.watch(userRepositoryProvider),
+    notificationChannels: ref.watch(notificationChannelsProvider),
   );
   ref.onDispose(service.dispose);
   return service;

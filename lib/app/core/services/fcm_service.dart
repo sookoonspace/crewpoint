@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:crewpoint_app/app/core/services/fcm_gateway.dart';
+import 'package:crewpoint_app/app/core/services/notification_channels.dart';
 import 'package:crewpoint_app/app/features/profile/domain/repositories/i_user_repository.dart';
 
 /// Owns the FCM token lifecycle:
@@ -15,11 +16,15 @@ class FcmService {
   FcmService({
     required IFcmGateway gateway,
     required IUserRepository userRepository,
+    INotificationChannels notificationChannels =
+        const NoOpNotificationChannels(),
   }) : _gateway = gateway,
-       _userRepository = userRepository;
+       _userRepository = userRepository,
+       _notificationChannels = notificationChannels;
 
   final IFcmGateway _gateway;
   final IUserRepository _userRepository;
+  final INotificationChannels _notificationChannels;
   StreamSubscription<String>? _refreshSub;
   String? _currentToken;
   String? _attachedUid;
@@ -40,6 +45,11 @@ class FcmService {
         log('FCM permission denied for $uid', name: 'fcm');
         return false;
       }
+      // Android: declare notification channels before the first push can
+      // arrive (API 26+ requirement). iOS / web / desktop short-circuit
+      // inside the adapter; failure is swallowed there too — channel
+      // setup must never block token registration.
+      await _notificationChannels.registerAll();
       // iOS: APNs token must resolve before getToken().
       await _gateway.getApnsToken();
       final token = await _gateway.getToken();
