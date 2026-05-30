@@ -112,22 +112,90 @@ Push notifications roadmap V1→V3. FCM scaffolding (`FcmGateway`/`FcmService`/`
 - [ ] Manual smoke matrix: real iOS device, Pixel (AOSP), Samsung One UI (OEM provider permission test). Document any per-OEM caveats in `docs/` if surfaced. *(Manual; out of session scope.)*
 - [x] Verify: `flutter analyze` && `flutter test`. *(1 pre-existing warning; 699 flutter tests pass, 4 skipped.)*
 
-### Phase 3c: V2 — remaining categories + Android channels + iOS actions (deferred)
+### Phase 3c: V2 — remaining categories + Android channels + iOS actions (rollup)
 
-- **Goal**: add the rest of the V2 category catalog + platform polish.
-- [ ] `lib/app/core/services/notification_channels.dart` — declare Android channels: `crewpoint_chat_urgent`, `crewpoint_chat_general`, `crewpoint_tasks`, `crewpoint_events`, `crewpoint_payments`. Importance ladder. Register via MethodChannel from `FcmService.attach()`.
-- [ ] `android/app/src/main/kotlin/.../MainActivity.kt` — MethodChannel handler that calls `NotificationManager.createNotificationChannel(...)`. Required because Flutter has no first-party API to declare channels.
-- [ ] `ios/Runner/AppDelegate.swift` — register `UNNotificationCategory` set; action buttons for `MARK_DONE` (tasks), `VIEW_EXPENSE` (payments).
-- [ ] `functions/src/events/onTaskDueScheduled.ts` — Pub/Sub scheduled (`every 15 minutes`) — scan tasks with `dueAt within next 24h && !reminderSent`, push via `sendCategorizedPush(category: 'task_due')`, set `reminderSent=true`. Required infra: Pub/Sub API enabled + cost monitoring.
-- [ ] `functions/src/events/onExpenseCreated.ts` — push to event members except payer; deep-link `/dashboard/event/{eid}/budget`.
-- [ ] `functions/src/events/onSettlementDisputed.ts` — push to debtor/creditor; deep-link `/dashboard/event/{eid}/budget`.
-- [ ] `functions/src/events/onMemberJoined.ts` — push to admins (event invite acceptance).
-- [ ] `lib/app/features/profile/domain/models/notification_prefs.dart` — add `eventUpdates`, `payments` fields.
-- [ ] `lib/app/features/profile/presentation/notification_settings_screen.dart` — surface remaining category toggles.
-- [ ] TDD: `sendCategorizedPush` writes correct `android.notification.channelId` per category.
-- [ ] TDD: `onTaskDueScheduled` marks `reminderSent` exactly once (idempotency).
-- [ ] Robot: assignee receives task-assigned push → tap → lands on task detail → mark done from notification action → task state updates.
+- **Goal**: complete the V2 push catalog. Original block decomposed into six vertical slices below — same pattern used to split Phase 3b → 3b.1 → 3b.2. Each subphase ships one user-visible change end-to-end.
+- **Slice order**:
+  1. `3c.1` Android channel foundation (pure infra; no new categories yet)
+  2. `3c.2` `payments` category end-to-end (`onExpenseCreated`)
+  3. `3c.3` `onSettlementDisputed` CF (reuses payments category)
+  4. `3c.4` `eventUpdates` category end-to-end (`onMemberJoined`)
+  5. `3c.5` `onTaskDueScheduled` Pub/Sub scheduled CF
+  6. `3c.6` iOS interactive notification actions (`MARK_DONE` / `VIEW_EXPENSE`)
+- Robot journey for the full task-assigned-with-action flow lives in `3c.6` (gates on the iOS action work landing).
+
+### Phase 3c.1: V2 — Android notification-channel foundation
+
+- **Goal**: declare all five categorized channels up front so subsequent slices just route to a channel id. Pure platform plumbing; no new CFs, no new prefs, no UI.
+- [ ] `lib/app/core/services/notification_channels.dart` — `INotificationChannels` test seam + `NoOpNotificationChannels` (default fallback / test fake) + `MethodChannelNotificationChannels` (production). Static registry shipped over MethodChannel `crewpoint/notification_channels`:
+  - `crewpoint_chat_urgent` — IMPORTANCE_HIGH
+  - `crewpoint_chat_general` — IMPORTANCE_DEFAULT
+  - `crewpoint_tasks` — IMPORTANCE_DEFAULT
+  - `crewpoint_events` — IMPORTANCE_DEFAULT
+  - `crewpoint_payments` — IMPORTANCE_DEFAULT
+- [ ] `android/app/src/main/kotlin/space/sookoon/crewpoint_app/MainActivity.kt` — override `configureFlutterEngine`; install a `MethodChannel` handler that maps each spec to `NotificationManager.createNotificationChannel(...)`. SDK-O guard.
+- [ ] `lib/app/core/services/fcm_service.dart` — accept optional `INotificationChannels`; call `registerAll()` after permission grant, before token fetch. Defaults to `NoOpNotificationChannels` so existing test setups stay green.
+- [ ] `lib/app/core/providers.dart` — `notificationChannelsProvider` (defaults to `MethodChannelNotificationChannels`); wire into `fcmServiceProvider`.
+- [ ] TDD: `FcmService.attach()` calls `registerAll()` exactly once after permission grant.
+- [ ] TDD: `FcmService.attach()` skips `registerAll()` when permission denied.
+- [ ] TDD: `FcmService.attach()` skips `registerAll()` when `pushEnabled=false`.
+- [ ] Verify: `flutter analyze` && `flutter test`.
+
+### Phase 3c.2: V2 — `payments` category end-to-end (`onExpenseCreated`)
+
+- **Goal**: prove the new channel infra by shipping the payments category end-to-end. Recipients = event members minus payer.
+- [ ] `lib/app/features/profile/domain/models/notification_prefs.dart` — add `payments` field (default true); round-trip via `fromMap` / `toMap` / `copyWith`.
+- [ ] `lib/app/features/profile/application/notification_prefs_provider.dart` — `setPayments(bool)` action.
+- [ ] `lib/app/features/profile/presentation/notification_settings_screen.dart` — "Payments" tile under Categories; disabled when master is OFF.
+- [ ] `functions/src/notifications/sendPush.ts` — extend `NotificationCategory` with `expense_added`; pref key `payments`; channel `crewpoint_payments`; thread id `payments`.
+- [ ] `functions/src/events/onExpenseCreated.ts` — Firestore `onDocumentCreated` on `events/{eid}/expenses/{xid}`. Excludes `paidBy` from recipients. Deep-link `/dashboard/event/{eid}/budget`.
+- [ ] `functions/src/index.ts` — export `onExpenseCreated`.
+- [ ] TDD: `NotificationPrefs.payments` round-trips + copyWith respects it.
+- [ ] TDD: `NotificationSettingsScreen` toggling payments persists.
+- [ ] TDD: `sendCategorizedPush` writes `crewpoint_payments` channel for `category: 'expense_added'`.
 - [ ] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`.
+
+### Phase 3c.3: V2 — `onSettlementDisputed` CF (reuses `payments` category)
+
+- **Goal**: notify the counterparty when a settlement gets disputed.
+- [ ] `functions/src/notifications/sendPush.ts` — add `settlement_disputed` category (decide whether to reuse the `payments` thread id or split — leaning reuse).
+- [ ] `functions/src/events/onSettlementDisputed.ts` — Firestore trigger on settlement-status transition; recipient = counterparty of `disputedBy`; deep-link `/dashboard/event/{eid}/budget`.
+- [ ] `functions/src/index.ts` — export.
+- [ ] TDD: dispute by debtor pushes only the creditor; dispute by creditor pushes only the debtor.
+- [ ] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`.
+
+### Phase 3c.4: V2 — `eventUpdates` category end-to-end (`onMemberJoined`)
+
+- **Goal**: notify event admins when a member accepts the invite.
+- [ ] `lib/app/features/profile/domain/models/notification_prefs.dart` — add `eventUpdates` field (default true).
+- [ ] `lib/app/features/profile/application/notification_prefs_provider.dart` — `setEventUpdates(bool)` action.
+- [ ] `lib/app/features/profile/presentation/notification_settings_screen.dart` — "Event updates" tile.
+- [ ] `functions/src/notifications/sendPush.ts` — `member_joined` category; pref key `eventUpdates`; channel `crewpoint_events`.
+- [ ] `functions/src/events/onMemberJoined.ts` — Firestore trigger on `events/{eid}.members` transition or invitation-accepted subcollection (verify schema before implementing). Recipients = admins.
+- [ ] `functions/src/index.ts` — export.
+- [ ] TDD: prefs round-trip; UI toggle persists; CF skips when `eventUpdates=false`.
+- [ ] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`.
+
+### Phase 3c.5: V2 — `onTaskDueScheduled` (Pub/Sub scheduled CF)
+
+- **Goal**: due-date reminders for assigned tasks. First scheduled CF in the project — establishes the Pub/Sub trigger pattern + idempotency convention.
+- [ ] `functions/src/notifications/sendPush.ts` — add `task_due` category sharing the `taskUpdates` pref + `crewpoint_tasks` channel.
+- [ ] `functions/src/events/onTaskDueScheduled.ts` — `onSchedule('every 15 minutes')`. Scans tasks where `dueAt within next 24h && !reminderSent && status != done`. Pushes via `sendCategorizedPush(category: 'task_due')`. Sets `reminderSent=true` atomically.
+- [ ] `functions/src/index.ts` — export.
+- [ ] TDD: scan picks the right window; idempotent (`reminderSent=true` prevents re-push); skips done tasks.
+- [ ] **Manual**: enable Pub/Sub API in GCP project (dev/stg/prod); set cost-monitoring budget alert.
+- [ ] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`.
+
+### Phase 3c.6: V2 — iOS interactive notification actions
+
+- **Goal**: `MARK_DONE` action on task pushes; `VIEW_EXPENSE` action on payments pushes. Lets users act without opening the app.
+- [ ] `ios/Runner/AppDelegate.swift` — register `UNNotificationCategory` set: `task_assigned` / `task_due` → `MARK_DONE`; `expense_added` / `settlement_disputed` → `VIEW_EXPENSE`.
+- [ ] `functions/src/notifications/sendPush.ts` — set `apns.payload.aps.category` per notification category so iOS resolves the right action set.
+- [ ] `lib/app/core/services/fcm_handler.dart` — handle `data['action']=='mark_done'` (write task done via repo).
+- [ ] TDD: handler maps `action: 'mark_done'` to a task-done write; ignores unknown actions.
+- [ ] Robot: assignee receives task-assigned push → tap → lands on task detail → mark done from notification action → task state updates.
+- [ ] **Manual**: real-device iOS smoke (notification action buttons can't run in widget tests).
+- [ ] Verify: `flutter analyze` && `flutter test`.
 
 ### Phase 4: V2.1 — critical notifications (urgent bypass DND)
 
