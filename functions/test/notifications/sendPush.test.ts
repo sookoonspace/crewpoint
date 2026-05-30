@@ -46,4 +46,11 @@ describe('sendCategorizedPush CATEGORY_CONFIG', () => {
       CATEGORY_CONFIG.expense_added.iosThreadId
     );
   });
+
+  test('member_joined routes to crewpoint_events + eventUpdates pref', () => {
+    expect(CATEGORY_CONFIG.member_joined.androidChannelId).toBe(
+      'crewpoint_events'
+    );
+    expect(CATEGORY_CONFIG.member_joined.prefKey).toBe('eventUpdates');
+  });
 });

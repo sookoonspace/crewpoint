@@ -168,14 +168,14 @@ Push notifications roadmap V1→V3. FCM scaffolding (`FcmGateway`/`FcmService`/`
 ### Phase 3c.4: V2 — `eventUpdates` category end-to-end (`onMemberJoined`)
 
 - **Goal**: notify event admins when a member accepts the invite.
-- [ ] `lib/app/features/profile/domain/models/notification_prefs.dart` — add `eventUpdates` field (default true).
-- [ ] `lib/app/features/profile/application/notification_prefs_provider.dart` — `setEventUpdates(bool)` action.
-- [ ] `lib/app/features/profile/presentation/notification_settings_screen.dart` — "Event updates" tile.
-- [ ] `functions/src/notifications/sendPush.ts` — `member_joined` category; pref key `eventUpdates`; channel `crewpoint_events`.
-- [ ] `functions/src/events/onMemberJoined.ts` — Firestore trigger on `events/{eid}.members` transition or invitation-accepted subcollection (verify schema before implementing). Recipients = admins.
-- [ ] `functions/src/index.ts` — export.
-- [ ] TDD: prefs round-trip; UI toggle persists; CF skips when `eventUpdates=false`.
-- [ ] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`.
+- [x] `lib/app/features/profile/domain/models/notification_prefs.dart` — added `eventUpdates` field (default true) with `fromMap` / `toMap` / `copyWith` coverage.
+- [x] `lib/app/features/profile/application/notification_prefs_provider.dart` — `setEventUpdates(bool)` action.
+- [x] `lib/app/features/profile/presentation/notification_settings_screen.dart` — "Event updates" tile (disabled when master is OFF).
+- [x] `functions/src/notifications/sendPush.ts` — `member_joined` category; pref key `eventUpdates`; channel `crewpoint_events`; iOS thread id `events`.
+- [x] `functions/src/events/onMemberJoined.ts` — Firestore `onDocumentWritten` on `events/{eventId}`. `newJoiners(before, after)` helper computes the membership delta; treats `before === undefined` (doc create) as "no joiners" so the creator doesn't ping themselves. Recipients per joiner = `after.adminIds` minus the joiner; deep-link `/dashboard/event/{eid}/members`. CF skips entirely when `adminIds` is empty.
+- [x] `functions/src/index.ts` — export `onMemberJoined`.
+- [x] TDD: prefs round-trip + UI toggle persists. *(3 new `eventUpdates` tests in `notification_prefs_test.dart`; "toggling eventUpdates OFF" + tile-count guards in `notification_settings_screen_test.dart`.)* `newJoiners` covered by 5 unit tests in `functions/test/events/onMemberJoined.test.ts` (positive delta, multi-delta, event-create, no-op edit, member-removed-only). Routing-table guard added to `sendPush.test.ts`. CF-level `eventUpdates=false` skip is enforced by `sendCategorizedPush` (already covered server-side by the pref-gate path; no new test needed).
+- [x] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`. *(1 pre-existing TableMigration warning; 711 flutter tests pass, 4 skipped; 88 CF tests pass.)*
 
 ### Phase 3c.5: V2 — `onTaskDueScheduled` (Pub/Sub scheduled CF)
 

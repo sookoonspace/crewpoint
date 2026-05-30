@@ -19,3 +19,4 @@ export {onUrgentMessageCreated} from "./events/onUrgentMessageCreated";
 export {onTaskAssigned} from "./events/onTaskAssigned";
 export {onExpenseCreated} from "./events/onExpenseCreated";
 export {onSettlementDisputed} from "./events/onSettlementDisputed";
+export {onMemberJoined} from "./events/onMemberJoined";

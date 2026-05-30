@@ -45,6 +45,10 @@ class NotificationPrefsNotifier extends AsyncNotifier<NotificationPrefs> {
     await _update((prefs) => prefs.copyWith(payments: value));
   }
 
+  Future<void> setEventUpdates(bool value) async {
+    await _update((prefs) => prefs.copyWith(eventUpdates: value));
+  }
+
   Future<void> _update(
     NotificationPrefs Function(NotificationPrefs prefs) transform,
   ) async {

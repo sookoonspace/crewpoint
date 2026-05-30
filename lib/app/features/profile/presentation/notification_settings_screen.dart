@@ -120,6 +120,15 @@ class _PrefsForm extends ConsumerWidget {
           onChanged: (v) =>
               _safeUpdate(context, () => controller.setPayments(v)),
         ),
+        AppSwitchTile(
+          key: const Key('notifSettings.eventUpdates.tile'),
+          title: 'Event updates',
+          subtitle: 'When someone joins one of your events.',
+          value: prefs.eventUpdates,
+          enabled: prefs.pushEnabled,
+          onChanged: (v) =>
+              _safeUpdate(context, () => controller.setEventUpdates(v)),
+        ),
       ],
     );
   }

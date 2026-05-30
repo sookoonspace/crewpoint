@@ -10,18 +10,19 @@ const FCM_BATCH_SIZE = 500;
  *   - a per-recipient pref flag on `users/{uid}/private/profile.notificationPrefs`
  *
  * Phase 3a shipped `chat_urgent` + `task_assigned`; Phase 3c.2 added
- * `expense_added`; Phase 3c.3 adds `settlement_disputed` (reuses payments
- * routing); later phases add `task_due`, `member_joined`.
+ * `expense_added`; Phase 3c.3 added `settlement_disputed` (reuses payments
+ * routing); Phase 3c.4 adds `member_joined`; later phases add `task_due`.
  */
 export type NotificationCategory =
   | "chat_urgent"
   | "task_assigned"
   | "expense_added"
-  | "settlement_disputed";
+  | "settlement_disputed"
+  | "member_joined";
 
 interface CategoryConfig {
   /** Field on `notificationPrefs` that gates this category. */
-  prefKey: "urgentChat" | "taskUpdates" | "payments";
+  prefKey: "urgentChat" | "taskUpdates" | "payments" | "eventUpdates";
   /** Android channel id (client declares the channel; this is the routing key). */
   androidChannelId: string;
   /** APNs `aps.thread-id` for iOS grouping. */
@@ -50,6 +51,11 @@ const CATEGORY_CONFIG: Record<NotificationCategory, CategoryConfig> = {
     // Shares the iOS thread with expense_added so payment activity in an
     // event groups under a single notification stack.
     iosThreadId: "payments",
+  },
+  member_joined: {
+    prefKey: "eventUpdates",
+    androidChannelId: "crewpoint_events",
+    iosThreadId: "events",
   },
 };
 

@@ -55,6 +55,7 @@ void main() {
         'urgentChat': true,
         'taskUpdates': true,
         'payments': true,
+        'eventUpdates': true,
       });
     });
 
@@ -64,6 +65,7 @@ void main() {
         urgentChat: false,
         taskUpdates: false,
         payments: false,
+        eventUpdates: false,
       );
 
       expect(prefs.toMap(), {
@@ -71,6 +73,7 @@ void main() {
         'urgentChat': false,
         'taskUpdates': false,
         'payments': false,
+        'eventUpdates': false,
       });
     });
   });
@@ -128,7 +131,34 @@ void main() {
         'urgentChat': true,
         'taskUpdates': true,
         'payments': false,
+        'eventUpdates': true,
       });
+    });
+  });
+
+  group('NotificationPrefs.eventUpdates round-trip', () {
+    test('defaults to true (opt-in)', () {
+      const prefs = NotificationPrefs();
+
+      expect(prefs.eventUpdates, isTrue);
+    });
+
+    test('fromMap honours explicit false', () {
+      final prefs = NotificationPrefs.fromMap(const {'eventUpdates': false});
+
+      expect(prefs.eventUpdates, isFalse);
+    });
+
+    test('copyWith eventUpdates leaves other flags untouched', () {
+      const prefs = NotificationPrefs();
+
+      final next = prefs.copyWith(eventUpdates: false);
+
+      expect(next.pushEnabled, isTrue);
+      expect(next.urgentChat, isTrue);
+      expect(next.taskUpdates, isTrue);
+      expect(next.payments, isTrue);
+      expect(next.eventUpdates, isFalse);
     });
   });
 }
