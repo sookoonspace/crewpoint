@@ -16,6 +16,8 @@ import 'package:crewpoint_app/app/core/database/daos/expenses_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/task_checklist_items_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/tasks_dao.dart';
 import 'package:crewpoint_app/app/core/services/account_deletion_service.dart';
+import 'package:crewpoint_app/app/core/services/app_badge_service.dart';
+import 'package:crewpoint_app/app/core/services/app_lifecycle_source.dart';
 import 'package:crewpoint_app/app/core/services/fcm_gateway.dart';
 import 'package:crewpoint_app/app/core/services/fcm_service.dart';
 import 'package:crewpoint_app/app/core/services/file_export_service.dart';
@@ -107,6 +109,35 @@ final fcmServiceProvider = Provider<FcmService>((ref) {
   final service = FcmService(
     gateway: ref.watch(fcmGatewayProvider),
     userRepository: ref.watch(userRepositoryProvider),
+  );
+  ref.onDispose(service.dispose);
+  return service;
+});
+
+/// Platform-channel adapter for the OS launcher app-icon badge.
+///
+/// Defaults to [NoOpAppBadgePlatform] — Phase 3b.1 deliberately defers
+/// the real package choice (both `flutter_app_badge_control` and
+/// `flutter_app_badger` have rough edges as of this writing). A follow-up
+/// commit overrides this provider with a concrete adapter and adds the
+/// package to `pubspec.yaml`.
+final appBadgePlatformProvider = Provider<IAppBadgePlatform>(
+  (_) => const NoOpAppBadgePlatform(),
+);
+
+/// App lifecycle source — `Widgets`-backed in prod, fake in tests.
+final appLifecycleSourceProvider = Provider<AppLifecycleSource>((ref) {
+  final source = WidgetsAppLifecycleSource();
+  ref.onDispose(source.dispose);
+  return source;
+});
+
+/// Mirrors a single unread count to the OS launcher badge. Wire from
+/// `main.dart` via `ref.listen(unreadBadgeProvider(uid))`.
+final appBadgeServiceProvider = Provider<AppBadgeService>((ref) {
+  final service = AppBadgeService(
+    platform: ref.watch(appBadgePlatformProvider),
+    lifecycleSource: ref.watch(appLifecycleSourceProvider),
   );
   ref.onDispose(service.dispose);
   return service;

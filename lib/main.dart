@@ -16,6 +16,7 @@ import 'package:crewpoint_app/app/core/services/firebase_service.dart';
 import 'package:crewpoint_app/app/core/theme/app_theme.dart';
 import 'package:crewpoint_app/app/core/theme/theme_mode_provider.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
+import 'package:crewpoint_app/app/features/dashboard/application/unread_badge_provider.dart';
 
 /// Background isolate FCM handler.
 ///
@@ -83,6 +84,7 @@ class _MyAppState extends ConsumerState<MyApp> {
       GlobalKey<ScaffoldMessengerState>();
   FcmHandlerBootstrap? _fcmBootstrap;
   String? _fcmAttachedUid;
+  ProviderSubscription<UnreadBadgeCounts>? _badgeMirrorSub;
 
   @override
   void initState() {
@@ -178,11 +180,32 @@ class _MyAppState extends ConsumerState<MyApp> {
       unawaited(service.attach(uid: nextUid));
     }
     _fcmAttachedUid = nextUid;
+
+    _syncBadgeMirror(nextUid);
+  }
+
+  /// Subscribes the OS app-icon badge to the current user's
+  /// [unreadBadgeProvider]. Resubscribes on uid change, closes on sign-out
+  /// (with an explicit clear so the badge doesn't linger).
+  void _syncBadgeMirror(String? uid) {
+    _badgeMirrorSub?.close();
+    _badgeMirrorSub = null;
+    final badgeService = ref.read(appBadgeServiceProvider);
+    if (uid == null) {
+      unawaited(badgeService.update(0));
+      return;
+    }
+    _badgeMirrorSub = ref.listenManual<UnreadBadgeCounts>(
+      unreadBadgeProvider(uid),
+      (_, next) => unawaited(badgeService.update(next.total)),
+      fireImmediately: true,
+    );
   }
 
   @override
   void dispose() {
     unawaited(_fcmBootstrap?.dispose());
+    _badgeMirrorSub?.close();
     _router.dispose();
     _routerRefresh.dispose();
     super.dispose();

@@ -89,12 +89,23 @@ Push notifications roadmap V1→V3. FCM scaffolding (`FcmGateway`/`FcmService`/`
 - [x] TDD: `unreadBadgeProvider` re-emits when task assignment / unread message stream updates. *(Covered by `unread_badge_provider_test.dart` — 7 tests covering all-zero, per-source counting, loading/error suppression, and explicit re-emit on upstream invalidation.)*
 - [x] Verify: `flutter analyze` && `flutter test`. *(1 pre-existing warning; 688 flutter tests pass, 4 skipped.)*
 
-### Phase 3b.1: V2 — OS app-icon badge (deferred follow-up)
+### Phase 3b.1: V2 — OS app-icon badge plumbing (real-package adapter deferred)
 
 - **Goal**: mirror the `unreadBadgeProvider.total` to the OS launcher icon so users see the count without opening the app.
-- [ ] `pubspec.yaml` — add `flutter_app_badge_control: ^X` (or chosen equivalent).
-- [ ] `lib/app/core/services/app_badge_service.dart` — `Notifier<int>` that listens to `unreadBadgeProvider.total` and calls the package's `update(count)` / `removeBadge()`. Clears on app foreground via `AppLifecycleSource`.
-- [ ] TDD: service writes `total` to the badge platform channel; clears on `AppLifecycleState.resumed` when total == 0.
+- [ ] `pubspec.yaml` — add `flutter_app_badge_control: ^X` (or chosen equivalent). *(Deferred to Phase 3b.2 — `flutter_app_badge_control` is at `0.0.2` and `flutter_app_badger` is discontinued. Decision deferred to the user after on-device evaluation; full plumbing below already lets a swap land in a single commit.)*
+- [x] `lib/app/core/services/app_badge_service.dart` — `AppBadgeService` mirrors a single unread count to an `IAppBadgePlatform` test seam. `update(total)` clears when `total <= 0`, sets otherwise. `AppLifecycleState.resumed` re-applies the current total (idempotent — handles Android OEM launchers that drop the badge on icon repaint). Platform failures are caught + logged; badge mirroring is cosmetic and must never crash the host.
+- [x] `lib/app/core/providers.dart` — `appBadgePlatformProvider` (defaults to `NoOpAppBadgePlatform`), `appLifecycleSourceProvider` (`WidgetsAppLifecycleSource`), `appBadgeServiceProvider` (wires the above).
+- [x] `lib/main.dart` — `_syncBadgeMirror(uid)` opens a `ref.listenManual(unreadBadgeProvider(uid))` subscription on auth transition; closes + explicitly clears on sign-out. Subscription closed in `dispose`.
+- [x] TDD: service writes `total` to the badge platform; clears on `update(0)` / negative; resume re-applies current total; non-resumed lifecycle events ignored; dispose cancels the subscription. *(9 tests in `app_badge_service_test.dart`.)*
+- [x] Verify: `flutter analyze` && `flutter test`. *(1 pre-existing warning; 697 flutter tests pass, 4 skipped.)*
+
+### Phase 3b.2: V2 — OS badge real-package swap (deferred)
+
+- **Goal**: replace `NoOpAppBadgePlatform` with a concrete adapter so the OS launcher actually paints the badge.
+- [ ] `pubspec.yaml` — add the chosen package (`flutter_app_badge_control` once it stabilises, or whatever the V2 ecosystem settles on).
+- [ ] `lib/app/core/services/app_badge_service.dart` — add a 5-line `class FlutterAppBadgeControlPlatform implements IAppBadgePlatform { ... }` adapter.
+- [ ] `lib/app/core/providers.dart` — override `appBadgePlatformProvider` with the adapter.
+- [ ] Manual smoke on real iOS device + an Android OEM launcher (Samsung One UI / Pixel) since OEM badge behaviour varies wildly.
 
 ### Phase 3c: V2 — remaining categories + Android channels + iOS actions (deferred)
 
