@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 
+import 'package:app_badge_plus/app_badge_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:crewpoint_app/app/core/services/app_lifecycle_source.dart';
 
@@ -24,9 +25,8 @@ abstract class IAppBadgePlatform {
   Future<void> clearBadge();
 }
 
-/// Production default — does nothing. Lets every other layer ship
-/// end-to-end while the package choice is deferred. Swap in a real
-/// adapter by overriding `appBadgePlatformProvider` in `providers.dart`.
+/// No-op fallback. Kept for tests + as a safety net if a future Riverpod
+/// override needs to disable badge writes without removing the service.
 class NoOpAppBadgePlatform implements IAppBadgePlatform {
   const NoOpAppBadgePlatform();
 
@@ -35,6 +35,25 @@ class NoOpAppBadgePlatform implements IAppBadgePlatform {
 
   @override
   Future<void> clearBadge() async {}
+}
+
+/// Production adapter backed by `app_badge_plus`. Maps both contract
+/// methods onto the package's single `updateBadge(int)` entry-point —
+/// the package treats `count == 0` as "clear".
+///
+/// Notification permission is requested upstream by `FcmService.attach()`
+/// (Phase 1), which is sufficient for iOS / macOS authorization +
+/// Android 13+ `POST_NOTIFICATIONS`. Per-OEM Android badge permissions
+/// (Samsung, Huawei, HTC, Sony, Apex, Solid) live in
+/// `android/app/src/main/AndroidManifest.xml`.
+class AppBadgePlusPlatform implements IAppBadgePlatform {
+  const AppBadgePlusPlatform();
+
+  @override
+  Future<void> setBadgeCount(int count) => AppBadgePlus.updateBadge(count);
+
+  @override
+  Future<void> clearBadge() => AppBadgePlus.updateBadge(0);
 }
 
 /// Mirrors a single unread total to the OS launcher app-icon badge.

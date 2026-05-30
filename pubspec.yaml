@@ -35,6 +35,13 @@ dependencies:
   cloud_functions: ^5.3.3
   firebase_messaging: ^15.2.0
 
+  # OS launcher app-icon badge — Phase 3b.2.
+  # AppBadgePlus.updateBadge(int) on iOS / Android / macOS.
+  # Notification permissions are inherited from firebase_messaging
+  # (FcmService.attach()); Android OEM-specific permissions are declared
+  # in AndroidManifest.xml for Samsung / Huawei / HTC / Sony / etc.
+  app_badge_plus: ^1.2.10
+
   # Auth
   # Note: google_sign_in and sign_in_with_apple were both removed —
   # Firebase Auth's GoogleAuthProvider + AppleAuthProvider drive OAuth

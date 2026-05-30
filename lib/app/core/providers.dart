@@ -116,13 +116,11 @@ final fcmServiceProvider = Provider<FcmService>((ref) {
 
 /// Platform-channel adapter for the OS launcher app-icon badge.
 ///
-/// Defaults to [NoOpAppBadgePlatform] — Phase 3b.1 deliberately defers
-/// the real package choice (both `flutter_app_badge_control` and
-/// `flutter_app_badger` have rough edges as of this writing). A follow-up
-/// commit overrides this provider with a concrete adapter and adds the
-/// package to `pubspec.yaml`.
+/// Backed by `app_badge_plus` (Phase 3b.2) — iOS / Android / macOS.
+/// Tests override this with [NoOpAppBadgePlatform] or a recording fake
+/// to keep the platform channel out of the test loop.
 final appBadgePlatformProvider = Provider<IAppBadgePlatform>(
-  (_) => const NoOpAppBadgePlatform(),
+  (_) => const AppBadgePlusPlatform(),
 );
 
 /// App lifecycle source — `Widgets`-backed in prod, fake in tests.
