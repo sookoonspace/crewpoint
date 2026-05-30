@@ -112,11 +112,15 @@ void main() {
         find.byKey(const Key('notifSettings.taskUpdates.tile')),
         findsOneWidget,
       );
+      expect(
+        find.byKey(const Key('notifSettings.payments.tile')),
+        findsOneWidget,
+      );
 
       final tiles = tester
           .widgetList<SwitchListTile>(find.byType(SwitchListTile))
           .toList();
-      expect(tiles.length, 3);
+      expect(tiles.length, 4);
       expect(tiles.every((t) => t.value == true), isTrue);
     });
 
@@ -144,9 +148,10 @@ void main() {
       final tiles = tester
           .widgetList<SwitchListTile>(find.byType(SwitchListTile))
           .toList();
-      // Layout order: [master, urgentChat, taskUpdates].
+      // Layout order: [master, urgentChat, taskUpdates, payments].
       expect(tiles[1].onChanged, isNull);
       expect(tiles[2].onChanged, isNull);
+      expect(tiles[3].onChanged, isNull);
     });
 
     testWidgets('toggling taskUpdates OFF persists taskUpdates=false', (
@@ -163,6 +168,23 @@ void main() {
       // Other flags stay true — copyWith semantics.
       expect(repo.updates.last.pushEnabled, isTrue);
       expect(repo.updates.last.urgentChat, isTrue);
+    });
+
+    testWidgets('toggling payments OFF persists payments=false', (
+      tester,
+    ) async {
+      final repo = _InMemoryUserRepo();
+      await _pumpScreen(tester, repo);
+
+      await tester.tap(find.byKey(const Key('notifSettings.payments.tile')));
+      await tester.pumpAndSettle();
+
+      expect(repo.updates, isNotEmpty);
+      expect(repo.updates.last.payments, isFalse);
+      // Other flags stay true — copyWith semantics.
+      expect(repo.updates.last.pushEnabled, isTrue);
+      expect(repo.updates.last.urgentChat, isTrue);
+      expect(repo.updates.last.taskUpdates, isTrue);
     });
   });
 }

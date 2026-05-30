@@ -17,3 +17,4 @@ export {markTaskComplete} from "./events/markTaskComplete";
 export {disputeSettlement} from "./events/disputeSettlement";
 export {onUrgentMessageCreated} from "./events/onUrgentMessageCreated";
 export {onTaskAssigned} from "./events/onTaskAssigned";
+export {onExpenseCreated} from "./events/onExpenseCreated";

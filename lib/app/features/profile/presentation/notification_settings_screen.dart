@@ -111,6 +111,15 @@ class _PrefsForm extends ConsumerWidget {
           onChanged: (v) =>
               _safeUpdate(context, () => controller.setTaskUpdates(v)),
         ),
+        AppSwitchTile(
+          key: const Key('notifSettings.payments.tile'),
+          title: 'Payments',
+          subtitle: 'New expenses and settlement disputes.',
+          value: prefs.payments,
+          enabled: prefs.pushEnabled,
+          onChanged: (v) =>
+              _safeUpdate(context, () => controller.setPayments(v)),
+        ),
       ],
     );
   }

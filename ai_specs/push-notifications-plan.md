@@ -144,16 +144,16 @@ Push notifications roadmap V1→V3. FCM scaffolding (`FcmGateway`/`FcmService`/`
 ### Phase 3c.2: V2 — `payments` category end-to-end (`onExpenseCreated`)
 
 - **Goal**: prove the new channel infra by shipping the payments category end-to-end. Recipients = event members minus payer.
-- [ ] `lib/app/features/profile/domain/models/notification_prefs.dart` — add `payments` field (default true); round-trip via `fromMap` / `toMap` / `copyWith`.
-- [ ] `lib/app/features/profile/application/notification_prefs_provider.dart` — `setPayments(bool)` action.
-- [ ] `lib/app/features/profile/presentation/notification_settings_screen.dart` — "Payments" tile under Categories; disabled when master is OFF.
-- [ ] `functions/src/notifications/sendPush.ts` — extend `NotificationCategory` with `expense_added`; pref key `payments`; channel `crewpoint_payments`; thread id `payments`.
-- [ ] `functions/src/events/onExpenseCreated.ts` — Firestore `onDocumentCreated` on `events/{eid}/expenses/{xid}`. Excludes `paidBy` from recipients. Deep-link `/dashboard/event/{eid}/budget`.
-- [ ] `functions/src/index.ts` — export `onExpenseCreated`.
-- [ ] TDD: `NotificationPrefs.payments` round-trips + copyWith respects it.
-- [ ] TDD: `NotificationSettingsScreen` toggling payments persists.
-- [ ] TDD: `sendCategorizedPush` writes `crewpoint_payments` channel for `category: 'expense_added'`.
-- [ ] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`.
+- [x] `lib/app/features/profile/domain/models/notification_prefs.dart` — add `payments` field (default true); round-trip via `fromMap` / `toMap` / `copyWith`.
+- [x] `lib/app/features/profile/application/notification_prefs_provider.dart` — `setPayments(bool)` action.
+- [x] `lib/app/features/profile/presentation/notification_settings_screen.dart` — "Payments" tile under Categories; disabled when master is OFF.
+- [x] `functions/src/notifications/sendPush.ts` — extend `NotificationCategory` with `expense_added`; pref key `payments`; channel `crewpoint_payments`; thread id `payments`.
+- [x] `functions/src/events/onExpenseCreated.ts` — Firestore `onDocumentCreated` on `events/{eid}/expenses/{xid}`. Excludes payer from recipients (Firestore field is `payerId`). Deep-link `/dashboard/event/{eid}/budget`. Includes settlement payments (`isPayment: true`) — the dispute path lives in 3c.3.
+- [x] `functions/src/index.ts` — export `onExpenseCreated`.
+- [x] TDD: `NotificationPrefs.payments` round-trips + copyWith respects it. *(`notification_prefs_test.dart` — 4 new tests cover defaults, fromMap, toMap, copyWith.)*
+- [x] TDD: `NotificationSettingsScreen` toggling payments persists. *(`notification_settings_screen_test.dart` — "toggling payments OFF persists payments=false".)*
+- [x] TDD: `sendCategorizedPush` writes `crewpoint_payments` channel for `category: 'expense_added'`. *(`functions/test/notifications/sendPush.test.ts` — 3 routing-table guards covering all 3 categories.)*
+- [x] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`. *(1 pre-existing TableMigration warning; 707 flutter tests pass, 4 skipped; 78 CF tests pass.)*
 
 ### Phase 3c.3: V2 — `onSettlementDisputed` CF (reuses `payments` category)
 

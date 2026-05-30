@@ -54,6 +54,7 @@ void main() {
         'pushEnabled': true,
         'urgentChat': true,
         'taskUpdates': true,
+        'payments': true,
       });
     });
 
@@ -62,12 +63,14 @@ void main() {
         pushEnabled: false,
         urgentChat: false,
         taskUpdates: false,
+        payments: false,
       );
 
       expect(prefs.toMap(), {
         'pushEnabled': false,
         'urgentChat': false,
         'taskUpdates': false,
+        'payments': false,
       });
     });
   });
@@ -90,6 +93,42 @@ void main() {
 
       expect(next.urgentChat, isTrue);
       expect(next.taskUpdates, isFalse);
+    });
+
+    test('copyWith payments leaves urgentChat + taskUpdates untouched', () {
+      const prefs = NotificationPrefs();
+
+      final next = prefs.copyWith(payments: false);
+
+      expect(next.pushEnabled, isTrue);
+      expect(next.urgentChat, isTrue);
+      expect(next.taskUpdates, isTrue);
+      expect(next.payments, isFalse);
+    });
+  });
+
+  group('NotificationPrefs.payments round-trip', () {
+    test('defaults to true (opt-in)', () {
+      const prefs = NotificationPrefs();
+
+      expect(prefs.payments, isTrue);
+    });
+
+    test('fromMap honours explicit false', () {
+      final prefs = NotificationPrefs.fromMap(const {'payments': false});
+
+      expect(prefs.payments, isFalse);
+    });
+
+    test('toMap serialises payments alongside other flags', () {
+      const prefs = NotificationPrefs(payments: false);
+
+      expect(prefs.toMap(), {
+        'pushEnabled': true,
+        'urgentChat': true,
+        'taskUpdates': true,
+        'payments': false,
+      });
     });
   });
 }
