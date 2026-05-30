@@ -99,13 +99,18 @@ Push notifications roadmap V1→V3. FCM scaffolding (`FcmGateway`/`FcmService`/`
 - [x] TDD: service writes `total` to the badge platform; clears on `update(0)` / negative; resume re-applies current total; non-resumed lifecycle events ignored; dispose cancels the subscription. *(9 tests in `app_badge_service_test.dart`.)*
 - [x] Verify: `flutter analyze` && `flutter test`. *(1 pre-existing warning; 697 flutter tests pass, 4 skipped.)*
 
-### Phase 3b.2: V2 — OS badge real-package swap (deferred)
+### Phase 3b.2: V2 — OS badge real-package swap (app_badge_plus)
 
-- **Goal**: replace `NoOpAppBadgePlatform` with a concrete adapter so the OS launcher actually paints the badge.
-- [ ] `pubspec.yaml` — add the chosen package (`flutter_app_badge_control` once it stabilises, or whatever the V2 ecosystem settles on).
-- [ ] `lib/app/core/services/app_badge_service.dart` — add a 5-line `class FlutterAppBadgeControlPlatform implements IAppBadgePlatform { ... }` adapter.
-- [ ] `lib/app/core/providers.dart` — override `appBadgePlatformProvider` with the adapter.
-- [ ] Manual smoke on real iOS device + an Android OEM launcher (Samsung One UI / Pixel) since OEM badge behaviour varies wildly.
+- **Goal**: replace `NoOpAppBadgePlatform` with a concrete `app_badge_plus 1.2.10`-backed adapter so the OS launcher actually paints the badge.
+- **Package decision**: `app_badge_plus` ([pub.dev/packages/app_badge_plus](https://pub.dev/packages/app_badge_plus)) — 160/160 pub points, ~190k downloads/30d, MIT, dart3-compatible, supports iOS / Android / macOS. Public API is a single `AppBadgePlus.updateBadge(int count)` (count=0 clears) + `AppBadgePlus.isSupported()`.
+- [ ] `pubspec.yaml` — add `app_badge_plus: ^1.2.10`. Run `flutter pub get`; macOS / iOS pod install happens on next build.
+- [ ] `lib/app/core/services/app_badge_service.dart` — add a small `class AppBadgePlusPlatform implements IAppBadgePlatform` adapter (`setBadgeCount(count) → updateBadge(count)`; `clearBadge() → updateBadge(0)`). Single source file, no interface change.
+- [ ] `lib/app/core/providers.dart` — override `appBadgePlatformProvider` to construct `AppBadgePlusPlatform()` instead of `NoOpAppBadgePlatform()`.
+- [ ] `android/app/src/main/AndroidManifest.xml` — declare OEM badge permissions (`com.sec.android.provider.badge.permission.{READ,WRITE}` for Samsung; `com.huawei.android.launcher.permission.{CHANGE_BADGE,READ_SETTINGS,WRITE_SETTINGS}` for Huawei; HTC + Sony + Apex + Solid per package README). Without these, Samsung / Huawei devices silently no-op.
+- [ ] *Permissions already covered:* iOS notification authorization + Android 13+ `POST_NOTIFICATIONS` runtime permission are both requested today by `FcmService.attach()` (Phase 1), so no extra prompt is needed for the badge path.
+- [ ] TDD: `AppBadgePlusPlatform.setBadgeCount(N)` invokes `AppBadgePlus.updateBadge(N)`; `clearBadge()` invokes `updateBadge(0)`. *(Requires a platform-channel mock via `TestDefaultBinaryMessengerBinding` — the test exercises the adapter contract, not the package internals.)*
+- [ ] Manual smoke matrix: real iOS device, Pixel (AOSP), Samsung One UI (OEM provider permission test). Document any per-OEM caveats in `docs/` if surfaced.
+- [ ] Verify: `flutter analyze` && `flutter test`.
 
 ### Phase 3c: V2 — remaining categories + Android channels + iOS actions (deferred)
 
