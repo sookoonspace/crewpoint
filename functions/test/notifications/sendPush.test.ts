@@ -34,4 +34,16 @@ describe('sendCategorizedPush CATEGORY_CONFIG', () => {
     );
     expect(CATEGORY_CONFIG.expense_added.prefKey).toBe('payments');
   });
+
+  test('settlement_disputed reuses the payments channel + pref', () => {
+    expect(CATEGORY_CONFIG.settlement_disputed.androidChannelId).toBe(
+      'crewpoint_payments'
+    );
+    expect(CATEGORY_CONFIG.settlement_disputed.prefKey).toBe('payments');
+    // Shares the iOS thread with expense_added so payment activity in an
+    // event groups under a single notification stack.
+    expect(CATEGORY_CONFIG.settlement_disputed.iosThreadId).toBe(
+      CATEGORY_CONFIG.expense_added.iosThreadId
+    );
+  });
 });

@@ -158,11 +158,12 @@ Push notifications roadmap V1→V3. FCM scaffolding (`FcmGateway`/`FcmService`/`
 ### Phase 3c.3: V2 — `onSettlementDisputed` CF (reuses `payments` category)
 
 - **Goal**: notify the counterparty when a settlement gets disputed.
-- [ ] `functions/src/notifications/sendPush.ts` — add `settlement_disputed` category (decide whether to reuse the `payments` thread id or split — leaning reuse).
-- [ ] `functions/src/events/onSettlementDisputed.ts` — Firestore trigger on settlement-status transition; recipient = counterparty of `disputedBy`; deep-link `/dashboard/event/{eid}/budget`.
-- [ ] `functions/src/index.ts` — export.
-- [ ] TDD: dispute by debtor pushes only the creditor; dispute by creditor pushes only the debtor.
-- [ ] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`.
+- [x] `functions/src/notifications/sendPush.ts` — added `settlement_disputed` category. Reuses `payments` pref + `crewpoint_payments` Android channel + `payments` iOS thread id (groups under the same "payment activity" stack as `expense_added`).
+- [x] `functions/src/events/onSettlementDisputed.ts` — Firestore `onDocumentCreated` on `events/{eventId}/messages/{messageId}` filtered to `kind === 'settlement_disputed'`. Recipient = counterparty of `senderId` via the `pickDisputeRecipient(disputerId, payerId, payeeId)` helper. Deep-link `/dashboard/event/{eid}/budget`. *(The original settlement is deleted by `disputeSettlement`, so the trigger reads `payerId` + `payeeId` snapshots persisted on the chat notice — see callable change below.)*
+- [x] `functions/src/events/disputeSettlement.ts` — chat notice now snapshots `payerId` + `payeeId` so `onSettlementDisputed` can resolve the counterparty without the deleted expense doc.
+- [x] `functions/src/index.ts` — export `onSettlementDisputed`.
+- [x] TDD: dispute by debtor pushes only the creditor; dispute by creditor pushes only the debtor. *(`functions/test/events/onSettlementDisputed.test.ts` — 3 tests pin `pickDisputeRecipient` and its defensive null-fallback. New `sendPush.test.ts` guard pins channel + pref reuse.)*
+- [x] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`. *(1 pre-existing TableMigration warning; 707 flutter tests pass, 4 skipped; 82 CF tests pass.)*
 
 ### Phase 3c.4: V2 — `eventUpdates` category end-to-end (`onMemberJoined`)
 
