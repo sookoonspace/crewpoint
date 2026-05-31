@@ -53,4 +53,14 @@ describe('sendCategorizedPush CATEGORY_CONFIG', () => {
     );
     expect(CATEGORY_CONFIG.member_joined.prefKey).toBe('eventUpdates');
   });
+
+  test('task_due shares the tasks channel + pref with task_assigned', () => {
+    expect(CATEGORY_CONFIG.task_due.androidChannelId).toBe('crewpoint_tasks');
+    expect(CATEGORY_CONFIG.task_due.prefKey).toBe('taskUpdates');
+    // Shares the iOS thread with task_assigned so task activity groups
+    // under a single notification stack.
+    expect(CATEGORY_CONFIG.task_due.iosThreadId).toBe(
+      CATEGORY_CONFIG.task_assigned.iosThreadId
+    );
+  });
 });

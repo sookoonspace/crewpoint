@@ -180,12 +180,12 @@ Push notifications roadmap V1→V3. FCM scaffolding (`FcmGateway`/`FcmService`/`
 ### Phase 3c.5: V2 — `onTaskDueScheduled` (Pub/Sub scheduled CF)
 
 - **Goal**: due-date reminders for assigned tasks. First scheduled CF in the project — establishes the Pub/Sub trigger pattern + idempotency convention.
-- [ ] `functions/src/notifications/sendPush.ts` — add `task_due` category sharing the `taskUpdates` pref + `crewpoint_tasks` channel.
-- [ ] `functions/src/events/onTaskDueScheduled.ts` — `onSchedule('every 15 minutes')`. Scans tasks where `dueAt within next 24h && !reminderSent && status != done`. Pushes via `sendCategorizedPush(category: 'task_due')`. Sets `reminderSent=true` atomically.
-- [ ] `functions/src/index.ts` — export.
-- [ ] TDD: scan picks the right window; idempotent (`reminderSent=true` prevents re-push); skips done tasks.
-- [ ] **Manual**: enable Pub/Sub API in GCP project (dev/stg/prod); set cost-monitoring budget alert.
-- [ ] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`.
+- [x] `functions/src/notifications/sendPush.ts` — added `task_due` category sharing the `taskUpdates` pref + `crewpoint_tasks` channel + `tasks` iOS thread id (groups with `task_assigned` under one notification stack).
+- [x] `functions/src/events/onTaskDueScheduled.ts` — `onSchedule('every 15 minutes')`. Scans `collectionGroup('tasks')` where `dueDate ∈ [now, now+24h]`; filters `status === 'done'`, `reminderSent === true`, and missing `assigneeId` in-memory (cuts the required Firestore index down to a single `dueDate asc` composite). Flags `reminderSent: true` *before* the FCM send so a transient send failure leaves the user with no reminder rather than a double-ping. Field name: `dueDate` (Firestore Timestamp) — matches the Dart-side `TaskModel.dueDate` repo write at `expense_repository.dart:465`.
+- [x] `functions/src/index.ts` — export `onTaskDueScheduled`.
+- [x] TDD: scan picks the right window; idempotent (`reminderSent=true` prevents re-push); skips done tasks. *(`functions/test/events/onTaskDueScheduled.test.ts` — 11 tests: 5 `isDueSoon` cases (in-window, upper edge, past window, past dueDate, null) + 6 `shouldSendReminder` cases (todo, inProgress, done, reminderSent=true, no assignee, undefined-reminderSent legacy doc). Routing guard added to `sendPush.test.ts`.)*
+- [ ] **Manual**: enable Pub/Sub API in GCP project (dev/stg/prod); set cost-monitoring budget alert. First deploy will also print the URL to create the required Firestore composite index (`collectionGroup: tasks, fields: dueDate asc`). *(Out of session scope.)*
+- [x] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`. *(1 pre-existing TableMigration warning; 711 flutter tests pass, 4 skipped; 100 CF tests pass.)*
 
 ### Phase 3c.6: V2 — iOS interactive notification actions
 

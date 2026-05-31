@@ -11,14 +11,16 @@ const FCM_BATCH_SIZE = 500;
  *
  * Phase 3a shipped `chat_urgent` + `task_assigned`; Phase 3c.2 added
  * `expense_added`; Phase 3c.3 added `settlement_disputed` (reuses payments
- * routing); Phase 3c.4 adds `member_joined`; later phases add `task_due`.
+ * routing); Phase 3c.4 added `member_joined`; Phase 3c.5 adds `task_due`
+ * (reuses task routing).
  */
 export type NotificationCategory =
   | "chat_urgent"
   | "task_assigned"
   | "expense_added"
   | "settlement_disputed"
-  | "member_joined";
+  | "member_joined"
+  | "task_due";
 
 interface CategoryConfig {
   /** Field on `notificationPrefs` that gates this category. */
@@ -56,6 +58,13 @@ const CATEGORY_CONFIG: Record<NotificationCategory, CategoryConfig> = {
     prefKey: "eventUpdates",
     androidChannelId: "crewpoint_events",
     iosThreadId: "events",
+  },
+  task_due: {
+    prefKey: "taskUpdates",
+    androidChannelId: "crewpoint_tasks",
+    // Shares the iOS thread with task_assigned so task activity in an
+    // event groups under a single notification stack.
+    iosThreadId: "tasks",
   },
 };
 
