@@ -190,13 +190,15 @@ Push notifications roadmap V1→V3. FCM scaffolding (`FcmGateway`/`FcmService`/`
 ### Phase 3c.6: V2 — iOS interactive notification actions
 
 - **Goal**: `MARK_DONE` action on task pushes; `VIEW_EXPENSE` action on payments pushes. Lets users act without opening the app.
-- [ ] `ios/Runner/AppDelegate.swift` — register `UNNotificationCategory` set: `task_assigned` / `task_due` → `MARK_DONE`; `expense_added` / `settlement_disputed` → `VIEW_EXPENSE`.
-- [ ] `functions/src/notifications/sendPush.ts` — set `apns.payload.aps.category` per notification category so iOS resolves the right action set.
-- [ ] `lib/app/core/services/fcm_handler.dart` — handle `data['action']=='mark_done'` (write task done via repo).
-- [ ] TDD: handler maps `action: 'mark_done'` to a task-done write; ignores unknown actions.
-- [ ] Robot: assignee receives task-assigned push → tap → lands on task detail → mark done from notification action → task state updates.
-- [ ] **Manual**: real-device iOS smoke (notification action buttons can't run in widget tests).
-- [ ] Verify: `flutter analyze` && `flutter test`.
+- [x] `ios/Runner/AppDelegate.swift` — registers `TASK_CATEGORY` (MARK_DONE) and `PAYMENT_CATEGORY` (VIEW_EXPENSE) via `UNNotificationCategory` at `didFinishLaunchingWithOptions`. Overrides `userNotificationCenter(_:didReceive:_:)` to forward the response's `actionIdentifier` (mapped to lowercase `mark_done` / `view_expense`) over a new `crewpoint/notification_actions` `MethodChannel`. Body taps + dismissals are not forwarded — `firebase_messaging`'s `onMessageOpenedApp` already covers the deep-link path.
+- [x] `functions/src/notifications/sendPush.ts` — `CategoryConfig` gains optional `apnsCategory`; tasks bind `TASK_CATEGORY`, payments bind `PAYMENT_CATEGORY`. `chat_urgent` + `member_joined` omit it (no actions). `apns.payload.aps.category` set when the config carries a value.
+- [x] `lib/app/core/services/fcm_handler.dart` — new optional `markTaskDone({eventId, taskId})` callback + `handleAction(data:)` dispatcher. Reads `data['action']`; `mark_done` → invokes the callback with the event/task ids; unknown actions no-op so a future server-side action doesn't crash older builds.
+- [x] `lib/app/core/services/fcm_handler_bootstrap.dart` — accepts an optional `onNotificationAction: Stream<Map<String,String>>` and routes each event to `handler.handleAction(...)`. `dispose()` cancels the new subscription.
+- [x] `lib/main.dart` — `_notificationActionStream()` adapts the iOS MethodChannel into the Dart stream; `_markTaskDoneFromNotification(...)` fires the existing `markTaskComplete` callable fire-and-forget (errors logged, never thrown — never crash the action callback path).
+- [x] TDD: handler maps `action: 'mark_done'` to a task-done write; ignores unknown actions. *(`fcm_handler_test.dart` — 3 new tests cover dispatch + unknown-action + missing-eventId/taskId fallback. `fcm_handler_bootstrap_test.dart` adds an end-to-end stream → handler → callback test using a synthetic action stream.)* Routing-table guards in `sendPush.test.ts` pin `TASK_CATEGORY` / `PAYMENT_CATEGORY` apnsCategory and confirm action-less categories omit it.
+- [ ] Robot: assignee receives task-assigned push → tap → lands on task detail → mark done from notification action → task state updates. *(Deferred — depends on robot harness work tracked in `todo.md:40`; the Dart-side dispatch is unit-covered above.)*
+- [ ] **Manual**: real-device iOS smoke (notification action buttons can't run in widget tests). The native delegate bridge in `AppDelegate.swift` is unverified outside of compile; first build on a real device must confirm: (a) `apns.payload.aps.category` shows the action buttons, (b) tapping `MARK_DONE` fires `crewpoint/notification_actions` `actionTapped`, (c) `markTaskComplete` succeeds. *(Out of session scope.)*
+- [x] Verify: `flutter analyze` && `flutter test`. *(1 pre-existing TableMigration warning; 715 flutter tests pass, 4 skipped; 103 CF tests pass.)*
 
 ### Phase 4: V2.1 — critical notifications (urgent bypass DND)
 

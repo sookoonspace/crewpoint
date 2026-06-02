@@ -63,4 +63,27 @@ describe('sendCategorizedPush CATEGORY_CONFIG', () => {
       CATEGORY_CONFIG.task_assigned.iosThreadId
     );
   });
+
+  describe('apnsCategory routing (Phase 3c.6)', () => {
+    test('task_assigned + task_due bind TASK_CATEGORY (MARK_DONE action set)', () => {
+      expect(CATEGORY_CONFIG.task_assigned.apnsCategory).toBe('TASK_CATEGORY');
+      expect(CATEGORY_CONFIG.task_due.apnsCategory).toBe('TASK_CATEGORY');
+    });
+
+    test('expense_added + settlement_disputed bind PAYMENT_CATEGORY (VIEW_EXPENSE action set)', () => {
+      expect(CATEGORY_CONFIG.expense_added.apnsCategory).toBe(
+        'PAYMENT_CATEGORY'
+      );
+      expect(CATEGORY_CONFIG.settlement_disputed.apnsCategory).toBe(
+        'PAYMENT_CATEGORY'
+      );
+    });
+
+    test('categories without actions omit apnsCategory', () => {
+      // chat_urgent + member_joined have no action buttons; iOS renders
+      // them as plain notifications.
+      expect(CATEGORY_CONFIG.chat_urgent.apnsCategory).toBeUndefined();
+      expect(CATEGORY_CONFIG.member_joined.apnsCategory).toBeUndefined();
+    });
+  });
 });

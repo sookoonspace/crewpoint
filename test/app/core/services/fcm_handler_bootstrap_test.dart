@@ -141,5 +141,46 @@ void main() {
       expect(banners, isEmpty);
       expect(taps, isEmpty);
     });
+
+    test(
+      'onNotificationAction event invokes handler.handleAction with mark_done',
+      () async {
+        final actionController =
+            StreamController<Map<String, String>>.broadcast();
+        addTearDown(actionController.close);
+
+        final doneCalls = <({String eventId, String taskId})>[];
+        final actionHandler = FcmHandler(
+          currentRoute: () => '/dashboard',
+          showBanner: ({required title, required body, required deepLink}) {},
+          navigateTo: (_) {},
+          markTaskDone: ({required eventId, required taskId}) {
+            doneCalls.add((eventId: eventId, taskId: taskId));
+          },
+        );
+
+        final bootstrap = FcmHandlerBootstrap(
+          handler: actionHandler,
+          onMessage: onMessageController.stream,
+          onMessageOpenedApp: onOpenedController.stream,
+          getInitialMessage: () async => null,
+          onNotificationAction: actionController.stream,
+        );
+        await bootstrap.start();
+
+        actionController.add(const {
+          'action': 'mark_done',
+          'eventId': 'evt-1',
+          'taskId': 't-42',
+        });
+        await Future<void>.delayed(Duration.zero);
+
+        expect(doneCalls, hasLength(1));
+        expect(doneCalls.first.eventId, 'evt-1');
+        expect(doneCalls.first.taskId, 't-42');
+
+        await bootstrap.dispose();
+      },
+    );
   });
 }

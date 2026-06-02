@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -120,6 +122,7 @@ class _MyAppState extends ConsumerState<MyApp> {
       currentRoute: () => ref.read(currentRouteProvider),
       showBanner: _showForegroundBanner,
       navigateTo: _router.go,
+      markTaskDone: _markTaskDoneFromNotification,
     );
     final messaging = FirebaseMessaging.instance;
     final bootstrap = FcmHandlerBootstrap(
@@ -127,9 +130,59 @@ class _MyAppState extends ConsumerState<MyApp> {
       onMessage: FirebaseMessaging.onMessage,
       onMessageOpenedApp: FirebaseMessaging.onMessageOpenedApp,
       getInitialMessage: messaging.getInitialMessage,
+      onNotificationAction: _notificationActionStream(),
     );
     _fcmBootstrap = bootstrap;
     await bootstrap.start();
+  }
+
+  /// Adapts the native `crewpoint/notification_actions` MethodChannel
+  /// (set up in `ios/Runner/AppDelegate.swift`) into a Dart stream of
+  /// `{action, eventId, taskId, deepLink}` payloads. Android currently
+  /// has no analogue — notification actions there route through
+  /// PendingIntent + the existing deep-link path.
+  Stream<Map<String, String>> _notificationActionStream() {
+    final controller = StreamController<Map<String, String>>.broadcast();
+    const channel = MethodChannel('crewpoint/notification_actions');
+    channel.setMethodCallHandler((call) async {
+      if (call.method != 'actionTapped') return null;
+      final args = call.arguments;
+      if (args is! Map) return null;
+      final data = <String, String>{
+        for (final entry in args.entries)
+          entry.key.toString(): entry.value?.toString() ?? '',
+      };
+      controller.add(data);
+      return null;
+    });
+    return controller.stream;
+  }
+
+  /// Bridges the iOS `MARK_DONE` notification action to the existing
+  /// `markTaskComplete` Cloud Function. Fire-and-forget — failures are
+  /// logged so a slow / lost network doesn't crash the app delegate
+  /// callback path on iOS.
+  void _markTaskDoneFromNotification({
+    required String eventId,
+    required String taskId,
+  }) {
+    unawaited(
+      FirebaseFunctions.instance
+          .httpsCallable('markTaskComplete')
+          .call<Map<String, dynamic>>({'eventId': eventId, 'taskId': taskId})
+          .then(
+            (_) => developer.log(
+              'mark_done dispatched for $eventId/$taskId',
+              name: 'fcm',
+            ),
+            onError: (Object e, StackTrace st) => developer.log(
+              'mark_done failed for $eventId/$taskId',
+              error: e,
+              stackTrace: st,
+              name: 'fcm',
+            ),
+          ),
+    );
   }
 
   void _showForegroundBanner({

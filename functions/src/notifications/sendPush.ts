@@ -29,6 +29,13 @@ interface CategoryConfig {
   androidChannelId: string;
   /** APNs `aps.thread-id` for iOS grouping. */
   iosThreadId: string;
+  /**
+   * APNs `aps.category` — resolves to a `UNNotificationCategory` registered
+   * in `ios/Runner/AppDelegate.swift` so iOS shows the matching action set
+   * (e.g. MARK_DONE on task notifications). Omitted for categories that
+   * don't ship an action — iOS then renders a plain notification.
+   */
+  apnsCategory?: string;
 }
 
 const CATEGORY_CONFIG: Record<NotificationCategory, CategoryConfig> = {
@@ -41,11 +48,13 @@ const CATEGORY_CONFIG: Record<NotificationCategory, CategoryConfig> = {
     prefKey: "taskUpdates",
     androidChannelId: "crewpoint_tasks",
     iosThreadId: "tasks",
+    apnsCategory: "TASK_CATEGORY",
   },
   expense_added: {
     prefKey: "payments",
     androidChannelId: "crewpoint_payments",
     iosThreadId: "payments",
+    apnsCategory: "PAYMENT_CATEGORY",
   },
   settlement_disputed: {
     prefKey: "payments",
@@ -53,6 +62,7 @@ const CATEGORY_CONFIG: Record<NotificationCategory, CategoryConfig> = {
     // Shares the iOS thread with expense_added so payment activity in an
     // event groups under a single notification stack.
     iosThreadId: "payments",
+    apnsCategory: "PAYMENT_CATEGORY",
   },
   member_joined: {
     prefKey: "eventUpdates",
@@ -65,6 +75,7 @@ const CATEGORY_CONFIG: Record<NotificationCategory, CategoryConfig> = {
     // Shares the iOS thread with task_assigned so task activity in an
     // event groups under a single notification stack.
     iosThreadId: "tasks",
+    apnsCategory: "TASK_CATEGORY",
   },
 };
 
@@ -170,6 +181,7 @@ export async function sendCategorizedPush(
         payload: {
           aps: {
             "thread-id": cfg.iosThreadId,
+            ...(cfg.apnsCategory ? {category: cfg.apnsCategory} : {}),
           },
         },
       },

@@ -17,18 +17,29 @@ class FcmHandlerBootstrap {
     required Stream<RemoteMessage> onMessage,
     required Stream<RemoteMessage> onMessageOpenedApp,
     required Future<RemoteMessage?> Function() getInitialMessage,
+    Stream<Map<String, String>>? onNotificationAction,
   }) : _handler = handler,
        _onMessage = onMessage,
        _onMessageOpenedApp = onMessageOpenedApp,
-       _getInitialMessage = getInitialMessage;
+       _getInitialMessage = getInitialMessage,
+       _onNotificationAction = onNotificationAction;
 
   final FcmHandler _handler;
   final Stream<RemoteMessage> _onMessage;
   final Stream<RemoteMessage> _onMessageOpenedApp;
   final Future<RemoteMessage?> Function() _getInitialMessage;
 
+  /// iOS-only stream of notification-action events. Wired in `main.dart`
+  /// to the `crewpoint/notification_actions` MethodChannel; each event
+  /// is the `userInfo`-derived payload from the native delegate (see
+  /// `ios/Runner/AppDelegate.swift`). Null on platforms without action
+  /// buttons (Android handles actions via PendingIntent + the existing
+  /// `deepLink` path).
+  final Stream<Map<String, String>>? _onNotificationAction;
+
   StreamSubscription<RemoteMessage>? _onMessageSub;
   StreamSubscription<RemoteMessage>? _onOpenedSub;
+  StreamSubscription<Map<String, String>>? _onActionSub;
 
   /// Subscribes to the two streams and processes the cold-start tap (if
   /// any). Safe to await once — re-calling start without dispose will leak
@@ -44,18 +55,23 @@ class FcmHandlerBootstrap {
     _onOpenedSub = _onMessageOpenedApp.listen((msg) {
       _handler.handleTap(data: _stringifyData(msg.data));
     });
+    _onActionSub = _onNotificationAction?.listen((data) {
+      _handler.handleAction(data: data);
+    });
     final initial = await _getInitialMessage();
     if (initial != null) {
       _handler.handleTap(data: _stringifyData(initial.data));
     }
   }
 
-  /// Cancels both stream subscriptions. Idempotent.
+  /// Cancels every stream subscription. Idempotent.
   Future<void> dispose() async {
     await _onMessageSub?.cancel();
     await _onOpenedSub?.cancel();
+    await _onActionSub?.cancel();
     _onMessageSub = null;
     _onOpenedSub = null;
+    _onActionSub = null;
   }
 
   /// `RemoteMessage.data` is `Map<String, dynamic>` on the platform channel
