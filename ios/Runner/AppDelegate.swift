@@ -26,9 +26,26 @@ import FirebaseAuth
   private static let viewExpenseActionId = "VIEW_EXPENSE"
 
   /// `MethodChannel` carrying notification-action events to Dart.
-  /// Established lazily on the first action tap so we can attach to the
-  /// implicit Flutter engine after `didInitializeImplicitFlutterEngine`.
+  /// Established lazily on the first action tap — at app launch the
+  /// implicit `FlutterViewController` may not be attached yet, so we
+  /// resolve the binary messenger from `window.rootViewController` on
+  /// demand and cache the channel once we have a working messenger.
   private var notificationActionChannel: FlutterMethodChannel?
+
+  private func resolveNotificationActionChannel() -> FlutterMethodChannel? {
+    if let cached = notificationActionChannel { return cached }
+    guard
+      let controller = window?.rootViewController as? FlutterViewController
+    else {
+      return nil
+    }
+    let channel = FlutterMethodChannel(
+      name: "crewpoint/notification_actions",
+      binaryMessenger: controller.binaryMessenger
+    )
+    notificationActionChannel = channel
+    return channel
+  }
 
   override func application(
     _ application: UIApplication,
@@ -64,14 +81,6 @@ import FirebaseAuth
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
-    // Wire the notification-action bridge. Falls back silently if the
-    // bridge type doesn't expose a binaryMessenger we can use — the
-    // category registration above still works, the action just won't
-    // forward to Dart on that build.
-    notificationActionChannel = FlutterMethodChannel(
-      name: "crewpoint/notification_actions",
-      binaryMessenger: engineBridge.binaryMessenger
-    )
   }
 
   // MARK: - UNNotificationCategory registration
@@ -127,7 +136,7 @@ import FirebaseAuth
       let normalized = mapActionIdentifier(actionId)
     {
       let userInfo = response.notification.request.content.userInfo
-      notificationActionChannel?.invokeMethod(
+      resolveNotificationActionChannel()?.invokeMethod(
         "actionTapped",
         arguments: [
           "action": normalized,
