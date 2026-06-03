@@ -109,6 +109,7 @@ class FcmService {
       }
       _currentToken = token;
       await _userRepository.addFcmToken(uid: uid, token: token);
+      log('FCM token attached for $uid (${token.length} chars)', name: 'fcm');
       return true;
     } catch (e, st) {
       log('FCM attach failed', error: e, stackTrace: st, name: 'fcm');
