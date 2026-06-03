@@ -50,33 +50,58 @@ class FcmService {
       // inside the adapter; failure is swallowed there too — channel
       // setup must never block token registration.
       await _notificationChannels.registerAll();
+
+      // Wire the refresh listener BEFORE the initial token fetch so a
+      // first-launch APNs race on iOS still lands the token. The OS
+      // may take several seconds (sometimes 10s+) to hand back an APNs
+      // token after permission grant; getToken() in that window throws
+      // `apns-token-not-set`, but `onTokenRefresh` fires once FCM has
+      // both APNs + its own token registered. The listener writes the
+      // token whenever it eventually arrives.
+      _attachedUid = uid;
+      await _refreshSub?.cancel();
+      _refreshSub = _gateway.onTokenRefresh.listen((newToken) async {
+        _currentToken = newToken;
+        try {
+          await _userRepository.addFcmToken(uid: uid, token: newToken);
+          log('FCM token written via refresh for $uid', name: 'fcm');
+        } catch (e, st) {
+          log(
+            'FCM refresh write failed for $uid',
+            error: e,
+            stackTrace: st,
+            name: 'fcm',
+          );
+        }
+      });
+
       // iOS: APNs token must resolve before getToken(). The gateway
       // polls briefly and returns null when APNs can't deliver one
-      // (most commonly the iOS Simulator). Skip the FCM token fetch in
-      // that case so we don't hit `apns-token-not-set` from inside the
-      // plugin. On Android / web the gateway returns a sentinel and we
+      // (iOS Simulator, or a first-launch race that exceeds the poll
+      // budget). The refresh listener above is already in place to
+      // catch the eventual token, so we just log and return false on
+      // null. On Android / web the gateway returns a sentinel and we
       // fall straight through.
       final apnsToken = await _gateway.getApnsToken();
       if (apnsToken == null) {
         log(
-          'FCM attach skipped — APNs token unavailable (simulator or '
-          'first-launch race) for $uid',
+          'FCM initial token deferred for $uid — APNs not ready yet; '
+          'refresh listener will catch it once registered',
           name: 'fcm',
         );
         return false;
       }
       final token = await _gateway.getToken();
       if (token == null) {
-        log('FCM token unavailable for $uid', name: 'fcm');
+        log(
+          'FCM initial token unavailable for $uid (refresh listener '
+          'will catch a later token)',
+          name: 'fcm',
+        );
         return false;
       }
       _currentToken = token;
-      _attachedUid = uid;
       await _userRepository.addFcmToken(uid: uid, token: token);
-      _refreshSub = _gateway.onTokenRefresh.listen((newToken) async {
-        _currentToken = newToken;
-        await _userRepository.addFcmToken(uid: uid, token: newToken);
-      });
       return true;
     } catch (e, st) {
       log('FCM attach failed', error: e, stackTrace: st, name: 'fcm');

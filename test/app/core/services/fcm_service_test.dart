@@ -265,4 +265,28 @@ void main() {
       expect(repo.added, isEmpty);
     },
   );
+
+  test(
+    'refresh listener writes the token even when initial APNs attach failed',
+    () async {
+      // First-launch race on iOS: APNs not ready at attach time, but
+      // the token arrives ~seconds later via onTokenRefresh. The
+      // refresh listener must already be wired so the late token
+      // still lands in Firestore.
+      gateway.apnsToken = null;
+
+      final ok = await service.attach(uid: 'u1');
+      expect(ok, isFalse);
+      expect(repo.added, isEmpty);
+
+      // Simulate iOS finishing APNs registration ~2s later — FCM fires
+      // onTokenRefresh with the initial token.
+      gateway.emitRefresh('fcm-late-arrival');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(repo.added, hasLength(1));
+      expect(repo.added.first.uid, 'u1');
+      expect(repo.added.first.token, 'fcm-late-arrival');
+    },
+  );
 }
