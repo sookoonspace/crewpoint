@@ -103,11 +103,13 @@ dev_dependencies:
   # to seed a v5-shaped DB before Drift's MigrationStrategy runs.
   sqlite3: ^2.4.0
 
-flutter_launcher_icons:
-  android: true
-  ios: true
-  image_path: "assets/icons/launcher_icon.png"
-  remove_alpha_ios: true
+# Launcher icon configs live in per-flavor YAML files at the project
+# root: `flutter_launcher_icons-{main,dev,stg}.yaml`. Run all three at
+# once with `dart run flutter_launcher_icons`, or one flavor with
+# `dart run flutter_launcher_icons -f flutter_launcher_icons-dev.yaml`.
+# Adaptive icons (Android 8.0+) use #2D3436 (AppColors.charcoal) as the
+# background layer so the device-specific mask gets a brand-aligned
+# colour while the foreground stays full-size.
 
 flutter:
   uses-material-design: true

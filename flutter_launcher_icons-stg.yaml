@@ -1,5 +1,15 @@
+# Per-flavor launcher icon config for the staging build (bundle id
+# `space.sookoon.crewpoint.stg`). Run with:
+#
+#   dart run flutter_launcher_icons -f flutter_launcher_icons-stg.yaml
+#
+# Writes Android assets into `android/app/src/stg/res/mipmap-*/` via
+# the `flavor:` directive.
+
 flutter_launcher_icons:
   android: true
-  ios: true
+  ios: false
   image_path: "assets/icons/launcher_icon_stg.png"
-  remove_alpha_ios: true
+  adaptive_icon_background: "#2D3436"  # AppColors.charcoal
+  adaptive_icon_foreground: "assets/icons/launcher_icon_stg.png"
+  flavor: "stg"

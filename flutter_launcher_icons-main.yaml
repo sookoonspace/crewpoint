@@ -1,0 +1,23 @@
+# Default / prod launcher icon config (bundle id
+# `space.sookoon.crewpoint.app` on Android, used by App Store builds).
+# Writes Android assets into `android/app/src/main/res/mipmap-*/` via
+# the `flavor: "main"` directive — Gradle's default source set.
+#
+# Run with:
+#   dart run flutter_launcher_icons -f flutter_launcher_icons-main.yaml
+#
+# (Or just `dart run flutter_launcher_icons` which auto-discovers every
+# `flutter_launcher_icons-*.yaml` at the project root and runs them all.)
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/launcher_icon.png"
+  remove_alpha_ios: true
+  adaptive_icon_background: "#2D3436"  # AppColors.charcoal
+  adaptive_icon_foreground: "assets/icons/launcher_icon.png"
+  # No `flavor:` — Android's main source set + iOS's default
+  # AppIcon.appiconset are both the un-suffixed default locations,
+  # which is exactly where prod (App Store) builds look. Setting
+  # `flavor: "main"` would create a flavored AppIcon-main.appiconset
+  # that Xcode's Runner target doesn't reference.
