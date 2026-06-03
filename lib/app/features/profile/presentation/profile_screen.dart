@@ -8,6 +8,7 @@ import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
+import 'package:crewpoint_app/app/core/env/app_flavor.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/network_image_with_placeholder.dart';
@@ -128,6 +129,21 @@ class ProfileScreen extends ConsumerWidget {
                           onTap: () =>
                               context.push(AppRoutes.notificationSettings),
                         ),
+                        // Dev-flavor only — diagnostic console for FCM
+                        // state, function calls, etc. Hidden on stg/prod
+                        // builds at compile time via `AppFlavor.current`.
+                        if (AppFlavor.current == AppFlavor.dev) ...[
+                          const Divider(
+                            height: 1,
+                            indent: AppSizes.settingsRowIndent,
+                          ),
+                          SettingsRow(
+                            key: const Key('profile.devTools.tile'),
+                            icon: Icons.build_circle_outlined,
+                            title: 'Dev tools',
+                            onTap: () => context.push(AppRoutes.devTools),
+                          ),
+                        ],
                       ],
                     ),
 

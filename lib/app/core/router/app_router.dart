@@ -7,6 +7,7 @@ import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/env/app_flavor.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/event_guard.dart';
 import 'package:crewpoint_app/app/core/widgets/responsive_shell.dart';
@@ -16,6 +17,7 @@ import 'package:crewpoint_app/app/features/profile/presentation/notification_set
 import 'package:crewpoint_app/app/features/profile/presentation/privacy_dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/profile_screen.dart';
 import 'package:crewpoint_app/app/features/auth/presentation/auth_gate_screen.dart';
+import 'package:crewpoint_app/app/features/dev/presentation/dev_tools_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/application/unread_badge_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/create_event_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/dashboard_screen.dart';
@@ -43,6 +45,10 @@ abstract final class AppRoutes {
   static const String profile = '/profile';
   static const String privacyDashboard = '/profile/privacy-dashboard';
   static const String notificationSettings = '/profile/notifications';
+
+  /// Dev-only diagnostic console. Registered conditionally — see
+  /// `app_router.dart` and only reachable on `AppFlavor.dev` builds.
+  static const String devTools = '/profile/dev-tools';
 }
 
 /// Creates the app router.
@@ -271,6 +277,14 @@ GoRouter createRouter({
                     path: 'notifications',
                     builder: (_, _) => const NotificationSettingsScreen(),
                   ),
+                  // Dev-only diagnostic console. Gated at the route
+                  // level so stg / prod builds can't reach this screen
+                  // even via a deep link.
+                  if (AppFlavor.current == AppFlavor.dev)
+                    GoRoute(
+                      path: 'dev-tools',
+                      builder: (_, _) => const DevToolsScreen(),
+                    ),
                 ],
               ),
             ],
