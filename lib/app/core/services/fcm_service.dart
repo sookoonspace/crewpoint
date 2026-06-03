@@ -45,6 +45,13 @@ class FcmService {
         log('FCM permission denied for $uid', name: 'fcm');
         return false;
       }
+      // iOS: explicitly trigger registerForRemoteNotifications. The
+      // firebase_messaging plugin only calls this at app launch, when
+      // authorization is `notDetermined` for auth-gated apps — iOS
+      // silently no-ops it and APNs never registers. Calling here, after
+      // permission was just granted, is what actually starts the APNs
+      // handshake. No-op on Android / web / desktop.
+      await _gateway.triggerApnsRegistration();
       // Android: declare notification channels before the first push can
       // arrive (API 26+ requirement). iOS / web / desktop short-circuit
       // inside the adapter; failure is swallowed there too — channel

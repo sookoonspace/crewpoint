@@ -67,6 +67,8 @@ class _NoopFcmGateway implements IFcmGateway {
   @override
   Future<bool> requestPermission() async => true;
   @override
+  Future<void> triggerApnsRegistration() async {}
+  @override
   Future<String?> getToken() async => 'fcm';
   @override
   Stream<String> get onTokenRefresh => const Stream.empty();

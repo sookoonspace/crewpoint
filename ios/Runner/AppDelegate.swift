@@ -47,6 +47,11 @@ import FirebaseAuth
     return channel
   }
 
+  /// `MethodChannel` Dart uses to explicitly call
+  /// `registerForRemoteNotifications`. Installed eagerly in
+  /// `didInitializeImplicitFlutterEngine` — see `installApnsControlHandler`.
+  private var apnsControlChannel: FlutterMethodChannel?
+
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -180,6 +185,39 @@ import FirebaseAuth
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    // Wire the APNs control channel eagerly so Dart can re-trigger
+    // `registerForRemoteNotifications` as soon as permission is granted.
+    // Falls back to lazy resolution from `window.rootViewController` if
+    // the registrar isn't available here (older Flutter versions / edge
+    // cases) — the lazy path doubles as the resolver for the action
+    // channel and is exercised by FCM action taps.
+    if let registrar = engineBridge.pluginRegistry.registrar(
+      forPlugin: "CrewPointApnsControl"
+    ) {
+      installApnsControlHandler(messenger: registrar.messenger())
+    }
+  }
+
+  private func installApnsControlHandler(messenger: FlutterBinaryMessenger) {
+    let channel = FlutterMethodChannel(
+      name: "crewpoint/apns",
+      binaryMessenger: messenger
+    )
+    channel.setMethodCallHandler { call, result in
+      switch call.method {
+      case "registerForRemoteNotifications":
+        DispatchQueue.main.async {
+          UIApplication.shared.registerForRemoteNotifications()
+          NSLog(
+            "[CrewPoint][APNs] Triggered registerForRemoteNotifications via MethodChannel"
+          )
+          result(nil)
+        }
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
+    apnsControlChannel = channel
   }
 
   // MARK: - UNNotificationCategory registration

@@ -16,6 +16,7 @@ class _FakeFcmGateway implements IFcmGateway {
   bool deleted = false;
   int permissionCalls = 0;
   int getTokenCalls = 0;
+  int triggerApnsCalls = 0;
 
   @override
   Future<String?> getApnsToken() async => apnsToken;
@@ -24,6 +25,11 @@ class _FakeFcmGateway implements IFcmGateway {
   Future<bool> requestPermission() async {
     permissionCalls++;
     return permissionGranted;
+  }
+
+  @override
+  Future<void> triggerApnsRegistration() async {
+    triggerApnsCalls++;
   }
 
   @override
@@ -263,6 +269,29 @@ void main() {
       expect(ok, isFalse);
       expect(gateway.getTokenCalls, 0);
       expect(repo.added, isEmpty);
+    },
+  );
+
+  test('attach() triggers APNs registration after permission grant', () async {
+    // firebase_messaging only calls registerForRemoteNotifications once
+    // at app launch when status is notDetermined — for auth-gated apps
+    // that's wasted because no one has been asked for permission yet.
+    // We must re-trigger after the user grants.
+    final ok = await service.attach(uid: 'u1');
+
+    expect(ok, isTrue);
+    expect(gateway.triggerApnsCalls, 1);
+  });
+
+  test(
+    'attach() skips APNs registration trigger when permission is denied',
+    () async {
+      gateway.permissionGranted = false;
+
+      final ok = await service.attach(uid: 'u1');
+
+      expect(ok, isFalse);
+      expect(gateway.triggerApnsCalls, 0);
     },
   );
 

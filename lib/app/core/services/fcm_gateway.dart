@@ -4,6 +4,7 @@ import 'dart:io' show Platform;
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 /// Test seam over `package:firebase_messaging`.
 ///
@@ -25,6 +26,20 @@ abstract class IFcmGateway {
   /// Requests notification permission. Returns whether the user accepted
   /// (treat `provisional` as accepted).
   Future<bool> requestPermission();
+
+  /// iOS-only: explicitly calls `UIApplication.registerForRemoteNotifications`.
+  ///
+  /// The `firebase_messaging` plugin only calls this **once**, during
+  /// `application_onDidFinishLaunchingNotification` at app launch (see
+  /// FLTFirebaseMessagingPlugin.m:308). For auth-gated apps that request
+  /// permission later (after sign-in), authorization is `notDetermined`
+  /// at that point and iOS silently no-ops the call — APNs registration
+  /// never starts. Calling this explicitly after [requestPermission]
+  /// grants forces iOS to register and gives us the APNs token via the
+  /// `didRegisterForRemoteNotificationsWithDeviceToken` callback chain.
+  ///
+  /// No-op on non-iOS platforms.
+  Future<void> triggerApnsRegistration();
 
   /// Returns the current FCM token, or null if not available.
   Future<String?> getToken();
@@ -55,6 +70,10 @@ class FirebaseFcmGateway implements IFcmGateway {
   /// the [FcmService.attach] chain doesn't trip the "null → skip" guard
   /// there.
   static const _nonIosSentinel = 'non-ios-no-apns';
+
+  /// `MethodChannel` to the Swift `registerForRemoteNotifications`
+  /// trigger registered in `ios/Runner/AppDelegate.swift`.
+  static const _apnsChannel = MethodChannel('crewpoint/apns');
 
   @override
   Future<String?> getApnsToken() async {
@@ -113,6 +132,25 @@ class FirebaseFcmGateway implements IFcmGateway {
     final settings = await _messaging.requestPermission();
     return settings.authorizationStatus == AuthorizationStatus.authorized ||
         settings.authorizationStatus == AuthorizationStatus.provisional;
+  }
+
+  @override
+  Future<void> triggerApnsRegistration() async {
+    if (kIsWeb || !Platform.isIOS) return;
+    try {
+      await _apnsChannel.invokeMethod<void>('registerForRemoteNotifications');
+      log(
+        'triggerApnsRegistration() invoked native registerForRemoteNotifications',
+        name: 'fcm.apns',
+      );
+    } catch (e, st) {
+      log(
+        'triggerApnsRegistration() MethodChannel call failed',
+        error: e,
+        stackTrace: st,
+        name: 'fcm.apns',
+      );
+    }
   }
 
   @override
