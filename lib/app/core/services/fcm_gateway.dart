@@ -80,15 +80,14 @@ class FirebaseFcmGateway implements IFcmGateway {
     if (kIsWeb || !Platform.isIOS) return _nonIosSentinel;
     for (var i = 0; i < _apnsMaxAttempts; i++) {
       final token = await _messaging.getAPNSToken();
-      final attempt = '${i + 1}/$_apnsMaxAttempts';
       if (token != null) {
         log(
-          'APNs poll $attempt → got token (${token.length} chars)',
+          'APNs token acquired after ${i + 1} poll(s) '
+          '(${(i + 1) * _apnsRetryDelay.inMilliseconds}ms)',
           name: 'fcm.apns',
         );
         return token;
       }
-      log('APNs poll $attempt → null', name: 'fcm.apns');
       if (i < _apnsMaxAttempts - 1) {
         await Future<void>.delayed(_apnsRetryDelay);
       }

@@ -63,63 +63,10 @@ import FirebaseAuth
     // override below gets invoked once the plugin claims the delegate
     // slot for itself.
     UNUserNotificationCenter.current().delegate = self
-    let result = super.application(
+    return super.application(
       application,
       didFinishLaunchingWithOptions: launchOptions
     )
-    scheduleRegistrationDiagnostics(application: application)
-    return result
-  }
-
-  /// Logs the OS-level "is this app registered for remote notifications?"
-  /// flag at a few intervals after launch. This is iOS's own opinion — if
-  /// `isRegisteredForRemoteNotifications` stays `false` after 15+ seconds,
-  /// the OS has silently no-op'd our `registerForRemoteNotifications`
-  /// call (classic signature of an entitlement / provisioning mismatch).
-  /// When it flips to `true` we should see the
-  /// `didRegisterForRemoteNotificationsWithDeviceToken` callback fire
-  /// shortly after.
-  private func scheduleRegistrationDiagnostics(application: UIApplication) {
-    let checkpoints: [Double] = [2.0, 5.0, 10.0, 20.0]
-    for delay in checkpoints {
-      DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak application] in
-        guard let app = application else { return }
-        let isRegistered = app.isRegisteredForRemoteNotifications
-        UNUserNotificationCenter.current().getNotificationSettings { settings in
-          let auth = self.authorizationStatusName(settings.authorizationStatus)
-          let alert = self.settingName(settings.alertSetting)
-          NSLog(
-            "[CrewPoint][APNs] +%.0fs isRegistered=%@ auth=%@ alert=%@",
-            delay,
-            isRegistered ? "YES" : "NO",
-            auth,
-            alert
-          )
-        }
-      }
-    }
-  }
-
-  private func authorizationStatusName(
-    _ status: UNAuthorizationStatus
-  ) -> String {
-    switch status {
-    case .notDetermined: return "notDetermined"
-    case .denied: return "denied"
-    case .authorized: return "authorized"
-    case .provisional: return "provisional"
-    case .ephemeral: return "ephemeral"
-    @unknown default: return "unknown(\(status.rawValue))"
-    }
-  }
-
-  private func settingName(_ setting: UNNotificationSetting) -> String {
-    switch setting {
-    case .notSupported: return "notSupported"
-    case .disabled: return "disabled"
-    case .enabled: return "enabled"
-    @unknown default: return "unknown(\(setting.rawValue))"
-    }
   }
 
   // MARK: - APNs registration diagnostics
