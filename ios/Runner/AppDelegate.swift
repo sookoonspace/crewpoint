@@ -61,6 +61,49 @@ import FirebaseAuth
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
+  // MARK: - APNs registration diagnostics
+  //
+  // These callbacks fire after `registerForRemoteNotifications` is called
+  // (which firebase_messaging does automatically once permission is
+  // granted). NSLog so the lines show up in both Xcode's debug console
+  // and macOS Console.app — easier to grep than the apsd noise.
+  //
+  // Success path: "✅ APNs token registered" — token comes back, FCM can
+  // then exchange it for an FCM token.
+  // Failure path: "❌ APNs registration failed" — the NSError carries the
+  // exact rejection reason (most commonly: invalid `aps-environment`,
+  // App ID without Push capability, or stale provisioning profile).
+  override func application(
+    _ application: UIApplication,
+    didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+  ) {
+    let tokenString = deviceToken.map { String(format: "%02x", $0) }.joined()
+    NSLog(
+      "[CrewPoint][APNs] ✅ Registered for remote notifications. Token: \(tokenString)"
+    )
+    super.application(
+      application,
+      didRegisterForRemoteNotificationsWithDeviceToken: deviceToken
+    )
+  }
+
+  override func application(
+    _ application: UIApplication,
+    didFailToRegisterForRemoteNotificationsWithError error: Error
+  ) {
+    let ns = error as NSError
+    NSLog(
+      "[CrewPoint][APNs] ❌ Failed to register for remote notifications: \(error.localizedDescription)"
+    )
+    NSLog(
+      "[CrewPoint][APNs] Error domain: \(ns.domain), code: \(ns.code), userInfo: \(ns.userInfo)"
+    )
+    super.application(
+      application,
+      didFailToRegisterForRemoteNotificationsWithError: error
+    )
+  }
+
   /// Hands Google / Apple OAuth callback URLs (com.googleusercontent.apps.<id>://firebaseauth/link?...)
   /// to Firebase Auth before falling through to the Flutter engine.
   ///
