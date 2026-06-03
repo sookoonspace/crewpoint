@@ -249,4 +249,20 @@ void main() {
       expect(channels.registerCalls, 0);
     },
   );
+
+  test(
+    'attach() returns false silently when APNs token is unavailable',
+    () async {
+      // iOS Simulator path — getApnsToken returns null. We must NOT
+      // proceed to getToken(), which would throw `apns-token-not-set`
+      // from inside the firebase_messaging plugin.
+      gateway.apnsToken = null;
+
+      final ok = await service.attach(uid: 'u1');
+
+      expect(ok, isFalse);
+      expect(gateway.getTokenCalls, 0);
+      expect(repo.added, isEmpty);
+    },
+  );
 }

@@ -50,8 +50,21 @@ class FcmService {
       // inside the adapter; failure is swallowed there too — channel
       // setup must never block token registration.
       await _notificationChannels.registerAll();
-      // iOS: APNs token must resolve before getToken().
-      await _gateway.getApnsToken();
+      // iOS: APNs token must resolve before getToken(). The gateway
+      // polls briefly and returns null when APNs can't deliver one
+      // (most commonly the iOS Simulator). Skip the FCM token fetch in
+      // that case so we don't hit `apns-token-not-set` from inside the
+      // plugin. On Android / web the gateway returns a sentinel and we
+      // fall straight through.
+      final apnsToken = await _gateway.getApnsToken();
+      if (apnsToken == null) {
+        log(
+          'FCM attach skipped — APNs token unavailable (simulator or '
+          'first-launch race) for $uid',
+          name: 'fcm',
+        );
+        return false;
+      }
       final token = await _gateway.getToken();
       if (token == null) {
         log('FCM token unavailable for $uid', name: 'fcm');
