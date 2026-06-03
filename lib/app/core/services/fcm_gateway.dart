@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 import 'dart:io' show Platform;
 
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -47,7 +48,7 @@ class FirebaseFcmGateway implements IFcmGateway {
   /// post-permission-grant race. Simulator builds will burn the whole
   /// budget and then fall through to `null` — that's fine, the caller
   /// short-circuits.
-  static const _apnsMaxAttempts = 5;
+  static const _apnsMaxAttempts = 30;
   static const _apnsRetryDelay = Duration(milliseconds: 300);
 
   /// Sentinel returned for non-APNs platforms (Android, web, desktop) so
@@ -60,10 +61,49 @@ class FirebaseFcmGateway implements IFcmGateway {
     if (kIsWeb || !Platform.isIOS) return _nonIosSentinel;
     for (var i = 0; i < _apnsMaxAttempts; i++) {
       final token = await _messaging.getAPNSToken();
-      if (token != null) return token;
+      final attempt = '${i + 1}/$_apnsMaxAttempts';
+      if (token != null) {
+        log(
+          'APNs poll $attempt → got token (${token.length} chars)',
+          name: 'fcm.apns',
+        );
+        return token;
+      }
+      log('APNs poll $attempt → null', name: 'fcm.apns');
       if (i < _apnsMaxAttempts - 1) {
         await Future<void>.delayed(_apnsRetryDelay);
       }
+    }
+    // Polling exhausted — dump everything Dart can see about why iOS
+    // didn't hand back a token. Most informative pieces:
+    //  - `authorizationStatus`: confirms the user actually granted
+    //    permission. `denied` or `notDetermined` here means we never
+    //    asked / they refused, so `registerForRemoteNotifications` is
+    //    a no-op upstream.
+    //  - `alert / badge / sound`: any "disabled" here points at iOS
+    //    Settings restrictions even though authorization is granted.
+    try {
+      final settings = await _messaging.getNotificationSettings();
+      log(
+        'APNs polling EXHAUSTED ($_apnsMaxAttempts × '
+        '${_apnsRetryDelay.inMilliseconds}ms = '
+        '${_apnsMaxAttempts * _apnsRetryDelay.inMilliseconds}ms). '
+        'authorizationStatus=${settings.authorizationStatus.name}, '
+        'alert=${settings.alert.name}, '
+        'badge=${settings.badge.name}, '
+        'sound=${settings.sound.name}, '
+        'notificationCenter=${settings.notificationCenter.name}, '
+        'lockScreen=${settings.lockScreen.name}, '
+        'criticalAlert=${settings.criticalAlert.name}',
+        name: 'fcm.apns',
+      );
+    } catch (e, st) {
+      log(
+        'APNs polling exhausted; getNotificationSettings also failed',
+        error: e,
+        stackTrace: st,
+        name: 'fcm.apns',
+      );
     }
     return null;
   }
