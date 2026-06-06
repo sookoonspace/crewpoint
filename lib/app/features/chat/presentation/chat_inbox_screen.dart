@@ -13,6 +13,7 @@ import 'package:crewpoint_app/app/core/widgets/conversation_tile.dart';
 import 'package:crewpoint_app/app/core/widgets/empty_state_placeholder.dart';
 import 'package:crewpoint_app/app/core/widgets/screen_header.dart';
 import 'package:crewpoint_app/app/core/widgets/skeletons.dart';
+import 'package:crewpoint_app/app/features/budget/data/member_name_resolver.dart';
 import 'package:crewpoint_app/app/features/chat/application/global_inbox_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/event_type_emoji.dart';
 
@@ -152,7 +153,8 @@ class _ChatInboxList extends StatelessWidget {
     if (last == null) return '';
     final senderName = last.senderId == currentUserId
         ? 'You'
-        : (last.senderName ?? last.senderId);
+        // Roster-resolved name from globalInboxProvider — never the UID.
+        : (row.lastSenderName ?? kRemovedMemberPlaceholder);
     return '$senderName: ${_truncate(last.text, 60)}';
   }
 

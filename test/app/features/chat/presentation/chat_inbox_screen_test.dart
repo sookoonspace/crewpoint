@@ -220,13 +220,16 @@ void main() {
         creatorId: 'uid-1',
         memberIds: ['uid-1'],
       );
+      // Note: senderName is intentionally NOT set on this message —
+      // production repository reads never populate it. The preview must
+      // resolve "Alex" via the roster (InboxRow.lastSenderName), NOT
+      // via the message model's senderName.
       final msgA = ChatMessageModel(
         id: 'm-a',
         eventId: 'evt-a',
         senderId: 'alex',
         text: 'Bring snacks',
         timestamp: DateTime(2026, 5, 13, 12),
-        senderName: 'Alex',
       );
       final msgB = ChatMessageModel(
         id: 'm-b',
@@ -282,6 +285,52 @@ void main() {
       await tester.tap(find.byKey(const Key('chat.inbox.tile.evt-a')));
       await _pumpFrames(tester);
       expect(captured?.event.id, 'evt-a');
+
+      await _teardownTree(tester);
+    },
+  );
+
+  testWidgets(
+    'preview renders placeholder (never UID) when sender is missing from roster',
+    (tester) async {
+      const event = EventModel(
+        id: 'evt-x',
+        title: 'Trip',
+        creatorId: 'me',
+        memberIds: ['me', 'ghost'],
+      );
+      final ghostMsg = ChatMessageModel(
+        id: 'm-ghost',
+        eventId: 'evt-x',
+        senderId: 'ghost',
+        text: 'hello',
+        timestamp: DateTime(2026, 5, 14),
+      );
+
+      final base = _ChatInboxTestBaseline.create();
+      addTearDown(base.cleanup);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ...base.baseOverrides.cast(),
+            currentUserIdProvider.overrideWith((ref) => 'me'),
+            dashboardEventsProvider.overrideWith(
+              (ref) => Stream.value(const [event]),
+            ),
+            chatMessagesProvider.overrideWith(
+              (ref, eventId) => Stream.value([ghostMsg]),
+            ),
+            usersByIdProvider.overrideWith(
+              (ref, key) async => const <String, AppUser>{},
+            ),
+          ],
+          child: const MaterialApp(home: ChatInboxScreen()),
+        ),
+      );
+      await _pumpFrames(tester);
+
+      expect(find.text('(no longer in event): hello'), findsOneWidget);
+      expect(find.textContaining('ghost'), findsNothing);
 
       await _teardownTree(tester);
     },
