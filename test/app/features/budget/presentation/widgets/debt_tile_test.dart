@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/features/budget/application/global_balance_ledger_provider.dart';
+import 'package:crewpoint_app/app/features/budget/data/member_name_resolver.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/debt_tile.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
@@ -81,4 +82,42 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets(
+    'renders counterpartyName (display name) and never the counterpartyUid',
+    (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: DebtTile(row: _debt)),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('Alex Chen'), findsOneWidget);
+      expect(find.text('alex'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'placeholder name → row text is the placeholder AND avatar reads "?" (not "(")',
+    (tester) async {
+      const placeholderDebt = DebtRow(
+        counterpartyUid: 'ghost',
+        counterpartyName: kRemovedMemberPlaceholder,
+        event: _event,
+        amount: 12,
+        currency: 'USD',
+      );
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: DebtTile(row: placeholderDebt)),
+        ),
+      );
+      await tester.pump();
+      expect(find.text(kRemovedMemberPlaceholder), findsOneWidget);
+      // Avatar bubble inside DebtTile.
+      final avatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar));
+      final avatarText = avatar.child! as Text;
+      expect(avatarText.data, '?');
+    },
+  );
 }
