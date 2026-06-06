@@ -19,6 +19,7 @@ const _event = EventModel(
 
 const _debt = DebtRow(
   counterpartyUid: 'alex',
+  counterpartyName: 'Alex',
   event: _event,
   amount: 45,
   currency: 'USD',

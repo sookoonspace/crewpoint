@@ -48,6 +48,7 @@ InboxRow _inbox({required int unread, String eventId = 'evt-1'}) {
 DebtRow _debt({double amount = 10}) {
   return DebtRow(
     counterpartyUid: 'alex',
+    counterpartyName: 'Alex',
     event: _event,
     amount: amount,
     currency: 'USD',

@@ -21,7 +21,11 @@ const _expense = ExpenseModel(
   description: 'Pizza',
 );
 
-const _row = RecentExpenseRow(expense: _expense, event: _event);
+const _row = RecentExpenseRow(
+  expense: _expense,
+  event: _event,
+  payerName: 'You',
+);
 
 void main() {
   testWidgets('wraps content in a Card for the elevated-tile look', (

@@ -75,6 +75,7 @@ void main() {
       );
       const debt = DebtRow(
         counterpartyUid: 'alex-with-a-pretty-long-handle',
+        counterpartyName: 'Alexandra With A Pretty Long Display Name',
         event: event,
         amount: 1234.56,
         currency: 'USD',
@@ -105,7 +106,11 @@ void main() {
       await pumpAt320(
         tester,
         RecentExpenseTile(
-          row: const RecentExpenseRow(expense: expense, event: event),
+          row: const RecentExpenseRow(
+            expense: expense,
+            event: event,
+            payerName: 'You',
+          ),
           currentUserId: 'me',
           onTap: () {},
         ),

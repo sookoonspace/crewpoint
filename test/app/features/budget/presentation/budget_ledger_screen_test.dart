@@ -3,9 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/skeletons.dart';
+import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/budget_ledger_screen.dart';
+import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
+
+/// Empty roster — keeps the cross-event ledger off the real user repo
+/// in tests that don't care about resolved names.
+final _emptyRosterOverride = usersByIdProvider.overrideWith(
+  (ref, key) async => const <String, AppUser>{},
+);
 
 /// Lottie loops forever — bounded pumps, not pumpAndSettle.
 Future<void> _pumpFrames(WidgetTester tester) async {
@@ -103,6 +111,7 @@ void main() {
             expenseListProvider.overrideWith(
               (ref, eventId) => Stream.value(const <ExpenseModel>[]),
             ),
+            _emptyRosterOverride,
           ],
           child: const MaterialApp(home: BudgetLedgerScreen()),
         ),
@@ -151,6 +160,7 @@ void main() {
             expenseListProvider.overrideWith(
               (ref, eventId) => Stream.value([exp]),
             ),
+            _emptyRosterOverride,
           ],
           child: const MaterialApp(home: BudgetLedgerScreen()),
         ),
@@ -201,6 +211,7 @@ void main() {
             expenseListProvider.overrideWith(
               (ref, eventId) => Stream.value([exp]),
             ),
+            _emptyRosterOverride,
           ],
           child: const MaterialApp(home: BudgetLedgerScreen()),
         ),
@@ -243,6 +254,7 @@ void main() {
             expenseListProvider.overrideWith(
               (ref, eventId) => Stream.value([exp]),
             ),
+            _emptyRosterOverride,
           ],
           child: MaterialApp(
             home: BudgetLedgerScreen(onOpenEventBudget: (_, e) => captured = e),
@@ -291,6 +303,7 @@ void main() {
             expenseListProvider.overrideWith(
               (ref, eventId) => Stream.value([exp]),
             ),
+            _emptyRosterOverride,
           ],
           child: const MaterialApp(home: BudgetLedgerScreen()),
         ),
