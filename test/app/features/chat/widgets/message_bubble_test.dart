@@ -68,7 +68,7 @@ void main() {
   /// `theme` and `darkTheme` and forces `themeMode` so the requested
   /// brightness is honoured regardless of the test binding's platform
   /// brightness default (light).
-  Future<void> _pumpWithTheme(
+  Future<void> pumpWithTheme(
     WidgetTester tester, {
     required ThemeData theme,
     required ChatMessageModel message,
@@ -98,7 +98,7 @@ void main() {
   /// Reads the bubble's background color (Container.decoration.color) and
   /// the body text color (the last Text widget in the bubble, which is
   /// the message text per message_bubble.dart:115).
-  ({Color bg, Color fg}) _readColors(WidgetTester tester, Key bubbleKey) {
+  ({Color bg, Color fg}) readColors(WidgetTester tester, Key bubbleKey) {
     final container = tester.widget<Container>(find.byKey(bubbleKey));
     final bg = (container.decoration! as BoxDecoration).color!;
     // The message body Text is the last Text inside the bubble Column.
@@ -116,13 +116,13 @@ void main() {
     tester,
   ) async {
     for (final theme in [AppTheme.light(), AppTheme.dark()]) {
-      await _pumpWithTheme(
+      await pumpWithTheme(
         tester,
         theme: theme,
         message: _msg(),
         isCurrentUser: false,
       );
-      final colors = _readColors(tester, const Key('chat.bubble.m1'));
+      final colors = readColors(tester, const Key('chat.bubble.m1'));
       expectAaContrast(
         colors.fg,
         colors.bg,
@@ -137,13 +137,13 @@ void main() {
     tester,
   ) async {
     for (final theme in [AppTheme.light(), AppTheme.dark()]) {
-      await _pumpWithTheme(
+      await pumpWithTheme(
         tester,
         theme: theme,
         message: _msg(),
         isCurrentUser: true,
       );
-      final colors = _readColors(tester, const Key('chat.bubble.m1'));
+      final colors = readColors(tester, const Key('chat.bubble.m1'));
       expectAaContrast(
         colors.fg,
         colors.bg,
@@ -164,13 +164,13 @@ void main() {
       isHighPriority: true,
     );
     for (final theme in [AppTheme.light(), AppTheme.dark()]) {
-      await _pumpWithTheme(
+      await pumpWithTheme(
         tester,
         theme: theme,
         message: urgent,
         isCurrentUser: false,
       );
-      final colors = _readColors(tester, const Key('chat.bubble.m1'));
+      final colors = readColors(tester, const Key('chat.bubble.m1'));
       // Backgrounds use alpha; opaque comparison would be misleading.
       // For now assert the text color resolves to a non-null value and
       // contrast against the painted bg meets AA.
@@ -194,13 +194,13 @@ void main() {
       kind: ChatMessageKind.settlement,
     );
     for (final theme in [AppTheme.light(), AppTheme.dark()]) {
-      await _pumpWithTheme(
+      await pumpWithTheme(
         tester,
         theme: theme,
         message: settle,
         isCurrentUser: false,
       );
-      final colors = _readColors(tester, const Key('chat.bubble.m1'));
+      final colors = readColors(tester, const Key('chat.bubble.m1'));
       expectAaContrast(
         colors.fg,
         colors.bg,
