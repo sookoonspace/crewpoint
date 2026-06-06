@@ -43,18 +43,18 @@ Fix 5 dark-mode/data bugs: balance hero wrap, UID-leak in Budget tiles + Chat in
 - [x] TDD: `chat_inbox_screen._previewLine` shows `'You: …'` for self; `'<name>: …'` for others; `'(no longer in event): …'` when missing; UID never appears.
 - [x] Verify: `flutter analyze && flutter test`.
 
-### Phase 2: Balance tile single-line + dark-mode contrast
+### Phase 2: Balance tile single-line + dark-mode contrast ✓
 
 - **Goal**: Hero amount renders one line at 320 px; chat bubbles + Join Event TextField legible in dark mode; WCAG AA verified.
-- [ ] `test/app/core/_helpers/wcag_contrast.dart` (new, ~15 lines) — `relativeLuminance(Color)` (sRGB→linear per WCAG 2.1) + `contrastRatio(Color, Color)` + `expectAaContrast(Color fg, Color bg, {double minimum = 4.5})` matcher.
-- [ ] `lib/app/core/widgets/balance_tile.dart:107-115,131-139` — wrap left `MoneyText` in `FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft)`; right `MoneyText` in `FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerRight)`. No font-size change.
-- [ ] `lib/app/features/chat/presentation/widgets/message_bubble.dart:41` — replace `background = AppColors.lightGrey` with `Theme.of(context).colorScheme.surfaceContainerHighest`. Leave settlement (line 28-30) + high-priority (line 31-33) branches untouched in source; let tests decide.
-- [ ] `lib/app/features/dashboard/presentation/widgets/join_event_sheet.dart:143-156` — delete `filled`, `fillColor`, `border`, `enabledBorder`, `focusedBorder` overrides (let `inputDecorationTheme` cover). Keep `counterText: ''`, `hintText: '------'`. Swap `hintStyle.color` from `AppColors.lightGrey` to `Theme.of(context).colorScheme.onSurfaceVariant`. Line 132 `style.color`: leave unset unless Phase-2 contrast test fails (then add `color: Theme.of(context).colorScheme.onSurface` as safety net).
-- [ ] **Extend** `test/app/core/widgets/overflow_320px_test.dart:77` — add case: `BalanceTile(owedToYou: 0, youOwe: 99999.99, currencyCode: 'USD')` at 320 px → `tester.takeException() == null`; `Text` painter width ≤ parent column width; single visual line.
-- [ ] TDD (long amount): assert single-line render for `$99,999.99` at 320 px (test above).
-- [ ] TDD (message_bubble × 2 themes): for each of 4 variants (own normal, other normal, high-priority, settlement), pump under `AppTheme.light()` and `AppTheme.dark()`. Read `Container.decoration.color` + resolved `Text.style.color`. Assert `expectAaContrast(text, bg, minimum: 4.5)`. Assert "Critical Alert" / "Settlement" header colors hit ≥ 4.5:1 on chosen background. Fix the failing branch only if a test reports failure (settlement in dark mode is the likely candidate — minimal fix: `colorScheme.surfaceContainerHighest`, keep sage border).
-- [ ] TDD (`test/app/features/dashboard/presentation/widgets/join_event_sheet_test.dart`, new): under both themes — `TextField` `fillColor` matches `Theme.of(context).inputDecorationTheme.fillColor` (not hard-coded); typed-text color ≥ 4.5:1 on fill; hint color ≥ 3.0:1 on fill.
-- [ ] Verify: `flutter analyze && flutter test`.
+- [x] `test/app/core/_helpers/wcag_contrast.dart` (new, ~50 lines) — `relativeLuminance(Color)` (sRGB→linear per WCAG 2.1) + `contrastRatio(Color, Color)` + `expectAaContrast(Color fg, Color bg, {double minimum = 4.5})` matcher.
+- [x] `lib/app/core/widgets/balance_tile.dart:107-115,131-139` — wrap left `MoneyText` in `FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft)`; right `MoneyText` in `FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerRight)`. No font-size change.
+- [x] `lib/app/features/chat/presentation/widgets/message_bubble.dart:41` — replace `background = AppColors.lightGrey` with `Theme.of(context).colorScheme.surfaceContainerHighest`. Settlement + high-priority branches needed dark-mode swap too (contrast test failed → fix applied): both fall through to `surfaceContainerHighest` in dark mode while keeping cream/terracotta tint in light mode; border carries the semantic signal.
+- [x] `lib/app/features/dashboard/presentation/widgets/join_event_sheet.dart:143-156` — delete `filled`, `fillColor`, `border`, `enabledBorder`, `focusedBorder` overrides (let `inputDecorationTheme` cover). Keep `counterText: ''`, `hintText: '------'`. Swap `hintStyle.color` to `Theme.of(context).colorScheme.onSurfaceVariant`. `style` retains `letterSpacing: 8` + `fontWeight: w700` via `headlineMedium.copyWith` so the typed-text color inherits the brightness-aware textTheme color (no explicit override needed).
+- [x] **Extend** `test/app/core/widgets/overflow_320px_test.dart:77` — add case: `BalanceTile(owedToYou: 0, youOwe: 99999.99, currencyCode: 'USD')` at 320 px → `tester.takeException() == null`; rendered widget height < 50px (single line via FittedBox); inner Text contains "99,999.99".
+- [x] TDD (long amount): assert single-line render for `$99,999.99` at 320 px (test above).
+- [x] TDD (message_bubble × 2 themes): for each of 4 variants (own normal, other normal, high-priority, settlement), pump under `Theme(data: AppTheme.light()/dark())` and assert `expectAaContrast(text, bg, ≥4.5)`. Settlement + high-priority dark-mode failures triggered the source fix above.
+- [x] TDD (`test/app/features/dashboard/presentation/widgets/join_event_sheet_test.dart`, new): under both themes — `TextField` `fillColor` is `null` (theme provides it); typed-text color ≥ 4.5:1 on the active fill; hint color ≥ 3.0:1 on fill.
+- [x] Verify: `flutter analyze && flutter test`. 743 tests passing; only pre-existing experimental_member_use warning.
 
 ### Phase 3: Manual visual QA + screenshot capture
 
