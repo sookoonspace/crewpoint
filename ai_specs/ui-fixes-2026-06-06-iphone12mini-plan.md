@@ -19,16 +19,16 @@ Fix 5 dark-mode/data bugs: balance hero wrap, UID-leak in Budget tiles + Chat in
 
 ## Plan
 
-### Phase 1: Provider-layer name enrichment (vertical slice)
+### Phase 1: Provider-layer name enrichment (vertical slice) ✓
 
 - **Goal**: `DebtRow.counterpartyName`, `RecentExpenseRow.payerName`, `InboxRow.lastSenderName` resolved end-to-end so UIDs never leak to UI.
-- [ ] `lib/app/features/budget/application/global_balance_ledger_provider.dart` — add `counterpartyName` (req) to `DebtRow`; add `payerName` (req) to `RecentExpenseRow`. Per-event watch `usersByIdProvider(usersByIds(event.memberIds))`; handle null via existing AsyncLoading/Error switch. Fold roster → `memberNames` (displayName → email). Use `resolveMemberName` for both rows.
-- [ ] `lib/app/features/chat/application/global_inbox_provider.dart` — add `final String? lastSenderName;` to `InboxRow`. Watch same roster provider per active event; fold and resolve `latest.senderId` via same chain.
-- [ ] `lib/app/features/chat/presentation/chat_inbox_screen.dart:150-157` — rewrite `_previewLine`: current user → `'You'`; else `row.lastSenderName ?? kRemovedMemberPlaceholder`. Never `last.senderId`.
-- [ ] `lib/app/features/budget/presentation/widgets/debt_tile.dart:46,59` — render `row.counterpartyName`; avatar `?` when name == placeholder, else `_firstLetter(counterpartyName)`. Keep `Key('budget.ledger.settleUp.${row.counterpartyUid}.${row.event.id}')` (line 86) UID-keyed.
-- [ ] `lib/app/features/budget/presentation/widgets/recent_expense_tile.dart:43,68` — `payerLabel` from `row.payerName`; same `?` exception for placeholder.
-- [ ] `lib/app/features/budget/presentation/budget_ledger_screen.dart:151` — confirm `budget.ledger.debt.{uid}.{eventId}` key stays UID-based (no source change expected).
-- [ ] Update compile-breaking test fixtures (add `counterpartyName`/`payerName`):
+- [x] `lib/app/features/budget/application/global_balance_ledger_provider.dart` — add `counterpartyName` (req) to `DebtRow`; add `payerName` (req) to `RecentExpenseRow`. Per-event watch `usersByIdProvider(usersByIds(event.memberIds))`; handle null via existing AsyncLoading/Error switch. Fold roster → `memberNames` (displayName → email). Use `resolveMemberName` for both rows.
+- [x] `lib/app/features/chat/application/global_inbox_provider.dart` — add `final String? lastSenderName;` to `InboxRow`. Watch same roster provider per active event; fold and resolve `latest.senderId` via same chain.
+- [x] `lib/app/features/chat/presentation/chat_inbox_screen.dart:150-157` — rewrite `_previewLine`: current user → `'You'`; else `row.lastSenderName ?? kRemovedMemberPlaceholder`. Never `last.senderId`.
+- [x] `lib/app/features/budget/presentation/widgets/debt_tile.dart:46,59` — render `row.counterpartyName`; avatar `?` when name == placeholder, else `_firstLetter(counterpartyName)`. Keep `Key('budget.ledger.settleUp.${row.counterpartyUid}.${row.event.id}')` (line 86) UID-keyed.
+- [x] `lib/app/features/budget/presentation/widgets/recent_expense_tile.dart:43,68` — `payerLabel` from `row.payerName`; same `?` exception for placeholder.
+- [x] `lib/app/features/budget/presentation/budget_ledger_screen.dart:151` — confirm `budget.ledger.debt.{uid}.{eventId}` key stays UID-based (no source change expected).
+- [x] Update compile-breaking test fixtures (add `counterpartyName`/`payerName`):
   - `test/app/features/budget/presentation/widgets/debt_tile_test.dart:15`
   - `test/app/features/budget/presentation/widgets/settle_up_fallback_sheet_test.dart:21`
   - `test/app/features/budget/application/settle_up_controller_test.dart:97`
@@ -36,12 +36,12 @@ Fix 5 dark-mode/data bugs: balance hero wrap, UID-leak in Budget tiles + Chat in
   - `test/app/features/dashboard/application/unread_badge_provider_test.dart:50`
   - `test/app/core/widgets/overflow_320px_test.dart:77`
   - `test/app/core/widgets/design_system_a11y_test.dart:165`
-- [ ] TDD: `global_balance_ledger_provider` resolves `counterpartyName` from roster — happy (displayName), then email-fallback, then placeholder when missing. Repeat for `payerName`. Then AsyncLoading propagation when roster is loading; AsyncError propagation when roster errors.
-- [ ] TDD: `global_inbox_provider` resolves `lastSenderName` — same three-step chain + Async state propagation.
-- [ ] TDD: `debt_tile` renders resolved name; never the UID; placeholder case → text == `'(no longer in event)'` AND avatar text == `'?'`.
-- [ ] TDD: `recent_expense_tile` same shape (name renders; placeholder + `?` avatar).
-- [ ] TDD: `chat_inbox_screen._previewLine` shows `'You: …'` for self; `'<name>: …'` for others; `'(no longer in event): …'` when missing; UID never appears.
-- [ ] Verify: `flutter analyze && flutter test`.
+- [x] TDD: `global_balance_ledger_provider` resolves `counterpartyName` from roster — happy (displayName), then email-fallback, then placeholder when missing. Repeat for `payerName`. Then AsyncLoading propagation when roster is loading; AsyncError propagation when roster errors.
+- [x] TDD: `global_inbox_provider` resolves `lastSenderName` — same three-step chain + Async state propagation.
+- [x] TDD: `debt_tile` renders resolved name; never the UID; placeholder case → text == `'(no longer in event)'` AND avatar text == `'?'`.
+- [x] TDD: `recent_expense_tile` same shape (name renders; placeholder + `?` avatar).
+- [x] TDD: `chat_inbox_screen._previewLine` shows `'You: …'` for self; `'<name>: …'` for others; `'(no longer in event): …'` when missing; UID never appears.
+- [x] Verify: `flutter analyze && flutter test`.
 
 ### Phase 2: Balance tile single-line + dark-mode contrast
 
