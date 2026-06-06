@@ -1,17 +1,29 @@
 # Per-flavor launcher icon config for the dev build (bundle id
-# `space.sookoon.crewpoint.dev`). Run with:
+# `space.sookoon.crewpoint.dev`).
 #
-#   dart run flutter_launcher_icons -f flutter_launcher_icons-dev.yaml
+# Android: writes assets into `android/app/src/dev/res/mipmap-*/` via
+# the `flavor:` directive.
 #
-# Writes Android assets into `android/app/src/dev/res/mipmap-*/` via
-# the `flavor:` directive. iOS xcassets only carry one variant in this
-# project — leave `ios: false` until the asset catalog is split per
-# flavor (separate follow-up).
+# iOS: flutter_launcher_icons can only write to
+# `ios/Runner/Assets.xcassets/AppIcon.appiconset/` — the iconset
+# directory name is not configurable. To produce a per-flavor iconset
+# (so the DEV icon overlay survives prod regenerations), run via the
+# helper script which writes + renames:
+#
+#   bash scripts/generate_ios_per_flavor_icons.sh
+#
+# That script invokes this yaml, renames the resulting iconset to
+# `AppIcon-dev.appiconset`, then does the same for stg, then runs the
+# main (prod) yaml last so the unsuffixed `AppIcon.appiconset` carries
+# the prod art. The per-flavor xcconfigs
+# (`ios/{dev,stg}.xcconfig`) point at their matching iconset name via
+# `ASSETCATALOG_COMPILER_APPICON_NAME`.
 
 flutter_launcher_icons:
   android: true
-  ios: false
+  ios: true
   image_path: "assets/icons/launcher_icon_dev.png"
+  remove_alpha_ios: true
   adaptive_icon_background: "#2D3436"  # AppColors.charcoal
   adaptive_icon_foreground: "assets/icons/launcher_icon_dev.png"
   flavor: "dev"

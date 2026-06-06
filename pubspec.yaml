@@ -104,9 +104,18 @@ dev_dependencies:
   sqlite3: ^2.4.0
 
 # Launcher icon configs live in per-flavor YAML files at the project
-# root: `flutter_launcher_icons-{main,dev,stg}.yaml`. Run all three at
-# once with `dart run flutter_launcher_icons`, or one flavor with
-# `dart run flutter_launcher_icons -f flutter_launcher_icons-dev.yaml`.
+# root: `flutter_launcher_icons-{main,dev,stg}.yaml`.
+#
+# Android only: `dart run flutter_launcher_icons -f flutter_launcher_icons-dev.yaml`
+# (or run all three at once with `dart run flutter_launcher_icons`).
+#
+# iOS + Android (recommended): `bash scripts/generate_ios_per_flavor_icons.sh`.
+# That wrapper runs each yaml in the right order and renames the iOS
+# iconset directory per flavor (AppIcon-dev / AppIcon-stg / AppIcon)
+# because flutter_launcher_icons can only write to AppIcon.appiconset
+# directly. The per-flavor xcconfigs at ios/{dev,stg,prod}.xcconfig
+# point ASSETCATALOG_COMPILER_APPICON_NAME at the matching iconset.
+#
 # Adaptive icons (Android 8.0+) use #2D3436 (AppColors.charcoal) as the
 # background layer so the device-specific mask gets a brand-aligned
 # colour while the foreground stays full-size.
