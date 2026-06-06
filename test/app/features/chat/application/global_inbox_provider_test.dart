@@ -1,9 +1,20 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
+import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
+import 'package:crewpoint_app/app/features/budget/data/member_name_resolver.dart';
 import 'package:crewpoint_app/app/features/chat/application/global_inbox_provider.dart';
+import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
+
+/// Empty roster override — keeps the inbox off the real user repo for
+/// tests that don't care about name resolution.
+final _emptyRosterOverride = usersByIdProvider.overrideWith(
+  (ref, key) async => const <String, AppUser>{},
+);
 
 /// Drain cascading stream emissions through the composed provider.
 Future<AsyncValue<List<InboxRow>>> _readAfterPump(
@@ -71,6 +82,7 @@ void main() {
               _ => Stream.value(const <ChatMessageModel>[]),
             };
           }),
+          _emptyRosterOverride,
         ],
       );
       addTearDown(container.dispose);
@@ -103,6 +115,7 @@ void main() {
         chatMessagesProvider.overrideWith(
           (ref, eventId) => Stream.value([msgANewer]),
         ),
+        _emptyRosterOverride,
       ],
     );
     addTearDown(container.dispose);
@@ -220,6 +233,7 @@ void main() {
             _ => Stream.value(const <ChatMessageModel>[]),
           };
         }),
+        _emptyRosterOverride,
       ],
     );
     addTearDown(container.dispose);
@@ -278,6 +292,7 @@ void main() {
               alexNew2,
             ]),
           ),
+          _emptyRosterOverride,
           eventChatReadStateProvider.overrideWith(
             (ref, arg) => Stream.value(lastRead),
           ),
@@ -324,6 +339,7 @@ void main() {
           chatMessagesProvider.overrideWith(
             (ref, eventId) => Stream.value([m1, m2, m3]),
           ),
+          _emptyRosterOverride,
           // Provider emits null → user has never opened the chat.
           eventChatReadStateProvider.overrideWith(
             (ref, arg) => Stream.value(null),
@@ -366,6 +382,7 @@ void main() {
           chatMessagesProvider.overrideWith(
             (ref, eventId) => Stream.value([urgent, normal]),
           ),
+          _emptyRosterOverride,
           eventChatReadStateProvider.overrideWith(
             (ref, arg) => Stream.value(null),
           ),
@@ -407,6 +424,7 @@ void main() {
           chatMessagesProvider.overrideWith(
             (ref, eventId) => Stream.value([urgent, normalNewer]),
           ),
+          _emptyRosterOverride,
           eventChatReadStateProvider.overrideWith(
             (ref, arg) => Stream.value(readBoundary),
           ),
@@ -421,4 +439,124 @@ void main() {
       expect(row.hasUrgentUnread, isFalse);
     },
   );
+
+  test(
+    'InboxRow.lastSenderName resolves from roster displayName (happy path)',
+    () async {
+      final container = ProviderContainer(
+        overrides: [
+          dashboardEventsProvider.overrideWith(
+            (ref) => Stream.value(const [eventA]),
+          ),
+          chatMessagesProvider.overrideWith(
+            (ref, eventId) => Stream.value([msgANewer]),
+          ),
+          usersByIdProvider.overrideWith(
+            (ref, key) async => const <String, AppUser>{
+              'alex': AppUser(
+                uid: 'alex',
+                email: 'a@x.com',
+                displayName: 'Alex Chen',
+              ),
+            },
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final row = (await _readAfterPump(container, 'me')).requireValue.single;
+      expect(row.lastSenderName, 'Alex Chen');
+    },
+  );
+
+  test(
+    'InboxRow.lastSenderName falls back to email when displayName missing',
+    () async {
+      final container = ProviderContainer(
+        overrides: [
+          dashboardEventsProvider.overrideWith(
+            (ref) => Stream.value(const [eventA]),
+          ),
+          chatMessagesProvider.overrideWith(
+            (ref, eventId) => Stream.value([msgANewer]),
+          ),
+          usersByIdProvider.overrideWith(
+            (ref, key) async => const <String, AppUser>{
+              'alex': AppUser(uid: 'alex', email: 'alex@x.com'),
+            },
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final row = (await _readAfterPump(container, 'me')).requireValue.single;
+      expect(row.lastSenderName, 'alex@x.com');
+    },
+  );
+
+  test(
+    'InboxRow.lastSenderName is the placeholder when sender no longer in roster',
+    () async {
+      final container = ProviderContainer(
+        overrides: [
+          dashboardEventsProvider.overrideWith(
+            (ref) => Stream.value(const [eventA]),
+          ),
+          chatMessagesProvider.overrideWith(
+            (ref, eventId) => Stream.value([msgANewer]),
+          ),
+          _emptyRosterOverride,
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final row = (await _readAfterPump(container, 'me')).requireValue.single;
+      expect(row.lastSenderName, kRemovedMemberPlaceholder);
+    },
+  );
+
+  test(
+    'inbox returns AsyncLoading while per-event roster is pending',
+    () async {
+      final container = ProviderContainer(
+        overrides: [
+          dashboardEventsProvider.overrideWith(
+            (ref) => Stream.value(const [eventA]),
+          ),
+          chatMessagesProvider.overrideWith(
+            (ref, eventId) => Stream.value([msgANewer]),
+          ),
+          usersByIdProvider.overrideWith((ref, key) {
+            final completer = Completer<Map<String, AppUser>>();
+            return completer.future;
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final result = await _readAfterPump(container, 'me');
+      expect(result, isA<AsyncLoading<List<InboxRow>>>());
+    },
+  );
+
+  test('inbox propagates error from per-event roster', () async {
+    final container = ProviderContainer(
+      overrides: [
+        dashboardEventsProvider.overrideWith(
+          (ref) => Stream.value(const [eventA]),
+        ),
+        chatMessagesProvider.overrideWith(
+          (ref, eventId) => Stream.value([msgANewer]),
+        ),
+        usersByIdProvider.overrideWith(
+          (ref, key) async => throw StateError('roster boom'),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final result = await _readAfterPump(container, 'me');
+    expect(result, isA<AsyncError<List<InboxRow>>>());
+    expect((result as AsyncError).error, isA<StateError>());
+  });
 }

@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
+import 'package:crewpoint_app/app/features/budget/data/member_name_resolver.dart';
+import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
@@ -9,12 +11,18 @@ class InboxRow {
   const InboxRow({
     required this.event,
     this.lastMessage,
+    this.lastSenderName,
     this.unreadCount = 0,
     this.hasUrgentUnread = false,
   });
 
   final EventModel event;
   final ChatMessageModel? lastMessage;
+
+  /// Resolved display name for `lastMessage.senderId`. Null when there is
+  /// no last message; `kRemovedMemberPlaceholder` when the sender is no
+  /// longer in the event roster.
+  final String? lastSenderName;
   final int unreadCount;
   final bool hasUrgentUnread;
 }
@@ -70,6 +78,31 @@ final globalInboxProvider = Provider.family<AsyncValue<List<InboxRow>>, String>(
         (a, b) => a.timestamp.isAfter(b.timestamp) ? a : b,
       );
 
+      // Fetch the user roster for this event so the inbox preview can
+      // show the latest sender's display name instead of a raw UID.
+      final rosterAsync = ref.watch(
+        usersByIdProvider(usersByIds(event.memberIds)),
+      );
+      final roster = rosterAsync.value;
+      if (roster == null) {
+        return switch (rosterAsync) {
+          AsyncError(:final error, :final stackTrace) => AsyncError(
+            error,
+            stackTrace,
+          ),
+          _ => const AsyncLoading(),
+        };
+      }
+      final memberNames = <String, String>{};
+      for (final entry in roster.entries) {
+        final name = entry.value.displayName;
+        if (name != null && name.isNotEmpty) {
+          memberNames[entry.key] = name;
+        } else if (entry.value.email.isNotEmpty) {
+          memberNames[entry.key] = entry.value.email;
+        }
+      }
+
       final readAsync = ref.watch(
         eventChatReadStateProvider((uid: uid, eventId: event.id)),
       );
@@ -92,6 +125,10 @@ final globalInboxProvider = Provider.family<AsyncValue<List<InboxRow>>, String>(
         InboxRow(
           event: event,
           lastMessage: latest,
+          lastSenderName: resolveMemberName(
+            uid: latest.senderId,
+            memberNames: memberNames,
+          ),
           unreadCount: unreadCount,
           hasUrgentUnread: hasUrgentUnread,
         ),

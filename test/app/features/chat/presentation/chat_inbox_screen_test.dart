@@ -8,7 +8,9 @@ import 'package:crewpoint_app/app/core/database/daos/chat_messages_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/chat_reads_dao.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/skeletons.dart';
+import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/chat/application/global_inbox_provider.dart';
+import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/chat/data/chat_repository.dart';
 import 'package:crewpoint_app/app/features/chat/data/firestore_chat_service.dart';
 import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
@@ -252,6 +254,16 @@ void main() {
                 _ => Stream.value(const <ChatMessageModel>[]),
               };
             }),
+            usersByIdProvider.overrideWith(
+              (ref, key) async => const <String, AppUser>{
+                'alex': AppUser(
+                  uid: 'alex',
+                  email: 'a@x.com',
+                  displayName: 'Alex',
+                ),
+                'uid-1': AppUser(uid: 'uid-1', email: 'me@x.com'),
+              },
+            ),
           ],
           child: MaterialApp(
             home: ChatInboxScreen(onOpenChat: (_, row) => captured = row),
