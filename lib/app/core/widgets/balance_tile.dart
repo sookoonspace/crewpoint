@@ -104,13 +104,19 @@ class _SplitNumbers extends StatelessWidget {
                 style: labelStyle,
               ),
               const SizedBox(height: 2),
-              MoneyText(
-                key: const Key('balance.tile.owedToYou'),
-                amount: owedToYou,
-                currencyCode: currencyCode,
-                sign: MoneySign.owedToYou,
-                style: AppTypography.numberDisplay(
-                  color: AppColors.moneyOwedToYouFg,
+              // FittedBox(scaleDown) keeps very large amounts on a single
+              // line at narrow widths (iPhone 12 mini / SE / 320 px).
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: MoneyText(
+                  key: const Key('balance.tile.owedToYou'),
+                  amount: owedToYou,
+                  currencyCode: currencyCode,
+                  sign: MoneySign.owedToYou,
+                  style: AppTypography.numberDisplay(
+                    color: AppColors.moneyOwedToYouFg,
+                  ),
                 ),
               ),
             ],
@@ -128,13 +134,17 @@ class _SplitNumbers extends StatelessWidget {
             children: [
               Text(s.balanceTileYouOweLabel.toUpperCase(), style: labelStyle),
               const SizedBox(height: 2),
-              MoneyText(
-                key: const Key('balance.tile.youOwe'),
-                amount: youOwe,
-                currencyCode: currencyCode,
-                sign: MoneySign.youOwe,
-                style: AppTypography.numberDisplay(
-                  color: AppColors.moneyYouOweFg,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: MoneyText(
+                  key: const Key('balance.tile.youOwe'),
+                  amount: youOwe,
+                  currencyCode: currencyCode,
+                  sign: MoneySign.youOwe,
+                  style: AppTypography.numberDisplay(
+                    color: AppColors.moneyYouOweFg,
+                  ),
                 ),
               ),
             ],
