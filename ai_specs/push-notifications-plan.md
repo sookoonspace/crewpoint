@@ -215,20 +215,31 @@ Push notifications roadmap V1→V3. FCM scaffolding (`FcmGateway`/`FcmService`/`
 - [ ] **Manual**: real-device iOS smoke on Focus-enabled device after Apple approves the critical-alert entitlement. Confirm: (a) entitlement enables `interruption-level=critical`; (b) opt-in toggle persists; (c) urgent push rings through Focus. *(Out of session scope — requires Apple developer-portal review.)*
 - [ ] **Manual**: real-device Android smoke on Pixel + Samsung. Confirm: (a) toggling criticalOptIn surfaces the warning banner; (b) "Grant access" opens system DND settings; (c) granting + returning dismisses the banner; (d) post-grant urgent push pierces DND. *(Out of session scope.)*
 
-### Phase 5: V3 — quiet hours + per-event mute + granular controls
+### Phase 5: V3 — quiet hours + per-event mute + granular controls (partial — A–F shipped; G + H + picker UI → Phase 5.1)
 
 - **Goal**: time-window suppression (skipped for critical), per-event mute, mute-this-thread from notification.
-- [ ] `lib/app/features/profile/domain/models/notification_prefs.dart` — extend w/ `quietHoursStart`, `quietHoursEnd`, `timezone`.
-- [ ] `lib/app/features/dashboard/domain/models/event_mute.dart` + repository — write `users/{uid}/private/eventMutes/{eventId}` w/ `{mutedUntil}`.
-- [ ] `lib/app/features/dashboard/presentation/event_dashboard_screen.dart` — overflow menu "Mute event" with duration picker (1h / 8h / 1d / until I unmute).
-- [ ] `functions/src/notifications/sendPush.ts` — server-side enforcement: read recipient `notificationPrefs.quietHours` + `eventMutes/{eventId}.mutedUntil`; suppress unless `category=='chat_urgent' && criticalOptIn==true`.
-- [ ] `functions/src/notifications/sendPush.ts` — include `category` + `mute_thread_action` in payload so notification action can mute event without app open.
-- [ ] `firestore.rules` — allow self read/write of `users/{uid}/private/eventMutes/{eventId}` (add to rules + access-matrix tests).
-- [ ] `lib/app/core/services/fcm_handler.dart` — handle `data['action']=='mute_event'` notification action.
-- [ ] TDD: quiet-hours window suppresses non-critical pushes; critical-opt-in path bypasses.
-- [ ] TDD: muting event for 1h sets `mutedUntil = now + 1h`; CF skips during window.
-- [ ] TDD: rules deny cross-user reads of `eventMutes/*`.
-- [ ] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`.
+- [x] `lib/app/features/profile/domain/models/notification_prefs.dart` — extended with nullable `quietHoursStart` / `quietHoursEnd` (int minutes-of-day) + `timezone` (IANA string). `withQuietHoursCleared()` helper handles the disable transition. `setQuietHours({startMinute, endMinute, timezone})` on the notifier.
+- [x] `lib/app/features/dashboard/domain/models/event_mute.dart` + repository — `EventMute` model (`isMutedAt(now)`, ISO-8601 + Firestore-Timestamp `fromMap`, ISO toMap). `EventMuteRepository` at `users/{uid}/eventMutes/{eventId}` (Firestore-canonical 4-segment path — the plan's literal "users/{uid}/private/eventMutes/{eventId}" was an odd-segment-count typo; collapsed to match the existing `users/{uid}/chatReads/{eventId}` convention). Methods: `muteEvent` / `unmuteEvent` / `getEventMute` / `watchEventMute`. 8 unit tests + 7 repo tests.
+- [ ] `lib/app/features/dashboard/presentation/event_dashboard_screen.dart` — overflow menu "Mute event" with duration picker (1h / 8h / 1d / until I unmute). *(Deferred to Phase 5.1 — repo + Firestore rules + CF enforcement already in place; this slice is the user-facing entry point only.)*
+- [x] `functions/src/notifications/sendPush.ts` — server-side enforcement via new pure helper module `functions/src/notifications/suppress.ts` (`isWithinQuietHours` / `isMutedUntilAfter` / `shouldSuppress`). `sendCategorizedPush` reads each recipient's `notificationPrefs.{quietHoursStart, quietHoursEnd, timezone}` + `users/{uid}/eventMutes/{eventId}.mutedUntil` and drops the push. Documented bypass: `category=='chat_urgent' && criticalOptIn==true` ignores both. Switched the per-batch send to `sendEach` so each Message carries its own apns payload (Phase 4 routing already required this). Top-level `eventId: string` arg added to `SendCategorizedPushArgs`; all 6 callers updated.
+- [ ] `functions/src/notifications/sendPush.ts` — include `category` + `mute_thread_action` in payload so notification action can mute event without app open. *(Deferred to Phase 5.1 — pairs with the iOS action dispatch slice below.)*
+- [x] `firestore.rules` — added `match /users/{userId}/eventMutes/{eventId}` self-only block. 6 new access-matrix tests (self-write / self-read / cross-user-read-denied / cross-user-write-denied / anon-denied / self-delete-unmute).
+- [ ] `lib/app/core/services/fcm_handler.dart` — handle `data['action']=='mute_event'` notification action. *(Deferred to Phase 5.1 — same iOS-action slice as the payload change above.)*
+- [x] TDD: quiet-hours window suppresses non-critical pushes; critical-opt-in path bypasses. *(`suppress.test.ts` — 13 helper tests cover intra-day + overnight windows, tz-aware America/New_York mapping, mutedUntil boundary, combined `shouldSuppress` bypass.)*
+- [ ] TDD: muting event for 1h sets `mutedUntil = now + 1h`; CF skips during window. *(Mute-set side covered by `event_mute_test.dart` (`EventMute.forDuration`). CF-skip-during-window is covered by `shouldSuppress` with an in-window `mutedUntil`. End-to-end integration test deferred to Phase 5.1.)*
+- [x] TDD: rules deny cross-user reads of `eventMutes/*`. *(`firestore-rules.test.ts` "user CANNOT read another user's eventMutes/{eventId}" + 5 sibling cases.)*
+- [x] Settings UI: minimal quiet-hours SwitchListTile (MVP — default 22:00-07:00 window in device's local timezone via `DateTime.now().timeZoneName`; falls back to `'UTC'`). Picker UI for custom windows ships in Phase 5.1.
+- [x] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`. *(1 pre-existing TableMigration warning; 779 flutter tests pass, 4 skipped; 126 CF tests pass.)*
+
+### Phase 5.1: V3 polish — quiet-hours picker, mute-event UI, mute-thread action *(NEW — split from Phase 5 for follow-up)*
+
+- **Goal**: complete the user-facing surface for Phase 5. Server-side enforcement, prefs model, and repo already shipped — these slices wire the UI to them.
+- [ ] Quiet-hours custom-window picker. Two `showTimePicker` dialogs (start / end) replacing the bare toggle. Persist via `setQuietHours`. Display the active window in the settings subtitle.
+- [ ] Proper IANA timezone detection. Add a small platform-channel call (or `flutter_timezone`) so the device's true IANA tz is persisted on every save (today the toggle uses `DateTime.now().timeZoneName`, which is reliable on Android + unreliable on iOS).
+- [ ] `EventDashboardScreen` overflow menu "Mute event" with duration picker (1h / 8h / 1d / until I unmute) → calls `EventMuteRepository.muteEvent` with `now + duration`. Display a "🔕 Muted" chip on the event tile when active.
+- [ ] `functions/src/notifications/sendPush.ts` — emit `mute_thread_action: '1'` in the data payload + `apns.payload.aps.category: 'CHAT_CATEGORY'` with `MUTE_THREAD` action registered in `AppDelegate.swift`.
+- [ ] `FcmHandler.handleAction` — wire `data['action']=='mute_event'` to `EventMuteRepository.muteEvent(now + 8h)` fire-and-forget (same pattern as `mark_done` from Phase 3c.6).
+- [ ] Robot: assignee mutes an event from the dashboard → CF skips a subsequent chat push during the window.
 
 ### Phase 6: V3.1 — web push + localization + summaries
 

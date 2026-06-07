@@ -160,6 +160,8 @@ class _PrefsForm extends ConsumerWidget {
           ),
         ),
         if (prefs.criticalOptIn) _CriticalOptInDndWarning(),
+        const SizedBox(height: AppSpacing.lg),
+        _QuietHoursTile(uid: uid, prefs: prefs),
       ],
     );
   }
@@ -268,5 +270,85 @@ class _CriticalOptInDndWarning extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+/// Phase 5 quiet-hours toggle. V1 MVP — enabling sets the default
+/// 22:00-07:00 window in the device's local timezone (read from
+/// `DateTime.now().timeZoneName`; falls back to `'UTC'` if the platform
+/// returns an empty string). Picker UI for a custom window ships in
+/// Phase 5.1 — server-side enforcement already honours any window the
+/// user / future picker writes.
+class _QuietHoursTile extends ConsumerWidget {
+  const _QuietHoursTile({required this.uid, required this.prefs});
+
+  final String uid;
+  final NotificationPrefs prefs;
+
+  static const _defaultStartMinute = 22 * 60;
+  static const _defaultEndMinute = 7 * 60;
+
+  bool get _isEnabled =>
+      prefs.quietHoursStart != null &&
+      prefs.quietHoursEnd != null &&
+      prefs.timezone != null;
+
+  String _formatMinute(int m) {
+    final h = (m ~/ 60).toString().padLeft(2, '0');
+    final mm = (m % 60).toString().padLeft(2, '0');
+    return '$h:$mm';
+  }
+
+  String _detectTimezone() {
+    final raw = DateTime.now().timeZoneName.trim();
+    return raw.isEmpty ? 'UTC' : raw;
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final controller = ref.read(notificationPrefsProvider(uid).notifier);
+    final subtitle = _isEnabled
+        ? 'Muted ${_formatMinute(prefs.quietHoursStart!)}'
+              ' – ${_formatMinute(prefs.quietHoursEnd!)}'
+              ' (${prefs.timezone})'
+        : 'Suppress non-urgent push during a daily window.';
+    return AppSwitchTile(
+      key: const Key('notifSettings.quietHours.tile'),
+      title: 'Quiet hours',
+      subtitle: subtitle,
+      value: _isEnabled,
+      enabled: prefs.pushEnabled,
+      onChanged: (v) => _safeToggle(context, controller, enable: v),
+    );
+  }
+
+  Future<void> _safeToggle(
+    BuildContext context,
+    NotificationPrefsNotifier controller, {
+    required bool enable,
+  }) async {
+    try {
+      if (enable) {
+        await controller.setQuietHours(
+          startMinute: _defaultStartMinute,
+          endMinute: _defaultEndMinute,
+          timezone: _detectTimezone(),
+        );
+      } else {
+        await controller.setQuietHours(
+          startMinute: null,
+          endMinute: null,
+          timezone: null,
+        );
+      }
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not save — try again'),
+          backgroundColor: AppColors.terracotta,
+        ),
+      );
+    }
   }
 }

@@ -150,11 +150,13 @@ void main() {
       final tiles = tester
           .widgetList<SwitchListTile>(find.byType(SwitchListTile))
           .toList();
-      // master + 4 categories + criticalOptIn opt-in.
-      expect(tiles.length, 6);
-      // All defaults TRUE except the criticalOptIn opt-in (Phase 4).
+      // master + 4 categories + criticalOptIn opt-in + quiet-hours toggle.
+      expect(tiles.length, 7);
+      // All defaults TRUE except the two opt-ins (criticalOptIn,
+      // quietHours — both Phase 4 / 5).
       expect(tiles.take(5).every((t) => t.value == true), isTrue);
       expect(tiles[5].value, isFalse);
+      expect(tiles[6].value, isFalse);
     });
 
     testWidgets('toggling master OFF persists pushEnabled=false', (
@@ -359,5 +361,68 @@ void main() {
         expect(channels.requestCalls, 1);
       },
     );
+
+    testWidgets(
+      'quietHours tile defaults to OFF when prefs.quietHoursStart is null',
+      (tester) async {
+        final repo = _InMemoryUserRepo();
+        await _pumpScreen(tester, repo);
+
+        final tile = tester.widget<SwitchListTile>(
+          find.descendant(
+            of: find.byKey(const Key('notifSettings.quietHours.tile')),
+            matching: find.byType(SwitchListTile),
+          ),
+        );
+        expect(tile.value, isFalse);
+      },
+    );
+
+    testWidgets(
+      'enabling quietHours persists defaults (22:00-07:00 + non-null timezone)',
+      (tester) async {
+        final repo = _InMemoryUserRepo();
+        await _pumpScreen(tester, repo);
+
+        final switchTile = find.byKey(
+          const Key('notifSettings.quietHours.tile'),
+        );
+        await tester.ensureVisible(switchTile);
+        await tester.pumpAndSettle();
+        await tester.tap(switchTile);
+        await tester.pumpAndSettle();
+
+        expect(repo.updates, isNotEmpty);
+        final last = repo.updates.last;
+        expect(last.quietHoursStart, 22 * 60);
+        expect(last.quietHoursEnd, 7 * 60);
+        expect(last.timezone, isNotNull);
+        expect(last.timezone, isNotEmpty);
+      },
+    );
+
+    testWidgets('disabling quietHours clears all three fields to null', (
+      tester,
+    ) async {
+      final repo = _InMemoryUserRepo()
+        ..prefs = const NotificationPrefs(
+          quietHoursStart: 22 * 60,
+          quietHoursEnd: 7 * 60,
+          timezone: 'UTC',
+        );
+      await _pumpScreen(tester, repo);
+
+      final switchTile = find.byKey(const Key('notifSettings.quietHours.tile'));
+      await tester.ensureVisible(switchTile);
+      await tester.pumpAndSettle();
+      await tester.tap(switchTile);
+      await tester.pumpAndSettle();
+
+      expect(repo.updates, isNotEmpty);
+      final last = repo.updates.last;
+      expect(last.quietHoursStart, isNull);
+      expect(last.quietHoursEnd, isNull);
+      expect(last.timezone, isNull);
+    });
   });
 }
