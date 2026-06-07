@@ -211,4 +211,83 @@ void main() {
       expect(next.criticalOptIn, isTrue);
     });
   });
+
+  group('NotificationPrefs quiet hours (Phase 5)', () {
+    test(
+      'defaults: all three fields null → quiet hours OFF (CF skips check)',
+      () {
+        const prefs = NotificationPrefs();
+
+        expect(prefs.quietHoursStart, isNull);
+        expect(prefs.quietHoursEnd, isNull);
+        expect(prefs.timezone, isNull);
+      },
+    );
+
+    test('fromMap reads minutes-of-day ints + IANA timezone string', () {
+      final prefs = NotificationPrefs.fromMap(const {
+        'quietHoursStart': 22 * 60, // 22:00
+        'quietHoursEnd': 7 * 60, // 07:00 (crosses midnight)
+        'timezone': 'America/New_York',
+      });
+
+      expect(prefs.quietHoursStart, 22 * 60);
+      expect(prefs.quietHoursEnd, 7 * 60);
+      expect(prefs.timezone, 'America/New_York');
+    });
+
+    test('fromMap drops wrong types instead of throwing', () {
+      final prefs = NotificationPrefs.fromMap(const {
+        'quietHoursStart': '22:00', // string instead of int
+        'quietHoursEnd': true,
+        'timezone': 42,
+      });
+
+      expect(prefs.quietHoursStart, isNull);
+      expect(prefs.quietHoursEnd, isNull);
+      expect(prefs.timezone, isNull);
+    });
+
+    test(
+      'toMap omits quiet-hour fields when null (Firestore stays sparse)',
+      () {
+        const prefs = NotificationPrefs();
+
+        // The CF only checks quiet hours when all three are present, so
+        // omitting them is cheaper + clearer than writing `null` keys.
+        expect(prefs.toMap().containsKey('quietHoursStart'), isFalse);
+        expect(prefs.toMap().containsKey('quietHoursEnd'), isFalse);
+        expect(prefs.toMap().containsKey('timezone'), isFalse);
+      },
+    );
+
+    test('toMap serialises quiet-hour fields when set', () {
+      const prefs = NotificationPrefs(
+        quietHoursStart: 22 * 60,
+        quietHoursEnd: 7 * 60,
+        timezone: 'America/New_York',
+      );
+
+      final map = prefs.toMap();
+      expect(map['quietHoursStart'], 22 * 60);
+      expect(map['quietHoursEnd'], 7 * 60);
+      expect(map['timezone'], 'America/New_York');
+    });
+
+    test('copyWith sets quiet-hour fields without touching other flags', () {
+      const prefs = NotificationPrefs();
+
+      final next = prefs.copyWith(
+        quietHoursStart: 22 * 60,
+        quietHoursEnd: 7 * 60,
+        timezone: 'UTC',
+      );
+
+      expect(next.quietHoursStart, 22 * 60);
+      expect(next.quietHoursEnd, 7 * 60);
+      expect(next.timezone, 'UTC');
+      expect(next.pushEnabled, isTrue);
+      expect(next.urgentChat, isTrue);
+    });
+  });
 }

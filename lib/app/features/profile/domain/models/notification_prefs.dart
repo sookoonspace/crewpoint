@@ -16,6 +16,9 @@ class NotificationPrefs {
     this.payments = true,
     this.eventUpdates = true,
     this.criticalOptIn = false,
+    this.quietHoursStart,
+    this.quietHoursEnd,
+    this.timezone,
   });
 
   /// Master toggle — false means: do not request OS permission, do not
@@ -54,6 +57,25 @@ class NotificationPrefs {
   /// access at the OS level.
   final bool criticalOptIn;
 
+  /// Quiet-hours window — minutes from midnight in the user's
+  /// [timezone]. Values are `0`-`1439`; `start > end` means the window
+  /// crosses midnight (e.g. 22:00-07:00 → `start = 1320`, `end = 420`).
+  /// **All three of [quietHoursStart], [quietHoursEnd], [timezone] must
+  /// be set for quiet hours to take effect** — the CF skips the check
+  /// when any is null. Critical-opt-in urgent pushes bypass this window
+  /// (server-side enforcement in `sendCategorizedPush`).
+  final int? quietHoursStart;
+
+  /// See [quietHoursStart].
+  final int? quietHoursEnd;
+
+  /// IANA timezone identifier (e.g. `"America/New_York"`). Required for
+  /// the CF to interpret [quietHoursStart] / [quietHoursEnd] against the
+  /// recipient's wall clock. Server side uses Node's
+  /// `Intl.DateTimeFormat({timeZone: ...})` — no third-party tz library
+  /// dependency.
+  final String? timezone;
+
   /// Reads the Firestore subdoc fragment. Missing / wrong-typed fields
   /// fall through to the constructor defaults so a partial migration
   /// never throws at deserialisation.
@@ -66,6 +88,9 @@ class NotificationPrefs {
       payments: _readBool(map['payments'], fallback: true),
       eventUpdates: _readBool(map['eventUpdates'], fallback: true),
       criticalOptIn: _readBool(map['criticalOptIn'], fallback: false),
+      quietHoursStart: _readMinuteOfDay(map['quietHoursStart']),
+      quietHoursEnd: _readMinuteOfDay(map['quietHoursEnd']),
+      timezone: _readNonEmptyString(map['timezone']),
     );
   }
 
@@ -76,6 +101,11 @@ class NotificationPrefs {
     'payments': payments,
     'eventUpdates': eventUpdates,
     'criticalOptIn': criticalOptIn,
+    // Sparse — only persist quiet-hours fields when set; the CF only
+    // checks the window when all three are present.
+    if (quietHoursStart != null) 'quietHoursStart': quietHoursStart,
+    if (quietHoursEnd != null) 'quietHoursEnd': quietHoursEnd,
+    if (timezone != null) 'timezone': timezone,
   };
 
   NotificationPrefs copyWith({
@@ -85,6 +115,9 @@ class NotificationPrefs {
     bool? payments,
     bool? eventUpdates,
     bool? criticalOptIn,
+    int? quietHoursStart,
+    int? quietHoursEnd,
+    String? timezone,
   }) {
     return NotificationPrefs(
       pushEnabled: pushEnabled ?? this.pushEnabled,
@@ -93,10 +126,39 @@ class NotificationPrefs {
       payments: payments ?? this.payments,
       eventUpdates: eventUpdates ?? this.eventUpdates,
       criticalOptIn: criticalOptIn ?? this.criticalOptIn,
+      quietHoursStart: quietHoursStart ?? this.quietHoursStart,
+      quietHoursEnd: quietHoursEnd ?? this.quietHoursEnd,
+      timezone: timezone ?? this.timezone,
+    );
+  }
+
+  /// Returns a copy with quiet hours explicitly cleared (all three
+  /// nullable fields set to null). Use this instead of `copyWith` when
+  /// the user disables quiet hours — `copyWith` can't transition a
+  /// non-null value back to null because its parameters are nullable.
+  NotificationPrefs withQuietHoursCleared() {
+    return NotificationPrefs(
+      pushEnabled: pushEnabled,
+      urgentChat: urgentChat,
+      taskUpdates: taskUpdates,
+      payments: payments,
+      eventUpdates: eventUpdates,
+      criticalOptIn: criticalOptIn,
     );
   }
 
   static bool _readBool(Object? value, {required bool fallback}) {
     return value is bool ? value : fallback;
+  }
+
+  /// Accepts a `0`-`1439` int; returns null otherwise.
+  static int? _readMinuteOfDay(Object? value) {
+    if (value is int && value >= 0 && value <= 1439) return value;
+    return null;
+  }
+
+  static String? _readNonEmptyString(Object? value) {
+    if (value is String && value.isNotEmpty) return value;
+    return null;
   }
 }
