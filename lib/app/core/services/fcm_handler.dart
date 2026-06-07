@@ -19,6 +19,7 @@ class FcmHandler {
     required this.showBanner,
     required this.navigateTo,
     this.markTaskDone,
+    this.muteEvent,
   });
 
   /// Reads the current go_router location.
@@ -41,6 +42,14 @@ class FcmHandler {
   /// existing callers that pre-date interactive actions keep compiling.
   final void Function({required String eventId, required String taskId})?
   markTaskDone;
+
+  /// Routes the iOS `MUTE_EVENT` action (Phase 5.1) to the
+  /// `EventMuteRepository.muteEvent` write — injected so `FcmHandler`
+  /// stays free of repository imports. The handler always passes a
+  /// fixed 8h duration; the user can open the in-app sheet to pick
+  /// another value.
+  final void Function({required String eventId, required Duration duration})?
+  muteEvent;
 
   /// Returns true if the foreground message was suppressed because the user
   /// is already on the relevant chat screen.
@@ -88,6 +97,10 @@ class FcmHandler {
           return;
         }
         markTaskDone?.call(eventId: eventId, taskId: taskId);
+      case 'mute_event':
+        final eventId = data['eventId'];
+        if (eventId == null || eventId.isEmpty) return;
+        muteEvent?.call(eventId: eventId, duration: const Duration(hours: 8));
       default:
         // Unknown action — no-op so a future server-side action that
         // ships before its client handler does no damage on older builds.

@@ -79,10 +79,11 @@ describe('sendCategorizedPush CATEGORY_CONFIG', () => {
       );
     });
 
-    test('categories without actions omit apnsCategory', () => {
-      // chat_urgent + member_joined have no action buttons; iOS renders
-      // them as plain notifications.
-      expect(CATEGORY_CONFIG.chat_urgent.apnsCategory).toBeUndefined();
+    test('chat_urgent binds CHAT_CATEGORY (MUTE_EVENT action — Phase 5.1)', () => {
+      expect(CATEGORY_CONFIG.chat_urgent.apnsCategory).toBe('CHAT_CATEGORY');
+    });
+
+    test('member_joined omits apnsCategory (no action set)', () => {
       expect(CATEGORY_CONFIG.member_joined.apnsCategory).toBeUndefined();
     });
   });

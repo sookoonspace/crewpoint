@@ -231,15 +231,25 @@ Push notifications roadmap V1→V3. FCM scaffolding (`FcmGateway`/`FcmService`/`
 - [x] Settings UI: minimal quiet-hours SwitchListTile (MVP — default 22:00-07:00 window in device's local timezone via `DateTime.now().timeZoneName`; falls back to `'UTC'`). Picker UI for custom windows ships in Phase 5.1.
 - [x] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`. *(1 pre-existing TableMigration warning; 779 flutter tests pass, 4 skipped; 126 CF tests pass.)*
 
-### Phase 5.1: V3 polish — quiet-hours picker, mute-event UI, mute-thread action *(NEW — split from Phase 5 for follow-up)*
+### Phase 5.1: V3 polish — mute-event UI + mute-from-notification action ✓ *(quiet-hours custom picker + IANA tz detection split into 5.2)*
 
 - **Goal**: complete the user-facing surface for Phase 5. Server-side enforcement, prefs model, and repo already shipped — these slices wire the UI to them.
-- [ ] Quiet-hours custom-window picker. Two `showTimePicker` dialogs (start / end) replacing the bare toggle. Persist via `setQuietHours`. Display the active window in the settings subtitle.
-- [ ] Proper IANA timezone detection. Add a small platform-channel call (or `flutter_timezone`) so the device's true IANA tz is persisted on every save (today the toggle uses `DateTime.now().timeZoneName`, which is reliable on Android + unreliable on iOS).
-- [ ] `EventDashboardScreen` overflow menu "Mute event" with duration picker (1h / 8h / 1d / until I unmute) → calls `EventMuteRepository.muteEvent` with `now + duration`. Display a "🔕 Muted" chip on the event tile when active.
-- [ ] `functions/src/notifications/sendPush.ts` — emit `mute_thread_action: '1'` in the data payload + `apns.payload.aps.category: 'CHAT_CATEGORY'` with `MUTE_THREAD` action registered in `AppDelegate.swift`.
-- [ ] `FcmHandler.handleAction` — wire `data['action']=='mute_event'` to `EventMuteRepository.muteEvent(now + 8h)` fire-and-forget (same pattern as `mark_done` from Phase 3c.6).
-- [ ] Robot: assignee mutes an event from the dashboard → CF skips a subsequent chat push during the window.
+- [x] `EventDashboardScreen` hero — bell icon visible to every member (mute is a per-user choice). Tap opens `MuteEventSheet` (new) with 4 preset durations (1h / 8h / 1d / Until I unmute) → calls `EventMuteRepository.muteEvent(now + duration)`. When a mute is active, the icon flips to `notifications_off_outlined` and the sheet shows an Unmute CTA instead. New `eventMuteProvider` (StreamProvider.family keyed by `({uid, eventId})` record) drives live UI state.
+- [x] `functions/src/notifications/sendPush.ts` — `chat_urgent` now binds `apnsCategory: 'CHAT_CATEGORY'` so the lock-screen notification shows a Mute action button.
+- [x] `ios/Runner/AppDelegate.swift` — `CHAT_CATEGORY` registered with a single `MUTE_EVENT` action (.authenticationRequired + .destructive). `mapActionIdentifier` adds the `MUTE_EVENT → 'mute_event'` mapping.
+- [x] `FcmHandler.handleAction` — `data['action']=='mute_event'` dispatches the new optional `muteEvent({eventId, duration})` callback with a fixed 8h duration (matches the in-app 8h preset). `main.dart` wires the callback to `EventMuteRepository.muteEvent` fire-and-forget; failures logged, never crash the app-delegate callback path.
+- [ ] Quiet-hours custom-window picker (two `showTimePicker` dialogs replacing the bare toggle). *(Deferred to Phase 5.2 — current toggle works with default 22:00-07:00 window; picker is polish.)*
+- [ ] Proper IANA timezone detection (`flutter_timezone` or platform channel). *(Deferred to Phase 5.2 — current `DateTime.now().timeZoneName` is reliable on Android, unreliable on iOS; suppress.ts catches and falls through to "no quiet hours" on unparseable strings so the failure mode is safe.)*
+- [ ] Robot: assignee mutes an event from the dashboard → CF skips a subsequent chat push during the window. *(Deferred — needs robot harness work; widget tests on `MuteEventSheet` + handler dispatch tests already cover the dispatch contract.)*
+- [x] TDD: 4 new MuteEventSheet widget tests pin duration writes (1h → mutedUntil=now+1h, "Until I unmute" → 10y+ mutedUntil, Unmute CTA deletes the doc, all 4 keyed buttons render). 2 new FcmHandler tests pin `mute_event` action dispatch + no-op on missing eventId. 2 sendPush.test.ts tests pin chat_urgent's new apnsCategory + member_joined keeps omitting it.
+- [x] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`. *(1 pre-existing TableMigration warning; 785 flutter tests pass, 4 skipped; 127 CF tests pass.)*
+
+### Phase 5.2: V3 polish — quiet-hours custom picker + IANA tz detection *(NEW — split from Phase 5.1)*
+
+- **Goal**: refine the quiet-hours UX from "default window only" to a fully customizable window persisted with the device's true IANA timezone.
+- [ ] Quiet-hours custom-window picker: two `showTimePicker` dialogs (start / end) below the toggle. Persist via `setQuietHours(startMinute, endMinute, timezone)`. Display the active window in the settings subtitle.
+- [ ] Proper IANA timezone detection. Add `flutter_timezone` (or a small platform-channel call) so the device's true IANA tz is persisted on every save. Falls back to `DateTime.now().timeZoneName` (today's behavior) when the call fails.
+- [ ] Robot: user sets a custom 9-5 quiet-hours window in Sydney tz → CF skips a 14:00 Sydney push.
 
 ### Phase 6: V3.1 — web push + localization + summaries
 

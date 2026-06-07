@@ -44,6 +44,12 @@ const CATEGORY_CONFIG: Record<NotificationCategory, CategoryConfig> = {
     prefKey: "urgentChat",
     androidChannelId: "crewpoint_chat_urgent",
     iosThreadId: "chat",
+    // Phase 5.1 — `CHAT_CATEGORY` carries the MUTE_EVENT action so a
+    // recipient can pause the event for 8h directly from the lock
+    // screen / banner. The action is registered in AppDelegate.swift;
+    // FcmHandler.handleAction routes the resulting `mute_event` to
+    // EventMuteRepository.muteEvent.
+    apnsCategory: "CHAT_CATEGORY",
   },
   task_assigned: {
     prefKey: "taskUpdates",
