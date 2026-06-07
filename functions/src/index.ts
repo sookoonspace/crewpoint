@@ -16,3 +16,8 @@ export {demoteAdmin} from "./events/demoteAdmin";
 export {markTaskComplete} from "./events/markTaskComplete";
 export {disputeSettlement} from "./events/disputeSettlement";
 export {onUrgentMessageCreated} from "./events/onUrgentMessageCreated";
+export {onTaskAssigned} from "./events/onTaskAssigned";
+export {onExpenseCreated} from "./events/onExpenseCreated";
+export {onSettlementDisputed} from "./events/onSettlementDisputed";
+export {onMemberJoined} from "./events/onMemberJoined";
+export {onTaskDueScheduled} from "./events/onTaskDueScheduled";

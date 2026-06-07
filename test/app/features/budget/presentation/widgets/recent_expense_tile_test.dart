@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/features/budget/application/global_balance_ledger_provider.dart';
+import 'package:crewpoint_app/app/features/budget/data/member_name_resolver.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/recent_expense_tile.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
@@ -21,7 +22,11 @@ const _expense = ExpenseModel(
   description: 'Pizza',
 );
 
-const _row = RecentExpenseRow(expense: _expense, event: _event);
+const _row = RecentExpenseRow(
+  expense: _expense,
+  event: _event,
+  payerName: 'You',
+);
 
 void main() {
   testWidgets('wraps content in a Card for the elevated-tile look', (
@@ -43,4 +48,73 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets(
+    'renders payerName (other user); avatar shows display-name initial',
+    (tester) async {
+      const otherPayer = ExpenseModel(
+        id: 'exp-2',
+        eventId: 'evt-1',
+        payerId: 'alex',
+        amount: 30,
+      );
+      const row = RecentExpenseRow(
+        expense: otherPayer,
+        event: _event,
+        payerName: 'Alex Chen',
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: RecentExpenseTile(
+              row: row,
+              currentUserId: 'me',
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      // Description fallback uses payerName, never payerId.
+      expect(find.text('Alex Chen paid'), findsOneWidget);
+      expect(find.textContaining('alex'), findsNothing);
+      final avatarText =
+          tester.widget<CircleAvatar>(find.byType(CircleAvatar)).child! as Text;
+      expect(avatarText.data, 'A');
+    },
+  );
+
+  testWidgets(
+    'placeholder payerName → avatar reads "?" and UID never appears',
+    (tester) async {
+      const ghost = ExpenseModel(
+        id: 'exp-3',
+        eventId: 'evt-1',
+        payerId: 'ghost-uid',
+        amount: 10,
+      );
+      const row = RecentExpenseRow(
+        expense: ghost,
+        event: _event,
+        payerName: kRemovedMemberPlaceholder,
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: RecentExpenseTile(
+              row: row,
+              currentUserId: 'me',
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('$kRemovedMemberPlaceholder paid'), findsOneWidget);
+      expect(find.textContaining('ghost-uid'), findsNothing);
+      final avatarText =
+          tester.widget<CircleAvatar>(find.byType(CircleAvatar)).child! as Text;
+      expect(avatarText.data, '?');
+    },
+  );
 }

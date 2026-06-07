@@ -105,4 +105,66 @@ void main() {
       expect(navigateCount, 0);
     });
   });
+
+  group('FcmHandler.handleAction', () {
+    test('mark_done action dispatches markTaskDone with eventId + taskId', () {
+      String? doneEventId;
+      String? doneTaskId;
+      final handler = FcmHandler(
+        currentRoute: () => null,
+        showBanner: ({required title, required body, required deepLink}) {},
+        navigateTo: (_) {},
+        markTaskDone: ({required eventId, required taskId}) {
+          doneEventId = eventId;
+          doneTaskId = taskId;
+        },
+      );
+
+      handler.handleAction(
+        data: const {
+          'action': 'mark_done',
+          'eventId': 'evt-1',
+          'taskId': 't-99',
+        },
+      );
+
+      expect(doneEventId, 'evt-1');
+      expect(doneTaskId, 't-99');
+    });
+
+    test('ignores unknown action identifiers', () {
+      var doneCalls = 0;
+      final handler = FcmHandler(
+        currentRoute: () => null,
+        showBanner: ({required title, required body, required deepLink}) {},
+        navigateTo: (_) {},
+        markTaskDone: ({required eventId, required taskId}) => doneCalls++,
+      );
+
+      handler.handleAction(
+        data: const {'action': 'snooze', 'eventId': 'evt-1', 'taskId': 't-99'},
+      );
+
+      expect(doneCalls, 0);
+    });
+
+    test('mark_done no-op when eventId or taskId is missing', () {
+      var doneCalls = 0;
+      final handler = FcmHandler(
+        currentRoute: () => null,
+        showBanner: ({required title, required body, required deepLink}) {},
+        navigateTo: (_) {},
+        markTaskDone: ({required eventId, required taskId}) => doneCalls++,
+      );
+
+      handler.handleAction(
+        data: const {'action': 'mark_done', 'eventId': 'evt-1'},
+      );
+      handler.handleAction(
+        data: const {'action': 'mark_done', 'taskId': 't-99'},
+      );
+
+      expect(doneCalls, 0);
+    });
+  });
 }

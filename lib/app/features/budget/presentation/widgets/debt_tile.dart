@@ -5,6 +5,7 @@ import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/widgets/money_text.dart';
 import 'package:crewpoint_app/app/features/budget/application/global_balance_ledger_provider.dart';
+import 'package:crewpoint_app/app/features/budget/data/member_name_resolver.dart';
 
 /// Settle-up tap callback. Production wires this to
 /// `SettleUpController.handleSettleUp`; tests inject a recorder.
@@ -43,7 +44,9 @@ class DebtTile extends StatelessWidget {
               radius: 18,
               backgroundColor: AppColors.sage,
               child: Text(
-                _firstLetter(row.counterpartyUid),
+                row.counterpartyName == kRemovedMemberPlaceholder
+                    ? '?'
+                    : _firstLetter(row.counterpartyName),
                 style: theme.textTheme.titleSmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.w600,
@@ -56,7 +59,7 @@ class DebtTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    row.counterpartyUid,
+                    row.counterpartyName,
                     style: theme.textTheme.titleSmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
@@ -122,9 +125,9 @@ class _EventChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: Theme.of(
-          context,
-        ).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurface),
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),

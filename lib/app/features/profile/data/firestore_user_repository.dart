@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
+import 'package:crewpoint_app/app/features/profile/domain/models/notification_prefs.dart';
 import 'package:crewpoint_app/app/features/profile/domain/repositories/i_user_repository.dart';
 
 /// Firestore implementation of [IUserRepository].
@@ -170,6 +171,49 @@ class FirestoreUserRepository implements IUserRepository {
         stackTrace: st,
         name: 'profile',
       );
+    }
+  }
+
+  @override
+  Future<NotificationPrefs> getNotificationPrefs(String uid) async {
+    try {
+      final snap = await _privateProfileRef(uid).get();
+      final raw = snap.data()?['notificationPrefs'] as Map<String, dynamic>?;
+      return NotificationPrefs.fromMap(raw);
+    } on FirebaseException catch (e, st) {
+      // Permission-denied on non-self reads is expected at security-rule
+      // level — return defaults so the UI / FCM gate doesn't crash.
+      if (e.code == 'permission-denied') {
+        return const NotificationPrefs();
+      }
+      log(
+        'Failed to read notificationPrefs for $uid',
+        error: e,
+        stackTrace: st,
+        name: 'profile',
+      );
+      return const NotificationPrefs();
+    }
+  }
+
+  @override
+  Future<void> updateNotificationPrefs({
+    required String uid,
+    required NotificationPrefs prefs,
+  }) async {
+    try {
+      await _privateProfileRef(uid).set({
+        'notificationPrefs': prefs.toMap(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e, st) {
+      log(
+        'Failed to update notificationPrefs for $uid',
+        error: e,
+        stackTrace: st,
+        name: 'profile',
+      );
+      rethrow;
     }
   }
 

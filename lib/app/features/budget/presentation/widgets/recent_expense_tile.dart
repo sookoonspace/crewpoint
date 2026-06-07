@@ -5,6 +5,7 @@ import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/widgets/money_text.dart';
 import 'package:crewpoint_app/app/features/budget/application/global_balance_ledger_provider.dart';
+import 'package:crewpoint_app/app/features/budget/data/member_name_resolver.dart';
 
 /// Chronological row in the cross-event "Recent expenses" feed.
 class RecentExpenseTile extends StatelessWidget {
@@ -40,7 +41,10 @@ class RecentExpenseTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final exp = row.expense;
-    final payerLabel = exp.payerId == currentUserId ? 'You' : exp.payerId;
+    final payerLabel = exp.payerId == currentUserId ? 'You' : row.payerName;
+    final avatarInitial = payerLabel == kRemovedMemberPlaceholder
+        ? '?'
+        : _firstLetter(payerLabel);
     return Card(
       elevation: 0,
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -65,7 +69,7 @@ class RecentExpenseTile extends StatelessWidget {
                 radius: 16,
                 backgroundColor: AppColors.sageLight,
                 child: Text(
-                  _firstLetter(payerLabel),
+                  avatarInitial,
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface,
                   ),

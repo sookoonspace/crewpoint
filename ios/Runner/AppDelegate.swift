@@ -1,14 +1,115 @@
 import Flutter
 import UIKit
+import UserNotifications
 import FirebaseAuth
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
+  // MARK: - UNNotificationCategory identifiers
+  //
+  // Server sets `apns.payload.aps.category` in
+  // `functions/src/notifications/sendPush.ts`. iOS resolves it against
+  // the categories registered below to decide which action buttons to
+  // show under the notification.
+  private static let taskCategoryId = "TASK_CATEGORY"
+  private static let paymentCategoryId = "PAYMENT_CATEGORY"
+
+  // MARK: - UNNotificationAction identifiers
+  //
+  // Mirrored on the Dart side as `data['action']` values
+  // ("mark_done", "view_expense"). The native → Dart bridge for the
+  // tapped action identifier is wired through the
+  // `crewpoint/notification_actions` MethodChannel (see
+  // `notificationActionChannel` below + the listener registered in
+  // `FcmHandlerBootstrap`).
+  private static let markDoneActionId = "MARK_DONE"
+  private static let viewExpenseActionId = "VIEW_EXPENSE"
+
+  /// `MethodChannel` carrying notification-action events to Dart.
+  /// Established lazily on the first action tap — at app launch the
+  /// implicit `FlutterViewController` may not be attached yet, so we
+  /// resolve the binary messenger from `window.rootViewController` on
+  /// demand and cache the channel once we have a working messenger.
+  private var notificationActionChannel: FlutterMethodChannel?
+
+  private func resolveNotificationActionChannel() -> FlutterMethodChannel? {
+    if let cached = notificationActionChannel { return cached }
+    guard
+      let controller = window?.rootViewController as? FlutterViewController
+    else {
+      return nil
+    }
+    let channel = FlutterMethodChannel(
+      name: "crewpoint/notification_actions",
+      binaryMessenger: controller.binaryMessenger
+    )
+    notificationActionChannel = channel
+    return channel
+  }
+
+  /// `MethodChannel` Dart uses to explicitly call
+  /// `registerForRemoteNotifications`. Installed eagerly in
+  /// `didInitializeImplicitFlutterEngine` — see `installApnsControlHandler`.
+  private var apnsControlChannel: FlutterMethodChannel?
+
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    registerNotificationCategories()
+    // Set our delegate BEFORE super so the firebase_messaging plugin saves
+    // us as `_originalNotificationCenterDelegate` during its own setup —
+    // that's the only path our `userNotificationCenter(_:didReceive:_)`
+    // override below gets invoked once the plugin claims the delegate
+    // slot for itself.
+    UNUserNotificationCenter.current().delegate = self
+    return super.application(
+      application,
+      didFinishLaunchingWithOptions: launchOptions
+    )
+  }
+
+  // MARK: - APNs registration diagnostics
+  //
+  // These callbacks fire after `registerForRemoteNotifications` is called
+  // (which firebase_messaging does automatically once permission is
+  // granted). NSLog so the lines show up in both Xcode's debug console
+  // and macOS Console.app — easier to grep than the apsd noise.
+  //
+  // Success path: "✅ APNs token registered" — token comes back, FCM can
+  // then exchange it for an FCM token.
+  // Failure path: "❌ APNs registration failed" — the NSError carries the
+  // exact rejection reason (most commonly: invalid `aps-environment`,
+  // App ID without Push capability, or stale provisioning profile).
+  override func application(
+    _ application: UIApplication,
+    didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+  ) {
+    let tokenString = deviceToken.map { String(format: "%02x", $0) }.joined()
+    NSLog(
+      "[CrewPoint][APNs] ✅ Registered for remote notifications. Token: \(tokenString)"
+    )
+    super.application(
+      application,
+      didRegisterForRemoteNotificationsWithDeviceToken: deviceToken
+    )
+  }
+
+  override func application(
+    _ application: UIApplication,
+    didFailToRegisterForRemoteNotificationsWithError error: Error
+  ) {
+    let ns = error as NSError
+    NSLog(
+      "[CrewPoint][APNs] ❌ Failed to register for remote notifications: \(error.localizedDescription)"
+    )
+    NSLog(
+      "[CrewPoint][APNs] Error domain: \(ns.domain), code: \(ns.code), userInfo: \(ns.userInfo)"
+    )
+    super.application(
+      application,
+      didFailToRegisterForRemoteNotificationsWithError: error
+    )
   }
 
   /// Hands Google / Apple OAuth callback URLs (com.googleusercontent.apps.<id>://firebaseauth/link?...)
@@ -31,5 +132,117 @@ import FirebaseAuth
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    // Wire the APNs control channel eagerly so Dart can re-trigger
+    // `registerForRemoteNotifications` as soon as permission is granted.
+    // Falls back to lazy resolution from `window.rootViewController` if
+    // the registrar isn't available here (older Flutter versions / edge
+    // cases) — the lazy path doubles as the resolver for the action
+    // channel and is exercised by FCM action taps.
+    if let registrar = engineBridge.pluginRegistry.registrar(
+      forPlugin: "CrewPointApnsControl"
+    ) {
+      installApnsControlHandler(messenger: registrar.messenger())
+    }
+  }
+
+  private func installApnsControlHandler(messenger: FlutterBinaryMessenger) {
+    let channel = FlutterMethodChannel(
+      name: "crewpoint/apns",
+      binaryMessenger: messenger
+    )
+    channel.setMethodCallHandler { call, result in
+      switch call.method {
+      case "registerForRemoteNotifications":
+        DispatchQueue.main.async {
+          UIApplication.shared.registerForRemoteNotifications()
+          NSLog(
+            "[CrewPoint][APNs] Triggered registerForRemoteNotifications via MethodChannel"
+          )
+          result(nil)
+        }
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
+    apnsControlChannel = channel
+  }
+
+  // MARK: - UNNotificationCategory registration
+
+  private func registerNotificationCategories() {
+    let markDone = UNNotificationAction(
+      identifier: Self.markDoneActionId,
+      title: "Mark Done",
+      options: [.authenticationRequired]
+    )
+    let viewExpense = UNNotificationAction(
+      identifier: Self.viewExpenseActionId,
+      title: "View Expense",
+      options: [.foreground]
+    )
+
+    let taskCategory = UNNotificationCategory(
+      identifier: Self.taskCategoryId,
+      actions: [markDone],
+      intentIdentifiers: [],
+      options: []
+    )
+    let paymentCategory = UNNotificationCategory(
+      identifier: Self.paymentCategoryId,
+      actions: [viewExpense],
+      intentIdentifiers: [],
+      options: []
+    )
+
+    UNUserNotificationCenter.current().setNotificationCategories(
+      [taskCategory, paymentCategory]
+    )
+  }
+
+  // MARK: - Action delegate
+  //
+  // The firebase_messaging plugin replaces the UNUserNotificationCenter
+  // delegate at plugin init and forwards `didReceive:` to whichever
+  // delegate was previously set (us). The plugin emits the message via
+  // `Messaging#onMessageOpenedApp` before forwarding to us, so the body
+  // tap path is unchanged. For action button taps we fire a separate
+  // `actionTapped` event on `crewpoint/notification_actions` carrying
+  // the action identifier + key fields from `userInfo` so `FcmHandler.
+  // handleAction` can route without inspecting the FCM data twice.
+  override func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    didReceive response: UNNotificationResponse,
+    withCompletionHandler completionHandler: @escaping () -> Void
+  ) {
+    let actionId = response.actionIdentifier
+    if actionId != UNNotificationDefaultActionIdentifier
+      && actionId != UNNotificationDismissActionIdentifier,
+      let normalized = mapActionIdentifier(actionId)
+    {
+      let userInfo = response.notification.request.content.userInfo
+      resolveNotificationActionChannel()?.invokeMethod(
+        "actionTapped",
+        arguments: [
+          "action": normalized,
+          "eventId": userInfo["eventId"] as? String ?? "",
+          "taskId": userInfo["taskId"] as? String ?? "",
+          "deepLink": userInfo["deepLink"] as? String ?? "",
+        ]
+      )
+    }
+
+    super.userNotificationCenter(
+      center,
+      didReceive: response,
+      withCompletionHandler: completionHandler
+    )
+  }
+
+  private func mapActionIdentifier(_ id: String) -> String? {
+    switch id {
+    case Self.markDoneActionId: return "mark_done"
+    case Self.viewExpenseActionId: return "view_expense"
+    default: return nil
+    }
   }
 }

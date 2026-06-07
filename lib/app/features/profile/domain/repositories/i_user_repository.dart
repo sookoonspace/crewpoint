@@ -1,4 +1,5 @@
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
+import 'package:crewpoint_app/app/features/profile/domain/models/notification_prefs.dart';
 
 /// Abstract user profile repository.
 /// Concrete implementations can use Firestore, mock, or any backend.
@@ -34,4 +35,16 @@ abstract class IUserRepository {
 
   /// Removes an FCM token from `users/{uid}.fcmTokens` (idempotent).
   Future<void> removeFcmToken({required String uid, required String token});
+
+  /// Reads the user's notification preferences from
+  /// `users/{uid}/private/profile.notificationPrefs`. Returns
+  /// [NotificationPrefs.fromMap]-defaults when the doc / field is missing
+  /// so callers never need to null-check.
+  Future<NotificationPrefs> getNotificationPrefs(String uid);
+
+  /// Writes the user's notification preferences (merge semantics).
+  Future<void> updateNotificationPrefs({
+    required String uid,
+    required NotificationPrefs prefs,
+  });
 }

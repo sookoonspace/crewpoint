@@ -7,14 +7,18 @@ import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/env/app_flavor.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/event_guard.dart';
 import 'package:crewpoint_app/app/core/widgets/responsive_shell.dart';
 import 'package:crewpoint_app/app/features/auth/presentation/widgets/email_unverified_banner.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/edit_profile_screen.dart';
+import 'package:crewpoint_app/app/features/profile/presentation/notification_settings_screen.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/privacy_dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/profile_screen.dart';
 import 'package:crewpoint_app/app/features/auth/presentation/auth_gate_screen.dart';
+import 'package:crewpoint_app/app/features/dev/presentation/dev_tools_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/application/unread_badge_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/create_event_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
@@ -40,6 +44,11 @@ abstract final class AppRoutes {
   static const String budget = '/budget';
   static const String profile = '/profile';
   static const String privacyDashboard = '/profile/privacy-dashboard';
+  static const String notificationSettings = '/profile/notifications';
+
+  /// Dev-only diagnostic console. Registered conditionally — see
+  /// `app_router.dart` and only reachable on `AppFlavor.dev` builds.
+  static const String devTools = '/profile/dev-tools';
 }
 
 /// Creates the app router.
@@ -115,20 +124,32 @@ GoRouter createRouter({
       GoRoute(path: AppRoutes.auth, builder: (_, _) => const AuthGateScreen()),
       StatefulShellRoute.indexedStack(
         builder: (_, _, navigationShell) => Consumer(
-          builder: (_, ref, _) => ResponsiveShell(
-            currentIndex: navigationShell.currentIndex,
-            onDestinationSelected: (index) => navigationShell.goBranch(
-              index,
-              initialLocation: index == navigationShell.currentIndex,
-            ),
-            onSignOut: () => ref.read(authProvider.notifier).signOut(),
-            body: Column(
-              children: [
-                const EmailUnverifiedBanner(),
-                Expanded(child: navigationShell),
-              ],
-            ),
-          ),
+          builder: (_, ref, _) {
+            // Signed-out users see no badges (currentUserIdProvider is null
+            // before auth resolves). UnreadBadgeCounts() defaults to zero
+            // so the un-badged path keeps the same widget identity.
+            final uid = ref.watch(currentUserIdProvider);
+            final badges = uid == null
+                ? const UnreadBadgeCounts()
+                : ref.watch(unreadBadgeProvider(uid));
+            return ResponsiveShell(
+              currentIndex: navigationShell.currentIndex,
+              onDestinationSelected: (index) => navigationShell.goBranch(
+                index,
+                initialLocation: index == navigationShell.currentIndex,
+              ),
+              onSignOut: () => ref.read(authProvider.notifier).signOut(),
+              tasksBadge: badges.tasks,
+              chatBadge: badges.chat,
+              budgetBadge: badges.budget,
+              body: Column(
+                children: [
+                  const EmailUnverifiedBanner(),
+                  Expanded(child: navigationShell),
+                ],
+              ),
+            );
+          },
         ),
         branches: [
           StatefulShellBranch(
@@ -252,6 +273,18 @@ GoRouter createRouter({
                     path: 'privacy-dashboard',
                     builder: (_, _) => const PrivacyDashboardScreen(),
                   ),
+                  GoRoute(
+                    path: 'notifications',
+                    builder: (_, _) => const NotificationSettingsScreen(),
+                  ),
+                  // Dev-only diagnostic console. Gated at the route
+                  // level so stg / prod builds can't reach this screen
+                  // even via a deep link.
+                  if (AppFlavor.current == AppFlavor.dev)
+                    GoRoute(
+                      path: 'dev-tools',
+                      builder: (_, _) => const DevToolsScreen(),
+                    ),
                 ],
               ),
             ],

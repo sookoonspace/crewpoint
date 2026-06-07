@@ -1,9 +1,20 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
+import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/budget/application/global_balance_ledger_provider.dart';
+import 'package:crewpoint_app/app/features/budget/data/member_name_resolver.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
+import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
+
+/// Returns an empty roster override — for tests that don't care about
+/// name resolution and just need the provider not to hit the real repo.
+final _emptyRosterOverride = usersByIdProvider.overrideWith(
+  (ref, key) async => const <String, AppUser>{},
+);
 
 /// Drain cascading stream emissions through the composed provider.
 Future<AsyncValue<LedgerSummary>> _readAfterPump(
@@ -52,6 +63,7 @@ void main() {
           expenseListProvider.overrideWith(
             (ref, eventId) => Stream.value([expA]),
           ),
+          _emptyRosterOverride,
         ],
       );
       addTearDown(container.dispose);
@@ -97,6 +109,7 @@ void main() {
         expenseListProvider.overrideWith(
           (ref, eventId) => Stream.value([expOld]),
         ),
+        _emptyRosterOverride,
       ],
     );
     addTearDown(container.dispose);
@@ -162,6 +175,7 @@ void main() {
               _ => Stream.value(const <ExpenseModel>[]),
             };
           }),
+          _emptyRosterOverride,
         ],
       );
       addTearDown(container.dispose);
@@ -212,6 +226,7 @@ void main() {
         expenseListProvider.overrideWith(
           (ref, eventId) => Stream.value([tiny]),
         ),
+        _emptyRosterOverride,
       ],
     );
     addTearDown(container.dispose);
@@ -250,6 +265,7 @@ void main() {
         expenseListProvider.overrideWith(
           (ref, eventId) => Stream.value(expenses),
         ),
+        _emptyRosterOverride,
       ],
     );
     addTearDown(container.dispose);
@@ -286,6 +302,7 @@ void main() {
           expenseListProvider.overrideWith(
             (ref, eventId) => const Stream<List<ExpenseModel>>.empty(),
           ),
+          _emptyRosterOverride,
         ],
       );
       addTearDown(container.dispose);
@@ -319,6 +336,230 @@ void main() {
         expenseListProvider.overrideWith(
           (ref, eventId) =>
               Stream<List<ExpenseModel>>.error(StateError('exp boom')),
+        ),
+        _emptyRosterOverride,
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final result = await _readAfterPump(container, 'me');
+    expect(result, isA<AsyncError<LedgerSummary>>());
+    expect((result as AsyncError).error, isA<StateError>());
+  });
+
+  test(
+    'DebtRow.counterpartyName resolves from roster displayName (happy path)',
+    () async {
+      const event = EventModel(
+        id: 'evt-name',
+        title: 'Trip',
+        creatorId: 'me',
+        memberIds: ['me', 'bob'],
+        currency: 'USD',
+      );
+      // I owe bob $30.
+      final exp = ExpenseModel(
+        id: 'e1',
+        eventId: 'evt-name',
+        payerId: 'bob',
+        amount: 60,
+        splits: const [
+          ExpenseSplit(userId: 'bob', amount: 30),
+          ExpenseSplit(userId: 'me', amount: 30),
+        ],
+        createdAt: DateTime(2026, 5, 1),
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          dashboardEventsProvider.overrideWith(
+            (ref) => Stream.value(const [event]),
+          ),
+          expenseListProvider.overrideWith(
+            (ref, eventId) => Stream.value([exp]),
+          ),
+          usersByIdProvider.overrideWith(
+            (ref, key) async => const <String, AppUser>{
+              'me': AppUser(
+                uid: 'me',
+                email: 'me@x.com',
+                displayName: 'Me User',
+              ),
+              'bob': AppUser(
+                uid: 'bob',
+                email: 'bob@x.com',
+                displayName: 'Bob Builder',
+              ),
+            },
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final result = await _readAfterPump(container, 'me');
+      final ledger = result.requireValue;
+      expect(ledger.debts, hasLength(1));
+      expect(ledger.debts.single.counterpartyName, 'Bob Builder');
+    },
+  );
+
+  test(
+    'DebtRow.counterpartyName falls back to email when displayName is empty/null',
+    () async {
+      const event = EventModel(
+        id: 'evt-email',
+        title: 'Trip',
+        creatorId: 'me',
+        memberIds: ['me', 'carol'],
+        currency: 'USD',
+      );
+      final exp = ExpenseModel(
+        id: 'e1',
+        eventId: 'evt-email',
+        payerId: 'carol',
+        amount: 40,
+        splits: const [
+          ExpenseSplit(userId: 'carol', amount: 20),
+          ExpenseSplit(userId: 'me', amount: 20),
+        ],
+        createdAt: DateTime(2026, 5, 1),
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          dashboardEventsProvider.overrideWith(
+            (ref) => Stream.value(const [event]),
+          ),
+          expenseListProvider.overrideWith(
+            (ref, eventId) => Stream.value([exp]),
+          ),
+          usersByIdProvider.overrideWith(
+            (ref, key) async => const <String, AppUser>{
+              'carol': AppUser(uid: 'carol', email: 'carol@x.com'),
+            },
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final ledger = (await _readAfterPump(container, 'me')).requireValue;
+      expect(ledger.debts.single.counterpartyName, 'carol@x.com');
+    },
+  );
+
+  test(
+    'DebtRow.counterpartyName falls back to placeholder when uid is missing from roster',
+    () async {
+      const event = EventModel(
+        id: 'evt-missing',
+        title: 'Trip',
+        creatorId: 'me',
+        memberIds: ['me', 'ghost'],
+        currency: 'USD',
+      );
+      final exp = ExpenseModel(
+        id: 'e1',
+        eventId: 'evt-missing',
+        payerId: 'ghost',
+        amount: 20,
+        splits: const [
+          ExpenseSplit(userId: 'ghost', amount: 10),
+          ExpenseSplit(userId: 'me', amount: 10),
+        ],
+        createdAt: DateTime(2026, 5, 1),
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          dashboardEventsProvider.overrideWith(
+            (ref) => Stream.value(const [event]),
+          ),
+          expenseListProvider.overrideWith(
+            (ref, eventId) => Stream.value([exp]),
+          ),
+          _emptyRosterOverride,
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final ledger = (await _readAfterPump(container, 'me')).requireValue;
+      expect(ledger.debts.single.counterpartyName, kRemovedMemberPlaceholder);
+    },
+  );
+
+  test('RecentExpenseRow.payerName resolves from roster displayName', () async {
+    const event = EventModel(
+      id: 'evt-payer',
+      title: 'Trip',
+      creatorId: 'me',
+      memberIds: ['me', 'alex'],
+      currency: 'USD',
+    );
+    final exp = ExpenseModel(
+      id: 'e1',
+      eventId: 'evt-payer',
+      payerId: 'alex',
+      amount: 30,
+      splits: const [ExpenseSplit(userId: 'alex', amount: 30)],
+      createdAt: DateTime(2026, 5, 1),
+    );
+
+    final container = ProviderContainer(
+      overrides: [
+        dashboardEventsProvider.overrideWith(
+          (ref) => Stream.value(const [event]),
+        ),
+        expenseListProvider.overrideWith((ref, eventId) => Stream.value([exp])),
+        usersByIdProvider.overrideWith(
+          (ref, key) async => const <String, AppUser>{
+            'alex': AppUser(
+              uid: 'alex',
+              email: 'a@x.com',
+              displayName: 'Alex Chen',
+            ),
+          },
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final ledger = (await _readAfterPump(container, 'me')).requireValue;
+    expect(ledger.recentExpenses.single.payerName, 'Alex Chen');
+  });
+
+  test('returns AsyncLoading while any per-event roster is pending', () async {
+    final container = ProviderContainer(
+      overrides: [
+        dashboardEventsProvider.overrideWith(
+          (ref) => Stream.value(const [eventA]),
+        ),
+        expenseListProvider.overrideWith(
+          (ref, eventId) => Stream.value(const <ExpenseModel>[]),
+        ),
+        usersByIdProvider.overrideWith((ref, key) {
+          // Never completes → stays AsyncLoading.
+          final completer = Completer<Map<String, AppUser>>();
+          return completer.future;
+        }),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final result = await _readAfterPump(container, 'me');
+    expect(result, isA<AsyncLoading<LedgerSummary>>());
+  });
+
+  test('propagates error from any per-event roster', () async {
+    final container = ProviderContainer(
+      overrides: [
+        dashboardEventsProvider.overrideWith(
+          (ref) => Stream.value(const [eventA]),
+        ),
+        expenseListProvider.overrideWith(
+          (ref, eventId) => Stream.value(const <ExpenseModel>[]),
+        ),
+        usersByIdProvider.overrideWith(
+          (ref, key) async => throw StateError('roster boom'),
         ),
       ],
     );

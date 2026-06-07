@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/services/fcm_gateway.dart';
 import 'package:crewpoint_app/app/core/services/fcm_service.dart';
+import 'package:crewpoint_app/app/core/services/notification_channels.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
+import 'package:crewpoint_app/app/features/profile/domain/models/notification_prefs.dart';
 import 'package:crewpoint_app/app/features/profile/domain/repositories/i_user_repository.dart';
 
 class _FakeFcmGateway implements IFcmGateway {
@@ -14,6 +16,7 @@ class _FakeFcmGateway implements IFcmGateway {
   bool deleted = false;
   int permissionCalls = 0;
   int getTokenCalls = 0;
+  int triggerApnsCalls = 0;
 
   @override
   Future<String?> getApnsToken() async => apnsToken;
@@ -22,6 +25,11 @@ class _FakeFcmGateway implements IFcmGateway {
   Future<bool> requestPermission() async {
     permissionCalls++;
     return permissionGranted;
+  }
+
+  @override
+  Future<void> triggerApnsRegistration() async {
+    triggerApnsCalls++;
   }
 
   @override
@@ -52,6 +60,12 @@ class _FakeFcmGateway implements IFcmGateway {
 class _FakeUserRepo implements IUserRepository {
   final List<({String uid, String token})> added = [];
   final List<({String uid, String token})> removed = [];
+
+  /// What [getNotificationPrefs] should return for the next call. Tests
+  /// mutate this to verify FcmService skips attach when pushEnabled is
+  /// false.
+  NotificationPrefs prefs = const NotificationPrefs();
+  final List<NotificationPrefs> updates = [];
 
   @override
   Future<void> addFcmToken({required String uid, required String token}) async {
@@ -88,17 +102,44 @@ class _FakeUserRepo implements IUserRepository {
     String? photoUrl,
     List<String> providerIds = const [],
   }) async {}
+
+  @override
+  Future<NotificationPrefs> getNotificationPrefs(String uid) async => prefs;
+
+  @override
+  Future<void> updateNotificationPrefs({
+    required String uid,
+    required NotificationPrefs prefs,
+  }) async {
+    updates.add(prefs);
+    this.prefs = prefs;
+  }
+}
+
+class _FakeNotificationChannels implements INotificationChannels {
+  int registerCalls = 0;
+
+  @override
+  Future<void> registerAll() async {
+    registerCalls++;
+  }
 }
 
 void main() {
   late _FakeFcmGateway gateway;
   late _FakeUserRepo repo;
+  late _FakeNotificationChannels channels;
   late FcmService service;
 
   setUp(() {
     gateway = _FakeFcmGateway();
     repo = _FakeUserRepo();
-    service = FcmService(gateway: gateway, userRepository: repo);
+    channels = _FakeNotificationChannels();
+    service = FcmService(
+      gateway: gateway,
+      userRepository: repo,
+      notificationChannels: channels,
+    );
   });
 
   tearDown(() async {
@@ -149,6 +190,132 @@ void main() {
       expect(repo.removed, hasLength(1));
       expect(repo.removed.first.token, 'fcm-token-A');
       expect(gateway.deleted, isTrue);
+    },
+  );
+
+  test(
+    'attach() short-circuits when notificationPrefs.pushEnabled is false',
+    () async {
+      repo.prefs = const NotificationPrefs(pushEnabled: false);
+
+      final ok = await service.attach(uid: 'u1');
+
+      expect(ok, isFalse);
+      expect(gateway.permissionCalls, 0);
+      expect(gateway.getTokenCalls, 0);
+      expect(repo.added, isEmpty);
+    },
+  );
+
+  test(
+    'attach() proceeds when pushEnabled true but urgentChat false',
+    () async {
+      // urgentChat is enforced server-side (in the CF); on the device we
+      // still want a token so the user can receive other categories later
+      // and so toggling urgentChat back on doesn't require a re-attach.
+      repo.prefs = const NotificationPrefs(urgentChat: false);
+
+      final ok = await service.attach(uid: 'u1');
+
+      expect(ok, isTrue);
+      expect(repo.added, hasLength(1));
+    },
+  );
+
+  test(
+    'attach() registers notification channels exactly once after permission grant',
+    () async {
+      final ok = await service.attach(uid: 'u1');
+
+      expect(ok, isTrue);
+      expect(channels.registerCalls, 1);
+    },
+  );
+
+  test(
+    'attach() skips channel registration when permission is denied',
+    () async {
+      gateway.permissionGranted = false;
+
+      final ok = await service.attach(uid: 'u1');
+
+      expect(ok, isFalse);
+      expect(channels.registerCalls, 0);
+    },
+  );
+
+  test(
+    'attach() skips channel registration when pushEnabled is false',
+    () async {
+      repo.prefs = const NotificationPrefs(pushEnabled: false);
+
+      final ok = await service.attach(uid: 'u1');
+
+      expect(ok, isFalse);
+      expect(channels.registerCalls, 0);
+    },
+  );
+
+  test(
+    'attach() returns false silently when APNs token is unavailable',
+    () async {
+      // iOS Simulator path — getApnsToken returns null. We must NOT
+      // proceed to getToken(), which would throw `apns-token-not-set`
+      // from inside the firebase_messaging plugin.
+      gateway.apnsToken = null;
+
+      final ok = await service.attach(uid: 'u1');
+
+      expect(ok, isFalse);
+      expect(gateway.getTokenCalls, 0);
+      expect(repo.added, isEmpty);
+    },
+  );
+
+  test('attach() triggers APNs registration after permission grant', () async {
+    // firebase_messaging only calls registerForRemoteNotifications once
+    // at app launch when status is notDetermined — for auth-gated apps
+    // that's wasted because no one has been asked for permission yet.
+    // We must re-trigger after the user grants.
+    final ok = await service.attach(uid: 'u1');
+
+    expect(ok, isTrue);
+    expect(gateway.triggerApnsCalls, 1);
+  });
+
+  test(
+    'attach() skips APNs registration trigger when permission is denied',
+    () async {
+      gateway.permissionGranted = false;
+
+      final ok = await service.attach(uid: 'u1');
+
+      expect(ok, isFalse);
+      expect(gateway.triggerApnsCalls, 0);
+    },
+  );
+
+  test(
+    'refresh listener writes the token even when initial APNs attach failed',
+    () async {
+      // First-launch race on iOS: APNs not ready at attach time, but
+      // the token arrives ~seconds later via onTokenRefresh. The
+      // refresh listener must already be wired so the late token
+      // still lands in Firestore.
+      gateway.apnsToken = null;
+
+      final ok = await service.attach(uid: 'u1');
+      expect(ok, isFalse);
+      expect(repo.added, isEmpty);
+
+      // Simulate iOS finishing APNs registration ~2s later — FCM fires
+      // onTokenRefresh with the initial token.
+      gateway.emitRefresh('fcm-late-arrival');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(repo.added, hasLength(1));
+      expect(repo.added.first.uid, 'u1');
+      expect(repo.added.first.token, 'fcm-late-arrival');
     },
   );
 }

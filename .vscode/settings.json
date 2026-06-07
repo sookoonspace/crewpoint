@@ -21,5 +21,9 @@
   "files.watcherExclude": {
     "**/.dart_tool/**": true,
     "**/build/**": true
+  },
+  "workbench.colorCustomizations": {
+    "statusBar.noFolderBackground": "#551913",
+    "statusBar.noFolderForeground": "#FEFCFC"
   }
 }

@@ -35,6 +35,13 @@ dependencies:
   cloud_functions: ^5.3.3
   firebase_messaging: ^15.2.0
 
+  # OS launcher app-icon badge — Phase 3b.2.
+  # AppBadgePlus.updateBadge(int) on iOS / Android / macOS.
+  # Notification permissions are inherited from firebase_messaging
+  # (FcmService.attach()); Android OEM-specific permissions are declared
+  # in AndroidManifest.xml for Samsung / Huawei / HTC / Sony / etc.
+  app_badge_plus: ^1.2.10
+
   # Auth
   # Note: google_sign_in and sign_in_with_apple were both removed —
   # Firebase Auth's GoogleAuthProvider + AppleAuthProvider drive OAuth
@@ -96,11 +103,22 @@ dev_dependencies:
   # to seed a v5-shaped DB before Drift's MigrationStrategy runs.
   sqlite3: ^2.4.0
 
-flutter_launcher_icons:
-  android: true
-  ios: true
-  image_path: "assets/icons/launcher_icon.png"
-  remove_alpha_ios: true
+# Launcher icon configs live in per-flavor YAML files at the project
+# root: `flutter_launcher_icons-{main,dev,stg}.yaml`.
+#
+# Android only: `dart run flutter_launcher_icons -f flutter_launcher_icons-dev.yaml`
+# (or run all three at once with `dart run flutter_launcher_icons`).
+#
+# iOS + Android (recommended): `bash scripts/generate_ios_per_flavor_icons.sh`.
+# That wrapper runs each yaml in the right order and renames the iOS
+# iconset directory per flavor (AppIcon-dev / AppIcon-stg / AppIcon)
+# because flutter_launcher_icons can only write to AppIcon.appiconset
+# directly. The per-flavor xcconfigs at ios/{dev,stg,prod}.xcconfig
+# point ASSETCATALOG_COMPILER_APPICON_NAME at the matching iconset.
+#
+# Adaptive icons (Android 8.0+) use #2D3436 (AppColors.charcoal) as the
+# background layer so the device-specific mask gets a brand-aligned
+# colour while the foreground stays full-size.
 
 flutter:
   uses-material-design: true

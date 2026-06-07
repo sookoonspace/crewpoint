@@ -116,9 +116,7 @@ class _JoinEventSheetState extends State<JoinEventSheet> {
 
           Text(
             'Enter the 6-character code shared by the event organizer',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium,
+            style: Theme.of(context).textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ),
 
@@ -129,30 +127,22 @@ class _JoinEventSheetState extends State<JoinEventSheet> {
             textAlign: TextAlign.center,
             textCapitalization: TextCapitalization.characters,
             maxLength: 6,
+            // Preserve the hero number-display look — letterSpacing 8 and
+            // bold weight — but inherit headlineMedium's brightness-aware
+            // color from the textTheme (no explicit color override).
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
               letterSpacing: 8,
               fontWeight: FontWeight.w700,
             ),
+            // Drop the explicit fillColor / border overrides — let
+            // inputDecorationTheme provide them so dark mode swaps in
+            // surfaceDarkElevated automatically.
             decoration: InputDecoration(
               counterText: '',
               hintText: '------',
-              hintStyle: const TextStyle(
+              hintStyle: TextStyle(
                 letterSpacing: 8,
-                color: AppColors.lightGrey,
-              ),
-              filled: true,
-              fillColor: AppColors.offWhite,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.lightGrey),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.lightGrey),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.sage, width: 2),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ),

@@ -86,6 +86,12 @@ export const disputeSettlement = onCall(
             text: "Settlement disputed",
             isHighPriority: false,
             kind: "settlement_disputed",
+            // Snapshot the two parties on the notice so
+            // `onSettlementDisputed` can route the push to the counterparty
+            // — the original settlement expense has been deleted above so
+            // the trigger has no other source for this.
+            payerId,
+            payeeId,
             timestamp: admin.firestore.FieldValue.serverTimestamp(),
           },
           {merge: true}

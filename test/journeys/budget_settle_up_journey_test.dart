@@ -9,6 +9,7 @@ import 'package:crewpoint_app/app/features/budget/data/pay_link_builder.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/budget_ledger_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
+import 'package:crewpoint_app/app/features/profile/domain/models/notification_prefs.dart';
 import 'package:crewpoint_app/app/features/profile/domain/repositories/i_user_repository.dart';
 
 import '../robots/budget_ledger_robot.dart';
@@ -56,6 +57,16 @@ class _FakeUserRepo implements IUserRepository {
   @override
   Future<void> removeFcmToken({required String uid, required String token}) =>
       throw UnimplementedError();
+
+  @override
+  Future<NotificationPrefs> getNotificationPrefs(String uid) async =>
+      const NotificationPrefs();
+
+  @override
+  Future<void> updateNotificationPrefs({
+    required String uid,
+    required NotificationPrefs prefs,
+  }) async => throw UnimplementedError();
 }
 
 const _event = EventModel(

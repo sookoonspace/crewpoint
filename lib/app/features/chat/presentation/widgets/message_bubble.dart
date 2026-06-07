@@ -25,11 +25,20 @@ class MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final Color background;
     final Border? border;
+    // In light mode the settlement / high-priority bubbles use pale
+    // accent fills; in dark mode those pale fills collide with the
+    // light onSurface text, so swap to the theme's elevated surface and
+    // let the existing sage/terracotta BORDER carry the semantic signal.
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (_isSettlement) {
-      background = AppColors.cream;
+      background = isDark
+          ? Theme.of(context).colorScheme.surfaceContainerHighest
+          : AppColors.cream;
       border = Border.all(color: AppColors.sage, width: 1.5);
     } else if (message.isHighPriority) {
-      background = AppColors.terracottaLight.withValues(alpha: 0.2);
+      background = isDark
+          ? Theme.of(context).colorScheme.surfaceContainerHighest
+          : AppColors.terracottaLight.withValues(alpha: 0.2);
       border = Border.all(color: AppColors.terracotta, width: 1.5);
     } else if (isCurrentUser) {
       // sageDark, not sage — white text on sage (#6B9080) only hits
@@ -38,7 +47,11 @@ class MessageBubble extends StatelessWidget {
       background = AppColors.sageDark;
       border = null;
     } else {
-      background = AppColors.lightGrey;
+      // Theme-aware surface so the bubble darkens in dark mode (where
+      // onSurface = offWhite). Hard-coded lightGrey here paired with
+      // dark-mode onSurface = ~1.2:1 contrast — see the WCAG widget
+      // test in message_bubble_test.dart.
+      background = Theme.of(context).colorScheme.surfaceContainerHighest;
       border = null;
     }
 

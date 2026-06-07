@@ -22,12 +22,22 @@ class ResponsiveShell extends StatelessWidget {
     required this.onDestinationSelected,
     required this.onSignOut,
     required this.body,
+    this.tasksBadge = 0,
+    this.chatBadge = 0,
+    this.budgetBadge = 0,
   });
 
   final int currentIndex;
   final ValueChanged<int> onDestinationSelected;
   final VoidCallback onSignOut;
   final Widget body;
+
+  /// Unread counts surfaced as Material [Badge]s on the bottom-nav / rail.
+  /// Zero hides the badge. Driven by `unreadBadgeProvider` at the
+  /// composition root (see `app_router.dart`).
+  final int tasksBadge;
+  final int chatBadge;
+  final int budgetBadge;
 
   static const double _railBreakpoint = 840;
 
@@ -70,17 +80,29 @@ class ResponsiveShell extends StatelessWidget {
           label: Text(s.home),
         ),
         NavigationRailDestination(
-          icon: const Icon(AppIcons.navTasks, key: Key('shell.rail.tasks')),
+          icon: _badged(
+            const Icon(AppIcons.navTasks, key: Key('shell.rail.tasks')),
+            count: tasksBadge,
+            badgeKey: const Key('shell.rail.tasks.badge'),
+          ),
           selectedIcon: const Icon(AppIcons.navTasksFilled),
           label: Text(s.tasks),
         ),
         NavigationRailDestination(
-          icon: const Icon(AppIcons.navChat, key: Key('shell.rail.chat')),
+          icon: _badged(
+            const Icon(AppIcons.navChat, key: Key('shell.rail.chat')),
+            count: chatBadge,
+            badgeKey: const Key('shell.rail.chat.badge'),
+          ),
           selectedIcon: const Icon(AppIcons.navChatFilled),
           label: Text(s.chat),
         ),
         NavigationRailDestination(
-          icon: const Icon(AppIcons.navBudget, key: Key('shell.rail.budget')),
+          icon: _badged(
+            const Icon(AppIcons.navBudget, key: Key('shell.rail.budget')),
+            count: budgetBadge,
+            badgeKey: const Key('shell.rail.budget.badge'),
+          ),
           selectedIcon: const Icon(AppIcons.navBudgetFilled),
           label: Text(s.budget),
         ),
@@ -120,19 +142,31 @@ class ResponsiveShell extends StatelessWidget {
         ),
         NavigationDestination(
           key: const Key('shell.bar.tasks'),
-          icon: const Icon(AppIcons.navTasks),
+          icon: _badged(
+            const Icon(AppIcons.navTasks),
+            count: tasksBadge,
+            badgeKey: const Key('shell.bar.tasks.badge'),
+          ),
           selectedIcon: const Icon(AppIcons.navTasksFilled),
           label: s.tasks,
         ),
         NavigationDestination(
           key: const Key('shell.bar.chat'),
-          icon: const Icon(AppIcons.navChat),
+          icon: _badged(
+            const Icon(AppIcons.navChat),
+            count: chatBadge,
+            badgeKey: const Key('shell.bar.chat.badge'),
+          ),
           selectedIcon: const Icon(AppIcons.navChatFilled),
           label: s.chat,
         ),
         NavigationDestination(
           key: const Key('shell.bar.budget'),
-          icon: const Icon(AppIcons.navBudget),
+          icon: _badged(
+            const Icon(AppIcons.navBudget),
+            count: budgetBadge,
+            badgeKey: const Key('shell.bar.budget.badge'),
+          ),
           selectedIcon: const Icon(AppIcons.navBudgetFilled),
           label: s.budget,
         ),
@@ -144,5 +178,17 @@ class ResponsiveShell extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  /// Wraps [icon] in a Material [Badge] when [count] > 0; returns [icon]
+  /// unmodified when zero so the un-badged path keeps the same widget
+  /// identity (matters for the existing key-finder widget tests).
+  ///
+  /// Counts ≥ 100 are clamped to "99+" so the badge never overflows on
+  /// pathologically high inboxes.
+  Widget _badged(Widget icon, {required int count, required Key badgeKey}) {
+    if (count <= 0) return icon;
+    final label = count >= 100 ? '99+' : '$count';
+    return Badge(key: badgeKey, label: Text(label), child: icon);
   }
 }

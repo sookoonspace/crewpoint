@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:crewpoint_app/app/core/widgets/balance_tile.dart';
 import 'package:crewpoint_app/app/core/widgets/conversation_tile.dart';
 import 'package:crewpoint_app/app/core/widgets/event_tile.dart';
 import 'package:crewpoint_app/app/core/widgets/segmented_filter_bar.dart';
@@ -75,6 +76,7 @@ void main() {
       );
       const debt = DebtRow(
         counterpartyUid: 'alex-with-a-pretty-long-handle',
+        counterpartyName: 'Alexandra With A Pretty Long Display Name',
         event: event,
         amount: 1234.56,
         currency: 'USD',
@@ -105,7 +107,11 @@ void main() {
       await pumpAt320(
         tester,
         RecentExpenseTile(
-          row: const RecentExpenseRow(expense: expense, event: event),
+          row: const RecentExpenseRow(
+            expense: expense,
+            event: event,
+            payerName: 'You',
+          ),
           currentUserId: 'me',
           onTap: () {},
         ),
@@ -150,6 +156,38 @@ void main() {
         ),
       );
       expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'BalanceTile renders large youOwe ("\$99,999.99") on a single line at 320 px',
+    (tester) async {
+      await pumpAt320(
+        tester,
+        const BalanceTile(owedToYou: 0, youOwe: 99999.99, currencyCode: 'USD'),
+      );
+      expect(tester.takeException(), isNull);
+
+      final ownedKey = find.byKey(const Key('balance.tile.youOwe'));
+      expect(ownedKey, findsOneWidget);
+      // MoneyText renders a single inner Text; FittedBox(scaleDown)
+      // preserves the full glyph string.
+      final innerText = tester.widget<Text>(
+        find.descendant(of: ownedKey, matching: find.byType(Text)),
+      );
+      expect(innerText.data, contains('99,999.99'));
+
+      // Single visual line — height stays close to the font line height.
+      // Numbers wrap to a second line in the broken state, doubling the
+      // measured height. Pick a generous cap (50 px) — single-line 28pt
+      // hero numbers sit at ~33 px on this fixture; two lines push past
+      // 60 px.
+      final size = tester.getSize(ownedKey);
+      expect(
+        size.height,
+        lessThan(50),
+        reason: 'long youOwe must render on one line; measured ${size.height}',
+      );
     },
   );
 }
