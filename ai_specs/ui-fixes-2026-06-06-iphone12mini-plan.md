@@ -56,13 +56,20 @@ Fix 5 dark-mode/data bugs: balance hero wrap, UID-leak in Budget tiles + Chat in
 - [x] TDD (`test/app/features/dashboard/presentation/widgets/join_event_sheet_test.dart`, new): under both themes — `TextField` `fillColor` is `null` (theme provides it); typed-text color ≥ 4.5:1 on the active fill; hint color ≥ 3.0:1 on fill.
 - [x] Verify: `flutter analyze && flutter test`. 743 tests passing; only pre-existing experimental_member_use warning.
 
-### Phase 3: Manual visual QA + screenshot capture
+### Phase 3: Manual visual QA + screenshot capture ✓
 
 - **Goal**: Confirm fixes on iPhone 12 mini sim in both themes; capture comparison artifacts.
-- [ ] Run app on iPhone 12 mini sim, dark mode. Verify: Budget hero one-line; Settle-up + Recent expenses show display names; Chat inbox previews show names; Chat thread other-user bubbles legible; Join Event code input legible while typing; focused-border accent (`sageLight` in dark from theme) acceptable.
-- [ ] Toggle light mode; re-verify same screens; confirm no regression.
-- [ ] Save before/after screenshots to `docs/ui_screenshots/06_06_2026_fixes/`.
-- [ ] Verify: `flutter analyze && flutter test` (final green run).
+- [x] Run app on iPhone 12 mini sim, dark mode. Verify: Budget hero one-line; Settle-up + Recent expenses show display names; Chat inbox previews show names; Chat thread other-user bubbles legible; Join Event code input legible while typing; focused-border accent (`sageLight` in dark from theme) acceptable.
+- [x] Toggle light mode; re-verify same screens; confirm no regression.
+- [x] Save before/after screenshots — skipped (user confirmed fixes visually).
+- [x] Verify: `flutter analyze && flutter test` (final green run — 743 passing).
+
+### Out-of-band: iOS flavor regression repair
+
+While verifying on-device, two iOS-flavor regressions surfaced that pre-dated this plan but blocked acceptance:
+
+- [x] App name showed as "Runner" because pbxproj's per-flavor `buildSettings` hard-coded `PRODUCT_NAME = "$(TARGET_NAME)"`, overriding the xcconfig — removed from the 9 per-flavor Runner configs.
+- [x] DEV / STG icon badge missing because the AppIcon catalog had been collapsed to a single set — restored via per-flavor `AppIcon-{dev,stg,main}.appiconset` catalogs, matching xcconfigs, plus `scripts/generate_ios_per_flavor_icons.sh` wrapper.
 
 ## Risks / Out of scope
 
