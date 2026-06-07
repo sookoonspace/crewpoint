@@ -57,6 +57,29 @@ class NotificationPrefsNotifier extends AsyncNotifier<NotificationPrefs> {
     await _update((prefs) => prefs.copyWith(criticalOptIn: value));
   }
 
+  /// Sets the recipient's preferred notification locale (BCP-47).
+  /// Pass `null` to revert to the server default (English).
+  Future<void> setLocale(String? value) async {
+    await _update((prefs) {
+      // copyWith can't transition non-null → null for nullable params;
+      // hand-build when clearing.
+      if (value == null) {
+        return NotificationPrefs(
+          pushEnabled: prefs.pushEnabled,
+          urgentChat: prefs.urgentChat,
+          taskUpdates: prefs.taskUpdates,
+          payments: prefs.payments,
+          eventUpdates: prefs.eventUpdates,
+          criticalOptIn: prefs.criticalOptIn,
+          quietHoursStart: prefs.quietHoursStart,
+          quietHoursEnd: prefs.quietHoursEnd,
+          timezone: prefs.timezone,
+        );
+      }
+      return prefs.copyWith(locale: value);
+    });
+  }
+
   /// Sets (or replaces) the quiet-hours window. Pass `null` for all
   /// three to clear the window entirely (CF treats absent fields as
   /// "no quiet hours").

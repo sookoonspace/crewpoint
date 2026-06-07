@@ -19,6 +19,7 @@ class NotificationPrefs {
     this.quietHoursStart,
     this.quietHoursEnd,
     this.timezone,
+    this.locale,
   });
 
   /// Master toggle — false means: do not request OS permission, do not
@@ -76,6 +77,13 @@ class NotificationPrefs {
   /// dependency.
   final String? timezone;
 
+  /// BCP-47 locale string (e.g. `"en"`, `"es-MX"`). Drives Phase 6
+  /// notification-template selection on the server. Null means "use
+  /// server default" (English). Server-side resolution lives in
+  /// `functions/src/notifications/templates.ts` and falls back to the
+  /// base language and then `en.json` when the exact locale is missing.
+  final String? locale;
+
   /// Reads the Firestore subdoc fragment. Missing / wrong-typed fields
   /// fall through to the constructor defaults so a partial migration
   /// never throws at deserialisation.
@@ -91,6 +99,7 @@ class NotificationPrefs {
       quietHoursStart: _readMinuteOfDay(map['quietHoursStart']),
       quietHoursEnd: _readMinuteOfDay(map['quietHoursEnd']),
       timezone: _readNonEmptyString(map['timezone']),
+      locale: _readNonEmptyString(map['locale']),
     );
   }
 
@@ -106,6 +115,9 @@ class NotificationPrefs {
     if (quietHoursStart != null) 'quietHoursStart': quietHoursStart,
     if (quietHoursEnd != null) 'quietHoursEnd': quietHoursEnd,
     if (timezone != null) 'timezone': timezone,
+    // Sparse too — null means "server default (English)"; persisting
+    // the absence keeps the doc small.
+    if (locale != null) 'locale': locale,
   };
 
   NotificationPrefs copyWith({
@@ -118,6 +130,7 @@ class NotificationPrefs {
     int? quietHoursStart,
     int? quietHoursEnd,
     String? timezone,
+    String? locale,
   }) {
     return NotificationPrefs(
       pushEnabled: pushEnabled ?? this.pushEnabled,
@@ -129,6 +142,7 @@ class NotificationPrefs {
       quietHoursStart: quietHoursStart ?? this.quietHoursStart,
       quietHoursEnd: quietHoursEnd ?? this.quietHoursEnd,
       timezone: timezone ?? this.timezone,
+      locale: locale ?? this.locale,
     );
   }
 

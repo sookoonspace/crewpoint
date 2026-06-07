@@ -290,4 +290,45 @@ void main() {
       expect(next.urgentChat, isTrue);
     });
   });
+
+  group('NotificationPrefs.locale (Phase 6)', () {
+    test('defaults to null → server falls back to English', () {
+      const prefs = NotificationPrefs();
+
+      expect(prefs.locale, isNull);
+    });
+
+    test('fromMap honours explicit non-empty string', () {
+      final prefs = NotificationPrefs.fromMap(const {'locale': 'es-MX'});
+
+      expect(prefs.locale, 'es-MX');
+    });
+
+    test('fromMap drops empty string + wrong types', () {
+      expect(NotificationPrefs.fromMap(const {'locale': ''}).locale, isNull);
+      expect(NotificationPrefs.fromMap(const {'locale': 42}).locale, isNull);
+    });
+
+    test('toMap omits locale when null (Firestore stays sparse)', () {
+      const prefs = NotificationPrefs();
+
+      expect(prefs.toMap().containsKey('locale'), isFalse);
+    });
+
+    test('toMap serialises locale when set', () {
+      const prefs = NotificationPrefs(locale: 'es-MX');
+
+      expect(prefs.toMap()['locale'], 'es-MX');
+    });
+
+    test('copyWith locale leaves other fields untouched', () {
+      const prefs = NotificationPrefs();
+
+      final next = prefs.copyWith(locale: 'fr');
+
+      expect(next.locale, 'fr');
+      expect(next.pushEnabled, isTrue);
+      expect(next.criticalOptIn, isFalse);
+    });
+  });
 }

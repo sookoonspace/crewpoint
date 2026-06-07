@@ -253,19 +253,38 @@ Push notifications roadmap V1→V3. FCM scaffolding (`FcmGateway`/`FcmService`/`
 - [x] TDD: 4 new `device_timezone_test.dart` tests (LocalName fallback + MethodChannel happy / throws / empty-fallback). Settings-screen test "enabling quietHours persists ... IANA timezone from deviceTimezoneProvider" pins the wiring with a `_FakeDeviceTimezone('Australia/Sydney')`. 2 new picker-row tests (rows render with the persisted times when enabled; rows absent when OFF).
 - [x] Verify: `flutter analyze` && `flutter test`. *(1 pre-existing TableMigration warning; 791 flutter tests pass, 4 skipped.)*
 
-### Phase 6: V3.1 — web push + localization + summaries
+### Phase 6: V3.1 — localized notification templates ✓ *(daily digest → 6.1, web push → 6.2)*
 
-- **Goal**: feature parity for web; localized notification body; optional daily/weekly digest.
-- [ ] `web/firebase-messaging-sw.js` — service worker for web push (background); pull config from `firebase_options.dart` at build.
+- **Goal**: emit each notification's title + body in the recipient's preferred language. Lay the template / locale-resolver framework so future categories localize for free.
+- [x] `functions/src/notifications/templates/en.json` — string templates for all 6 V2 categories (`chat_urgent` / `task_assigned` / `task_due` / `expense_added` / `settlement_disputed` / `member_joined`, each with `title` + `body`). `es` / `hi` / `fr` ship as a mechanical follow-up once translators provide copy.
+- [x] `functions/src/notifications/templates.ts` — pure helper: `loadTemplate(category, field, locale)` with exact-locale → base-language → English fallback chain + `interpolate(template, placeholders)` (regex-based `{{key}}` substitution; no `eval`; unknown keys left intact for visible-on-purpose template-bug surfacing).
+- [x] `tsconfig.json` — `resolveJsonModule: true` so the JSON registry imports inline (no FS read at request time).
+- [x] `lib/app/features/profile/domain/models/notification_prefs.dart` — nullable `locale` (BCP-47). Sparse `toMap` (omits when null). `copyWith` carries it.
+- [x] `lib/app/features/profile/application/notification_prefs_provider.dart` — `setLocale(String?)`. Hand-builds the cleared shape on null (copyWith can't transition nullable → null).
+- [x] `functions/src/notifications/sendPush.ts` — `SendCategorizedPushArgs` gains optional `templateKey` + `placeholders`. New `resolveNotificationText` pure helper resolves per-recipient text. `TokenOwner` gains `locale`; the per-message `notification: {title, body}` now varies per recipient (the `sendEach` refactor from Phase 4 already supports this).
+- [x] `functions/src/events/onUrgentMessageCreated.ts` — migrated to `templateKey: 'chat_urgent'` + `placeholders: {eventTitle, body}`. Literal title/body kept as the back-compat fallback. Other 5 CFs are mechanical follow-ups.
+- [x] TDD: `templates.test.ts` — 11 tests cover `interpolate` (single / multiple / repeated / unknown-key / empty-map / no-placeholders) + `loadTemplate` (en happy / null+undefined locale / unknown locale / base-language fallback / unknown category-or-field → undefined).
+- [x] TDD: `sendPush.test.ts` — 4 new `resolveNotificationText` tests pin back-compat (no templateKey), template-resolved happy path, missing-template fallback to literal, and per-recipient locale resolution pinned for the day a non-en JSON ships.
+- [x] TDD: `notification_prefs_test.dart` — 6 new `locale` tests (default null / fromMap honours non-empty / drops empty + wrong types / toMap sparse / toMap when set / copyWith).
+- [x] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`. *(1 pre-existing TableMigration warning; 797 flutter tests pass, 4 skipped; 142 CF tests pass — +15 across templates + sendPush.)*
+
+### Phase 6.1: V3.2 — daily digest CF + opt-in *(NEW — split from original Phase 6)*
+
+- **Goal**: opt-in daily summary push (unread chat + pending tasks + open settlements). First scheduled CF that does per-user aggregation across multiple collections.
+- [ ] `NotificationPrefs.dailyDigest: bool` (default false) + `setDailyDigest(bool)` setter + UI toggle.
+- [ ] `functions/src/notifications/sendPush.ts` — extend `NotificationCategory` with `digest`; route to a new `crewpoint_digest` Android channel.
+- [ ] `lib/app/core/services/notification_channels.dart` — declare `crewpoint_digest` channel (IMPORTANCE_DEFAULT).
+- [ ] `functions/src/events/onDigestSummary.ts` — `onSchedule('every 60 minutes')`. For each user with `dailyDigest=true`, compute the current hour in their timezone (Phase 5.2 IANA tz already persisted); skip unless hour == 9. Aggregate unread chat (count messages newer than `chatReads/{eventId}.lastReadAt` across active events), pending tasks (count `status != done` assigned to user), open settlements (count rows in their global ledger). Skip when total == 0 (no "good morning, you have nothing" pings).
+- [ ] `firestore.indexes.json` — composite index if the aggregation queries need it.
+- [ ] TDD: digest CF skips when `dailyDigest == false`. Hour selector returns true only at recipient-local 9:00. Empty-day skip (count==0). Per-source counters surface correctly.
+
+### Phase 6.2: V3.3 — web push *(NEW — split from original Phase 6; depends on token-schema migration)*
+
+- **Goal**: feature parity for web. Background pushes land via service worker; tokens roundtrip through Firestore tagged by platform.
+- [ ] `web/firebase-messaging-sw.js` — service worker for background pushes; pull config from `firebase_options.dart` at build.
 - [ ] `lib/app/core/services/fcm_service.dart` — branch on `kIsWeb`: use `vapidKey` from env; web token stored under same `fcmTokens` array tagged `{token, platform:'web'}` (schema migration: tokens become `{value, platform}` objects — back-compat reader keeps array-of-string path).
-- [ ] `functions/src/notifications/templates/{en,es,hi,fr}.json` — string templates keyed by category.
-- [ ] `functions/src/notifications/sendPush.ts` — resolve `recipient.preferences.locale` (fallback `en`) → load template → interpolate placeholders.
-- [ ] `functions/src/notifications/sendDigestSummary.ts` — scheduled CF (daily 9am user-tz) summarizing unread chat + pending tasks + open settlements; opt-in only via `notificationPrefs.dailyDigest`.
-- [ ] `lib/app/features/profile/presentation/notification_settings_screen.dart` — quiet hours range picker + daily digest toggle.
 - [ ] TDD: web token registration stores `{platform:'web'}`; android/ios stores `{platform:'mobile'}`; legacy plain-string tokens still readable.
-- [ ] TDD: `sendPush` falls back to `en` template when recipient locale missing.
-- [ ] TDD: digest CF skips users w/ `dailyDigest==false`; selects exactly users whose local-time hour == 9.
-- [ ] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`. Manual smoke on web build.
+- [ ] Manual smoke on web build.
 
 ## Risks / Out of scope
 
