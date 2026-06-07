@@ -70,6 +70,7 @@ export const onMemberJoined = onDocumentWritten(
         recipientUids,
         senderId: joiner,
         category: "member_joined",
+        eventId,
         title: `New member in ${eventTitle}`,
         body: "Tap to review the member list.",
         deepLink: `/dashboard/event/${eventId}/members`,

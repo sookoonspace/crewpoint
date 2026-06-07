@@ -1,5 +1,6 @@
 import * as admin from "firebase-admin";
 import {logger} from "firebase-functions/v2";
+import {shouldSuppress, QuietHoursPrefs} from "./suppress";
 
 const FCM_BATCH_SIZE = 500;
 
@@ -84,6 +85,13 @@ interface SendCategorizedPushArgs {
   /** Excluded from the recipient list — never send a self-notification. */
   senderId?: string | null;
   category: NotificationCategory;
+  /**
+   * Owning event. Required for the Phase 5 event-mute lookup at
+   * `users/{uid}/eventMutes/{eventId}`. Callers should also pass it
+   * through `extraData.eventId` so the client deep-link payload still
+   * carries it for tap routing.
+   */
+  eventId: string;
   title: string;
   body: string;
   /** Goes into `data.deepLink` for in-app navigation on tap. */
@@ -99,6 +107,33 @@ interface SendResult {
 }
 
 type TokenOwner = {uid: string; token: string; criticalOptIn: boolean};
+
+/**
+ * Read the recipient's `users/{uid}/eventMutes/{eventId}.mutedUntil`.
+ * Returns `null` when the doc is missing / the field is the wrong
+ * shape — handled identically by [shouldSuppress].
+ */
+async function readMutedUntil(
+  db: admin.firestore.Firestore,
+  uid: string,
+  eventId: string
+): Promise<unknown> {
+  try {
+    const snap = await db
+      .collection("users")
+      .doc(uid)
+      .collection("eventMutes")
+      .doc(eventId)
+      .get();
+    return snap.data()?.mutedUntil ?? null;
+  } catch (e) {
+    logger.warn(
+      `eventMute read failed for ${uid}/${eventId}; treating as unmuted`,
+      e
+    );
+    return null;
+  }
+}
 
 /**
  * Builds the iOS `apns.payload.aps` dict for one (category, recipient)
@@ -156,6 +191,10 @@ export async function sendCategorizedPush(
 
   const owners: TokenOwner[] = [];
   let skipped = 0;
+  // Pinned "now" for the whole fan-out so every recipient gets the same
+  // suppression window (avoids a recipient on the back end of the loop
+  // being judged on a slightly newer clock).
+  const now = new Date();
 
   for (const uid of args.recipientUids) {
     if (args.senderId && uid === args.senderId) {
@@ -182,11 +221,43 @@ export async function sendCategorizedPush(
       skipped++;
       continue;
     }
+    // Read per-recipient DND-bypass opt-in. Default false; chat_urgent
+    // payloads use this for `apns.payload.aps.interruption-level`, and
+    // (Phase 5) the same flag is the documented bypass for quiet-hours
+    // / event-mute suppression.
+    const criticalOptIn = prefs.criticalOptIn === true;
+
+    // Phase 5: per-recipient quiet-hours + event-mute suppression.
+    const quietPrefs: QuietHoursPrefs = {
+      quietHoursStart:
+        typeof prefs.quietHoursStart === "number" ?
+          prefs.quietHoursStart :
+          null,
+      quietHoursEnd:
+        typeof prefs.quietHoursEnd === "number" ?
+          prefs.quietHoursEnd :
+          null,
+      timezone: typeof prefs.timezone === "string" ? prefs.timezone : null,
+    };
+    const eventMutedUntil = await readMutedUntil(db, uid, args.eventId);
+    if (
+      shouldSuppress({
+        category: args.category,
+        criticalOptIn,
+        prefs: quietPrefs,
+        eventMutedUntil,
+        now,
+      })
+    ) {
+      logger.info(
+        `Suppressing ${args.category} for ${uid} (quiet hours / event mute)`
+      );
+      skipped++;
+      continue;
+    }
+
     const tokens =
       (privateData?.fcmTokens as string[] | undefined) ?? [];
-    // Read per-recipient DND-bypass opt-in. Default false; only
-    // chat_urgent payloads use this for `apns.payload.aps.interruption-level`.
-    const criticalOptIn = prefs.criticalOptIn === true;
     for (const token of tokens) {
       owners.push({uid, token, criticalOptIn});
     }

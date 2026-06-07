@@ -87,6 +87,7 @@ export const onSettlementDisputed = onDocumentCreated(
       recipientUids: [recipient],
       senderId: disputerId,
       category: "settlement_disputed",
+      eventId,
       title: `Settlement disputed in ${eventTitle}`,
       body: "Tap to review the budget.",
       deepLink: `/dashboard/event/${eventId}/budget`,
