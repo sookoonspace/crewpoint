@@ -4,10 +4,27 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/services/fcm_gateway.dart';
 import 'package:crewpoint_app/app/core/services/fcm_service.dart';
+import 'package:crewpoint_app/app/core/services/notification_channels.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/profile/domain/models/notification_prefs.dart';
 import 'package:crewpoint_app/app/features/profile/domain/repositories/i_user_repository.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/notification_settings_screen.dart';
+
+class _FakeChannels implements INotificationChannels {
+  _FakeChannels({this.dndGranted = true});
+
+  bool dndGranted;
+  int requestCalls = 0;
+
+  @override
+  Future<void> registerAll() async {}
+  @override
+  Future<bool> isDndAccessGranted() async => dndGranted;
+  @override
+  Future<void> requestDndAccess() async {
+    requestCalls++;
+  }
+}
 
 class _InMemoryUserRepo implements IUserRepository {
   NotificationPrefs prefs = const NotificationPrefs();
@@ -76,7 +93,11 @@ class _NoopFcmGateway implements IFcmGateway {
   Future<void> deleteToken() async {}
 }
 
-Future<void> _pumpScreen(WidgetTester tester, _InMemoryUserRepo repo) async {
+Future<void> _pumpScreen(
+  WidgetTester tester,
+  _InMemoryUserRepo repo, {
+  _FakeChannels? channels,
+}) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -85,6 +106,9 @@ Future<void> _pumpScreen(WidgetTester tester, _InMemoryUserRepo repo) async {
         fcmServiceProvider.overrideWith((ref) {
           return FcmService(gateway: _NoopFcmGateway(), userRepository: repo);
         }),
+        notificationChannelsProvider.overrideWithValue(
+          channels ?? _FakeChannels(),
+        ),
         // Bypass authProvider entirely — the screen only needs the uid.
         currentUserIdProvider.overrideWithValue('u-test'),
       ],
@@ -268,5 +292,72 @@ void main() {
       );
       expect(tile.onChanged, isNull);
     });
+
+    testWidgets(
+      'criticalOptIn=true AND DND access NOT granted → non-blocking warning visible',
+      (tester) async {
+        final repo = _InMemoryUserRepo()
+          ..prefs = const NotificationPrefs(criticalOptIn: true);
+        final channels = _FakeChannels(dndGranted: false);
+        await _pumpScreen(tester, repo, channels: channels);
+
+        expect(
+          find.byKey(const Key('notifSettings.criticalOptIn.dndWarning')),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('criticalOptIn=true AND DND access granted → no warning', (
+      tester,
+    ) async {
+      final repo = _InMemoryUserRepo()
+        ..prefs = const NotificationPrefs(criticalOptIn: true);
+      final channels = _FakeChannels(dndGranted: true);
+      await _pumpScreen(tester, repo, channels: channels);
+
+      expect(
+        find.byKey(const Key('notifSettings.criticalOptIn.dndWarning')),
+        findsNothing,
+      );
+    });
+
+    testWidgets(
+      'criticalOptIn=false → no warning even when DND access not granted',
+      (tester) async {
+        // No opt-in means we don't ask the user to grant anything.
+        final repo = _InMemoryUserRepo();
+        final channels = _FakeChannels(dndGranted: false);
+        await _pumpScreen(tester, repo, channels: channels);
+
+        expect(
+          find.byKey(const Key('notifSettings.criticalOptIn.dndWarning')),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'warning "Grant access" CTA calls INotificationChannels.requestDndAccess',
+      (tester) async {
+        final repo = _InMemoryUserRepo()
+          ..prefs = const NotificationPrefs(criticalOptIn: true);
+        final channels = _FakeChannels(dndGranted: false);
+        await _pumpScreen(tester, repo, channels: channels);
+
+        final cta = find.byKey(
+          const Key('notifSettings.criticalOptIn.grantDnd.cta'),
+        );
+        // The warning Card sits at the bottom of a scroll view that
+        // overflows the test viewport — scroll the button into hittable
+        // range before tapping.
+        await tester.ensureVisible(cta);
+        await tester.pumpAndSettle();
+        await tester.tap(cta);
+        await tester.pumpAndSettle();
+
+        expect(channels.requestCalls, 1);
+      },
+    );
   });
 }

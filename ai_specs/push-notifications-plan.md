@@ -200,17 +200,20 @@ Push notifications roadmap V1→V3. FCM scaffolding (`FcmGateway`/`FcmService`/`
 - [ ] **Manual**: real-device iOS smoke (notification action buttons can't run in widget tests). The native delegate bridge in `AppDelegate.swift` is unverified outside of compile; first build on a real device must confirm: (a) `apns.payload.aps.category` shows the action buttons, (b) tapping `MARK_DONE` fires `crewpoint/notification_actions` `actionTapped`, (c) `markTaskComplete` succeeds. *(Out of session scope.)*
 - [x] Verify: `flutter analyze` && `flutter test`. *(1 pre-existing TableMigration warning; 715 flutter tests pass, 4 skipped; 103 CF tests pass.)*
 
-### Phase 4: V2.1 — critical notifications (urgent bypass DND)
+### Phase 4: V2.1 — critical notifications (urgent bypass DND) ✓
 
 - **Goal**: urgent chat alerts pierce DND/Focus when user has opted in.
-- [ ] `ios/Runner/Runner.entitlements` — add `com.apple.developer.usernotifications.critical-alerts` (request approval from Apple; fall back to `time-sensitive` interruption-level when entitlement unavailable).
-- [ ] `functions/src/notifications/sendPush.ts` — for `category==chat_urgent` set `apns.payload.aps.interruption-level='critical'` when recipient `criticalOptIn==true`, else `'time-sensitive'`; Android `crewpoint_chat_urgent` channel set `IMPORTANCE_HIGH` + `setBypassDnd(true)` (requires `NotificationManager.NOTIFICATION_POLICY_ACCESS_GRANTED` — prompt in-app).
-- [ ] `lib/app/core/services/notification_channels.dart` — request DND access on Android via platform channel when user enables criticalOptIn.
-- [ ] `lib/app/features/profile/presentation/notification_settings_screen.dart` — explicit "Allow urgent alerts to bypass Do Not Disturb" toggle; explain risks; require re-confirmation toast on enable.
-- [ ] `functions/src/events/onUrgentMessageCreated.ts` — migrate to call `sendCategorizedPush(category: 'chat_urgent')`.
-- [ ] TDD: CF sets `interruption-level=critical` only when recipient `criticalOptIn==true`.
-- [ ] TDD: enabling criticalOptIn without DND grant on Android surfaces a non-blocking warning.
-- [ ] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`. Manual smoke on real iOS device w/ Focus enabled.
+- [x] `ios/Runner/Runner.entitlements` — added `com.apple.developer.usernotifications.critical-alerts` with the Apple-approval note. Until approval lands the OS silently downgrades to `time-sensitive` (matches the fallback path in `buildApnsAps`).
+- [x] `functions/src/notifications/sendPush.ts` — extracted pure helper `buildApnsAps({category, criticalOptIn, cfg})`. For `category==chat_urgent` it sets `apns.payload.aps.interruption-level='critical'` when recipient `criticalOptIn==true`, else `'time-sensitive'`. Per-recipient: switched the inner loop from `sendEachForMulticast` (single payload) to `sendEach` (per-Message payload) so each token carries its owner's interruption-level. Token batching, dead-token pruning, pref filtering all unchanged.
+- [x] Android `crewpoint_chat_urgent` channel set `setBypassDnd(true)` in `MainActivity.kt` — harmless without policy access, takes effect once granted.
+- [x] `lib/app/core/services/notification_channels.dart` — `INotificationChannels` gains `isDndAccessGranted()` + `requestDndAccess()`. iOS / web / desktop short-circuit; Android wires to `NotificationManager.isNotificationPolicyAccessGranted` + `ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS` via the existing platform channel.
+- [x] `lib/app/features/profile/presentation/notification_settings_screen.dart` — "Allow urgent alerts to bypass Do Not Disturb" tile gated on `pushEnabled && urgentChat` (no point bypassing DND if urgent chat is off). Enable fires a re-confirmation snackbar; disable is silent. `_CriticalOptInDndWarning` Card surfaces when the user has opted in but `isDndAccessGranted()` is false; "Grant access" CTA calls `requestDndAccess()` then invalidates the dnd-granted future so the banner self-dismisses on return.
+- [x] `functions/src/events/onUrgentMessageCreated.ts` — already calls `sendCategorizedPush(category: 'chat_urgent')` from Phase 3a; no change needed.
+- [x] TDD: CF sets `interruption-level=critical` only when recipient `criticalOptIn==true`. *(`sendPush.test.ts` — 4 new tests cover `buildApnsAps` across all 6 categories.)*
+- [x] TDD: enabling criticalOptIn without DND grant on Android surfaces a non-blocking warning. *(`notification_settings_screen_test.dart` — 4 new tests cover warning visibility under all combinations of `criticalOptIn` + `dndGranted`, plus the "Grant access" CTA dispatch.)*
+- [x] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`. *(1 pre-existing TableMigration warning; 755 flutter tests pass, 4 skipped; 107 CF tests pass.)*
+- [ ] **Manual**: real-device iOS smoke on Focus-enabled device after Apple approves the critical-alert entitlement. Confirm: (a) entitlement enables `interruption-level=critical`; (b) opt-in toggle persists; (c) urgent push rings through Focus. *(Out of session scope — requires Apple developer-portal review.)*
+- [ ] **Manual**: real-device Android smoke on Pixel + Samsung. Confirm: (a) toggling criticalOptIn surfaces the warning banner; (b) "Grant access" opens system DND settings; (c) granting + returning dismisses the banner; (d) post-grant urgent push pierces DND. *(Out of session scope.)*
 
 ### Phase 5: V3 — quiet hours + per-event mute + granular controls
 
