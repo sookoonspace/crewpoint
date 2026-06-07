@@ -167,6 +167,17 @@ service cloud.firestore {
         allow read, write: if request.auth != null
           && request.auth.uid == userId;
       }
+
+      // Per-user, per-event push-notification mute state (Phase 5 V3).
+      // `users/{uid}/eventMutes/{eventId}` carries `mutedUntil` (ISO-8601
+      // UTC string). Self-only: a user's mute choice is private (it
+      // would be a privacy leak if co-event members could see who has
+      // an event muted). The server-side CF reads this via the Admin
+      // SDK and so bypasses these rules.
+      match /eventMutes/{eventId} {
+        allow read, write: if request.auth != null
+          && request.auth.uid == userId;
+      }
     }
   }
 }
