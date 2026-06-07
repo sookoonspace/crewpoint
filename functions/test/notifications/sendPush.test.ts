@@ -11,7 +11,7 @@
  */
 import {__INTERNAL} from '../../src/notifications/sendPush';
 
-const {CATEGORY_CONFIG} = __INTERNAL;
+const {CATEGORY_CONFIG, buildApnsAps} = __INTERNAL;
 
 describe('sendCategorizedPush CATEGORY_CONFIG', () => {
   test('chat_urgent routes to crewpoint_chat_urgent + urgentChat pref', () => {
@@ -79,11 +79,60 @@ describe('sendCategorizedPush CATEGORY_CONFIG', () => {
       );
     });
 
-    test('categories without actions omit apnsCategory', () => {
-      // chat_urgent + member_joined have no action buttons; iOS renders
-      // them as plain notifications.
-      expect(CATEGORY_CONFIG.chat_urgent.apnsCategory).toBeUndefined();
+    test('chat_urgent binds CHAT_CATEGORY (MUTE_EVENT action — Phase 5.1)', () => {
+      expect(CATEGORY_CONFIG.chat_urgent.apnsCategory).toBe('CHAT_CATEGORY');
+    });
+
+    test('member_joined omits apnsCategory (no action set)', () => {
       expect(CATEGORY_CONFIG.member_joined.apnsCategory).toBeUndefined();
+    });
+  });
+
+  describe('buildApnsAps interruption-level (Phase 4)', () => {
+    test('chat_urgent + criticalOptIn=true → interruption-level "critical"', () => {
+      const aps = buildApnsAps({
+        category: 'chat_urgent',
+        criticalOptIn: true,
+        cfg: CATEGORY_CONFIG.chat_urgent,
+      });
+      expect(aps['interruption-level']).toBe('critical');
+      expect(aps['thread-id']).toBe('chat');
+    });
+
+    test('chat_urgent + criticalOptIn=false → interruption-level "time-sensitive"', () => {
+      const aps = buildApnsAps({
+        category: 'chat_urgent',
+        criticalOptIn: false,
+        cfg: CATEGORY_CONFIG.chat_urgent,
+      });
+      expect(aps['interruption-level']).toBe('time-sensitive');
+    });
+
+    test('non-chat_urgent categories never set interruption-level (irrespective of criticalOptIn)', () => {
+      for (const category of [
+        'task_assigned',
+        'task_due',
+        'expense_added',
+        'settlement_disputed',
+        'member_joined',
+      ] as const) {
+        const aps = buildApnsAps({
+          category,
+          criticalOptIn: true,
+          cfg: CATEGORY_CONFIG[category],
+        });
+        expect(aps['interruption-level']).toBeUndefined();
+      }
+    });
+
+    test('preserves existing apnsCategory + thread-id wiring', () => {
+      const aps = buildApnsAps({
+        category: 'task_assigned',
+        criticalOptIn: false,
+        cfg: CATEGORY_CONFIG.task_assigned,
+      });
+      expect(aps['thread-id']).toBe('tasks');
+      expect(aps.category).toBe('TASK_CATEGORY');
     });
   });
 });

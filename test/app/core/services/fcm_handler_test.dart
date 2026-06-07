@@ -166,5 +166,43 @@ void main() {
 
       expect(doneCalls, 0);
     });
+
+    test('mute_event action dispatches muteEvent with the carrier eventId', () {
+      String? mutedEventId;
+      Duration? mutedFor;
+      final handler = FcmHandler(
+        currentRoute: () => null,
+        showBanner: ({required title, required body, required deepLink}) {},
+        navigateTo: (_) {},
+        muteEvent: ({required eventId, required duration}) {
+          mutedEventId = eventId;
+          mutedFor = duration;
+        },
+      );
+
+      handler.handleAction(
+        data: const {'action': 'mute_event', 'eventId': 'evt-9'},
+      );
+
+      expect(mutedEventId, 'evt-9');
+      // Default mute-from-notification duration is 8 hours — matches the
+      // 8h preset on MuteEventSheet so the user gets the same window
+      // whether they tap the notification action or open the app.
+      expect(mutedFor, const Duration(hours: 8));
+    });
+
+    test('mute_event no-op when eventId missing', () {
+      var muteCalls = 0;
+      final handler = FcmHandler(
+        currentRoute: () => null,
+        showBanner: ({required title, required body, required deepLink}) {},
+        navigateTo: (_) {},
+        muteEvent: ({required eventId, required duration}) => muteCalls++,
+      );
+
+      handler.handleAction(data: const {'action': 'mute_event'});
+
+      expect(muteCalls, 0);
+    });
   });
 }

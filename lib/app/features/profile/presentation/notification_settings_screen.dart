@@ -10,6 +10,15 @@ import 'package:crewpoint_app/app/core/widgets/forms/app_switch_tile.dart';
 import 'package:crewpoint_app/app/features/profile/application/notification_prefs_provider.dart';
 import 'package:crewpoint_app/app/features/profile/domain/models/notification_prefs.dart';
 
+/// Per-app-launch query for "is the OS willing to let our urgent channel
+/// bypass DND on this device?". Android-only; iOS / web / desktop always
+/// resolve true (the entitlement-vs-grant gate lives at build time, not
+/// runtime). Used to surface the non-blocking DND warning when the user
+/// has opted in but the OS has not yet been told yes.
+final _dndAccessGrantedProvider = FutureProvider<bool>((ref) async {
+  return ref.watch(notificationChannelsProvider).isDndAccessGranted();
+});
+
 /// `/profile/notifications` — surfaces the master push toggle + per-category
 /// switches. Server-side enforcement of these flags lives in
 /// `functions/src/events/onUrgentMessageCreated.ts`.
@@ -40,7 +49,7 @@ class _Body extends ConsumerWidget {
     final asyncPrefs = ref.watch(notificationPrefsProvider(uid));
     return ContentMaxWidth(
       maxWidth: 720,
-      child: Padding(
+      child: SingleChildScrollView(
         padding: EdgeInsets.symmetric(
           horizontal: Breakpoints.screenHorizontalPadding(context),
           vertical: AppSpacing.lg,
@@ -129,16 +138,209 @@ class _PrefsForm extends ConsumerWidget {
           onChanged: (v) =>
               _safeUpdate(context, () => controller.setEventUpdates(v)),
         ),
+        const SizedBox(height: AppSpacing.lg),
+        AppSwitchTile(
+          key: const Key('notifSettings.criticalOptIn.tile'),
+          title: 'Allow urgent alerts to bypass Do Not Disturb',
+          subtitle:
+              'Required for 🚨 messages to ring through Focus / silent mode. '
+              'You can revoke this at any time in iOS Focus settings or '
+              'Android Do Not Disturb access.',
+          value: prefs.criticalOptIn,
+          // Only meaningful when urgent chat is enabled.
+          enabled: prefs.pushEnabled && prefs.urgentChat,
+          onChanged: (v) => _safeUpdate(
+            context,
+            () => controller.setCriticalOptIn(v),
+            // Re-confirm only on enable so the user knows this is an
+            // elevated permission (per Phase 4 plan). Disabling is silent.
+            confirmationOnEnable: v
+                ? 'Urgent alerts will bypass Do Not Disturb on this device.'
+                : null,
+          ),
+        ),
+        if (prefs.criticalOptIn) _CriticalOptInDndWarning(),
+        const SizedBox(height: AppSpacing.lg),
+        _QuietHoursTile(uid: uid, prefs: prefs),
       ],
     );
   }
 
   Future<void> _safeUpdate(
     BuildContext context,
-    Future<void> Function() update,
-  ) async {
+    Future<void> Function() update, {
+    String? confirmationOnEnable,
+  }) async {
     try {
       await update();
+      if (confirmationOnEnable != null && context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(confirmationOnEnable)));
+      }
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not save — try again'),
+          backgroundColor: AppColors.terracotta,
+        ),
+      );
+    }
+  }
+}
+
+/// Non-blocking banner shown beneath the criticalOptIn tile when the
+/// user has opted in but the host OS has not yet granted DND-bypass
+/// access (Android-only — iOS gates this at build time via the
+/// `critical-alerts` entitlement). Tapping the CTA opens the system
+/// "Do Not Disturb access" settings page; the screen re-checks on
+/// resume via the `_dndAccessGrantedProvider` future invalidating
+/// itself on rebuild.
+class _CriticalOptInDndWarning extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final asyncGranted = ref.watch(_dndAccessGrantedProvider);
+    // Treat the loading / error states as granted so we don't flash a
+    // warning on first build. A real "not granted" eventually replaces it.
+    final granted = asyncGranted.maybeWhen(data: (v) => v, orElse: () => true);
+    if (granted) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return Padding(
+      key: const Key('notifSettings.criticalOptIn.dndWarning'),
+      padding: const EdgeInsets.only(top: AppSpacing.md),
+      child: Card(
+        elevation: 0,
+        color: AppColors.terracottaLight.withValues(alpha: 0.18),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: AppColors.terracotta, width: 1),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.warning_amber_rounded,
+                color: AppColors.terracotta,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Do Not Disturb access not granted',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      'Urgent alerts will be delivered, but they cannot '
+                      'ring through Do Not Disturb until you grant access '
+                      'in system settings.',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton(
+                        key: const Key(
+                          'notifSettings.criticalOptIn.grantDnd.cta',
+                        ),
+                        onPressed: () async {
+                          await ref
+                              .read(notificationChannelsProvider)
+                              .requestDndAccess();
+                          // Re-query after the user returns from the
+                          // system settings sheet so the banner can
+                          // dismiss itself once permission lands.
+                          ref.invalidate(_dndAccessGrantedProvider);
+                        },
+                        child: const Text('Grant access'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Phase 5 quiet-hours toggle. V1 MVP — enabling sets the default
+/// 22:00-07:00 window in the device's local timezone (read from
+/// `DateTime.now().timeZoneName`; falls back to `'UTC'` if the platform
+/// returns an empty string). Picker UI for a custom window ships in
+/// Phase 5.1 — server-side enforcement already honours any window the
+/// user / future picker writes.
+class _QuietHoursTile extends ConsumerWidget {
+  const _QuietHoursTile({required this.uid, required this.prefs});
+
+  final String uid;
+  final NotificationPrefs prefs;
+
+  static const _defaultStartMinute = 22 * 60;
+  static const _defaultEndMinute = 7 * 60;
+
+  bool get _isEnabled =>
+      prefs.quietHoursStart != null &&
+      prefs.quietHoursEnd != null &&
+      prefs.timezone != null;
+
+  String _formatMinute(int m) {
+    final h = (m ~/ 60).toString().padLeft(2, '0');
+    final mm = (m % 60).toString().padLeft(2, '0');
+    return '$h:$mm';
+  }
+
+  String _detectTimezone() {
+    final raw = DateTime.now().timeZoneName.trim();
+    return raw.isEmpty ? 'UTC' : raw;
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final controller = ref.read(notificationPrefsProvider(uid).notifier);
+    final subtitle = _isEnabled
+        ? 'Muted ${_formatMinute(prefs.quietHoursStart!)}'
+              ' – ${_formatMinute(prefs.quietHoursEnd!)}'
+              ' (${prefs.timezone})'
+        : 'Suppress non-urgent push during a daily window.';
+    return AppSwitchTile(
+      key: const Key('notifSettings.quietHours.tile'),
+      title: 'Quiet hours',
+      subtitle: subtitle,
+      value: _isEnabled,
+      enabled: prefs.pushEnabled,
+      onChanged: (v) => _safeToggle(context, controller, enable: v),
+    );
+  }
+
+  Future<void> _safeToggle(
+    BuildContext context,
+    NotificationPrefsNotifier controller, {
+    required bool enable,
+  }) async {
+    try {
+      if (enable) {
+        await controller.setQuietHours(
+          startMinute: _defaultStartMinute,
+          endMinute: _defaultEndMinute,
+          timezone: _detectTimezone(),
+        );
+      } else {
+        await controller.setQuietHours(
+          startMinute: null,
+          endMinute: null,
+          timezone: null,
+        );
+      }
     } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

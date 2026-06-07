@@ -1,5 +1,6 @@
 import * as admin from "firebase-admin";
 import {logger} from "firebase-functions/v2";
+import {shouldSuppress, QuietHoursPrefs} from "./suppress";
 
 const FCM_BATCH_SIZE = 500;
 
@@ -43,6 +44,12 @@ const CATEGORY_CONFIG: Record<NotificationCategory, CategoryConfig> = {
     prefKey: "urgentChat",
     androidChannelId: "crewpoint_chat_urgent",
     iosThreadId: "chat",
+    // Phase 5.1 — `CHAT_CATEGORY` carries the MUTE_EVENT action so a
+    // recipient can pause the event for 8h directly from the lock
+    // screen / banner. The action is registered in AppDelegate.swift;
+    // FcmHandler.handleAction routes the resulting `mute_event` to
+    // EventMuteRepository.muteEvent.
+    apnsCategory: "CHAT_CATEGORY",
   },
   task_assigned: {
     prefKey: "taskUpdates",
@@ -84,6 +91,13 @@ interface SendCategorizedPushArgs {
   /** Excluded from the recipient list — never send a self-notification. */
   senderId?: string | null;
   category: NotificationCategory;
+  /**
+   * Owning event. Required for the Phase 5 event-mute lookup at
+   * `users/{uid}/eventMutes/{eventId}`. Callers should also pass it
+   * through `extraData.eventId` so the client deep-link payload still
+   * carries it for tap routing.
+   */
+  eventId: string;
   title: string;
   body: string;
   /** Goes into `data.deepLink` for in-app navigation on tap. */
@@ -98,7 +112,68 @@ interface SendResult {
   skipped: number;
 }
 
-type TokenOwner = {uid: string; token: string};
+type TokenOwner = {uid: string; token: string; criticalOptIn: boolean};
+
+/**
+ * Read the recipient's `users/{uid}/eventMutes/{eventId}.mutedUntil`.
+ * Returns `null` when the doc is missing / the field is the wrong
+ * shape — handled identically by [shouldSuppress].
+ */
+async function readMutedUntil(
+  db: admin.firestore.Firestore,
+  uid: string,
+  eventId: string
+): Promise<unknown> {
+  try {
+    const snap = await db
+      .collection("users")
+      .doc(uid)
+      .collection("eventMutes")
+      .doc(eventId)
+      .get();
+    return snap.data()?.mutedUntil ?? null;
+  } catch (e) {
+    logger.warn(
+      `eventMute read failed for ${uid}/${eventId}; treating as unmuted`,
+      e
+    );
+    return null;
+  }
+}
+
+/**
+ * Builds the iOS `apns.payload.aps` dict for one (category, recipient)
+ * pair. Pure / side-effect free — exported for unit tests via __INTERNAL.
+ *
+ * `interruption-level` is only set for `chat_urgent`:
+ *   - `criticalOptIn=true`  → `'critical'`     (requires Apple's
+ *     `com.apple.developer.usernotifications.critical-alerts` entitlement;
+ *     pierces Focus / DND on the device)
+ *   - `criticalOptIn=false` → `'time-sensitive'` (default elevated
+ *     priority for chat; respects Focus)
+ *
+ * Non-chat_urgent categories never receive an interruption-level — the
+ * default behavior already matches their semantic priority and there is
+ * no per-recipient pref to vary on.
+ */
+export function buildApnsAps(args: {
+  category: NotificationCategory;
+  criticalOptIn: boolean;
+  cfg: CategoryConfig;
+}): Record<string, unknown> {
+  const aps: Record<string, unknown> = {
+    "thread-id": args.cfg.iosThreadId,
+  };
+  if (args.cfg.apnsCategory) {
+    aps.category = args.cfg.apnsCategory;
+  }
+  if (args.category === "chat_urgent") {
+    aps["interruption-level"] = args.criticalOptIn ?
+      "critical" :
+      "time-sensitive";
+  }
+  return aps;
+}
 
 /**
  * Fans out a categorized push.
@@ -122,6 +197,10 @@ export async function sendCategorizedPush(
 
   const owners: TokenOwner[] = [];
   let skipped = 0;
+  // Pinned "now" for the whole fan-out so every recipient gets the same
+  // suppression window (avoids a recipient on the back end of the loop
+  // being judged on a slightly newer clock).
+  const now = new Date();
 
   for (const uid of args.recipientUids) {
     if (args.senderId && uid === args.senderId) {
@@ -148,10 +227,45 @@ export async function sendCategorizedPush(
       skipped++;
       continue;
     }
+    // Read per-recipient DND-bypass opt-in. Default false; chat_urgent
+    // payloads use this for `apns.payload.aps.interruption-level`, and
+    // (Phase 5) the same flag is the documented bypass for quiet-hours
+    // / event-mute suppression.
+    const criticalOptIn = prefs.criticalOptIn === true;
+
+    // Phase 5: per-recipient quiet-hours + event-mute suppression.
+    const quietPrefs: QuietHoursPrefs = {
+      quietHoursStart:
+        typeof prefs.quietHoursStart === "number" ?
+          prefs.quietHoursStart :
+          null,
+      quietHoursEnd:
+        typeof prefs.quietHoursEnd === "number" ?
+          prefs.quietHoursEnd :
+          null,
+      timezone: typeof prefs.timezone === "string" ? prefs.timezone : null,
+    };
+    const eventMutedUntil = await readMutedUntil(db, uid, args.eventId);
+    if (
+      shouldSuppress({
+        category: args.category,
+        criticalOptIn,
+        prefs: quietPrefs,
+        eventMutedUntil,
+        now,
+      })
+    ) {
+      logger.info(
+        `Suppressing ${args.category} for ${uid} (quiet hours / event mute)`
+      );
+      skipped++;
+      continue;
+    }
+
     const tokens =
       (privateData?.fcmTokens as string[] | undefined) ?? [];
     for (const token of tokens) {
-      owners.push({uid, token});
+      owners.push({uid, token, criticalOptIn});
     }
   }
 
@@ -168,10 +282,13 @@ export async function sendCategorizedPush(
 
   const messaging = admin.messaging();
   const deadTokens: TokenOwner[] = [];
+  // sendEach (not sendEachForMulticast) so each Message can carry a
+  // per-recipient apns payload — `chat_urgent`'s `interruption-level`
+  // varies on the recipient's `criticalOptIn` flag.
   for (let i = 0; i < owners.length; i += FCM_BATCH_SIZE) {
     const chunk = owners.slice(i, i + FCM_BATCH_SIZE);
-    const response = await messaging.sendEachForMulticast({
-      tokens: chunk.map((o) => o.token),
+    const messages = chunk.map((owner) => ({
+      token: owner.token,
       notification,
       data: messageData,
       android: {
@@ -179,13 +296,15 @@ export async function sendCategorizedPush(
       },
       apns: {
         payload: {
-          aps: {
-            "thread-id": cfg.iosThreadId,
-            ...(cfg.apnsCategory ? {category: cfg.apnsCategory} : {}),
-          },
+          aps: buildApnsAps({
+            category: args.category,
+            criticalOptIn: owner.criticalOptIn,
+            cfg,
+          }),
         },
       },
-    });
+    }));
+    const response = await messaging.sendEach(messages);
     response.responses.forEach((res, idx) => {
       if (res.success) return;
       const code = res.error?.code ?? "";
@@ -232,4 +351,4 @@ async function pruneDeadTokens(
 }
 
 /** Test seam — internal helper exported only for unit tests. */
-export const __INTERNAL = {CATEGORY_CONFIG};
+export const __INTERNAL = {CATEGORY_CONFIG, buildApnsAps};

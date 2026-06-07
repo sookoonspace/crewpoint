@@ -49,6 +49,34 @@ class NotificationPrefsNotifier extends AsyncNotifier<NotificationPrefs> {
     await _update((prefs) => prefs.copyWith(eventUpdates: value));
   }
 
+  /// Toggles the DND-bypass opt-in. CF reads this server-side when
+  /// `category == 'chat_urgent'` to set the APNs interruption-level;
+  /// on Android the client-side `crewpoint_chat_urgent` channel toggles
+  /// `setBypassDnd(true)` once the user grants policy access.
+  Future<void> setCriticalOptIn(bool value) async {
+    await _update((prefs) => prefs.copyWith(criticalOptIn: value));
+  }
+
+  /// Sets (or replaces) the quiet-hours window. Pass `null` for all
+  /// three to clear the window entirely (CF treats absent fields as
+  /// "no quiet hours").
+  Future<void> setQuietHours({
+    required int? startMinute,
+    required int? endMinute,
+    required String? timezone,
+  }) async {
+    final allNull =
+        startMinute == null && endMinute == null && timezone == null;
+    await _update((prefs) {
+      if (allNull) return prefs.withQuietHoursCleared();
+      return prefs.copyWith(
+        quietHoursStart: startMinute,
+        quietHoursEnd: endMinute,
+        timezone: timezone,
+      );
+    });
+  }
+
   Future<void> _update(
     NotificationPrefs Function(NotificationPrefs prefs) transform,
   ) async {

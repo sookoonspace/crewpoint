@@ -26,6 +26,21 @@ abstract class INotificationChannels {
   /// Android replaces an existing channel definition with the same id,
   /// non-Android targets no-op.
   Future<void> registerAll();
+
+  /// True iff this device's host can bypass Do Not Disturb / Focus for
+  /// the urgent chat channel. On Android this maps to
+  /// `NotificationManager.isNotificationPolicyAccessGranted()`; iOS / web /
+  /// desktop return true (the concept does not exist there and the iOS
+  /// gate is the build-level `critical-alerts` entitlement, not a
+  /// per-install runtime grant). Phase 4 — drives the non-blocking
+  /// warning shown when the user opts in but Android has not yet
+  /// granted policy access.
+  Future<bool> isDndAccessGranted();
+
+  /// Opens the system "Do Not Disturb access" settings page on Android so
+  /// the user can grant the app permission to bypass DND. No-op on
+  /// non-Android platforms.
+  Future<void> requestDndAccess();
 }
 
 /// Importance bucket. Mirrors `android.app.NotificationManager.IMPORTANCE_*`
@@ -112,6 +127,14 @@ class NoOpNotificationChannels implements INotificationChannels {
 
   @override
   Future<void> registerAll() async {}
+
+  /// Defaults to `true` so non-Android targets + tests that don't care
+  /// about DND don't have to inject a value.
+  @override
+  Future<bool> isDndAccessGranted() async => true;
+
+  @override
+  Future<void> requestDndAccess() async {}
 }
 
 /// Production adapter. Ships the entire channel registry to the Kotlin
@@ -128,6 +151,8 @@ class MethodChannelNotificationChannels implements INotificationChannels {
 
   static const String channelName = 'crewpoint/notification_channels';
   static const String registerMethod = 'registerChannels';
+  static const String isDndGrantedMethod = 'isDndAccessGranted';
+  static const String requestDndAccessMethod = 'requestDndAccess';
 
   final MethodChannel _channel;
 
@@ -145,6 +170,35 @@ class MethodChannelNotificationChannels implements INotificationChannels {
         stackTrace: st,
         name: 'fcm',
       );
+    }
+  }
+
+  @override
+  Future<bool> isDndAccessGranted() async {
+    // The concept only exists on Android; treat everything else as
+    // granted so the UI doesn't show a warning that can't be fixed.
+    if (kIsWeb || !Platform.isAndroid) return true;
+    try {
+      final granted = await _channel.invokeMethod<bool>(isDndGrantedMethod);
+      return granted ?? false;
+    } catch (e, st) {
+      log(
+        'isDndAccessGranted query failed; assuming not granted',
+        error: e,
+        stackTrace: st,
+        name: 'fcm',
+      );
+      return false;
+    }
+  }
+
+  @override
+  Future<void> requestDndAccess() async {
+    if (kIsWeb || !Platform.isAndroid) return;
+    try {
+      await _channel.invokeMethod<void>(requestDndAccessMethod);
+    } catch (e, st) {
+      log('requestDndAccess failed', error: e, stackTrace: st, name: 'fcm');
     }
   }
 }

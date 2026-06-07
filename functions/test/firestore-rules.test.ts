@@ -500,3 +500,105 @@ describe('access matrix smoke', () => {
     );
   });
 });
+
+describe('eventMutes — self-only access (Phase 5)', () => {
+  test('user can write their own users/{uid}/eventMutes/{eventId}', async () => {
+    const uid = 'self';
+    const eventId = 'evt-1';
+    const selfCtx = env.authenticatedContext(uid);
+
+    await assertSucceeds(
+      setDoc(
+        doc(selfCtx.firestore(), `users/${uid}/eventMutes/${eventId}`),
+        {mutedUntil: '2026-06-01T12:00:00.000Z'}
+      )
+    );
+  });
+
+  test('user can read their own users/{uid}/eventMutes/{eventId}', async () => {
+    const uid = 'self';
+    const eventId = 'evt-1';
+
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(
+        doc(ctx.firestore(), `users/${uid}/eventMutes/${eventId}`),
+        {mutedUntil: '2026-06-01T12:00:00.000Z'}
+      );
+    });
+
+    const selfCtx = env.authenticatedContext(uid);
+    await assertSucceeds(
+      getDoc(doc(selfCtx.firestore(), `users/${uid}/eventMutes/${eventId}`))
+    );
+  });
+
+  test('user CANNOT read another user\'s eventMutes/{eventId}', async () => {
+    const ownerUid = 'owner';
+    const otherUid = 'snooper';
+    const eventId = 'evt-1';
+
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(
+        doc(ctx.firestore(), `users/${ownerUid}/eventMutes/${eventId}`),
+        {mutedUntil: '2026-06-01T12:00:00.000Z'}
+      );
+    });
+
+    const otherCtx = env.authenticatedContext(otherUid);
+    await assertFails(
+      getDoc(
+        doc(otherCtx.firestore(), `users/${ownerUid}/eventMutes/${eventId}`)
+      )
+    );
+  });
+
+  test('user CANNOT write another user\'s eventMutes/{eventId}', async () => {
+    const ownerUid = 'owner';
+    const attackerUid = 'attacker';
+    const eventId = 'evt-1';
+
+    const attackerCtx = env.authenticatedContext(attackerUid);
+    await assertFails(
+      setDoc(
+        doc(attackerCtx.firestore(), `users/${ownerUid}/eventMutes/${eventId}`),
+        {mutedUntil: '2099-01-01T00:00:00.000Z'}
+      )
+    );
+  });
+
+  test('anonymous user CANNOT read eventMutes', async () => {
+    const ownerUid = 'owner';
+    const eventId = 'evt-1';
+
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(
+        doc(ctx.firestore(), `users/${ownerUid}/eventMutes/${eventId}`),
+        {mutedUntil: '2026-06-01T12:00:00.000Z'}
+      );
+    });
+
+    const anonCtx = env.unauthenticatedContext();
+    await assertFails(
+      getDoc(
+        doc(anonCtx.firestore(), `users/${ownerUid}/eventMutes/${eventId}`)
+      )
+    );
+  });
+
+  test('user can delete their own eventMutes/{eventId} (unmute)', async () => {
+    const uid = 'self';
+    const eventId = 'evt-1';
+
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(
+        doc(ctx.firestore(), `users/${uid}/eventMutes/${eventId}`),
+        {mutedUntil: '2026-06-01T12:00:00.000Z'}
+      );
+    });
+
+    const selfCtx = env.authenticatedContext(uid);
+    await assertSucceeds(
+      deleteDoc(doc(selfCtx.firestore(), `users/${uid}/eventMutes/${eventId}`))
+    );
+  });
+});

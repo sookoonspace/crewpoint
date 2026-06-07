@@ -8,6 +8,24 @@
 	<array>
 		<string>Default</string>
 	</array>
+	<!--
+	  Phase 4 V2.1 — critical-alert entitlement. Required for chat_urgent
+	  pushes to set apns.payload.aps.interruption-level='critical' and
+	  thereby pierce Focus / Do Not Disturb on the recipient's device.
+
+	  This entitlement requires explicit Apple review approval (request via
+	  developer.apple.com → Support → Critical Alerts). Until approval lands,
+	  iOS silently downgrades the push to 'time-sensitive' (the existing
+	  fallback path in functions/src/notifications/sendPush.ts:buildApnsAps).
+	  The server still emits 'critical' when the recipient has opted in;
+	  the OS makes the final call based on the entitlement status of the
+	  build that registered the APNs token.
+
+	  Per-recipient opt-in lives on users/{uid}/private/profile.notificationPrefs.criticalOptIn
+	  (default false) — see lib/app/features/profile/domain/models/notification_prefs.dart.
+	-->
+	<key>com.apple.developer.usernotifications.critical-alerts</key>
+	<true/>
 	<key>com.apple.developer.default-data-protection</key>
 	<string>NSFileProtectionComplete</string>
 </dict>

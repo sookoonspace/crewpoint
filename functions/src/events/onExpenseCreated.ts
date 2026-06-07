@@ -71,6 +71,7 @@ export const onExpenseCreated = onDocumentCreated(
       recipientUids,
       senderId: payerId,
       category: "expense_added",
+      eventId,
       title: `New expense in ${eventTitle}`,
       body,
       deepLink: `/dashboard/event/${eventId}/budget`,

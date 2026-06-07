@@ -200,32 +200,56 @@ Push notifications roadmap V1→V3. FCM scaffolding (`FcmGateway`/`FcmService`/`
 - [ ] **Manual**: real-device iOS smoke (notification action buttons can't run in widget tests). The native delegate bridge in `AppDelegate.swift` is unverified outside of compile; first build on a real device must confirm: (a) `apns.payload.aps.category` shows the action buttons, (b) tapping `MARK_DONE` fires `crewpoint/notification_actions` `actionTapped`, (c) `markTaskComplete` succeeds. *(Out of session scope.)*
 - [x] Verify: `flutter analyze` && `flutter test`. *(1 pre-existing TableMigration warning; 715 flutter tests pass, 4 skipped; 103 CF tests pass.)*
 
-### Phase 4: V2.1 — critical notifications (urgent bypass DND)
+### Phase 4: V2.1 — critical notifications (urgent bypass DND) ✓
 
 - **Goal**: urgent chat alerts pierce DND/Focus when user has opted in.
-- [ ] `ios/Runner/Runner.entitlements` — add `com.apple.developer.usernotifications.critical-alerts` (request approval from Apple; fall back to `time-sensitive` interruption-level when entitlement unavailable).
-- [ ] `functions/src/notifications/sendPush.ts` — for `category==chat_urgent` set `apns.payload.aps.interruption-level='critical'` when recipient `criticalOptIn==true`, else `'time-sensitive'`; Android `crewpoint_chat_urgent` channel set `IMPORTANCE_HIGH` + `setBypassDnd(true)` (requires `NotificationManager.NOTIFICATION_POLICY_ACCESS_GRANTED` — prompt in-app).
-- [ ] `lib/app/core/services/notification_channels.dart` — request DND access on Android via platform channel when user enables criticalOptIn.
-- [ ] `lib/app/features/profile/presentation/notification_settings_screen.dart` — explicit "Allow urgent alerts to bypass Do Not Disturb" toggle; explain risks; require re-confirmation toast on enable.
-- [ ] `functions/src/events/onUrgentMessageCreated.ts` — migrate to call `sendCategorizedPush(category: 'chat_urgent')`.
-- [ ] TDD: CF sets `interruption-level=critical` only when recipient `criticalOptIn==true`.
-- [ ] TDD: enabling criticalOptIn without DND grant on Android surfaces a non-blocking warning.
-- [ ] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`. Manual smoke on real iOS device w/ Focus enabled.
+- [x] `ios/Runner/Runner.entitlements` — added `com.apple.developer.usernotifications.critical-alerts` with the Apple-approval note. Until approval lands the OS silently downgrades to `time-sensitive` (matches the fallback path in `buildApnsAps`).
+- [x] `functions/src/notifications/sendPush.ts` — extracted pure helper `buildApnsAps({category, criticalOptIn, cfg})`. For `category==chat_urgent` it sets `apns.payload.aps.interruption-level='critical'` when recipient `criticalOptIn==true`, else `'time-sensitive'`. Per-recipient: switched the inner loop from `sendEachForMulticast` (single payload) to `sendEach` (per-Message payload) so each token carries its owner's interruption-level. Token batching, dead-token pruning, pref filtering all unchanged.
+- [x] Android `crewpoint_chat_urgent` channel set `setBypassDnd(true)` in `MainActivity.kt` — harmless without policy access, takes effect once granted.
+- [x] `lib/app/core/services/notification_channels.dart` — `INotificationChannels` gains `isDndAccessGranted()` + `requestDndAccess()`. iOS / web / desktop short-circuit; Android wires to `NotificationManager.isNotificationPolicyAccessGranted` + `ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS` via the existing platform channel.
+- [x] `lib/app/features/profile/presentation/notification_settings_screen.dart` — "Allow urgent alerts to bypass Do Not Disturb" tile gated on `pushEnabled && urgentChat` (no point bypassing DND if urgent chat is off). Enable fires a re-confirmation snackbar; disable is silent. `_CriticalOptInDndWarning` Card surfaces when the user has opted in but `isDndAccessGranted()` is false; "Grant access" CTA calls `requestDndAccess()` then invalidates the dnd-granted future so the banner self-dismisses on return.
+- [x] `functions/src/events/onUrgentMessageCreated.ts` — already calls `sendCategorizedPush(category: 'chat_urgent')` from Phase 3a; no change needed.
+- [x] TDD: CF sets `interruption-level=critical` only when recipient `criticalOptIn==true`. *(`sendPush.test.ts` — 4 new tests cover `buildApnsAps` across all 6 categories.)*
+- [x] TDD: enabling criticalOptIn without DND grant on Android surfaces a non-blocking warning. *(`notification_settings_screen_test.dart` — 4 new tests cover warning visibility under all combinations of `criticalOptIn` + `dndGranted`, plus the "Grant access" CTA dispatch.)*
+- [x] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`. *(1 pre-existing TableMigration warning; 755 flutter tests pass, 4 skipped; 107 CF tests pass.)*
+- [ ] **Manual**: real-device iOS smoke on Focus-enabled device after Apple approves the critical-alert entitlement. Confirm: (a) entitlement enables `interruption-level=critical`; (b) opt-in toggle persists; (c) urgent push rings through Focus. *(Out of session scope — requires Apple developer-portal review.)*
+- [ ] **Manual**: real-device Android smoke on Pixel + Samsung. Confirm: (a) toggling criticalOptIn surfaces the warning banner; (b) "Grant access" opens system DND settings; (c) granting + returning dismisses the banner; (d) post-grant urgent push pierces DND. *(Out of session scope.)*
 
-### Phase 5: V3 — quiet hours + per-event mute + granular controls
+### Phase 5: V3 — quiet hours + per-event mute + granular controls (partial — A–F shipped; G + H + picker UI → Phase 5.1)
 
 - **Goal**: time-window suppression (skipped for critical), per-event mute, mute-this-thread from notification.
-- [ ] `lib/app/features/profile/domain/models/notification_prefs.dart` — extend w/ `quietHoursStart`, `quietHoursEnd`, `timezone`.
-- [ ] `lib/app/features/dashboard/domain/models/event_mute.dart` + repository — write `users/{uid}/private/eventMutes/{eventId}` w/ `{mutedUntil}`.
-- [ ] `lib/app/features/dashboard/presentation/event_dashboard_screen.dart` — overflow menu "Mute event" with duration picker (1h / 8h / 1d / until I unmute).
-- [ ] `functions/src/notifications/sendPush.ts` — server-side enforcement: read recipient `notificationPrefs.quietHours` + `eventMutes/{eventId}.mutedUntil`; suppress unless `category=='chat_urgent' && criticalOptIn==true`.
-- [ ] `functions/src/notifications/sendPush.ts` — include `category` + `mute_thread_action` in payload so notification action can mute event without app open.
-- [ ] `firestore.rules` — allow self read/write of `users/{uid}/private/eventMutes/{eventId}` (add to rules + access-matrix tests).
-- [ ] `lib/app/core/services/fcm_handler.dart` — handle `data['action']=='mute_event'` notification action.
-- [ ] TDD: quiet-hours window suppresses non-critical pushes; critical-opt-in path bypasses.
-- [ ] TDD: muting event for 1h sets `mutedUntil = now + 1h`; CF skips during window.
-- [ ] TDD: rules deny cross-user reads of `eventMutes/*`.
-- [ ] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`.
+- [x] `lib/app/features/profile/domain/models/notification_prefs.dart` — extended with nullable `quietHoursStart` / `quietHoursEnd` (int minutes-of-day) + `timezone` (IANA string). `withQuietHoursCleared()` helper handles the disable transition. `setQuietHours({startMinute, endMinute, timezone})` on the notifier.
+- [x] `lib/app/features/dashboard/domain/models/event_mute.dart` + repository — `EventMute` model (`isMutedAt(now)`, ISO-8601 + Firestore-Timestamp `fromMap`, ISO toMap). `EventMuteRepository` at `users/{uid}/eventMutes/{eventId}` (Firestore-canonical 4-segment path — the plan's literal "users/{uid}/private/eventMutes/{eventId}" was an odd-segment-count typo; collapsed to match the existing `users/{uid}/chatReads/{eventId}` convention). Methods: `muteEvent` / `unmuteEvent` / `getEventMute` / `watchEventMute`. 8 unit tests + 7 repo tests.
+- [ ] `lib/app/features/dashboard/presentation/event_dashboard_screen.dart` — overflow menu "Mute event" with duration picker (1h / 8h / 1d / until I unmute). *(Deferred to Phase 5.1 — repo + Firestore rules + CF enforcement already in place; this slice is the user-facing entry point only.)*
+- [x] `functions/src/notifications/sendPush.ts` — server-side enforcement via new pure helper module `functions/src/notifications/suppress.ts` (`isWithinQuietHours` / `isMutedUntilAfter` / `shouldSuppress`). `sendCategorizedPush` reads each recipient's `notificationPrefs.{quietHoursStart, quietHoursEnd, timezone}` + `users/{uid}/eventMutes/{eventId}.mutedUntil` and drops the push. Documented bypass: `category=='chat_urgent' && criticalOptIn==true` ignores both. Switched the per-batch send to `sendEach` so each Message carries its own apns payload (Phase 4 routing already required this). Top-level `eventId: string` arg added to `SendCategorizedPushArgs`; all 6 callers updated.
+- [ ] `functions/src/notifications/sendPush.ts` — include `category` + `mute_thread_action` in payload so notification action can mute event without app open. *(Deferred to Phase 5.1 — pairs with the iOS action dispatch slice below.)*
+- [x] `firestore.rules` — added `match /users/{userId}/eventMutes/{eventId}` self-only block. 6 new access-matrix tests (self-write / self-read / cross-user-read-denied / cross-user-write-denied / anon-denied / self-delete-unmute).
+- [ ] `lib/app/core/services/fcm_handler.dart` — handle `data['action']=='mute_event'` notification action. *(Deferred to Phase 5.1 — same iOS-action slice as the payload change above.)*
+- [x] TDD: quiet-hours window suppresses non-critical pushes; critical-opt-in path bypasses. *(`suppress.test.ts` — 13 helper tests cover intra-day + overnight windows, tz-aware America/New_York mapping, mutedUntil boundary, combined `shouldSuppress` bypass.)*
+- [ ] TDD: muting event for 1h sets `mutedUntil = now + 1h`; CF skips during window. *(Mute-set side covered by `event_mute_test.dart` (`EventMute.forDuration`). CF-skip-during-window is covered by `shouldSuppress` with an in-window `mutedUntil`. End-to-end integration test deferred to Phase 5.1.)*
+- [x] TDD: rules deny cross-user reads of `eventMutes/*`. *(`firestore-rules.test.ts` "user CANNOT read another user's eventMutes/{eventId}" + 5 sibling cases.)*
+- [x] Settings UI: minimal quiet-hours SwitchListTile (MVP — default 22:00-07:00 window in device's local timezone via `DateTime.now().timeZoneName`; falls back to `'UTC'`). Picker UI for custom windows ships in Phase 5.1.
+- [x] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`. *(1 pre-existing TableMigration warning; 779 flutter tests pass, 4 skipped; 126 CF tests pass.)*
+
+### Phase 5.1: V3 polish — mute-event UI + mute-from-notification action ✓ *(quiet-hours custom picker + IANA tz detection split into 5.2)*
+
+- **Goal**: complete the user-facing surface for Phase 5. Server-side enforcement, prefs model, and repo already shipped — these slices wire the UI to them.
+- [x] `EventDashboardScreen` hero — bell icon visible to every member (mute is a per-user choice). Tap opens `MuteEventSheet` (new) with 4 preset durations (1h / 8h / 1d / Until I unmute) → calls `EventMuteRepository.muteEvent(now + duration)`. When a mute is active, the icon flips to `notifications_off_outlined` and the sheet shows an Unmute CTA instead. New `eventMuteProvider` (StreamProvider.family keyed by `({uid, eventId})` record) drives live UI state.
+- [x] `functions/src/notifications/sendPush.ts` — `chat_urgent` now binds `apnsCategory: 'CHAT_CATEGORY'` so the lock-screen notification shows a Mute action button.
+- [x] `ios/Runner/AppDelegate.swift` — `CHAT_CATEGORY` registered with a single `MUTE_EVENT` action (.authenticationRequired + .destructive). `mapActionIdentifier` adds the `MUTE_EVENT → 'mute_event'` mapping.
+- [x] `FcmHandler.handleAction` — `data['action']=='mute_event'` dispatches the new optional `muteEvent({eventId, duration})` callback with a fixed 8h duration (matches the in-app 8h preset). `main.dart` wires the callback to `EventMuteRepository.muteEvent` fire-and-forget; failures logged, never crash the app-delegate callback path.
+- [ ] Quiet-hours custom-window picker (two `showTimePicker` dialogs replacing the bare toggle). *(Deferred to Phase 5.2 — current toggle works with default 22:00-07:00 window; picker is polish.)*
+- [ ] Proper IANA timezone detection (`flutter_timezone` or platform channel). *(Deferred to Phase 5.2 — current `DateTime.now().timeZoneName` is reliable on Android, unreliable on iOS; suppress.ts catches and falls through to "no quiet hours" on unparseable strings so the failure mode is safe.)*
+- [ ] Robot: assignee mutes an event from the dashboard → CF skips a subsequent chat push during the window. *(Deferred — needs robot harness work; widget tests on `MuteEventSheet` + handler dispatch tests already cover the dispatch contract.)*
+- [x] TDD: 4 new MuteEventSheet widget tests pin duration writes (1h → mutedUntil=now+1h, "Until I unmute" → 10y+ mutedUntil, Unmute CTA deletes the doc, all 4 keyed buttons render). 2 new FcmHandler tests pin `mute_event` action dispatch + no-op on missing eventId. 2 sendPush.test.ts tests pin chat_urgent's new apnsCategory + member_joined keeps omitting it.
+- [x] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`. *(1 pre-existing TableMigration warning; 785 flutter tests pass, 4 skipped; 127 CF tests pass.)*
+
+### Phase 5.2: V3 polish — quiet-hours custom picker + IANA tz detection *(NEW — split from Phase 5.1)*
+
+- **Goal**: refine the quiet-hours UX from "default window only" to a fully customizable window persisted with the device's true IANA timezone.
+- [ ] Quiet-hours custom-window picker: two `showTimePicker` dialogs (start / end) below the toggle. Persist via `setQuietHours(startMinute, endMinute, timezone)`. Display the active window in the settings subtitle.
+- [ ] Proper IANA timezone detection. Add `flutter_timezone` (or a small platform-channel call) so the device's true IANA tz is persisted on every save. Falls back to `DateTime.now().timeZoneName` (today's behavior) when the call fails.
+- [ ] Robot: user sets a custom 9-5 quiet-hours window in Sydney tz → CF skips a 14:00 Sydney push.
 
 ### Phase 6: V3.1 — web push + localization + summaries
 

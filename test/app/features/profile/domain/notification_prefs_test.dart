@@ -56,6 +56,7 @@ void main() {
         'taskUpdates': true,
         'payments': true,
         'eventUpdates': true,
+        'criticalOptIn': false,
       });
     });
 
@@ -66,6 +67,7 @@ void main() {
         taskUpdates: false,
         payments: false,
         eventUpdates: false,
+        criticalOptIn: true,
       );
 
       expect(prefs.toMap(), {
@@ -74,6 +76,7 @@ void main() {
         'taskUpdates': false,
         'payments': false,
         'eventUpdates': false,
+        'criticalOptIn': true,
       });
     });
   });
@@ -132,6 +135,7 @@ void main() {
         'taskUpdates': true,
         'payments': false,
         'eventUpdates': true,
+        'criticalOptIn': false,
       });
     });
   });
@@ -159,6 +163,131 @@ void main() {
       expect(next.taskUpdates, isTrue);
       expect(next.payments, isTrue);
       expect(next.eventUpdates, isFalse);
+    });
+  });
+
+  group('NotificationPrefs.criticalOptIn (Phase 4)', () {
+    test('defaults to false — DND bypass is opt-in, never on by default', () {
+      const prefs = NotificationPrefs();
+
+      expect(prefs.criticalOptIn, isFalse);
+    });
+
+    test('fromMap honours explicit true', () {
+      final prefs = NotificationPrefs.fromMap(const {'criticalOptIn': true});
+
+      expect(prefs.criticalOptIn, isTrue);
+    });
+
+    test('fromMap falls back to false when wrong type', () {
+      final prefs = NotificationPrefs.fromMap(const {'criticalOptIn': 'yes'});
+
+      expect(prefs.criticalOptIn, isFalse);
+    });
+
+    test('toMap serialises criticalOptIn alongside other flags', () {
+      const prefs = NotificationPrefs(criticalOptIn: true);
+
+      expect(prefs.toMap(), {
+        'pushEnabled': true,
+        'urgentChat': true,
+        'taskUpdates': true,
+        'payments': true,
+        'eventUpdates': true,
+        'criticalOptIn': true,
+      });
+    });
+
+    test('copyWith criticalOptIn leaves other flags untouched', () {
+      const prefs = NotificationPrefs();
+
+      final next = prefs.copyWith(criticalOptIn: true);
+
+      expect(next.pushEnabled, isTrue);
+      expect(next.urgentChat, isTrue);
+      expect(next.taskUpdates, isTrue);
+      expect(next.payments, isTrue);
+      expect(next.eventUpdates, isTrue);
+      expect(next.criticalOptIn, isTrue);
+    });
+  });
+
+  group('NotificationPrefs quiet hours (Phase 5)', () {
+    test(
+      'defaults: all three fields null → quiet hours OFF (CF skips check)',
+      () {
+        const prefs = NotificationPrefs();
+
+        expect(prefs.quietHoursStart, isNull);
+        expect(prefs.quietHoursEnd, isNull);
+        expect(prefs.timezone, isNull);
+      },
+    );
+
+    test('fromMap reads minutes-of-day ints + IANA timezone string', () {
+      final prefs = NotificationPrefs.fromMap(const {
+        'quietHoursStart': 22 * 60, // 22:00
+        'quietHoursEnd': 7 * 60, // 07:00 (crosses midnight)
+        'timezone': 'America/New_York',
+      });
+
+      expect(prefs.quietHoursStart, 22 * 60);
+      expect(prefs.quietHoursEnd, 7 * 60);
+      expect(prefs.timezone, 'America/New_York');
+    });
+
+    test('fromMap drops wrong types instead of throwing', () {
+      final prefs = NotificationPrefs.fromMap(const {
+        'quietHoursStart': '22:00', // string instead of int
+        'quietHoursEnd': true,
+        'timezone': 42,
+      });
+
+      expect(prefs.quietHoursStart, isNull);
+      expect(prefs.quietHoursEnd, isNull);
+      expect(prefs.timezone, isNull);
+    });
+
+    test(
+      'toMap omits quiet-hour fields when null (Firestore stays sparse)',
+      () {
+        const prefs = NotificationPrefs();
+
+        // The CF only checks quiet hours when all three are present, so
+        // omitting them is cheaper + clearer than writing `null` keys.
+        expect(prefs.toMap().containsKey('quietHoursStart'), isFalse);
+        expect(prefs.toMap().containsKey('quietHoursEnd'), isFalse);
+        expect(prefs.toMap().containsKey('timezone'), isFalse);
+      },
+    );
+
+    test('toMap serialises quiet-hour fields when set', () {
+      const prefs = NotificationPrefs(
+        quietHoursStart: 22 * 60,
+        quietHoursEnd: 7 * 60,
+        timezone: 'America/New_York',
+      );
+
+      final map = prefs.toMap();
+      expect(map['quietHoursStart'], 22 * 60);
+      expect(map['quietHoursEnd'], 7 * 60);
+      expect(map['timezone'], 'America/New_York');
+    });
+
+    test('copyWith sets quiet-hour fields without touching other flags', () {
+      const prefs = NotificationPrefs();
+
+      final next = prefs.copyWith(
+        quietHoursStart: 22 * 60,
+        quietHoursEnd: 7 * 60,
+        timezone: 'UTC',
+      );
+
+      expect(next.quietHoursStart, 22 * 60);
+      expect(next.quietHoursEnd, 7 * 60);
+      expect(next.timezone, 'UTC');
+      expect(next.pushEnabled, isTrue);
+      expect(next.urgentChat, isTrue);
     });
   });
 }

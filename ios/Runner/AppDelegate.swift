@@ -13,6 +13,7 @@ import FirebaseAuth
   // show under the notification.
   private static let taskCategoryId = "TASK_CATEGORY"
   private static let paymentCategoryId = "PAYMENT_CATEGORY"
+  private static let chatCategoryId = "CHAT_CATEGORY"
 
   // MARK: - UNNotificationAction identifiers
   //
@@ -24,6 +25,7 @@ import FirebaseAuth
   // `FcmHandlerBootstrap`).
   private static let markDoneActionId = "MARK_DONE"
   private static let viewExpenseActionId = "VIEW_EXPENSE"
+  private static let muteEventActionId = "MUTE_EVENT"
 
   /// `MethodChannel` carrying notification-action events to Dart.
   /// Established lazily on the first action tap — at app launch the
@@ -180,6 +182,15 @@ import FirebaseAuth
       title: "View Expense",
       options: [.foreground]
     )
+    // Phase 5.1 — let users mute an event's notifications for the next
+    // 8h without opening the app. Fires the `crewpoint/notification_actions`
+    // MethodChannel which `FcmHandler.handleAction` routes to
+    // `EventMuteRepository.muteEvent`.
+    let muteEvent = UNNotificationAction(
+      identifier: Self.muteEventActionId,
+      title: "Mute 8h",
+      options: [.authenticationRequired, .destructive]
+    )
 
     let taskCategory = UNNotificationCategory(
       identifier: Self.taskCategoryId,
@@ -193,9 +204,15 @@ import FirebaseAuth
       intentIdentifiers: [],
       options: []
     )
+    let chatCategory = UNNotificationCategory(
+      identifier: Self.chatCategoryId,
+      actions: [muteEvent],
+      intentIdentifiers: [],
+      options: []
+    )
 
     UNUserNotificationCenter.current().setNotificationCategories(
-      [taskCategory, paymentCategory]
+      [taskCategory, paymentCategory, chatCategory]
     )
   }
 
@@ -242,6 +259,7 @@ import FirebaseAuth
     switch id {
     case Self.markDoneActionId: return "mark_done"
     case Self.viewExpenseActionId: return "view_expense"
+    case Self.muteEventActionId: return "mute_event"
     default: return nil
     }
   }

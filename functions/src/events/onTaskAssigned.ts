@@ -65,6 +65,7 @@ export const onTaskAssigned = onDocumentWritten(
       recipientUids: [afterAssignee],
       senderId: actorId,
       category: "task_assigned",
+      eventId,
       title: `New task in ${eventTitle}`,
       body: taskTitle,
       deepLink: `/dashboard/event/${eventId}/tasks/${taskId}`,

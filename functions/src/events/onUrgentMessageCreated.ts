@@ -51,6 +51,7 @@ export const onUrgentMessageCreated = onDocumentCreated(
       recipientUids: memberIds,
       senderId,
       category: "chat_urgent",
+      eventId,
       title: `🚨 Urgent in ${eventTitle}`,
       body: truncatedBody,
       deepLink: `/dashboard/event/${eventId}/chat`,

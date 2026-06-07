@@ -136,6 +136,7 @@ export const onTaskDueScheduled = onSchedule(
         recipientUids: [assigneeId!],
         senderId: null,
         category: "task_due",
+        eventId,
         title: "Task due soon",
         body: title,
         deepLink: `/dashboard/event/${eventId}/tasks/${taskId}`,

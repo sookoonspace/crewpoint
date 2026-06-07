@@ -123,6 +123,7 @@ class _MyAppState extends ConsumerState<MyApp> {
       showBanner: _showForegroundBanner,
       navigateTo: _router.go,
       markTaskDone: _markTaskDoneFromNotification,
+      muteEvent: _muteEventFromNotification,
     );
     final messaging = FirebaseMessaging.instance;
     final bootstrap = FcmHandlerBootstrap(
@@ -177,6 +178,40 @@ class _MyAppState extends ConsumerState<MyApp> {
             ),
             onError: (Object e, StackTrace st) => developer.log(
               'mark_done failed for $eventId/$taskId',
+              error: e,
+              stackTrace: st,
+              name: 'fcm',
+            ),
+          ),
+    );
+  }
+
+  /// Bridges the iOS `MUTE_EVENT` notification action to a direct
+  /// Firestore write (`users/{uid}/eventMutes/{eventId}` via
+  /// EventMuteRepository). Fire-and-forget — failures are logged.
+  /// No-op when there is no authenticated uid (the action shouldn't
+  /// be reachable then, but defend in case of stale notifications).
+  void _muteEventFromNotification({
+    required String eventId,
+    required Duration duration,
+  }) {
+    final uid = ref.read(currentUserIdProvider);
+    if (uid == null) return;
+    unawaited(
+      ref
+          .read(eventMuteRepositoryProvider)
+          .muteEvent(
+            uid: uid,
+            eventId: eventId,
+            mutedUntil: DateTime.now().toUtc().add(duration),
+          )
+          .then(
+            (_) => developer.log(
+              'mute_event dispatched for $eventId (${duration.inHours}h)',
+              name: 'fcm',
+            ),
+            onError: (Object e, StackTrace st) => developer.log(
+              'mute_event failed for $eventId',
               error: e,
               stackTrace: st,
               name: 'fcm',
