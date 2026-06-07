@@ -13,6 +13,7 @@ import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/loading_animation.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/mute_event_sheet.dart';
 
 /// Event detail hub — shows event info, member avatars, and quick links
 /// to sub-features (Chat, Budget, Tasks).
@@ -175,7 +176,7 @@ class _EventHero extends StatelessWidget {
           child: Column(
             crossAxisAlignment: .start,
             children: [
-              // Back button + settings
+              // Back button + mute toggle + settings (admin)
               Row(
                 children: [
                   IconButton(
@@ -186,6 +187,41 @@ class _EventHero extends StatelessWidget {
                     onPressed: () => context.pop(),
                   ),
                   const Spacer(),
+                  // Mute (Phase 5.1) — visible to every member; mute is
+                  // a per-user choice so non-admins get it too.
+                  Consumer(
+                    builder: (_, ref, _) {
+                      final uid = ref.watch(currentUserIdProvider);
+                      if (uid == null) return const SizedBox.shrink();
+                      final asyncMute = ref.watch(
+                        eventMuteProvider((uid: uid, eventId: event.id)),
+                      );
+                      final mute = asyncMute.maybeWhen(
+                        data: (m) => m,
+                        orElse: () => null,
+                      );
+                      final isMuted =
+                          mute != null &&
+                          mute.isMutedAt(DateTime.now().toUtc());
+                      return IconButton(
+                        key: const Key('event.dashboard.muteIcon'),
+                        tooltip: isMuted
+                            ? 'Muted — tap to manage'
+                            : 'Mute event',
+                        icon: Icon(
+                          isMuted
+                              ? Icons.notifications_off_outlined
+                              : Icons.notifications_outlined,
+                          color: AppColors.offWhite,
+                        ),
+                        onPressed: () => MuteEventSheet.show(
+                          context: context,
+                          uid: uid,
+                          eventId: event.id,
+                        ),
+                      );
+                    },
+                  ),
                   Consumer(
                     builder: (_, ref, _) {
                       final uid = ref.watch(currentUserIdProvider);

@@ -43,8 +43,10 @@ import 'package:crewpoint_app/app/features/budget/presentation/widgets/settle_up
 import 'package:crewpoint_app/app/features/chat/data/chat_repository.dart';
 import 'package:crewpoint_app/app/features/chat/data/firestore_chat_service.dart';
 import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
+import 'package:crewpoint_app/app/features/dashboard/data/event_mute_repository.dart';
 import 'package:crewpoint_app/app/features/dashboard/data/event_repository.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/event_mute.dart';
 import 'package:crewpoint_app/app/core/database/daos/events_dao.dart';
 import 'package:crewpoint_app/app/features/tasks/data/task_repository.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
@@ -347,3 +349,25 @@ final disputeSettlementCallableProvider = Provider<DisputeSettlementCall>(
     });
   },
 );
+
+/// Per-user, per-event push-notification mute store (Phase 5).
+/// Backed by Firestore at `users/{uid}/eventMutes/{eventId}`.
+final eventMuteRepositoryProvider = Provider<EventMuteRepository>(
+  (ref) => EventMuteRepository(firestore: ref.watch(firestoreProvider)),
+);
+
+/// Family arg shape for [eventMuteProvider] — Dart records give us
+/// value-equality for free, so the family cache hits when the same
+/// `(uid, eventId)` pair is observed by multiple widgets.
+typedef EventMuteKey = ({String uid, String eventId});
+
+/// Live stream of the current `(uid, eventId)` mute state. Emits null
+/// when no mute is set; emits the [EventMute] otherwise.
+final eventMuteProvider = StreamProvider.family<EventMute?, EventMuteKey>((
+  ref,
+  key,
+) {
+  return ref
+      .watch(eventMuteRepositoryProvider)
+      .watchEventMute(uid: key.uid, eventId: key.eventId);
+});
