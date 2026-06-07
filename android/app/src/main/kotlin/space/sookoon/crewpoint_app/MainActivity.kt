@@ -9,6 +9,7 @@ import android.provider.Settings
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.util.TimeZone
 
 /**
  * Receives notification-channel specs from
@@ -33,9 +34,11 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     companion object {
         private const val CHANNEL = "crewpoint/notification_channels"
+        private const val DEVICE_INFO_CHANNEL = "crewpoint/device_info"
         private const val METHOD_REGISTER = "registerChannels"
         private const val METHOD_IS_DND_GRANTED = "isDndAccessGranted"
         private const val METHOD_REQUEST_DND = "requestDndAccess"
+        private const val METHOD_GET_LOCAL_TIMEZONE = "getLocalTimezone"
 
         /** Channel id of the urgent chat channel — see
          *  `notification_channels.dart`. Centralised so the Kotlin side
@@ -67,6 +70,21 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+        // Dedicated device-info channel (Phase 5.2). Currently exposes
+        // only the device's IANA timezone; new methods can land here as
+        // future phases need them.
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            DEVICE_INFO_CHANNEL
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                METHOD_GET_LOCAL_TIMEZONE -> {
+                    result.success(TimeZone.getDefault().id)
+                }
+                else -> result.notImplemented()
+            }
+        }
     }
 
     private fun registerChannels(specs: List<Map<String, Any>>) {

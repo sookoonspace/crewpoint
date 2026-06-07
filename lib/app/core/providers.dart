@@ -20,6 +20,7 @@ import 'package:crewpoint_app/app/core/services/app_badge_service.dart';
 import 'package:crewpoint_app/app/core/services/app_lifecycle_source.dart';
 import 'package:crewpoint_app/app/core/services/fcm_gateway.dart';
 import 'package:crewpoint_app/app/core/services/fcm_service.dart';
+import 'package:crewpoint_app/app/core/services/device_timezone.dart';
 import 'package:crewpoint_app/app/core/services/notification_channels.dart';
 import 'package:crewpoint_app/app/core/services/file_export_service.dart';
 import 'package:crewpoint_app/app/core/services/file_export_service_native.dart'
@@ -113,6 +114,15 @@ final fcmGatewayProvider = Provider<IFcmGateway>((_) => FirebaseFcmGateway());
 /// spec. iOS / web / desktop short-circuit inside the adapter.
 final notificationChannelsProvider = Provider<INotificationChannels>(
   (_) => const MethodChannelNotificationChannels(),
+);
+
+/// Device IANA timezone resolver (Phase 5.2). Used by the quiet-hours
+/// settings to persist the recipient's true timezone alongside the
+/// minute-of-day window so the CF can do `Intl.DateTimeFormat`
+/// conversion correctly. Tests inject a [LocalNameDeviceTimezone] or
+/// a recording fake.
+final deviceTimezoneProvider = Provider<IDeviceTimezone>(
+  (_) => const MethodChannelDeviceTimezone(),
 );
 
 /// Owns the FCM token lifecycle (`attach(uid)` / `detach(uid)`).

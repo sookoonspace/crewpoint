@@ -273,12 +273,13 @@ class _CriticalOptInDndWarning extends ConsumerWidget {
   }
 }
 
-/// Phase 5 quiet-hours toggle. V1 MVP — enabling sets the default
-/// 22:00-07:00 window in the device's local timezone (read from
-/// `DateTime.now().timeZoneName`; falls back to `'UTC'` if the platform
-/// returns an empty string). Picker UI for a custom window ships in
-/// Phase 5.1 — server-side enforcement already honours any window the
-/// user / future picker writes.
+/// Phase 5 / 5.2 quiet-hours toggle. Enabling sets a default
+/// 22:00-07:00 window in the device's IANA timezone (resolved via
+/// `deviceTimezoneProvider` — native call to TimeZone.current on iOS /
+/// TimeZone.getDefault() on Android; falls back to `'UTC'` when the
+/// platform call fails). Phase 5.2 follow-up adds a custom-window
+/// picker; server-side enforcement already honours any window the user
+/// / picker writes.
 class _QuietHoursTile extends ConsumerWidget {
   const _QuietHoursTile({required this.uid, required this.prefs});
 
@@ -299,11 +300,6 @@ class _QuietHoursTile extends ConsumerWidget {
     return '$h:$mm';
   }
 
-  String _detectTimezone() {
-    final raw = DateTime.now().timeZoneName.trim();
-    return raw.isEmpty ? 'UTC' : raw;
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final controller = ref.read(notificationPrefsProvider(uid).notifier);
@@ -312,27 +308,92 @@ class _QuietHoursTile extends ConsumerWidget {
               ' – ${_formatMinute(prefs.quietHoursEnd!)}'
               ' (${prefs.timezone})'
         : 'Suppress non-urgent push during a daily window.';
-    return AppSwitchTile(
-      key: const Key('notifSettings.quietHours.tile'),
-      title: 'Quiet hours',
-      subtitle: subtitle,
-      value: _isEnabled,
-      enabled: prefs.pushEnabled,
-      onChanged: (v) => _safeToggle(context, controller, enable: v),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AppSwitchTile(
+          key: const Key('notifSettings.quietHours.tile'),
+          title: 'Quiet hours',
+          subtitle: subtitle,
+          value: _isEnabled,
+          enabled: prefs.pushEnabled,
+          onChanged: (v) => _safeToggle(context, ref, controller, enable: v),
+        ),
+        if (_isEnabled) ...[
+          _TimeRow(
+            keyId: 'notifSettings.quietHours.start',
+            label: 'Start',
+            minuteOfDay: prefs.quietHoursStart!,
+            onPicked: (m) => _safeSetStart(context, controller, m),
+          ),
+          _TimeRow(
+            keyId: 'notifSettings.quietHours.end',
+            label: 'End',
+            minuteOfDay: prefs.quietHoursEnd!,
+            onPicked: (m) => _safeSetEnd(context, controller, m),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _safeSetStart(
+    BuildContext context,
+    NotificationPrefsNotifier controller,
+    int newStartMinute,
+  ) async {
+    try {
+      await controller.setQuietHours(
+        startMinute: newStartMinute,
+        endMinute: prefs.quietHoursEnd,
+        timezone: prefs.timezone,
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      _showSaveError(context);
+    }
+  }
+
+  Future<void> _safeSetEnd(
+    BuildContext context,
+    NotificationPrefsNotifier controller,
+    int newEndMinute,
+  ) async {
+    try {
+      await controller.setQuietHours(
+        startMinute: prefs.quietHoursStart,
+        endMinute: newEndMinute,
+        timezone: prefs.timezone,
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      _showSaveError(context);
+    }
+  }
+
+  void _showSaveError(BuildContext context) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Could not save — try again'),
+        backgroundColor: AppColors.terracotta,
+      ),
     );
   }
 
   Future<void> _safeToggle(
     BuildContext context,
+    WidgetRef ref,
     NotificationPrefsNotifier controller, {
     required bool enable,
   }) async {
     try {
       if (enable) {
+        final tz = await ref.read(deviceTimezoneProvider).getLocalTimezone();
         await controller.setQuietHours(
           startMinute: _defaultStartMinute,
           endMinute: _defaultEndMinute,
-          timezone: _detectTimezone(),
+          timezone: tz,
         );
       } else {
         await controller.setQuietHours(
@@ -350,5 +411,56 @@ class _QuietHoursTile extends ConsumerWidget {
         ),
       );
     }
+  }
+}
+
+/// One quiet-hours endpoint row — leading label + trailing "HH:MM"
+/// display. Tap opens Material's [showTimePicker]; the chosen
+/// [TimeOfDay] is converted to a minute-of-day int and handed to
+/// [onPicked]. The `showTimePicker` dialog itself is not exercised in
+/// widget tests (Material's input-mode keyboard interaction is brittle
+/// in the test harness); manual QA covers the dialog.
+class _TimeRow extends StatelessWidget {
+  const _TimeRow({
+    required this.keyId,
+    required this.label,
+    required this.minuteOfDay,
+    required this.onPicked,
+  });
+
+  final String keyId;
+  final String label;
+  final int minuteOfDay;
+  final ValueChanged<int> onPicked;
+
+  String _format(int m) {
+    final h = (m ~/ 60).toString().padLeft(2, '0');
+    final mm = (m % 60).toString().padLeft(2, '0');
+    return '$h:$mm';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      key: Key(keyId),
+      title: Text(label),
+      trailing: Text(
+        _format(minuteOfDay),
+        style: Theme.of(
+          context,
+        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+      ),
+      onTap: () async {
+        final picked = await showTimePicker(
+          context: context,
+          initialTime: TimeOfDay(
+            hour: minuteOfDay ~/ 60,
+            minute: minuteOfDay % 60,
+          ),
+        );
+        if (picked == null) return;
+        onPicked(picked.hour * 60 + picked.minute);
+      },
+    );
   }
 }

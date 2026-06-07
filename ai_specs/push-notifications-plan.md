@@ -244,12 +244,14 @@ Push notifications roadmap V1→V3. FCM scaffolding (`FcmGateway`/`FcmService`/`
 - [x] TDD: 4 new MuteEventSheet widget tests pin duration writes (1h → mutedUntil=now+1h, "Until I unmute" → 10y+ mutedUntil, Unmute CTA deletes the doc, all 4 keyed buttons render). 2 new FcmHandler tests pin `mute_event` action dispatch + no-op on missing eventId. 2 sendPush.test.ts tests pin chat_urgent's new apnsCategory + member_joined keeps omitting it.
 - [x] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`. *(1 pre-existing TableMigration warning; 785 flutter tests pass, 4 skipped; 127 CF tests pass.)*
 
-### Phase 5.2: V3 polish — quiet-hours custom picker + IANA tz detection *(NEW — split from Phase 5.1)*
+### Phase 5.2: V3 polish — quiet-hours custom picker + IANA tz detection ✓
 
 - **Goal**: refine the quiet-hours UX from "default window only" to a fully customizable window persisted with the device's true IANA timezone.
-- [ ] Quiet-hours custom-window picker: two `showTimePicker` dialogs (start / end) below the toggle. Persist via `setQuietHours(startMinute, endMinute, timezone)`. Display the active window in the settings subtitle.
-- [ ] Proper IANA timezone detection. Add `flutter_timezone` (or a small platform-channel call) so the device's true IANA tz is persisted on every save. Falls back to `DateTime.now().timeZoneName` (today's behavior) when the call fails.
-- [ ] Robot: user sets a custom 9-5 quiet-hours window in Sydney tz → CF skips a 14:00 Sydney push.
+- [x] Quiet-hours custom-window picker — two `ListTile` rows ("Start" / "End") render beneath the toggle when quiet hours are enabled. Trailing `HH:MM` reads from `prefs.quietHoursStart/End`. Tap opens Material's `showTimePicker` (initial = persisted value); selected `TimeOfDay` round-trips to a minute-of-day int via `setQuietHours`. Rows are absent when the toggle is OFF.
+- [x] Proper IANA timezone detection. New `IDeviceTimezone` Dart seam in `lib/app/core/services/device_timezone.dart` — `MethodChannelDeviceTimezone` production (calls `crewpoint/device_info` MethodChannel; returns `'UTC'` on platform failures), `LocalNameDeviceTimezone` fallback (wraps `DateTime.now().timeZoneName`). Native handlers in `MainActivity.kt` (`TimeZone.getDefault().id`) and `AppDelegate.swift` (`TimeZone.current.identifier`). `deviceTimezoneProvider` overrideable in tests; settings-screen `_QuietHoursTile` now reads the IANA tz from the provider when enabling quiet hours.
+- [ ] Robot: user sets a custom 9-5 quiet-hours window in Sydney tz → CF skips a 14:00 Sydney push. *(Deferred — depends on the robot harness work tracked in `todo.md:40`; the suppress.ts pure-helper tests already pin the tz-aware enforcement.)*
+- [x] TDD: 4 new `device_timezone_test.dart` tests (LocalName fallback + MethodChannel happy / throws / empty-fallback). Settings-screen test "enabling quietHours persists ... IANA timezone from deviceTimezoneProvider" pins the wiring with a `_FakeDeviceTimezone('Australia/Sydney')`. 2 new picker-row tests (rows render with the persisted times when enabled; rows absent when OFF).
+- [x] Verify: `flutter analyze` && `flutter test`. *(1 pre-existing TableMigration warning; 791 flutter tests pass, 4 skipped.)*
 
 ### Phase 6: V3.1 — web push + localization + summaries
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
+import 'package:crewpoint_app/app/core/services/device_timezone.dart';
 import 'package:crewpoint_app/app/core/services/fcm_gateway.dart';
 import 'package:crewpoint_app/app/core/services/fcm_service.dart';
 import 'package:crewpoint_app/app/core/services/notification_channels.dart';
@@ -24,6 +25,15 @@ class _FakeChannels implements INotificationChannels {
   Future<void> requestDndAccess() async {
     requestCalls++;
   }
+}
+
+class _FakeDeviceTimezone implements IDeviceTimezone {
+  _FakeDeviceTimezone(this.iana);
+
+  final String iana;
+
+  @override
+  Future<String> getLocalTimezone() async => iana;
 }
 
 class _InMemoryUserRepo implements IUserRepository {
@@ -97,6 +107,7 @@ Future<void> _pumpScreen(
   WidgetTester tester,
   _InMemoryUserRepo repo, {
   _FakeChannels? channels,
+  IDeviceTimezone? deviceTimezone,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -108,6 +119,9 @@ Future<void> _pumpScreen(
         }),
         notificationChannelsProvider.overrideWithValue(
           channels ?? _FakeChannels(),
+        ),
+        deviceTimezoneProvider.overrideWithValue(
+          deviceTimezone ?? _FakeDeviceTimezone('America/New_York'),
         ),
         // Bypass authProvider entirely — the screen only needs the uid.
         currentUserIdProvider.overrideWithValue('u-test'),
@@ -379,10 +393,14 @@ void main() {
     );
 
     testWidgets(
-      'enabling quietHours persists defaults (22:00-07:00 + non-null timezone)',
+      'enabling quietHours persists defaults (22:00-07:00 + IANA timezone from deviceTimezoneProvider)',
       (tester) async {
         final repo = _InMemoryUserRepo();
-        await _pumpScreen(tester, repo);
+        await _pumpScreen(
+          tester,
+          repo,
+          deviceTimezone: _FakeDeviceTimezone('Australia/Sydney'),
+        );
 
         final switchTile = find.byKey(
           const Key('notifSettings.quietHours.tile'),
@@ -396,8 +414,9 @@ void main() {
         final last = repo.updates.last;
         expect(last.quietHoursStart, 22 * 60);
         expect(last.quietHoursEnd, 7 * 60);
-        expect(last.timezone, isNotNull);
-        expect(last.timezone, isNotEmpty);
+        // The IANA string from the injected provider — *not* the platform
+        // default — proves the toggle goes through deviceTimezoneProvider.
+        expect(last.timezone, 'Australia/Sydney');
       },
     );
 
@@ -423,6 +442,47 @@ void main() {
       expect(last.quietHoursStart, isNull);
       expect(last.quietHoursEnd, isNull);
       expect(last.timezone, isNull);
+    });
+
+    testWidgets(
+      'when quietHours enabled, start + end picker rows render the persisted times',
+      (tester) async {
+        final repo = _InMemoryUserRepo()
+          ..prefs = const NotificationPrefs(
+            quietHoursStart: 22 * 60,
+            quietHoursEnd: 7 * 60,
+            timezone: 'America/New_York',
+          );
+        await _pumpScreen(tester, repo);
+
+        expect(
+          find.byKey(const Key('notifSettings.quietHours.start')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const Key('notifSettings.quietHours.end')),
+          findsOneWidget,
+        );
+        // Pickers render the persisted minute-of-day values (zero-padded).
+        expect(find.text('22:00'), findsOneWidget);
+        expect(find.text('07:00'), findsOneWidget);
+      },
+    );
+
+    testWidgets('when quietHours OFF, start + end picker rows are absent', (
+      tester,
+    ) async {
+      final repo = _InMemoryUserRepo();
+      await _pumpScreen(tester, repo);
+
+      expect(
+        find.byKey(const Key('notifSettings.quietHours.start')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const Key('notifSettings.quietHours.end')),
+        findsNothing,
+      );
     });
   });
 }
