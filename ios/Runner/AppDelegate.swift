@@ -54,6 +54,10 @@ import FirebaseAuth
   /// `didInitializeImplicitFlutterEngine` — see `installApnsControlHandler`.
   private var apnsControlChannel: FlutterMethodChannel?
 
+  /// `MethodChannel` Dart uses to query device info (Phase 5.2 IANA
+  /// timezone). Installed eagerly in `didInitializeImplicitFlutterEngine`.
+  private var deviceInfoChannel: FlutterMethodChannel?
+
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -145,6 +149,30 @@ import FirebaseAuth
     ) {
       installApnsControlHandler(messenger: registrar.messenger())
     }
+    if let registrar = engineBridge.pluginRegistry.registrar(
+      forPlugin: "CrewPointDeviceInfo"
+    ) {
+      installDeviceInfoHandler(messenger: registrar.messenger())
+    }
+  }
+
+  private func installDeviceInfoHandler(messenger: FlutterBinaryMessenger) {
+    let channel = FlutterMethodChannel(
+      name: "crewpoint/device_info",
+      binaryMessenger: messenger
+    )
+    channel.setMethodCallHandler { call, result in
+      switch call.method {
+      case "getLocalTimezone":
+        // TimeZone.current.identifier returns the IANA name
+        // (e.g. "America/New_York"), not the locale-specific
+        // abbreviation that DateTime.timeZoneName would surface in Dart.
+        result(TimeZone.current.identifier)
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
+    deviceInfoChannel = channel
   }
 
   private func installApnsControlHandler(messenger: FlutterBinaryMessenger) {
