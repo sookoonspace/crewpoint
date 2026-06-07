@@ -15,6 +15,7 @@ class NotificationPrefs {
     this.taskUpdates = true,
     this.payments = true,
     this.eventUpdates = true,
+    this.criticalOptIn = false,
   });
 
   /// Master toggle — false means: do not request OS permission, do not
@@ -42,6 +43,17 @@ class NotificationPrefs {
   /// and skips the recipient when false.
   final bool eventUpdates;
 
+  /// Opt-in for urgent chat alerts that bypass Do Not Disturb / Focus.
+  /// **Default false** — Apple's `critical-alert` entitlement (iOS) and
+  /// Android's `NOTIFICATION_POLICY_ACCESS_GRANTED` are explicit-consent
+  /// privileges; defaulting them to true would be a hostile UX. The CF
+  /// reads this in `sendCategorizedPush` for `category == 'chat_urgent'`
+  /// to pick `apns.payload.aps.interruption-level` ('critical' vs
+  /// 'time-sensitive'). On Android, the client-side `crewpoint_chat_urgent`
+  /// channel toggles `setBypassDnd(true)` once the user grants policy
+  /// access at the OS level.
+  final bool criticalOptIn;
+
   /// Reads the Firestore subdoc fragment. Missing / wrong-typed fields
   /// fall through to the constructor defaults so a partial migration
   /// never throws at deserialisation.
@@ -53,6 +65,7 @@ class NotificationPrefs {
       taskUpdates: _readBool(map['taskUpdates'], fallback: true),
       payments: _readBool(map['payments'], fallback: true),
       eventUpdates: _readBool(map['eventUpdates'], fallback: true),
+      criticalOptIn: _readBool(map['criticalOptIn'], fallback: false),
     );
   }
 
@@ -62,6 +75,7 @@ class NotificationPrefs {
     'taskUpdates': taskUpdates,
     'payments': payments,
     'eventUpdates': eventUpdates,
+    'criticalOptIn': criticalOptIn,
   };
 
   NotificationPrefs copyWith({
@@ -70,6 +84,7 @@ class NotificationPrefs {
     bool? taskUpdates,
     bool? payments,
     bool? eventUpdates,
+    bool? criticalOptIn,
   }) {
     return NotificationPrefs(
       pushEnabled: pushEnabled ?? this.pushEnabled,
@@ -77,6 +92,7 @@ class NotificationPrefs {
       taskUpdates: taskUpdates ?? this.taskUpdates,
       payments: payments ?? this.payments,
       eventUpdates: eventUpdates ?? this.eventUpdates,
+      criticalOptIn: criticalOptIn ?? this.criticalOptIn,
     );
   }
 

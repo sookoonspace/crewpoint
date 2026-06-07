@@ -49,6 +49,14 @@ class NotificationPrefsNotifier extends AsyncNotifier<NotificationPrefs> {
     await _update((prefs) => prefs.copyWith(eventUpdates: value));
   }
 
+  /// Toggles the DND-bypass opt-in. CF reads this server-side when
+  /// `category == 'chat_urgent'` to set the APNs interruption-level;
+  /// on Android the client-side `crewpoint_chat_urgent` channel toggles
+  /// `setBypassDnd(true)` once the user grants policy access.
+  Future<void> setCriticalOptIn(bool value) async {
+    await _update((prefs) => prefs.copyWith(criticalOptIn: value));
+  }
+
   Future<void> _update(
     NotificationPrefs Function(NotificationPrefs prefs) transform,
   ) async {

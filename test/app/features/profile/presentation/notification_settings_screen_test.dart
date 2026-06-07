@@ -126,8 +126,11 @@ void main() {
       final tiles = tester
           .widgetList<SwitchListTile>(find.byType(SwitchListTile))
           .toList();
-      expect(tiles.length, 5);
-      expect(tiles.every((t) => t.value == true), isTrue);
+      // master + 4 categories + criticalOptIn opt-in.
+      expect(tiles.length, 6);
+      // All defaults TRUE except the criticalOptIn opt-in (Phase 4).
+      expect(tiles.take(5).every((t) => t.value == true), isTrue);
+      expect(tiles[5].value, isFalse);
     });
 
     testWidgets('toggling master OFF persists pushEnabled=false', (
@@ -154,11 +157,13 @@ void main() {
       final tiles = tester
           .widgetList<SwitchListTile>(find.byType(SwitchListTile))
           .toList();
-      // Layout order: [master, urgentChat, taskUpdates, payments, eventUpdates].
+      // Layout order: [master, urgentChat, taskUpdates, payments,
+      // eventUpdates, criticalOptIn].
       expect(tiles[1].onChanged, isNull);
       expect(tiles[2].onChanged, isNull);
       expect(tiles[3].onChanged, isNull);
       expect(tiles[4].onChanged, isNull);
+      expect(tiles[5].onChanged, isNull);
     });
 
     testWidgets('toggling taskUpdates OFF persists taskUpdates=false', (
@@ -212,6 +217,56 @@ void main() {
       expect(repo.updates.last.urgentChat, isTrue);
       expect(repo.updates.last.taskUpdates, isTrue);
       expect(repo.updates.last.payments, isTrue);
+    });
+
+    testWidgets(
+      'criticalOptIn tile defaults to OFF (Apple/Google opt-in only)',
+      (tester) async {
+        final repo = _InMemoryUserRepo();
+        await _pumpScreen(tester, repo);
+
+        final tile = tester.widget<SwitchListTile>(
+          find.descendant(
+            of: find.byKey(const Key('notifSettings.criticalOptIn.tile')),
+            matching: find.byType(SwitchListTile),
+          ),
+        );
+        expect(tile.value, isFalse);
+      },
+    );
+
+    testWidgets(
+      'toggling criticalOptIn ON persists criticalOptIn=true AND shows re-confirmation snackbar',
+      (tester) async {
+        final repo = _InMemoryUserRepo();
+        await _pumpScreen(tester, repo);
+
+        await tester.tap(
+          find.byKey(const Key('notifSettings.criticalOptIn.tile')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(repo.updates, isNotEmpty);
+        expect(repo.updates.last.criticalOptIn, isTrue);
+        // Confirmation toast acknowledges the elevated permission.
+        expect(find.byType(SnackBar), findsOneWidget);
+      },
+    );
+
+    testWidgets('criticalOptIn tile is disabled when urgentChat is OFF', (
+      tester,
+    ) async {
+      final repo = _InMemoryUserRepo()
+        ..prefs = const NotificationPrefs(urgentChat: false);
+      await _pumpScreen(tester, repo);
+
+      final tile = tester.widget<SwitchListTile>(
+        find.descendant(
+          of: find.byKey(const Key('notifSettings.criticalOptIn.tile')),
+          matching: find.byType(SwitchListTile),
+        ),
+      );
+      expect(tile.onChanged, isNull);
     });
   });
 }

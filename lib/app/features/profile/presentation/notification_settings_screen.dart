@@ -40,7 +40,7 @@ class _Body extends ConsumerWidget {
     final asyncPrefs = ref.watch(notificationPrefsProvider(uid));
     return ContentMaxWidth(
       maxWidth: 720,
-      child: Padding(
+      child: SingleChildScrollView(
         padding: EdgeInsets.symmetric(
           horizontal: Breakpoints.screenHorizontalPadding(context),
           vertical: AppSpacing.lg,
@@ -129,16 +129,43 @@ class _PrefsForm extends ConsumerWidget {
           onChanged: (v) =>
               _safeUpdate(context, () => controller.setEventUpdates(v)),
         ),
+        const SizedBox(height: AppSpacing.lg),
+        AppSwitchTile(
+          key: const Key('notifSettings.criticalOptIn.tile'),
+          title: 'Allow urgent alerts to bypass Do Not Disturb',
+          subtitle:
+              'Required for 🚨 messages to ring through Focus / silent mode. '
+              'You can revoke this at any time in iOS Focus settings or '
+              'Android Do Not Disturb access.',
+          value: prefs.criticalOptIn,
+          // Only meaningful when urgent chat is enabled.
+          enabled: prefs.pushEnabled && prefs.urgentChat,
+          onChanged: (v) => _safeUpdate(
+            context,
+            () => controller.setCriticalOptIn(v),
+            // Re-confirm only on enable so the user knows this is an
+            // elevated permission (per Phase 4 plan). Disabling is silent.
+            confirmationOnEnable: v
+                ? 'Urgent alerts will bypass Do Not Disturb on this device.'
+                : null,
+          ),
+        ),
       ],
     );
   }
 
   Future<void> _safeUpdate(
     BuildContext context,
-    Future<void> Function() update,
-  ) async {
+    Future<void> Function() update, {
+    String? confirmationOnEnable,
+  }) async {
     try {
       await update();
+      if (confirmationOnEnable != null && context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(confirmationOnEnable)));
+      }
     } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
