@@ -57,6 +57,7 @@ void main() {
         'payments': true,
         'eventUpdates': true,
         'criticalOptIn': false,
+        'dailyDigest': false,
       });
     });
 
@@ -68,6 +69,7 @@ void main() {
         payments: false,
         eventUpdates: false,
         criticalOptIn: true,
+        dailyDigest: true,
       );
 
       expect(prefs.toMap(), {
@@ -77,6 +79,7 @@ void main() {
         'payments': false,
         'eventUpdates': false,
         'criticalOptIn': true,
+        'dailyDigest': true,
       });
     });
   });
@@ -136,6 +139,7 @@ void main() {
         'payments': false,
         'eventUpdates': true,
         'criticalOptIn': false,
+        'dailyDigest': false,
       });
     });
   });
@@ -195,6 +199,7 @@ void main() {
         'payments': true,
         'eventUpdates': true,
         'criticalOptIn': true,
+        'dailyDigest': false,
       });
     });
 
@@ -288,6 +293,86 @@ void main() {
       expect(next.timezone, 'UTC');
       expect(next.pushEnabled, isTrue);
       expect(next.urgentChat, isTrue);
+    });
+  });
+
+  group('NotificationPrefs.locale (Phase 6)', () {
+    test('defaults to null → server falls back to English', () {
+      const prefs = NotificationPrefs();
+
+      expect(prefs.locale, isNull);
+    });
+
+    test('fromMap honours explicit non-empty string', () {
+      final prefs = NotificationPrefs.fromMap(const {'locale': 'es-MX'});
+
+      expect(prefs.locale, 'es-MX');
+    });
+
+    test('fromMap drops empty string + wrong types', () {
+      expect(NotificationPrefs.fromMap(const {'locale': ''}).locale, isNull);
+      expect(NotificationPrefs.fromMap(const {'locale': 42}).locale, isNull);
+    });
+
+    test('toMap omits locale when null (Firestore stays sparse)', () {
+      const prefs = NotificationPrefs();
+
+      expect(prefs.toMap().containsKey('locale'), isFalse);
+    });
+
+    test('toMap serialises locale when set', () {
+      const prefs = NotificationPrefs(locale: 'es-MX');
+
+      expect(prefs.toMap()['locale'], 'es-MX');
+    });
+
+    test('copyWith locale leaves other fields untouched', () {
+      const prefs = NotificationPrefs();
+
+      final next = prefs.copyWith(locale: 'fr');
+
+      expect(next.locale, 'fr');
+      expect(next.pushEnabled, isTrue);
+      expect(next.criticalOptIn, isFalse);
+    });
+  });
+
+  group('NotificationPrefs.dailyDigest (Phase 6.1)', () {
+    test(
+      'defaults to false — opt-in, no morning ping without explicit consent',
+      () {
+        const prefs = NotificationPrefs();
+
+        expect(prefs.dailyDigest, isFalse);
+      },
+    );
+
+    test('fromMap honours explicit true', () {
+      final prefs = NotificationPrefs.fromMap(const {'dailyDigest': true});
+
+      expect(prefs.dailyDigest, isTrue);
+    });
+
+    test('fromMap falls back to false on wrong type', () {
+      final prefs = NotificationPrefs.fromMap(const {'dailyDigest': 'yes'});
+
+      expect(prefs.dailyDigest, isFalse);
+    });
+
+    test('toMap serialises dailyDigest alongside other flags', () {
+      const prefs = NotificationPrefs(dailyDigest: true);
+
+      expect(prefs.toMap()['dailyDigest'], true);
+    });
+
+    test('copyWith dailyDigest leaves other flags untouched', () {
+      const prefs = NotificationPrefs();
+
+      final next = prefs.copyWith(dailyDigest: true);
+
+      expect(next.dailyDigest, isTrue);
+      expect(next.pushEnabled, isTrue);
+      expect(next.locale, isNull);
     });
   });
 }

@@ -52,8 +52,15 @@ export const onUrgentMessageCreated = onDocumentCreated(
       senderId,
       category: "chat_urgent",
       eventId,
+      // Phase 6 — title / body fall through to the recipient's locale
+      // template (functions/src/notifications/templates/en.json today;
+      // base-language + English fallback when other locales register).
+      // Literal title/body remain as the back-compat path for any
+      // recipient missing a matching template.
       title: `🚨 Urgent in ${eventTitle}`,
       body: truncatedBody,
+      templateKey: "chat_urgent",
+      placeholders: {eventTitle, body: truncatedBody},
       deepLink: `/dashboard/event/${eventId}/chat`,
       extraData: {eventId, messageId},
     });

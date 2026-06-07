@@ -11,7 +11,7 @@
  */
 import {__INTERNAL} from '../../src/notifications/sendPush';
 
-const {CATEGORY_CONFIG, buildApnsAps} = __INTERNAL;
+const {CATEGORY_CONFIG, buildApnsAps, resolveNotificationText} = __INTERNAL;
 
 describe('sendCategorizedPush CATEGORY_CONFIG', () => {
   test('chat_urgent routes to crewpoint_chat_urgent + urgentChat pref', () => {
@@ -85,6 +85,70 @@ describe('sendCategorizedPush CATEGORY_CONFIG', () => {
 
     test('member_joined omits apnsCategory (no action set)', () => {
       expect(CATEGORY_CONFIG.member_joined.apnsCategory).toBeUndefined();
+    });
+  });
+
+  describe('resolveNotificationText (Phase 6 localization)', () => {
+    test('returns literal title/body when no templateKey provided (back-compat)', () => {
+      const {title, body} = resolveNotificationText({
+        title: 'Literal title',
+        body: 'Literal body',
+        templateKey: undefined,
+        placeholders: undefined,
+        locale: null,
+      });
+      expect(title).toBe('Literal title');
+      expect(body).toBe('Literal body');
+    });
+
+    test('uses the recipient locale template when templateKey provided', () => {
+      const {title, body} = resolveNotificationText({
+        title: 'fallback title',
+        body: 'fallback body',
+        templateKey: 'chat_urgent',
+        placeholders: {eventTitle: 'Trip', body: 'Bear in camp'},
+        locale: 'en',
+      });
+      expect(title).toBe('🚨 Urgent in Trip');
+      expect(body).toBe('Bear in camp');
+    });
+
+    test('falls back to literal title/body when template field is missing', () => {
+      // `chat_urgent` has no `subtitle` field in en.json — caller's
+      // literal fallback wins.
+      const {title, body} = resolveNotificationText({
+        title: 'fallback title',
+        body: 'fallback body',
+        templateKey: 'undefined_category',
+        placeholders: {},
+        locale: 'en',
+      });
+      expect(title).toBe('fallback title');
+      expect(body).toBe('fallback body');
+    });
+
+    test('interpolates per-recipient even when CF passes the same placeholders', () => {
+      // Same placeholders for two recipients with different locales —
+      // both currently resolve to en (es not yet registered), so the
+      // strings match. Pinning this so adding `es.json` later breaks
+      // the test deliberately + forces a deliberate update.
+      const en = resolveNotificationText({
+        title: 'x',
+        body: 'x',
+        templateKey: 'task_assigned',
+        placeholders: {eventTitle: 'Trip', taskTitle: 'Buy beer'},
+        locale: 'en',
+      });
+      const es = resolveNotificationText({
+        title: 'x',
+        body: 'x',
+        templateKey: 'task_assigned',
+        placeholders: {eventTitle: 'Trip', taskTitle: 'Buy beer'},
+        locale: 'es',
+      });
+      expect(en.title).toBe('New task in Trip');
+      // No `es.json` yet → base-language fallback → en.
+      expect(es.title).toBe(en.title);
     });
   });
 

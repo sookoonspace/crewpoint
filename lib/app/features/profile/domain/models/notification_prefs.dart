@@ -19,6 +19,8 @@ class NotificationPrefs {
     this.quietHoursStart,
     this.quietHoursEnd,
     this.timezone,
+    this.locale,
+    this.dailyDigest = false,
   });
 
   /// Master toggle — false means: do not request OS permission, do not
@@ -76,6 +78,21 @@ class NotificationPrefs {
   /// dependency.
   final String? timezone;
 
+  /// BCP-47 locale string (e.g. `"en"`, `"es-MX"`). Drives Phase 6
+  /// notification-template selection on the server. Null means "use
+  /// server default" (English). Server-side resolution lives in
+  /// `functions/src/notifications/templates.ts` and falls back to the
+  /// base language and then `en.json` when the exact locale is missing.
+  final String? locale;
+
+  /// Opt-in for the Phase 6.1 daily-digest push (morning summary of
+  /// unread chat + pending tasks + open settlements). **Default false** —
+  /// users must explicitly enable this to avoid surprise "good morning"
+  /// pings. The CF runs every 60 minutes and fires when the recipient's
+  /// local hour matches the digest send time (9:00 in their [timezone],
+  /// reusing the Phase 5 IANA timezone field).
+  final bool dailyDigest;
+
   /// Reads the Firestore subdoc fragment. Missing / wrong-typed fields
   /// fall through to the constructor defaults so a partial migration
   /// never throws at deserialisation.
@@ -91,6 +108,8 @@ class NotificationPrefs {
       quietHoursStart: _readMinuteOfDay(map['quietHoursStart']),
       quietHoursEnd: _readMinuteOfDay(map['quietHoursEnd']),
       timezone: _readNonEmptyString(map['timezone']),
+      locale: _readNonEmptyString(map['locale']),
+      dailyDigest: _readBool(map['dailyDigest'], fallback: false),
     );
   }
 
@@ -106,6 +125,10 @@ class NotificationPrefs {
     if (quietHoursStart != null) 'quietHoursStart': quietHoursStart,
     if (quietHoursEnd != null) 'quietHoursEnd': quietHoursEnd,
     if (timezone != null) 'timezone': timezone,
+    // Sparse too — null means "server default (English)"; persisting
+    // the absence keeps the doc small.
+    if (locale != null) 'locale': locale,
+    'dailyDigest': dailyDigest,
   };
 
   NotificationPrefs copyWith({
@@ -118,6 +141,8 @@ class NotificationPrefs {
     int? quietHoursStart,
     int? quietHoursEnd,
     String? timezone,
+    String? locale,
+    bool? dailyDigest,
   }) {
     return NotificationPrefs(
       pushEnabled: pushEnabled ?? this.pushEnabled,
@@ -129,6 +154,8 @@ class NotificationPrefs {
       quietHoursStart: quietHoursStart ?? this.quietHoursStart,
       quietHoursEnd: quietHoursEnd ?? this.quietHoursEnd,
       timezone: timezone ?? this.timezone,
+      locale: locale ?? this.locale,
+      dailyDigest: dailyDigest ?? this.dailyDigest,
     );
   }
 

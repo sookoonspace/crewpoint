@@ -162,6 +162,18 @@ class _PrefsForm extends ConsumerWidget {
         if (prefs.criticalOptIn) _CriticalOptInDndWarning(),
         const SizedBox(height: AppSpacing.lg),
         _QuietHoursTile(uid: uid, prefs: prefs),
+        const SizedBox(height: AppSpacing.lg),
+        AppSwitchTile(
+          key: const Key('notifSettings.dailyDigest.tile'),
+          title: 'Daily digest',
+          subtitle:
+              'Morning summary of unread chat, pending tasks, and open '
+              'settlements. Sent at 9:00 in your timezone.',
+          value: prefs.dailyDigest,
+          enabled: prefs.pushEnabled,
+          onChanged: (v) =>
+              _safeUpdate(context, () => controller.setDailyDigest(v)),
+        ),
       ],
     );
   }

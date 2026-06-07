@@ -1,0 +1,30 @@
+{
+  "chat_urgent": {
+    "title": "🚨 Urgent in {{eventTitle}}",
+    "body": "{{body}}"
+  },
+  "task_assigned": {
+    "title": "New task in {{eventTitle}}",
+    "body": "{{taskTitle}}"
+  },
+  "task_due": {
+    "title": "Task due soon",
+    "body": "{{taskTitle}}"
+  },
+  "expense_added": {
+    "title": "New expense in {{eventTitle}}",
+    "body": "{{body}}"
+  },
+  "settlement_disputed": {
+    "title": "Settlement disputed in {{eventTitle}}",
+    "body": "Tap to review the budget."
+  },
+  "member_joined": {
+    "title": "New member in {{eventTitle}}",
+    "body": "Tap to review the member list."
+  },
+  "digest": {
+    "title": "Your morning summary",
+    "body": "{{summary}}"
+  }
+}

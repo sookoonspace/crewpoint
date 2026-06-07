@@ -1,6 +1,7 @@
 import * as admin from "firebase-admin";
 import {logger} from "firebase-functions/v2";
 import {shouldSuppress, QuietHoursPrefs} from "./suppress";
+import {interpolate, loadTemplate} from "./templates";
 
 const FCM_BATCH_SIZE = 500;
 
@@ -21,11 +22,17 @@ export type NotificationCategory =
   | "expense_added"
   | "settlement_disputed"
   | "member_joined"
-  | "task_due";
+  | "task_due"
+  | "digest";
 
 interface CategoryConfig {
   /** Field on `notificationPrefs` that gates this category. */
-  prefKey: "urgentChat" | "taskUpdates" | "payments" | "eventUpdates";
+  prefKey:
+    | "urgentChat"
+    | "taskUpdates"
+    | "payments"
+    | "eventUpdates"
+    | "dailyDigest";
   /** Android channel id (client declares the channel; this is the routing key). */
   androidChannelId: string;
   /** APNs `aps.thread-id` for iOS grouping. */
@@ -84,6 +91,14 @@ const CATEGORY_CONFIG: Record<NotificationCategory, CategoryConfig> = {
     iosThreadId: "tasks",
     apnsCategory: "TASK_CATEGORY",
   },
+  digest: {
+    // Phase 6.1 — opt-in morning summary. Lives on its own Android
+    // channel + iOS thread so users can mute it in OS settings
+    // independently of the per-event categories.
+    prefKey: "dailyDigest",
+    androidChannelId: "crewpoint_digest",
+    iosThreadId: "digest",
+  },
 };
 
 interface SendCategorizedPushArgs {
@@ -98,12 +113,57 @@ interface SendCategorizedPushArgs {
    * carries it for tap routing.
    */
   eventId: string;
+  /**
+   * Fallback / non-localized title. Used as-is when [templateKey] is
+   * omitted or the template lookup yields no entry for the recipient's
+   * locale.
+   */
   title: string;
+  /** Fallback / non-localized body. See [title]. */
   body: string;
+  /**
+   * Phase 6 localization (optional). When provided, the CF resolves
+   * `templates/{locale}.json[templateKey].title|body` for each recipient
+   * — falling back to [title] / [body] when the template is missing.
+   * [placeholders] populates `{{key}}` substitutions inside the
+   * resolved template.
+   */
+  templateKey?: string;
+  placeholders?: Record<string, string>;
   /** Goes into `data.deepLink` for in-app navigation on tap. */
   deepLink: string;
   /** Merged into `data` alongside `deepLink`. Values must be strings (FCM). */
   extraData?: Record<string, string>;
+}
+
+/**
+ * Resolves the final (title, body) pair for one recipient. Pure helper
+ * exported for unit tests via __INTERNAL.
+ *
+ * Resolution order per field:
+ *   1. `loadTemplate(templateKey, field, locale)` — Phase 6 path
+ *   2. literal `args.title` / `args.body` — back-compat fallback
+ *
+ * Interpolation runs on the resolved template (path 1) only — literal
+ * args are emitted verbatim.
+ */
+export function resolveNotificationText(args: {
+  title: string;
+  body: string;
+  templateKey: string | undefined;
+  placeholders: Record<string, string> | undefined;
+  locale: string | null | undefined;
+}): {title: string; body: string} {
+  if (!args.templateKey) {
+    return {title: args.title, body: args.body};
+  }
+  const placeholders = args.placeholders ?? {};
+  const tplTitle = loadTemplate(args.templateKey, "title", args.locale);
+  const tplBody = loadTemplate(args.templateKey, "body", args.locale);
+  return {
+    title: tplTitle ? interpolate(tplTitle, placeholders) : args.title,
+    body: tplBody ? interpolate(tplBody, placeholders) : args.body,
+  };
 }
 
 interface SendResult {
@@ -112,7 +172,14 @@ interface SendResult {
   skipped: number;
 }
 
-type TokenOwner = {uid: string; token: string; criticalOptIn: boolean};
+type TokenOwner = {
+  uid: string;
+  token: string;
+  criticalOptIn: boolean;
+  /** Phase 6 — recipient's preferred locale, used to resolve the per-message
+   *  notification text. Null means "use server default" (English). */
+  locale: string | null;
+};
 
 /**
  * Read the recipient's `users/{uid}/eventMutes/{eventId}.mutedUntil`.
@@ -264,8 +331,9 @@ export async function sendCategorizedPush(
 
     const tokens =
       (privateData?.fcmTokens as string[] | undefined) ?? [];
+    const locale = typeof prefs.locale === "string" ? prefs.locale : null;
     for (const token of tokens) {
-      owners.push({uid, token, criticalOptIn});
+      owners.push({uid, token, criticalOptIn, locale});
     }
   }
 
@@ -273,7 +341,6 @@ export async function sendCategorizedPush(
     return {attempted: 0, skipped};
   }
 
-  const notification = {title: args.title, body: args.body};
   const messageData: Record<string, string> = {
     ...(args.extraData ?? {}),
     deepLink: args.deepLink,
@@ -284,12 +351,19 @@ export async function sendCategorizedPush(
   const deadTokens: TokenOwner[] = [];
   // sendEach (not sendEachForMulticast) so each Message can carry a
   // per-recipient apns payload — `chat_urgent`'s `interruption-level`
-  // varies on the recipient's `criticalOptIn` flag.
+  // varies on the recipient's `criticalOptIn` flag, and Phase 6
+  // localization resolves title/body against the recipient's locale.
   for (let i = 0; i < owners.length; i += FCM_BATCH_SIZE) {
     const chunk = owners.slice(i, i + FCM_BATCH_SIZE);
     const messages = chunk.map((owner) => ({
       token: owner.token,
-      notification,
+      notification: resolveNotificationText({
+        title: args.title,
+        body: args.body,
+        templateKey: args.templateKey,
+        placeholders: args.placeholders,
+        locale: owner.locale,
+      }),
       data: messageData,
       android: {
         notification: {channelId: cfg.androidChannelId},
@@ -350,5 +424,9 @@ async function pruneDeadTokens(
   );
 }
 
-/** Test seam — internal helper exported only for unit tests. */
-export const __INTERNAL = {CATEGORY_CONFIG, buildApnsAps};
+/** Test seam — internal helpers exported only for unit tests. */
+export const __INTERNAL = {
+  CATEGORY_CONFIG,
+  buildApnsAps,
+  resolveNotificationText,
+};

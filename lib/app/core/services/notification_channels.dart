@@ -117,6 +117,12 @@ const List<NotificationChannelSpec> kNotificationChannels = [
     description: 'Expense additions and settlement disputes.',
     importance: NotificationChannelImportance.default_,
   ),
+  NotificationChannelSpec(
+    id: 'crewpoint_digest',
+    name: 'Daily digest',
+    description: 'Morning summary of unread chat, tasks, and settlements.',
+    importance: NotificationChannelImportance.default_,
+  ),
 ];
 
 /// No-op fallback. Used as the default in [FcmService] (so existing test
