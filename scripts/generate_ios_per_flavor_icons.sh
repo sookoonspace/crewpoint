@@ -1,31 +1,27 @@
 #!/usr/bin/env bash
-# Generates per-flavor iOS app-icon catalogs (AppIcon, AppIcon-dev,
-# AppIcon-stg) so each flavor's home-screen icon carries its own
-# DEV/STG badge overlay.
+# Generates per-flavor iOS app-icon catalogs so each flavor's home-screen
+# icon carries its own DEV/STG badge overlay.
 #
-# flutter_launcher_icons can only write to
-# `ios/Runner/Assets.xcassets/AppIcon.appiconset/` — the iconset
-# directory name is not configurable. This script runs the three
-# yaml configs in order, renames the resulting iconset after each
-# non-prod run, then runs the prod config last so the unsuffixed
-# `AppIcon.appiconset` carries the prod art.
+# flutter_launcher_icons 0.14+ auto-derives the iOS iconset directory
+# name from the yaml's filename suffix:
 #
-# The per-flavor `ASSETCATALOG_COMPILER_APPICON_NAME` settings in
-# `ios/{dev,stg}.xcconfig` reference the matching directory name.
+#   flutter_launcher_icons-dev.yaml  → AppIcon-dev.appiconset
+#   flutter_launcher_icons-stg.yaml  → AppIcon-stg.appiconset
+#   flutter_launcher_icons-main.yaml → AppIcon-main.appiconset
 #
-# Source PNGs live in `assets/icons/launcher_icon{,_dev,_stg}.png` and
-# are produced by `dart run scripts/generate_flavor_icons.dart` from
-# `launcher_icon.png` (badged with orange DEV / blue STG ribbons).
+# So no renames are needed — this script just runs the three yamls
+# in order. The per-flavor xcconfigs at ios/{dev,stg,prod}.xcconfig
+# point ASSETCATALOG_COMPILER_APPICON_NAME at the matching name.
+#
+# Source PNGs (`assets/icons/launcher_icon{,_dev,_stg}.png`) are
+# produced by `dart run scripts/generate_flavor_icons.dart` from the
+# unbadged base icon.
 
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-ASSETS_DIR="ios/Runner/Assets.xcassets"
-ICONSET="$ASSETS_DIR/AppIcon.appiconset"
-
-# Sanity check the source PNGs exist (run generate_flavor_icons.dart
-# first if they don't).
+# Sanity check the source PNGs.
 for f in launcher_icon launcher_icon_dev launcher_icon_stg; do
   if [[ ! -f "assets/icons/$f.png" ]]; then
     echo "Error: assets/icons/$f.png is missing." >&2
@@ -36,30 +32,19 @@ done
 
 run_flavor() {
   local yaml="$1"
-  local target="$2"
-
   echo "==> Generating from $yaml"
   dart run flutter_launcher_icons -f "$yaml"
-
-  if [[ "$target" != "AppIcon" ]]; then
-    local target_dir="$ASSETS_DIR/$target.appiconset"
-    rm -rf "$target_dir"
-    mv "$ICONSET" "$target_dir"
-    echo "==> Renamed AppIcon.appiconset → $target.appiconset"
-  fi
 }
 
-# Order matters: dev + stg get renamed; main runs last and keeps the
-# default AppIcon.appiconset name.
-run_flavor flutter_launcher_icons-dev.yaml  AppIcon-dev
-run_flavor flutter_launcher_icons-stg.yaml  AppIcon-stg
-run_flavor flutter_launcher_icons-main.yaml AppIcon
+run_flavor flutter_launcher_icons-dev.yaml
+run_flavor flutter_launcher_icons-stg.yaml
+run_flavor flutter_launcher_icons-main.yaml
 
 echo
 echo "Done. iOS now has:"
-echo "  $ASSETS_DIR/AppIcon.appiconset      (prod)"
-echo "  $ASSETS_DIR/AppIcon-dev.appiconset  (dev — orange DEV badge)"
-echo "  $ASSETS_DIR/AppIcon-stg.appiconset  (stg — blue STG badge)"
+echo "  ios/Runner/Assets.xcassets/AppIcon-dev.appiconset   (dev — orange DEV badge)"
+echo "  ios/Runner/Assets.xcassets/AppIcon-stg.appiconset   (stg — blue STG badge)"
+echo "  ios/Runner/Assets.xcassets/AppIcon-main.appiconset  (prod / App Store art)"
 echo
-echo "Rebuild dev/stg in Xcode (or via flutter run --flavor dev) to see"
-echo "the badged icon on the home screen."
+echo "Rebuild dev/stg/prod in Xcode (or via flutter run --flavor X) to"
+echo "see the matching icon on the home screen."

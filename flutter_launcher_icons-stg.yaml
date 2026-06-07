@@ -4,12 +4,10 @@
 # Android: writes assets into `android/app/src/stg/res/mipmap-*/` via
 # the `flavor:` directive.
 #
-# iOS: flutter_launcher_icons can only write to
-# `ios/Runner/Assets.xcassets/AppIcon.appiconset/` — the iconset
-# directory name is not configurable. Use the helper script to write +
-# rename so the STG iconset becomes `AppIcon-stg.appiconset`:
-#
-#   bash scripts/generate_ios_per_flavor_icons.sh
+# iOS: writes directly to `AppIcon-stg.appiconset/` because
+# flutter_launcher_icons 0.14+ uses this yaml's filename suffix as
+# the iconset directory name. `ios/stg.xcconfig` points
+# `ASSETCATALOG_COMPILER_APPICON_NAME` at that directory.
 #
 # See `flutter_launcher_icons-dev.yaml` for the full workflow rationale.
 

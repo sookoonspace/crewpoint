@@ -1,13 +1,18 @@
 # Default / prod launcher icon config (bundle id
 # `space.sookoon.crewpoint.app` on Android, used by App Store builds).
-# Writes Android assets into `android/app/src/main/res/mipmap-*/` via
-# the `flavor: "main"` directive — Gradle's default source set.
+#
+# Android: writes assets into `android/app/src/main/res/mipmap-*/` —
+# Gradle's default source set — because no `flavor:` is set.
+#
+# iOS: flutter_launcher_icons 0.14+ derives the iconset directory name
+# from this yaml's filename suffix, so it writes to
+# `ios/Runner/Assets.xcassets/AppIcon-main.appiconset/`.
+# `ios/prod.xcconfig` points `ASSETCATALOG_COMPILER_APPICON_NAME` at
+# that directory.
 #
 # Run with:
-#   dart run flutter_launcher_icons -f flutter_launcher_icons-main.yaml
-#
-# (Or just `dart run flutter_launcher_icons` which auto-discovers every
-# `flutter_launcher_icons-*.yaml` at the project root and runs them all.)
+#   bash scripts/generate_ios_per_flavor_icons.sh   (recommended — does all 3)
+#   dart run flutter_launcher_icons -f flutter_launcher_icons-main.yaml   (this one)
 
 flutter_launcher_icons:
   android: true
@@ -16,8 +21,3 @@ flutter_launcher_icons:
   remove_alpha_ios: true
   adaptive_icon_background: "#2D3436"  # AppColors.charcoal
   adaptive_icon_foreground: "assets/icons/launcher_icon.png"
-  # No `flavor:` — Android's main source set + iOS's default
-  # AppIcon.appiconset are both the un-suffixed default locations,
-  # which is exactly where prod (App Store) builds look. Setting
-  # `flavor: "main"` would create a flavored AppIcon-main.appiconset
-  # that Xcode's Runner target doesn't reference.
