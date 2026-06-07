@@ -22,11 +22,17 @@ export type NotificationCategory =
   | "expense_added"
   | "settlement_disputed"
   | "member_joined"
-  | "task_due";
+  | "task_due"
+  | "digest";
 
 interface CategoryConfig {
   /** Field on `notificationPrefs` that gates this category. */
-  prefKey: "urgentChat" | "taskUpdates" | "payments" | "eventUpdates";
+  prefKey:
+    | "urgentChat"
+    | "taskUpdates"
+    | "payments"
+    | "eventUpdates"
+    | "dailyDigest";
   /** Android channel id (client declares the channel; this is the routing key). */
   androidChannelId: string;
   /** APNs `aps.thread-id` for iOS grouping. */
@@ -84,6 +90,14 @@ const CATEGORY_CONFIG: Record<NotificationCategory, CategoryConfig> = {
     // event groups under a single notification stack.
     iosThreadId: "tasks",
     apnsCategory: "TASK_CATEGORY",
+  },
+  digest: {
+    // Phase 6.1 — opt-in morning summary. Lives on its own Android
+    // channel + iOS thread so users can mute it in OS settings
+    // independently of the per-event categories.
+    prefKey: "dailyDigest",
+    androidChannelId: "crewpoint_digest",
+    iosThreadId: "digest",
   },
 };
 

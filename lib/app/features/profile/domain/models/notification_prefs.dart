@@ -20,6 +20,7 @@ class NotificationPrefs {
     this.quietHoursEnd,
     this.timezone,
     this.locale,
+    this.dailyDigest = false,
   });
 
   /// Master toggle — false means: do not request OS permission, do not
@@ -84,6 +85,14 @@ class NotificationPrefs {
   /// base language and then `en.json` when the exact locale is missing.
   final String? locale;
 
+  /// Opt-in for the Phase 6.1 daily-digest push (morning summary of
+  /// unread chat + pending tasks + open settlements). **Default false** —
+  /// users must explicitly enable this to avoid surprise "good morning"
+  /// pings. The CF runs every 60 minutes and fires when the recipient's
+  /// local hour matches the digest send time (9:00 in their [timezone],
+  /// reusing the Phase 5 IANA timezone field).
+  final bool dailyDigest;
+
   /// Reads the Firestore subdoc fragment. Missing / wrong-typed fields
   /// fall through to the constructor defaults so a partial migration
   /// never throws at deserialisation.
@@ -100,6 +109,7 @@ class NotificationPrefs {
       quietHoursEnd: _readMinuteOfDay(map['quietHoursEnd']),
       timezone: _readNonEmptyString(map['timezone']),
       locale: _readNonEmptyString(map['locale']),
+      dailyDigest: _readBool(map['dailyDigest'], fallback: false),
     );
   }
 
@@ -118,6 +128,7 @@ class NotificationPrefs {
     // Sparse too — null means "server default (English)"; persisting
     // the absence keeps the doc small.
     if (locale != null) 'locale': locale,
+    'dailyDigest': dailyDigest,
   };
 
   NotificationPrefs copyWith({
@@ -131,6 +142,7 @@ class NotificationPrefs {
     int? quietHoursEnd,
     String? timezone,
     String? locale,
+    bool? dailyDigest,
   }) {
     return NotificationPrefs(
       pushEnabled: pushEnabled ?? this.pushEnabled,
@@ -143,6 +155,7 @@ class NotificationPrefs {
       quietHoursEnd: quietHoursEnd ?? this.quietHoursEnd,
       timezone: timezone ?? this.timezone,
       locale: locale ?? this.locale,
+      dailyDigest: dailyDigest ?? this.dailyDigest,
     );
   }
 

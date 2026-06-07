@@ -22,5 +22,9 @@
   "member_joined": {
     "title": "New member in {{eventTitle}}",
     "body": "Tap to review the member list."
+  },
+  "digest": {
+    "title": "Your morning summary",
+    "body": "{{summary}}"
   }
 }

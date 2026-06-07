@@ -57,6 +57,12 @@ class NotificationPrefsNotifier extends AsyncNotifier<NotificationPrefs> {
     await _update((prefs) => prefs.copyWith(criticalOptIn: value));
   }
 
+  /// Toggles the Phase 6.1 daily-digest opt-in. CF reads this
+  /// server-side when picking digest recipients each hour.
+  Future<void> setDailyDigest(bool value) async {
+    await _update((prefs) => prefs.copyWith(dailyDigest: value));
+  }
+
   /// Sets the recipient's preferred notification locale (BCP-47).
   /// Pass `null` to revert to the server default (English).
   Future<void> setLocale(String? value) async {

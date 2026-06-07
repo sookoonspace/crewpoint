@@ -164,13 +164,15 @@ void main() {
       final tiles = tester
           .widgetList<SwitchListTile>(find.byType(SwitchListTile))
           .toList();
-      // master + 4 categories + criticalOptIn opt-in + quiet-hours toggle.
-      expect(tiles.length, 7);
-      // All defaults TRUE except the two opt-ins (criticalOptIn,
-      // quietHours — both Phase 4 / 5).
+      // master + 4 categories + criticalOptIn opt-in + quiet-hours
+      // toggle + dailyDigest opt-in (Phase 6.1).
+      expect(tiles.length, 8);
+      // All defaults TRUE except the three opt-ins (criticalOptIn,
+      // quietHours, dailyDigest — Phases 4 / 5 / 6.1).
       expect(tiles.take(5).every((t) => t.value == true), isTrue);
       expect(tiles[5].value, isFalse);
       expect(tiles[6].value, isFalse);
+      expect(tiles[7].value, isFalse);
     });
 
     testWidgets('toggling master OFF persists pushEnabled=false', (
@@ -198,12 +200,15 @@ void main() {
           .widgetList<SwitchListTile>(find.byType(SwitchListTile))
           .toList();
       // Layout order: [master, urgentChat, taskUpdates, payments,
-      // eventUpdates, criticalOptIn].
-      expect(tiles[1].onChanged, isNull);
-      expect(tiles[2].onChanged, isNull);
-      expect(tiles[3].onChanged, isNull);
-      expect(tiles[4].onChanged, isNull);
-      expect(tiles[5].onChanged, isNull);
+      // eventUpdates, criticalOptIn, quietHours, dailyDigest]. Every
+      // non-master tile should be disabled when master is OFF.
+      for (var i = 1; i < tiles.length; i++) {
+        expect(
+          tiles[i].onChanged,
+          isNull,
+          reason: 'tile $i should be disabled when master is OFF',
+        );
+      }
     });
 
     testWidgets('toggling taskUpdates OFF persists taskUpdates=false', (
@@ -483,6 +488,37 @@ void main() {
         find.byKey(const Key('notifSettings.quietHours.end')),
         findsNothing,
       );
+    });
+
+    testWidgets('dailyDigest tile defaults to OFF (opt-in only)', (
+      tester,
+    ) async {
+      final repo = _InMemoryUserRepo();
+      await _pumpScreen(tester, repo);
+
+      final tile = tester.widget<SwitchListTile>(
+        find.descendant(
+          of: find.byKey(const Key('notifSettings.dailyDigest.tile')),
+          matching: find.byType(SwitchListTile),
+        ),
+      );
+      expect(tile.value, isFalse);
+    });
+
+    testWidgets('toggling dailyDigest ON persists dailyDigest=true', (
+      tester,
+    ) async {
+      final repo = _InMemoryUserRepo();
+      await _pumpScreen(tester, repo);
+
+      final tile = find.byKey(const Key('notifSettings.dailyDigest.tile'));
+      await tester.ensureVisible(tile);
+      await tester.pumpAndSettle();
+      await tester.tap(tile);
+      await tester.pumpAndSettle();
+
+      expect(repo.updates, isNotEmpty);
+      expect(repo.updates.last.dailyDigest, isTrue);
     });
   });
 }

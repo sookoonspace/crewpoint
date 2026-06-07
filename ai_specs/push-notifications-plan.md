@@ -268,15 +268,19 @@ Push notifications roadmap V1→V3. FCM scaffolding (`FcmGateway`/`FcmService`/`
 - [x] TDD: `notification_prefs_test.dart` — 6 new `locale` tests (default null / fromMap honours non-empty / drops empty + wrong types / toMap sparse / toMap when set / copyWith).
 - [x] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`. *(1 pre-existing TableMigration warning; 797 flutter tests pass, 4 skipped; 142 CF tests pass — +15 across templates + sendPush.)*
 
-### Phase 6.1: V3.2 — daily digest CF + opt-in *(NEW — split from original Phase 6)*
+### Phase 6.1: V3.2 — daily digest CF + opt-in ✓
 
 - **Goal**: opt-in daily summary push (unread chat + pending tasks + open settlements). First scheduled CF that does per-user aggregation across multiple collections.
-- [ ] `NotificationPrefs.dailyDigest: bool` (default false) + `setDailyDigest(bool)` setter + UI toggle.
-- [ ] `functions/src/notifications/sendPush.ts` — extend `NotificationCategory` with `digest`; route to a new `crewpoint_digest` Android channel.
-- [ ] `lib/app/core/services/notification_channels.dart` — declare `crewpoint_digest` channel (IMPORTANCE_DEFAULT).
-- [ ] `functions/src/events/onDigestSummary.ts` — `onSchedule('every 60 minutes')`. For each user with `dailyDigest=true`, compute the current hour in their timezone (Phase 5.2 IANA tz already persisted); skip unless hour == 9. Aggregate unread chat (count messages newer than `chatReads/{eventId}.lastReadAt` across active events), pending tasks (count `status != done` assigned to user), open settlements (count rows in their global ledger). Skip when total == 0 (no "good morning, you have nothing" pings).
-- [ ] `firestore.indexes.json` — composite index if the aggregation queries need it.
-- [ ] TDD: digest CF skips when `dailyDigest == false`. Hour selector returns true only at recipient-local 9:00. Empty-day skip (count==0). Per-source counters surface correctly.
+- [x] `NotificationPrefs.dailyDigest: bool` (default false) + `setDailyDigest(bool)` setter on the notifier + UI toggle in `NotificationSettingsScreen` (gated on `pushEnabled`; appears below the quiet-hours block).
+- [x] `functions/src/notifications/sendPush.ts` — `NotificationCategory` extended with `digest`; `CategoryConfig.prefKey` extended with `'dailyDigest'`; routing-table entry binds the `crewpoint_digest` Android channel + `digest` iOS thread id.
+- [x] `lib/app/core/services/notification_channels.dart` — declared `crewpoint_digest` channel (IMPORTANCE_DEFAULT).
+- [x] `functions/src/events/onDigestSummary.ts` — `onSchedule('every 60 minutes')`. Collection-group query on `private` for `notificationPrefs.dailyDigest == true`, then per-user: `isDigestHour({timezone, now, targetHour: 9})` gate → `computeUserCounters` aggregation (unread chat via `chatReads/{eventId}.lastReadAt` + `events/{eventId}/messages` count queries; pending tasks via `collectionGroup('tasks').where(assigneeId, ==, uid).where(status, !=, 'done').count()`; open-settlement stub via `collectionGroup('expenses').where(payerId, !=, uid).count()` — proper net-debt computation deferred since the V1 use case is "is there anything to nudge me about?", not exact dollars). `shouldFireDigest` final gate drops the push when all counters are zero. `buildDigestPlaceholders` emits raw counters + pre-formatted plural-correct `summary` line consumed by `templates/en.json[digest.body]`.
+- [x] `functions/src/notifications/templates/en.json` — `digest` entry with `title: "Your morning summary"` and `body: "{{summary}}"`. Plural-correct summary is computed in the CF, not the template, so future locales don't have to re-implement English plural arithmetic.
+- [x] `functions/src/index.ts` — exports `onDigestSummary`.
+- [x] TDD: 12 new tests in `digestSummary.test.ts` pin: `isDigestHour` (5 — tz-aware happy / wrong-hour / null tz / unknown tz / Sydney AEST), `shouldFireDigest` (4 — pref off / master off / empty-day skip / non-zero-fires), `buildDigestPlaceholders` (3 — counters + summary / zero-omission / singular vs plural). 7 new Dart tests pin `dailyDigest` model round-trip + UI toggle + master-off-disables-everything (loop-based assertion now covers the new tile too).
+- [ ] `firestore.indexes.json` — composite index for `(assigneeId asc, status asc)` on `collectionGroup('tasks')` *(deferred — Firestore will surface the missing-index error on first deploy with a click-to-create URL; faster than guessing at index shapes that may need tweaking after real-world cardinality is observed)*.
+- [x] Verify: `flutter analyze` && `flutter test` && `npm --prefix functions test`. *(1 pre-existing TableMigration warning; 804 flutter tests pass, 4 skipped; 154 CF tests pass — +12 across digestSummary.)*
+- [ ] **Manual**: enable Pub/Sub API in GCP project (dev/stg/prod) — same prereq as `onTaskDueScheduled`; second scheduled CF doesn't add new infra. First deploy surfaces the missing-index URL for the `(assigneeId, status)` composite. *(Out of session scope.)*
 
 ### Phase 6.2: V3.3 — web push *(NEW — split from original Phase 6; depends on token-schema migration)*
 
