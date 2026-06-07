@@ -98,7 +98,41 @@ interface SendResult {
   skipped: number;
 }
 
-type TokenOwner = {uid: string; token: string};
+type TokenOwner = {uid: string; token: string; criticalOptIn: boolean};
+
+/**
+ * Builds the iOS `apns.payload.aps` dict for one (category, recipient)
+ * pair. Pure / side-effect free — exported for unit tests via __INTERNAL.
+ *
+ * `interruption-level` is only set for `chat_urgent`:
+ *   - `criticalOptIn=true`  → `'critical'`     (requires Apple's
+ *     `com.apple.developer.usernotifications.critical-alerts` entitlement;
+ *     pierces Focus / DND on the device)
+ *   - `criticalOptIn=false` → `'time-sensitive'` (default elevated
+ *     priority for chat; respects Focus)
+ *
+ * Non-chat_urgent categories never receive an interruption-level — the
+ * default behavior already matches their semantic priority and there is
+ * no per-recipient pref to vary on.
+ */
+export function buildApnsAps(args: {
+  category: NotificationCategory;
+  criticalOptIn: boolean;
+  cfg: CategoryConfig;
+}): Record<string, unknown> {
+  const aps: Record<string, unknown> = {
+    "thread-id": args.cfg.iosThreadId,
+  };
+  if (args.cfg.apnsCategory) {
+    aps.category = args.cfg.apnsCategory;
+  }
+  if (args.category === "chat_urgent") {
+    aps["interruption-level"] = args.criticalOptIn ?
+      "critical" :
+      "time-sensitive";
+  }
+  return aps;
+}
 
 /**
  * Fans out a categorized push.
@@ -150,8 +184,11 @@ export async function sendCategorizedPush(
     }
     const tokens =
       (privateData?.fcmTokens as string[] | undefined) ?? [];
+    // Read per-recipient DND-bypass opt-in. Default false; only
+    // chat_urgent payloads use this for `apns.payload.aps.interruption-level`.
+    const criticalOptIn = prefs.criticalOptIn === true;
     for (const token of tokens) {
-      owners.push({uid, token});
+      owners.push({uid, token, criticalOptIn});
     }
   }
 
@@ -168,10 +205,13 @@ export async function sendCategorizedPush(
 
   const messaging = admin.messaging();
   const deadTokens: TokenOwner[] = [];
+  // sendEach (not sendEachForMulticast) so each Message can carry a
+  // per-recipient apns payload — `chat_urgent`'s `interruption-level`
+  // varies on the recipient's `criticalOptIn` flag.
   for (let i = 0; i < owners.length; i += FCM_BATCH_SIZE) {
     const chunk = owners.slice(i, i + FCM_BATCH_SIZE);
-    const response = await messaging.sendEachForMulticast({
-      tokens: chunk.map((o) => o.token),
+    const messages = chunk.map((owner) => ({
+      token: owner.token,
       notification,
       data: messageData,
       android: {
@@ -179,13 +219,15 @@ export async function sendCategorizedPush(
       },
       apns: {
         payload: {
-          aps: {
-            "thread-id": cfg.iosThreadId,
-            ...(cfg.apnsCategory ? {category: cfg.apnsCategory} : {}),
-          },
+          aps: buildApnsAps({
+            category: args.category,
+            criticalOptIn: owner.criticalOptIn,
+            cfg,
+          }),
         },
       },
-    });
+    }));
+    const response = await messaging.sendEach(messages);
     response.responses.forEach((res, idx) => {
       if (res.success) return;
       const code = res.error?.code ?? "";
@@ -232,4 +274,4 @@ async function pruneDeadTokens(
 }
 
 /** Test seam — internal helper exported only for unit tests. */
-export const __INTERNAL = {CATEGORY_CONFIG};
+export const __INTERNAL = {CATEGORY_CONFIG, buildApnsAps};
