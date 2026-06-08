@@ -18,6 +18,10 @@ class _FakeFcmGateway implements IFcmGateway {
   int getTokenCalls = 0;
   int triggerApnsCalls = 0;
 
+  /// Captures the [vapidKey] passed to the most recent [getToken] call so
+  /// tests can assert FcmService threads it through on web.
+  String? lastVapidKey;
+
   @override
   Future<String?> getApnsToken() async => apnsToken;
 
@@ -33,8 +37,9 @@ class _FakeFcmGateway implements IFcmGateway {
   }
 
   @override
-  Future<String?> getToken() async {
+  Future<String?> getToken({String? vapidKey}) async {
     getTokenCalls++;
+    lastVapidKey = vapidKey;
     return currentToken;
   }
 
@@ -58,8 +63,8 @@ class _FakeFcmGateway implements IFcmGateway {
 }
 
 class _FakeUserRepo implements IUserRepository {
-  final List<({String uid, String token})> added = [];
-  final List<({String uid, String token})> removed = [];
+  final List<({String uid, String token, String platform})> added = [];
+  final List<({String uid, String token, String platform})> removed = [];
 
   /// What [getNotificationPrefs] should return for the next call. Tests
   /// mutate this to verify FcmService skips attach when pushEnabled is
@@ -68,16 +73,21 @@ class _FakeUserRepo implements IUserRepository {
   final List<NotificationPrefs> updates = [];
 
   @override
-  Future<void> addFcmToken({required String uid, required String token}) async {
-    added.add((uid: uid, token: token));
+  Future<void> addFcmToken({
+    required String uid,
+    required String token,
+    required String platform,
+  }) async {
+    added.add((uid: uid, token: token, platform: platform));
   }
 
   @override
   Future<void> removeFcmToken({
     required String uid,
     required String token,
+    required String platform,
   }) async {
-    removed.add((uid: uid, token: token));
+    removed.add((uid: uid, token: token, platform: platform));
   }
 
   @override
@@ -324,4 +334,56 @@ void main() {
       expect(repo.added.first.token, 'fcm-late-arrival');
     },
   );
+
+  group('Phase 6.2 — platform-tagged token storage', () {
+    test('default constructor tags writes as "mobile" under tests', () async {
+      // `kIsWeb` is false in the Dart VM test runner, so the default
+      // FcmService writes the mobile tag. Web tests inject explicitly.
+      final ok = await service.attach(uid: 'u1');
+
+      expect(ok, isTrue);
+      expect(repo.added.single.platform, 'mobile');
+    });
+
+    test(
+      'explicit platform: "web" propagates to both initial + refresh writes',
+      () async {
+        final webService = FcmService(
+          gateway: gateway,
+          userRepository: repo,
+          notificationChannels: channels,
+          platform: 'web',
+        );
+
+        final ok = await webService.attach(uid: 'u1');
+        expect(ok, isTrue);
+        expect(repo.added.single.platform, 'web');
+
+        gateway.emitRefresh('fcm-token-refresh-web');
+        await Future<void>.delayed(Duration.zero);
+
+        expect(repo.added, hasLength(2));
+        expect(repo.added.last.platform, 'web');
+
+        await webService.detach(uid: 'u1');
+        expect(repo.removed.single.platform, 'web');
+        await webService.dispose();
+      },
+    );
+
+    test('attach() threads vapidKey through to gateway.getToken()', () async {
+      final webService = FcmService(
+        gateway: gateway,
+        userRepository: repo,
+        notificationChannels: channels,
+        platform: 'web',
+        vapidKey: 'BVAPID_KEY_X',
+      );
+
+      final ok = await webService.attach(uid: 'u1');
+      expect(ok, isTrue);
+      expect(gateway.lastVapidKey, 'BVAPID_KEY_X');
+      await webService.dispose();
+    });
+  });
 }

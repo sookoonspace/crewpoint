@@ -53,12 +53,18 @@ class _FakeUserRepo implements IUserRepository {
   }) async => throw UnimplementedError();
 
   @override
-  Future<void> addFcmToken({required String uid, required String token}) =>
-      throw UnimplementedError();
+  Future<void> addFcmToken({
+    required String uid,
+    required String token,
+    required String platform,
+  }) => throw UnimplementedError();
 
   @override
-  Future<void> removeFcmToken({required String uid, required String token}) =>
-      throw UnimplementedError();
+  Future<void> removeFcmToken({
+    required String uid,
+    required String token,
+    required String platform,
+  }) => throw UnimplementedError();
 
   @override
   Future<NotificationPrefs> getNotificationPrefs(String uid) async =>

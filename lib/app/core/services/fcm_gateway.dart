@@ -42,7 +42,11 @@ abstract class IFcmGateway {
   Future<void> triggerApnsRegistration();
 
   /// Returns the current FCM token, or null if not available.
-  Future<String?> getToken();
+  ///
+  /// Web requires [vapidKey] (the application server's VAPID public
+  /// key); the underlying plugin rejects the call without it. Mobile /
+  /// desktop ignore the parameter.
+  Future<String?> getToken({String? vapidKey});
 
   /// Stream of token-refresh events.
   Stream<String> get onTokenRefresh;
@@ -153,7 +157,8 @@ class FirebaseFcmGateway implements IFcmGateway {
   }
 
   @override
-  Future<String?> getToken() => _messaging.getToken();
+  Future<String?> getToken({String? vapidKey}) =>
+      _messaging.getToken(vapidKey: vapidKey);
 
   @override
   Stream<String> get onTokenRefresh => _messaging.onTokenRefresh;

@@ -137,6 +137,23 @@ interface SendCategorizedPushArgs {
 }
 
 /**
+ * Reads one entry from `private/profile.fcmTokens`. Phase 6.2 migrated
+ * the schema from `string[]` → `{value, platform}[]`; this helper accepts
+ * both so pre-migration installs keep receiving pushes.
+ *
+ * Returns the token string, or `null` for malformed entries (which the
+ * caller skips).
+ */
+export function extractTokenValue(rawToken: unknown): string | null {
+  if (typeof rawToken === "string") return rawToken;
+  if (rawToken && typeof rawToken === "object") {
+    const value = (rawToken as Record<string, unknown>).value;
+    if (typeof value === "string") return value;
+  }
+  return null;
+}
+
+/**
  * Resolves the final (title, body) pair for one recipient. Pure helper
  * exported for unit tests via __INTERNAL.
  *
@@ -175,6 +192,12 @@ interface SendResult {
 type TokenOwner = {
   uid: string;
   token: string;
+  /**
+   * Phase 6.2 — original entry as written to Firestore (legacy `string`
+   * or new `{value, platform}` object). [pruneDeadTokens] uses this for
+   * the `arrayRemove` so the exact stored shape matches.
+   */
+  rawToken: unknown;
   criticalOptIn: boolean;
   /** Phase 6 — recipient's preferred locale, used to resolve the per-message
    *  notification text. Null means "use server default" (English). */
@@ -329,11 +352,17 @@ export async function sendCategorizedPush(
       continue;
     }
 
-    const tokens =
-      (privateData?.fcmTokens as string[] | undefined) ?? [];
+    // Phase 6.2 — `fcmTokens` may carry either legacy plain strings or
+    // new `{value, platform}` objects. [extractTokenValue] handles both
+    // shapes; malformed entries are dropped.
+    const rawTokens: unknown[] = Array.isArray(privateData?.fcmTokens) ?
+      (privateData?.fcmTokens as unknown[]) :
+      [];
     const locale = typeof prefs.locale === "string" ? prefs.locale : null;
-    for (const token of tokens) {
-      owners.push({uid, token, criticalOptIn, locale});
+    for (const raw of rawTokens) {
+      const value = extractTokenValue(raw);
+      if (value === null) continue;
+      owners.push({uid, token: value, rawToken: raw, criticalOptIn, locale});
     }
   }
 
@@ -402,18 +431,21 @@ async function pruneDeadTokens(
   db: admin.firestore.Firestore,
   deadTokens: TokenOwner[]
 ): Promise<void> {
-  const byUid = new Map<string, string[]>();
+  // Phase 6.2 — keys are the original Firestore shape (string OR
+  // `{value, platform}` object). `arrayRemove` must match exactly,
+  // so we feed the raw entry back.
+  const byUid = new Map<string, unknown[]>();
   for (const owner of deadTokens) {
     const list = byUid.get(owner.uid) ?? [];
-    list.push(owner.token);
+    list.push(owner.rawToken);
     byUid.set(owner.uid, list);
   }
   const batch = db.batch();
-  for (const [uid, tokens] of byUid) {
+  for (const [uid, rawEntries] of byUid) {
     batch.set(
       db.collection("users").doc(uid).collection("private").doc("profile"),
       {
-        fcmTokens: admin.firestore.FieldValue.arrayRemove(...tokens),
+        fcmTokens: admin.firestore.FieldValue.arrayRemove(...rawEntries),
       },
       {merge: true}
     );
@@ -429,4 +461,5 @@ export const __INTERNAL = {
   CATEGORY_CONFIG,
   buildApnsAps,
   resolveNotificationText,
+  extractTokenValue,
 };
