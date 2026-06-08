@@ -30,11 +30,26 @@ abstract class IUserRepository {
     List<String> providerIds = const [],
   });
 
-  /// Adds an FCM token to `users/{uid}.fcmTokens` (idempotent via arrayUnion).
-  Future<void> addFcmToken({required String uid, required String token});
+  /// Adds an FCM token to `users/{uid}/private/profile.fcmTokens`
+  /// (idempotent via arrayUnion). [platform] tags the token by the
+  /// platform that owns it (`'mobile'` or `'web'`) so multi-platform
+  /// installs can be reasoned about server-side. Storage shape is
+  /// `{value, platform}` since Phase 6.2 — the CF reader still accepts
+  /// legacy plain-string entries for pre-migration installs.
+  Future<void> addFcmToken({
+    required String uid,
+    required String token,
+    required String platform,
+  });
 
-  /// Removes an FCM token from `users/{uid}.fcmTokens` (idempotent).
-  Future<void> removeFcmToken({required String uid, required String token});
+  /// Removes an FCM token from `users/{uid}/private/profile.fcmTokens`.
+  /// Removes the new `{value, platform}` shape; legacy plain-string
+  /// entries stay until the CF prunes them on the next failed send.
+  Future<void> removeFcmToken({
+    required String uid,
+    required String token,
+    required String platform,
+  });
 
   /// Reads the user's notification preferences from
   /// `users/{uid}/private/profile.notificationPrefs`. Returns

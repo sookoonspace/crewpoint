@@ -159,44 +159,86 @@ void main() {
   });
 
   group('FCM tokens write into the private subdoc, not the public doc', () {
-    test('addFcmToken appends to private subdoc only', () async {
-      await repo.createUserIfNotExists(
-        uid: 'u3',
-        email: 'c@example.com',
-        displayName: 'Carol',
-      );
-      await repo.addFcmToken(uid: 'u3', token: 'tok-A');
+    test(
+      'addFcmToken appends a {value, platform} object to the private subdoc',
+      () async {
+        await repo.createUserIfNotExists(
+          uid: 'u3',
+          email: 'c@example.com',
+          displayName: 'Carol',
+        );
+        await repo.addFcmToken(uid: 'u3', token: 'tok-A', platform: 'mobile');
 
-      final publicDoc = await firestore.collection('users').doc('u3').get();
-      expect(publicDoc.data()!.containsKey('fcmTokens'), isFalse);
+        final publicDoc = await firestore.collection('users').doc('u3').get();
+        expect(publicDoc.data()!.containsKey('fcmTokens'), isFalse);
+
+        final privateDoc = await firestore
+            .collection('users')
+            .doc('u3')
+            .collection('private')
+            .doc('profile')
+            .get();
+        expect(
+          privateDoc.data()!['fcmTokens'],
+          equals([
+            {'value': 'tok-A', 'platform': 'mobile'},
+          ]),
+        );
+      },
+    );
+
+    test('addFcmToken tags web tokens with platform "web"', () async {
+      await repo.createUserIfNotExists(
+        uid: 'u-web',
+        email: 'w@example.com',
+        displayName: 'Wendy',
+      );
+      await repo.addFcmToken(uid: 'u-web', token: 'tok-web-1', platform: 'web');
 
       final privateDoc = await firestore
           .collection('users')
-          .doc('u3')
+          .doc('u-web')
           .collection('private')
           .doc('profile')
           .get();
-      expect(privateDoc.data()!['fcmTokens'], equals(['tok-A']));
-    });
-
-    test('removeFcmToken pulls from private subdoc only', () async {
-      await repo.createUserIfNotExists(
-        uid: 'u4',
-        email: 'd@example.com',
-        displayName: 'Dave',
+      expect(
+        privateDoc.data()!['fcmTokens'],
+        equals([
+          {'value': 'tok-web-1', 'platform': 'web'},
+        ]),
       );
-      await repo.addFcmToken(uid: 'u4', token: 'tok-A');
-      await repo.addFcmToken(uid: 'u4', token: 'tok-B');
-      await repo.removeFcmToken(uid: 'u4', token: 'tok-A');
-
-      final privateDoc = await firestore
-          .collection('users')
-          .doc('u4')
-          .collection('private')
-          .doc('profile')
-          .get();
-      expect(privateDoc.data()!['fcmTokens'], equals(['tok-B']));
     });
+
+    test(
+      'removeFcmToken pulls only the matching {value, platform} entry',
+      () async {
+        await repo.createUserIfNotExists(
+          uid: 'u4',
+          email: 'd@example.com',
+          displayName: 'Dave',
+        );
+        await repo.addFcmToken(uid: 'u4', token: 'tok-A', platform: 'mobile');
+        await repo.addFcmToken(uid: 'u4', token: 'tok-B', platform: 'mobile');
+        await repo.removeFcmToken(
+          uid: 'u4',
+          token: 'tok-A',
+          platform: 'mobile',
+        );
+
+        final privateDoc = await firestore
+            .collection('users')
+            .doc('u4')
+            .collection('private')
+            .doc('profile')
+            .get();
+        expect(
+          privateDoc.data()!['fcmTokens'],
+          equals([
+            {'value': 'tok-B', 'platform': 'mobile'},
+          ]),
+        );
+      },
+    );
   });
 
   group('getUser merges public + private projections', () {

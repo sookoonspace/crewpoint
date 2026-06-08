@@ -11,7 +11,12 @@
  */
 import {__INTERNAL} from '../../src/notifications/sendPush';
 
-const {CATEGORY_CONFIG, buildApnsAps, resolveNotificationText} = __INTERNAL;
+const {
+  CATEGORY_CONFIG,
+  buildApnsAps,
+  resolveNotificationText,
+  extractTokenValue,
+} = __INTERNAL;
 
 describe('sendCategorizedPush CATEGORY_CONFIG', () => {
   test('chat_urgent routes to crewpoint_chat_urgent + urgentChat pref', () => {
@@ -149,6 +154,36 @@ describe('sendCategorizedPush CATEGORY_CONFIG', () => {
       expect(en.title).toBe('New task in Trip');
       // No `es.json` yet → base-language fallback → en.
       expect(es.title).toBe(en.title);
+    });
+  });
+
+  describe('extractTokenValue back-compat reader (Phase 6.2)', () => {
+    // Phase 6.2 introduces platform-tagged tokens stored as
+    // `{value, platform}` objects. Plain-string tokens written by older
+    // builds must still be readable so we don't lose delivery to
+    // pre-migration installs.
+    test('returns the string verbatim for legacy plain-string tokens', () => {
+      expect(extractTokenValue('fcm-legacy-token-abc')).toBe(
+        'fcm-legacy-token-abc'
+      );
+    });
+
+    test('returns the `.value` field for new object-shape tokens', () => {
+      expect(
+        extractTokenValue({value: 'fcm-web-token-xyz', platform: 'web'})
+      ).toBe('fcm-web-token-xyz');
+      expect(
+        extractTokenValue({value: 'fcm-mobile-token', platform: 'mobile'})
+      ).toBe('fcm-mobile-token');
+    });
+
+    test('returns null for malformed entries (missing/wrong-type value)', () => {
+      expect(extractTokenValue(null)).toBeNull();
+      expect(extractTokenValue(undefined)).toBeNull();
+      expect(extractTokenValue(42)).toBeNull();
+      expect(extractTokenValue({})).toBeNull();
+      expect(extractTokenValue({platform: 'web'})).toBeNull();
+      expect(extractTokenValue({value: 7, platform: 'web'})).toBeNull();
     });
   });
 

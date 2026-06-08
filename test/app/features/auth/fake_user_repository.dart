@@ -55,12 +55,14 @@ class FakeUserRepository implements IUserRepository {
   Future<void> addFcmToken({
     required String uid,
     required String token,
+    required String platform,
   }) async {}
 
   @override
   Future<void> removeFcmToken({
     required String uid,
     required String token,
+    required String platform,
   }) async {}
 
   @override

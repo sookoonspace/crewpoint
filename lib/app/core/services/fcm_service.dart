@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'package:crewpoint_app/app/core/services/fcm_gateway.dart';
 import 'package:crewpoint_app/app/core/services/notification_channels.dart';
 import 'package:crewpoint_app/app/features/profile/domain/repositories/i_user_repository.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 /// Owns the FCM token lifecycle:
 /// * `attach(uid)` after sign-in — requests permission, fetches APNs (iOS),
@@ -18,13 +19,26 @@ class FcmService {
     required IUserRepository userRepository,
     INotificationChannels notificationChannels =
         const NoOpNotificationChannels(),
+    String? platform,
+    String? vapidKey,
   }) : _gateway = gateway,
        _userRepository = userRepository,
-       _notificationChannels = notificationChannels;
+       _notificationChannels = notificationChannels,
+       _platform = platform ?? (kIsWeb ? 'web' : 'mobile'),
+       _vapidKey = vapidKey;
 
   final IFcmGateway _gateway;
   final IUserRepository _userRepository;
   final INotificationChannels _notificationChannels;
+
+  /// Tag persisted alongside each token at
+  /// `users/{uid}/private/profile.fcmTokens[i].platform`. Defaults to
+  /// `'web'` when [kIsWeb], otherwise `'mobile'`. Tests inject explicitly.
+  final String _platform;
+
+  /// Web-only — passed to `FirebaseMessaging.getToken(vapidKey: ...)`
+  /// inside the gateway. Null on mobile / desktop builds.
+  final String? _vapidKey;
   StreamSubscription<String>? _refreshSub;
   String? _currentToken;
   String? _attachedUid;
@@ -70,7 +84,11 @@ class FcmService {
       _refreshSub = _gateway.onTokenRefresh.listen((newToken) async {
         _currentToken = newToken;
         try {
-          await _userRepository.addFcmToken(uid: uid, token: newToken);
+          await _userRepository.addFcmToken(
+            uid: uid,
+            token: newToken,
+            platform: _platform,
+          );
           log('FCM token written via refresh for $uid', name: 'fcm');
         } catch (e, st) {
           log(
@@ -98,7 +116,7 @@ class FcmService {
         );
         return false;
       }
-      final token = await _gateway.getToken();
+      final token = await _gateway.getToken(vapidKey: _vapidKey);
       if (token == null) {
         log(
           'FCM initial token unavailable for $uid (refresh listener '
@@ -108,7 +126,11 @@ class FcmService {
         return false;
       }
       _currentToken = token;
-      await _userRepository.addFcmToken(uid: uid, token: token);
+      await _userRepository.addFcmToken(
+        uid: uid,
+        token: token,
+        platform: _platform,
+      );
       log('FCM token attached for $uid (${token.length} chars)', name: 'fcm');
       return true;
     } catch (e, st) {
@@ -124,7 +146,11 @@ class FcmService {
     await _refreshSub?.cancel();
     _refreshSub = null;
     if (token != null) {
-      await _userRepository.removeFcmToken(uid: uid, token: token);
+      await _userRepository.removeFcmToken(
+        uid: uid,
+        token: token,
+        platform: _platform,
+      );
     }
     await _gateway.deleteToken();
     _currentToken = null;

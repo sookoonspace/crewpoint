@@ -125,12 +125,21 @@ final deviceTimezoneProvider = Provider<IDeviceTimezone>(
   (_) => const MethodChannelDeviceTimezone(),
 );
 
+/// Web VAPID public key — required by `FirebaseMessaging.getToken()` on
+/// the web platform. Source: Firebase Console → Project Settings →
+/// Cloud Messaging → Web configuration. Supplied via
+/// `--dart-define=FIREBASE_VAPID_KEY=...` at build time. Empty string
+/// (the default) is treated as unset so mobile builds don't pass a
+/// bogus value into the gateway.
+const _firebaseVapidKey = String.fromEnvironment('FIREBASE_VAPID_KEY');
+
 /// Owns the FCM token lifecycle (`attach(uid)` / `detach(uid)`).
 final fcmServiceProvider = Provider<FcmService>((ref) {
   final service = FcmService(
     gateway: ref.watch(fcmGatewayProvider),
     userRepository: ref.watch(userRepositoryProvider),
     notificationChannels: ref.watch(notificationChannelsProvider),
+    vapidKey: _firebaseVapidKey.isEmpty ? null : _firebaseVapidKey,
   );
   ref.onDispose(service.dispose);
   return service;

@@ -139,10 +139,16 @@ class FirestoreUserRepository implements IUserRepository {
   }
 
   @override
-  Future<void> addFcmToken({required String uid, required String token}) async {
+  Future<void> addFcmToken({
+    required String uid,
+    required String token,
+    required String platform,
+  }) async {
     try {
       await _privateProfileRef(uid).set({
-        'fcmTokens': FieldValue.arrayUnion([token]),
+        'fcmTokens': FieldValue.arrayUnion([
+          {'value': token, 'platform': platform},
+        ]),
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } catch (e, st) {
@@ -159,10 +165,13 @@ class FirestoreUserRepository implements IUserRepository {
   Future<void> removeFcmToken({
     required String uid,
     required String token,
+    required String platform,
   }) async {
     try {
       await _privateProfileRef(uid).set({
-        'fcmTokens': FieldValue.arrayRemove([token]),
+        'fcmTokens': FieldValue.arrayRemove([
+          {'value': token, 'platform': platform},
+        ]),
       }, SetOptions(merge: true));
     } catch (e, st) {
       log(

@@ -79,12 +79,14 @@ class _InMemoryUserRepo implements IUserRepository {
   Future<void> addFcmToken({
     required String uid,
     required String token,
+    required String platform,
   }) async {}
 
   @override
   Future<void> removeFcmToken({
     required String uid,
     required String token,
+    required String platform,
   }) async {}
 }
 
@@ -96,7 +98,7 @@ class _NoopFcmGateway implements IFcmGateway {
   @override
   Future<void> triggerApnsRegistration() async {}
   @override
-  Future<String?> getToken() async => 'fcm';
+  Future<String?> getToken({String? vapidKey}) async => 'fcm';
   @override
   Stream<String> get onTokenRefresh => const Stream.empty();
   @override
