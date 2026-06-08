@@ -133,12 +133,6 @@ class _FakeNotificationChannels implements INotificationChannels {
   Future<void> registerAll() async {
     registerCalls++;
   }
-
-  @override
-  Future<bool> isDndAccessGranted() async => true;
-
-  @override
-  Future<void> requestDndAccess() async {}
 }
 
 void main() {

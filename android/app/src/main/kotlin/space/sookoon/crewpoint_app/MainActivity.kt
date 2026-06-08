@@ -3,9 +3,7 @@ package space.sookoon.crewpoint_app
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
-import android.content.Intent
 import android.os.Build
-import android.provider.Settings
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -22,22 +20,15 @@ import java.util.TimeZone
  * existing channel definition without resetting user-visible settings
  * (importance, sound) the user may have changed in System Settings.
  *
- * Phase 4 adds two methods used by the DND-bypass opt-in surfaced in
- * `NotificationSettingsScreen`:
- *   - `isDndAccessGranted` returns the host's
- *     `NotificationManager.isNotificationPolicyAccessGranted()`.
- *   - `requestDndAccess` opens
- *     `ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS` so the user can
- *     grant it. The urgent channel also gets `setBypassDnd(true)` so
- *     once the grant lands, urgent pushes ring through Focus / DND.
+ * The urgent channel keeps `setBypassDnd(true)` as a semantic
+ * declaration — harmless without `NOTIFICATION_POLICY_ACCESS_GRANTED`,
+ * and useful if a future build re-introduces the DND-access opt-in.
  */
 class MainActivity : FlutterActivity() {
     companion object {
         private const val CHANNEL = "crewpoint/notification_channels"
         private const val DEVICE_INFO_CHANNEL = "crewpoint/device_info"
         private const val METHOD_REGISTER = "registerChannels"
-        private const val METHOD_IS_DND_GRANTED = "isDndAccessGranted"
-        private const val METHOD_REQUEST_DND = "requestDndAccess"
         private const val METHOD_GET_LOCAL_TIMEZONE = "getLocalTimezone"
 
         /** Channel id of the urgent chat channel — see
@@ -58,13 +49,6 @@ class MainActivity : FlutterActivity() {
                             call.argument<List<Map<String, Any>>>("channels")
                                 ?: emptyList()
                         registerChannels(specs)
-                        result.success(null)
-                    }
-                    METHOD_IS_DND_GRANTED -> {
-                        result.success(isDndAccessGranted())
-                    }
-                    METHOD_REQUEST_DND -> {
-                        requestDndAccess()
                         result.success(null)
                     }
                     else -> result.notImplemented()
@@ -98,29 +82,14 @@ class MainActivity : FlutterActivity() {
                 ?: NotificationManager.IMPORTANCE_DEFAULT
             val channel = NotificationChannel(id, name, importance).apply {
                 if (description != null) this.description = description
-                // Urgent chat: ask to pierce DND. The OS enforces that the
-                // user has granted NOTIFICATION_POLICY_ACCESS_GRANTED for
-                // this to take effect; calling `setBypassDnd(true)` is
-                // harmless without the grant.
+                // Urgent chat: declare bypass intent. The OS gates this
+                // on NOTIFICATION_POLICY_ACCESS_GRANTED; harmless without
+                // the grant, which we no longer request in V1/V2.
                 if (id == URGENT_CHANNEL_ID) {
                     setBypassDnd(true)
                 }
             }
             nm.createNotificationChannel(channel)
         }
-    }
-
-    private fun isDndAccessGranted(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true
-        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        return nm.isNotificationPolicyAccessGranted
-    }
-
-    private fun requestDndAccess() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
-        val intent =
-            Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        startActivity(intent)
     }
 }

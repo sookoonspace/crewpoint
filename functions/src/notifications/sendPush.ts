@@ -198,7 +198,6 @@ type TokenOwner = {
    * the `arrayRemove` so the exact stored shape matches.
    */
   rawToken: unknown;
-  criticalOptIn: boolean;
   /** Phase 6 — recipient's preferred locale, used to resolve the per-message
    *  notification text. Null means "use server default" (English). */
   locale: string | null;
@@ -235,20 +234,14 @@ async function readMutedUntil(
  * Builds the iOS `apns.payload.aps` dict for one (category, recipient)
  * pair. Pure / side-effect free — exported for unit tests via __INTERNAL.
  *
- * `interruption-level` is only set for `chat_urgent`:
- *   - `criticalOptIn=true`  → `'critical'`     (requires Apple's
- *     `com.apple.developer.usernotifications.critical-alerts` entitlement;
- *     pierces Focus / DND on the device)
- *   - `criticalOptIn=false` → `'time-sensitive'` (default elevated
- *     priority for chat; respects Focus)
- *
- * Non-chat_urgent categories never receive an interruption-level — the
- * default behavior already matches their semantic priority and there is
- * no per-recipient pref to vary on.
+ * `interruption-level` is only set for `chat_urgent`, and is hard-coded
+ * to `'time-sensitive'` (elevated priority that respects Focus). The
+ * Apple `critical-alerts` entitlement is not requested in V1/V2 — see
+ * `ios/Runner/Runner.entitlements`. Non-chat_urgent categories never
+ * receive an interruption-level.
  */
 export function buildApnsAps(args: {
   category: NotificationCategory;
-  criticalOptIn: boolean;
   cfg: CategoryConfig;
 }): Record<string, unknown> {
   const aps: Record<string, unknown> = {
@@ -258,9 +251,7 @@ export function buildApnsAps(args: {
     aps.category = args.cfg.apnsCategory;
   }
   if (args.category === "chat_urgent") {
-    aps["interruption-level"] = args.criticalOptIn ?
-      "critical" :
-      "time-sensitive";
+    aps["interruption-level"] = "time-sensitive";
   }
   return aps;
 }
@@ -317,13 +308,11 @@ export async function sendCategorizedPush(
       skipped++;
       continue;
     }
-    // Read per-recipient DND-bypass opt-in. Default false; chat_urgent
-    // payloads use this for `apns.payload.aps.interruption-level`, and
-    // (Phase 5) the same flag is the documented bypass for quiet-hours
-    // / event-mute suppression.
-    const criticalOptIn = prefs.criticalOptIn === true;
-
     // Phase 5: per-recipient quiet-hours + event-mute suppression.
+    // Critical-alert removal note: `chat_urgent` now bypasses quiet
+    // hours unconditionally (24/7 emergency channel) but still obeys
+    // the per-event mute — explicit `mute this event` from the user
+    // stays authoritative. Everything else honours both.
     const quietPrefs: QuietHoursPrefs = {
       quietHoursStart:
         typeof prefs.quietHoursStart === "number" ?
@@ -339,7 +328,6 @@ export async function sendCategorizedPush(
     if (
       shouldSuppress({
         category: args.category,
-        criticalOptIn,
         prefs: quietPrefs,
         eventMutedUntil,
         now,
@@ -362,7 +350,7 @@ export async function sendCategorizedPush(
     for (const raw of rawTokens) {
       const value = extractTokenValue(raw);
       if (value === null) continue;
-      owners.push({uid, token: value, rawToken: raw, criticalOptIn, locale});
+      owners.push({uid, token: value, rawToken: raw, locale});
     }
   }
 
@@ -401,7 +389,6 @@ export async function sendCategorizedPush(
         payload: {
           aps: buildApnsAps({
             category: args.category,
-            criticalOptIn: owner.criticalOptIn,
             cfg,
           }),
         },

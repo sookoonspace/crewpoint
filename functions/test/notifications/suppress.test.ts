@@ -3,13 +3,14 @@
  *
  * `sendCategorizedPush` skips a recipient when EITHER:
  *   (a) the current wall-clock in the recipient's timezone falls
- *       inside `notificationPrefs.quietHoursStart`..`quietHoursEnd`, OR
+ *       inside `notificationPrefs.quietHoursStart`..`quietHoursEnd`
+ *       AND the category is NOT `chat_urgent` (Option B bypass), OR
  *   (b) the recipient has an active `eventMutes/{eventId}` doc
- *       (`mutedUntil >= now`).
+ *       (`mutedUntil >= now`) — `chat_urgent` obeys this too.
  *
- * One documented bypass: `chat_urgent` + `criticalOptIn === true` ignores
- * both. That branch lives in sendPush.ts; this suite pins the pure
- * predicates only.
+ * Phase 4 critical-alert opt-in withdrawn for V1/V2 — there is no
+ * per-recipient bypass any more. `chat_urgent` always pierces quiet
+ * hours; per-event mute always wins.
  */
 import {
   isWithinQuietHours,
@@ -141,12 +142,16 @@ describe('shouldSuppress', () => {
     timezone: 'UTC',
   };
   const within = new Date('2026-05-01T03:00:00Z'); // inside the window
+  const noMute = {
+    quietHoursStart: null,
+    quietHoursEnd: null,
+    timezone: null,
+  };
 
   test('non-urgent in quiet hours → suppress', () => {
     expect(
       shouldSuppress({
         category: 'task_assigned',
-        criticalOptIn: false,
         prefs: quietPrefs,
         eventMutedUntil: null,
         now: within,
@@ -154,72 +159,47 @@ describe('shouldSuppress', () => {
     ).toBe(true);
   });
 
-  test('chat_urgent + criticalOptIn=true bypasses quiet hours', () => {
+  test('chat_urgent in quiet hours → NOT suppressed (Option B bypass)', () => {
     expect(
       shouldSuppress({
         category: 'chat_urgent',
-        criticalOptIn: true,
         prefs: quietPrefs,
         eventMutedUntil: null,
         now: within,
       }),
     ).toBe(false);
-  });
-
-  test('chat_urgent without criticalOptIn is still suppressed in quiet hours', () => {
-    expect(
-      shouldSuppress({
-        category: 'chat_urgent',
-        criticalOptIn: false,
-        prefs: quietPrefs,
-        eventMutedUntil: null,
-        now: within,
-      }),
-    ).toBe(true);
   });
 
   test('non-urgent suppressed by active event mute', () => {
     expect(
       shouldSuppress({
         category: 'task_assigned',
-        criticalOptIn: false,
-        prefs: {
-          quietHoursStart: null,
-          quietHoursEnd: null,
-          timezone: null,
-        },
+        prefs: noMute,
         eventMutedUntil: '2026-05-01T12:00:00.000Z',
         now: new Date('2026-05-01T11:59:00Z'),
       }),
     ).toBe(true);
   });
 
-  test('chat_urgent + criticalOptIn=true bypasses event mute', () => {
-    expect(
-      shouldSuppress({
-        category: 'chat_urgent',
-        criticalOptIn: true,
-        prefs: {
-          quietHoursStart: null,
-          quietHoursEnd: null,
-          timezone: null,
-        },
-        eventMutedUntil: '2026-05-01T12:00:00.000Z',
-        now: new Date('2026-05-01T11:59:00Z'),
-      }),
-    ).toBe(false);
-  });
+  test(
+    'chat_urgent obeys event mute (Option B — explicit per-event silence wins)',
+    () => {
+      expect(
+        shouldSuppress({
+          category: 'chat_urgent',
+          prefs: noMute,
+          eventMutedUntil: '2026-05-01T12:00:00.000Z',
+          now: new Date('2026-05-01T11:59:00Z'),
+        }),
+      ).toBe(true);
+    },
+  );
 
   test('no quiet hours + no event mute → never suppress', () => {
     expect(
       shouldSuppress({
         category: 'task_assigned',
-        criticalOptIn: false,
-        prefs: {
-          quietHoursStart: null,
-          quietHoursEnd: null,
-          timezone: null,
-        },
+        prefs: noMute,
         eventMutedUntil: null,
         now: new Date(),
       }),

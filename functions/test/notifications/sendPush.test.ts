@@ -187,27 +187,20 @@ describe('sendCategorizedPush CATEGORY_CONFIG', () => {
     });
   });
 
-  describe('buildApnsAps interruption-level (Phase 4)', () => {
-    test('chat_urgent + criticalOptIn=true → interruption-level "critical"', () => {
+  describe('buildApnsAps interruption-level', () => {
+    // Phase 4 critical-alert opt-in withdrawn for V1/V2 — `chat_urgent`
+    // always emits `time-sensitive`; never `critical`. No per-recipient
+    // opt-in surface remains.
+    test('chat_urgent → interruption-level "time-sensitive"', () => {
       const aps = buildApnsAps({
         category: 'chat_urgent',
-        criticalOptIn: true,
-        cfg: CATEGORY_CONFIG.chat_urgent,
-      });
-      expect(aps['interruption-level']).toBe('critical');
-      expect(aps['thread-id']).toBe('chat');
-    });
-
-    test('chat_urgent + criticalOptIn=false → interruption-level "time-sensitive"', () => {
-      const aps = buildApnsAps({
-        category: 'chat_urgent',
-        criticalOptIn: false,
         cfg: CATEGORY_CONFIG.chat_urgent,
       });
       expect(aps['interruption-level']).toBe('time-sensitive');
+      expect(aps['thread-id']).toBe('chat');
     });
 
-    test('non-chat_urgent categories never set interruption-level (irrespective of criticalOptIn)', () => {
+    test('non-chat_urgent categories never set interruption-level', () => {
       for (const category of [
         'task_assigned',
         'task_due',
@@ -217,7 +210,6 @@ describe('sendCategorizedPush CATEGORY_CONFIG', () => {
       ] as const) {
         const aps = buildApnsAps({
           category,
-          criticalOptIn: true,
           cfg: CATEGORY_CONFIG[category],
         });
         expect(aps['interruption-level']).toBeUndefined();
@@ -227,7 +219,6 @@ describe('sendCategorizedPush CATEGORY_CONFIG', () => {
     test('preserves existing apnsCategory + thread-id wiring', () => {
       const aps = buildApnsAps({
         category: 'task_assigned',
-        criticalOptIn: false,
         cfg: CATEGORY_CONFIG.task_assigned,
       });
       expect(aps['thread-id']).toBe('tasks');
