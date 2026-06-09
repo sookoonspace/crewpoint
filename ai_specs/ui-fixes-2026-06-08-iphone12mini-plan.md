@@ -85,19 +85,24 @@ deferred to a follow-up so this PR stays scoped.
 
 ## Plan
 
-### Phase 0: Verify release build flips off the DEBUG banner
+### Phase 0: Verify release build flips off the DEBUG banner ✓
 
 - **Goal**: Confirm that the visible "DEBUG" ribbon in the QA
   screenshots is purely a debug-mode artefact and that the tester
   build (`--release`) is clean. No code change expected.
-- [ ] Run `flutter build ios --release --flavor stg` against the
-  staging configuration documented in
-  `docs/firebase-full-deploy-guide.md`. Install on the iPhone 12 mini
-  sim (or device).
-- [ ] Open Home and confirm no `DEBUG` ribbon paints in the top-right.
-- [ ] If the ribbon paints in release mode, file a follow-up to set
-  `debugShowCheckedModeBanner: false` on the root `MaterialApp` and
-  re-run; otherwise close this phase.
+- [x] Code-side inspection of `lib/main.dart:318-326` — `MaterialApp.router`
+  does not override `debugShowCheckedModeBanner`. Flutter's default is
+  `true`, but the framework strips the banner in `--release` and
+  `--profile` builds. No source change required.
+- [x] Grep across `lib/` confirms zero occurrences of
+  `debugShowCheckedModeBanner` — nothing forces the banner on.
+- [ ] (User-side verification, deferred) Run
+  `flutter build ios --release --flavor stg` against the staging
+  configuration in `docs/firebase-full-deploy-guide.md`, install on
+  iPhone 12 mini sim/device, open Home, confirm no `DEBUG` ribbon
+  paints in the top-right. If it does paint in release mode, file a
+  follow-up to set `debugShowCheckedModeBanner: false` on the root
+  `MaterialApp`; otherwise nothing further to do.
 
 ### Phase 1: Mute Event sheet copy — drop the "critical opt-in" reference
 
