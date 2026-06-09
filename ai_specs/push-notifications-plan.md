@@ -200,7 +200,18 @@ Push notifications roadmap V1→V3. FCM scaffolding (`FcmGateway`/`FcmService`/`
 - [ ] **Manual**: real-device iOS smoke (notification action buttons can't run in widget tests). The native delegate bridge in `AppDelegate.swift` is unverified outside of compile; first build on a real device must confirm: (a) `apns.payload.aps.category` shows the action buttons, (b) tapping `MARK_DONE` fires `crewpoint/notification_actions` `actionTapped`, (c) `markTaskComplete` succeeds. *(Out of session scope.)*
 - [x] Verify: `flutter analyze` && `flutter test`. *(1 pre-existing TableMigration warning; 715 flutter tests pass, 4 skipped; 103 CF tests pass.)*
 
-### Phase 4: V2.1 — critical notifications (urgent bypass DND) ✓
+### Phase 4: V2.1 — critical notifications (urgent bypass DND) — **WITHDRAWN for V1/V2**
+
+> **Withdrawn 2026-06-08.** Apple's `critical-alerts` entitlement requires explicit
+> App Store review approval, which we're deferring rather than risking. The opt-in
+> surface (UI tile, server-side `criticalOptIn` field, Android DND-access plumbing)
+> has been removed. `chat_urgent` now always emits `interruption-level: 'time-sensitive'`
+> (the Phase 4 fallback path); Phase 5 suppression policy moves to **Option B** —
+> `chat_urgent` bypasses quiet hours but obeys per-event mute. See the
+> `feat(notifications): remove critical-alert entitlement + Option B suppression`
+> commit for the removal. Re-introduction in V3+ is a small additive PR
+> (entitlement + field + UI tile back).
+
 
 - **Goal**: urgent chat alerts pierce DND/Focus when user has opted in.
 - [x] `ios/Runner/Runner.entitlements` — added `com.apple.developer.usernotifications.critical-alerts` with the Apple-approval note. Until approval lands the OS silently downgrades to `time-sensitive` (matches the fallback path in `buildApnsAps`).
@@ -221,7 +232,7 @@ Push notifications roadmap V1→V3. FCM scaffolding (`FcmGateway`/`FcmService`/`
 - [x] `lib/app/features/profile/domain/models/notification_prefs.dart` — extended with nullable `quietHoursStart` / `quietHoursEnd` (int minutes-of-day) + `timezone` (IANA string). `withQuietHoursCleared()` helper handles the disable transition. `setQuietHours({startMinute, endMinute, timezone})` on the notifier.
 - [x] `lib/app/features/dashboard/domain/models/event_mute.dart` + repository — `EventMute` model (`isMutedAt(now)`, ISO-8601 + Firestore-Timestamp `fromMap`, ISO toMap). `EventMuteRepository` at `users/{uid}/eventMutes/{eventId}` (Firestore-canonical 4-segment path — the plan's literal "users/{uid}/private/eventMutes/{eventId}" was an odd-segment-count typo; collapsed to match the existing `users/{uid}/chatReads/{eventId}` convention). Methods: `muteEvent` / `unmuteEvent` / `getEventMute` / `watchEventMute`. 8 unit tests + 7 repo tests.
 - [ ] `lib/app/features/dashboard/presentation/event_dashboard_screen.dart` — overflow menu "Mute event" with duration picker (1h / 8h / 1d / until I unmute). *(Deferred to Phase 5.1 — repo + Firestore rules + CF enforcement already in place; this slice is the user-facing entry point only.)*
-- [x] `functions/src/notifications/sendPush.ts` — server-side enforcement via new pure helper module `functions/src/notifications/suppress.ts` (`isWithinQuietHours` / `isMutedUntilAfter` / `shouldSuppress`). `sendCategorizedPush` reads each recipient's `notificationPrefs.{quietHoursStart, quietHoursEnd, timezone}` + `users/{uid}/eventMutes/{eventId}.mutedUntil` and drops the push. Documented bypass: `category=='chat_urgent' && criticalOptIn==true` ignores both. Switched the per-batch send to `sendEach` so each Message carries its own apns payload (Phase 4 routing already required this). Top-level `eventId: string` arg added to `SendCategorizedPushArgs`; all 6 callers updated.
+- [x] `functions/src/notifications/sendPush.ts` — server-side enforcement via new pure helper module `functions/src/notifications/suppress.ts` (`isWithinQuietHours` / `isMutedUntilAfter` / `shouldSuppress`). `sendCategorizedPush` reads each recipient's `notificationPrefs.{quietHoursStart, quietHoursEnd, timezone}` + `users/{uid}/eventMutes/{eventId}.mutedUntil` and drops the push. **Option B bypass (post-Phase-4-withdrawal):** `chat_urgent` bypasses quiet hours but obeys per-event mute; every other category obeys both. Switched the per-batch send to `sendEach` so each Message carries its own apns payload. Top-level `eventId: string` arg added to `SendCategorizedPushArgs`; all 6 callers updated.
 - [ ] `functions/src/notifications/sendPush.ts` — include `category` + `mute_thread_action` in payload so notification action can mute event without app open. *(Deferred to Phase 5.1 — pairs with the iOS action dispatch slice below.)*
 - [x] `firestore.rules` — added `match /users/{userId}/eventMutes/{eventId}` self-only block. 6 new access-matrix tests (self-write / self-read / cross-user-read-denied / cross-user-write-denied / anon-denied / self-delete-unmute).
 - [ ] `lib/app/core/services/fcm_handler.dart` — handle `data['action']=='mute_event'` notification action. *(Deferred to Phase 5.1 — same iOS-action slice as the payload change above.)*

@@ -14,10 +14,14 @@ import type {NotificationCategory} from "./sendPush";
  *     UTC string) drops every push for that (uid, eventId) until the
  *     timestamp passes.
  *
- * Bypass: `category === 'chat_urgent'` AND recipient
- * `notificationPrefs.criticalOptIn === true` ignores both. Mirrors the
- * Phase 4 interruption-level routing — opted-in urgent pings are the
- * one stream that pierces every quiet / mute state the user has set.
+ * Bypass policy (Option B — set after the Phase 4 critical-alert
+ * opt-in was withdrawn for V1/V2):
+ *   - `category === 'chat_urgent'` bypasses **quiet hours** — the 24/7
+ *     emergency channel pierces the daily quiet window.
+ *   - `chat_urgent` still obeys **event mute** — when a user has
+ *     explicitly muted *this* event, even urgent messages in it stay
+ *     silent until the mute window passes.
+ *   - All other categories obey both.
  */
 
 export interface QuietHoursPrefs {
@@ -96,19 +100,21 @@ export function isMutedUntilAfter(
  * Combined suppression predicate used inside `sendCategorizedPush`.
  * Returns true when the push should be dropped for this recipient.
  *
- * `chat_urgent` + `criticalOptIn === true` bypasses both quiet hours
- * and event mute — the documented one bypass. Every other category /
- * non-opted-in chat_urgent honours both.
+ * Option B bypass policy: `chat_urgent` ignores quiet hours but still
+ * obeys event mute. Every other category obeys both.
  */
 export function shouldSuppress(args: {
   category: NotificationCategory;
-  criticalOptIn: boolean;
   prefs: QuietHoursPrefs;
   eventMutedUntil: unknown;
   now: Date;
 }): boolean {
-  if (args.category === "chat_urgent" && args.criticalOptIn) return false;
-  if (isWithinQuietHours(args.prefs, args.now)) return true;
+  if (
+    args.category !== "chat_urgent" &&
+    isWithinQuietHours(args.prefs, args.now)
+  ) {
+    return true;
+  }
   if (isMutedUntilAfter(args.eventMutedUntil, args.now)) return true;
   return false;
 }

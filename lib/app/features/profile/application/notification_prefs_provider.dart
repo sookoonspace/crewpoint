@@ -49,14 +49,6 @@ class NotificationPrefsNotifier extends AsyncNotifier<NotificationPrefs> {
     await _update((prefs) => prefs.copyWith(eventUpdates: value));
   }
 
-  /// Toggles the DND-bypass opt-in. CF reads this server-side when
-  /// `category == 'chat_urgent'` to set the APNs interruption-level;
-  /// on Android the client-side `crewpoint_chat_urgent` channel toggles
-  /// `setBypassDnd(true)` once the user grants policy access.
-  Future<void> setCriticalOptIn(bool value) async {
-    await _update((prefs) => prefs.copyWith(criticalOptIn: value));
-  }
-
   /// Toggles the Phase 6.1 daily-digest opt-in. CF reads this
   /// server-side when picking digest recipients each hour.
   Future<void> setDailyDigest(bool value) async {
@@ -76,7 +68,6 @@ class NotificationPrefsNotifier extends AsyncNotifier<NotificationPrefs> {
           taskUpdates: prefs.taskUpdates,
           payments: prefs.payments,
           eventUpdates: prefs.eventUpdates,
-          criticalOptIn: prefs.criticalOptIn,
           quietHoursStart: prefs.quietHoursStart,
           quietHoursEnd: prefs.quietHoursEnd,
           timezone: prefs.timezone,

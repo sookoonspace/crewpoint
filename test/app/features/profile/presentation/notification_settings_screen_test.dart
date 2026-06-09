@@ -12,19 +12,8 @@ import 'package:crewpoint_app/app/features/profile/domain/repositories/i_user_re
 import 'package:crewpoint_app/app/features/profile/presentation/notification_settings_screen.dart';
 
 class _FakeChannels implements INotificationChannels {
-  _FakeChannels({this.dndGranted = true});
-
-  bool dndGranted;
-  int requestCalls = 0;
-
   @override
   Future<void> registerAll() async {}
-  @override
-  Future<bool> isDndAccessGranted() async => dndGranted;
-  @override
-  Future<void> requestDndAccess() async {
-    requestCalls++;
-  }
 }
 
 class _FakeDeviceTimezone implements IDeviceTimezone {
@@ -166,15 +155,13 @@ void main() {
       final tiles = tester
           .widgetList<SwitchListTile>(find.byType(SwitchListTile))
           .toList();
-      // master + 4 categories + criticalOptIn opt-in + quiet-hours
-      // toggle + dailyDigest opt-in (Phase 6.1).
-      expect(tiles.length, 8);
-      // All defaults TRUE except the three opt-ins (criticalOptIn,
-      // quietHours, dailyDigest — Phases 4 / 5 / 6.1).
+      // master + 4 categories + quiet-hours toggle + dailyDigest opt-in
+      // (Phase 6.1). Phase 4 criticalOptIn tile withdrawn for V1/V2.
+      expect(tiles.length, 7);
+      // All defaults TRUE except the two opt-ins (quietHours, dailyDigest).
       expect(tiles.take(5).every((t) => t.value == true), isTrue);
       expect(tiles[5].value, isFalse);
       expect(tiles[6].value, isFalse);
-      expect(tiles[7].value, isFalse);
     });
 
     testWidgets('toggling master OFF persists pushEnabled=false', (
@@ -202,8 +189,8 @@ void main() {
           .widgetList<SwitchListTile>(find.byType(SwitchListTile))
           .toList();
       // Layout order: [master, urgentChat, taskUpdates, payments,
-      // eventUpdates, criticalOptIn, quietHours, dailyDigest]. Every
-      // non-master tile should be disabled when master is OFF.
+      // eventUpdates, quietHours, dailyDigest]. Every non-master tile
+      // should be disabled when master is OFF.
       for (var i = 1; i < tiles.length; i++) {
         expect(
           tiles[i].onChanged,
@@ -267,119 +254,19 @@ void main() {
     });
 
     testWidgets(
-      'criticalOptIn tile defaults to OFF (Apple/Google opt-in only)',
+      'critical-alert tile is no longer rendered (Phase 4 withdrawn V1/V2)',
       (tester) async {
         final repo = _InMemoryUserRepo();
         await _pumpScreen(tester, repo);
-
-        final tile = tester.widget<SwitchListTile>(
-          find.descendant(
-            of: find.byKey(const Key('notifSettings.criticalOptIn.tile')),
-            matching: find.byType(SwitchListTile),
-          ),
-        );
-        expect(tile.value, isFalse);
-      },
-    );
-
-    testWidgets(
-      'toggling criticalOptIn ON persists criticalOptIn=true AND shows re-confirmation snackbar',
-      (tester) async {
-        final repo = _InMemoryUserRepo();
-        await _pumpScreen(tester, repo);
-
-        await tester.tap(
-          find.byKey(const Key('notifSettings.criticalOptIn.tile')),
-        );
-        await tester.pumpAndSettle();
-
-        expect(repo.updates, isNotEmpty);
-        expect(repo.updates.last.criticalOptIn, isTrue);
-        // Confirmation toast acknowledges the elevated permission.
-        expect(find.byType(SnackBar), findsOneWidget);
-      },
-    );
-
-    testWidgets('criticalOptIn tile is disabled when urgentChat is OFF', (
-      tester,
-    ) async {
-      final repo = _InMemoryUserRepo()
-        ..prefs = const NotificationPrefs(urgentChat: false);
-      await _pumpScreen(tester, repo);
-
-      final tile = tester.widget<SwitchListTile>(
-        find.descendant(
-          of: find.byKey(const Key('notifSettings.criticalOptIn.tile')),
-          matching: find.byType(SwitchListTile),
-        ),
-      );
-      expect(tile.onChanged, isNull);
-    });
-
-    testWidgets(
-      'criticalOptIn=true AND DND access NOT granted → non-blocking warning visible',
-      (tester) async {
-        final repo = _InMemoryUserRepo()
-          ..prefs = const NotificationPrefs(criticalOptIn: true);
-        final channels = _FakeChannels(dndGranted: false);
-        await _pumpScreen(tester, repo, channels: channels);
 
         expect(
-          find.byKey(const Key('notifSettings.criticalOptIn.dndWarning')),
-          findsOneWidget,
+          find.byKey(const Key('notifSettings.criticalOptIn.tile')),
+          findsNothing,
         );
-      },
-    );
-
-    testWidgets('criticalOptIn=true AND DND access granted → no warning', (
-      tester,
-    ) async {
-      final repo = _InMemoryUserRepo()
-        ..prefs = const NotificationPrefs(criticalOptIn: true);
-      final channels = _FakeChannels(dndGranted: true);
-      await _pumpScreen(tester, repo, channels: channels);
-
-      expect(
-        find.byKey(const Key('notifSettings.criticalOptIn.dndWarning')),
-        findsNothing,
-      );
-    });
-
-    testWidgets(
-      'criticalOptIn=false → no warning even when DND access not granted',
-      (tester) async {
-        // No opt-in means we don't ask the user to grant anything.
-        final repo = _InMemoryUserRepo();
-        final channels = _FakeChannels(dndGranted: false);
-        await _pumpScreen(tester, repo, channels: channels);
-
         expect(
           find.byKey(const Key('notifSettings.criticalOptIn.dndWarning')),
           findsNothing,
         );
-      },
-    );
-
-    testWidgets(
-      'warning "Grant access" CTA calls INotificationChannels.requestDndAccess',
-      (tester) async {
-        final repo = _InMemoryUserRepo()
-          ..prefs = const NotificationPrefs(criticalOptIn: true);
-        final channels = _FakeChannels(dndGranted: false);
-        await _pumpScreen(tester, repo, channels: channels);
-
-        final cta = find.byKey(
-          const Key('notifSettings.criticalOptIn.grantDnd.cta'),
-        );
-        // The warning Card sits at the bottom of a scroll view that
-        // overflows the test viewport — scroll the button into hittable
-        // range before tapping.
-        await tester.ensureVisible(cta);
-        await tester.pumpAndSettle();
-        await tester.tap(cta);
-        await tester.pumpAndSettle();
-
-        expect(channels.requestCalls, 1);
       },
     );
 

@@ -56,7 +56,6 @@ void main() {
         'taskUpdates': true,
         'payments': true,
         'eventUpdates': true,
-        'criticalOptIn': false,
         'dailyDigest': false,
       });
     });
@@ -68,7 +67,6 @@ void main() {
         taskUpdates: false,
         payments: false,
         eventUpdates: false,
-        criticalOptIn: true,
         dailyDigest: true,
       );
 
@@ -78,7 +76,6 @@ void main() {
         'taskUpdates': false,
         'payments': false,
         'eventUpdates': false,
-        'criticalOptIn': true,
         'dailyDigest': true,
       });
     });
@@ -138,7 +135,6 @@ void main() {
         'taskUpdates': true,
         'payments': false,
         'eventUpdates': true,
-        'criticalOptIn': false,
         'dailyDigest': false,
       });
     });
@@ -170,50 +166,17 @@ void main() {
     });
   });
 
-  group('NotificationPrefs.criticalOptIn (Phase 4)', () {
-    test('defaults to false — DND bypass is opt-in, never on by default', () {
-      const prefs = NotificationPrefs();
-
-      expect(prefs.criticalOptIn, isFalse);
-    });
-
-    test('fromMap honours explicit true', () {
-      final prefs = NotificationPrefs.fromMap(const {'criticalOptIn': true});
-
-      expect(prefs.criticalOptIn, isTrue);
-    });
-
-    test('fromMap falls back to false when wrong type', () {
-      final prefs = NotificationPrefs.fromMap(const {'criticalOptIn': 'yes'});
-
-      expect(prefs.criticalOptIn, isFalse);
-    });
-
-    test('toMap serialises criticalOptIn alongside other flags', () {
-      const prefs = NotificationPrefs(criticalOptIn: true);
-
-      expect(prefs.toMap(), {
-        'pushEnabled': true,
-        'urgentChat': true,
-        'taskUpdates': true,
-        'payments': true,
-        'eventUpdates': true,
+  group('NotificationPrefs.fromMap ignores withdrawn fields', () {
+    test('legacy criticalOptIn=true is silently dropped', () {
+      // Phase 4 critical-alert opt-in withdrawn for V1/V2. Existing
+      // Firestore docs that still carry this field must not throw or
+      // surface it back through the model.
+      final prefs = NotificationPrefs.fromMap(const {
         'criticalOptIn': true,
-        'dailyDigest': false,
+        'pushEnabled': true,
       });
-    });
 
-    test('copyWith criticalOptIn leaves other flags untouched', () {
-      const prefs = NotificationPrefs();
-
-      final next = prefs.copyWith(criticalOptIn: true);
-
-      expect(next.pushEnabled, isTrue);
-      expect(next.urgentChat, isTrue);
-      expect(next.taskUpdates, isTrue);
-      expect(next.payments, isTrue);
-      expect(next.eventUpdates, isTrue);
-      expect(next.criticalOptIn, isTrue);
+      expect(prefs.toMap().containsKey('criticalOptIn'), isFalse);
     });
   });
 
@@ -333,7 +296,7 @@ void main() {
 
       expect(next.locale, 'fr');
       expect(next.pushEnabled, isTrue);
-      expect(next.criticalOptIn, isFalse);
+      expect(next.urgentChat, isTrue);
     });
   });
 
