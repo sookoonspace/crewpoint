@@ -104,25 +104,25 @@ deferred to a follow-up so this PR stays scoped.
   follow-up to set `debugShowCheckedModeBanner: false` on the root
   `MaterialApp`; otherwise nothing further to do.
 
-### Phase 1: Mute Event sheet copy — drop the "critical opt-in" reference
+### Phase 1: Mute Event sheet copy — drop the "critical opt-in" reference ✓
 
 - **Goal**: The Mute Event bottom sheet describes current behavior
   (Option B suppression) instead of the withdrawn Phase 4 critical-
   alert opt-in.
-- [ ] TDD: add `test/app/features/dashboard/presentation/widgets/mute_event_sheet_test.dart`
-  (or extend existing) — pump the sheet in the inactive state and
-  assert `find.textContaining('critical opt-in')` is absent and a
-  substring like `find.textContaining('Pause all notifications')` is
-  present. One test, one failure.
-- [ ] `lib/app/features/dashboard/presentation/widgets/mute_event_sheet.dart:84-85`
-  — replace the `else` branch subtitle with:
-  ```
-  'Pause all notifications for this event for the selected '
-  "window. You'll still see messages when you open the chat."
-  ```
-  No other behavior changes.
-- [ ] Run the new test → green. `flutter analyze` + `flutter test` →
-  green.
+- [x] TDD: extended `test/app/features/dashboard/presentation/widgets/mute_event_sheet_test.dart`
+  with a `MuteEventSheet — copy` group asserting
+  `find.textContaining('critical opt-in')` is absent and
+  `find.textContaining('Pause all notifications')` is present in the
+  inactive subtitle. Confirmed RED before the source edit.
+- [x] `lib/app/features/dashboard/presentation/widgets/mute_event_sheet.dart:84-86`
+  — replaced the `else` branch subtitle with:
+  `'Pause all notifications for this event for the selected window. You\'ll still see messages when you open the chat.'`.
+  Also corrected the stale class-doc reference to `suppress.ts` /
+  Option B (was pointing at `sendPush.ts` + the withdrawn
+  `criticalOptIn` clause).
+- [x] Verified: `flutter analyze` (clean, sole pre-existing
+  `experimental_member_use` warning) + `flutter test` (799 / 799
+  passing).
 
 ### Phase 2: Tasks group-by SegmentedButton — kill the word-break
 

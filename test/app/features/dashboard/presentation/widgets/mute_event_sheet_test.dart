@@ -125,6 +125,23 @@ void main() {
     });
   });
 
+  group('MuteEventSheet — copy', () {
+    testWidgets('inactive subtitle no longer references "critical opt-in" '
+        '(Phase 4 withdrawn — Option B suppression silences chat_urgent '
+        'too when the event is muted)', (tester) async {
+      await _pumpSheet(
+        tester,
+        repo: repo,
+        firestore: firestore,
+        uid: 'u1',
+        eventId: 'evt-1',
+      );
+
+      expect(find.textContaining('critical opt-in'), findsNothing);
+      expect(find.textContaining('Pause all notifications'), findsOneWidget);
+    });
+  });
+
   group('MuteEventSheet — already-muted state', () {
     testWidgets('shows "Unmute" CTA + tapping it deletes the mute doc', (
       tester,
