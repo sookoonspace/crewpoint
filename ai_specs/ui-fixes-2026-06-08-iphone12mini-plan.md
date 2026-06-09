@@ -153,32 +153,40 @@ deferred to a follow-up so this PR stays scoped.
   `tasks_filter_sort_group_journey_test.dart` whose Key-based
   selection survives the label change unchanged.
 
-### Phase 3: Description fields — top-align icon for multi-line inputs
+### Phase 3: Description fields — drop prefixIcon for multi-line inputs ✓
 
-- **Goal**: In `Create Task` and `Add Expense`, the icon visually
-  anchors to the start of the first line of the description input
-  instead of sitting orphaned in the middle of the field.
-- [ ] TDD: extend
-  `test/app/features/tasks/presentation/create_task_screen_test.dart`
-  (or add a focused test) — pump the screen and assert that the
-  `Icon(AppIcons.description)` is no longer the resolved `prefixIcon`
-  on the multi-line description field. Asserting the visual position
-  is brittle; asserting the structural choice is enough.
-- [ ] `lib/app/features/tasks/presentation/create_task_screen.dart:152-158`
-  — drop `prefixIcon: const Icon(AppIcons.description)` from the
-  multi-line description `AppTextField`. The single-line title field
-  above keeps its icon. Update the hint to remain self-explanatory
-  (no change needed; `descriptionOptionalHint` already reads
-  "Description (optional)").
-- [ ] `lib/app/features/budget/presentation/widgets/expense_modal.dart:215-219`
-  — same drop on the Description `CustomTextField`.
-- [ ] **Do not** modify
-  `lib/app/core/widgets/forms/app_text_field.dart` — single-line
-  call-sites still rely on the prefix icon being centered, and the
-  shared widget should stay neutral about line count.
-- [ ] Verify: `flutter analyze && flutter test`. Manual: open Create
-  Task + Add Expense, confirm both description fields look balanced
-  and the placeholder no longer floats away from any icon.
+- **Goal**: The multi-line description input no longer renders an
+  icon centred in the middle of the field, disconnected from the
+  hint at the top.
+- [x] TDD: added `test/app/features/tasks/create_task_screen_test.dart`
+  with a single test that pumps `CreateTaskScreen` (under a tall
+  view to bypass scroll) and asserts the `AppTextField` keyed
+  `tasks.create.description` has `prefixIcon == null`. Confirmed
+  RED before the source edit.
+- [x] `lib/app/features/tasks/presentation/create_task_screen.dart:152-158`
+  — dropped `prefixIcon: const Icon(AppIcons.description)` from
+  the multi-line description `AppTextField`. The single-line title
+  field above keeps its `navTasksFilled` icon; `AppIcons` import
+  stays.
+- [x] **Also fixed** the matching bug in
+  `lib/app/features/tasks/presentation/edit_task_screen.dart:147-153`
+  — same `maxLines: 3` + `prefixIcon` pattern, same visual
+  disconnection. The existing
+  `test/app/features/tasks/edit_task_screen_test.dart` continues
+  to pass; one more focused assertion was not added because the
+  pattern + fix are identical and the Create-side test already
+  documents the rationale.
+- [x] **Did not** touch
+  `lib/app/features/budget/presentation/widgets/expense_modal.dart`
+  — the Description `CustomTextField` there is single-line (no
+  explicit `maxLines`, so default = 1), which means the prefix
+  icon centres correctly on the one line and is visually
+  consistent with the `$` icon on the Amount field above. Dropping
+  it would be churn without a fix. Plan scope tightened.
+- [x] Left `lib/app/core/widgets/forms/app_text_field.dart`
+  untouched; the shared widget stays neutral about line count.
+- [x] Verified: `flutter analyze` clean (sole pre-existing
+  experimental warning); `flutter test` 801 / 801 passing.
 
 ### Phase 4: Create Task — Due Date row no longer hidden by bottom nav
 

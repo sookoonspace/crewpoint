@@ -108,10 +108,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
   Widget build(BuildContext context) {
     final s = context.strings.tasks;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(s.createTaskTitle),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: Text(s.createTaskTitle), elevation: 0),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(
           horizontal: Breakpoints.screenHorizontalPadding(context),
@@ -149,12 +146,16 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                             return null;
                           },
                         ),
+                        // No prefixIcon: Material centres prefixIcon
+                        // vertically across the field's full multi-line
+                        // height, so on a 3-line description it sits
+                        // orphaned below the hint. The hint alone tells
+                        // the user what this field is for.
                         AppTextField(
                           key: const Key('tasks.create.description'),
                           hintText: s.descriptionOptionalHint,
                           controller: _descriptionController,
                           maxLines: 3,
-                          prefixIcon: const Icon(AppIcons.description),
                         ),
                       ],
                     ),

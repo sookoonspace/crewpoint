@@ -103,10 +103,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
         : null;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(s.editTaskTitle),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: Text(s.editTaskTitle), elevation: 0),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(
           horizontal: Breakpoints.screenHorizontalPadding(context),
@@ -144,12 +141,13 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                             return null;
                           },
                         ),
+                        // See create_task_screen.dart for the rationale
+                        // — same multi-line + centred-prefixIcon bug.
                         AppTextField(
                           key: const Key('tasks.edit.description'),
                           hintText: s.descriptionOptionalHint,
                           controller: _descriptionController,
                           maxLines: 3,
-                          prefixIcon: const Icon(AppIcons.description),
                         ),
                       ],
                     ),
