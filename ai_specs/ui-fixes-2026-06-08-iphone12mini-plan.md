@@ -124,39 +124,34 @@ deferred to a follow-up so this PR stays scoped.
   `experimental_member_use` warning) + `flutter test` (799 / 799
   passing).
 
-### Phase 2: Tasks group-by SegmentedButton — kill the word-break
+### Phase 2: Tasks group-by SegmentedButton — kill the word-break ✓
 
 - **Goal**: At 375 px viewport, all three segment labels render on a
   single line; no `Assign\nee`-style breaks.
-- [ ] Decide between two source fixes (pick one — recommendation
-  noted):
-  - **A (recommended)**: shorten labels to `Status / People / Due`
-    in `lib/app/core/i18n/app_strings.dart:720-727`. Keeps the
-    SegmentedButton; reduces total horizontal demand by ~25 %.
-  - **B**: keep labels, swap the SegmentedButton for a
-    horizontally-scrollable `Row<ChoiceChip>`. Higher diff; only
-    take if A is rejected.
-- [ ] TDD (chosen option A): add
-  `test/app/features/tasks/presentation/widgets/tasks_filter_bar_groupby_overflow_test.dart`.
-  Pump `TasksFilterBar` inside a `SizedBox(width: 375)` for each
-  of the three `TasksGroupBy` values (so each segment in turn carries
-  the checkmark + width). Assert `tester.takeException() == null`
-  and that for each selected value the segment's `RenderParagraph`
-  reports `didExceedMaxLines == false` (single-line render).
-- [ ] If A: update `groupStatus / groupAssignee / groupDueWindow` in
-  `app_strings.dart`. Keys stay; only the returned strings change.
-  No call-site updates needed — labels are read through
-  `context.strings.tasks`.
-- [ ] If A still overflows (escape hatch only): set
-  `style: const ButtonStyle(visualDensity: VisualDensity.compact)`
-  is already present at `tasks_filter_bar.dart:245`; additionally
-  wrap each segment's `Text` in a `softWrap: false,
-  overflow: TextOverflow.fade` and reduce `textScaler` clamp inside
-  the segment via `MediaQuery.withClampedTextScaling(maxScaleFactor:
-  1.1, ...)` on the SegmentedButton subtree.
-- [ ] Verify: `flutter analyze && flutter test`. Manual verification
-  on iPhone 12 mini sim: cycle through each selected segment and
-  confirm one-line render every time.
+- [x] Chose **option A** (shortened labels) over option B
+  (scrollable chip row) — smaller diff, no test-key churn, no
+  custom widget.
+- [x] TDD: added
+  `test/app/features/tasks/widgets/tasks_filter_bar_groupby_overflow_test.dart`.
+  Pumps `TasksFilterBar` inside a `SizedBox(width: 375)` for each of
+  the three `TasksGroupBy` values and asserts the SegmentedButton's
+  overall height stays below the single-row cap (50 px). When any
+  label wraps, the segment grows and the whole button passes the
+  threshold (RED confirmed at 60 px with the original labels). The
+  per-Text height heuristic I tried first was unreliable because
+  Material gives every ButtonSegment label slot the segment's full
+  tap-target height; the bar-level height is the honest signal.
+- [x] Updated `groupAssignee` → `People` and `groupDueWindow` → `Due`
+  in `lib/app/core/i18n/app_strings.dart:720-727`. Test keys
+  (`tasks.list.groupToggle.{status,assignee,dueWindow}`) and the
+  `TasksGroupBy` enum values stay; only the rendered labels changed.
+- [x] No escape hatch needed (text wrapping stayed off after the
+  rename). Existing `VisualDensity.compact` style on the button
+  retained.
+- [x] Verified: `flutter analyze` clean (sole pre-existing
+  experimental warning); `flutter test` 800/800 passing — including
+  `tasks_filter_sort_group_journey_test.dart` whose Key-based
+  selection survives the label change unchanged.
 
 ### Phase 3: Description fields — top-align icon for multi-line inputs
 
