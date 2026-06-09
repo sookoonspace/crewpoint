@@ -16,6 +16,14 @@ import 'package:crewpoint_app/app/core/widgets/forms/app_text_field.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/create_task_screen.dart';
 
+// The Create Task form lives inside ResponsiveShell on mobile widths,
+// which means the form's SingleChildScrollView ends just above a
+// Material 3 NavigationBar. The QA-pass screenshot
+// (Create_task_screen_02.PNG) showed the green "Create Task" CTA
+// floating ~10 px above that bar — visibly cramped. Anything < ~40 px
+// reads as occlusion to the eye even when nothing is actually clipped.
+const _minScrollBottomPaddingForNav = 40.0;
+
 void main() {
   const event = EventModel(
     id: 'evt-1',
@@ -52,6 +60,33 @@ void main() {
           'Description AppTextField (maxLines=3) must not pass a '
           'prefixIcon — Material centres it vertically across all 3 '
           'lines and the result looks orphaned next to the hint.',
+    );
+  });
+
+  testWidgets('scroll view leaves enough bottom padding for the persistent nav '
+      'so the Create Task CTA breathes', (tester) async {
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: CreateTaskScreen(event: event, currentUserId: 'owner-1'),
+      ),
+    );
+
+    final scrollView = tester.widget<SingleChildScrollView>(
+      find.byType(SingleChildScrollView),
+    );
+    final padding = scrollView.padding as EdgeInsets;
+    expect(
+      padding.bottom,
+      greaterThanOrEqualTo(_minScrollBottomPaddingForNav),
+      reason:
+          'SingleChildScrollView.padding.bottom must clear the persistent '
+          'NavigationBar with breathing room. The Create Task CTA otherwise '
+          'sits flush against the nav at iPhone 12 mini.',
     );
   });
 }

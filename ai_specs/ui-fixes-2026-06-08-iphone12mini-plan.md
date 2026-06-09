@@ -188,30 +188,37 @@ deferred to a follow-up so this PR stays scoped.
 - [x] Verified: `flutter analyze` clean (sole pre-existing
   experimental warning); `flutter test` 801 / 801 passing.
 
-### Phase 4: Create Task — Due Date row no longer hidden by bottom nav
+### Phase 4: Create Task — comfortable bottom padding under the CTA ✓
 
-- **Goal**: At the iPhone 12 mini viewport, the Due Date field is
-  fully visible without scrolling past the persistent bottom nav.
-- [ ] Locate the scroll view that wraps the Create Task form (the
-  current implementation in
-  `lib/app/features/tasks/presentation/create_task_screen.dart`
-  uses an outer `SingleChildScrollView`/`ListView`). Confirm
-  current padding.
-- [ ] TDD: add a widget test that pumps the screen inside a
-  `MediaQuery(size: Size(375, 812), ...)` and a `Padding` mimicking
-  the bottom-nav viewInsets. Assert the bottom of the Due Date
-  field's `RenderBox` is above the nav's `top` edge after one full
-  scroll-to-end (use `tester.dragUntilVisible(...)` + assert no
-  exception).
-- [ ] Update the scroll view's `padding` to include
-  `EdgeInsets.only(bottom: 96 + MediaQuery.viewPaddingOf(context).bottom)`
-  (or pull the magic number from `AppSpacing` if a `xxl` exists; if
-  not, add a named constant locally with a short comment explaining
-  it matches the persistent nav height). Do **not** thread the
-  bottom-nav height through providers — derive locally.
-- [ ] Verify: `flutter analyze && flutter test`. Manual: open Create
-  Task on iPhone 12 mini sim, scroll to the bottom, confirm the Due
-  Date row clears the nav and there's room to tap.
+- **Goal**: At the iPhone 12 mini viewport the Create Task CTA at
+  the form tail has breathing room above the persistent
+  ResponsiveShell NavigationBar — previously the button rendered
+  ~10 px above the nav and read as visually cramped, even though
+  nothing was actually clipped.
+- [x] Scope re-evaluated. Initial plan called for
+  `EdgeInsets.only(bottom: 96 + viewPadding.bottom)` plus a
+  `dragUntilVisible` widget test. Closer reading of
+  `responsive_shell.dart` showed the NavigationBar sits in the
+  outer Scaffold's `bottomNavigationBar` slot — it never overlays
+  the body, so safe-area maths is unnecessary. The real fix is
+  just doubling the existing bottom padding so the CTA isn't flush
+  with the nav.
+- [x] TDD: extended `create_task_screen_test.dart` with a structural
+  assertion — find the `SingleChildScrollView`, cast `padding` to
+  `EdgeInsets`, and assert `padding.bottom >= 40`. RED confirmed
+  at 24 px (the previous `AppSpacing.xl`).
+- [x] `lib/app/features/tasks/presentation/create_task_screen.dart:112-117`
+  — swapped `EdgeInsets.symmetric(vertical: AppSpacing.xl)` for
+  `EdgeInsets.fromLTRB(h, AppSpacing.xl, h, AppSpacing.xxxl)`
+  (top 24 → bottom 48). Pulled the named tokens from the existing
+  `AppSpacing` table; no magic numbers introduced.
+- [x] Applied the same change to
+  `lib/app/features/tasks/presentation/edit_task_screen.dart:107-114`
+  — Edit Task has the identical Scaffold + SingleChildScrollView
+  shell and the Save CTA at the form tail. Keeping the two in
+  lockstep avoids one drifting under the next polish pass.
+- [x] Verified: `flutter analyze` clean (sole pre-existing
+  experimental warning); `flutter test` 802 / 802 passing.
 
 ### Phase 5: Chat & Budget detail — show the event name in the AppBar
 
