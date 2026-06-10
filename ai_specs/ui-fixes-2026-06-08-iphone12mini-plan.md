@@ -279,26 +279,38 @@ deferred to a follow-up so this PR stays scoped.
 - [x] Verified: `flutter analyze` clean (sole pre-existing
   experimental warning); `flutter test` 806 / 806 passing.
 
-### Phase 7: Donated expenses — visible badge in the list
+### Phase 7: Donated expenses — visible badge in the list ✓
 
 - **Goal**: A donation-mode expense reads as "donated" in the
   expense row, so the zero balances next to a non-zero expense
   total stop being confusing.
-- [ ] Confirm the data model already carries the donation flag (e.g.
-  `Expense.donated` / `isDonation`). If not present, this phase is
-  blocked — surface that in the plan rather than silently extending
-  the model.
-- [ ] Extend `lib/app/features/budget/presentation/widgets/recent_expense_tile.dart`
-  (and the per-event expense tile if separate) to render a small
-  "Donated" pill (use the existing `AppColors.sage` accent + the
-  existing pill style from the priority chips on the Tasks list for
-  visual consistency).
-- [ ] TDD: extend the existing widget test for the expense tile —
-  with `donated: true`, assert the pill is rendered; with
-  `donated: false`, assert it's absent.
-- [ ] Verify: `flutter analyze && flutter test`. Manual: confirm
-  visually with the existing "Let's keep it affordable" $1,000
-  donated expense.
+- [x] Confirmed the model already carries the flag —
+  `ExpenseModel.isDonation` defaults to `false` at
+  `lib/app/features/budget/domain/models/expense.dart:10,22`. Not
+  blocked.
+- [x] Added a shared
+  `lib/app/features/budget/presentation/widgets/donated_pill.dart`
+  rendering a small sage-tinted "Donated" pill (background:
+  `AppColors.sage.withValues(alpha: 0.15)`; text: `AppColors.sage`,
+  600 weight). Keyed `budget.expense.donatedPill` for stable
+  selector access. Both tiles import this one widget so the cue
+  stays consistent across the per-event and global Budget surfaces.
+- [x] Wired the pill into the cross-event row
+  (`recent_expense_tile.dart`) — sits on the same Row as the event
+  title with an `AppSpacing.sm` gap; the event title is wrapped in
+  a `Flexible` so the pill doesn't shove it off-screen.
+- [x] Upgraded the per-event row (`expense_tile.dart`) — replaced
+  the plain `Text('Donated', ...)` subtitle with the shared
+  `DonatedPill`. Visually stronger signal + one source of truth for
+  the design.
+- [x] TDD: extended both existing tile suites with two paired tests
+  (donation present → pill renders + 'Donated' visible; donation
+  absent → pill key not found). RED on the present case for
+  `recent_expense_tile_test.dart` before the source edit; the
+  `expense_tile_test.dart` pair used a key-based assertion that the
+  pre-existing plain-text path could not satisfy.
+- [x] Verified: `flutter analyze` clean (sole pre-existing
+  experimental warning); `flutter test` 810 / 810 passing.
 
 ### Phase 8: Tasks empty state — icon + CTA alignment
 

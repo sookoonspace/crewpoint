@@ -29,6 +29,55 @@ const _row = RecentExpenseRow(
 );
 
 void main() {
+  testWidgets('donation-mode expense shows a "Donated" pill so the row reads '
+      'differently from a cost-shared one — fixes the 2026-06-08 QA '
+      'note where Budget_detail_screen.PNG had identical-looking rows '
+      'next to all-zero balances', (tester) async {
+    const donatedExpense = ExpenseModel(
+      id: 'exp-donated',
+      eventId: 'evt-1',
+      payerId: 'me',
+      amount: 1000,
+      description: "Let's keep it affordable",
+      isDonation: true,
+    );
+    const donatedRow = RecentExpenseRow(
+      expense: donatedExpense,
+      event: _event,
+      payerName: 'You',
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: RecentExpenseTile(
+            row: donatedRow,
+            currentUserId: 'me',
+            onTap: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byKey(const Key('budget.expense.donatedPill')), findsOneWidget);
+    expect(find.text('Donated'), findsOneWidget);
+  });
+
+  testWidgets('non-donation expense does NOT show the "Donated" pill', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: RecentExpenseTile(row: _row, currentUserId: 'me', onTap: () {}),
+        ),
+      ),
+    );
+
+    expect(find.byKey(const Key('budget.expense.donatedPill')), findsNothing);
+    expect(find.text('Donated'), findsNothing);
+  });
+
   testWidgets('wraps content in a Card for the elevated-tile look', (
     tester,
   ) async {

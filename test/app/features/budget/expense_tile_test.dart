@@ -5,6 +5,52 @@ import 'package:crewpoint_app/app/features/budget/presentation/widgets/expense_t
 
 void main() {
   testWidgets(
+    'donation-mode expense renders the shared DonatedPill — keeps the '
+    'per-event Budget detail consistent with the global Budget tab',
+    (tester) async {
+      const expense = ExpenseModel(
+        id: 'exp-donated',
+        eventId: 'evt-1',
+        payerId: 'user-1',
+        amount: 1000,
+        description: "Let's keep it affordable",
+        isDonation: true,
+      );
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: ExpenseTile(expense: expense)),
+        ),
+      );
+
+      expect(
+        find.byKey(const Key('budget.expense.donatedPill')),
+        findsOneWidget,
+      );
+      expect(find.text('Donated'), findsOneWidget);
+    },
+  );
+
+  testWidgets('non-donation expense does NOT render the DonatedPill', (
+    tester,
+  ) async {
+    const expense = ExpenseModel(
+      id: 'exp-regular',
+      eventId: 'evt-1',
+      payerId: 'user-1',
+      amount: 25,
+    );
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: ExpenseTile(expense: expense)),
+      ),
+    );
+
+    expect(find.byKey(const Key('budget.expense.donatedPill')), findsNothing);
+  });
+
+  testWidgets(
     'expense without receipt shows the default receipt icon, no thumbnail',
     (tester) async {
       const expense = ExpenseModel(
