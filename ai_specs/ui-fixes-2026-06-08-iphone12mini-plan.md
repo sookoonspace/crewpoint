@@ -220,25 +220,39 @@ deferred to a follow-up so this PR stays scoped.
 - [x] Verified: `flutter analyze` clean (sole pre-existing
   experimental warning); `flutter test` 802 / 802 passing.
 
-### Phase 5: Chat & Budget detail — show the event name in the AppBar
+### Phase 5: Chat & Budget detail — show the event name in the AppBar ✓
 
 - **Goal**: Users in multiple events can identify which thread or
   ledger they're inside.
-- [ ] `lib/app/features/chat/presentation/event_chat_page.dart` —
-  change the `AppBar.title` from the literal/generic string to the
-  resolved event name (the page already has the event in scope via
-  the route argument or provider). Keep the title as `Text(event.name)`
-  with `overflow: TextOverflow.ellipsis`; drop the subtitle row.
-- [ ] Same swap for the per-event Budget detail screen
-  (`lib/app/features/budget/presentation/budget_screen.dart` or the
-  equivalent — verify by grep before editing).
-- [ ] TDD: extend the existing chat page test (or add a tiny test)
-  that pumps the page with a known event name and asserts
-  `find.text(eventName)` is hit, while `find.text('Chat')` is **not**
-  in the AppBar.
-- [ ] Verify: `flutter analyze && flutter test`. Manual: open chat
-  and budget for an event named "Weekend getaway", confirm the
-  AppBar reflects that.
+- [x] `ChatScreen` and `BudgetScreen` both grew an optional
+  `String? appBarTitle` parameter. When supplied the AppBar paints
+  it (with `TextOverflow.ellipsis` so long event names degrade
+  gracefully); when null the screen falls back to the existing
+  generic title (`Chat` from `context.strings.chat.chatAppBarTitle`
+  / literal `'Budget'`) — keeps untouched callers backwards-
+  compatible.
+- [x] Wired both from the per-event parents:
+  - `lib/app/features/budget/presentation/event_budget_page.dart:357`
+    — passes `appBarTitle: widget.event.title` into `BudgetScreen`.
+  - `lib/app/features/chat/presentation/event_chat_page.dart` —
+    passes `appBarTitle: widget.event.title` into `ChatScreen` on
+    the data branch, and updates the loading + error fallback
+    `Scaffold`s to use `Text(widget.event.title)` instead of the
+    hard-coded `'Chat'`.
+- [x] TDD (Budget): extended
+  `test/app/features/budget/budget_screen_test.dart` with two new
+  tests — one asserting the supplied `appBarTitle` paints inside
+  the `AppBar` subtree (descendant finder, so a body widget that
+  happens to share the string can't satisfy the assertion) AND
+  that `'Budget'` does **not** appear there; the other locking the
+  fallback path for un-migrated callers. Compile-failure RED
+  confirmed before the BudgetScreen ctor update.
+- [x] TDD (Chat): added
+  `test/app/features/chat/presentation/chat_screen_appbar_title_test.dart`
+  mirroring the same shape — supplied-title path + fallback path,
+  both scoped to the `AppBar` subtree.
+- [x] Verified: `flutter analyze` clean (sole pre-existing
+  experimental warning); `flutter test` 806 / 806 passing.
 
 ### Phase 6: Budget global tab — collapse the duplicated "settled" copy
 

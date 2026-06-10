@@ -15,6 +15,7 @@ class BudgetScreen extends StatelessWidget {
     required this.memberIds,
     this.currency = 'USD',
     this.memberNames = const {},
+    this.appBarTitle,
     this.onAddExpense,
     this.onEditExpense,
     this.onDeleteExpense,
@@ -27,6 +28,12 @@ class BudgetScreen extends StatelessWidget {
   final List<String> memberIds;
   final String currency;
   final Map<String, String> memberNames;
+
+  /// AppBar title — the parent (`EventBudgetPage`) wires the event
+  /// name through so users in multiple events know which ledger
+  /// they're looking at. Falls back to "Budget" when not supplied so
+  /// callers that have not been migrated keep their old chrome.
+  final String? appBarTitle;
   final VoidCallback? onAddExpense;
 
   /// Per-tile callbacks. When null, the overflow menu hides that action.
@@ -58,7 +65,7 @@ class BudgetScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Budget'),
+        title: Text(appBarTitle ?? 'Budget', overflow: TextOverflow.ellipsis),
         elevation: 0,
         actions: [
           if (onExportPdf != null || onExportCsv != null)
@@ -192,9 +199,9 @@ class _TotalCard extends StatelessWidget {
           children: [
             Text(
               'Total Expenses',
-              style: Theme.of(
-                context,
-              ).textTheme.labelMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(

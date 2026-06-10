@@ -119,6 +119,7 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
         messages: messages,
         currentUserId: uid,
         memberNames: memberNames,
+        appBarTitle: widget.event.title,
         isSending: _isSending,
         lastSendFailed: _lastSendFailed,
         onSendMessage: (text) => _send(text),
@@ -126,11 +127,17 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
         onTapSettlement: _onDispute,
       ),
       loading: () => Scaffold(
-        appBar: AppBar(title: const Text('Chat'), elevation: 0),
+        appBar: AppBar(
+          title: Text(widget.event.title, overflow: TextOverflow.ellipsis),
+          elevation: 0,
+        ),
         body: const Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => Scaffold(
-        appBar: AppBar(title: const Text('Chat'), elevation: 0),
+        appBar: AppBar(
+          title: Text(widget.event.title, overflow: TextOverflow.ellipsis),
+          elevation: 0,
+        ),
         body: Center(child: Text('Error: $e')),
       ),
     );

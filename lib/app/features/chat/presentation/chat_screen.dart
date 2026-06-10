@@ -16,6 +16,7 @@ class ChatScreen extends StatefulWidget {
     required this.messages,
     required this.currentUserId,
     this.memberNames = const {},
+    this.appBarTitle,
     this.isSending = false,
     this.lastSendFailed = false,
     this.onSendMessage,
@@ -26,6 +27,12 @@ class ChatScreen extends StatefulWidget {
   final List<ChatMessageModel> messages;
   final String currentUserId;
   final Map<String, String> memberNames;
+
+  /// AppBar title — the parent (`EventChatPage`) wires the event
+  /// name through so users in multiple events can identify which
+  /// thread they're in. Falls back to the i18n default (`Chat`)
+  /// when unset.
+  final String? appBarTitle;
   final bool isSending;
   final bool lastSendFailed;
   final ValueChanged<String>? onSendMessage;
@@ -93,7 +100,10 @@ class _ChatScreenState extends State<ChatScreen> {
     final s = context.strings.chat;
     return Scaffold(
       appBar: AppBar(
-        title: Text(s.chatAppBarTitle),
+        title: Text(
+          widget.appBarTitle ?? s.chatAppBarTitle,
+          overflow: TextOverflow.ellipsis,
+        ),
         elevation: 0,
         actions: [
           IconButton(

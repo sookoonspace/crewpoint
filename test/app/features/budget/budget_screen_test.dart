@@ -14,6 +14,50 @@ void main() {
     expect(find.text('No expenses yet'), findsOneWidget);
   });
 
+  testWidgets('AppBar title surfaces the supplied event title rather than the '
+      'generic "Budget" — users in multiple events need to know which '
+      'ledger they are looking at', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: BudgetScreen(
+          expenses: [],
+          memberIds: ['u1', 'u2'],
+          appBarTitle: 'Weekend getaway',
+        ),
+      ),
+    );
+
+    // The AppBar slot owns this title — restrict the finder to that
+    // subtree so a body widget that happens to share the string can't
+    // satisfy the assertion.
+    final inAppBar = find.descendant(
+      of: find.byType(AppBar),
+      matching: find.text('Weekend getaway'),
+    );
+    expect(inAppBar, findsOneWidget);
+    expect(
+      find.descendant(of: find.byType(AppBar), matching: find.text('Budget')),
+      findsNothing,
+    );
+  });
+
+  testWidgets(
+    'AppBar title falls back to "Budget" when no appBarTitle is supplied — '
+    'covers callers that have not been migrated yet',
+    (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: BudgetScreen(expenses: [], memberIds: ['u1', 'u2']),
+        ),
+      );
+
+      expect(
+        find.descendant(of: find.byType(AppBar), matching: find.text('Budget')),
+        findsOneWidget,
+      );
+    },
+  );
+
   testWidgets('renders currency symbol from event currency', (tester) async {
     const expenses = [
       ExpenseModel(
