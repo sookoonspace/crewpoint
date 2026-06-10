@@ -254,22 +254,30 @@ deferred to a follow-up so this PR stays scoped.
 - [x] Verified: `flutter analyze` clean (sole pre-existing
   experimental warning); `flutter test` 806 / 806 passing.
 
-### Phase 6: Budget global tab — collapse the duplicated "settled" copy
+### Phase 6: Budget global tab — collapse the duplicated "settled" copy ✓
 
 - **Goal**: Only one settled-state message appears on the global
   Budget tab when there's nothing to settle.
-- [ ] Locate the duplicate. The hero `BalanceTile` already renders
-  `$0.00 — all settled`; the "You're all settled up." card is a
-  separate widget in `budget_ledger_screen.dart` (or sibling).
-- [ ] Decide which to drop. Recommendation: keep the hero, drop the
-  redundant card. If product wants a CTA in that vertical space
-  later, add a follow-up task — don't widen scope here.
-- [ ] TDD: add an assertion in the existing
-  `budget_ledger_screen_test.dart` that, in the empty/settled
-  state, `find.textContaining('all settled')` resolves to exactly
-  **one** match.
-- [ ] Verify: `flutter analyze && flutter test`. Manual: confirm
-  visually on iPhone 12 mini.
+- [x] Located the duplicate at
+  `lib/app/features/budget/presentation/budget_ledger_screen.dart:157`
+  — the `else` branch of the debts block was rendering
+  `LedgerAllSettledChip` ("You're all settled up.") on top of the
+  `BalanceTile` hero ("$0.00 — all settled"). Same message twice.
+- [x] Kept the hero, dropped the chip — matches the plan's
+  recommendation.
+- [x] TDD: flipped the existing
+  `test/app/features/budget/presentation/budget_ledger_screen_test.dart`
+  "all-settled state" case to assert the chip is gone AND that
+  `find.textContaining('all settled')` resolves to exactly one
+  widget (the hero). RED confirmed before the source edit.
+- [x] Removed the now-orphan widget file
+  (`lib/app/features/budget/presentation/widgets/ledger_all_settled_chip.dart`)
+  and the unused `ledgerAllSettledMessage` getter from both the
+  `AppStrings` abstract base and its English implementation in
+  `lib/app/core/i18n/app_strings.dart`. No other production or
+  test code referenced either.
+- [x] Verified: `flutter analyze` clean (sole pre-existing
+  experimental warning); `flutter test` 806 / 806 passing.
 
 ### Phase 7: Donated expenses — visible badge in the list
 

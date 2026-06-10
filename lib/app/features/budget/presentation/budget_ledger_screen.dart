@@ -15,7 +15,6 @@ import 'package:crewpoint_app/app/core/widgets/balance_tile.dart';
 import 'package:crewpoint_app/app/core/widgets/screen_header.dart';
 import 'package:crewpoint_app/app/core/widgets/skeletons.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/debt_tile.dart';
-import 'package:crewpoint_app/app/features/budget/presentation/widgets/ledger_all_settled_chip.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/recent_expense_tile.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
@@ -142,7 +141,10 @@ class _LedgerBody extends ConsumerWidget {
               ? strings.budget.multiCurrencyDisclaimer
               : null,
         ),
-        // Debts section.
+        // Debts section. When there are no debts the BalanceTile hero
+        // already paints "$0.00 — all settled"; the previous
+        // LedgerAllSettledChip in this else branch duplicated that
+        // message verbatim and was removed for the 2026-06-08 UI fix.
         if (ledger.debts.isNotEmpty) ...[
           _SectionHeader(label: strings.budget.ledgerDebtsHeader),
           for (final debt in ledger.debts)
@@ -153,8 +155,7 @@ class _LedgerBody extends ConsumerWidget {
               row: debt,
               onSettleUp: onSettleUp,
             ),
-        ] else
-          LedgerAllSettledChip(message: strings.budget.ledgerAllSettledMessage),
+        ],
         // Recent expenses section.
         if (ledger.recentExpenses.isNotEmpty) ...[
           _SectionHeader(label: strings.budget.ledgerRecentExpensesHeader),

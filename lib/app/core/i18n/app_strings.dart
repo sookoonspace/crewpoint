@@ -255,7 +255,6 @@ abstract class BudgetStrings {
   String get ledgerHeroOwedToYouLabel;
   String get ledgerHeroYouOweLabel;
   String get ledgerDebtsHeader;
-  String get ledgerAllSettledMessage;
   String get ledgerRecentExpensesHeader;
   String get ledgerEmptyTitle;
   String get ledgerEmptyNoEventsSubtitle;
@@ -444,9 +443,6 @@ class _EnglishBudgetStrings extends BudgetStrings {
 
   @override
   String get ledgerDebtsHeader => 'Settle up';
-
-  @override
-  String get ledgerAllSettledMessage => "You're all settled up.";
 
   @override
   String get ledgerRecentExpensesHeader => 'Recent expenses';
