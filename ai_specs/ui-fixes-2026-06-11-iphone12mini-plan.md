@@ -70,12 +70,12 @@ Eight UI polish fixes (5 reported + 3 bonus) from the 2026-06-11 QA pass. Contin
 - [x] `lib/app/features/budget/presentation/budget_screen.dart:111-119` — ListView `padding: EdgeInsets.fromLTRB(lg, lg, lg, xxxl + xl + lg)` (top 16 carries bonus B3; bottom 88 carries the FAB-clearance fix).
 - [x] Verified: `flutter analyze` clean; `flutter test` 823 / 823 passing (was 821; +2 new tests).
 
-### Phase 6: Chat AppBar mirror (req 5 Chat)
+### Phase 6: Chat AppBar mirror (req 5 Chat) ✓
 
 - **Goal**: Chat detail AppBar follows Budget detail shape — `titleMedium` weight 600, `maxLines: 2`, `toolbarHeight: 72`.
-- [ ] TDD: extend `test/app/features/chat/presentation/chat_screen_appbar_title_test.dart` — same three assertions (style, maxLines, toolbarHeight).
-- [ ] `lib/app/features/chat/presentation/chat_screen.dart` - swap AppBar title style + add `toolbarHeight: kToolbarHeight + 16`.
-- [ ] Verify: `flutter analyze` && `flutter test`.
+- [x] TDD: extended `chat_screen_appbar_title_test.dart` with the same shape assertion used for Budget (maxLines == 2, toolbarHeight >= 72). RED before source edit.
+- [x] `lib/app/features/chat/presentation/chat_screen.dart:102-115` — swapped AppBar title to `titleMedium w600`, `maxLines: 2`, `toolbarHeight: kToolbarHeight + 16`. Symmetric with `budget_screen.dart`.
+- [x] Verified: `flutter analyze` clean; `flutter test` 824 / 824 passing (was 823).
 
 ### Phase 7: ReservedCheckmarkChip widget + TasksFilterBar predicate chips (req 6a)
 
