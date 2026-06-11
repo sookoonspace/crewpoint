@@ -39,12 +39,12 @@ Eight UI polish fixes (5 reported + 3 bonus) from the 2026-06-11 QA pass. Contin
 - [x] Existing event_tile date-row test - no assertions on date string, no update needed (verified via Grep).
 - [x] Verified: `flutter analyze` clean (sole pre-existing warning); `flutter test` 816 / 816 passing (was 810; +6 helper tests).
 
-### Phase 2: Home Upcoming/Past pill centring (req 1)
+### Phase 2: Home Upcoming/Past pill centring (req 1) ✓
 
 - **Goal**: Labels visually centred inside equal-width pills.
-- [ ] TDD: pump `SegmentedFilterBar(equalWidth: true)` at 375 px; assert each `_Pill` label's render-box centre x-coord equals the pill's centre x-coord (within ±1 px). RED on current `start`-aligned state.
-- [ ] `lib/app/core/widgets/segmented_filter_bar.dart` - in `_Pill.build`, add `alignment: Alignment.center` to outer `Container` (line ~172). Do NOT mutate Row.
-- [ ] Verify: `flutter analyze` && `flutter test`.
+- [x] TDD: pumped `SegmentedFilterBar(equalWidth: true)` at 375 px; assert `tester.getCenter(find.byKey(pillKey)).dx` matches `tester.getCenter(find.text(label)).dx` within ±1 px for both segments. RED confirmed on the start-aligned state.
+- [x] `lib/app/core/widgets/segmented_filter_bar.dart:174` — added `alignment: Alignment.center` to the outer `Container` in `_Pill.build`. Row's `mainAxisSize: min` left untouched (preserves label+count clustering).
+- [x] Verified: `flutter analyze` clean; `flutter test` 817 / 817 passing (was 816).
 
 ### Phase 3: Event detail Edit Event tile (req 2)
 
