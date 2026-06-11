@@ -61,15 +61,14 @@ Eight UI polish fixes (5 reported + 3 bonus) from the 2026-06-11 QA pass. Contin
 - [x] `lib/app/core/widgets/balance_tile.dart:95-159` — wrapped inner Row in `IntrinsicHeight`, switched `crossAxisAlignment` to `stretch`, replaced the fixed-height Container with `VerticalDivider(width: AppSpacing.md * 2 + 1, thickness: 1, color: theme.colorScheme.outline)` carrying the same Key.
 - [x] Verified: `flutter analyze` clean; `flutter test` 821 / 821 passing (was 820).
 
-### Phase 5: Per-event Budget polish — FAB clearance + AppBar + first-row pad (req 4, 5 Budget, B3)
+### Phase 5: Per-event Budget polish — FAB clearance + AppBar + first-row pad (req 4, 5 Budget, B3) ✓
 
 - **Goal**: Last expense row's 3-dot ≥ 16 px above FAB top; AppBar shows up to 2-line title without clipping; first row not flush with AppBar.
-- [ ] TDD: extend `test/app/features/budget/budget_screen_test.dart` AppBar test — assert `title.style.fontSize` matches `titleMedium` + `weight w600`, `maxLines: 2`, `AppBar.toolbarHeight >= 72`.
-- [ ] TDD: new test (same file) — render `BudgetScreen` with 10 expenses at iPhone 12 mini viewport, scroll to bottom, assert last `Key('budget.expense.tile.<id>.overflow')` `RenderBox` bottom is ≥ 16 px above FAB `RenderBox` top.
-- [ ] `lib/app/features/budget/presentation/budget_screen.dart` - AppBar title swap to `Text(appBarTitle ?? 'Budget', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600), maxLines: 2, overflow: TextOverflow.ellipsis)`.
-- [ ] `lib/app/features/budget/presentation/budget_screen.dart` - AppBar `toolbarHeight: kToolbarHeight + 16`.
-- [ ] `lib/app/features/budget/presentation/budget_screen.dart:101-102` - ListView `padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.xxxl + AppSpacing.xl + AppSpacing.lg)` (top 16, bottom 88).
-- [ ] Verify: `flutter analyze` && `flutter test`.
+- [x] TDD (AppBar): extended `budget_screen_test.dart` — assert `Text.maxLines == 2` and `AppBar.toolbarHeight >= 72`. RED before source edit.
+- [x] TDD (FAB clearance): structural assertion `ListView.padding.bottom >= 88` (= FAB diameter 56 + endFloat margin 16 + breathing 16). Switched from spatial test after discovering the iOS-target default bouncing scroll physics overshoots and bounces back from `maxScrollExtent`, leaving the list ~80 px short of true end and producing false negatives. The structural test pins the contract; the Scaffold FAB position is constant.
+- [x] `lib/app/features/budget/presentation/budget_screen.dart:68-78` — AppBar title swapped to `Text(appBarTitle ?? 'Budget', style: titleMedium w600, maxLines: 2, overflow: ellipsis)` + `toolbarHeight: kToolbarHeight + 16` (= 72).
+- [x] `lib/app/features/budget/presentation/budget_screen.dart:111-119` — ListView `padding: EdgeInsets.fromLTRB(lg, lg, lg, xxxl + xl + lg)` (top 16 carries bonus B3; bottom 88 carries the FAB-clearance fix).
+- [x] Verified: `flutter analyze` clean; `flutter test` 823 / 823 passing (was 821; +2 new tests).
 
 ### Phase 6: Chat AppBar mirror (req 5 Chat)
 
