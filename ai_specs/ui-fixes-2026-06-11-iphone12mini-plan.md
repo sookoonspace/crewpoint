@@ -94,14 +94,13 @@ Eight UI polish fixes (5 reported + 3 bonus) from the 2026-06-11 QA pass. Contin
 - [x] `lib/app/features/tasks/presentation/widgets/tasks_filter_bar.dart` — added `_groupSegmentSlotWidth(context, strings)` helper (TextPainter-measures widest label at `labelLarge` style, returns `widest + 22`). Each `ButtonSegment.label` now wraps `_GroupSegmentLabel(label, selected, width)`. Keys moved from inner Text to outer `_GroupSegmentLabel`. Journey test taps by Key → continues to work.
 - [x] Verified: `flutter analyze` clean (sole pre-existing warning); `flutter test` 830 / 830 passing (was 829; +1 width-parity test). Journey test `tasks_filter_sort_group_journey_test.dart` passes unchanged.
 
-### Phase 9: Task list empty-state Lottie bypass (req 7, bonus B1)
+### Phase 9: Task list empty-state Lottie bypass (req 7, bonus B1) ✓
 
 - **Goal**: Per-event Tasks tab empty states show the tasks icon, not the generic Lottie blob.
-- [ ] TDD: extend `test/app/features/tasks/presentation/task_list_screen_test.dart` (or analogue — verify via Glob) — pump filter-empty state, assert `find.byIcon(AppIcons.navTasks)` resolves AND `find.byKey(Key('emptyState.lottie'))` is absent.
-- [ ] TDD: same for no-tasks-yet state.
-- [ ] `lib/app/features/tasks/presentation/task_list_screen.dart:78-84` - filter-empty branch: add `lottieAsset: null`, change `iconFallback: AppIcons.statusDone` → `AppIcons.navTasks`.
-- [ ] `lib/app/features/tasks/presentation/task_list_screen.dart:85-89` - no-tasks-yet branch: same swap.
-- [ ] Verify: `flutter analyze` && `flutter test`.
+- [x] TDD (filter-empty): extended `test/app/features/tasks/task_list_screen_test.dart` — pump with `TasksFilter(onlyMine: true)` + empty groups; assert `find.byIcon(AppIcons.navTasks)` and `find.byKey(Key('emptyState.lottie'))` absent. RED before source edit.
+- [x] TDD (no-tasks-yet): same assertion shape with `TasksFilter()` (default).
+- [x] `lib/app/features/tasks/presentation/task_list_screen.dart:77-94` — both `EmptyStatePlaceholder` call-sites updated: added `lottieAsset: null`, changed `iconFallback: AppIcons.statusDone` → `AppIcons.navTasks`. Mirrors Phase 8 of the 2026-06-08 plan for the global Tasks tab.
+- [x] Verified: `flutter analyze` clean; `flutter test` 832 / 832 passing (was 830; +2 new icon-bypass tests).
 
 ## Risks / Out of scope
 
