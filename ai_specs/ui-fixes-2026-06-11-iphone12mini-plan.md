@@ -77,18 +77,14 @@ Eight UI polish fixes (5 reported + 3 bonus) from the 2026-06-11 QA pass. Contin
 - [x] `lib/app/features/chat/presentation/chat_screen.dart:102-115` — swapped AppBar title to `titleMedium w600`, `maxLines: 2`, `toolbarHeight: kToolbarHeight + 16`. Symmetric with `budget_screen.dart`.
 - [x] Verified: `flutter analyze` clean; `flutter test` 824 / 824 passing (was 823).
 
-### Phase 7: ReservedCheckmarkChip widget + TasksFilterBar predicate chips (req 6a)
+### Phase 7: ReservedCheckmarkChip widget + TasksFilterBar predicate chips (req 6a) ✓
 
 - **Goal**: Six predicate chips have fixed widths; ✓ fades in/out in reserved 22-px slot.
-- [ ] TDD: pump bare `ReservedCheckmarkChip(label: 'Mine', selected: false)` then re-pump `selected: true` — assert chip's `RenderBox` width equal (±0.5 px).
-- [ ] TDD: selected → `find.byIcon(Icons.check)` resolves with the chip's foreground colour; unselected → ✓ exists in widget tree (`Visibility` maintainSize) but is not visible (assert via `Visibility.visible == false`).
-- [ ] TDD: tap fires `onChanged(!selected)`.
-- [ ] TDD: long label ellipsizes; chip width capped at parent constraint.
-- [ ] TDD: textScaler 1.3 — pump in `MediaQuery(textScaler: TextScaler.linear(1.3))`; assert no `RenderFlex` exception.
-- [ ] `lib/app/core/widgets/reserved_checkmark_chip.dart` - new widget. API per spec. Private const `_reservedSlotWidth = 22.0`. Wraps `InkWell + Container + Row(min) + Visibility(maintainSize,maintainAnimation,maintainState, child: Icon(Icons.check)) + Flexible(Text)`.
-- [ ] `test/app/core/widgets/reserved_checkmark_chip_test.dart` - new test file with the five TDD slices above.
-- [ ] `lib/app/features/tasks/presentation/widgets/tasks_filter_bar.dart:117-158` - replace each of the six `FilterChip(key, label, selected, onSelected, selectedColor)` calls with `ReservedCheckmarkChip(key: <same>, label: <same>, selected: <same>, onChanged: <same callback shape>, selectedColor: <same>)`. Keys preserved verbatim.
-- [ ] Verify: `flutter analyze` && `flutter test` (including `tasks_filter_sort_group_journey_test.dart` — keys preserve, journey stays green).
+- [x] `lib/app/core/widgets/reserved_checkmark_chip.dart` — new shared widget. API: `(label, selected, onChanged, selectedColor?)`. Private const `_reservedSlotWidth = 22.0` (= `IconTheme.iconSize` 18 + `AppSpacing.xs` 4). Structure: `InkWell + Container + Row(min) + SizedBox(22) + Visibility(maintainSize,maintainAnimation,maintainState, child: Icon(Icons.check)) + Flexible(Text)`.
+- [x] TDD (5 slices): width parity selected vs unselected (± 0.5 px); ✓ visible-vs-invisible-but-maintain-size; tap fires `onChanged(!selected)`; long label ellipsizes at narrow constraint; no overflow at `MediaQuery.textScaler 1.3`. All 5 GREEN.
+- [x] `test/app/core/widgets/reserved_checkmark_chip_test.dart` — 5 tests, one per contract slice.
+- [x] `lib/app/features/tasks/presentation/widgets/tasks_filter_bar.dart:117-158` — replaced all six Material `FilterChip` calls with `ReservedCheckmarkChip`. Keys preserved verbatim (`tasks.list.filterChip.{mine,overdue,hasBudget,todo,inProgress,done}`). Callback names normalised from `onSelected: ...` → `onChanged: ...` per the new widget's API.
+- [x] Verified: `flutter analyze` clean; `flutter test` 829 / 829 passing (was 824; +5 new chip tests). Journey test `tasks_filter_sort_group_journey_test.dart` survives the swap unchanged — Key-by-Key selection confirms the contract holds.
 
 ### Phase 8: SegmentedButton width-locking for group toggle (req 6b)
 
