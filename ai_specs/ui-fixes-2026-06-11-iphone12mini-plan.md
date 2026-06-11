@@ -46,14 +46,13 @@ Eight UI polish fixes (5 reported + 3 bonus) from the 2026-06-11 QA pass. Contin
 - [x] `lib/app/core/widgets/segmented_filter_bar.dart:174` — added `alignment: Alignment.center` to the outer `Container` in `_Pill.build`. Row's `mainAxisSize: min` left untouched (preserves label+count clustering).
 - [x] Verified: `flutter analyze` clean; `flutter test` 817 / 817 passing (was 816).
 
-### Phase 3: Event detail Edit Event tile (req 2)
+### Phase 3: Event detail Edit Event tile (req 2) ✓
 
 - **Goal**: Admin-only `Edit Event` tile, discoverable, above `Invite Members`.
-- [ ] TDD: pump `EventDashboardScreen` with admin uid → `find.byKey(Key('eventDashboard.editEvent.tile'))` resolves; tap → `context.push` reaches `/dashboard/event/<id>/edit` (verify via router seam or navigator spy).
-- [ ] TDD: pump with non-admin uid → tile absent.
-- [ ] `test/app/features/dashboard/presentation/event_dashboard_screen_admin_edit_tile_test.dart` - new test file.
-- [ ] `lib/app/features/dashboard/presentation/event_dashboard_screen.dart` - insert new `_QuickLinkCard` above `Invite Members` Consumer (around line 67). Same admin Consumer pattern. Icon `AppIcons.actionEdit`, label `'Edit Event'`, key `eventDashboard.editEvent.tile`, tap → `context.push('/dashboard/event/${event.id}/edit')`.
-- [ ] Verify: `flutter analyze` && `flutter test`.
+- [x] TDD (3 cases): admin uid → tile renders + `'Edit Event'` label visible; non-admin uid → absent; null uid → absent. RED on the present case before source edit.
+- [x] `test/app/features/dashboard/presentation/event_dashboard_screen_admin_edit_tile_test.dart` — new test file using `ProviderScope.overrides` for `currentUserIdProvider`. `creatorId` field on `EventModel` drives `isAdmin`.
+- [x] `lib/app/features/dashboard/presentation/event_dashboard_screen.dart:67-94` — inserted new admin-gated `Consumer + _QuickLinkCard` directly above the existing `Invite Members` tile. Icon: `AppIcons.actionEdit`. Label: `'Edit Event'`. Subtitle: `'Update title, dates, or details'`. Color: `AppColors.sage` (neutral, distinguishes from the terracotta `Invite Members`). Key: `eventDashboard.editEvent.tile`. Tap → `context.push('/dashboard/event/${event.id}/edit')`.
+- [x] Verified: `flutter analyze` clean; `flutter test` 820 / 820 passing (was 817; +3 new admin-tile tests).
 
 ### Phase 4: BalanceTile divider stretches (req 3)
 

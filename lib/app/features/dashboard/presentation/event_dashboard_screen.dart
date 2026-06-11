@@ -64,6 +64,32 @@ class EventDashboardScreen extends StatelessWidget {
 
                   const SizedBox(height: AppSpacing.md),
 
+                  // Edit Event tile — admin/owner only. Manage-then-add:
+                  // sits above the Invite Members tile so admins reach
+                  // the edit affordance first. Adds a discoverable body
+                  // entry point alongside the gear icon in the hero
+                  // (2026-06-11 iPhone 12 mini QA).
+                  Consumer(
+                    builder: (_, ref, _) {
+                      final uid = ref.watch(currentUserIdProvider);
+                      if (uid == null || !event.isAdmin(uid)) {
+                        return const SizedBox.shrink();
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(top: AppSpacing.md),
+                        child: _QuickLinkCard(
+                          key: const Key('eventDashboard.editEvent.tile'),
+                          icon: AppIcons.actionEdit,
+                          label: 'Edit Event',
+                          subtitle: 'Update title, dates, or details',
+                          color: AppColors.sage,
+                          onTap: () =>
+                              context.push('/dashboard/event/${event.id}/edit'),
+                        ),
+                      );
+                    },
+                  ),
+
                   // Invite Members tile — admin/owner only. Explicit
                   // null-uid guard so we don't rely on isAdmin('') semantics.
                   Consumer(
