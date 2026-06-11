@@ -766,7 +766,10 @@ class _EnglishTasksStrings extends TasksStrings {
       'Create an event from the Dashboard to get started.';
 
   @override
-  String get openDashboardCta => 'Open Dashboard';
+  // The bottom-nav tab on mobile reads "Home". Earlier copy ("Open
+  // Dashboard") referenced the legacy name and made the empty-state
+  // CTAs feel disconnected from the destination they navigate to.
+  String get openDashboardCta => 'Go to Home';
 
   @override
   String get createFromDashboardCta => 'Create an event';

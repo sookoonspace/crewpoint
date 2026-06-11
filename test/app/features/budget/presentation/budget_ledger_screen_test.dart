@@ -122,7 +122,7 @@ void main() {
         find.text('Open an event from the Dashboard to log an expense.'),
         findsOneWidget,
       );
-      expect(find.text('Open Dashboard'), findsOneWidget);
+      expect(find.text('Go to Home'), findsOneWidget);
     },
   );
 

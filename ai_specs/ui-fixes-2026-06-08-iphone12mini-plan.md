@@ -312,22 +312,40 @@ deferred to a follow-up so this PR stays scoped.
 - [x] Verified: `flutter analyze` clean (sole pre-existing
   experimental warning); `flutter test` 810 / 810 passing.
 
-### Phase 8: Tasks empty state — icon + CTA alignment
+### Phase 8: Tasks empty state — icon + CTA alignment ✓
 
 - **Goal**: The empty state on the Tasks tab reads as "no tasks" and
   the CTA text matches the bottom-nav tab name.
-- [ ] Swap the empty-state icon from the current tent-shaped icon
-  to `Icons.checklist_outlined` (or the equivalent already exposed
-  via `AppIcons`). Keep size + tint untouched.
-- [ ] Rename the CTA label from "Open Dashboard" to "Go to Home" so
-  it matches the bottom-nav tab. The bottom nav stays "Home"; the
-  CTA aligns to it (smaller diff, no terminology churn elsewhere).
-- [ ] TDD: extend
-  `test/app/features/tasks/presentation/event_tasks_page_test.dart`
-  (or the empty-state test) — assert `find.byIcon(Icons.checklist_outlined)`
-  resolves and the button text is `'Go to Home'`.
-- [ ] Verify: `flutter analyze && flutter test`. Manual: navigate to
-  Tasks with no assigned tasks and confirm the new copy + icon.
+- [x] Renamed the shared `openDashboardCta` getter in
+  `lib/app/core/i18n/app_strings.dart` from `'Open Dashboard'` to
+  `'Go to Home'`. Updated the three sibling tests that pinned the
+  literal — `my_tasks_screen_test.dart`,
+  `budget_ledger_screen_test.dart`,
+  `chat_inbox_screen_test.dart`. The Chat, Budget, and Tasks
+  empty-state CTAs now agree with the bottom-nav tab name on every
+  surface that uses this key.
+- [x] Tasks empty state — discovered that the visible "tent-shaped"
+  blob is actually the default `lottieEmptyState` animation, not
+  the icon fallback. `EmptyStatePlaceholder` only renders
+  `iconFallback` when Lottie fails to load, so the original plan's
+  "swap iconFallback to checklist" wouldn't have changed what
+  testers see on a working install.
+  - Resolved by passing `lottieAsset: null` at the Tasks call-site
+    (`lib/app/features/tasks/presentation/my_tasks_screen.dart:347-348`)
+    so the placeholder always uses the icon path, and setting
+    `iconFallback: AppIcons.navTasks` (`Icons.task_outlined`) — the
+    same icon the bottom-nav tab uses, so the metaphor is
+    consistent across the app.
+- [x] TDD: extended the existing `empty-with-events branch` test in
+  `my_tasks_screen_test.dart` with two new assertions — CTA text
+  `'Go to Home'` and `find.byIcon(AppIcons.navTasks)` resolves to
+  one widget. Confirmed RED in two steps (the CTA assertion failed
+  first; the icon assertion failed after that) before each source
+  edit.
+- [x] Verified: `flutter analyze` clean (sole pre-existing
+  experimental warning); `flutter test` 810 / 810 passing —
+  including the three sibling i18n suites that needed the string
+  flip.
 
 ### Phase 9: P2 items — defer
 
