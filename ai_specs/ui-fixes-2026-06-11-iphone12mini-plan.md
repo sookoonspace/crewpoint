@@ -86,12 +86,13 @@ Eight UI polish fixes (5 reported + 3 bonus) from the 2026-06-11 QA pass. Contin
 - [x] `lib/app/features/tasks/presentation/widgets/tasks_filter_bar.dart:117-158` — replaced all six Material `FilterChip` calls with `ReservedCheckmarkChip`. Keys preserved verbatim (`tasks.list.filterChip.{mine,overdue,hasBudget,todo,inProgress,done}`). Callback names normalised from `onSelected: ...` → `onChanged: ...` per the new widget's API.
 - [x] Verified: `flutter analyze` clean; `flutter test` 829 / 829 passing (was 824; +5 new chip tests). Journey test `tasks_filter_sort_group_journey_test.dart` survives the swap unchanged — Key-by-Key selection confirms the contract holds.
 
-### Phase 8: SegmentedButton width-locking for group toggle (req 6b)
+### Phase 8: SegmentedButton width-locking for group toggle (req 6b) ✓
 
 - **Goal**: Status/People/Due segments stay equal-width across selection. Material visual preserved.
-- [ ] TDD: extend `tasks_filter_bar_groupby_overflow_test.dart` — measure each segment's width while cycling `TasksGroupBy` selection. Assert all three widths equal (±0.5 px) for every selection state. RED on current state (Material grows the selected segment to fit the ✓).
-- [ ] `lib/app/features/tasks/presentation/widgets/tasks_filter_bar.dart` - extract `_measureText` from `segmented_filter_bar.dart:138-145` OR inline. Pre-compute widest of the three labels at the SegmentedButton's text style. Wrap each `ButtonSegment.label`'s `Text` in `SizedBox(width: widestLabel + 22)` so the Material ✓ slot fits inside the shared width.
-- [ ] Verify: `flutter analyze` && `flutter test`.
+- [x] TDD: extended `tasks_filter_bar_groupby_overflow_test.dart` — cycled all 3 `TasksGroupBy` selection states, captured each segment's width by Key, asserted per-slot widths within 0.5 px. RED before source edit (60.33 vs 90.33 spread = 30 px).
+- [x] **Approach pivot from the spec**: tried the spec's `SizedBox(width: widest + 22)` first; Material's `showSelectedIcon: true` still allocates the ✓ slot OUTSIDE the SizedBox, so the segment intrinsic width still differed by ~30 px between selected/unselected. Switched to: `SegmentedButton(showSelectedIcon: false)` + a new private `_GroupSegmentLabel` widget that renders our own ✓ via `Visibility(maintainSize)` inside a fixed-width `SizedBox`, same shape as `ReservedCheckmarkChip` from Phase 7. Material's connected-pill visual is preserved (segments stay touching with a single border) — only the ✓ delivery mechanism changes.
+- [x] `lib/app/features/tasks/presentation/widgets/tasks_filter_bar.dart` — added `_groupSegmentSlotWidth(context, strings)` helper (TextPainter-measures widest label at `labelLarge` style, returns `widest + 22`). Each `ButtonSegment.label` now wraps `_GroupSegmentLabel(label, selected, width)`. Keys moved from inner Text to outer `_GroupSegmentLabel`. Journey test taps by Key → continues to work.
+- [x] Verified: `flutter analyze` clean (sole pre-existing warning); `flutter test` 830 / 830 passing (was 829; +1 width-parity test). Journey test `tasks_filter_sort_group_journey_test.dart` passes unchanged.
 
 ### Phase 9: Task list empty-state Lottie bypass (req 7, bonus B1)
 

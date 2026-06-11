@@ -67,4 +67,59 @@ void main() {
       );
     }
   });
+
+  testWidgets('group-by SegmentedButton segments have identical width across '
+      'selection — Material grows the selected segment to fit ✓; the '
+      'fix wraps each label in a SizedBox sized to the widest label + '
+      'reserved 22-px ✓ slot so widths stay constant (2026-06-11 QA)', (
+    tester,
+  ) async {
+    const segmentKeys = [
+      Key('tasks.list.groupToggle.status'),
+      Key('tasks.list.groupToggle.assignee'),
+      Key('tasks.list.groupToggle.dueWindow'),
+    ];
+
+    final widthsBySelection = <TasksGroupBy, List<double>>{};
+    for (final group in TasksGroupBy.values) {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SafeArea(
+              child: SizedBox(
+                width: iphone12MiniWidth,
+                child: TasksFilterBar(
+                  filter: TasksFilter(groupBy: group),
+                  onFilterChanged: (_) {},
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      widthsBySelection[group] = [
+        for (final k in segmentKeys) tester.getSize(find.byKey(k)).width,
+      ];
+    }
+
+    // For each segment slot, assert the width is identical across
+    // every TasksGroupBy selection state.
+    for (var slot = 0; slot < segmentKeys.length; slot++) {
+      final widths = TasksGroupBy.values
+          .map((g) => widthsBySelection[g]![slot])
+          .toList();
+      final spread =
+          widths.reduce((a, b) => a > b ? a : b) -
+          widths.reduce((a, b) => a < b ? a : b);
+      expect(
+        spread,
+        lessThan(0.5),
+        reason:
+            'Segment slot $slot widths drifted across selection: '
+            '$widths (spread=${spread.toStringAsFixed(2)} px). '
+            'Wrap each ButtonSegment.label in a SizedBox(width: widest + 22) '
+            'so Material\'s ✓ slot fits inside the shared width.',
+      );
+    }
+  });
 }
