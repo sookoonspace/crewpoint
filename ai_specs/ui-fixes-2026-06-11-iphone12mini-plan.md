@@ -54,12 +54,12 @@ Eight UI polish fixes (5 reported + 3 bonus) from the 2026-06-11 QA pass. Contin
 - [x] `lib/app/features/dashboard/presentation/event_dashboard_screen.dart:67-94` — inserted new admin-gated `Consumer + _QuickLinkCard` directly above the existing `Invite Members` tile. Icon: `AppIcons.actionEdit`. Label: `'Edit Event'`. Subtitle: `'Update title, dates, or details'`. Color: `AppColors.sage` (neutral, distinguishes from the terracotta `Invite Members`). Key: `eventDashboard.editEvent.tile`. Tap → `context.push('/dashboard/event/${event.id}/edit')`.
 - [x] Verified: `flutter analyze` clean; `flutter test` 820 / 820 passing (was 817; +3 new admin-tile tests).
 
-### Phase 4: BalanceTile divider stretches (req 3)
+### Phase 4: BalanceTile divider stretches (req 3) ✓
 
 - **Goal**: Divider spans label + amount, not just label height.
-- [ ] TDD: extend `test/app/core/widgets/balance_tile_test.dart` — assert divider `RenderBox` height equals parent Row's height (±1 px) for `owedToYou: 0, youOwe: 333.33` case. RED at current 40 px.
-- [ ] `lib/app/core/widgets/balance_tile.dart:95-154` - wrap inner Row in `IntrinsicHeight`. Replace lines 125-130 with `VerticalDivider(width: AppSpacing.md * 2 + 1, thickness: 1, color: Theme.of(context).colorScheme.outline)`.
-- [ ] Verify: `flutter analyze` && `flutter test`.
+- [x] Added a stable Key `balance.tile.divider` to the divider Container (so the test can locate it). RED via `dividerHeight > 50` for `owedToYou: 0, youOwe: 333.33` — failed at 40 px on the pre-fix state.
+- [x] `lib/app/core/widgets/balance_tile.dart:95-159` — wrapped inner Row in `IntrinsicHeight`, switched `crossAxisAlignment` to `stretch`, replaced the fixed-height Container with `VerticalDivider(width: AppSpacing.md * 2 + 1, thickness: 1, color: theme.colorScheme.outline)` carrying the same Key.
+- [x] Verified: `flutter analyze` clean; `flutter test` 821 / 821 passing (was 820).
 
 ### Phase 5: Per-event Budget polish — FAB clearance + AppBar + first-row pad (req 4, 5 Budget, B3)
 
