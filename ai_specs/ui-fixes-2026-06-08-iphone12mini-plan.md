@@ -347,16 +347,16 @@ deferred to a follow-up so this PR stays scoped.
   including the three sibling i18n suites that needed the string
   flip.
 
-### Phase 9: P2 items — defer
+### Phase 9: P2 items — defer ✓
 
 - **Goal**: Document deferred polish so it doesn't get lost.
-- [ ] Add a brief follow-up note (in `ai_specs/todo.md`) listing:
-  - Filter chip row on Tasks (consider horizontal scroll or
-    overflow sheet).
-  - Recent-expense title heavy truncation on the global Budget tab.
-  - Vertical centering on empty-state widgets (Tasks + Chat).
-  - Reduced min-height on multi-line Description fields.
-- [ ] No source changes in this phase.
+- [x] Added a new section "UI polish — deferred (post 2026-06-08
+  iPhone 12 mini QA)" to `ai_specs/todo.md` capturing the four
+  P2 items with their concrete source-file pointers:
+  Tasks filter-chip row crowding, recent-expense title truncation
+  on the global Budget tab, empty-state vertical centering, and
+  the multi-line Description field min-height tightening.
+- [x] No source changes in this phase (per plan scope).
 
 ## Risks / Out of scope
 
