@@ -2,11 +2,11 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
+import 'package:crewpoint_app/app/core/format/event_date_range.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
@@ -150,7 +150,7 @@ class _EventHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat.yMMMd();
+    final dateLabel = formatEventDateRange(event.startDate, event.endDate);
 
     return Container(
       decoration: const BoxDecoration(
@@ -274,7 +274,7 @@ class _EventHero extends StatelessWidget {
               const SizedBox(height: AppSpacing.sm),
 
               // Dates
-              if (event.startDate != null)
+              if (dateLabel.isNotEmpty)
                 Row(
                   spacing: AppSpacing.sm,
                   children: [
@@ -284,23 +284,11 @@ class _EventHero extends StatelessWidget {
                       color: AppColors.sageLight,
                     ),
                     Text(
-                      dateFormat.format(event.startDate!),
+                      dateLabel,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppColors.sageLight,
                       ),
                     ),
-                    if (event.endDate != null) ...[
-                      const Text(
-                        '—',
-                        style: TextStyle(color: AppColors.sageLight),
-                      ),
-                      Text(
-                        dateFormat.format(event.endDate!),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.sageLight,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
 
