@@ -217,13 +217,25 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // `todo` reverses correctly in dark mode by reading from the theme
+    // (the older `(charcoal, lightGrey)` pair painted dark text on a
+    // pale pill island against the dark surrounding chrome — 2026-06-11
+    // follow-up). Light mode keeps the original tokens visually
+    // unchanged. `inProgress` + `done` already pick theme-agnostic
+    // sage tokens that contrast in both modes; left untouched.
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = Theme.of(context).colorScheme;
     final (color, bgColor) = switch (status) {
-      TaskStatus.todo => (AppColors.charcoal, AppColors.lightGrey),
+      TaskStatus.todo =>
+        isDark
+            ? (colors.onSurfaceVariant, colors.surfaceContainerHighest)
+            : (AppColors.charcoal, AppColors.lightGrey),
       TaskStatus.inProgress => (AppColors.white, AppColors.sage),
       TaskStatus.done => (AppColors.white, AppColors.sageDark),
     };
 
     return Container(
+      key: const Key('tasks.detail.statusBadge'),
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
         vertical: AppSpacing.xs,

@@ -80,6 +80,16 @@ abstract final class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       dividerTheme: const DividerThemeData(color: AppColors.lightGrey),
+      // Explicit in light mode so future Material defaults don't drift
+      // the look. Sage fill + white ✓ + charcoal outline.
+      checkboxTheme: CheckboxThemeData(
+        fillColor: WidgetStateProperty.resolveWith(
+          (states) =>
+              states.contains(WidgetState.selected) ? AppColors.sage : null,
+        ),
+        checkColor: WidgetStateProperty.all(AppColors.white),
+        side: const BorderSide(color: AppColors.charcoal, width: 2),
+      ),
     );
   }
 
@@ -150,6 +160,19 @@ abstract final class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       dividerTheme: const DividerThemeData(color: AppColors.darkGrey),
+      // Without an explicit dark-theme entry Material's defaults rendered
+      // a charcoal fill on the dark surface (checked) + a near-invisible
+      // outline (unchecked), flagged in IMG_1874.PNG. SageLight fill +
+      // charcoalDark ✓ + lightGrey outline restore contrast.
+      checkboxTheme: CheckboxThemeData(
+        fillColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? AppColors.sageLight
+              : null,
+        ),
+        checkColor: WidgetStateProperty.all(AppColors.charcoalDark),
+        side: const BorderSide(color: AppColors.lightGrey, width: 2),
+      ),
     );
   }
 }
