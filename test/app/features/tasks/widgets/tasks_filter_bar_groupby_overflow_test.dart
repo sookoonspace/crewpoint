@@ -14,6 +14,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/features/tasks/application/tasks_filter.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/widgets/tasks_filter_bar.dart';
@@ -64,6 +65,78 @@ void main() {
             'SegmentedButton grew taller than a single row at '
             '$iphone12MiniWidth px when "$group" was selected '
             '(height=$segmentedHeight). A segment label likely wrapped.',
+      );
+    }
+  });
+
+  testWidgets('group-by SegmentedButton segments have identical width across '
+      'selection — Material grows the selected segment to fit ✓; the '
+      'fix wraps each label in a SizedBox sized to the widest label + '
+      'reserved 22-px ✓ slot so widths stay constant (2026-06-11 QA)', (
+    tester,
+  ) async {
+    const segmentKeys = [
+      Key('tasks.list.groupToggle.status'),
+      Key('tasks.list.groupToggle.assignee'),
+      Key('tasks.list.groupToggle.dueWindow'),
+    ];
+
+    final widthsBySelection = <TasksGroupBy, List<double>>{};
+    for (final group in TasksGroupBy.values) {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SafeArea(
+              child: SizedBox(
+                width: iphone12MiniWidth,
+                child: TasksFilterBar(
+                  filter: TasksFilter(groupBy: group),
+                  onFilterChanged: (_) {},
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      widthsBySelection[group] = [
+        for (final k in segmentKeys) tester.getSize(find.byKey(k)).width,
+      ];
+
+      // No-truncation guard — each Text widget's RenderParagraph must
+      // not report didExceedMaxLines. Pre-fix, the SizedBox-clamped
+      // labels truncated to "Sta..." / "Peo..." at iPhone 12 mini
+      // because Material squeezed the segment slot narrower than the
+      // computed slot width.
+      for (final k in segmentKeys) {
+        final paragraph = tester.renderObject<RenderParagraph>(find.byKey(k));
+        expect(
+          paragraph.didExceedMaxLines,
+          isFalse,
+          reason:
+              'Segment $k label truncated when "$group" was selected. '
+              'Dropping the reserved-✓ slot gives the label the full '
+              'segment width so it stops ellipsizing.',
+        );
+      }
+    }
+
+    // For each segment slot, assert the width is identical across
+    // every TasksGroupBy selection state.
+    for (var slot = 0; slot < segmentKeys.length; slot++) {
+      final widths = TasksGroupBy.values
+          .map((g) => widthsBySelection[g]![slot])
+          .toList();
+      final spread =
+          widths.reduce((a, b) => a > b ? a : b) -
+          widths.reduce((a, b) => a < b ? a : b);
+      expect(
+        spread,
+        lessThan(0.5),
+        reason:
+            'Segment slot $slot widths drifted across selection: '
+            '$widths (spread=${spread.toStringAsFixed(2)} px). '
+            'Wrap each ButtonSegment.label in a SizedBox(width: widest + 22) '
+            'so Material\'s ✓ slot fits inside the shared width.',
       );
     }
   });

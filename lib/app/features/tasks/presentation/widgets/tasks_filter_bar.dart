@@ -20,6 +20,7 @@ import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
+import 'package:crewpoint_app/app/core/widgets/reserved_checkmark_chip.dart';
 import 'package:crewpoint_app/app/features/tasks/application/tasks_filter.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 
@@ -114,46 +115,46 @@ class _TasksFilterBarState extends State<TasksFilterBar> {
             spacing: AppSpacing.sm,
             runSpacing: 4,
             children: [
-              FilterChip(
+              ReservedCheckmarkChip(
                 key: const Key('tasks.list.filterChip.mine'),
-                label: Text(s.filterChipMine),
+                label: s.filterChipMine,
                 selected: f.onlyMine,
-                onSelected: (sel) => _emit(f.copyWith(onlyMine: sel)),
+                onChanged: (sel) => _emit(f.copyWith(onlyMine: sel)),
                 selectedColor: AppColors.sage.withValues(alpha: 0.25),
               ),
-              FilterChip(
+              ReservedCheckmarkChip(
                 key: const Key('tasks.list.filterChip.overdue'),
-                label: Text(s.filterChipOverdue),
+                label: s.filterChipOverdue,
                 selected: f.onlyOverdue,
-                onSelected: (sel) => _emit(f.copyWith(onlyOverdue: sel)),
+                onChanged: (sel) => _emit(f.copyWith(onlyOverdue: sel)),
                 selectedColor: AppColors.terracotta.withValues(alpha: 0.25),
               ),
-              FilterChip(
+              ReservedCheckmarkChip(
                 key: const Key('tasks.list.filterChip.hasBudget'),
-                label: Text(s.filterChipHasBudget),
+                label: s.filterChipHasBudget,
                 selected: f.onlyWithBudget,
-                onSelected: (sel) => _emit(f.copyWith(onlyWithBudget: sel)),
+                onChanged: (sel) => _emit(f.copyWith(onlyWithBudget: sel)),
                 selectedColor: AppColors.sage.withValues(alpha: 0.25),
               ),
-              FilterChip(
+              ReservedCheckmarkChip(
                 key: const Key('tasks.list.filterChip.todo'),
-                label: Text(s.statusTodo),
+                label: s.statusTodo,
                 selected: f.statuses.contains(TaskStatus.todo),
-                onSelected: (_) => _toggleStatus(TaskStatus.todo),
+                onChanged: (_) => _toggleStatus(TaskStatus.todo),
                 selectedColor: AppColors.sage.withValues(alpha: 0.25),
               ),
-              FilterChip(
+              ReservedCheckmarkChip(
                 key: const Key('tasks.list.filterChip.inProgress'),
-                label: Text(s.statusInProgress),
+                label: s.statusInProgress,
                 selected: f.statuses.contains(TaskStatus.inProgress),
-                onSelected: (_) => _toggleStatus(TaskStatus.inProgress),
+                onChanged: (_) => _toggleStatus(TaskStatus.inProgress),
                 selectedColor: AppColors.sage.withValues(alpha: 0.25),
               ),
-              FilterChip(
+              ReservedCheckmarkChip(
                 key: const Key('tasks.list.filterChip.done'),
-                label: Text(s.statusDone),
+                label: s.statusDone,
                 selected: f.statuses.contains(TaskStatus.done),
-                onSelected: (_) => _toggleStatus(TaskStatus.done),
+                onChanged: (_) => _toggleStatus(TaskStatus.done),
                 selectedColor: AppColors.sage.withValues(alpha: 0.25),
               ),
             ],
@@ -216,6 +217,15 @@ class _TasksFilterBarState extends State<TasksFilterBar> {
               ),
               SegmentedButton<TasksGroupBy>(
                 key: const Key('tasks.list.groupToggle'),
+                // showSelectedIcon: false removes Material's auto-✓
+                // entirely. Selection is signalled by the background
+                // color from the SegmentedButton's theme; widths stay
+                // constant across selection because no segment ever
+                // has to grow to fit a ✓. Labels render at the full
+                // segment width (no reserved slot stealing space),
+                // so "Status"/"People" stop ellipsizing to "Sta..."/
+                // "Peo..." at iPhone 12 mini (2026-06-11 follow-up).
+                showSelectedIcon: false,
                 segments: [
                   ButtonSegment(
                     value: TasksGroupBy.status,

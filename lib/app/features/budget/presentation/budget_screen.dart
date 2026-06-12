@@ -65,7 +65,17 @@ class BudgetScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(appBarTitle ?? 'Budget', overflow: TextOverflow.ellipsis),
+        title: Text(
+          appBarTitle ?? 'Budget',
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        // kToolbarHeight=56 clips a 2-line titleMedium; +16 leaves
+        // breathing room (72 ≈ 24 px line × 2 + AppBar vertical insets).
+        toolbarHeight: kToolbarHeight + 16,
         elevation: 0,
         actions: [
           if (onExportPdf != null || onExportCsv != null)
@@ -99,7 +109,15 @@ class BudgetScreen extends StatelessWidget {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
+        // Bottom = FAB diameter (56) + endFloat margin (16) + breathing
+        // room (16) = 88 px so the last expense row's overflow menu
+        // sits ≥ 16 px above the FAB top (2026-06-11 iPhone 12 mini QA).
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.xxxl + AppSpacing.xl + AppSpacing.lg,
+        ),
         children: [
           // Total summary
           _TotalCard(total: ledger.totalExpenses, symbol: symbol),

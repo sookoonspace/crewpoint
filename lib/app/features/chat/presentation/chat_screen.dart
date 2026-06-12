@@ -102,8 +102,16 @@ class _ChatScreenState extends State<ChatScreen> {
       appBar: AppBar(
         title: Text(
           widget.appBarTitle ?? s.chatAppBarTitle,
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
+        // Matches BudgetScreen — kToolbarHeight (56) clips a 2-line
+        // titleMedium; +16 leaves breathing room for long event titles
+        // like "Weekend getaway" (2026-06-11 iPhone 12 mini QA).
+        toolbarHeight: kToolbarHeight + 16,
         elevation: 0,
         actions: [
           IconButton(

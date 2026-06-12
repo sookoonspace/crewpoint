@@ -48,4 +48,44 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets(
+    'AppBar title wraps to 2 lines with a taller toolbar — same shape '
+    'as the Budget detail (2026-06-11 iPhone 12 mini QA)',
+    (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: ChatScreen(
+            messages: [],
+            currentUserId: 'u1',
+            appBarTitle: 'Weekend getaway',
+          ),
+        ),
+      );
+
+      final titleText = tester.widget<Text>(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text('Weekend getaway'),
+        ),
+      );
+      expect(titleText.maxLines, 2, reason: 'title must allow 2 lines');
+
+      final appBar = tester.widget<AppBar>(find.byType(AppBar));
+      expect(
+        appBar.toolbarHeight,
+        isNotNull,
+        reason:
+            'toolbarHeight must be set explicitly; Material defaults to '
+            '56 which clips the second line.',
+      );
+      expect(
+        appBar.toolbarHeight,
+        greaterThanOrEqualTo(72.0),
+        reason:
+            'toolbarHeight=${appBar.toolbarHeight} is too small — needs '
+            '>=72 to fit 2 lines of titleMedium.',
+      );
+    },
+  );
 }
