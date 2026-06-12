@@ -33,17 +33,20 @@ Three contrast fixes on the per-event task detail screen for dark mode. Route ha
 - [x] `test/app/features/tasks/task_detail_screen_test.dart` — added `_StatusBadge — theme-aware colours` group with 5 tests (dark todo, AA contrast, light todo unchanged, inProgress + done parity across themes).
 - [x] Verified: `flutter analyze` clean (sole pre-existing experimental warning); `flutter test` 803 / 803 passing (was 798; +5 new badge tests).
 
-### Phase 2: `CheckboxThemeData` + strike-through colour
+### Phase 2: `CheckboxThemeData` + strike-through colour ✓
 
 - **Goal**: Checked + unchecked checkboxes visible in dark mode; completed-item strike-through legible.
-- [ ] TDD: dark theme, `Checkbox(value: true)` → `Checkbox.fillColor` resolves to `colorScheme.primary` for `MaterialState.selected`. RED before adding `CheckboxThemeData`.
-- [ ] TDD: dark theme, `Checkbox(value: false)` → `Checkbox.side` (outline) resolves to `colorScheme.outline` (or `onSurfaceVariant` — pick at implementation time based on contrast). Visible against dark surface.
-- [ ] TDD: light-mode parity — `Checkbox` in light theme still uses Material defaults; assert no exception, basic render. Light parity check, not a full lock.
-- [ ] TDD: completed checklist item Text — `style.color == colorScheme.onSurfaceVariant` under dark theme; `TextDecoration.lineThrough` present.
-- [ ] `lib/app/core/theme/app_theme.dart:85-154` (dark) — add `checkboxTheme: CheckboxThemeData(fillColor: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected) ? AppColors.sageLight : null), checkColor: WidgetStateProperty.all(AppColors.charcoalDark), side: const BorderSide(color: AppColors.lightGrey, width: 2))`. Light theme: add parity entry if absent (use existing Material defaults colour mapping but make it explicit).
-- [ ] `lib/app/features/tasks/presentation/widgets/checklist_editor.dart:184-196` — completed-item Text: pass `style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, decoration: TextDecoration.lineThrough)` when `widget.item.isCompleted`. Use existing style chain otherwise.
-- [ ] `test/app/features/tasks/widgets/checklist_editor_test.dart` (new) — four tests above. Inject `ThemeData.dark()`/`ThemeData.light()` via `MaterialApp(theme: ...)`.
-- [ ] Verify: `flutter analyze` && `flutter test`.
+- [x] TDD: dark theme — `checkboxTheme.fillColor.resolve({WidgetState.selected}) == AppColors.sageLight`. RED before source edit.
+- [x] TDD: dark theme — `checkboxTheme.checkColor.resolve({WidgetState.selected}) == AppColors.charcoalDark` (AA contrast on sageLight).
+- [x] TDD: dark theme — `checkboxTheme.side.color == AppColors.lightGrey` (unchecked outline visible against dark surface).
+- [x] TDD: light theme — `checkboxTheme.fillColor != null` (explicit parity; doesn't drift with Material updates).
+- [x] TDD (completed text, both themes): `text.style.color == colorScheme.onSurfaceVariant` + `decoration == TextDecoration.lineThrough`. Locked the pre-existing source.
+- [x] TDD (unchecked text, both themes): `text.style.color == colorScheme.onSurface`, no decoration. Lock-in only.
+- [x] `lib/app/core/theme/app_theme.dart:82-94 (light)` + `app_theme.dart:162-176 (dark)` — added `checkboxTheme: CheckboxThemeData(fillColor, checkColor, side)`. Dark uses sageLight + charcoalDark + lightGrey 2-px outline; light uses sage + white + charcoal 2-px outline.
+- [x] `lib/app/features/tasks/presentation/widgets/checklist_editor.dart:184-194` — already routes through `colorScheme.onSurfaceVariant` for completed items (no source change needed; test locks the contract in).
+- [x] `test/app/core/theme/checkbox_theme_test.dart` (new) — 4 tests on the theme contract.
+- [x] `test/app/features/tasks/widgets/checklist_editor_test.dart` (new) — 4 tests covering strike-through colour + decoration across both themes for completed AND unchecked states.
+- [x] Verified: `flutter analyze` clean; `flutter test` 811 / 811 passing (was 803; +8 new tests).
 
 ## Risks / Out of scope
 
