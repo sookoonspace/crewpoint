@@ -344,7 +344,11 @@ class _MyTasksEmptyState extends ConsumerWidget {
       ctaLabel: hasEvents
           ? strings.openDashboardCta
           : strings.createFromDashboardCta,
-      iconFallback: AppIcons.statusDone,
+      // Skip the generic empty-state Lottie so this surface reads as
+      // "no tasks" via its own icon rather than the tent-shaped
+      // animation shared with Chat + Budget (2026-06-08 UI QA pass).
+      lottieAsset: null,
+      iconFallback: AppIcons.navTasks,
       onCta: () {
         final cb = onOpenDashboard;
         if (cb != null) {

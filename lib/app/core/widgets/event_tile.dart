@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/format/event_date_range.dart';
 import 'package:crewpoint_app/app/core/widgets/task_progress_summary.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/event_type_emoji.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
@@ -25,14 +25,7 @@ class EventTile extends StatelessWidget {
   final int done;
   final VoidCallback? onTap;
 
-  String _dateRange() {
-    final start = event.startDate;
-    final end = event.endDate;
-    if (start == null) return '';
-    final fmt = DateFormat.MMMd();
-    if (end == null || end == start) return fmt.format(start);
-    return '${fmt.format(start)}–${fmt.format(end)}';
-  }
+  String _dateRange() => formatEventDateRange(event.startDate, event.endDate);
 
   String _memberCount() {
     final n = event.memberIds.length;

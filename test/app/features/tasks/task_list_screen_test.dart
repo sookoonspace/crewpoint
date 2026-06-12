@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/application/tasks_filter.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
@@ -72,6 +73,35 @@ void main() {
         find.byKey(const Key('tasks.list.emptyState.clear')),
         findsNothing,
       );
+    },
+  );
+
+  testWidgets('empty state (no filters) shows the tasks icon (not the generic '
+      'tent Lottie) — 2026-06-11 iPhone 12 mini bonus B1', (tester) async {
+    resizeWide(tester);
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(
+      pump(groups: const [], filter: const TasksFilter()),
+    );
+
+    expect(find.byIcon(AppIcons.navTasks), findsOneWidget);
+    expect(find.byKey(const Key('emptyState.lottie')), findsNothing);
+  });
+
+  testWidgets(
+    'empty state (active filters) shows the tasks icon (not the generic '
+    'tent Lottie) — 2026-06-11 iPhone 12 mini bonus B1',
+    (tester) async {
+      resizeWide(tester);
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        pump(groups: const [], filter: const TasksFilter(onlyMine: true)),
+      );
+
+      expect(find.byIcon(AppIcons.navTasks), findsOneWidget);
+      expect(find.byKey(const Key('emptyState.lottie')), findsNothing);
     },
   );
 

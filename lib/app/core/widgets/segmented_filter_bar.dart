@@ -174,6 +174,11 @@ class _Pill<T> extends StatelessWidget {
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.sm,
         ),
+        // Centre the (min-sized) Row inside the (full-width) pill when
+        // the parent uses equalWidth + Expanded. Without this, the Row
+        // hugs the start edge and the label visibly drifts left of
+        // centre — 2026-06-11 iPhone 12 mini Home QA.
+        alignment: Alignment.center,
         constraints: const BoxConstraints(minHeight: 48),
         decoration: BoxDecoration(
           color: bg,

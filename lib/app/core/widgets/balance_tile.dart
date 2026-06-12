@@ -92,65 +92,71 @@ class _SplitNumbers extends StatelessWidget {
     );
     final s = context.strings.budget;
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                s.balanceTileYouAreOwedLabel.toUpperCase(),
-                style: labelStyle,
-              ),
-              const SizedBox(height: 2),
-              // FittedBox(scaleDown) keeps very large amounts on a single
-              // line at narrow widths (iPhone 12 mini / SE / 320 px).
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: MoneyText(
-                  key: const Key('balance.tile.owedToYou'),
-                  amount: owedToYou,
-                  currencyCode: currencyCode,
-                  sign: MoneySign.owedToYou,
-                  style: AppTypography.numberDisplay(
-                    color: AppColors.moneyOwedToYouFg,
+    // IntrinsicHeight + a stretched divider so the line spans the
+    // full content height (label + amount), not just the previous
+    // hard-coded 40 px that stopped above the amount row
+    // (2026-06-11 iPhone 12 mini Budget tab QA).
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  s.balanceTileYouAreOwedLabel.toUpperCase(),
+                  style: labelStyle,
+                ),
+                const SizedBox(height: 2),
+                // FittedBox(scaleDown) keeps very large amounts on a single
+                // line at narrow widths (iPhone 12 mini / SE / 320 px).
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: MoneyText(
+                    key: const Key('balance.tile.owedToYou'),
+                    amount: owedToYou,
+                    currencyCode: currencyCode,
+                    sign: MoneySign.owedToYou,
+                    style: AppTypography.numberDisplay(
+                      color: AppColors.moneyOwedToYouFg,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        Container(
-          width: 1,
-          height: 40,
-          margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          color: Theme.of(context).colorScheme.outline,
-        ),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(s.balanceTileYouOweLabel.toUpperCase(), style: labelStyle),
-              const SizedBox(height: 2),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerRight,
-                child: MoneyText(
-                  key: const Key('balance.tile.youOwe'),
-                  amount: youOwe,
-                  currencyCode: currencyCode,
-                  sign: MoneySign.youOwe,
-                  style: AppTypography.numberDisplay(
-                    color: AppColors.moneyYouOweFg,
+          VerticalDivider(
+            key: const Key('balance.tile.divider'),
+            width: AppSpacing.md * 2 + 1,
+            thickness: 1,
+            color: Theme.of(context).colorScheme.outline,
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(s.balanceTileYouOweLabel.toUpperCase(), style: labelStyle),
+                const SizedBox(height: 2),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: MoneyText(
+                    key: const Key('balance.tile.youOwe'),
+                    amount: youOwe,
+                    currencyCode: currencyCode,
+                    sign: MoneySign.youOwe,
+                    style: AppTypography.numberDisplay(
+                      color: AppColors.moneyYouOweFg,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

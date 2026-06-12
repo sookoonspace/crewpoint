@@ -122,7 +122,7 @@ void main() {
         find.text('Open an event from the Dashboard to log an expense.'),
         findsOneWidget,
       );
-      expect(find.text('Open Dashboard'), findsOneWidget);
+      expect(find.text('Go to Home'), findsOneWidget);
     },
   );
 
@@ -180,48 +180,51 @@ void main() {
     },
   );
 
-  testWidgets(
-    'all-settled state — LedgerAllSettledChip renders when debts empty but recent expenses present',
-    (tester) async {
-      const event = EventModel(
-        id: 'evt-1',
-        title: 'Trip',
-        creatorId: 'me',
-        memberIds: ['me'],
-        currency: 'USD',
-      );
-      // Self-only expense: I pay $10, my own split is $10. No debt.
-      final exp = ExpenseModel(
-        id: 'exp-1',
-        eventId: 'evt-1',
-        payerId: 'me',
-        amount: 10,
-        splits: const [ExpenseSplit(userId: 'me', amount: 10)],
-        createdAt: DateTime(2026, 5, 14),
-        description: 'Coffee',
-      );
+  testWidgets('all-settled state — hero is the single "settled" indicator; the '
+      'redundant LedgerAllSettledChip is no longer rendered', (tester) async {
+    const event = EventModel(
+      id: 'evt-1',
+      title: 'Trip',
+      creatorId: 'me',
+      memberIds: ['me'],
+      currency: 'USD',
+    );
+    // Self-only expense: I pay $10, my own split is $10. No debt.
+    final exp = ExpenseModel(
+      id: 'exp-1',
+      eventId: 'evt-1',
+      payerId: 'me',
+      amount: 10,
+      splits: const [ExpenseSplit(userId: 'me', amount: 10)],
+      createdAt: DateTime(2026, 5, 14),
+      description: 'Coffee',
+    );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            currentUserIdProvider.overrideWith((ref) => 'me'),
-            dashboardEventsProvider.overrideWith(
-              (ref) => Stream.value(const [event]),
-            ),
-            expenseListProvider.overrideWith(
-              (ref, eventId) => Stream.value([exp]),
-            ),
-            _emptyRosterOverride,
-          ],
-          child: const MaterialApp(home: BudgetLedgerScreen()),
-        ),
-      );
-      await _pumpFrames(tester);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          currentUserIdProvider.overrideWith((ref) => 'me'),
+          dashboardEventsProvider.overrideWith(
+            (ref) => Stream.value(const [event]),
+          ),
+          expenseListProvider.overrideWith(
+            (ref, eventId) => Stream.value([exp]),
+          ),
+          _emptyRosterOverride,
+        ],
+        child: const MaterialApp(home: BudgetLedgerScreen()),
+      ),
+    );
+    await _pumpFrames(tester);
 
-      expect(find.byKey(const Key('budget.ledger.allSettled')), findsOneWidget);
-      expect(find.text("You're all settled up."), findsOneWidget);
-    },
-  );
+    // Chip is gone — the BalanceTile already shows "$0.00 — all
+    // settled", so the second "You're all settled up." was pure
+    // duplication on the global Budget tab.
+    expect(find.byKey(const Key('budget.ledger.allSettled')), findsNothing);
+    expect(find.text("You're all settled up."), findsNothing);
+    // Hero still carries the message.
+    expect(find.textContaining('all settled'), findsOneWidget);
+  });
 
   testWidgets(
     'recent expense tile tap fires onOpenEventBudget seam with the right event',

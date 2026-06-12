@@ -15,6 +15,7 @@ class BudgetScreen extends StatelessWidget {
     required this.memberIds,
     this.currency = 'USD',
     this.memberNames = const {},
+    this.appBarTitle,
     this.onAddExpense,
     this.onEditExpense,
     this.onDeleteExpense,
@@ -27,6 +28,12 @@ class BudgetScreen extends StatelessWidget {
   final List<String> memberIds;
   final String currency;
   final Map<String, String> memberNames;
+
+  /// AppBar title — the parent (`EventBudgetPage`) wires the event
+  /// name through so users in multiple events know which ledger
+  /// they're looking at. Falls back to "Budget" when not supplied so
+  /// callers that have not been migrated keep their old chrome.
+  final String? appBarTitle;
   final VoidCallback? onAddExpense;
 
   /// Per-tile callbacks. When null, the overflow menu hides that action.
@@ -58,7 +65,17 @@ class BudgetScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Budget'),
+        title: Text(
+          appBarTitle ?? 'Budget',
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        // kToolbarHeight=56 clips a 2-line titleMedium; +16 leaves
+        // breathing room (72 ≈ 24 px line × 2 + AppBar vertical insets).
+        toolbarHeight: kToolbarHeight + 16,
         elevation: 0,
         actions: [
           if (onExportPdf != null || onExportCsv != null)
@@ -92,7 +109,15 @@ class BudgetScreen extends StatelessWidget {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
+        // Bottom = FAB diameter (56) + endFloat margin (16) + breathing
+        // room (16) = 88 px so the last expense row's overflow menu
+        // sits ≥ 16 px above the FAB top (2026-06-11 iPhone 12 mini QA).
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.xxxl + AppSpacing.xl + AppSpacing.lg,
+        ),
         children: [
           // Total summary
           _TotalCard(total: ledger.totalExpenses, symbol: symbol),
@@ -192,9 +217,9 @@ class _TotalCard extends StatelessWidget {
           children: [
             Text(
               'Total Expenses',
-              style: Theme.of(
-                context,
-              ).textTheme.labelMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(

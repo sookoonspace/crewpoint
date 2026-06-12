@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/section_label.dart';
 import 'package:crewpoint_app/app/core/widgets/skeletons.dart';
@@ -70,7 +71,13 @@ void main() {
         find.text('Open an event from the Dashboard to view or create tasks.'),
         findsOneWidget,
       );
-      expect(find.text('Open Dashboard'), findsOneWidget);
+      // CTA matches the bottom-nav tab name. See app_strings.dart
+      // openDashboardCta — shared with Chat + Budget empty states.
+      expect(find.text('Go to Home'), findsOneWidget);
+      // Tasks empty state reads as "no tasks" via the tasks icon, not
+      // the generic empty Lottie blob. Bypassed Lottie + matched
+      // iconFallback to AppIcons.navTasks for the 2026-06-08 UI fix.
+      expect(find.byIcon(AppIcons.navTasks), findsOneWidget);
     },
   );
 
@@ -95,7 +102,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Create an event'), findsOneWidget);
-      expect(find.text('Open Dashboard'), findsNothing);
+      expect(find.text('Go to Home'), findsNothing);
     },
   );
 

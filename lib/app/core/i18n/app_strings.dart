@@ -255,7 +255,6 @@ abstract class BudgetStrings {
   String get ledgerHeroOwedToYouLabel;
   String get ledgerHeroYouOweLabel;
   String get ledgerDebtsHeader;
-  String get ledgerAllSettledMessage;
   String get ledgerRecentExpensesHeader;
   String get ledgerEmptyTitle;
   String get ledgerEmptyNoEventsSubtitle;
@@ -444,9 +443,6 @@ class _EnglishBudgetStrings extends BudgetStrings {
 
   @override
   String get ledgerDebtsHeader => 'Settle up';
-
-  @override
-  String get ledgerAllSettledMessage => "You're all settled up.";
 
   @override
   String get ledgerRecentExpensesHeader => 'Recent expenses';
@@ -721,10 +717,15 @@ class _EnglishTasksStrings extends TasksStrings {
   String get groupStatus => 'Status';
 
   @override
-  String get groupAssignee => 'Assignee';
+  // Shortened from 'Assignee' for the iPhone 12 mini SegmentedButton
+  // overflow fix (2026-06-08). The 'tasks.list.groupToggle.assignee'
+  // Key is still 'assignee' — the segment value is what tests target;
+  // only the rendered label changed.
+  String get groupAssignee => 'People';
 
   @override
-  String get groupDueWindow => 'Due window';
+  // Shortened from 'Due window' for the same fix.
+  String get groupDueWindow => 'Due';
 
   @override
   String get dueWindowToday => 'Today';
@@ -765,7 +766,10 @@ class _EnglishTasksStrings extends TasksStrings {
       'Create an event from the Dashboard to get started.';
 
   @override
-  String get openDashboardCta => 'Open Dashboard';
+  // The bottom-nav tab on mobile reads "Home". Earlier copy ("Open
+  // Dashboard") referenced the legacy name and made the empty-state
+  // CTAs feel disconnected from the destination they navigate to.
+  String get openDashboardCta => 'Go to Home';
 
   @override
   String get createFromDashboardCta => 'Create an event';

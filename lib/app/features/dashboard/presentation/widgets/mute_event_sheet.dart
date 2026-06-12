@@ -11,9 +11,9 @@ import 'package:crewpoint_app/app/core/providers.dart';
 /// active mute exists. Persists via `EventMuteRepository.muteEvent`
 /// (sealed `mutedUntil` write — see `users/{uid}/eventMutes/{eventId}`).
 ///
-/// Server-side enforcement lives in `functions/src/notifications/sendPush.ts`
-/// (`shouldSuppress` honours mute unless category=='chat_urgent' AND
-/// criticalOptIn==true).
+/// Server-side enforcement lives in `functions/src/notifications/suppress.ts`
+/// (`shouldSuppress` — under Option B, an active event mute silences
+/// every category including `chat_urgent`).
 class MuteEventSheet extends ConsumerWidget {
   const MuteEventSheet({super.key, required this.uid, required this.eventId});
 
@@ -81,8 +81,9 @@ class MuteEventSheet extends ConsumerWidget {
             isActive
                 ? 'Notifications for this event are paused until '
                       '${_formatUntil(activeMute.mutedUntil)}.'
-                : 'Pause notifications for this event. Urgent chat alerts '
-                      'still come through if you have critical opt-in enabled.',
+                : 'Pause all notifications for this event for the selected '
+                      "window. You'll still see messages when you open "
+                      'the chat.',
             style: theme.textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ),

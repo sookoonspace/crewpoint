@@ -261,6 +261,56 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'equalWidth=true centres each label horizontally inside its pill — '
+    'fix for the 2026-06-11 iPhone 12 mini home dashboard QA note where '
+    'Upcoming/Past labels visually drifted toward the left edge',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(375, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SegmentedFilterBar<_Pill>(
+              selected: _Pill.upcoming,
+              equalWidth: true,
+              segments: const [
+                SegmentedFilterSegment(
+                  value: _Pill.upcoming,
+                  label: 'Upcoming',
+                  keyValue: Key('seg.upcoming'),
+                ),
+                SegmentedFilterSegment(
+                  value: _Pill.past,
+                  label: 'Past',
+                  keyValue: Key('seg.past'),
+                ),
+              ],
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      for (final entry in const [
+        (Key('seg.upcoming'), 'Upcoming'),
+        (Key('seg.past'), 'Past'),
+      ]) {
+        final pillCentre = tester.getCenter(find.byKey(entry.$1));
+        final labelCentre = tester.getCenter(find.text(entry.$2));
+        expect(
+          (labelCentre.dx - pillCentre.dx).abs(),
+          lessThan(1.0),
+          reason:
+              'Label "${entry.$2}" off-centre by '
+              '${(labelCentre.dx - pillCentre.dx).abs()} px (pill.dx='
+              '${pillCentre.dx}, label.dx=${labelCentre.dx}).',
+        );
+      }
+    },
+  );
 }
 
 enum _TaskFilter { all, todo, doing, done }

@@ -139,7 +139,7 @@ void main() {
         find.text('Open an event from the Dashboard to start chatting.'),
         findsOneWidget,
       );
-      expect(find.text('Open Dashboard'), findsOneWidget);
+      expect(find.text('Go to Home'), findsOneWidget);
 
       await _teardownTree(tester);
     },
@@ -169,7 +169,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Create an event'), findsOneWidget);
-      expect(find.text('Open Dashboard'), findsNothing);
+      expect(find.text('Go to Home'), findsNothing);
 
       await _teardownTree(tester);
     },

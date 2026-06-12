@@ -108,14 +108,18 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
   Widget build(BuildContext context) {
     final s = context.strings.tasks;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(s.createTaskTitle),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: Text(s.createTaskTitle), elevation: 0),
       body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(
-          horizontal: Breakpoints.screenHorizontalPadding(context),
-          vertical: AppSpacing.xl,
+        // Bottom padding is doubled vs top so the Create Task CTA at
+        // the form's tail clears the persistent ResponsiveShell
+        // NavigationBar with comfortable breathing room on iPhone 12
+        // mini — the previous symmetric `xl` (24) put the button only
+        // ~10 px above the nav.
+        padding: EdgeInsets.fromLTRB(
+          Breakpoints.screenHorizontalPadding(context),
+          AppSpacing.xl,
+          Breakpoints.screenHorizontalPadding(context),
+          AppSpacing.xxxl,
         ),
         child: ContentMaxWidth(
           key: const Key('createTask.body.clamped'),
@@ -149,12 +153,16 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                             return null;
                           },
                         ),
+                        // No prefixIcon: Material centres prefixIcon
+                        // vertically across the field's full multi-line
+                        // height, so on a 3-line description it sits
+                        // orphaned below the hint. The hint alone tells
+                        // the user what this field is for.
                         AppTextField(
                           key: const Key('tasks.create.description'),
                           hintText: s.descriptionOptionalHint,
                           controller: _descriptionController,
                           maxLines: 3,
-                          prefixIcon: const Icon(AppIcons.description),
                         ),
                       ],
                     ),

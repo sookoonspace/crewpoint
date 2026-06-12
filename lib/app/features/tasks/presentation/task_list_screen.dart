@@ -74,18 +74,25 @@ class TaskListScreen extends StatelessWidget {
               child: isEmpty
                   ? KeyedSubtree(
                       key: const Key('tasks.list.emptyState'),
+                      // Per-event Tasks empty state — bypass the generic
+                      // empty Lottie (the tent/house-shape flagged in
+                      // 2026-06-11 QA) and fall through to the icon
+                      // path, matching Phase 8 of the 2026-06-08 plan
+                      // that fixed the global MyTasksScreen.
                       child: filter.hasActiveFilters
                           ? EmptyStatePlaceholder(
                               title: s.emptyNoMatch,
                               ctaLabel: s.clearFilters,
                               onCta: () => onFilterChanged(const TasksFilter()),
                               ctaKey: const Key('tasks.list.emptyState.clear'),
-                              iconFallback: AppIcons.statusDone,
+                              lottieAsset: null,
+                              iconFallback: AppIcons.navTasks,
                             )
                           : EmptyStatePlaceholder(
                               title: s.emptyNoTasksYet,
                               subtitle: s.emptyNoTasksHelp,
-                              iconFallback: AppIcons.statusDone,
+                              lottieAsset: null,
+                              iconFallback: AppIcons.navTasks,
                             ),
                     )
                   : ListView(

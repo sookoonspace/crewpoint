@@ -71,6 +71,14 @@ Tracks ideas and partial implementations explicitly out of V1 scope. Promote int
 - **`event_detail_screen.dart` cleanup** — `lib/app/features/dashboard/presentation/event_detail_screen.dart` is defined but never routed. Either delete it (preferred if `EventDashboardScreen` fully replaces it) or wire it into the router.
 - **MarkdownRenderScreen layout-regression test** — clamp assertion lives in `privacy_dashboard_screen_test.dart` because the MarkdownRenderScreen FutureBuilder + cross-test ordering left the `rootBundle.loadString` data path stuck in loading at the resized surface. Either drive the loader via a faked binary messenger or pump in `runAsync` once the asset cache reset is figured out, then add the markdown clamp assertion to its own file.
 
+## UI polish — deferred (post 2026-06-08 iPhone 12 mini QA)
+P2 follow-ups from `ai_specs/ui-fixes-2026-06-08-iphone12mini-plan.md` Phase 9. None are blockers for the tester drop; the P0/P1 fixes already landed in the parent plan.
+
+- **Tasks filter-chip row crowding at 375 px** — six chips (Mine / Overdue / Has budget / To Do / In Progress / Done) wrap onto two visually busy rows on iPhone 12 mini. Consider a horizontal-scrolling chip row or grouping into a "Filters" bottom sheet. Source: `lib/app/features/tasks/presentation/widgets/tasks_filter_bar.dart:111-161`.
+- **Recent-expense title truncation on the global Budget tab** — `"Let's keep it aff..."` is harsh; narrow the right amount/date column or let the title use 2 lines. Source: `lib/app/features/budget/presentation/widgets/recent_expense_tile.dart:83-90`.
+- **Empty-state vertical centering** — Tasks + Chat empty states float a touch high on small viewports. Tighten the vertical centering inside `EmptyStatePlaceholder` (`lib/app/core/widgets/empty_state_placeholder.dart`) or wrap the call-sites in a `Center` with a custom vertical bias.
+- **Multi-line Description field min-height tightening** — Create Task's description is taller than needed for a 3-line placeholder. Consider reducing the visual minHeight by reining in `maxLines: 3` or supplying a tighter `InputDecoration.contentPadding`. Source: `lib/app/features/tasks/presentation/create_task_screen.dart:154-159` + `lib/app/features/tasks/presentation/edit_task_screen.dart:147-153`.
+
 ## Security & privacy followups (post sookoon-security-privacy-audit)
 - **DPDP Act (India) compliance clauses** — Hindi is on the localization roadmap; India-residency compliance is a separate spec. Likely additions: Indian data principal definitions, grievance officer contact, consent-manager integration, breach-notification timeline.
 - **E2EE chat** — `firestore_chat_service.dart` documents this gap. Privacy Policy explicitly states V1 messaging is not E2EE. Separate large spec when prioritized.

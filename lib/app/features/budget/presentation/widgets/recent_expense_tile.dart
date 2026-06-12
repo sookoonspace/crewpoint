@@ -6,6 +6,7 @@ import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/widgets/money_text.dart';
 import 'package:crewpoint_app/app/features/budget/application/global_balance_ledger_provider.dart';
 import 'package:crewpoint_app/app/features/budget/data/member_name_resolver.dart';
+import 'package:crewpoint_app/app/features/budget/presentation/widgets/donated_pill.dart';
 
 /// Chronological row in the cross-event "Recent expenses" feed.
 class RecentExpenseTile extends StatelessWidget {
@@ -89,13 +90,25 @@ class RecentExpenseTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      row.event.title,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            row.event.title,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (exp.isDonation) ...[
+                          const SizedBox(width: AppSpacing.sm),
+                          const DonatedPill(),
+                        ],
+                      ],
                     ),
                   ],
                 ),

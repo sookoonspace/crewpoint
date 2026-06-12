@@ -355,6 +355,7 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
           memberIds: widget.event.memberIds,
           currency: widget.event.currency,
           memberNames: memberNames,
+          appBarTitle: widget.event.title,
           onEditExpense: (expense) =>
               canMutate(expense) ? editExpense(expense) : null,
           onDeleteExpense: (expense) =>

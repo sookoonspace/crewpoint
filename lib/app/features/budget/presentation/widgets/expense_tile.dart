@@ -3,6 +3,7 @@ import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
+import 'package:crewpoint_app/app/features/budget/presentation/widgets/donated_pill.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/receipt_viewer.dart';
 
 class ExpenseTile extends StatelessWidget {
@@ -92,13 +93,10 @@ class ExpenseTile extends StatelessWidget {
                     expense.description ?? 'Expense',
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
-                  if (expense.isDonation)
-                    Text(
-                      'Donated',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.labelSmall?.copyWith(color: AppColors.sage),
-                    ),
+                  if (expense.isDonation) ...[
+                    const SizedBox(height: 4),
+                    const DonatedPill(),
+                  ],
                 ],
               ),
             ),
