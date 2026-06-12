@@ -146,4 +146,60 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'label uses colorScheme.onSurface in BOTH selected and unselected '
+    '(2026-06-11 follow-up — earlier code used onPrimary which resolves '
+    'to AppColors.charcoalDark in dark mode = dark-on-dark-tint = '
+    'invisible)',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData.dark(useMaterial3: true),
+          home: Scaffold(
+            body: ReservedCheckmarkChip(
+              label: 'Mine',
+              selected: true,
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      final element = tester.element(find.text('Mine'));
+      final theme = Theme.of(element);
+      final textWidget = tester.widget<Text>(find.text('Mine'));
+      expect(
+        textWidget.style?.color,
+        equals(theme.colorScheme.onSurface),
+        reason:
+            'selected chip text must use colorScheme.onSurface so it '
+            'contrasts against the faded selectedColor tint.',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData.dark(useMaterial3: true),
+          home: Scaffold(
+            body: ReservedCheckmarkChip(
+              label: 'Mine',
+              selected: false,
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      );
+      final unselectedTextWidget = tester.widget<Text>(find.text('Mine'));
+      expect(
+        unselectedTextWidget.style?.color,
+        equals(
+          Theme.of(tester.element(find.text('Mine'))).colorScheme.onSurface,
+        ),
+        reason:
+            'unselected chip text must also use colorScheme.onSurface '
+            '(same as selected — selection signal is the background, '
+            'not the text color).',
+      );
+    },
+  );
 }

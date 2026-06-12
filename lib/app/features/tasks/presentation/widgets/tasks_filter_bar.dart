@@ -73,37 +73,10 @@ class _TasksFilterBarState extends State<TasksFilterBar> {
     _emit(widget.filter.copyWith(statuses: next));
   }
 
-  /// Width-locks the SegmentedButton's three group-by segments so the
-  /// Material `showSelectedIcon` (✓) doesn't grow the selected segment
-  /// and shrink the others (2026-06-11 iPhone 12 mini QA). Measures the
-  /// widest of the three labels at the SegmentedButton's text style
-  /// (`labelLarge`) and adds the standard reserved-icon slot width
-  /// (= `IconTheme.iconSize` 18 + `AppSpacing.xs` 4 = 22) so the ✓
-  /// fits inside the shared slot.
-  double _groupSegmentSlotWidth(BuildContext context, TasksStrings s) {
-    final style = Theme.of(context).textTheme.labelLarge;
-    double measure(String text) {
-      final tp = TextPainter(
-        text: TextSpan(text: text, style: style),
-        textDirection: TextDirection.ltr,
-        maxLines: 1,
-      )..layout();
-      return tp.width;
-    }
-
-    final widest = [
-      measure(s.groupStatus),
-      measure(s.groupAssignee),
-      measure(s.groupDueWindow),
-    ].reduce((a, b) => a > b ? a : b);
-    return widest + 22.0;
-  }
-
   @override
   Widget build(BuildContext context) {
     final s = context.strings.tasks;
     final f = widget.filter;
-    final groupSlotWidth = _groupSegmentSlotWidth(context, s);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,37 +217,35 @@ class _TasksFilterBarState extends State<TasksFilterBar> {
               ),
               SegmentedButton<TasksGroupBy>(
                 key: const Key('tasks.list.groupToggle'),
-                // showSelectedIcon: false disables Material's auto-✓
-                // (which grows the selected segment). We render our own
-                // reserved-✓ slot inside each label, so every segment
-                // has identical intrinsic width regardless of selection.
+                // showSelectedIcon: false removes Material's auto-✓
+                // entirely. Selection is signalled by the background
+                // color from the SegmentedButton's theme; widths stay
+                // constant across selection because no segment ever
+                // has to grow to fit a ✓. Labels render at the full
+                // segment width (no reserved slot stealing space),
+                // so "Status"/"People" stop ellipsizing to "Sta..."/
+                // "Peo..." at iPhone 12 mini (2026-06-11 follow-up).
                 showSelectedIcon: false,
                 segments: [
                   ButtonSegment(
                     value: TasksGroupBy.status,
-                    label: _GroupSegmentLabel(
+                    label: Text(
+                      s.groupStatus,
                       key: const Key('tasks.list.groupToggle.status'),
-                      label: s.groupStatus,
-                      selected: f.groupBy == TasksGroupBy.status,
-                      width: groupSlotWidth,
                     ),
                   ),
                   ButtonSegment(
                     value: TasksGroupBy.assignee,
-                    label: _GroupSegmentLabel(
+                    label: Text(
+                      s.groupAssignee,
                       key: const Key('tasks.list.groupToggle.assignee'),
-                      label: s.groupAssignee,
-                      selected: f.groupBy == TasksGroupBy.assignee,
-                      width: groupSlotWidth,
                     ),
                   ),
                   ButtonSegment(
                     value: TasksGroupBy.dueWindow,
-                    label: _GroupSegmentLabel(
+                    label: Text(
+                      s.groupDueWindow,
                       key: const Key('tasks.list.groupToggle.dueWindow'),
-                      label: s.groupDueWindow,
-                      selected: f.groupBy == TasksGroupBy.dueWindow,
-                      width: groupSlotWidth,
                     ),
                   ),
                 ],
@@ -296,56 +267,4 @@ class _TasksFilterBarState extends State<TasksFilterBar> {
     TasksSortKey.created => s.sortCreated,
     TasksSortKey.title => s.sortTitle,
   };
-}
-
-/// SegmentedButton group-toggle label with a reserved-✓ leading slot so
-/// segment widths stay constant across selection. Material's default
-/// `showSelectedIcon: true` grows the selected segment to fit the ✓;
-/// disabling it (in the parent `SegmentedButton`) + rendering our own
-/// `Visibility(maintainSize)` ✓ here keeps the intrinsic width identical
-/// for every segment regardless of which one is selected.
-class _GroupSegmentLabel extends StatelessWidget {
-  const _GroupSegmentLabel({
-    super.key,
-    required this.label,
-    required this.selected,
-    required this.width,
-  });
-
-  final String label;
-  final bool selected;
-  final double width;
-
-  static const double _reservedSlotWidth = 22.0;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: _reservedSlotWidth,
-            child: Visibility(
-              visible: selected,
-              maintainSize: true,
-              maintainAnimation: true,
-              maintainState: true,
-              child: const Icon(Icons.check, size: 18),
-            ),
-          ),
-          Flexible(
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

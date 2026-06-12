@@ -14,6 +14,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/features/tasks/application/tasks_filter.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/widgets/tasks_filter_bar.dart';
@@ -100,6 +101,23 @@ void main() {
       widthsBySelection[group] = [
         for (final k in segmentKeys) tester.getSize(find.byKey(k)).width,
       ];
+
+      // No-truncation guard — each Text widget's RenderParagraph must
+      // not report didExceedMaxLines. Pre-fix, the SizedBox-clamped
+      // labels truncated to "Sta..." / "Peo..." at iPhone 12 mini
+      // because Material squeezed the segment slot narrower than the
+      // computed slot width.
+      for (final k in segmentKeys) {
+        final paragraph = tester.renderObject<RenderParagraph>(find.byKey(k));
+        expect(
+          paragraph.didExceedMaxLines,
+          isFalse,
+          reason:
+              'Segment $k label truncated when "$group" was selected. '
+              'Dropping the reserved-✓ slot gives the label the full '
+              'segment width so it stops ellipsizing.',
+        );
+      }
     }
 
     // For each segment slot, assert the width is identical across

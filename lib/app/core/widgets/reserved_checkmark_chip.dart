@@ -37,7 +37,13 @@ class ReservedCheckmarkChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final fg = selected ? colors.onPrimary : colors.onSurface;
+    // Use onSurface in BOTH states — selectedColor is always a faded
+    // tint (e.g. sage @ 25 % alpha) sitting on top of `surface`, so the
+    // standard onSurface text reads well over both backgrounds in
+    // either light or dark theme. The earlier `colors.onPrimary` branch
+    // resolved to `AppColors.charcoalDark` under dark mode, giving
+    // dark-on-dark-tint = invisible (2026-06-11 follow-up).
+    final fg = colors.onSurface;
     final bg = selected
         ? (selectedColor ?? colors.primary.withValues(alpha: 0.25))
         : colors.surfaceContainerHighest;
