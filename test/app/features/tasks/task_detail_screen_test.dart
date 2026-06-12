@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/theme/app_theme.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/task_detail_screen.dart';
+
+import '../../core/_helpers/wcag_contrast.dart';
 
 void main() {
   const event = EventModel(
@@ -260,5 +264,106 @@ void main() {
       ),
     );
     expect(find.text('Will sync when online'), findsOneWidget);
+  });
+
+  group('_StatusBadge — theme-aware colours (2026-06-11 follow-up)', () {
+    Future<({Color fg, Color bg})> badgeColours(
+      WidgetTester tester, {
+      required ThemeData theme,
+      required TaskStatus status,
+    }) async {
+      final taskWithStatus = task.copyWith(status: status);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: theme,
+          home: TaskDetailScreen(
+            task: taskWithStatus,
+            event: event,
+            checklist: const [],
+            canEditTask: false,
+            canChangeStatus: false,
+          ),
+        ),
+      );
+      final container = tester.widget<Container>(
+        find.byKey(const Key('tasks.detail.statusBadge')),
+      );
+      final bg = (container.decoration as BoxDecoration).color!;
+      final textWidget = tester.widget<Text>(
+        find.descendant(
+          of: find.byKey(const Key('tasks.detail.statusBadge')),
+          matching: find.byType(Text),
+        ),
+      );
+      return (fg: textWidget.style!.color!, bg: bg);
+    }
+
+    testWidgets(
+      'dark mode todo → onSurfaceVariant on surfaceContainerHighest',
+      (tester) async {
+        final theme = AppTheme.dark();
+        final colours = await badgeColours(
+          tester,
+          theme: theme,
+          status: TaskStatus.todo,
+        );
+        expect(colours.fg, theme.colorScheme.onSurfaceVariant);
+        expect(colours.bg, theme.colorScheme.surfaceContainerHighest);
+      },
+    );
+
+    testWidgets('dark mode todo pill ≥ AA contrast (4.5:1)', (tester) async {
+      final theme = AppTheme.dark();
+      final colours = await badgeColours(
+        tester,
+        theme: theme,
+        status: TaskStatus.todo,
+      );
+      expectAaContrast(
+        colours.fg,
+        colours.bg,
+        reason: 'dark mode "To Do" pill needs AA-readable contrast',
+      );
+    });
+
+    testWidgets('light mode todo → charcoal on lightGrey (unchanged)', (
+      tester,
+    ) async {
+      final colours = await badgeColours(
+        tester,
+        theme: AppTheme.light(),
+        status: TaskStatus.todo,
+      );
+      expect(colours.fg, AppColors.charcoal);
+      expect(colours.bg, AppColors.lightGrey);
+    });
+
+    testWidgets('inProgress unchanged across themes — sage bg + white text', (
+      tester,
+    ) async {
+      for (final theme in [AppTheme.light(), AppTheme.dark()]) {
+        final colours = await badgeColours(
+          tester,
+          theme: theme,
+          status: TaskStatus.inProgress,
+        );
+        expect(colours.fg, AppColors.white);
+        expect(colours.bg, AppColors.sage);
+      }
+    });
+
+    testWidgets('done unchanged across themes — sageDark bg + white text', (
+      tester,
+    ) async {
+      for (final theme in [AppTheme.light(), AppTheme.dark()]) {
+        final colours = await badgeColours(
+          tester,
+          theme: theme,
+          status: TaskStatus.done,
+        );
+        expect(colours.fg, AppColors.white);
+        expect(colours.bg, AppColors.sageDark);
+      }
+    });
   });
 }

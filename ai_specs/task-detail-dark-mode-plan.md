@@ -22,16 +22,16 @@ Three contrast fixes on the per-event task detail screen for dark mode. Route ha
 
 ## Plan
 
-### Phase 1: Thin slice — `_StatusBadge` theme-aware
+### Phase 1: Thin slice — `_StatusBadge` theme-aware ✓
 
 - **Goal**: `_StatusBadge` `todo` state reads against dark surface; light mode unregressed; AA contrast verified.
-- [ ] TDD: light mode, `TaskStatus.todo` → `Container.decoration.color == AppColors.lightGrey` (current); text colour == `AppColors.charcoal` (current). Pins existing light look.
-- [ ] TDD: dark mode, `TaskStatus.todo` → `Container.decoration.color == colorScheme.surfaceContainerHighest`; text colour == `colorScheme.onSurfaceVariant`. RED before source edit.
-- [ ] TDD: dark mode `todo` pill ≥ 4.5:1 contrast via `expectAaContrast(fg, bg)` from `test/app/core/_helpers/wcag_contrast.dart`.
-- [ ] TDD: `inProgress` + `done` states unchanged (`sage` / `sageDark` bg + `white` text) under both themes — locks the no-regression for the two already-readable states.
-- [ ] `lib/app/features/tasks/presentation/task_detail_screen.dart:213-241` — `_StatusBadge.build`: switch the tuple to read from `Theme.of(context).colorScheme`. `todo` → `(colors.onSurfaceVariant, colors.surfaceContainerHighest)`. Keep `inProgress` + `done` on their existing sage-bg tokens.
-- [ ] `test/app/features/tasks/task_detail_screen_test.dart` — extend with the four tests above. Reuse the existing pump helper if present.
-- [ ] Verify: `flutter analyze` && `flutter test`.
+- [x] TDD: light mode `todo` → `(AppColors.charcoal, AppColors.lightGrey)`. Pins existing light look.
+- [x] TDD: dark mode `todo` → `(colorScheme.onSurfaceVariant, colorScheme.surfaceContainerHighest)`. RED before source edit.
+- [x] TDD: dark mode `todo` pill ≥ 4.5:1 AA contrast via `expectAaContrast` from `wcag_contrast.dart`.
+- [x] TDD: `inProgress` + `done` unchanged across themes (sage/sageDark bg + white text).
+- [x] `lib/app/features/tasks/presentation/task_detail_screen.dart:218-237` — `_StatusBadge.build`: branch on `Theme.brightness`. Dark `todo` uses `colorScheme.onSurfaceVariant` + `colorScheme.surfaceContainerHighest`; light `todo` keeps the original `(charcoal, lightGrey)` tuple for visual continuity. Added a stable Key `tasks.detail.statusBadge` to the Container for test access.
+- [x] `test/app/features/tasks/task_detail_screen_test.dart` — added `_StatusBadge — theme-aware colours` group with 5 tests (dark todo, AA contrast, light todo unchanged, inProgress + done parity across themes).
+- [x] Verified: `flutter analyze` clean (sole pre-existing experimental warning); `flutter test` 803 / 803 passing (was 798; +5 new badge tests).
 
 ### Phase 2: `CheckboxThemeData` + strike-through colour
 
