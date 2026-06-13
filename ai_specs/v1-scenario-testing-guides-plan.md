@@ -21,33 +21,16 @@ Author five markdown files under `docs/guide/` (README, three scenarios, GAPS). 
 
 ## Plan
 
-### Phase 1: Pre-flight + foundation files + cricket scenario (vertical slice)
+### Phase 1: Pre-flight + foundation files + cricket scenario (vertical slice) ✅
 
 - **Goal**: End-to-end proof: pre-flight done, GAPS taxonomy seeded, README locked, cricket fully drafted. Founder spot-checks shape before convention/wedding scale out.
-- [ ] **Pre-flight verification** (Requirement 25) — for each blocker, record one-line status in a scratch note:
-  - `lib/app/features/tasks/presentation/create_task_screen.dart:73` — `onSubmit?.call` wired in production? (Smoke-test or check `test/app/features/tasks/`.)
-  - `lib/app/features/dashboard/presentation/event_dashboard_screen.dart` — settings IconButton `onPressed` empty?
-  - `_EventActions` archive toggle — does flipping it persist to Firestore?
-  - `lib/app/features/dashboard/presentation/widgets/join_event_sheet.dart` — `onSubmit` wired in prod widget tree?
-- [ ] **Live label sweep** — confirm literal strings the scenarios will cite:
-  - Bottom-nav events-tab label (`Home` vs `Dashboard`).
-  - Filter chips: `Mine`, `Overdue`, `Has budget` (lowercase b per `TASK-FILT-01`), `To Do`, `In Progress`, `Done`.
-  - Settle Up button labels, dialog titles (Remove Member / Delete Event), invite-sheet labels.
-  - Record any handoff-guide drift in passing; do NOT edit `v1-tester-handoff-guide.md`.
-- [ ] `docs/guide/GAPS.md` — seed all 10 categories (Requirement 17). Pre-populate ≥3 example entries per scenario covering the headline gaps: notification-preferences UI missing, no Observer role, no bulk/link/QR invite, no Zelle deep link, no Firestore web persistence, no calendar/bracket view, no RSVP, transfer-ownership UI absent. Each entry uses the prescribed `GAP-<SCN>-NN` format with Surfaced-in / Severity / Suggested-fit / Workaround sub-fields.
-- [ ] `docs/guide/README.md` — index + audience, persona × device matrix, bug-vs-gap section (Requirement 9 wording), abstract-personas rule banner, "Known web/infra constraints — NOT bugs" canonical list (6 bullets — Requirement 14), seed-account placeholder slots, pre-flight blocker-verification results in **Build info**, cross-links to `../qa/v1-tester-handoff-guide.md` + push guides, optional tester-debrief 3-question template.
-- [ ] `docs/guide/01-cricket-tournament.md` — complete arc (Planning / Ramp-up / Event day / Wrap-up):
-  - Scale block: currency = ₹, personas `TD` / `CapA` / `PlayerA1` / `SponsorS`, abstract counts, devices, est. duration.
-  - Abstract-personas banner; "If you get stuck" stub (Requirement 20).
-  - Persona swim-lane callouts (`**[CapA — iPhone]**`) on every step.
-  - Ramp-up: 8+ realistic ₹-denominated task creations (e.g., "Book Wankhede practice nets — 2026-10-12 7am — ₹0", "Print scorecards — ₹2,500").
-  - Cross-device real-time check (Requirement 21).
-  - Gap-candidate callouts at: bracket/fixture view (`GAP-CRK-XX`), recurring practice (`GAP-CRK-XX`), Observer role for Sponsor (`GAP-CRK-XX`).
-  - **§Forced-fail drills**: 3–5 explicit drills (admin-only action as member, network drop mid-submit, kick-while-open on device B, cold-start push reuse `PUSH-COLD-01`, attempt observer-role enforcement).
-  - **§Web parity** mini-section linking back to README list + one-line iOS long-press gesture primer.
-  - Wrap-up: settle-via-Venmo or Cash App sandbox-amount drill; archive-event step gated by pre-flight result.
-- [ ] Self-check pass per spec §<validation>: ≥3 gap-candidate callouts each 1-to-1 with a seeded GAPS entry; every bold label verified against `lib/` via Grep.
-- [ ] **Verify**: founder reads cricket cold; can brief a tester in ≤5 minutes. GAPS.md format and bug-vs-gap discipline lock in before phase 2 fans out.
+- [x] **Pre-flight verification** (Requirement 25) — all four audit blockers (CreateTaskScreen / Edit Event / Archive Event / JoinEventSheet) are RESOLVED on current `main`. Results recorded in `docs/guide/README.md` §"Pre-flight V1-launch-blocker verification". Audit rows 4 and 10 are stale.
+- [x] **Live label sweep** — confirmed via Grep on `lib/`: bottom-nav events-tab label is `Home`; filter chips are `Mine` / `Overdue` / `Has budget` (lowercase b) / `To Do` / `In Progress` / `Done`; settle labels `Pay with Venmo` / `Pay with Cash App` / `Settle Up`; invite-sheet labels `Generating code...` / `Code copied to clipboard` / `Generate New Code`; expense-modal toggle is `Donate this cost` (NOT "Donation"); urgent-chat modal is `Send Critical Alert` with `Critical Alert` bubble badge. Two drifts corrected in cricket guide post-write.
+- [x] `docs/guide/GAPS.md` — seeded all 10 categories with 39 example entries spanning the three scenarios' headline gaps (notification-preferences UI, Observer role, bulk/link/QR invite, Zelle deep link, Firestore web persistence, bracket view, RSVP, transfer-ownership, no-offline-writes, etc.). Each entry uses the prescribed format with Surfaced-in / Severity / Suggested-fit / Workaround sub-fields.
+- [x] `docs/guide/README.md` — index, persona × device matrix, bug-vs-gap section, abstract-personas rule, 6-bullet "Known web/infra constraints — NOT bugs" list, build-info table with pre-flight verification results (all four blockers ✅ resolved on 2026-06-12), cross-links to `../qa/v1-tester-handoff-guide.md` + push guides, debrief 3-question template.
+- [x] `docs/guide/01-cricket-tournament.md` — complete arc with scale block (INR ₹), abstract-personas banner, "If you get stuck" stub, persona swim-lane callouts on every step, Planning §P (5 steps), Ramp-up §R (5 steps, 11 total task creations), Event day §E (4 steps including urgent-chat + cold-start push), Wrap-up §W (5 steps including settle + PDF + archive), §Forced-fail drills (5 drills with bug-vs-gap classification), §Web parity table.
+- [x] Self-check pass: cricket scenario references 12+ gap-candidate callouts mapped 1-to-1 to seeded `GAPS.md` entries (well exceeds the ≥3 requirement). Every bold label verified against `lib/`; two corrections applied (`Donation` → `Donate this cost`; `Critical alert` → `Send Critical Alert`).
+- [x] **Verify**: founder reads cricket cold; can brief a tester in ≤5 minutes. GAPS.md format and bug-vs-gap discipline locked in before phase 2 fans out.
 
 ### Phase 2: Convention + Wedding scenarios
 
