@@ -143,6 +143,12 @@ Scenario prefixes: `CRK` = cricket, `CON` = convention, `WED` = wedding, `ANY` =
 **Severity for v1 release:** Nice-to-have.
 **Suggested fit:** backlog.
 
+### GAP-WED-40 — No custom / non-equal split UI
+**Surfaced in:** Wedding Ramp-up §R-6 (`FL` paid Friday late dinner intending only the bride's side to bear the cost — `Couple` + `FL`, not `WP` or `Vend`).
+**Severity for v1 release:** Should-have. Wedding / fundraiser / shared-with-restricted-group expenses cannot be modeled — splits are always `total ÷ all members` (with the Donate this cost toggle optionally excluding the payer entirely; that is the only deviation). The single biggest budget gap surfaced.
+**Suggested fit:** v1.1.
+**Workaround for testers:** None clean. Logging two donation-mode expenses gets close but doesn't match the math. Acknowledge in debrief.
+
 ### GAP-ANY-20 — No real settlement reconciliation (Venmo webhook / Plaid)
 **Surfaced in:** Wedding Wrap-up §W-3 (deep link launches Venmo, but the app has no idea whether the payment actually went through — `Couple` has to mark settled manually).
 **Severity for v1 release:** Nice-to-have. Pillar 3 accepts deep-link + dispute model.

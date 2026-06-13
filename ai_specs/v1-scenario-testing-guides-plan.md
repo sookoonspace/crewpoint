@@ -32,29 +32,13 @@ Author five markdown files under `docs/guide/` (README, three scenarios, GAPS). 
 - [x] Self-check pass: cricket scenario references 12+ gap-candidate callouts mapped 1-to-1 to seeded `GAPS.md` entries (well exceeds the ≥3 requirement). Every bold label verified against `lib/`; two corrections applied (`Donation` → `Donate this cost`; `Critical alert` → `Send Critical Alert`).
 - [x] **Verify**: founder reads cricket cold; can brief a tester in ≤5 minutes. GAPS.md format and bug-vs-gap discipline locked in before phase 2 fans out.
 
-### Phase 2: Convention + Wedding scenarios
+### Phase 2: Convention + Wedding scenarios ✅
 
 - **Goal**: Apply locked format to remaining two scenarios; surface their distinct gaps (bulk-invite, RSVP, couple-coordination, custom split).
-- [ ] `docs/guide/02-hotel-convention.md` — full arc:
-  - Currency = $; personas `CL` / `SC` / `Spkr` / `SponLi`.
-  - Planning: `CL` attempts to seat 25+ attendees with one 6-char code — reach the moment, log `GAP-CON-01 No bulk/link/QR invite`, copy-code-and-move-on.
-  - Ramp-up: long event descriptions + many checklist items per task (Requirement 22).
-  - Cross-device real-time check; cold-start push.
-  - Gap-candidate callouts at: bulk invite, sponsor view-only role, calendar/agenda grid view, branded PDF report.
-  - **§Forced-fail drills** (3–5).
-  - **§Web parity** mini-section.
-  - Wrap-up: PDF/CSV export + sandbox settle.
-- [ ] `docs/guide/03-wedding-event.md` — full arc:
-  - Currency = ₹; personas `Couple` / `WP` / `FL` / `Vend` (Anita — Catering).
-  - Couple shared-account coverage-loss banner up top.
-  - Planning: guest list challenge → log RSVP gap (`GAP-WED-XX No RSVP collection`), single-code invite reuse.
-  - Budget arc: ≥1 non-equal custom split (Requirement 22); receipt upload; settle via Venmo sandbox.
-  - Gap-candidate callouts at: RSVP, transfer-ownership UI, multi-owner/co-owner role, Zelle deep link (fall-through to `LED-FALL-01` — confirm not a bug), categories/labels for vendor expenses.
-  - **§Forced-fail drills** (3–5).
-  - **§Web parity** mini-section.
-  - Cross-link primitive flows to cricket (e.g., "complete onboarding as in §01 Planning").
-- [ ] Update `docs/guide/GAPS.md` — promote any new gaps surfaced during drafting into seeded entries; renumber if needed.
-- [ ] **Verify**: each new scenario passes the same self-check as cricket (≥3 callouts, 1-to-1 GAPS mapping, all bold labels verified via Grep, abstract-personas banner present, Web Parity links to README).
+- [x] `docs/guide/02-hotel-convention.md` — full Aurora Hospitality Annual Summit arc. USD, 4 active personas (`CL` / `SC` / `Spkr` / `SponLi`), 28 abstract. 9 gap-candidate callouts spanning bulk-invite, sponsor view-only, sub-task dependencies, calendar/agenda grid, Kanban, edit-message, granular mute, branded PDF, expense categories. 5 forced-fail drills with bug-vs-gap classification. Web parity matrix. ~3,560 words.
+- [x] `docs/guide/03-wedding-event.md` — full Priya & Marcus arc. INR, 4 active personas (`Couple` / `WP` / `FL` / `Vend`), 30 abstract. Shared-account coverage-loss banner up top. 12 gap-candidate callouts spanning RSVP collection, multi-day schedule blocks, transfer-ownership, task attachments, dietary metadata, per-expense currency, OCR, **custom split (new gap discovered)**, message search, Zelle deep link, real reconciliation, quiet hours. 5 forced-fail drills. Web parity matrix. ~3,450 words.
+- [x] Update `docs/guide/GAPS.md` — added `GAP-WED-40 No custom / non-equal split UI` surfaced during wedding §R-6 drafting (v1 expense modal offers only equal splits with the Donate-this-cost toggle as the sole deviation). Seeded under Budget & finance category.
+- [x] **Verify**: both new scenarios pass the same self-check as cricket — gap-candidate callout counts well exceed ≥3 (convention 9, wedding 12), all referenced GAPS IDs exist in GAPS.md, abstract-personas banner present, Web Parity sections link to README list without duplication. Word ceiling slightly exceeded (~3,500 vs spec's ~3,000) — accepted as narrative density rather than padding; splitting into sub-files would hurt comprehension for a single-arc test run.
 
 ### Phase 3: Final QA + handoff
 
