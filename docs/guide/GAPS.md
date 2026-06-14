@@ -200,7 +200,7 @@ Scenario prefixes: `CRK` = cricket, `CON` = convention, `WED` = wedding, `ANY` =
 **Suggested fit:** v1.1 (gated on GAP-ANY-25).
 
 ### GAP-ANY-28 — No FCM web push delivered to users
-**Surfaced in:** Web Parity section of all three scenarios (testers on Chrome/Safari get no push at all).
+**Surfaced in:** Constraint #4 in the README "Known web/infra constraints — NOT bugs" list. Re-confirmed in each scenario's §Web parity section ("Web receives no FCM push (constraint #4)"). This is an acknowledged platform gap surfaced once in the constants list rather than per scenario step.
 **Severity for v1 release:** Acknowledged. Phase 6.2 schema landed but user-facing delivery is deferred.
 **Suggested fit:** v1.1.
 
@@ -245,12 +245,12 @@ Scenario prefixes: `CRK` = cricket, `CON` = convention, `WED` = wedding, `ANY` =
 **Suggested fit:** v1.1.
 
 ### GAP-ANY-35 — Firestore web persistence is intentionally OFF
-**Surfaced in:** Web Parity section of all three scenarios — reload always re-fetches; queued writes lost (audit V1 launch blocker #6, founder-acknowledged).
+**Surfaced in:** Constraint #2 in the README "Known web/infra constraints — NOT bugs" list. Re-confirmed in each scenario's FF-2 (network-drop) drill ("Reload mid-submit → form state lost — constraint #2, NOT a bug"). Acknowledged platform gap surfaced once in the constraints list rather than per scenario step.
 **Severity for v1 release:** Should-have for web-first organizers.
 **Suggested fit:** v1.0 if resolved before launch, else v1.1.
 
 ### GAP-ANY-36 — No background sync / periodic refresh
-**Surfaced in:** Cricket Event-day §E-2 (`PlayerA1` puts phone in pocket between innings; opens app to find stale chat for 2 seconds until streams reconnect).
+**Surfaced in:** Debrief observations across all three scenarios — testers who pocket the device between activities see a brief stale-stream window on app re-open. Not pinned to a specific scenario step.
 **Severity for v1 release:** Nice-to-have.
 **Suggested fit:** v2.
 
@@ -264,12 +264,12 @@ Scenario prefixes: `CRK` = cricket, `CON` = convention, `WED` = wedding, `ANY` =
 **Suggested fit:** v1.1.
 
 ### GAP-ANY-38 — No scheduled / automated exports
-**Surfaced in:** Cricket Wrap-up §W-1 (`TD` wants weekly auto-emailed budget summary during the tournament).
+**Surfaced in:** Debrief observations — organizers running long-arc events (cricket tournament across a weekend, convention spanning 3 days) want weekly or daily auto-emailed budget / task summaries instead of manually triggering the export each time. Not pinned to a specific scenario step.
 **Severity for v1 release:** Nice-to-have.
 **Suggested fit:** v2.
 
 ### GAP-ANY-39 — No richer report types (member summary, attendance, task-completion %)
-**Surfaced in:** Cricket Wrap-up §W-2 (`TD` wants "tasks completed per team captain").
+**Surfaced in:** Debrief observations — testers running the PDF export in cricket §W-3 + convention §W-1 + wedding §W-4 note the PDF is expense-only; no per-member task-completion %, no attendance roster, no member-activity summary. Not pinned to a specific scenario step.
 **Severity for v1 release:** Nice-to-have.
 **Suggested fit:** v2.
 

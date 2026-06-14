@@ -61,7 +61,7 @@ A 4-team weekend tournament. 20 players total, plus a tournament director and a 
    - Event type: **Trip** *(the four options are **Trip / Project / Social / Custom** — none of them are "Tournament", which is itself a soft signal — see callout below.)*
    - Start date: 2026-10-12 (Friday) — End date: 2026-10-14 (Sunday)
    - Currency: **₹ INR** *(immutable once set per audit row 4)*
-3. Tap **Create**.
+3. Tap **Create Event** (the form's primary button repeats the entry-point label per `create_event_screen.dart:321`).
 
 > 🕳️ **Gap candidate:** No **Tournament** / **Sport** event type. This is captured under `GAP-ANY-07 No task templates / event-template duplication` indirectly. If you, the tester, *expected* a dedicated tournament type, add a fresh entry to `GAPS.md` § Task management as `GAP-CRK-XX No tournament event template`.
 
@@ -88,7 +88,7 @@ A 4-team weekend tournament. 20 players total, plus a tournament director and a 
 **[CapA — iPhone]**
 
 1. Sign in (if not already). On the **Home** tab, tap the **Join Event** sheet entry-point (`HOME-JOIN-01`).
-2. Enter the 6-character code from `TD`. Tap **Join**.
+2. Enter the 6-character code from `TD`. Tap **Join Event** (sheet's primary button per `join_event_sheet.dart:160`).
    - Snackbar confirms the join. **Mumbai Sixers Invitational** appears on `CapA`'s **Home**.
 
 **[TD — iPhone]**
@@ -103,7 +103,7 @@ A 4-team weekend tournament. 20 players total, plus a tournament director and a 
 
 **[PlayerA1 — Android]**
 
-1. Sign in. **Join Event**. Enter code. Tap **Join**.
+1. Sign in. **Join Event**. Enter code. Tap **Join Event** (sheet's primary button per `join_event_sheet.dart:160`).
 
 **[SponsorS — Web Chrome]**
 
@@ -188,7 +188,7 @@ Create the following 8 tasks via the `CreateTaskScreen` (`TASK-CRE-01`). Hit Sav
 **[CapA — iPhone]**
 
 1. Open **Budget** inside the event. Tap **Add Expense**.
-2. Amount: *₹5,000*. Description: *Wankhede practice nets — Fri 7am session*. Payer: `CapA`. Splits: **Equal** across all event members.
+2. Amount: *₹5,000*. Description: *Wankhede practice nets — Fri 7am session*. Payer: `CapA`. Splits are computed equal across all event members by default (v1 has no Equal/Custom toggle — the only deviation is the **Donate this cost** switch which excludes the payer).
 3. Attach a receipt photo (`BUD-RECEIPT-01`) — anything works; this is a smoke test that image-picker + upload still functions.
 4. Save.
 

@@ -63,7 +63,7 @@ A multi-day Indian wedding — mehndi night Friday, ceremony + reception Saturda
    - Event type: **Social** (closest fit — none of **Trip / Project / Social / Custom** is "Wedding").
    - Start date: 2026-10-16 — End date: 2026-10-17
    - Currency: **₹ INR** *(immutable once set)*
-3. Tap **Create**.
+3. Tap **Create Event** (form's primary button per `create_event_screen.dart:321`).
 
 **Expected**
 - `Couple` lands on the new event dashboard. Currency symbol throughout reads **₹**.
@@ -112,9 +112,9 @@ Then `WP` creates these 9 tasks to represent the multi-day schedule (3 per day �
 
 ### P-5 — `FL` and `Vend` join
 
-**[FL — iPad]** Sign in → **Join Event** → enter code → **Join**.
+**[FL — iPad]** Sign in → **Join Event** → enter code → tap **Join Event** (sheet's primary button per `join_event_sheet.dart:160`).
 
-**[Vend — Web Chrome]** Sign in (OAuth popup; recover via `AUTH-WEB-01` if blocked) → **Join Event** sheet → enter code → **Join**.
+**[Vend — Web Chrome]** Sign in (OAuth popup; recover via `AUTH-WEB-01` if blocked) → **Join Event** sheet → enter code → tap **Join Event** (sheet's primary button per `join_event_sheet.dart:160`).
 
 **Expected**
 - 4 members: `Couple` Owner, `WP` Admin, `FL` Member, `Vend` Member.
@@ -185,7 +185,7 @@ Then `WP` creates these 9 tasks to represent the multi-day schedule (3 per day �
 
 - Amount: *₹15,000*
 - Description: *Florist deposit — Asha Florals — paid cash*
-- Payer: `Couple`. **Equal** split (4 members).
+- Payer: `Couple`. Equal split across the 4 members (default — no Equal/Custom toggle in v1).
 - Tap **Add receipt** → camera → photograph a hand-written receipt (or upload from gallery).
 
 **Expected**
@@ -200,7 +200,7 @@ Then `WP` creates these 9 tasks to represent the multi-day schedule (3 per day �
 
 - Amount: *₹35,000*
 - Description: *Mehndi night late dinner — paid by bride's side only (not groom's)*
-- Payer: `FL`. **Equal** split (default).
+- Payer: `FL`. Equal split (the only option in v1).
 
 But `FL` *meant* the cost to fall on only the bride's side — i.e., `Couple` + `FL` should bear it, `WP` + `Vend` should not. v1's modal only offers equal split (with the Donate this cost toggle as the only deviation, which excludes the payer entirely).
 

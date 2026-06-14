@@ -59,7 +59,7 @@ A 3-day brand summit at a hotel chain's flagship property. 25 internal attendees
    - Event type: **Project** (closest fit — none of the four — **Trip / Project / Social / Custom** — is "Conference").
    - Start date: 2026-09-21 — End date: 2026-09-23
    - Currency: **$ USD** *(immutable once set per audit row 4)*
-3. Tap **Create**.
+3. Tap **Create Event** (form's primary button per `create_event_screen.dart:321`).
 
 **Expected**
 - `CL` lands on the new event's dashboard. Event card on **Home** shows the title and date range.
@@ -79,7 +79,7 @@ A 3-day brand summit at a hotel chain's flagship property. 25 internal attendees
 
 **[SC — Android]**
 
-1. Sign in. **Home** tab → **Join Event** sheet → enter code → **Join**. Snackbar confirms.
+1. Sign in. **Home** tab → **Join Event** sheet → enter code → tap **Join Event** (sheet's primary button per `join_event_sheet.dart:160`). Snackbar confirms.
 
 **[CL — iPhone]**
 
@@ -88,9 +88,9 @@ A 3-day brand summit at a hotel chain's flagship property. 25 internal attendees
 
 ### P-4 — `Spkr` and `SponLi` join
 
-**[Spkr — iPad/tablet]** Sign in → **Join Event** → enter code → **Join**.
+**[Spkr — iPad/tablet]** Sign in → **Join Event** → enter code → tap **Join Event** (sheet's primary button per `join_event_sheet.dart:160`).
 
-**[SponLi — Web Chrome]** Sign in (OAuth popup; if blocked, follow `AUTH-WEB-01`) → **Join Event** sheet on **Home** → enter code → **Join**.
+**[SponLi — Web Chrome]** Sign in (OAuth popup; if blocked, follow `AUTH-WEB-01`) → **Join Event** sheet on **Home** → enter code → tap **Join Event** (sheet's primary button per `join_event_sheet.dart:160`).
 
 **Expected**
 - All four devices show 4 members. Roles: `CL` Owner, `SC` Admin, `Spkr` Member, `SponLi` Member.
