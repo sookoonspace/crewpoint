@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:drift/drift.dart' show Value;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:crewpoint_app/app/core/database/app_database.dart' as db;
 import 'package:crewpoint_app/app/core/database/app_database.dart'
     show ExpensesCompanion, ExpenseSplitsCompanion;
@@ -36,6 +37,18 @@ class ExpenseRepository implements IExpenseRepository {
 
   @override
   Stream<List<ExpenseModel>> watchExpensesByEventId(String eventId) {
+    // Web has no Drift persistence (Wasm is in-memory) and the empty-table
+    // watch on Wasm Drift does not reliably emit its first frame. Match
+    // `EventRepository.watchEventsForUser`'s web fork: read straight from
+    // Firestore. `_fromFirestore` parses the inline splits array, so no
+    // subcollection follow-up is needed.
+    if (kIsWeb) {
+      return _expensesRef(eventId).snapshots().map(
+        (snap) => snap.docs
+            .map((doc) => _fromFirestore(doc.id, eventId, doc.data()))
+            .toList(),
+      );
+    }
     _ensureFirestoreMirror(eventId);
     return _expensesDao.watchExpensesByEventId(eventId).asyncMap(_hydrateRows);
   }

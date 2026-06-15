@@ -3,6 +3,7 @@ import 'dart:developer';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:drift/drift.dart' show Value;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:crewpoint_app/app/core/database/app_database.dart'
     as db
     show ChatMessage;
@@ -44,8 +45,11 @@ class ChatRepository implements IChatRepository {
   @override
   Stream<List<ChatMessageModel>> watchMessages(String eventId) {
     final dao = _chatMessagesDao;
-    if (dao == null) {
-      // No Drift cache — fall back to live-only Firestore (legacy path).
+    // Web has no Drift persistence (Wasm is in-memory) and the empty-table
+    // watch on Wasm Drift does not reliably emit its first frame. Match
+    // `EventRepository.watchEventsForUser`'s web fork: read straight from
+    // Firestore — same path as the legacy `dao == null` fallback.
+    if (kIsWeb || dao == null) {
       return _chatService
           .messagesForEvent(eventId)
           .map(

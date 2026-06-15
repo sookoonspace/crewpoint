@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:drift/drift.dart' show Value;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:crewpoint_app/app/core/database/app_database.dart';
 import 'package:crewpoint_app/app/core/database/daos/task_checklist_items_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/tasks_dao.dart';
@@ -61,6 +62,19 @@ class TaskRepository implements ITaskRepository {
 
   @override
   Stream<List<TaskModel>> watchTasksByEventId(String eventId) {
+    // Web has no Drift persistence (Wasm is in-memory) and the empty-table
+    // watch on Wasm Drift does not reliably emit its first frame. Match
+    // `EventRepository.watchEventsForUser`'s web fork: read straight from
+    // Firestore. `checklistItems` stays empty on the tile-list path here —
+    // same as the pre-`_hydrate` legacy behavior. The detail-page subscribes
+    // to the per-task checklist subcollection separately.
+    if (kIsWeb) {
+      return _tasksRef(eventId).snapshots().map(
+        (snap) => snap.docs
+            .map((doc) => _fromFirestore(doc.id, eventId, doc.data()))
+            .toList(),
+      );
+    }
     _ensureFirestoreMirror(eventId);
     return _tasksDao.watchTasksByEventId(eventId).asyncMap(_hydrate);
   }

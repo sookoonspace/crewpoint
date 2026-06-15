@@ -98,6 +98,7 @@ Severity legend: **must-ship** = launch blocker; **should-ship** = ship if cheap
 **Missing / stubbed**
 
 - **Drift on web is in-memory Wasm** — confirmed by comment at `lib/app/core/providers.dart:76-79`. Web reads from the Firestore stream directly; cold-start UX has no Drift cache to hydrate. Acceptable per spec; flag if any V1 feature depends on it. **nice-to-have** to revisit (OPFS persistence for Drift on web is a V1.x enhancement).
+  - **Resolved 2026-06-15:** Three repositories (`TaskRepository.watchTasksByEventId`, `ChatRepository.watchMessages`, `ExpenseRepository.watchExpensesByEventId`) accidentally read from Drift on web, contradicting the spec intent above. The empty-table Wasm-Drift `.watch()` never emitted its first frame for events with zero tasks/messages/expenses, so the bottom-nav cross-event aggregations (My Tasks / Chat inbox / Budget ledger) stayed on the loading skeleton indefinitely. Surfaced during web QA 2026-06-15; fixed by adding `if (kIsWeb)` forks matching `EventRepository.watchEventsForUser:84-90`.
 - **Custom domain DNS** — setup guide exists (`docs/crewpoint-web-app-setup-guide.md`) but the Namecheap DNS records and Firebase domain verification have not been audited as live. Out-of-scope for code audit; flag for launch checklist.
 
 **Severity:** must-ship (the code surface is complete; remaining work is launch operations).
