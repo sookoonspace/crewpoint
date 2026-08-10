@@ -12,7 +12,7 @@ dependencies:
 
   # UI
   cupertino_icons: ^1.0.8
-  google_fonts: ^6.2.1
+  google_fonts: ^8.2.1
   lottie: ^3.3.1
   flutter_svg: ^2.0.0
   # flutter_markdown was archived by the Flutter team in 2024;
@@ -22,7 +22,6 @@ dependencies:
 
   # State Management
   flutter_riverpod: ^3.0.0
-  riverpod_annotation: ^3.0.0
 
   # Navigation
   go_router: ^14.8.1
@@ -52,11 +51,27 @@ dependencies:
 
   # Local Database
   drift: ^2.25.0
+  # HELD at 0.5.x deliberately — do not "upgrade" to 0.6.0+eol.
+  # That release is an intentionally *emptied* package: upstream
+  # deprecated it and stripped all its code, because sqlite3 3.x ships
+  # the native libraries itself. Taking it removes the iOS/Android
+  # native SQLite build integration Drift depends on; it is a removal
+  # wearing a version bump.
+  # The real migration is sqlite3 2.x -> 3.x, which requires
+  # drift >= 2.32.1, whose drift_dev requires analyzer >= 10.0.0 — see
+  # the analyzer ceiling under dev_dependencies. Blocked until that
+  # ceiling moves, so revisit the two together.
   sqlite3_flutter_libs: ^0.5.32
 
   # Security
   envied: ^1.1.1
-  flutter_secure_storage: ^9.2.4
+  # HELD at 10.x. 11.0.0 raises compileSdk to 37, which AGP 8.11.1 cannot
+  # resolve: it emits the legacy `android-37` target hash while Google now
+  # publishes only minor-API-level platforms (android-37.0 / 37.1). No SDK
+  # install fixes that — it needs an AGP that understands minor API levels.
+  # 10.3.1 already ships flutter_secure_storage_darwin, so the discontinued
+  # flutter_secure_storage_macos impl is gone either way. Tracked separately.
+  flutter_secure_storage: ^10.3.1
   # Theme preference persistence (non-sensitive — secure_storage is overkill).
   shared_preferences: ^2.3.0
 
@@ -67,8 +82,8 @@ dependencies:
   yaml: ^3.1.2
   path_provider: ^2.1.5
   path: ^1.9.1
-  package_info_plus: ^8.3.0
-  share_plus: ^10.1.4
+  package_info_plus: ^10.2.1
+  share_plus: ^13.3.0
   url_launcher: ^6.3.1
   clock: ^1.1.1
   # Grapheme-aware string ops (TaskModel.duplicate truncation). Ships
@@ -78,7 +93,7 @@ dependencies:
   # Reporting (PDF + CSV exports)
   pdf: ^3.11.0
   printing: ^5.13.0
-  csv: ^6.0.0
+  csv: ^8.0.0
   web: ^1.1.0
 
 dev_dependencies:
@@ -88,10 +103,27 @@ dev_dependencies:
   # Used only by scripts/build_legal_html.dart to render Markdown
   # source into the hosted /privacy + /terms HTML pages.
   markdown: ^7.3.0
-  riverpod_generator: ^3.0.0
   build_runner: ^2.4.15
   envied_generator: ^1.1.1
   drift_dev: ^2.25.0
+  # --- Analyzer ceiling: read this before bumping anything below ---
+  # `analyzer` is capped below 9 by the lint chain:
+  #   custom_lint_core 0.8.1 -> analyzer ^8.0.0
+  #   riverpod_lint    3.0.3 -> analyzer >=7.0.0 <9.0.0
+  # drift_dev 2.31.0 permits analyzer >=8.1.0 <11.0.0, so drift is a
+  # victim of the cap rather than a cause of it.
+  #
+  # Consequence: analyzer, drift, drift_dev, build_runner and sqlite3 all
+  # stay where they are, and the sqlite3_flutter_libs EOL migration noted
+  # above is unreachable (drift_dev 2.32.1 wants analyzer >= 10.0.0).
+  # This is a deliberate trade: riverpod_lint guards the 36 hand-written
+  # providers in lib/app/core/providers.dart, and CONTRIBUTING §Style
+  # tells contributors to run `dart run custom_lint`. Lint coverage was
+  # chosen over version currency — see GitHub issue #16 [L3].
+  #
+  # Removing riverpod_annotation / riverpod_generator (Wave 1) did NOT
+  # lift this cap: riverpod_lint pulls the same riverpod_analyzer_utils
+  # -> custom_lint_core path, and custom_lint carries it independently.
   custom_lint: ^0.8.1
   riverpod_lint: ^3.0.0
   flutter_launcher_icons: ^0.14.3

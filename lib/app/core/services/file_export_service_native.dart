@@ -20,9 +20,14 @@ class NativeFileExporter implements IFileExporter {
       return;
     }
 
-    await Share.shareXFiles(
-      [XFile.fromData(bytes, name: filename, mimeType: mimeType)],
-      fileNameOverrides: [filename],
+    // share_plus 11 replaced the static `Share.*` helpers with the
+    // `SharePlus.instance.share(ShareParams(...))` form; the old API is
+    // deprecated in 13 and slated for removal.
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile.fromData(bytes, name: filename, mimeType: mimeType)],
+        fileNameOverrides: [filename],
+      ),
     );
   }
 }

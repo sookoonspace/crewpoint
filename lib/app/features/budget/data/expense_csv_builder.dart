@@ -32,8 +32,11 @@ String buildExpenseCsv({
     for (final e in expenses) _row(e, event, memberNames),
   ];
 
-  const converter = ListToCsvConverter(eol: '\n');
-  return converter.convert(rows);
+  // csv 7 rewrote the library: `ListToCsvConverter` is gone and `Csv` is
+  // its replacement. `lineDelimiter` must stay explicit — csv 8 defaults
+  // to '\r\n', whereas this export has always emitted '\n'.
+  final converter = Csv(lineDelimiter: '\n');
+  return converter.encode(rows);
 }
 
 List<String> _row(

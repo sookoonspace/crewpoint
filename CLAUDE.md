@@ -89,6 +89,15 @@ Firestore data model: `events/{eventId}` with `messages`, `tasks` (+ `tasks/{id}
 
 `AppFlavor.current` reads `--dart-define=FLAVOR=` (defaults to `dev` when absent, which is what `flutter test` gets). Firebase config is generated per flavor into `lib/firebase_options_{dev,stg,prod}.dart` by `flutterfire configure` — never hand-edit. `.env*` files are gitignored and currently only hold placeholders; `lib/app/core/env/env.dart` has the envied wiring commented out until a real non-Firebase secret exists.
 
+### Dependency ceilings
+
+Two dependencies are deliberately held back. **Both have their full reasoning in `pubspec.yaml` comments at the constraint itself — read those before attempting a bump.**
+
+- **`analyzer` is capped below 9** by `custom_lint_core` (`analyzer ^8.0.0`) and `riverpod_lint` (`analyzer >=7.0.0 <9.0.0`). This holds `drift`, `drift_dev`, `build_runner`, and `sqlite3` at their current versions. `drift_dev` is a victim of the cap, not a cause. Lint coverage of the 36 hand-written providers was chosen over version currency.
+- **`sqlite3_flutter_libs` is held at 0.5.x.** `0.6.0+eol` is an intentionally emptied package — upstream removed all its code because `sqlite3` 3.x bundles the native libraries. Taking it deletes the iOS/Android native SQLite build integration Drift relies on. The real migration needs `drift >= 2.32.1` → `analyzer >= 10.0.0`, so it is blocked by the ceiling above.
+
+Riverpod codegen (`riverpod_annotation` / `riverpod_generator`) was removed as unused, not rejected on merit — every provider is a hand-written `Notifier`. Adoption is tracked separately and would be its own migration.
+
 ## Testing
 
 - **Never call `Firebase.initializeApp()` or `FirebaseService.initialize()` from `test/`.** A CI grep fails the build on it. Use Riverpod overrides on the service seams instead.
@@ -100,6 +109,8 @@ Firestore data model: `events/{eventId}` with `messages`, `tasks` (+ `tasks/{id}
 ## Conventions
 
 Conventional Commits (`feat(scope):`, `fix(scope):`, …), subject ≤ 72 chars, imperative, no trailing period. Branches `feat/` `fix/` `docs/` off `main`. PRs need at least one release-drafter label (`feature`/`fix`/`docs`/`chore`/`breaking`). Lints beyond `flutter_lints`: `always_use_package_imports` and `avoid_print` are **errors**, strict casts/inference/raw-types are on, single quotes and `prefer_final_locals` enforced.
+
+**`pubspec.yaml` constraints carry the exact resolved version, never a rounded floor** — `google_fonts: ^8.2.1`, not `^8.0.0`. After `flutter pub get` resolves, read the real version out of `pubspec.lock` and write it back as the caret floor. Keep the caret; this is about the floor being accurate, not about pinning. A rounded floor lets a fresh resolve pick a version nobody tested, so the constraint stops describing what was actually verified. Applies to new packages and upgrades alike.
 
 ## Where things are documented
 
