@@ -169,6 +169,11 @@ class AppDatabase extends _$AppDatabase {
         // original, renames. Architectural rationale lives in the
         // Firestore-Write / Drift-Read spec — events are mirrored from
         // Firestore and don't depend on a Drift Users row existing.
+        // `TableMigration` is marked experimental by Drift, but it is the
+        // only supported way to drop an FK and this migration is already
+        // shipped at schema v5. Suppressed narrowly rather than repo-wide
+        // so a genuinely new experimental API still trips the analyzer.
+        // ignore: experimental_member_use
         await m.alterTable(TableMigration(events));
       }
       if (from < 6) {

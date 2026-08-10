@@ -24,7 +24,7 @@ Severity legend: **must-ship** = launch blocker; **should-ship** = ship if cheap
 
 **Missing / stubbed**
 
-- **Firestore offline persistence on WEB is not enabled.** `lib/app/core/services/firebase_service.dart:9-17` calls only `Firebase.initializeApp(options: options)` — no `FirebaseFirestore.instance.settings = const Settings(persistenceEnabled: true)` and no `enableIndexedDbPersistence()` call. Grep across `lib/` for `persistenceEnabled` / `enableIndexedDbPersistence` / `firestoreSettings` returned zero matches. Web builds will lose all queued writes and cached reads on tab close. **must-ship.**
+- ~~**Firestore offline persistence on WEB is not enabled.**~~ **Resolved 2026-08-08.** `FirebaseService.firestoreSettings` (`lib/app/core/services/firebase_service.dart`) declares `Settings(persistenceEnabled: true)` and `initialize()` assigns it to `FirebaseFirestore.instance.settings` immediately after `Firebase.initializeApp`, before any provider touches Firestore. On web the plugin maps this onto the modern JS `persistentLocalCache(...)` (`cloud_firestore_web/lib/cloud_firestore_web.dart:145-153`), not the deprecated `enableIndexedDbPersistence()`. `cacheSizeBytes` is left unset so the 40 MB LRU default applies. Contract locked by `test/app/core/services/firebase_settings_test.dart`. Remaining caveat: the plugin's `Settings` API exposes no tab manager, so web persistence is **single-tab** — secondary tabs fall back to an in-memory cache and stay functional online.
 - **`EventRepository` is the odd one out** — `lib/app/features/dashboard/data/event_repository.dart` is Drift-only, no Firestore wiring. Tracked in spec Stage 2. **must-ship.**
 - **Dashboard never re-renders from data** — `lib/app/features/dashboard/presentation/dashboard_screen.dart:19` hardcodes `final events = <EventModel>[];` with `// TODO: Wire to event provider...`. **must-ship.**
 - **`SyncEngine` is dead code.** `lib/app/core/services/sync_engine.dart` and `lib/app/core/services/i_sync_service.dart` are registered in no provider, called from nowhere. Only external reference is a stale unit test (`test/app/features/profile/profile_test.dart:8`) that exercises the dead implementation. **Recommend deletion** of all three — the architecture moved on to per-repository mirrors. **must-ship cleanup** (low risk).
@@ -97,7 +97,8 @@ Severity legend: **must-ship** = launch blocker; **should-ship** = ship if cheap
 
 **Missing / stubbed**
 
-- **Drift on web is in-memory Wasm** — confirmed by comment at `lib/app/core/providers.dart:76-79`. Web reads from the Firestore stream directly; cold-start UX has no Drift cache to hydrate. Acceptable per spec; flag if any V1 feature depends on it. **nice-to-have** to revisit (OPFS persistence for Drift on web is a V1.x enhancement).
+- **Drift on web is in-memory Wasm** — confirmed by comment at `lib/app/core/providers.dart:76-79`. Web reads from the Firestore stream directly; there is no Drift cache to hydrate. Acceptable per spec; flag if any V1 feature depends on it. **nice-to-have** to revisit (OPFS persistence for Drift on web is a V1.x enhancement).
+  - **Cold start covered as of 2026-08-08:** with `persistenceEnabled: true` (Pillar 1), the raw Firestore streams the web forks read from now emit a cached snapshot from IndexedDB before the server round-trip. Drift-on-web stays unnecessary for V1 — the cache moved a layer down rather than the mirror coming back.
   - **Resolved 2026-06-15:** Three repositories (`TaskRepository.watchTasksByEventId`, `ChatRepository.watchMessages`, `ExpenseRepository.watchExpensesByEventId`) accidentally read from Drift on web, contradicting the spec intent above. The empty-table Wasm-Drift `.watch()` never emitted its first frame for events with zero tasks/messages/expenses, so the bottom-nav cross-event aggregations (My Tasks / Chat inbox / Budget ledger) stayed on the loading skeleton indefinitely. Surfaced during web QA 2026-06-15; fixed by adding `if (kIsWeb)` forks matching `EventRepository.watchEventsForUser:84-90`.
 - **Custom domain DNS** — setup guide exists (`docs/crewpoint-web-app-setup-guide.md`) but the Namecheap DNS records and Firebase domain verification have not been audited as live. Out-of-scope for code audit; flag for launch checklist.
 
@@ -150,7 +151,7 @@ The architecture moved to per-repository Firestore listeners + Drift mirrors. Ke
 3. **`CreateTaskScreen` silent no-op** — `lib/app/features/tasks/presentation/create_task_screen.dart:73`, identical pattern. Needs a separate fix spec. *Pillar 2.*
 4. **`JoinEventSheet` callback wiring** — verify production wiring; if absent, same root cause. *Pillar 2.*
 5. **`MemberManagementScreen` placeholder uid** — `lib/app/core/router/app_router.dart:158` passes `currentUserId: ''`. Tracked in spec Stage 2 via `currentUserIdProvider`. *Pillar 5 trust integrity.*
-6. **Firestore offline persistence on web is not enabled** — `lib/app/core/services/firebase_service.dart`. Without `Settings(persistenceEnabled: true)` (or `enableIndexedDbPersistence`), the offline-first pillar is broken on web — every reload re-fetches and offline writes are lost. *Pillar 1.*
+6. ~~**Firestore offline persistence on web is not enabled**~~ — ✅ **Resolved 2026-08-08.** `lib/app/core/services/firebase_service.dart` now sets `Settings(persistenceEnabled: true)` on every platform before first Firestore use; web gets IndexedDB-backed `persistentLocalCache`. Single-tab only (plugin exposes no tab manager). *Pillar 1.*
 7. **Zelle settlement UX decision pending** — `pay_link_builder.dart` covers only Venmo + CashApp. Either implement a Zelle web-banking fallback or carve Zelle out of V1 scope. *Pillar 3.*
 8. **`SyncEngine` + `i_sync_service` deletion** — low risk, high signal. Removes architectural ambiguity for the next contributor. *Pillar 1 cleanup.*
 
@@ -201,4 +202,4 @@ The `event-actions-uid-wiring-spec.md` follow-up that earlier audit drafts named
 
 ---
 
-*Section appended as Phase 2 of the event-navigation-fix work (PR following PR #3). The original V1 audit was generated as Phase 1 of the V1-audit + create-event-fix work; PR #3 implemented blockers 1, 2, and 5 from that audit. Web Firestore offline persistence (blocker 6) and Zelle (blocker 7) still need separate small specs before public launch.*
+*Section appended as Phase 2 of the event-navigation-fix work (PR following PR #3). The original V1 audit was generated as Phase 1 of the V1-audit + create-event-fix work; PR #3 implemented blockers 1, 2, and 5 from that audit. Blocker 6 (web Firestore offline persistence) was closed 2026-08-08. Zelle (blocker 7) and the SyncEngine deletion (blocker 8) remain open before public launch.*
