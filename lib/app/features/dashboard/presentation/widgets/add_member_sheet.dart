@@ -107,7 +107,9 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
 
   Future<void> _shareCode() async {
     if (_code == null) return;
-    await Share.share('Join my event on CrewPoint! Use code: $_code');
+    await SharePlus.instance.share(
+      ShareParams(text: 'Join my event on CrewPoint! Use code: $_code'),
+    );
   }
 
   @override
