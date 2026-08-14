@@ -327,7 +327,10 @@ class TaskRepository implements ITaskRepository {
   Future<List<TaskModel>> getTasksByEventId(String eventId) async {
     try {
       final rows = await _tasksDao.tasksByEventId(eventId);
-      return _hydrate(rows);
+      // `await` is load-bearing: without it the future escapes the try
+      // block and a rejection from _hydrate would bypass the catch below
+      // instead of degrading to an empty list.
+      return await _hydrate(rows);
     } catch (e, st) {
       log('Failed to get tasks', error: e, stackTrace: st, name: 'tasks');
       return [];
