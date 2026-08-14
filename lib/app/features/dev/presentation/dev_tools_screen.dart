@@ -316,6 +316,11 @@ class _FcmDiagnosticResult {
     this.fcmToken,
     this.fcmTokenError,
     this.firestoreTokens = const [],
+    // Analyzer false positive under Dart 3.13 (Flutter 3.47): the
+    // redirecting constructor below does supply this, and it is read at
+    // `_resultBody`, but `unused_element_parameter` does not count a
+    // redirecting generative constructor as giving a value.
+    // ignore: unused_element_parameter
     this.errorBlob,
   });
 

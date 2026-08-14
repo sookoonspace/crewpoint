@@ -17,18 +17,47 @@ final _emptyRosterOverride = usersByIdProvider.overrideWith(
 );
 
 /// Drain cascading stream emissions through the composed provider.
+/// Reads [globalInboxProvider] once its dependency graph has settled.
+///
+/// The provider fans out across a family of per-event message streams, so
+/// the number of microtasks before it resolves scales with how many events
+/// a test seeds. Waiting a fixed number of milliseconds therefore races:
+/// two 10ms delays were enough on a developer machine but not on a loaded
+/// CI runner, where the sort test read `AsyncLoading` and failed.
+///
+/// Polling to a bounded deadline is deterministic on any machine, and a
+/// provider that genuinely never resolves still fails the test rather than
+/// passing on a lucky delay.
+///
+/// Pass [expectSettled] as false for the cases that assert the provider is
+/// *still* loading — those seed streams that never emit, so polling would
+/// only burn the deadline.
 Future<AsyncValue<List<InboxRow>>> _readAfterPump(
   ProviderContainer container,
-  String uid,
-) async {
+  String uid, {
+  bool expectSettled = true,
+}) async {
   container.listen<AsyncValue<List<InboxRow>>>(
     globalInboxProvider(uid),
     (_, _) {},
     fireImmediately: true,
   );
-  await Future<void>.delayed(const Duration(milliseconds: 10));
-  await Future<void>.delayed(const Duration(milliseconds: 10));
-  return container.read(globalInboxProvider(uid));
+
+  if (!expectSettled) {
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    return container.read(globalInboxProvider(uid));
+  }
+
+  const timeout = Duration(seconds: 5);
+  final started = DateTime.now();
+  var value = container.read(globalInboxProvider(uid));
+  while (value is AsyncLoading &&
+      DateTime.now().difference(started) < timeout) {
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+    value = container.read(globalInboxProvider(uid));
+  }
+  return value;
 }
 
 void main() {
@@ -138,7 +167,11 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final result = await _readAfterPump(container, 'me');
+      final result = await _readAfterPump(
+        container,
+        'me',
+        expectSettled: false,
+      );
       expect(result, isA<AsyncLoading<List<InboxRow>>>());
     },
   );
@@ -158,7 +191,11 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final result = await _readAfterPump(container, 'me');
+      final result = await _readAfterPump(
+        container,
+        'me',
+        expectSettled: false,
+      );
       expect(result, isA<AsyncLoading<List<InboxRow>>>());
     },
   );
@@ -534,7 +571,11 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final result = await _readAfterPump(container, 'me');
+      final result = await _readAfterPump(
+        container,
+        'me',
+        expectSettled: false,
+      );
       expect(result, isA<AsyncLoading<List<InboxRow>>>());
     },
   );

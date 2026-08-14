@@ -160,7 +160,10 @@ class ExpenseRepository implements IExpenseRepository {
   Future<List<ExpenseModel>> getExpensesByEventId(String eventId) async {
     try {
       final rows = await _expensesDao.expensesByEventId(eventId);
-      return _hydrateRows(rows);
+      // `await` is load-bearing: without it the future escapes the try
+      // block and a rejection from _hydrateRows would bypass the catch
+      // below instead of degrading to an empty list.
+      return await _hydrateRows(rows);
     } catch (e, st) {
       log('Failed to get expenses', error: e, stackTrace: st, name: 'budget');
       return [];
