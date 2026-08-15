@@ -27,12 +27,12 @@ dependencies:
   go_router: ^17.5.0
 
   # Firebase
-  firebase_core: ^3.13.0
-  firebase_auth: ^5.5.3
-  cloud_firestore: ^5.6.7
-  firebase_storage: ^12.4.4
-  cloud_functions: ^5.3.3
-  firebase_messaging: ^15.2.0
+  firebase_core: ^4.13.0
+  firebase_auth: ^6.5.7
+  cloud_firestore: ^6.8.0
+  firebase_storage: ^13.4.6
+  cloud_functions: ^6.3.6
+  firebase_messaging: ^16.5.0
 
   # OS launcher app-icon badge — Phase 3b.2.
   # AppBadgePlus.updateBadge(int) on iOS / Android / macOS.
@@ -128,8 +128,8 @@ dev_dependencies:
   riverpod_lint: ^3.0.0
   flutter_launcher_icons: ^0.14.3
   image: ^4.5.3
-  fake_cloud_firestore: ^3.0.3
-  firebase_auth_mocks: ^0.14.1
+  fake_cloud_firestore: ^4.2.0
+  firebase_auth_mocks: ^0.15.2
   # sqlite3 is a transitive dep via sqlite3_flutter_libs; declared here
   # so test/database/migration_v5_to_v6_test.dart can import it cleanly
   # to seed a v5-shaped DB before Drift's MigrationStrategy runs.
