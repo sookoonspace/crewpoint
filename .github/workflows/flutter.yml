@@ -24,6 +24,13 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          # Pinned deliberately. An unpinned `channel: stable` silently
+          # follows every new Flutter release, so CI's analyzer and test
+          # runner can change under a PR for reasons unrelated to it. That
+          # happened during PR #28: CI moved to 3.47.0 while local was on
+          # 3.44.8 and failed a gate the change had not broken. Bump this
+          # on purpose, with a full gate, not by surprise.
+          flutter-version: 3.47.0
           cache: true
 
       - name: Show Flutter / Dart versions
