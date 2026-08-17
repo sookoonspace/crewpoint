@@ -1,18 +1,15 @@
 #!/usr/bin/env bash
 #
-# Run CrewPoint with a flavor, passing every flag the app actually needs.
+# Convenience wrapper for running CrewPoint with a flavor.
 #
-# `flutter run --flavor stg` on its own is NOT enough and fails in a
-# confusing way. `--flavor` only selects the *native* build (Android
-# product flavor, iOS scheme, and therefore which google-services.json /
-# GoogleService-Info.plist ships). The Dart side picks its Firebase
-# project from `--dart-define=FLAVOR=`, which defaults to `dev` when
-# absent. Mismatch them and Android's Firebase SDK auto-initializes
-# `[DEFAULT]` from the native stg/prod config, then `initializeApp` is
-# called again with dev options and throws `[core/duplicate-app]` — an
-# unhandled exception in `main()`, so you get a blank screen rather than
-# an error. `main.dart` now guards against this explicitly; this script
-# stops you tripping it in the first place.
+# Optional on iOS and Android: `flutter run --flavor stg` is correct on
+# its own, because `main` derives the flavor from the native package
+# identifier that `--flavor` already selects. Use this script when you
+# want the `.env.<flavor>` file passed too, or to avoid remembering that
+# web needs `--dart-define=FLAVOR=` instead of `--flavor`.
+#
+# Web has no native build to select, so `--flavor` does not apply there
+# and the define is the only selector. This script handles that for you.
 #
 # Usage:
 #   scripts/run.sh <dev|stg|prod> [extra flutter run args...]
