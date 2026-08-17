@@ -3,10 +3,12 @@ import 'dart:developer' as developer;
 
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crewpoint_app/app/core/env/app_flavor.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
@@ -39,11 +41,60 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   );
 }
 
+/// Makes the native build the source of truth for the active flavor, so
+/// `flutter run --flavor stg` is correct on its own.
+///
+/// `--flavor` selects the native build — the Android product flavor and
+/// iOS scheme, and therefore which `google-services.json` /
+/// `GoogleService-Info.plist` ships. The package identifier that produces
+/// is unambiguous, so it can name the flavor directly rather than making
+/// the caller repeat it in `--dart-define=FLAVOR=`.
+///
+/// This must run before [FirebaseService.initialize]. Without it, omitting
+/// the define left `AppFlavor.current` at its `dev` fallback while the
+/// native side was stg: Android's Firebase SDK auto-initializes
+/// `[DEFAULT]` from the stg config before `main`, `initializeApp` was then
+/// called with dev options, and the resulting `[core/duplicate-app]`
+/// propagated out of `main` — `runApp` never executed and the app showed a
+/// blank screen with nothing in the logs naming the cause.
+///
+/// Web is skipped: it has no native build to select, so the define stays
+/// the only selector there — which is also why web takes no `--flavor`.
+///
+/// A define that *contradicts* the native build is still an error worth
+/// reporting, since only one of the two can be honoured.
+Future<void> _resolveFlavorFromNativeBuild() async {
+  if (kIsWeb) return;
+  final packageName = (await PackageInfo.fromPlatform()).packageName;
+  final native = AppFlavor.fromAppId(packageName);
+  if (native == null) {
+    developer.log(
+      'Unrecognised package id "$packageName"; falling back to '
+      '${AppFlavor.current.name}',
+      name: 'flavor',
+    );
+    return;
+  }
+  const defineWasGiven = bool.hasEnvironment('FLAVOR');
+  if (defineWasGiven && AppFlavor.fromDefine != native) {
+    throw StateError(
+      'Flavor mismatch: the native build is "$packageName" (${native.name}) '
+      'but --dart-define=FLAVOR was set to "${AppFlavor.fromDefine.name}".\n'
+      'Drop the define — `flutter run --flavor ${native.name}` is enough on '
+      'iOS and Android — or set both to the same flavor.',
+    );
+  }
+  AppFlavor.resolveFromNativeAppId(packageName);
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // `AppFlavor.current` reads --dart-define=FLAVOR=... at launch and
-  // defaults to dev when the define is missing (tests, ad-hoc runs).
-  // launch.json passes the matching --dart-define-from-file=.env.<flavor>.
+  // The native build names the flavor on iOS and Android, so `--flavor`
+  // alone is sufficient there. Must precede FirebaseService.initialize:
+  // the native Firebase SDK has already auto-initialized [DEFAULT] from
+  // the per-flavor config by this point, and initializing again with a
+  // different project's options throws [core/duplicate-app].
+  await _resolveFlavorFromNativeBuild();
   await FirebaseService.initialize(flavor: AppFlavor.current);
   // Background isolate handler must be registered before the first FCM
   // event lands. Register early so a cold-start tap into a closed app

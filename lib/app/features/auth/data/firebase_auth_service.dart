@@ -143,18 +143,27 @@ class FirebaseAuthService implements IAuthService {
 
   @override
   Future<List<String>> fetchSignInMethodsForEmail(String email) async {
-    try {
-      // ignore: deprecated_member_use
-      return await _firebaseAuth.fetchSignInMethodsForEmail(email);
-    } catch (e, st) {
-      log(
-        'fetchSignInMethodsForEmail failed (returning [])',
-        error: e,
-        stackTrace: st,
-        name: 'auth',
-      );
-      return const [];
-    }
+    // firebase_auth 6 removed `FirebaseAuth.fetchSignInMethodsForEmail`.
+    // The removal is deliberate and there is no replacement: the call
+    // reveals whether an email is registered, which is exactly what
+    // Email Enumeration Protection exists to prevent. Google enables that
+    // protection by default on new projects, and when it is on the API
+    // already returned an empty list.
+    //
+    // Returning `const []` therefore preserves the behaviour this app
+    // already saw under enumeration protection, and every caller is
+    // written for it: `AuthNotifier.signInWithEmail` treats an empty list
+    // as "never suggest" precisely so it cannot leak account existence.
+    // The practical effect is that `AuthFailure.suggestedProvider` is now
+    // always null, so a failed password sign-in shows the plain
+    // "Incorrect email or password" message instead of routing the user
+    // to an OAuth tile.
+    //
+    // The seam is kept rather than deleted so the contract, its tests and
+    // the UI branch survive intact if Firebase ever ships an
+    // enumeration-safe replacement. Removing the now-inert UX path is
+    // tracked separately.
+    return const [];
   }
 
   AuthUser _mapUser(fb.User user) => AuthUser(
