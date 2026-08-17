@@ -3,10 +3,12 @@ import 'dart:developer' as developer;
 
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crewpoint_app/app/core/env/app_flavor.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
@@ -39,11 +41,43 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   );
 }
 
+/// Fails fast when the native build flavor and the Dart-side [AppFlavor]
+/// disagree.
+///
+/// `--flavor` selects the native build — the Android product flavor and
+/// iOS scheme, and therefore which `google-services.json` /
+/// `GoogleService-Info.plist` ships. `AppFlavor.current` is independent:
+/// it reads `--dart-define=FLAVOR=` and falls back to `dev`. Passing only
+/// `--flavor stg` leaves them disagreeing, and the failure is opaque:
+/// Android's Firebase SDK auto-initializes `[DEFAULT]` from the native stg
+/// config before `main` runs, `Firebase.initializeApp` is then called with
+/// dev options, and the resulting `[core/duplicate-app]` propagates out of
+/// `main` — so `runApp` never executes and the app shows a blank screen
+/// with nothing in the logs pointing at the cause.
+///
+/// This check runs *before* `Firebase.initializeApp` so the diagnosis
+/// arrives instead of that exception. Skipped on web, which has no native
+/// build to select and where the define is the only selector.
+Future<void> _assertFlavorMatchesNativeBuild() async {
+  if (kIsWeb) return;
+  final info = await PackageInfo.fromPlatform();
+  final expected = AppFlavor.current.appId;
+  if (info.packageName == expected) return;
+  throw StateError(
+    'Flavor mismatch: the native build is "${info.packageName}" but FLAVOR '
+    'resolved to "${AppFlavor.current.name}" ("$expected").\n'
+    'Pass both flags — they are independent:\n'
+    '  --flavor <flavor> --dart-define=FLAVOR=<flavor>\n'
+    'Or use the wrapper that does it for you: scripts/run.sh <flavor>',
+  );
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // `AppFlavor.current` reads --dart-define=FLAVOR=... at launch and
   // defaults to dev when the define is missing (tests, ad-hoc runs).
   // launch.json passes the matching --dart-define-from-file=.env.<flavor>.
+  await _assertFlavorMatchesNativeBuild();
   await FirebaseService.initialize(flavor: AppFlavor.current);
   // Background isolate handler must be registered before the first FCM
   // event lands. Register early so a cold-start tap into a closed app
