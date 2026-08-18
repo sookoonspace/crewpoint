@@ -1,6 +1,8 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions/v2";
-import * as admin from "firebase-admin";
+import {getAuth} from "firebase-admin/auth";
+import {FieldValue, getFirestore} from "firebase-admin/firestore";
+import {getStorage} from "firebase-admin/storage";
 import {
   commitInChunks,
   streamDeleteSubcollection,
@@ -8,9 +10,9 @@ import {
 } from "../utils/batch";
 import {withStructuredLogs} from "../utils/logging";
 
-const db = admin.firestore();
-const storage = admin.storage();
-const auth = admin.auth();
+const db = getFirestore();
+const storage = getStorage();
+const auth = getAuth();
 
 /**
  * Stage tag used in the `details.stage` field of every typed `HttpsError`
@@ -25,7 +27,7 @@ const CODE_FIRESTORE_CLEANUP_FAILED = "firestore-cleanup-failed";
 const CODE_AUTH_DELETE_FAILED = "auth-delete-failed";
 
 /**
- * Bounded retry helper around `admin.auth().deleteUser(uid)`.
+ * Bounded retry helper around `getAuth().deleteUser(uid)`.
  *
  * Auth deletion failures are the source of the partial-deletion bug
  * fixed in this spec — Firestore + Storage have already been wiped by
@@ -34,7 +36,7 @@ const CODE_AUTH_DELETE_FAILED = "auth-delete-failed";
  * user with an orphaned auth record.
  *
  * Exported for unit testing — production wires `deleter` to
- * `(u) => admin.auth().deleteUser(u)`.
+ * `(u) => getAuth().deleteUser(u)`.
  */
 export async function deleteAuthUserWithRetry(
   uid: string,
@@ -112,8 +114,8 @@ async function anonymizeUserInEvent(
   const adminIds: string[] = eventData.adminIds || [];
   const remainingMembers = memberIds.filter((m: string) => m !== uid);
   const updateData: Record<string, unknown> = {
-    memberIds: admin.firestore.FieldValue.arrayRemove(uid),
-    adminIds: admin.firestore.FieldValue.arrayRemove(uid),
+    memberIds: FieldValue.arrayRemove(uid),
+    adminIds: FieldValue.arrayRemove(uid),
   };
 
   // Transfer ownership if user is creator
@@ -180,7 +182,7 @@ async function deleteUserStorage(uid: string): Promise<void> {
  *    `details.stage = 'firestore'`, `details.code = 'firestore-cleanup-failed'`.
  * 3. Storage: delete `users/{uid}/`. Failure is **non-fatal** — logged
  *    as a structured warning, function continues to the auth stage.
- * 4. Auth: `admin.auth().deleteUser(uid)` with bounded retry (3 attempts,
+ * 4. Auth: `getAuth().deleteUser(uid)` with bounded retry (3 attempts,
  *    250 ms linear backoff). Final failure throws `HttpsError` with
  *    `details.stage = 'auth'`, `details.code = 'auth-delete-failed'`.
  * 5. Return `{success: true}`.

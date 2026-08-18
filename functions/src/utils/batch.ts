@@ -1,4 +1,4 @@
-import * as admin from "firebase-admin";
+import {getFirestore} from "firebase-admin/firestore";
 
 const BATCH_LIMIT = 500;
 
@@ -15,7 +15,7 @@ export interface BatchOperation {
 export async function commitInChunks(
   operations: BatchOperation[]
 ): Promise<void> {
-  const db = admin.firestore();
+  const db = getFirestore();
 
   for (let i = 0; i < operations.length; i += BATCH_LIMIT) {
     const chunk = operations.slice(i, i + BATCH_LIMIT);
@@ -67,7 +67,7 @@ export async function streamDeleteSubcollection(
   parentRef: FirebaseFirestore.DocumentReference,
   subcollection: string
 ): Promise<void> {
-  const db = admin.firestore();
+  const db = getFirestore();
   // eslint-disable-next-line no-constant-condition
   while (true) {
     const snapshot = await parentRef

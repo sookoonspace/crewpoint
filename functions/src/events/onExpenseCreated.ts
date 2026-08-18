@@ -1,9 +1,9 @@
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import {logger} from "firebase-functions/v2";
-import * as admin from "firebase-admin";
+import {getFirestore} from "firebase-admin/firestore";
 import {sendCategorizedPush} from "../notifications/sendPush";
 
-const db = admin.firestore();
+const db = getFirestore();
 
 /**
  * onExpenseCreated — pushes a "new expense" notification to every event

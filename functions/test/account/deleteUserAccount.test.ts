@@ -18,7 +18,7 @@ const firebaseFunctionsTest = require("firebase-functions-test");
 const ftest = firebaseFunctionsTest();
 
 // Eager-init Admin SDK before requiring the CF source — the module
-// calls `admin.firestore()` at load time, which otherwise throws
+// calls `getFirestore()` at load time, which otherwise throws
 // "default app does not exist".
 getAdminApp();
 

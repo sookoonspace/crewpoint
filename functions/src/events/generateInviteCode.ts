@@ -1,9 +1,9 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions/v2";
-import * as admin from "firebase-admin";
+import {FieldValue, Timestamp, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 
-const db = admin.firestore();
+const db = getFirestore();
 
 // Characters: A-Z minus ambiguous (O, I, L) + 2-9.
 const CHARSET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
@@ -150,13 +150,13 @@ async function reusePath(
 
     // ── PHASE 2: writes ───────────────────────────────────────────
     for (const doc of existing.docs) tx.delete(doc.ref);
-    const expiresAt = admin.firestore.Timestamp.fromDate(
+    const expiresAt = Timestamp.fromDate(
       new Date(now + EXPIRY_MS)
     );
     tx.set(invitesRef.doc(freshCode), {
       eventId,
       createdBy: uid,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
       expiresAt,
     });
 
@@ -210,13 +210,13 @@ async function rotatePath(
     );
   }
 
-  const expiresAt = admin.firestore.Timestamp.fromDate(
+  const expiresAt = Timestamp.fromDate(
     new Date(Date.now() + EXPIRY_MS)
   );
   batch.set(invitesRef.doc(code), {
     eventId,
     createdBy: uid,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: FieldValue.serverTimestamp(),
     expiresAt,
   });
 

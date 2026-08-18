@@ -1,0 +1,21 @@
+{
+  // Test-only compiler options for ts-jest.
+  //
+  // Two things differ from the production `tsconfig.json`:
+  //
+  //   * `rootDir` widens from `src` to the package root, so ts-jest can
+  //     compile `test/` as well as the `node_modules` files matched by
+  //     `transformIgnorePatterns` in `jest.config.js`.
+  //   * `allowJs` lets ts-jest transpile plain `.js` dependencies. This
+  //     exists for `jose` (pulled in by firebase-admin 14 -> jwks-rsa 4),
+  //     which ships as pure ESM. Node 22 loads it fine via `require(esm)`;
+  //     Jest's CommonJS runtime cannot, so it gets transpiled instead.
+  //
+  // `checkJs` stays off — those dependencies are transpiled, not type-checked.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "allowJs": true
+  },
+  "include": ["src", "test"]
+}

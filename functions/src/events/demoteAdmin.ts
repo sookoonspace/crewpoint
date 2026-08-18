@@ -1,8 +1,8 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
-import * as admin from "firebase-admin";
+import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 
-const db = admin.firestore();
+const db = getFirestore();
 
 /**
  * demoteAdmin — removes admin role from an event member.
@@ -73,8 +73,8 @@ export const demoteAdmin = onCall(
         }
 
         await db.collection("events").doc(eventId).update({
-          adminIds: admin.firestore.FieldValue.arrayRemove(targetUserId),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          adminIds: FieldValue.arrayRemove(targetUserId),
+          updatedAt: FieldValue.serverTimestamp(),
         });
 
         return {success: true};

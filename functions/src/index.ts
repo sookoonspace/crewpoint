@@ -1,7 +1,7 @@
-import * as admin from "firebase-admin";
+import {initializeApp} from "firebase-admin/app";
 
 // Initialize Firebase Admin SDK (once, before any function imports)
-admin.initializeApp();
+initializeApp();
 
 // === Account Functions ===
 export {deleteUserAccount} from "./account/deleteUserAccount";

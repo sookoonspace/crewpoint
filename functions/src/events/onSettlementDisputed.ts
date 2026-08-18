@@ -1,6 +1,6 @@
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import {logger} from "firebase-functions/v2";
-import * as admin from "firebase-admin";
+import {getFirestore} from "firebase-admin/firestore";
 import {sendCategorizedPush} from "../notifications/sendPush";
 
 /**
@@ -69,8 +69,7 @@ export const onSettlementDisputed = onDocumentCreated(
       return;
     }
 
-    const eventDoc = await admin
-      .firestore()
+    const eventDoc = await getFirestore()
       .collection("events")
       .doc(eventId)
       .get();

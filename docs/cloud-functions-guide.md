@@ -155,7 +155,9 @@ Use Firebase Functions v2 (2nd gen) syntax:
 ```typescript
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions/v2";
-import * as admin from "firebase-admin";
+// firebase-admin 14 removed the legacy `admin.*` namespace. Import the
+// modular entry point you need instead — `getFirestore` from
+// "firebase-admin/firestore", `getAuth` from "firebase-admin/auth", etc.
 
 export const myFunction = onCall(
   {timeoutSeconds: 60, memory: "256MiB"},
