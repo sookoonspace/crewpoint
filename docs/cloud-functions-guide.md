@@ -134,6 +134,29 @@ All deployed Cloud Functions, kept up-to-date as features are added.
 | `disputeSettlement` | HTTPS Callable | `events/` | Payer or payee rolls back a settlement: deletes the `isPayment` expense, replaces the chat notice with `kind: 'settlement_disputed'`. | 30s | 2026-04-27 |
 | `onUrgentMessageCreated` | Firestore-trigger v2 (`onDocumentCreated` on `events/{eid}/messages/{mid}`) | `events/` | Fans out an FCM push when an urgent (high-priority) chat message is created. Loads recipients from event memberIds, skips the sender, chunks tokens at 500 with `sendEachForMulticast`, prunes dead tokens via batched arrayRemove. `retry: false`. | 30s | 2026-04-28 |
 
+> **Note:** this table is incomplete — 16 functions are exported from
+> `functions/src/index.ts` and only the rows above are documented. Treat
+> `functions/src/index.ts` as the source of truth until the table is caught up.
+
+### 4.1 Required Firestore Indexes
+
+Collection-group queries do **not** work off the automatic single-field indexes. Every
+one currently in the codebase, and the index that serves it:
+
+| Query | Function | Index required |
+|---|---|---|
+| `collectionGroup('tasks').where('dueDate', '>=' / '<=')` | `onTaskDueScheduled` | `fieldOverrides` → `tasks.dueDate`, `COLLECTION_GROUP` ASC |
+| `collectionGroup('private').where('notificationPrefs.dailyDigest', '==', true)` | `onDigestSummary` | `fieldOverrides` → `private.notificationPrefs.dailyDigest`, `COLLECTION_GROUP` ASC |
+| `collectionGroup('tasks').where('assigneeId','==').where('status','!=')` | `onDigestSummary` | composite → `tasks` (`assigneeId` ASC, `status` ASC), `COLLECTION_GROUP` |
+| `collectionGroup('expenses').where('payerId','!=')` | `onDigestSummary` | `fieldOverrides` → `expenses.payerId`, `COLLECTION_GROUP` ASC |
+
+The last three all sit inside `onDigestSummary`. The `private` query runs first, so while
+it was failing the other two had never executed — fixing only the reported index would
+have moved the failure rather than removed it.
+
+All four are declared in `firestore.indexes.json`. See Step 4 of Section 5 for the
+`fieldOverrides` replacement caveat before editing that file.
+
 ---
 
 ## 5. Adding a New Function
@@ -180,14 +203,62 @@ Add the export to `functions/src/index.ts`:
 export {myFunction} from "./{feature}/{functionName}";
 ```
 
-### Step 4: Build and Deploy
+### Step 4: Declare Any Indexes the Query Needs
+
+**If the function runs a `collectionGroup()` query, it needs an index declared by hand
+in `firestore.indexes.json` — and the emulator will not tell you.**
+
+The Firestore emulator serves collection-group queries without requiring the index, so
+`npm test` passes against queries that cannot run in production. **Emulator-green is not
+index-safe.** This is not hypothetical: `onTaskDueScheduled` and `onDigestSummary` both
+failed on *every* run in `crewpoint-dev` for over a month before anyone noticed, because
+a scheduled trigger that throws has no user-visible surface (see #36).
+
+Automatic single-field indexes are `COLLECTION` scope only. A collection-group query
+therefore needs either:
+
+- a **`fieldOverrides` entry** adding `COLLECTION_GROUP` scope, for a single-field
+  filter or range; or
+- a **composite index** with `"queryScope": "COLLECTION_GROUP"`, for multi-field filters.
+
+⚠️ A `fieldOverrides` entry **replaces** the automatic index configuration for that
+field. Always carry the three default `COLLECTION`-scope entries (`ASCENDING`,
+`DESCENDING`, `CONTAINS`) alongside the new `COLLECTION_GROUP` entry, or you will
+silently delete indexes that existing queries depend on:
+
+```jsonc
+{
+  "collectionGroup": "tasks",
+  "fieldPath": "dueDate",
+  "ttl": false,
+  "indexes": [
+    {"order": "ASCENDING",     "queryScope": "COLLECTION"},
+    {"order": "DESCENDING",    "queryScope": "COLLECTION"},
+    {"arrayConfig": "CONTAINS","queryScope": "COLLECTION"},
+    {"order": "ASCENDING",     "queryScope": "COLLECTION_GROUP"}  // <- the addition
+  ]
+}
+```
+
+Deploy indexes separately from code, and to **every** environment — index state does not
+travel with the function:
+
+```bash
+firebase deploy --only firestore:indexes --project crewpoint-dev
+```
+
+Verify what a project actually has with `firebase firestore:indexes --project <id>`.
+Note that `firebase functions:log` cannot be relied on to confirm a recent invocation;
+check for the resulting Firestore write instead.
+
+### Step 5: Build and Deploy
 
 ```bash
 cd functions && npm run build && cd ..
 firebase deploy --only functions --project crewpoint-dev
 ```
 
-### Step 5: Update This Guide
+### Step 6: Update This Guide
 
 Add a row to the Function Registry table in Section 4.
 
