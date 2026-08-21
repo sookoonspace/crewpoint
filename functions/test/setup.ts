@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import * as admin from 'firebase-admin';
+import {App, getApps, initializeApp} from 'firebase-admin/app';
+import {Firestore, getFirestore} from 'firebase-admin/firestore';
 import {
   initializeTestEnvironment,
   RulesTestEnvironment,
@@ -57,24 +58,24 @@ export async function getTestEnv(): Promise<RulesTestEnvironment> {
 /**
  * Returns the Admin SDK app pointed at the CF test project. Memoized.
  */
-let _adminApp: admin.app.App | null = null;
-export function getAdminApp(): admin.app.App {
+let _adminApp: App | null = null;
+export function getAdminApp(): App {
   requireEmulatorHost();
   if (_adminApp) return _adminApp;
 
   // Reuse the existing default app if functions/src/index.ts has
   // already called initializeApp(); otherwise initialize one.
-  if (admin.apps.length > 0 && admin.apps[0]) {
-    _adminApp = admin.apps[0]!;
+  if (getApps().length > 0 && getApps()[0]) {
+    _adminApp = getApps()[0]!;
   } else {
-    _adminApp = admin.initializeApp({projectId: CF_PROJECT_ID});
+    _adminApp = initializeApp({projectId: CF_PROJECT_ID});
   }
   return _adminApp;
 }
 
 /** Convenience accessor for the Admin SDK Firestore (CF test project). */
-export function getAdminDb(): FirebaseFirestore.Firestore {
-  return getAdminApp().firestore();
+export function getAdminDb(): Firestore {
+  return getFirestore(getAdminApp());
 }
 
 /** Wipes Firestore in the CF test project via the emulator REST API. */

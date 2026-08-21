@@ -1,6 +1,6 @@
 /**
  * Pure-helper guards for the Phase 6.1 daily-digest CF
- * (`onDigestSummary`). The CF wires Firestore reads + admin.messaging
+ * (`onDigestSummary`). The CF wires Firestore reads + getMessaging()
  * around these helpers; pinning them keeps the time-window and
  * summary-text contracts visible without an emulator.
  */

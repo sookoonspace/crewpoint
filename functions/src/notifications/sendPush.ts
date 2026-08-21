@@ -1,4 +1,5 @@
-import * as admin from "firebase-admin";
+import {FieldValue, Firestore, getFirestore} from "firebase-admin/firestore";
+import {getMessaging} from "firebase-admin/messaging";
 import {logger} from "firebase-functions/v2";
 import {shouldSuppress, QuietHoursPrefs} from "./suppress";
 import {interpolate, loadTemplate} from "./templates";
@@ -209,7 +210,7 @@ type TokenOwner = {
  * shape — handled identically by [shouldSuppress].
  */
 async function readMutedUntil(
-  db: admin.firestore.Firestore,
+  db: Firestore,
   uid: string,
   eventId: string
 ): Promise<unknown> {
@@ -274,7 +275,7 @@ export async function sendCategorizedPush(
   args: SendCategorizedPushArgs
 ): Promise<SendResult> {
   const cfg = CATEGORY_CONFIG[args.category];
-  const db = admin.firestore();
+  const db = getFirestore();
 
   const owners: TokenOwner[] = [];
   let skipped = 0;
@@ -364,7 +365,7 @@ export async function sendCategorizedPush(
     category: args.category,
   };
 
-  const messaging = admin.messaging();
+  const messaging = getMessaging();
   const deadTokens: TokenOwner[] = [];
   // sendEach (not sendEachForMulticast) so each Message can carry a
   // per-recipient apns payload — `chat_urgent`'s `interruption-level`
@@ -415,7 +416,7 @@ export async function sendCategorizedPush(
 }
 
 async function pruneDeadTokens(
-  db: admin.firestore.Firestore,
+  db: Firestore,
   deadTokens: TokenOwner[]
 ): Promise<void> {
   // Phase 6.2 — keys are the original Firestore shape (string OR
@@ -432,7 +433,7 @@ async function pruneDeadTokens(
     batch.set(
       db.collection("users").doc(uid).collection("private").doc("profile"),
       {
-        fcmTokens: admin.firestore.FieldValue.arrayRemove(...rawEntries),
+        fcmTokens: FieldValue.arrayRemove(...rawEntries),
       },
       {merge: true}
     );

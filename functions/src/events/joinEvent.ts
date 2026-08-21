@@ -1,8 +1,8 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
-import * as admin from "firebase-admin";
+import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 
-const db = admin.firestore();
+const db = getFirestore();
 const MAX_MEMBERS = 50;
 
 /**
@@ -84,8 +84,8 @@ export const joinEvent = onCall(
         }
 
         await db.collection("events").doc(eventId).update({
-          memberIds: admin.firestore.FieldValue.arrayUnion(uid),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          memberIds: FieldValue.arrayUnion(uid),
+          updatedAt: FieldValue.serverTimestamp(),
         });
 
         return {

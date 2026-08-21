@@ -1,8 +1,8 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
-import * as admin from "firebase-admin";
+import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 
-const db = admin.firestore();
+const db = getFirestore();
 
 /**
  * markTaskComplete — transitions a task to `done`, stamping
@@ -67,9 +67,9 @@ export const markTaskComplete = onCall(
 
         await taskRef.update({
           status: "done",
-          completedAt: admin.firestore.FieldValue.serverTimestamp(),
+          completedAt: FieldValue.serverTimestamp(),
           completedBy: uid,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
         });
 
         return {success: true};

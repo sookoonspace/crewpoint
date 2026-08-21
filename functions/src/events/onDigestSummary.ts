@@ -1,6 +1,6 @@
 import {onSchedule} from "firebase-functions/v2/scheduler";
 import {logger} from "firebase-functions/v2";
-import * as admin from "firebase-admin";
+import {Firestore, Query, Timestamp, getFirestore} from "firebase-admin/firestore";
 import {sendCategorizedPush} from "../notifications/sendPush";
 
 /**
@@ -123,7 +123,7 @@ export function buildDigestPlaceholders(args: {
 export const onDigestSummary = onSchedule(
   {schedule: "every 60 minutes", retryCount: 0},
   async () => {
-    const db = admin.firestore();
+    const db = getFirestore();
     const now = new Date();
     let attempted = 0;
     let skipped = 0;
@@ -226,7 +226,7 @@ export const onDigestSummary = onSchedule(
  * thousands the per-user cost should be revisited.
  */
 async function computeUserCounters(
-  db: admin.firestore.Firestore,
+  db: Firestore,
   uid: string
 ): Promise<{unread: number; pending: number; openSettlements: number}> {
   // 1. Unread chat — read all chatReads docs to learn the user's
@@ -240,12 +240,12 @@ async function computeUserCounters(
   for (const readDoc of chatReadsSnap.docs) {
     const eventId = readDoc.id;
     const lastReadAt =
-      (readDoc.data().lastReadAt as admin.firestore.Timestamp | undefined) ??
+      (readDoc.data().lastReadAt as Timestamp | undefined) ??
       null;
     let query = db
       .collection("events")
       .doc(eventId)
-      .collection("messages") as admin.firestore.Query;
+      .collection("messages") as Query;
     if (lastReadAt) {
       query = query.where("timestamp", ">", lastReadAt);
     }

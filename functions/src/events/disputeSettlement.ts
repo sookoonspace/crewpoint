@@ -1,8 +1,8 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
-import * as admin from "firebase-admin";
+import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 
-const db = admin.firestore();
+const db = getFirestore();
 
 /**
  * disputeSettlement — rolls back a settlement that the payer or payee
@@ -92,7 +92,7 @@ export const disputeSettlement = onCall(
             // the trigger has no other source for this.
             payerId,
             payeeId,
-            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+            timestamp: FieldValue.serverTimestamp(),
           },
           {merge: true}
         );

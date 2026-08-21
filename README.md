@@ -33,16 +33,16 @@ campsite signal.
 
 ## Tech stack
 
-- **Flutter** 3.11.5 / **Dart** 3.x
+- **Flutter** 3.47.0 / **Dart** 3.13.0
 - **State management** — [Riverpod](https://riverpod.dev) 3 with hand-written
   `Notifier` classes (codegen not yet adopted; matches existing project
   convention)
-- **Navigation** — [go_router](https://pub.dev/packages/go_router) 14 with a
+- **Navigation** — [go_router](https://pub.dev/packages/go_router) 17 with a
   `currentRouteProvider` for context-free FCM suppression checks
 - **Firebase** — Auth, Firestore, Storage, Cloud Functions (TypeScript v2),
   Messaging
 - **Local persistence** — [Drift](https://drift.simonbinder.eu) (SQLite),
-  schema v4 with explicit migrations
+  schema v7 with explicit migrations
 - **Other** — `image_picker`, `url_launcher`, `cloud_functions`,
   `fake_cloud_firestore` (tests), `clock` (tests)
 
@@ -84,8 +84,8 @@ services), `domain/` (models + repository interfaces), `application/`
 git clone git@github.com:sookoonspace/crewpoint.git
 cd crewpoint
 flutter pub get
-dart run build_runner build --delete-conflicting-outputs   # Drift + Riverpod codegen
-flutter test                                               # 133 tests
+dart run build_runner build --delete-conflicting-outputs   # Drift codegen
+flutter test                                               # 859 tests, 4 skipped
 flutter run --flavor dev -t lib/main.dart                  # iOS / Android
 ```
 
@@ -123,7 +123,7 @@ function.
 ## Testing
 
 ```bash
-flutter test                                # 133 tests
+flutter test                                # 859 tests, 4 skipped
 flutter test test/journeys/                 # robot journey tests only
 cd functions && npm run build && cd ..      # TypeScript typecheck for CFs
 flutter analyze                             # lint

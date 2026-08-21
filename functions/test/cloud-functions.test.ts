@@ -9,7 +9,8 @@
  *
  * Prerequisites: `firebase emulators:exec --only firestore,auth`.
  */
-import * as admin from 'firebase-admin';
+import {getAuth} from 'firebase-admin/auth';
+import {Timestamp} from 'firebase-admin/firestore';
 import {clearFirestoreEmulator, getAdminApp, getAdminDb} from './setup';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -17,7 +18,7 @@ const firebaseFunctionsTest = require('firebase-functions-test');
 const ftest = firebaseFunctionsTest();
 
 // Eager-init the Admin SDK before importing CFs (which call
-// admin.initializeApp() at module load).
+// initializeApp() at module load).
 getAdminApp();
 
 // Imports must come AFTER getAdminApp() to avoid double-init.
@@ -230,7 +231,7 @@ describe('joinEvent', () => {
     const code = 'EXP123';
     await getAdminDb().collection('event_invites').doc(code).set({
       eventId: 'someEvent',
-      expiresAt: admin.firestore.Timestamp.fromDate(new Date(Date.now() - 1000)),
+      expiresAt: Timestamp.fromDate(new Date(Date.now() - 1000)),
     });
 
     const wrapped = ftest.wrap(joinEvent);
@@ -253,7 +254,7 @@ describe('joinEvent', () => {
     const code = 'MISS01';
     await getAdminDb().collection('event_invites').doc(code).set({
       eventId: 'eventDoesNotExist',
-      expiresAt: admin.firestore.Timestamp.fromDate(
+      expiresAt: Timestamp.fromDate(
         new Date(Date.now() + 60_000)
       ),
     });
@@ -279,7 +280,7 @@ describe('joinEvent', () => {
     const code = 'JOINOK';
     await getAdminDb().collection('event_invites').doc(code).set({
       eventId: 'evtJ1',
-      expiresAt: admin.firestore.Timestamp.fromDate(
+      expiresAt: Timestamp.fromDate(
         new Date(Date.now() + 60_000)
       ),
     });
@@ -483,10 +484,10 @@ describe('generateInviteCode', () => {
       .set({
         eventId: 'evtG5',
         createdBy: 'creatorG5',
-        createdAt: admin.firestore.Timestamp.fromDate(
+        createdAt: Timestamp.fromDate(
           new Date(past.getTime() - 60 * 60 * 1000)
         ),
-        expiresAt: admin.firestore.Timestamp.fromDate(past),
+        expiresAt: Timestamp.fromDate(past),
       });
 
     const wrapped = ftest.wrap(generateInviteCode);
@@ -515,13 +516,13 @@ describe('generateInviteCode', () => {
   test('self-heal: multiple non-expired duplicates → returns most-recent + deletes siblings', async () => {
     await seedEvent({eventId: 'evtG6', creatorUid: 'creatorG6'});
 
-    const future = admin.firestore.Timestamp.fromDate(
+    const future = Timestamp.fromDate(
       new Date(Date.now() + 12 * 60 * 60 * 1000)
     );
-    const older = admin.firestore.Timestamp.fromDate(
+    const older = Timestamp.fromDate(
       new Date(Date.now() - 5 * 60 * 1000)
     );
-    const newer = admin.firestore.Timestamp.fromDate(
+    const newer = Timestamp.fromDate(
       new Date(Date.now() - 1 * 60 * 1000)
     );
 
@@ -809,12 +810,12 @@ describe('deleteUserAccount', () => {
   // Helper: deleteUserAccount calls auth().deleteUser(uid) at the end,
   // so we need a real auth user in the emulator first.
   async function createAuthUser(uid: string, email: string): Promise<void> {
-    await admin.auth().createUser({uid, email});
+    await getAuth().createUser({uid, email});
   }
 
   async function deleteAuthUserSilently(uid: string): Promise<void> {
     try {
-      await admin.auth().deleteUser(uid);
+      await getAuth().deleteUser(uid);
     } catch {
       // Test cleanup — ignore.
     }
@@ -871,7 +872,7 @@ describe('deleteUserAccount', () => {
       expect(privateAfter.exists).toBe(false);
 
       // Auth user gone.
-      await expect(admin.auth().getUser(uid)).rejects.toMatchObject({
+      await expect(getAuth().getUser(uid)).rejects.toMatchObject({
         code: 'auth/user-not-found',
       });
     }

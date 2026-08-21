@@ -1,8 +1,8 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
-import * as admin from "firebase-admin";
+import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 
-const db = admin.firestore();
+const db = getFirestore();
 
 /**
  * removeEventMember — removes a user from an event.
@@ -60,9 +60,9 @@ export const removeEventMember = onCall(
         }
 
         await db.collection("events").doc(eventId).update({
-          memberIds: admin.firestore.FieldValue.arrayRemove(targetUserId),
-          adminIds: admin.firestore.FieldValue.arrayRemove(targetUserId),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          memberIds: FieldValue.arrayRemove(targetUserId),
+          adminIds: FieldValue.arrayRemove(targetUserId),
+          updatedAt: FieldValue.serverTimestamp(),
         });
 
         return {success: true};

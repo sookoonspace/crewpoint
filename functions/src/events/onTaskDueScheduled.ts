@@ -1,6 +1,6 @@
 import {onSchedule} from "firebase-functions/v2/scheduler";
 import {logger} from "firebase-functions/v2";
-import * as admin from "firebase-admin";
+import {Timestamp, getFirestore} from "firebase-admin/firestore";
 import {sendCategorizedPush} from "../notifications/sendPush";
 
 /**
@@ -79,12 +79,12 @@ export const onTaskDueScheduled = onSchedule(
     const windowEnd = new Date(
       now.getTime() + DUE_WINDOW_HOURS * 60 * 60 * 1000
     );
-    const db = admin.firestore();
+    const db = getFirestore();
 
     const snap = await db
       .collectionGroup("tasks")
-      .where("dueDate", ">=", admin.firestore.Timestamp.fromDate(now))
-      .where("dueDate", "<=", admin.firestore.Timestamp.fromDate(windowEnd))
+      .where("dueDate", ">=", Timestamp.fromDate(now))
+      .where("dueDate", "<=", Timestamp.fromDate(windowEnd))
       .get();
 
     let attempted = 0;
@@ -105,7 +105,7 @@ export const onTaskDueScheduled = onSchedule(
         continue;
       }
 
-      const due = (data.dueDate as admin.firestore.Timestamp | undefined)
+      const due = (data.dueDate as Timestamp | undefined)
         ?.toDate();
       if (!isDueSoon(due, now, DUE_WINDOW_HOURS)) {
         // Defensive — the Firestore query already filters by the range,

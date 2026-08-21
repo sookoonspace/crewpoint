@@ -4,11 +4,17 @@
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "outDir": "lib",
+    "rootDir": "src",
     "sourceMap": true,
     "strict": true,
     "target": "es2018",
     "esModuleInterop": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    // TypeScript 6 no longer auto-includes every package under
+    // node_modules/@types — `types` now defaults to []. Both entries are
+    // load-bearing: `node` for process/Buffer in src, `jest` for the
+    // describe/test/expect globals ts-jest compiles in test/.
+    "types": ["node", "jest"]
   },
   "compileOnSave": true,
   "include": ["src"]

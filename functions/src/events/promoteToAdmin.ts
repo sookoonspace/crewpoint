@@ -1,8 +1,8 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
-import * as admin from "firebase-admin";
+import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 
-const db = admin.firestore();
+const db = getFirestore();
 
 /**
  * promoteToAdmin — promotes an event member to admin.
@@ -56,8 +56,8 @@ export const promoteToAdmin = onCall(
         }
 
         await db.collection("events").doc(eventId).update({
-          adminIds: admin.firestore.FieldValue.arrayUnion(targetUserId),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          adminIds: FieldValue.arrayUnion(targetUserId),
+          updatedAt: FieldValue.serverTimestamp(),
         });
 
         return {success: true};
