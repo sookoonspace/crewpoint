@@ -85,7 +85,7 @@ git clone git@github.com:sookoonspace/crewpoint.git
 cd crewpoint
 flutter pub get
 dart run build_runner build --delete-conflicting-outputs   # Drift codegen
-flutter test                                               # 859 tests, 4 skipped
+flutter test                                               # 862 tests, 4 skipped
 flutter run --flavor dev -t lib/main.dart                  # iOS / Android
 ```
 
@@ -123,7 +123,7 @@ function.
 ## Testing
 
 ```bash
-flutter test                                # 859 tests, 4 skipped
+flutter test                                # 862 tests, 4 skipped
 flutter test test/journeys/                 # robot journey tests only
 cd functions && npm run build && cd ..      # TypeScript typecheck for CFs
 flutter analyze                             # lint

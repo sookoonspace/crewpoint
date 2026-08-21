@@ -11,16 +11,29 @@ import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/widgets/loading_animation.dart';
 import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
 
+/// Callable signature for the `generateInviteCode` Cloud Function. Mirrors
+/// `MarkTaskCompleteCall` in `TaskRepository` — the seam exists so widget
+/// tests can pump this sheet without touching Firebase.
+typedef GenerateInviteCodeCall = Future<String?> Function(String eventId);
+
 /// Bottom sheet that generates and displays a join code for inviting members.
 /// Code generation is server-side via generateInviteCode Cloud Function.
 class AddMemberSheet extends StatefulWidget {
-  const AddMemberSheet({super.key, required this.eventId});
+  const AddMemberSheet({
+    super.key,
+    required this.eventId,
+    this.generateInviteCode,
+  });
 
   final String eventId;
+
+  /// Test seam. Defaults to the real `generateInviteCode` callable.
+  final GenerateInviteCodeCall? generateInviteCode;
 
   static Future<void> show({
     required BuildContext context,
     required String eventId,
+    GenerateInviteCodeCall? generateInviteCode,
   }) {
     return showModalBottomSheet<void>(
       context: context,
@@ -30,7 +43,10 @@ class AddMemberSheet extends StatefulWidget {
           top: Radius.circular(AppRadius.xxl),
         ),
       ),
-      builder: (_) => AddMemberSheet(eventId: eventId),
+      builder: (_) => AddMemberSheet(
+        eventId: eventId,
+        generateInviteCode: generateInviteCode,
+      ),
     );
   }
 
@@ -56,16 +72,12 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
     });
 
     try {
-      final callable = FirebaseFunctions.instance.httpsCallable(
-        'generateInviteCode',
-      );
-      final result = await callable.call<Map<String, dynamic>>({
-        'eventId': widget.eventId,
-      });
+      final generate = widget.generateInviteCode ?? _callGenerateInviteCode;
+      final code = await generate(widget.eventId);
 
       if (mounted) {
         setState(() {
-          _code = result.data['code'] as String?;
+          _code = code;
           _isLoading = false;
         });
       }
@@ -93,6 +105,17 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
     }
   }
 
+  /// Real callable — the default for [AddMemberSheet.generateInviteCode].
+  static Future<String?> _callGenerateInviteCode(String eventId) async {
+    final callable = FirebaseFunctions.instance.httpsCallable(
+      'generateInviteCode',
+    );
+    final result = await callable.call<Map<String, dynamic>>({
+      'eventId': eventId,
+    });
+    return result.data['code'] as String?;
+  }
+
   void _copyCode() {
     if (_code == null) return;
     Clipboard.setData(ClipboardData(text: _code!));
@@ -114,6 +137,11 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
 
   @override
   Widget build(BuildContext context) {
+    // Every colour below comes from the scheme so the sheet moves with the
+    // theme. The light-mode values are unchanged: `surfaceContainerHighest`
+    // *is* `offWhite`, `outline` *is* `lightGrey`, and `onSurface` *is*
+    // `charcoal` in `AppTheme.light()`.
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.xl,
@@ -130,7 +158,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: AppColors.lightGrey,
+              color: colorScheme.outline,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -191,16 +219,17 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
                   vertical: AppSpacing.xl,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.offWhite,
+                  color: colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.lightGrey),
+                  border: Border.all(color: colorScheme.outline),
                 ),
                 child: Text(
                   _code!,
+                  key: const Key('dashboard.invite.code'),
                   style: Theme.of(context).textTheme.displaySmall?.copyWith(
                     letterSpacing: 10,
                     fontWeight: FontWeight.w700,
-                    color: Theme.of(context).colorScheme.onSurface,
+                    color: colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -221,8 +250,8 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
                     icon: const Icon(AppIcons.actionCopy, size: 18),
                     label: const Text('Copy'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.charcoal,
-                      side: const BorderSide(color: AppColors.lightGrey),
+                      foregroundColor: colorScheme.onSurface,
+                      side: BorderSide(color: colorScheme.outline),
                       shape: const RoundedRectangleBorder(
                         borderRadius: AppRadius.borderLg,
                       ),
