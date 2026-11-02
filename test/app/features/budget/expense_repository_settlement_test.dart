@@ -9,6 +9,8 @@ import 'package:crewpoint_app/app/core/database/daos/expense_splits_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/expenses_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/users_dao.dart';
 import 'package:crewpoint_app/app/features/budget/data/expense_repository.dart';
+import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
+import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 
 void main() {
   late AppDatabase db;
@@ -41,7 +43,7 @@ void main() {
 
   tearDown(() => db.close());
 
-  test('recordSettlement writes an isPayment expense with a single negative '
+  test('recordSettlement writes an isPayment expense with a single positive '
       'split addressed to the payee', () async {
     final id = await repository.recordSettlement(
       eventId: 'event-1',
@@ -65,6 +67,42 @@ void main() {
         .cast<Map<String, dynamic>>();
     expect(splits, hasLength(1));
     expect(splits.first['userId'], equals('payee'));
-    expect(splits.first['amount'], closeTo(-25, 0.001));
+    expect(splits.first['amount'], closeTo(25, 0.001));
+  });
+
+  test('a recorded settlement clears the debt in the ledger', () async {
+    const members = ['payer', 'payee'];
+    await repository.createExpense(
+      const ExpenseModel(
+        id: 'dinner',
+        eventId: 'event-1',
+        payerId: 'payee',
+        amount: 50,
+        splits: [
+          ExpenseSplit(userId: 'payer', amount: 25),
+          ExpenseSplit(userId: 'payee', amount: 25),
+        ],
+      ),
+    );
+    await repository.recordSettlement(
+      eventId: 'event-1',
+      payerId: 'payer',
+      payeeId: 'payee',
+      amount: 25,
+    );
+
+    final stored = await repository
+        .watchExpensesByEventId('event-1')
+        .firstWhere((expenses) => expenses.length == 2);
+    repository.disposeMirror('event-1');
+
+    final ledger = BalanceLedger.calculate(
+      expenses: stored,
+      memberIds: members,
+    );
+
+    expect(ledger.netBalances['payer'], equals(0.0));
+    expect(ledger.netBalances['payee'], equals(0.0));
+    expect(ledger.settlements, isEmpty);
   });
 }

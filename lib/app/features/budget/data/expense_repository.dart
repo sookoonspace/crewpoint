@@ -98,7 +98,7 @@ class ExpenseRepository implements IExpenseRepository {
   }
 
   /// Records a settlement payment from [payerId] to [payeeId] as a single
-  /// `isPayment: true` expense whose only split is `(payeeId, -amount)`.
+  /// `isPayment: true` expense whose only split is `(payeeId, amount)`.
   /// This integrates with the existing [BalanceLedger] payment handling.
   /// Returns the generated expense id (which doubles as the chat-notice id),
   /// or `null` on failure.
@@ -120,7 +120,7 @@ class ExpenseRepository implements IExpenseRepository {
       payerId: payerId,
       amount: amount,
       isPayment: true,
-      splits: [ExpenseSplit(userId: payeeId, amount: -amount)],
+      splits: [ExpenseSplit(userId: payeeId, amount: amount)],
     );
     final ok = await createExpense(expense);
     return ok ? id : null;
