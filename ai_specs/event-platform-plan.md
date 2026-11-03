@@ -165,7 +165,7 @@ The slices are in dependency order, and each one ships working software.
 
 **1.4 Members, roles and permissions.** The largest slice. `members` subcollection, role presets, custom roles, crews, migration from the arrays, new rules, updated callables and triggers, role management screens. Ownership transfer, co-owners, Observer and Vendor scopes, invite-as-role, people holding several roles. Includes the role matrix test for every role and restricted path.
 
-**1.5 Money and privacy separation.** Move `budgetEstimate` and payment handles. Handles visible only to people who share an event. Update the privacy policy for children and for Canada, with counsel review, because 1.6 can hold children's data.
+**1.5 Money and privacy separation.** Move `budgetEstimate` and payment handles. Handles visible only to people who share an event. Event admins choose who can read expenses: everyone, only people involved, or selected roles and people. Update the privacy policy for children and for Canada, because 1.6 can hold children's data. **A lawyer must approve it before anything moves to prod** (TODO in `ai_specs/todo.md`).
 
 **1.6 Participants and groups.** Accountless people, groups with configurable labels, categories, custom fields with visibility, private data split. Add by hand, or by a general CSV import with column mapping, a validation report and safe re-import. Link a signed-in account to a participant safely. Bulk invites.
 

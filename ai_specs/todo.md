@@ -2,6 +2,9 @@
 
 Tracks ideas and partial implementations explicitly out of V1 scope. Promote into a spec when prioritized.
 
+## Required before moving to prod
+- **Lawyer approval of the privacy policy** (`assets/legal/privacy-policy.md`). The updated policy must cover children, since events can register young participants, and Canada. Today it says CrewPoint is for ages 13 and up. Do not move the platform work in #44 to prod until this is approved. Owner: to be arranged by the product owner. Added 2026-11-03.
+
 ## Tasks
 - Kanban board view (3 columns, drag-to-move) — alternative to current list view
 - Task attachments file storage (model has `TaskAttachment`, no Drift/Storage wiring)
