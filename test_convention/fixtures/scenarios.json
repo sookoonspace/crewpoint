@@ -478,8 +478,8 @@
  {
   "id": "H-07",
   "title": "Removing someone from the committee ends access immediately, including tasks, money and scanners; an admin cannot be the only one who can do so (at least 2 admins).",
-  "status": "FAIL",
-  "gap": "Removed members can still edit their old expenses and assigned tasks, and can rejoin with the same code for 24 hours.",
+  "status": "PASS",
+  "gap": "Fixed in PR #40 and verified live on dev, not yet deployed to stg or prod. The at-least-2-admins rule is a process point.",
   "tested": true
  },
  {
@@ -842,15 +842,15 @@
  {
   "id": "O-01",
   "title": "Billing alerts, budget caps and a named owner. A lapsed billing account must not be able to take the event down unnoticed, as happened on Nov 2, 2026.",
-  "status": "NOT RUN",
-  "gap": "All projects lost billing until Nov 2, 2026. Budget alerts could not be checked: this login has no access to the billing account.",
+  "status": "PARTIAL",
+  "gap": "A $5 and a $15 monthly budget cover the billing account. An uptime alert exists on dev only. Stg and prod have no outage alert, and no check runs outside Google Cloud.",
   "tested": false
  },
  {
   "id": "O-02",
   "title": "Crash reporting and backend error alerts reach a person during event hours.",
   "status": "NOT BUILT",
-  "gap": "No crash reporting or analytics packages, and no alert policies on dev or prod.",
+  "gap": "No crash reporting or analytics packages, and no backend error alerts. Dev has one uptime alert.",
   "tested": false
  },
  {

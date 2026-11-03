@@ -69,7 +69,7 @@ put('H-03', NB, 'No vendor model, contracts or deadlines.', 'M')
 put('H-04', NB, 'Only a display-only `budgetEstimate` per task, readable by every member. No budget lines or actuals.', 'M')
 put('H-05', PA, 'Outsiders are blocked, and members cannot change event settings. But every member can read all expenses and task budgets, and any signed-in user can read anyone\'s payment handles. Needs finance, committee and volunteer roles enforced in firestore.rules.', 'L', '`H-05` tests (3 pass, 4 fail)')
 put('H-06', NB, 'No scoped roles exist.', 'M')
-put('H-07', FA, 'Removed members can still edit their old expenses and assigned tasks, and can rejoin with the same code for 24 hours.', 'S', '`H-07` tests (3 fail), firestore.rules, removeEventMember.ts')
+put('H-07', PS, 'Fixed in PR #40 and verified live on dev, not yet deployed to stg or prod. The at-least-2-admins rule is a process point.', '', '`H-07` tests (3 pass), firestore.rules, removeEventMember.ts')
 put('V-01 V-02 V-03 V-04', NB, 'No shifts, scanner, counter or issue reports.', 'L')
 put('J-01 J-02 J-03 J-04 J-05 J-06 J-07 J-08 J-10 J-11 J-12 J-13 J-14 J-15 J-16', NB, 'No check-in, QR, agenda, live schedule or directory. Offline covers reads only.', 'L')
 put('J-09', NB, 'English only. No Gujarati strings, and no language setting in the app.', 'L', '`J-09` test')
@@ -88,8 +88,8 @@ put('Z-01', FA, 'The privacy policy says CrewPoint is for ages 13 and up and doe
 put('Z-02 Z-07', NB, 'No consent record or retention rule for event data.', 'S')
 put('Z-04', PA, 'The policy covers EU/UK rights and deletion exists, but the user ID stays in expense splits and tasks, and personal subcollections survive. Canada is not mentioned.', 'M', '`Z-04` tests (2 fail), deleteUserAccount.ts')
 put('Z-05', NB, 'No email or SMS, so no unsubscribe.', 'S')
-put('O-01', NR, 'All projects lost billing until Nov 2, 2026. Budget alerts could not be checked: this login has no access to the billing account.', 'S', 'gcloud billing budgets: permission denied')
-put('O-02', NB, 'No crash reporting or analytics packages, and no alert policies on dev or prod.', 'S', 'pubspec.yaml; Cloud Monitoring API: 0 policies')
+put('O-01', PA, 'A $5 and a $15 monthly budget cover the billing account. An uptime alert exists on dev only. Stg and prod have no outage alert, and no check runs outside Google Cloud.', 'S', 'gcloud billing budgets list; Monitoring uptime check and alert policy on dev')
+put('O-02', NB, 'No crash reporting or analytics packages, and no backend error alerts. Dev has one uptime alert.', 'S', 'pubspec.yaml; Cloud Monitoring API: 0 policies')
 put('O-03', NB, 'No backup schedules on dev or prod, and point-in-time recovery is off. Data loss today would be permanent.', 'S', 'gcloud firestore backups schedules list: 0; databases describe: PITR disabled')
 put('O-04', NB, 'No email sending or domain setup in the repo.', 'S')
 put('O-05 O-07', NR, 'Needs store console access or a visit to the venue.')
@@ -144,7 +144,7 @@ for i, (ok, bad) in summary.items():
     if s == PS:
         assert bad == 0, i
     if s == FA:
-        assert i in ('U-03', 'S-01', 'H-07') and bad > 0, i
+        assert i in ('U-03', 'S-01') and bad > 0, i
     if s == PA:
         assert ok > 0 or i in ('N-21', 'N-14', 'N-08', 'Z-04'), (i, ok, bad)
     if s == NB:
@@ -181,19 +181,19 @@ def cell(s):
 o = []
 w = o.append
 w('# Derod Gaam Convention 2027: Test Report (v3)\n')
-w(f'**Test spec:** [`CREWPOINT_CONVENTION_TEST_v3.md`](CREWPOINT_CONVENTION_TEST_v3.md) · **Run:** Nov 3, 2026 · **Branch:** `test/derod-convention-v2`, cut from `main` at `3d83407`\n')
+w(f'**Test spec:** [`CREWPOINT_CONVENTION_TEST_v3.md`](CREWPOINT_CONVENTION_TEST_v3.md) · **Run:** Nov 3, 2026 · **Branch:** `test/derod-convention-v2`, on `main` at `51f5cb8`, including PRs #39 and #40\n')
 w(f'**Result: CrewPoint is not ready for this event, and most of the event-specific product does not exist yet.** Of {len(titles)} scenarios, {overall[PS]} passes, {overall[PA]} are partial, {overall[FA]} fail, {overall[NB]} are not built, {overall[VN]} belong to the tool you are buying, and {overall[NR]} need a person or outside access. The task, budget-split, chat and push foundations are sound, but they need permissions, Gujarati, email and an import path before they can serve this event.\n')
 w('**Most urgent, because they apply before any real data arrives:**\n')
 w('1. Choose the registration tool. The requirements in section 4 narrow the field quickly.')
 w('2. Change the privacy policy. It says CrewPoint is not for under-13s, and this event registers 3-year-olds.')
 w('3. Fix permissions. Every member can read all money today, which breaks your committee and volunteer rules.')
-w('4. Turn on backups and billing alerts. There are no backup schedules on dev or prod, and no alert policies.\n')
+w('4. Turn on backups. There are no backup schedules on dev or prod, and point-in-time recovery is off.\n')
 w('**How far to trust this:**\n')
 w(f'- {total_ok + total_bad} tests ran against the real app code and backend code: {total_ok} passed and {total_bad} failed. A failure here is a finding, and these tests sit outside CI so they don\'t block normal work.')
-w('- Everything ran on emulators, with mocked push. Nothing touched `crewpoint-dev` or production, and no real message was sent.')
+w('- The tests ran on emulators with mocked push, and no real message was sent. Separately, H-07 was confirmed on live dev with throwaway accounts, which were then deleted.')
 w('- Timings come from a Mac and a local emulator. Expect phones to be slower, and real delivery times are unmeasured.')
 w('- NOT BUILT comes from reading and searching the code. Those scenarios are registered as skipped tests, with the reason.')
-w('- The settlement fix in PR #39 is not on this branch. It does not affect any result here.\n')
+w('- PRs #39 (settlement fix) and #40 (removed members) are merged. #40 is deployed to dev only, and stg and prod still have the old rules. The Flutter results predate these merges, which changed no code those tests cover.\n')
 w('## 1. Inventory\n')
 w('| Area | Today |\n|---|---|')
 for a, b in [
@@ -207,7 +207,7 @@ for a, b in [
     ('Offline', 'Reads work on mobile through the Drift copy. Firestore queues writes, but nothing covers check-in rules or conflicts'),
     ('Languages', 'English only. The string layer is designed for more, but no Gujarati exists'),
     ('Limits', '50 members per event, invite codes last 24 hours, one invite code per event, PDF reports stop at 200 expenses'),
-    ('Existing tests', '862 Flutter tests passing and 4 skipped on `main`, and 155 backend tests passing. One flaky timing test was seen once under load'),
+    ('Existing tests', '865 Flutter tests passing and 4 skipped on `main`, and 169 backend tests passing. One flaky timing test was seen once under load'),
 ]:
     w(f'| {a} | {b} |')
 w('\n## 2. Scorecard\n')
@@ -232,7 +232,7 @@ w('**P0: before announcing registration (Nov–Dec 2026)**\n')
 w('- **Choose the tool.** Check these first, because they are hardest to find: hybrid family fee (C-01), per-person meal choices and arrival times (B-01, B-03), Gujarati forms and emails (B-09, N-01), Zelle pending and offline payments (C-03, C-04), full data export (X-01), and sponsorship items with shared funding (D-02).')
 w('- **Privacy and legal:** Z-01, Z-03, Z-04, Z-05 and Z-06, including the nonprofit\'s legal name, EIN and receipt wording (D-15).')
 w('- **Permissions:** H-05 and H-06, before committee members and real data arrive.')
-w('- **Resilience:** O-01 billing alerts, O-03 backups, O-04 email domain.\n')
+w('- **Resilience:** O-01 alerts on prod, O-03 backups, O-04 email domain.\n')
 w('**P1: sponsorship and hotel push (Jan–Jun 2027)**\n')
 w('- Roster import (X), schedule and venue (A), sub-teams, vendors and budget (H), the 50-member cap (S-01), and app store approval (O-05).')
 w('- Accessibility (U-01…U-04) and notification controls (N-16…N-20).\n')
@@ -251,8 +251,8 @@ for n, (title, body) in enumerate([
     ('No check-in or offline event-day flow', 'Build family QR tokens, a scanner, the limited name search, an offline queue with a clear conflict rule, and a printed fallback (J, V). This is the largest single build, so prototype it early and test it at the hotel.'),
     ('Scale limits', 'Replace the 50-member cap, and load chat in pages while saving only what changed. That one change removes the 53-second slowdown and most of the read cost (S-01, S-07).'),
     ('Messages are dropped, not delayed, and cannot be scheduled', 'Add a scheduled message queue that holds quiet-hours messages until 7:00am, uses event time during the event, and supports per-person content. Emergency alerts should ignore event mute (N-09, N-10, N-14, S-03).'),
-    ('Removed members keep access', 'Check current membership in the rules for expenses, tasks and messages, and rotate or block invite codes on removal. A small, high-value fix (H-07).'),
-    ('No safety net', 'Turn on scheduled backups, billing alerts and crash reporting, and name an on-call person. Small tasks, and yesterday\'s billing outage shows why they matter (O-01…O-03, O-08).'),
+    ('Account deletion leaves personal data behind', 'Remove the user ID from expense splits and tasks, and delete `chatReads` and `eventMutes`. The privacy policy promises anonymised records, so this is a compliance gap, and it can also split one deleted person into two in the ledger (Z-04).'),
+    ('No safety net', 'Turn on scheduled backups and crash reporting, extend outage alerts to prod, and name an on-call person. Small tasks, and the Nov 2 billing outage shows why they matter (O-01…O-03, O-08).'),
 ], 1):
     w(f'{n}. **{title}.** {body}')
 w('\n## 6. Testability gaps\n')
@@ -261,7 +261,7 @@ for g in [
     '**No email or SMS transport to mock.** N-00 can only prove safety for push.',
     '**Scheduled jobs have no recipient-level result.** `sendCategorizedPush` returns only counts, and skipped messages are not recorded, so recipient assertions must inspect the mock.',
     '**Real sign-in and real delivery.** Google and Apple sign-in, APNs and FCM delivery need real devices and accounts (L-01, L-02).',
-    '**Not checked: Storage rules, store listings, billing budgets (no access), venue network.**',
+    '**Not checked: Storage rules, store listings, venue network.**',
     '**Live device testing was stopped at your request** before any test account was created. The Android and iOS builds succeeded, and the app launched on both. A manual two-account pass on dev is still worth doing for the features that exist.',
     '**Vendor scenarios** cannot run until a tool is chosen. Rerun them against the tool, using the same fixture.',
 ]:
