@@ -8,7 +8,8 @@ const db = getFirestore();
  * markTaskComplete — transitions a task to `done`, stamping
  * completedAt/completedBy.
  *
- * - Caller must be event owner, admin, or the task assignee
+ * - Caller must be a current member, and the event owner, an admin, or the
+ *   task assignee. `assigneeId` outlives membership, so it is not enough alone.
  * - Reserves a server-side seam for future side effects (notifications,
  *   ledger hooks)
  *
@@ -56,7 +57,9 @@ export const markTaskComplete = onCall(
 
         const isOwner = eventData.creatorId === uid;
         const isAdmin = adminIds.includes(uid);
-        const isAssignee = taskData.assigneeId === uid;
+        const memberIds: string[] = eventData.memberIds || [];
+        const isAssignee =
+          taskData.assigneeId === uid && memberIds.includes(uid);
 
         if (!isOwner && !isAdmin && !isAssignee) {
           throw new HttpsError(
