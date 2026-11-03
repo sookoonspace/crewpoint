@@ -1,0 +1,95 @@
+name: Acceptance
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: acceptance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  acceptance:
+    name: acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          # Keep in step with flutter.yml.
+          flutter-version: 3.47.0
+          cache: true
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: functions/package-lock.json
+
+      - name: Set up Java for the emulators
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Cache emulators
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-15.27.0
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools@15.27.0
+
+      - name: Install dependencies
+        run: |
+          flutter pub get
+          dart run build_runner build --delete-conflicting-outputs
+          npm ci --prefix functions
+
+      - name: Verify tests do not initialize Firebase
+        run: |
+          if grep -rn "Firebase\.initializeApp\|FirebaseService\.initialize" test_acceptance/; then
+            echo "::error::Acceptance tests must not initialize Firebase. Use seams and emulators."
+            exit 1
+          fi
+
+      - name: Test the finished-scenario gate
+        run: python3 -m unittest discover test_acceptance
+
+      # These prove the fixtures are self-consistent, so they must always pass.
+      - name: Check fixtures
+        run: flutter test test_acceptance/spec_check_test.dart test_acceptance/template_fixtures_test.dart
+
+      # A red test here can be a planned gap, so these two steps do not decide
+      # the job. The gate below does, and it fails on missing or unreadable results.
+      - name: Run Flutter acceptance tests
+        run: flutter test test_acceptance/ --reporter json > "$RUNNER_TEMP/flutter.json" || true
+
+      - name: Run backend acceptance tests
+        working-directory: functions
+        run: |
+          firebase emulators:exec --project demo-crewpoint --only firestore,auth \
+            "npx jest --runInBand --config jest.acceptance.config.js --json --outputFile=$RUNNER_TEMP/jest.json" || true
+
+      - name: Keep results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acceptance-results
+          path: |
+            ${{ runner.temp }}/flutter.json
+            ${{ runner.temp }}/jest.json
+          if-no-files-found: warn
+
+      - name: Check finished scenarios
+        run: python3 test_acceptance/check_finished.py "$RUNNER_TEMP/flutter.json" "$RUNNER_TEMP/jest.json"

@@ -12,12 +12,13 @@ import {
  *
  * Rules tests use a dedicated `RULES_PROJECT_ID` so they're isolated
  * from CF integration test state. CF tests inherit `GCLOUD_PROJECT`
- * from `firebase emulators:exec` (set to `crewpoint-dev` per
- * `.firebaserc`'s default) so the seed data Admin SDK + the CF code's
- * Admin SDK share the same Firestore project namespace.
+ * from `firebase emulators:exec` (set to `demo-crewpoint` by the npm
+ * scripts) so the seed data Admin SDK + the CF code's Admin SDK share
+ * the same Firestore project namespace. A `demo-` project can only
+ * reach emulators, never a real Firebase project.
  */
 const RULES_PROJECT_ID = 'crewpoint-rules-test';
-const CF_PROJECT_ID = process.env.GCLOUD_PROJECT ?? 'crewpoint-dev';
+const CF_PROJECT_ID = process.env.GCLOUD_PROJECT ?? 'demo-crewpoint';
 
 const FIRESTORE_HOST_RAW = process.env.FIRESTORE_EMULATOR_HOST ?? '';
 

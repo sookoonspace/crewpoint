@@ -300,7 +300,6 @@ A rough, worst-case model, not a measurement. Chat loads the whole history, so 4
 ## How to re-run
 
 ```bash
-flutter test test_convention/
-cd functions && npx firebase emulators:exec --only firestore,auth \
-  "npx jest --runInBand --config jest.convention.config.js"
+flutter test test_acceptance/
+cd functions && npm run test:acceptance
 ```

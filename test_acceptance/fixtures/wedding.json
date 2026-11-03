@@ -1,0 +1,231 @@
+{
+  "templateId": "wedding",
+  "event": {
+    "title": "Asha and Dev",
+    "startDate": "2027-05-21",
+    "endDate": "2027-05-22",
+    "timeZone": "America/Toronto",
+    "currency": "CAD"
+  },
+  "settings": {
+    "attendancePolicy": "invitedOnly",
+    "expenseAccess": "everyone"
+  },
+  "labels": {
+    "group": {
+      "one": "Guest party",
+      "other": "Guest parties"
+    }
+  },
+  "fields": [
+    {
+      "id": "mealChoice",
+      "type": "singleChoice",
+      "options": [
+        "veg",
+        "nonVeg"
+      ],
+      "scope": "participant",
+      "visibility": "organizers"
+    }
+  ],
+  "members": [
+    {
+      "uid": "asha",
+      "roleId": "owner"
+    },
+    {
+      "uid": "dev",
+      "roleId": "coOwner"
+    },
+    {
+      "uid": "florist",
+      "roleId": "vendor"
+    }
+  ],
+  "groups": [
+    {
+      "id": "G1",
+      "invitedTo": [
+        "mehndi",
+        "ceremony",
+        "reception"
+      ],
+      "people": [
+        {
+          "name": "Rina",
+          "age": 58,
+          "hasAccount": false,
+          "fields": {
+            "mealChoice": "veg"
+          }
+        },
+        {
+          "name": "Vik",
+          "age": 55,
+          "hasAccount": false,
+          "fields": {
+            "mealChoice": "veg"
+          }
+        },
+        {
+          "name": "Tara",
+          "age": 28,
+          "hasAccount": true,
+          "fields": {
+            "mealChoice": "nonVeg"
+          }
+        }
+      ]
+    },
+    {
+      "id": "G2",
+      "invitedTo": [
+        "mehndi",
+        "ceremony",
+        "reception"
+      ],
+      "people": [
+        {
+          "name": "Hari",
+          "age": 60,
+          "hasAccount": false,
+          "fields": {
+            "mealChoice": "veg"
+          }
+        },
+        {
+          "name": "Neil",
+          "age": 30,
+          "hasAccount": true,
+          "fields": {
+            "mealChoice": "nonVeg"
+          },
+          "optOut": [
+            "mehndi"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "G3",
+      "invitedTo": [
+        "ceremony",
+        "reception"
+      ],
+      "people": [
+        {
+          "name": "Jo",
+          "age": 29,
+          "hasAccount": false,
+          "fields": {
+            "mealChoice": "veg"
+          }
+        },
+        {
+          "name": "Sam",
+          "age": 31,
+          "hasAccount": false,
+          "fields": {
+            "mealChoice": "nonVeg"
+          }
+        }
+      ]
+    },
+    {
+      "id": "G4",
+      "invitedTo": [
+        "mehndi",
+        "reception"
+      ],
+      "people": [
+        {
+          "name": "Lena",
+          "age": 45,
+          "hasAccount": false,
+          "fields": {
+            "mealChoice": "veg"
+          }
+        },
+        {
+          "name": "Raj",
+          "age": 44,
+          "hasAccount": false,
+          "fields": {
+            "mealChoice": "veg"
+          }
+        },
+        {
+          "name": "Mira",
+          "age": 9,
+          "hasAccount": false,
+          "fields": {
+            "mealChoice": "veg"
+          }
+        }
+      ]
+    },
+    {
+      "id": "G5",
+      "invitedTo": [
+        "reception"
+      ],
+      "people": [
+        {
+          "name": "Paul",
+          "age": 35,
+          "hasAccount": false,
+          "fields": {
+            "mealChoice": "nonVeg"
+          },
+          "invitedTo": [
+            "ceremony"
+          ]
+        }
+      ]
+    }
+  ],
+  "sessions": [
+    {
+      "id": "mehndi",
+      "title": "Mehndi",
+      "start": "2027-05-21T18:00:00-04:00",
+      "end": "2027-05-21T21:00:00-04:00",
+      "venue": "hall"
+    },
+    {
+      "id": "ceremony",
+      "title": "Ceremony",
+      "start": "2027-05-22T11:00:00-04:00",
+      "end": "2027-05-22T13:00:00-04:00",
+      "venue": "hall"
+    },
+    {
+      "id": "reception",
+      "title": "Reception",
+      "start": "2027-05-22T18:00:00-04:00",
+      "end": "2027-05-22T23:00:00-04:00",
+      "venue": "hotel"
+    }
+  ],
+  "expected": {
+    "groups": 5,
+    "people": 11,
+    "withoutAccount": 9,
+    "byCategory": {
+      "adult": 10,
+      "child": 1
+    },
+    "byField": {
+      "mealChoice": {
+        "veg": 7,
+        "nonVeg": 4
+      }
+    },
+    "perSession": {
+      "mehndi": 7,
+      "ceremony": 8,
+      "reception": 11
+    }
+  }
+}

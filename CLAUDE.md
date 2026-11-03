@@ -25,6 +25,7 @@ flutter test test/journeys/tasks_journey_test.dart          # single file
 flutter test --plain-name 'substring of test name'          # single test
 flutter test test/journeys/                                 # robot journey tests only
 flutter test --tags screenshots --update-goldens            # regen screenshots/ (skipped by default via dart_test.yaml)
+flutter test test_acceptance/                               # acceptance suite; red can be a planned gap
 
 # Lint
 flutter analyze          # must be zero issues
@@ -33,13 +34,14 @@ dart run custom_lint     # riverpod_lint checks (not covered by flutter analyze)
 # Cloud Functions
 cd functions && npm run build    # tsc typecheck — a required PR gate
 cd functions && npm test         # jest under firebase emulators (firestore + auth)
+cd functions && npm run test:acceptance   # backend acceptance suite under the emulators
 firebase deploy --only functions --project crewpoint-dev
 
 # Web
 flutter build web --release --dart-define=FLAVOR=dev
 ```
 
-CI (`.github/workflows/flutter.yml`) runs: build_runner → the Firebase-in-tests grep guardrail → `flutter analyze` → `flutter test`. `web-build.yml` additionally does a release web build when `lib/`, `web/`, or pubspec/firebase.json change.
+CI (`.github/workflows/flutter.yml`) runs: build_runner → the Firebase-in-tests grep guardrail → `flutter analyze` → `flutter test`. `web-build.yml` additionally does a release web build when `lib/`, `web/`, or pubspec/firebase.json change. `functions.yml` runs `npm run build` and `npm test` on changes to `functions/**`, `firestore.rules`, `storage.rules`, `firestore.indexes.json` or `firebase.json`. `acceptance.yml` runs both acceptance suites and fails only if a scenario in `test_acceptance/finished_scenarios.json` goes red.
 
 ## Architecture
 
@@ -100,7 +102,9 @@ Riverpod codegen (`riverpod_annotation` / `riverpod_generator`) was removed as u
 
 ## Testing
 
-- **Never call `Firebase.initializeApp()` or `FirebaseService.initialize()` from `test/`.** A CI grep fails the build on it. Use Riverpod overrides on the service seams instead.
+- **Never call `Firebase.initializeApp()` or `FirebaseService.initialize()` from `test/` or `test_acceptance/`.** A CI grep fails the build on it. Use Riverpod overrides on the service seams instead.
+- Backend tests run on the `demo-crewpoint` project, which can only reach emulators. `crewpoint-dev` holds real data, so no automated test may write to a real project.
+- `test_acceptance/` holds scenario tests, whose names start with the scenario ID, and one fixture per template (`fixtures/templates.json`). When a scenario is finished, add its ID to `finished_scenarios.json` so CI protects it.
 - Unit tests use `NativeDatabase.memory()` for Drift and `fake_cloud_firestore` for Firestore. Pure utilities (`PayLinkBuilder`, `BalanceLedger`) have no Flutter/Firebase imports at all — keep them that way.
 - Widget/journey tests select by stable keys named `domain.feature.action` — `Key('budget.settle.venmo')`, `Key('tasks.tile.{id}.status')`. Adding an interactive widget means adding a key.
 - `test/journeys/` drives flows through `*Robot` classes (`test/robots/`) over harnesses (`test/harness/`) that seed Drift + fake Firestore and stub auth. Extend an existing robot/harness rather than pumping widgets ad hoc.

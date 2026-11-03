@@ -158,7 +158,7 @@ json.dump(
         dict(id=i, title=titles[i], status=A[i][0], gap=A[i][1], tested=i in res)
         for i in titles
     ],
-    open('test_convention/fixtures/scenarios.json', 'w', encoding='utf-8'),
+    open('test_acceptance/fixtures/scenarios.json', 'w', encoding='utf-8'),
     ensure_ascii=False,
     indent=1,
 )
@@ -294,6 +294,6 @@ for a, b, c in [
     w(f'| {a} | {b} | {c} |')
 w('\n**Owner input still needed:** nonprofit legal name and EIN, refund policy (C-13), who absorbs card fees (C-20), waiver text (Z-03), whether to adopt SMS for emergencies (N-14).\n')
 w('## How to re-run\n')
-w('```bash\nflutter test test_convention/\ncd functions && npx firebase emulators:exec --only firestore,auth \\\n  "npx jest --runInBand --config jest.convention.config.js"\n```')
+w('```bash\nflutter test test_acceptance/\ncd functions && npm run test:acceptance\n```')
 open(OUT, 'w', encoding='utf-8').write('\n'.join(o) + '\n')
 print('wrote', OUT, 'scenarios', len(titles), dict(overall), 'tests pass/fail', total_ok, total_bad)

@@ -1,0 +1,33 @@
+{
+  "templateId": "blank",
+  "event": {
+    "title": "Team planning",
+    "timeZone": "America/New_York",
+    "currency": "USD"
+  },
+  "settings": {
+    "attendancePolicy": "everyone",
+    "expenseAccess": "everyone"
+  },
+  "labels": {},
+  "fields": [],
+  "members": [
+    {
+      "uid": "owner",
+      "roleId": "owner"
+    }
+  ],
+  "groups": [],
+  "sessions": [],
+  "expected": {
+    "groups": 0,
+    "people": 0,
+    "withoutAccount": 0,
+    "byCategory": {
+      "adult": 0,
+      "child": 0
+    },
+    "byField": {},
+    "perSession": {}
+  }
+}

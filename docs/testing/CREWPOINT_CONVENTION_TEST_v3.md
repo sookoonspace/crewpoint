@@ -15,9 +15,9 @@
 
 ## 0. Instructions for Claude Code
 
-1. **Branch:** `test/derod-convention-v2`, kept from v2. Do **not** change application code. Add only tests, fixtures, a seed loader, and the report. Tests live in `test_convention/` and `functions/test_convention/`, outside the default suites, because a failure there is a product gap rather than a regression. If something can't be tested without an app change (e.g., no injectable clock, no mock notification transport), record it as a *testability gap* rather than changing the app.
+1. **Branch:** `test/derod-convention-v2`, kept from v2. Do **not** change application code. Add only tests, fixtures, a seed loader, and the report. Tests live in `test_acceptance/` and `functions/test_acceptance/`, outside the default suites, because a failure there is a product gap rather than a regression. If something can't be tested without an app change (e.g., no injectable clock, no mock notification transport), record it as a *testability gap* rather than changing the app.
 2. **Inventory first** (report section 1): stack, data models, auth providers, roles/permissions, payments integration, notification infrastructure (push provider, email provider, templates, scheduling, localization, quiet hours, delivery logs), offline support, i18n, existing tests.
-3. **Seed data:** build the fixture in §3 as `test_convention/fixtures/derod_convention_2027_v3.json` (or the project's fixture convention) plus a loader.
+3. **Seed data:** build the fixture in §3 as `test_acceptance/fixtures/derod_convention_2027_v3.json` (or the project's fixture convention) plus a loader.
 4. **Write and run tests** using the project's existing frameworks (unit / widget / backend emulator). Every scenario ID in §5 gets one test or group. Where the app has something to exercise, assert the exact expected values in §4. Where it has nothing (no data model, no screen), register the ID as a skipped test carrying the reason, so every ID stays traceable, and do not write a test that passes vacuously.
    - **Spec checks:** tests that recompute §4 from the fixture prove the *specification* is consistent. They are not evidence about the app and never count toward a PASS.
 5. **Safety (mandatory):**
