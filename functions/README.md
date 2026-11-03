@@ -20,7 +20,7 @@ npm install           # one-time
 npm test              # runs jest in-band against fresh emulator instances
 ```
 
-`npm test` invokes `firebase emulators:exec --only firestore,auth 'jest --runInBand'`,
+`npm test` invokes `firebase emulators:exec --project demo-crewpoint --only firestore,auth 'jest --runInBand'`,
 which boots the emulator, runs the test suite once, and tears it down — ideal
 for CI and local one-shot runs.
 

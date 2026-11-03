@@ -1,0 +1,222 @@
+{
+  "templateId": "golf_outing",
+  "event": {
+    "title": "Charity day",
+    "startDate": "2027-09-18",
+    "endDate": "2027-09-18",
+    "timeZone": "Europe/London",
+    "currency": "GBP"
+  },
+  "settings": {
+    "attendancePolicy": "everyone",
+    "expenseAccess": "onlyInvolved"
+  },
+  "labels": {
+    "group": {
+      "one": "Foursome",
+      "other": "Foursomes"
+    },
+    "session": {
+      "one": "Round",
+      "other": "Rounds"
+    }
+  },
+  "fields": [
+    {
+      "id": "cart",
+      "type": "yesNo",
+      "scope": "participant",
+      "visibility": "organizers"
+    },
+    {
+      "id": "handicap",
+      "type": "number",
+      "scope": "participant",
+      "visibility": "everyone"
+    }
+  ],
+  "members": [
+    {
+      "uid": "org",
+      "roleId": "owner"
+    },
+    {
+      "uid": "scorer",
+      "roleId": "scorer"
+    },
+    {
+      "uid": "brand",
+      "roleId": "sponsor"
+    }
+  ],
+  "groups": [
+    {
+      "id": "G1",
+      "people": [
+        {
+          "name": "Alan",
+          "age": 52,
+          "hasAccount": true,
+          "fields": {
+            "cart": "yes",
+            "handicap": 12
+          }
+        },
+        {
+          "name": "Beth",
+          "age": 47,
+          "hasAccount": false,
+          "fields": {
+            "cart": "yes",
+            "handicap": 18
+          }
+        },
+        {
+          "name": "Carl",
+          "age": 60,
+          "hasAccount": false,
+          "fields": {
+            "cart": "yes",
+            "handicap": 22
+          }
+        },
+        {
+          "name": "Dee",
+          "age": 44,
+          "hasAccount": false,
+          "fields": {
+            "cart": "no",
+            "handicap": 9
+          }
+        }
+      ]
+    },
+    {
+      "id": "G2",
+      "people": [
+        {
+          "name": "Evan",
+          "age": 38,
+          "hasAccount": true,
+          "fields": {
+            "cart": "no",
+            "handicap": 6
+          },
+          "optOut": [
+            "dinner"
+          ]
+        },
+        {
+          "name": "Faye",
+          "age": 41,
+          "hasAccount": false,
+          "fields": {
+            "cart": "yes",
+            "handicap": 15
+          }
+        },
+        {
+          "name": "Gus",
+          "age": 66,
+          "hasAccount": false,
+          "fields": {
+            "cart": "yes",
+            "handicap": 24
+          }
+        },
+        {
+          "name": "Hana",
+          "age": 35,
+          "hasAccount": false,
+          "fields": {
+            "cart": "no",
+            "handicap": 11
+          }
+        }
+      ]
+    },
+    {
+      "id": "G3",
+      "people": [
+        {
+          "name": "Ian",
+          "age": 58,
+          "hasAccount": false,
+          "fields": {
+            "cart": "yes",
+            "handicap": 20
+          },
+          "optOut": [
+            "dinner"
+          ]
+        },
+        {
+          "name": "Jill",
+          "age": 49,
+          "hasAccount": false,
+          "fields": {
+            "cart": "no",
+            "handicap": 14
+          }
+        },
+        {
+          "name": "Kofi",
+          "age": 53,
+          "hasAccount": false,
+          "fields": {
+            "cart": "no",
+            "handicap": 17
+          }
+        }
+      ]
+    }
+  ],
+  "sessions": [
+    {
+      "id": "round",
+      "title": "Morning round",
+      "start": "2027-09-18T08:00:00+01:00",
+      "end": "2027-09-18T13:00:00+01:00",
+      "venue": "course"
+    },
+    {
+      "id": "dinner",
+      "title": "Awards dinner",
+      "start": "2027-09-18T18:00:00+01:00",
+      "end": "2027-09-18T21:00:00+01:00",
+      "venue": "clubhouse"
+    }
+  ],
+  "expected": {
+    "groups": 3,
+    "people": 11,
+    "withoutAccount": 9,
+    "byCategory": {
+      "adult": 11,
+      "child": 0
+    },
+    "byField": {
+      "cart": {
+        "yes": 6,
+        "no": 5
+      },
+      "handicap": {
+        "12": 1,
+        "18": 1,
+        "22": 1,
+        "9": 1,
+        "6": 1,
+        "15": 1,
+        "24": 1,
+        "11": 1,
+        "20": 1,
+        "14": 1,
+        "17": 1
+      }
+    },
+    "perSession": {
+      "round": 11,
+      "dinner": 9
+    }
+  }
+}

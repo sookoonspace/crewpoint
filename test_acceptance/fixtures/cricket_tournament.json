@@ -1,0 +1,223 @@
+{
+  "templateId": "cricket_tournament",
+  "event": {
+    "title": "Summer cup",
+    "startDate": "2027-07-03",
+    "endDate": "2027-07-04",
+    "timeZone": "Asia/Kolkata",
+    "currency": "INR"
+  },
+  "settings": {
+    "attendancePolicy": "invitedOnly",
+    "expenseAccess": "onlyInvolved"
+  },
+  "labels": {
+    "group": {
+      "one": "Team",
+      "other": "Teams"
+    },
+    "session": {
+      "one": "Match",
+      "other": "Matches"
+    }
+  },
+  "fields": [
+    {
+      "id": "playerRole",
+      "type": "singleChoice",
+      "options": [
+        "batter",
+        "bowler",
+        "allRounder"
+      ],
+      "scope": "participant",
+      "visibility": "everyone"
+    }
+  ],
+  "members": [
+    {
+      "uid": "org",
+      "roleId": "owner"
+    },
+    {
+      "uid": "scorer",
+      "roleId": "scorer"
+    },
+    {
+      "uid": "fan",
+      "roleId": "observer"
+    }
+  ],
+  "groups": [
+    {
+      "id": "Lions",
+      "invitedTo": [
+        "M1",
+        "M3"
+      ],
+      "people": [
+        {
+          "name": "Arun",
+          "age": 25,
+          "hasAccount": true,
+          "fields": {
+            "playerRole": "batter"
+          },
+          "optOut": [
+            "M3"
+          ]
+        },
+        {
+          "name": "Bala",
+          "age": 26,
+          "hasAccount": false,
+          "fields": {
+            "playerRole": "batter"
+          }
+        },
+        {
+          "name": "Chet",
+          "age": 27,
+          "hasAccount": false,
+          "fields": {
+            "playerRole": "bowler"
+          }
+        },
+        {
+          "name": "Dinesh",
+          "age": 28,
+          "hasAccount": false,
+          "fields": {
+            "playerRole": "allRounder"
+          }
+        }
+      ]
+    },
+    {
+      "id": "Tigers",
+      "invitedTo": [
+        "M1",
+        "M2"
+      ],
+      "people": [
+        {
+          "name": "Eshan",
+          "age": 25,
+          "hasAccount": true,
+          "fields": {
+            "playerRole": "batter"
+          }
+        },
+        {
+          "name": "Farid",
+          "age": 26,
+          "hasAccount": false,
+          "fields": {
+            "playerRole": "batter"
+          }
+        },
+        {
+          "name": "Gopal",
+          "age": 27,
+          "hasAccount": false,
+          "fields": {
+            "playerRole": "bowler"
+          }
+        },
+        {
+          "name": "Hemant",
+          "age": 28,
+          "hasAccount": false,
+          "fields": {
+            "playerRole": "allRounder"
+          }
+        }
+      ]
+    },
+    {
+      "id": "Hawks",
+      "invitedTo": [
+        "M2",
+        "M3"
+      ],
+      "people": [
+        {
+          "name": "Imran",
+          "age": 24,
+          "hasAccount": true,
+          "fields": {
+            "playerRole": "batter"
+          }
+        },
+        {
+          "name": "Jay",
+          "age": 29,
+          "hasAccount": false,
+          "fields": {
+            "playerRole": "batter"
+          }
+        },
+        {
+          "name": "Kiran",
+          "age": 30,
+          "hasAccount": false,
+          "fields": {
+            "playerRole": "bowler"
+          }
+        },
+        {
+          "name": "Luv",
+          "age": 16,
+          "hasAccount": false,
+          "fields": {
+            "playerRole": "allRounder"
+          }
+        }
+      ]
+    }
+  ],
+  "sessions": [
+    {
+      "id": "M1",
+      "title": "Lions v Tigers",
+      "start": "2027-07-03T09:00:00+05:30",
+      "end": "2027-07-03T13:00:00+05:30",
+      "venue": "ground"
+    },
+    {
+      "id": "M2",
+      "title": "Tigers v Hawks",
+      "start": "2027-07-03T14:00:00+05:30",
+      "end": "2027-07-03T18:00:00+05:30",
+      "venue": "ground"
+    },
+    {
+      "id": "M3",
+      "title": "Lions v Hawks",
+      "start": "2027-07-04T09:00:00+05:30",
+      "end": "2027-07-04T13:00:00+05:30",
+      "venue": "ground"
+    }
+  ],
+  "expected": {
+    "groups": 3,
+    "people": 12,
+    "withoutAccount": 9,
+    "byCategory": {
+      "adult": 11,
+      "child": 1
+    },
+    "byField": {
+      "playerRole": {
+        "batter": 6,
+        "bowler": 3,
+        "allRounder": 3
+      }
+    },
+    "perSession": {
+      "M1": 8,
+      "M2": 8,
+      "M3": 7
+    }
+  }
+}

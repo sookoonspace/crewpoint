@@ -52,7 +52,7 @@ jobs:
 
       - name: Verify tests do not initialize Firebase
         run: |
-          if grep -rn "Firebase\.initializeApp\|FirebaseService\.initialize" test/; then
+          if grep -rn "Firebase\.initializeApp\|FirebaseService\.initialize" test/ test_acceptance/; then
             echo "::error::Tests must not call Firebase.initializeApp() or FirebaseService.initialize(). Use Riverpod overrides on the IAuthService / IUserRepository / IFcmGateway seams instead."
             exit 1
           fi

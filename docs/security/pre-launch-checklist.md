@@ -25,7 +25,7 @@ Each row carries an owner in `[brackets]`. Engineering owns the test/code rows; 
   ```bash
   FIRESTORE_EMULATOR_HOST=localhost:8080 \
   GCLOUD_PROJECT=crewpoint-dev \
-  firebase emulators:exec --only firestore,auth \
+  firebase emulators:exec --project demo-crewpoint --only firestore,auth \
     'npx tsx functions/scripts/seed-large-event.ts \
        --event-id=evtSmoke --creator-uid=creatorSmoke \
        --messages=10000 --expenses=200 --tasks=500'

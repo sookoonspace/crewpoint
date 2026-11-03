@@ -1,7 +1,7 @@
 // Tests against the real app. Each name starts with its scenario ID. A failure
 // here is a finding, so this suite lives outside test/ and CI's `flutter test`.
 //
-// Run: flutter test test_convention/
+// Run: flutter test test_acceptance/
 import 'dart:async';
 import 'dart:io';
 
@@ -96,7 +96,7 @@ void main() {
       final hits = [
         for (final f in [
           ..._sources(),
-          File('test_convention/fixtures/derod_convention_2027_v3.json'),
+          File('test_acceptance/fixtures/derod_convention_2027_v3.json'),
         ])
           if (f.readAsStringSync().contains('ડેરોડ')) f.path,
       ];

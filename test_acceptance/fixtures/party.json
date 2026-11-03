@@ -1,0 +1,156 @@
+{
+  "templateId": "party",
+  "event": {
+    "title": "Lily's birthday",
+    "startDate": "2027-03-13",
+    "endDate": "2027-03-13",
+    "timeZone": "America/Chicago",
+    "currency": "USD"
+  },
+  "settings": {
+    "attendancePolicy": "everyone",
+    "expenseAccess": "everyone"
+  },
+  "labels": {},
+  "fields": [
+    {
+      "id": "allergy",
+      "type": "yesNo",
+      "scope": "participant",
+      "visibility": "organizers"
+    }
+  ],
+  "members": [
+    {
+      "uid": "maya",
+      "roleId": "owner"
+    },
+    {
+      "uid": "ken",
+      "roleId": "participant"
+    },
+    {
+      "uid": "ana",
+      "roleId": "participant"
+    }
+  ],
+  "groups": [
+    {
+      "id": "G1",
+      "people": [
+        {
+          "name": "Maya",
+          "age": 34,
+          "hasAccount": true,
+          "fields": {
+            "allergy": "no"
+          }
+        },
+        {
+          "name": "Ken",
+          "age": 36,
+          "hasAccount": true,
+          "fields": {
+            "allergy": "no"
+          }
+        },
+        {
+          "name": "Lily",
+          "age": 7,
+          "hasAccount": false,
+          "fields": {
+            "allergy": "no"
+          }
+        }
+      ]
+    },
+    {
+      "id": "G2",
+      "people": [
+        {
+          "name": "Ana",
+          "age": 33,
+          "hasAccount": true,
+          "fields": {
+            "allergy": "no"
+          }
+        },
+        {
+          "name": "Ben",
+          "age": 5,
+          "hasAccount": false,
+          "fields": {
+            "allergy": "yes"
+          }
+        },
+        {
+          "name": "Cara",
+          "age": 3,
+          "hasAccount": false,
+          "fields": {
+            "allergy": "no"
+          }
+        }
+      ]
+    },
+    {
+      "id": "G3",
+      "people": [
+        {
+          "name": "Omar",
+          "age": 40,
+          "hasAccount": false,
+          "fields": {
+            "allergy": "no"
+          }
+        },
+        {
+          "name": "Zed",
+          "age": 41,
+          "hasAccount": false,
+          "fields": {
+            "allergy": "no"
+          },
+          "optOut": [
+            "cake"
+          ]
+        }
+      ]
+    }
+  ],
+  "sessions": [
+    {
+      "id": "party",
+      "title": "Party",
+      "start": "2027-03-13T15:00:00-06:00",
+      "end": "2027-03-13T18:00:00-06:00",
+      "venue": "home"
+    },
+    {
+      "id": "cake",
+      "title": "Cake and games",
+      "start": "2027-03-13T17:00:00-06:00",
+      "end": "2027-03-13T18:00:00-06:00",
+      "venue": "home"
+    }
+  ],
+  "expected": {
+    "groups": 3,
+    "people": 8,
+    "withoutAccount": 5,
+    "byCategory": {
+      "adult": 5,
+      "child": 3
+    },
+    "byField": {
+      "allergy": {
+        "no": 7,
+        "yes": 1
+      }
+    },
+    "perSession": {
+      "party": 8,
+      "cake": 7
+    }
+  }
+}

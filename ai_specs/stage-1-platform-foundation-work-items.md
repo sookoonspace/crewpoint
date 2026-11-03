@@ -121,12 +121,12 @@ Run functions tests under the emulators in CI, rename the convention suite to a 
 
 ### Acceptance criteria
 - [ ] `npm test` for functions runs under the emulators in CI.
-- [ ] The job also triggers on `firestore.rules`, `storage.rules` and `firestore.indexes.json`, as well as `functions/**`.
-- [ ] `test_convention/` and `functions/test_convention/` are renamed to `test_acceptance/`, with `generate_report.py` and `jest.convention.config.js` updated.
-- [ ] The suite has one fixture per template: the convention fixture and its expected values stay as they are, and party, wedding, cricket and golf fixtures are added.
+- [x] The job also triggers on `firestore.rules`, `storage.rules` and `firestore.indexes.json`, as well as `functions/**`.
+- [x] `test_convention/` and `functions/test_convention/` are renamed to `test_acceptance/`, with `generate_report.py` and `jest.convention.config.js` updated.
+- [x] The suite has one fixture per template: the convention fixture and its expected values stay as they are, and party, wedding, cricket and golf fixtures are added.
 - [ ] CI runs a list of finished scenario IDs from the acceptance suite, and fails if any of them goes red. Unfinished scenarios stay outside this list, so a planned gap does not block work.
-- [ ] Automated tests use emulators only, and none writes to a real project.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] Automated tests use emulators only, and none writes to a real project.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - Requirements: 4, 5, 5a
