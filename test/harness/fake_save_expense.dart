@@ -29,3 +29,29 @@ SaveExpenseCall fakeSaveExpenseCall(FirebaseFirestore firestore) =>
             }.toList(),
           });
     };
+
+/// Stands in for the `recordSettlement` callable, writing what the server would.
+RecordSettlementCall fakeRecordSettlementCall(FirebaseFirestore firestore) =>
+    ({
+      required eventId,
+      required settlementId,
+      required payerId,
+      required payeeId,
+      required amount,
+    }) async {
+      await firestore
+          .collection('events')
+          .doc(eventId)
+          .collection('expenses')
+          .doc(settlementId)
+          .set({
+            'eventId': eventId,
+            'payerId': payerId,
+            'amount': amount,
+            'isPayment': true,
+            'splits': [
+              {'userId': payeeId, 'amount': amount},
+            ],
+            'involvedUids': [payerId, payeeId],
+          });
+    };

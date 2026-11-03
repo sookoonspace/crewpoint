@@ -185,15 +185,15 @@ Add a `recordSettlement` callable that writes a payment and its chat notice toge
 - `lib/app/features/budget/application/settle_up_controller.dart`, `pending_settlement_notifier.dart`, and the messages block in `firestore.rules`.
 
 ### Acceptance criteria
-- [ ] A new `recordSettlement` callable writes the payment and its chat notice together.
-- [ ] Clients can no longer create payment expenses directly.
-- [ ] The notice retry that rules deny today no longer fails.
-- [ ] Rules reject any client message with a `kind` field.
-- [ ] `settlement` and `settlement_disputed` are written only by the server.
-- [ ] Forged notices and forged payments are rejected in emulator tests.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] Tests for scenarios FND-01, FND-02 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] A new `recordSettlement` callable writes the payment and its chat notice together.
+- [x] Clients can no longer create payment expenses directly.
+- [x] The notice retry that rules deny today no longer fails.
+- [x] Rules reject any client message with a `kind` field.
+- [x] `settlement` and `settlement_disputed` are written only by the server.
+- [x] Forged notices and forged payments are rejected in emulator tests.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] Tests for scenarios FND-01, FND-02 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 26

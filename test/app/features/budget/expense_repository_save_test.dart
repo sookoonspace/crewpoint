@@ -36,6 +36,14 @@ void main() {
     splitsDao: ExpenseSplitsDao(db),
     firestore: firestore,
     saveExpenseCall: call,
+    recordSettlementCall:
+        ({
+          required eventId,
+          required settlementId,
+          required payerId,
+          required payeeId,
+          required amount,
+        }) async {},
   );
 
   ExpenseRepository failingWith(String code) => repoWith(
@@ -97,20 +105,105 @@ void main() {
     expect(await repo.getExpensesByEventId('event-1'), isEmpty);
   });
 
-  test(
-    'a settlement still writes directly, not through the callable',
-    () async {
-      var calls = 0;
-      final repo = repoWith((_) async => calls++);
-      final id = await repo.recordSettlement(
-        eventId: 'event-1',
-        payerId: 'payer',
-        payeeId: 'other',
-        amount: 5,
+  group('recordSettlement', () {
+    ExpenseRepository settlementRepo(RecordSettlementCall call) =>
+        ExpenseRepository(
+          expensesDao: ExpensesDao(db),
+          splitsDao: ExpenseSplitsDao(db),
+          firestore: firestore,
+          saveExpenseCall: (_) async {},
+          recordSettlementCall: call,
+        );
+
+    Future<ExpenseSaveResult> record(ExpenseRepository repo) =>
+        repo.recordSettlement(
+          eventId: 'event-1',
+          settlementId: 's1',
+          payerId: 'payer',
+          payeeId: 'payee',
+          amount: 25,
+        );
+
+    test('goes through the callable, and writes nothing directly', () async {
+      String? sentId;
+      final repo = settlementRepo(({
+        required eventId,
+        required settlementId,
+        required payerId,
+        required payeeId,
+        required amount,
+      }) async {
+        sentId = settlementId;
+      });
+      expect(await record(repo), ExpenseSaveResult.saved);
+      expect(sentId, 's1');
+      final remote = await firestore
+          .collection('events/event-1/expenses')
+          .get();
+      expect(remote.docs, isEmpty);
+    });
+
+    test('a recorded payment reaches the local mirror', () async {
+      final repo = settlementRepo(
+        ({
+          required eventId,
+          required settlementId,
+          required payerId,
+          required payeeId,
+          required amount,
+        }) async {},
       );
-      expect(calls, 0);
-      final doc = await firestore.doc('events/event-1/expenses/$id').get();
-      expect(doc.data()!['isPayment'], isTrue);
-    },
-  );
+      await record(repo);
+      final local = await repo.getExpensesByEventId('event-1');
+      expect(local.single.isPayment, isTrue);
+      expect(local.single.splits.single.userId, 'payee');
+      expect(local.single.splits.single.amount, 25);
+    });
+
+    test('with no connection, says so and mirrors nothing', () async {
+      final repo = settlementRepo(({
+        required eventId,
+        required settlementId,
+        required payerId,
+        required payeeId,
+        required amount,
+      }) async {
+        throw FirebaseFunctionsException(message: 'x', code: 'unavailable');
+      });
+      expect(await record(repo), ExpenseSaveResult.needsConnection);
+      expect(await repo.getExpensesByEventId('event-1'), isEmpty);
+    });
+
+    test('a server refusal is reported as rejected', () async {
+      final repo = settlementRepo(({
+        required eventId,
+        required settlementId,
+        required payerId,
+        required payeeId,
+        required amount,
+      }) async {
+        throw FirebaseFunctionsException(
+          message: 'x',
+          code: 'permission-denied',
+        );
+      });
+      expect(await record(repo), ExpenseSaveResult.rejected);
+    });
+
+    test('each new settlement ID is different', () {
+      final repo = settlementRepo(
+        ({
+          required eventId,
+          required settlementId,
+          required payerId,
+          required payeeId,
+          required amount,
+        }) async {},
+      );
+      expect(
+        repo.newSettlementId('event-1'),
+        isNot(repo.newSettlementId('event-1')),
+      );
+    });
+  });
 }

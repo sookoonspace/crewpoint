@@ -45,7 +45,10 @@ service cloud.firestore {
 
         allow create: if request.auth != null
           && isEventMember(eventId)
-          && request.resource.data.senderId == request.auth.uid;
+          && request.resource.data.senderId == request.auth.uid
+          // Notices such as `settlement` and `settlement_disputed` are written
+          // only by the server, so a member cannot forge one.
+          && !('kind' in request.resource.data);
 
         allow delete: if request.auth != null
           && isEventMember(eventId)
@@ -118,15 +121,9 @@ service cloud.firestore {
 
         allow read: if request.auth != null && isEventMember(eventId);
 
-        // Expenses are written by the saveExpense callable, because rules
-        // cannot loop over splits to check they add up. Settlement payments
-        // are still created here until the recordSettlement callable lands.
-        allow create: if request.auth != null
-          && isEventMember(eventId)
-          && request.resource.data.payerId == request.auth.uid
-          && request.resource.data.isPayment == true;
-
-        allow update: if false;
+        // Expenses are written by the saveExpense and recordSettlement
+        // callables, because rules cannot loop over splits to check they add up.
+        allow create, update: if false;
 
         // Delete: payer, event creator, or any admin.
         allow delete: if request.auth != null

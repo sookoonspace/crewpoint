@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/services/app_lifecycle_source.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
@@ -241,22 +242,44 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
     if (confirmed != true) return;
 
     final repo = ref.read(expenseRepositoryProvider);
-    final id = await repo.recordSettlement(
-      eventId: widget.event.id,
-      payerId: pending.payerId,
-      payeeId: pending.payeeId,
-      amount: pending.amount,
-    );
-    if (id == null) return;
+    await _recordSettlement(pending, repo.newSettlementId(widget.event.id));
+  }
 
-    final chat = ref.read(chatRepositoryProvider);
-    await chat.postSettlementNotice(
-      eventId: widget.event.id,
-      messageId: id,
-      senderId: pending.payerId,
-      text:
-          'Settled $symbol${pending.amount.toStringAsFixed(2)} '
-          'with a member',
+  /// Records a confirmed payment, and offers retry with the same [settlementId]
+  /// when there is no connection, so it can never be recorded twice.
+  Future<void> _recordSettlement(
+    PendingSettlement pending,
+    String settlementId,
+  ) async {
+    final result = await ref
+        .read(expenseRepositoryProvider)
+        .recordSettlement(
+          eventId: widget.event.id,
+          settlementId: settlementId,
+          payerId: pending.payerId,
+          payeeId: pending.payeeId,
+          amount: pending.amount,
+        );
+    if (result == ExpenseSaveResult.saved || !mounted) return;
+    final strings = context.strings.budget;
+    final needsConnection = result == ExpenseSaveResult.needsConnection;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        key: const Key('budget.settle.error'),
+        content: Text(
+          needsConnection
+              ? strings.settlementNeedsConnection
+              : strings.settlementRejected,
+        ),
+        backgroundColor: AppColors.terracotta,
+        action: needsConnection
+            ? SnackBarAction(
+                key: const Key('budget.settle.retry'),
+                label: strings.expenseRetry,
+                onPressed: () => _recordSettlement(pending, settlementId),
+              )
+            : null,
+      ),
     );
   }
 

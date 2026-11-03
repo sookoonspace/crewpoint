@@ -42,14 +42,6 @@ class _ControllableChatService implements IChatService {
     required String messageId,
   }) async {}
 
-  @override
-  Future<void> postSettlementNotice({
-    required String eventId,
-    required String messageId,
-    required String senderId,
-    required String text,
-  }) async {}
-
   Future<void> close() async {
     for (final c in _byEvent.values) {
       await c.close();

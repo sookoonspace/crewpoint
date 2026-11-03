@@ -41,6 +41,7 @@ void main() {
       splitsDao: ExpenseSplitsDao(db),
       firestore: firestore,
       saveExpenseCall: fakeSaveExpenseCall(firestore),
+      recordSettlementCall: fakeRecordSettlementCall(firestore),
     );
   });
 
@@ -48,14 +49,14 @@ void main() {
 
   test('recordSettlement writes an isPayment expense with a single positive '
       'split addressed to the payee', () async {
-    final id = await repository.recordSettlement(
+    const id = 'settlement-1';
+    await repository.recordSettlement(
       eventId: 'event-1',
+      settlementId: id,
       payerId: 'payer',
       payeeId: 'payee',
       amount: 25,
     );
-
-    expect(id, isNotNull);
 
     final remote = await firestore
         .collection('events/event-1/expenses')
@@ -89,6 +90,7 @@ void main() {
     );
     await repository.recordSettlement(
       eventId: 'event-1',
+      settlementId: 'settlement-2',
       payerId: 'payer',
       payeeId: 'payee',
       amount: 25,
