@@ -545,6 +545,32 @@ Decision: `ended` events keep settlements, expenses and chat open.
 
 Reason: People log final costs and settle up after an event.
 
+### L21
+
+Status: current
+
+Question: Items in slice 1.2 name permissions that do not exist until slice 1.4. What should they check until then?
+
+Recommended Answer: Treat those permissions as owner or admin until the cutover in #66, then move each check to the named permission.
+
+Answer: Accepted.
+
+Decision: Interim owner-or-admin checks until #66. Plain members lose urgent sending at #52, which matches the Participant preset in Req 26a.
+
+### L22
+
+Status: current
+
+Question: What can existing members do after migration, given that the Participant preset holds only `chat.send` and no permission covers creating tasks or adding expenses?
+
+Recommended Answer: Creator becomes Owner, admins become Admin, and everyone else becomes Participant. Adding your own expense and creating tasks stay open to every member except Observer and Vendor.
+
+Answer: Accepted.
+
+Decision: Use this migration mapping, and keep these two actions open to every member except Observer and Vendor.
+
+Reason: Req 34 preserves everyone's access.
+
 </details>
 
 
