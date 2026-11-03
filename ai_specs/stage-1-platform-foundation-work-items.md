@@ -98,9 +98,9 @@ Triage `ai_specs/todo.md` and refresh `docs/guide/GAPS.md` against the current c
 - Section "Already built" in `ai_specs/event-platform-plan.md`.
 
 ### Acceptance criteria
-- [ ] Every entry in `ai_specs/todo.md` is triaged.
-- [ ] `docs/guide/GAPS.md` is refreshed, recording `GAP-ANY-09`, `-25`, `-26`, `-27` and `-35` as built, after checking each against the code.
-- [ ] If a check shows one of these is not built, that is reported and it is not marked as built.
+- [x] Every entry in `ai_specs/todo.md` is triaged.
+- [x] `docs/guide/GAPS.md` is refreshed, recording `GAP-ANY-09`, `-25`, `-26`, `-27` and `-35` as built, after checking each against the code.
+- [x] If a check shows one of these is not built, that is reported and it is not marked as built.
 
 ### Covers
 - Requirements: 3
@@ -564,7 +564,7 @@ Let organizers turn modules on and off, and make the event screen a hub of the e
 
 ### Required context
 - Approved with the Work Item proposal (2026-11-03): permissions that do not exist until #66 are treated as owner or admin until that cutover, then #66 moves the check to the named permission.
-- `lib/app/features/dashboard/presentation/event_detail_screen.dart`, `event_dashboard_screen.dart`, `lib/app/core/constants/` (`Breakpoints`), `global_inbox_provider.dart`, and `global_balance_ledger_provider.dart`.
+- `lib/app/features/dashboard/presentation/event_dashboard_screen.dart`, `lib/app/core/constants/` (`Breakpoints`), `global_inbox_provider.dart`, and `global_balance_ledger_provider.dart`.
 - Agenda arrives in #82. Until then, the hub shows enabled modules only.
 
 ### Acceptance criteria

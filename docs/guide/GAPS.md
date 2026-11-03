@@ -4,6 +4,8 @@ This file collects **gaps** — things v1 doesn't do that real organizers want �
 
 > **Bug vs gap reminder.** A **bug** is the app crashing, throwing a red error, freezing, or failing to do something it explicitly promises. File bugs with the template in [`../qa/v1-tester-handoff-guide.md` §14](../qa/v1-tester-handoff-guide.md#14-bug-report-template). A **gap** is the app working perfectly but you wishing it had a tool to finish your scenario — that's what goes here.
 
+**Refreshed 2026-11-03:** GAP-ANY-09, GAP-ANY-25, GAP-ANY-26, GAP-ANY-27 and GAP-ANY-35 are built, and each has a **Status** line below. Their original notes are kept for history. See `ai_specs/event-platform-plan.md` for where the remaining gaps are planned.
+
 Organized by category, not by scenario. Each entry uses the format:
 
 ```
@@ -71,6 +73,7 @@ Scenario prefixes: `CRK` = cricket, `CON` = convention, `WED` = wedding, `ANY` =
 **Suggested fit:** v1.x.
 
 ### GAP-ANY-09 — No due-date reminders / nudge notifications
+**Status:** Built. `onTaskDueScheduled` runs every 15 minutes and sends the assignee a `task_due` push. Checked against the code on 2026-11-03.
 **Surfaced in:** Cricket Event-day §E-3 (`PlayerA1` misses a "Bring whites" task because no push fires until match day).
 **Severity for v1 release:** Should-have.
 **Suggested fit:** v1.1.
@@ -184,17 +187,20 @@ Scenario prefixes: `CRK` = cricket, `CON` = convention, `WED` = wedding, `ANY` =
 ## Notifications
 
 ### GAP-ANY-25 — **No notification preferences UI at all** (headline gap)
+**Status:** Built. Profile → Notifications opens `notification_settings_screen.dart` at `/profile/notifications`, with per-category settings. Checked against the code on 2026-11-03.
 **Surfaced in:** All three scenarios — every persona hits Profile → **Notifications** row and finds it does nothing (`PROF-NOTIF-01` "deliberate no-op (NOT a bug)").
 **Severity for v1 release:** Should-have. Privacy/control posture suffers without per-category toggles.
 **Suggested fit:** v1.1.
 **Workaround for testers:** OS-level notification control only. The no-op is intentional per the handoff guide and **NOT a bug** — confirm it sits silently as documented.
 
 ### GAP-ANY-26 — No quiet hours / Do-Not-Disturb window
+**Status:** Built. Quiet hours are set in notification settings and enforced by `functions/src/notifications/suppress.ts`. Checked against the code on 2026-11-03.
 **Surfaced in:** Wedding Event-day §E-2 (urgent push fires at 02:00 because vendor sent a question late).
 **Severity for v1 release:** Should-have.
 **Suggested fit:** v1.1 (gated on GAP-ANY-25).
 
 ### GAP-ANY-27 — No granular per-event mute durations (only iOS MUTE_EVENT 8h notif action)
+**Status:** Built. `mute_event_sheet.dart` offers 1 hour, 8 hours, 1 day and Until I unmute. It has no 3-day option, so the 3-day case uses Until I unmute. Checked against the code on 2026-11-03.
 **Surfaced in:** Convention Event-day §E-3 (`SponLi` wants to mute one event for 3 days, not 8 hours).
 **Severity for v1 release:** Nice-to-have.
 **Suggested fit:** v1.1 (gated on GAP-ANY-25).
@@ -245,6 +251,7 @@ Scenario prefixes: `CRK` = cricket, `CON` = convention, `WED` = wedding, `ANY` =
 **Suggested fit:** v1.1.
 
 ### GAP-ANY-35 — Firestore web persistence is intentionally OFF
+**Status:** Built. `firebase_service.dart` sets `persistenceEnabled: true` on every platform, including web. Web persistence covers one tab at a time, and other tabs use an in-memory cache. Checked against the code on 2026-11-03.
 **Surfaced in:** Constraint #2 in the README "Known web/infra constraints — NOT bugs" list. Re-confirmed in each scenario's FF-2 (network-drop) drill ("Reload mid-submit → form state lost — constraint #2, NOT a bug"). Acknowledged platform gap surfaced once in the constraints list rather than per scenario step.
 **Severity for v1 release:** Should-have for web-first organizers.
 **Suggested fit:** v1.0 if resolved before launch, else v1.1.
