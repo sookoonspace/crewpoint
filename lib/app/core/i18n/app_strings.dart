@@ -254,6 +254,8 @@ abstract class BudgetStrings {
   String get expenseNeedsConnection;
   String get expenseSaveRejected;
   String get expenseRetry;
+  String get settlementNeedsConnection;
+  String get settlementRejected;
 
   // Ledger surface.
   String get ledgerAppBarTitle;
@@ -447,6 +449,13 @@ class _EnglishBudgetStrings extends BudgetStrings {
 
   @override
   String get expenseRetry => 'Retry';
+
+  @override
+  String get settlementNeedsConnection =>
+      'Recording a payment needs a connection. Check yours and try again.';
+
+  @override
+  String get settlementRejected => 'This payment could not be recorded.';
 
   @override
   String get ledgerAppBarTitle => 'Budget';

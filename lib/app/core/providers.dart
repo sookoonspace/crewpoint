@@ -293,6 +293,30 @@ final saveExpenseCallProvider = Provider<SaveExpenseCall>(
   },
 );
 
+/// Default impl wraps `FirebaseFunctions.instance`. Tests override with a fake.
+final recordSettlementCallProvider = Provider<RecordSettlementCall>(
+  (_) =>
+      ({
+        required eventId,
+        required settlementId,
+        required payerId,
+        required payeeId,
+        required amount,
+      }) async {
+        final callable = FirebaseFunctions.instance.httpsCallable(
+          'recordSettlement',
+          options: HttpsCallableOptions(timeout: const Duration(seconds: 20)),
+        );
+        await callable.call<Map<String, dynamic>>({
+          'eventId': eventId,
+          'settlementId': settlementId,
+          'payerId': payerId,
+          'payeeId': payeeId,
+          'amount': amount,
+        });
+      },
+);
+
 /// Expense repository (Firestore source of truth + Drift mirror).
 final expenseRepositoryProvider = Provider<ExpenseRepository>((ref) {
   final db = ref.watch(databaseProvider);
@@ -301,6 +325,7 @@ final expenseRepositoryProvider = Provider<ExpenseRepository>((ref) {
     splitsDao: ExpenseSplitsDao(db),
     firestore: ref.watch(firestoreProvider),
     saveExpenseCall: ref.watch(saveExpenseCallProvider),
+    recordSettlementCall: ref.watch(recordSettlementCallProvider),
     imageService: ref.watch(imageServiceProvider),
   );
   ref.onDispose(repo.dispose);

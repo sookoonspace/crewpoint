@@ -73,6 +73,7 @@ void main() {
         splitsDao: ExpenseSplitsDao(db),
         firestore: firestore,
         saveExpenseCall: fakeSaveExpenseCall(firestore),
+        recordSettlementCall: fakeRecordSettlementCall(firestore),
       );
     });
 

@@ -21,11 +21,13 @@ class ExpenseRepository implements IExpenseRepository {
     required ExpenseSplitsDao splitsDao,
     required FirebaseFirestore firestore,
     required SaveExpenseCall saveExpenseCall,
+    required RecordSettlementCall recordSettlementCall,
     IImageService? imageService,
   }) : _expensesDao = expensesDao,
        _splitsDao = splitsDao,
        _firestore = firestore,
        _saveExpenseCall = saveExpenseCall,
+       _recordSettlementCall = recordSettlementCall,
        _imageService = imageService;
 
   /// Error codes from a callable that never reached the server. Web reports a
@@ -40,6 +42,7 @@ class ExpenseRepository implements IExpenseRepository {
   final ExpenseSplitsDao _splitsDao;
   final FirebaseFirestore _firestore;
   final SaveExpenseCall _saveExpenseCall;
+  final RecordSettlementCall _recordSettlementCall;
   final IImageService? _imageService;
   final Map<String, StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>
   _firestoreSubs = {};
@@ -109,41 +112,36 @@ class ExpenseRepository implements IExpenseRepository {
     _firestoreSubs.clear();
   }
 
-  /// Records a settlement payment from [payerId] to [payeeId] as a single
-  /// `isPayment: true` expense whose only split is `(payeeId, amount)`.
-  /// This integrates with the existing [BalanceLedger] payment handling.
-  /// Returns the generated expense id (which doubles as the chat-notice id),
-  /// or `null` on failure.
-  Future<String?> recordSettlement({
+  /// An ID for a new settlement. Keep it across retries, so a payment that
+  /// reached the server is not recorded twice.
+  String newSettlementId(String eventId) => _expensesRef(eventId).doc().id;
+
+  /// Records a payment from [payerId] to [payeeId] through the
+  /// `recordSettlement` callable, as a single `isPayment: true` expense whose
+  /// only split is `(payeeId, amount)`, with its chat notice.
+  Future<ExpenseSaveResult> recordSettlement({
     required String eventId,
+    required String settlementId,
     required String payerId,
     required String payeeId,
     required double amount,
-  }) async {
-    final id = _firestore
-        .collection('events')
-        .doc(eventId)
-        .collection('expenses')
-        .doc()
-        .id;
-    final expense = ExpenseModel(
-      id: id,
+  }) => _callAndMirror(
+    () => _recordSettlementCall(
+      eventId: eventId,
+      settlementId: settlementId,
+      payerId: payerId,
+      payeeId: payeeId,
+      amount: amount,
+    ),
+    ExpenseModel(
+      id: settlementId,
       eventId: eventId,
       payerId: payerId,
       amount: amount,
       isPayment: true,
       splits: [ExpenseSplit(userId: payeeId, amount: amount)],
-    );
-    // Payments still write directly, until the recordSettlement callable lands.
-    try {
-      await _expensesRef(eventId).doc(id).set(_toFirestore(expense));
-      await _upsertDrift(expense);
-      return id;
-    } catch (e, st) {
-      log('Failed to record payment', error: e, stackTrace: st, name: 'budget');
-      return null;
-    }
-  }
+    ),
+  );
 
   /// Uploads a receipt to Storage at `events/{eid}/receipts/{exid}.jpg`.
   /// Returns the download URL on success, or `null` on failure (caller may
@@ -192,9 +190,15 @@ class ExpenseRepository implements IExpenseRepository {
   /// Creates or edits an expense through the `saveExpense` callable. It is
   /// safe to retry, because the expense keeps its ID.
   @override
-  Future<ExpenseSaveResult> saveExpense(ExpenseModel expense) async {
+  Future<ExpenseSaveResult> saveExpense(ExpenseModel expense) =>
+      _callAndMirror(() => _saveExpenseCall(expense), expense);
+
+  Future<ExpenseSaveResult> _callAndMirror(
+    Future<void> Function() call,
+    ExpenseModel expense,
+  ) async {
     try {
-      await _saveExpenseCall(expense);
+      await call();
     } on FirebaseFunctionsException catch (e, st) {
       log('Failed to save expense', error: e, stackTrace: st, name: 'budget');
       return _connectionCodes.contains(e.code)
@@ -281,20 +285,6 @@ class ExpenseRepository implements IExpenseRepository {
             .toList(),
         createdAt: row.createdAt,
       );
-
-  Map<String, dynamic> _toFirestore(ExpenseModel expense) => {
-    'eventId': expense.eventId,
-    'payerId': expense.payerId,
-    'amount': expense.amount,
-    'description': expense.description,
-    'receiptPath': expense.receiptPath,
-    'isDonation': expense.isDonation,
-    'isPayment': expense.isPayment,
-    'splits': expense.splits
-        .map((s) => {'userId': s.userId, 'amount': s.amount})
-        .toList(),
-    'updatedAt': FieldValue.serverTimestamp(),
-  };
 
   ExpenseModel _fromFirestore(
     String id,

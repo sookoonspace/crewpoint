@@ -289,7 +289,7 @@ describe('users — Fix 1.B Option A: PII isolated in users/{uid}/private/profil
   });
 });
 
-describe('expenses create and update — go through saveExpense, and only payments are created directly', () => {
+describe('expenses create and update — only the saveExpense and recordSettlement callables write them', () => {
   const eventId = 'evtExp';
   const creatorUid = 'creator1';
   const adminUid = 'admin1';
@@ -381,20 +381,21 @@ describe('expenses create and update — go through saveExpense, and only paymen
     await assertFails(setDoc(ref, {eventId, payerId: payerUid, amount: 5}));
   });
 
-  test('a member can create a settlement payment as its payer', async () => {
+  test('a member cannot create a settlement payment directly', async () => {
     await seed();
     const payerCtx = env.authenticatedContext(payerUid);
     const ref = doc(payerCtx.firestore(), `events/${eventId}/expenses/pay`);
-    await assertSucceeds(setDoc(ref, {eventId, payerId: payerUid, amount: 5, isPayment: true}));
-    const otherRef = doc(payerCtx.firestore(), `events/${eventId}/expenses/pay2`);
-    await assertFails(setDoc(otherRef, {eventId, payerId: memberUid, amount: 5, isPayment: true}));
+    await assertFails(setDoc(ref, {eventId, payerId: payerUid, amount: 5, isPayment: true}));
   });
 
-  test('a non-member cannot create a settlement payment', async () => {
+  test('a member cannot forge a notice, but can send a normal message', async () => {
     await seed();
-    const ctx = env.authenticatedContext(outsiderUid);
-    const ref = doc(ctx.firestore(), `events/${eventId}/expenses/pay`);
-    await assertFails(setDoc(ref, {eventId, payerId: outsiderUid, amount: 5, isPayment: true}));
+    const db = env.authenticatedContext(payerUid).firestore();
+    const message = {senderId: payerUid, text: 'hi', isHighPriority: false};
+    await assertSucceeds(setDoc(doc(db, `events/${eventId}/messages/ok`), message));
+    for (const kind of ['settlement', 'settlement_disputed', 'normal', null]) {
+      await assertFails(setDoc(doc(db, `events/${eventId}/messages/forged`), {...message, kind}));
+    }
   });
 
   test('payer cannot reassign payerId via update', async () => {

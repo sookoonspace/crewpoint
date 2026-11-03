@@ -15,6 +15,7 @@ export {promoteToAdmin} from "./events/promoteToAdmin";
 export {demoteAdmin} from "./events/demoteAdmin";
 export {markTaskComplete} from "./events/markTaskComplete";
 export {saveExpense} from "./events/saveExpense";
+export {recordSettlement} from "./events/recordSettlement";
 export {disputeSettlement} from "./events/disputeSettlement";
 export {onUrgentMessageCreated} from "./events/onUrgentMessageCreated";
 export {onTaskAssigned} from "./events/onTaskAssigned";
