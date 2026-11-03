@@ -38,8 +38,11 @@ class BalanceLedger {
         // recipient.balance -= amount (their share of what was "paid")
         balances[expense.payerId] =
             (balances[expense.payerId] ?? 0) + expense.amount;
+        // abs(): settlements recorded before the sign fix are stored with a
+        // negative payee split, and those documents are still in Firestore.
         for (final split in expense.splits) {
-          balances[split.userId] = (balances[split.userId] ?? 0) - split.amount;
+          balances[split.userId] =
+              (balances[split.userId] ?? 0) - split.amount.abs();
         }
         // Payments don't count toward totalExpenses
       } else {

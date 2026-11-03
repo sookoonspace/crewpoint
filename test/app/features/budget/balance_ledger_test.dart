@@ -160,6 +160,72 @@ void main() {
       expect(ledger.netBalances['charlie'], equals(-30.0));
     });
 
+    // Settlements recorded before the sign fix are stored in Firestore with a
+    // negative payee split and are still read back by every client.
+    group('stored settlement with a negative payee split', () {
+      const dinner = ExpenseModel(
+        id: 'e1',
+        eventId: 'ev1',
+        payerId: 'alice',
+        amount: 60,
+        splits: [
+          ExpenseSplit(userId: 'alice', amount: 20),
+          ExpenseSplit(userId: 'bob', amount: 20),
+          ExpenseSplit(userId: 'charlie', amount: 20),
+        ],
+      );
+      const settlement = ExpenseModel(
+        id: 'p1',
+        eventId: 'ev1',
+        payerId: 'bob',
+        amount: 20,
+        isPayment: true,
+        splits: [ExpenseSplit(userId: 'alice', amount: -20)],
+      );
+
+      test('reduces the payee credit instead of doubling it', () {
+        final ledger = BalanceLedger.calculate(
+          expenses: const [dinner, settlement],
+          memberIds: members,
+        );
+
+        expect(ledger.netBalances['alice'], equals(20.0));
+        expect(ledger.netBalances['bob'], equals(0.0));
+        expect(ledger.netBalances['charlie'], equals(-20.0));
+        expect(ledger.netBalances.values.reduce((a, b) => a + b), equals(0.0));
+      });
+
+      test('does not erase what the payee owes on a later expense', () {
+        const taxi = ExpenseModel(
+          id: 'e2',
+          eventId: 'ev1',
+          payerId: 'charlie',
+          amount: 90,
+          splits: [
+            ExpenseSplit(userId: 'alice', amount: 30),
+            ExpenseSplit(userId: 'bob', amount: 30),
+            ExpenseSplit(userId: 'charlie', amount: 30),
+          ],
+        );
+
+        final ledger = BalanceLedger.calculate(
+          expenses: const [dinner, settlement, taxi],
+          memberIds: members,
+        );
+
+        expect(ledger.netBalances['alice'], equals(-10.0));
+        expect(ledger.netBalances['bob'], equals(-30.0));
+        expect(ledger.netBalances['charlie'], equals(40.0));
+        expect(
+          ledger.settlements.map((s) => (s.fromUserId, s.toUserId, s.amount)),
+          unorderedEquals([
+            ('bob', 'charlie', 30.0),
+            ('alice', 'charlie', 10.0),
+          ]),
+        );
+      });
+    });
+
     test('mixed scenario — expenses + donations + payments', () {
       final expenses = [
         // Alice pays $90 dinner (split 3 ways)
