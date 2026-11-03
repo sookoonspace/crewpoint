@@ -9,7 +9,10 @@ import 'package:crewpoint_app/app/core/database/daos/expense_splits_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/expenses_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/users_dao.dart';
 import 'package:crewpoint_app/app/features/budget/data/expense_repository.dart';
+import 'package:crewpoint_app/app/features/budget/domain/repositories/i_expense_repository.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
+
+import '../../../harness/fake_save_expense.dart';
 
 void main() {
   group('ExpenseModel.calculateSplits', () {
@@ -69,6 +72,7 @@ void main() {
         expensesDao: ExpensesDao(db),
         splitsDao: ExpenseSplitsDao(db),
         firestore: firestore,
+        saveExpenseCall: fakeSaveExpenseCall(firestore),
       );
     });
 
@@ -83,8 +87,8 @@ void main() {
         description: 'Lunch',
       );
 
-      final created = await repository.createExpense(expense);
-      expect(created, isTrue);
+      final created = await repository.saveExpense(expense);
+      expect(created, ExpenseSaveResult.saved);
 
       final expenses = await repository.getExpensesByEventId('event-1');
       expect(expenses, hasLength(1));
@@ -105,7 +109,7 @@ void main() {
         ],
       );
 
-      await repository.createExpense(expense);
+      await repository.saveExpense(expense);
 
       final expenses = await repository.getExpensesByEventId('event-1');
       expect(expenses.first.splits, hasLength(2));
@@ -130,7 +134,7 @@ void main() {
         ],
       );
 
-      await repository.createExpense(expense);
+      await repository.saveExpense(expense);
 
       final remote = await firestore
           .collection('events/event-1/expenses')

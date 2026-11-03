@@ -118,22 +118,15 @@ service cloud.firestore {
 
         allow read: if request.auth != null && isEventMember(eventId);
 
+        // Expenses are written by the saveExpense callable, because rules
+        // cannot loop over splits to check they add up. Settlement payments
+        // are still created here until the recordSettlement callable lands.
         allow create: if request.auth != null
           && isEventMember(eventId)
-          && request.resource.data.payerId == request.auth.uid;
+          && request.resource.data.payerId == request.auth.uid
+          && request.resource.data.isPayment == true;
 
-        // Update: payer, event creator, or any admin may edit. payerId and
-        // eventId are locked so an edit cannot reassign the expense to a
-        // different payer or move it across events. Other fields
-        // (amount, description, splits, receiptPath, isDonation,
-        // isPayment) flow freely.
-        allow update: if request.auth != null
-          && isEventMember(eventId)
-          && (resource.data.payerId == request.auth.uid
-              || eventDocForExpense().creatorId == request.auth.uid
-              || request.auth.uid in eventDocForExpense().adminIds)
-          && request.resource.data.payerId == resource.data.payerId
-          && request.resource.data.eventId == resource.data.eventId;
+        allow update: if false;
 
         // Delete: payer, event creator, or any admin.
         allow delete: if request.auth != null

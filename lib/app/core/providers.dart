@@ -37,6 +37,7 @@ import 'package:crewpoint_app/app/features/profile/data/firestore_user_repositor
 import 'package:crewpoint_app/app/features/profile/domain/repositories/i_user_repository.dart';
 import 'package:crewpoint_app/app/core/services/i_chat_service.dart';
 import 'package:crewpoint_app/app/core/services/url_launcher_service.dart';
+import 'package:crewpoint_app/app/features/budget/domain/repositories/i_expense_repository.dart';
 import 'package:crewpoint_app/app/features/budget/application/settle_up_controller.dart';
 import 'package:crewpoint_app/app/features/budget/data/expense_repository.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
@@ -269,6 +270,29 @@ final taskChecklistProvider =
       return repo.watchChecklist(key.eventId, key.taskId);
     });
 
+/// Default impl wraps `FirebaseFunctions.instance`. Tests override with a fake.
+final saveExpenseCallProvider = Provider<SaveExpenseCall>(
+  (_) => (expense) async {
+    final callable = FirebaseFunctions.instance.httpsCallable(
+      'saveExpense',
+      options: HttpsCallableOptions(timeout: const Duration(seconds: 20)),
+    );
+    await callable.call<Map<String, dynamic>>({
+      'eventId': expense.eventId,
+      'expenseId': expense.id,
+      'payerId': expense.payerId,
+      'amount': expense.amount,
+      'description': expense.description,
+      'receiptPath': expense.receiptPath,
+      'isDonation': expense.isDonation,
+      'splits': [
+        for (final split in expense.splits)
+          {'userId': split.userId, 'amount': split.amount},
+      ],
+    });
+  },
+);
+
 /// Expense repository (Firestore source of truth + Drift mirror).
 final expenseRepositoryProvider = Provider<ExpenseRepository>((ref) {
   final db = ref.watch(databaseProvider);
@@ -276,6 +300,7 @@ final expenseRepositoryProvider = Provider<ExpenseRepository>((ref) {
     expensesDao: ExpensesDao(db),
     splitsDao: ExpenseSplitsDao(db),
     firestore: ref.watch(firestoreProvider),
+    saveExpenseCall: ref.watch(saveExpenseCallProvider),
     imageService: ref.watch(imageServiceProvider),
   );
   ref.onDispose(repo.dispose);

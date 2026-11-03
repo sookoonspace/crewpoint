@@ -13,6 +13,9 @@ import 'package:crewpoint_app/app/core/database/daos/users_dao.dart';
 import 'package:crewpoint_app/app/core/services/image_service.dart';
 import 'package:crewpoint_app/app/features/budget/data/expense_repository.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
+import 'package:crewpoint_app/app/features/budget/domain/repositories/i_expense_repository.dart';
+
+import '../../../harness/fake_save_expense.dart';
 
 class _FakeImageService implements IImageService {
   bool shouldThrow = false;
@@ -75,6 +78,7 @@ void main() {
       expensesDao: ExpensesDao(db),
       splitsDao: ExpenseSplitsDao(db),
       firestore: firestore,
+      saveExpenseCall: fakeSaveExpenseCall(firestore),
       imageService: imageService,
     );
   });
@@ -119,8 +123,8 @@ void main() {
       payerId: 'user-1',
       amount: 12.5,
     );
-    final saved = await repository.createExpense(expense);
-    expect(saved, isTrue);
+    final saved = await repository.saveExpense(expense);
+    expect(saved, ExpenseSaveResult.saved);
 
     final saved2 = await repository.getExpensesByEventId('event-1');
     expect(saved2.first.receiptPath, isNull);

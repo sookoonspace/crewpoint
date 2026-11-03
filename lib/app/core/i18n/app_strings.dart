@@ -250,6 +250,11 @@ abstract class ChatStrings {
 abstract class BudgetStrings {
   const BudgetStrings();
 
+  // Saving an expense.
+  String get expenseNeedsConnection;
+  String get expenseSaveRejected;
+  String get expenseRetry;
+
   // Ledger surface.
   String get ledgerAppBarTitle;
   String get ledgerHeroOwedToYouLabel;
@@ -431,6 +436,17 @@ class _EnglishChatStrings extends ChatStrings {
 
 class _EnglishBudgetStrings extends BudgetStrings {
   const _EnglishBudgetStrings();
+
+  @override
+  String get expenseNeedsConnection =>
+      'Saving an expense needs a connection. Check yours and try again.';
+
+  @override
+  String get expenseSaveRejected =>
+      'This expense could not be saved. Check the details and try again.';
+
+  @override
+  String get expenseRetry => 'Retry';
 
   @override
   String get ledgerAppBarTitle => 'Budget';

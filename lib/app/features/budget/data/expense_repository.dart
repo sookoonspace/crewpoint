@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:crewpoint_app/app/core/database/app_database.dart' as db;
@@ -19,15 +20,26 @@ class ExpenseRepository implements IExpenseRepository {
     required ExpensesDao expensesDao,
     required ExpenseSplitsDao splitsDao,
     required FirebaseFirestore firestore,
+    required SaveExpenseCall saveExpenseCall,
     IImageService? imageService,
   }) : _expensesDao = expensesDao,
        _splitsDao = splitsDao,
        _firestore = firestore,
+       _saveExpenseCall = saveExpenseCall,
        _imageService = imageService;
+
+  /// Error codes from a callable that never reached the server. Web reports a
+  /// failed network request as `internal`.
+  static const _connectionCodes = {
+    'unavailable',
+    'deadline-exceeded',
+    'internal',
+  };
 
   final ExpensesDao _expensesDao;
   final ExpenseSplitsDao _splitsDao;
   final FirebaseFirestore _firestore;
+  final SaveExpenseCall _saveExpenseCall;
   final IImageService? _imageService;
   final Map<String, StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>
   _firestoreSubs = {};
@@ -122,8 +134,15 @@ class ExpenseRepository implements IExpenseRepository {
       isPayment: true,
       splits: [ExpenseSplit(userId: payeeId, amount: amount)],
     );
-    final ok = await createExpense(expense);
-    return ok ? id : null;
+    // Payments still write directly, until the recordSettlement callable lands.
+    try {
+      await _expensesRef(eventId).doc(id).set(_toFirestore(expense));
+      await _upsertDrift(expense);
+      return id;
+    } catch (e, st) {
+      log('Failed to record payment', error: e, stackTrace: st, name: 'budget');
+      return null;
+    }
   }
 
   /// Uploads a receipt to Storage at `events/{eid}/receipts/{exid}.jpg`.
@@ -170,34 +189,28 @@ class ExpenseRepository implements IExpenseRepository {
     }
   }
 
+  /// Creates or edits an expense through the `saveExpense` callable. It is
+  /// safe to retry, because the expense keeps its ID.
   @override
-  Future<bool> createExpense(ExpenseModel expense) async {
+  Future<ExpenseSaveResult> saveExpense(ExpenseModel expense) async {
     try {
-      await _expensesRef(
-        expense.eventId,
-      ).doc(expense.id).set(_toFirestore(expense));
-      await _upsertDrift(expense);
-      return true;
+      await _saveExpenseCall(expense);
+    } on FirebaseFunctionsException catch (e, st) {
+      log('Failed to save expense', error: e, stackTrace: st, name: 'budget');
+      return _connectionCodes.contains(e.code)
+          ? ExpenseSaveResult.needsConnection
+          : ExpenseSaveResult.rejected;
     } catch (e, st) {
-      log('Failed to create expense', error: e, stackTrace: st, name: 'budget');
-      return false;
+      log('Failed to save expense', error: e, stackTrace: st, name: 'budget');
+      return ExpenseSaveResult.rejected;
     }
-  }
-
-  /// Updates an existing expense via Firestore `update()`. Locks
-  /// `payerId`/`eventId`/`id` field shape per `firestore.rules` (those are
-  /// the immutable fields the rules enforce).
-  Future<bool> updateExpense(ExpenseModel expense) async {
     try {
-      await _expensesRef(
-        expense.eventId,
-      ).doc(expense.id).update(_toFirestore(expense));
       await _upsertDrift(expense);
-      return true;
     } catch (e, st) {
-      log('Failed to update expense', error: e, stackTrace: st, name: 'budget');
-      return false;
+      // Already saved on the server, and the mirror will catch up.
+      log('Failed to mirror expense', error: e, stackTrace: st, name: 'budget');
     }
+    return ExpenseSaveResult.saved;
   }
 
   @override
