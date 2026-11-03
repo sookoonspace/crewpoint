@@ -57,6 +57,9 @@ jobs:
             exit 1
           fi
 
+      - name: Naming guardrail
+        run: flutter test test_acceptance/naming_guardrail_test.dart
+
       - name: Analyze
         run: flutter analyze
 

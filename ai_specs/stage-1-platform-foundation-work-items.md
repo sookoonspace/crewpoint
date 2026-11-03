@@ -71,13 +71,13 @@ Add `GLOSSARY.md` with the agreed general vocabulary, and a CI test that fails w
 - `.github/workflows/flutter.yml` for where the guardrail runs.
 
 ### Acceptance criteria
-- [ ] `GLOSSARY.md` has a one-line definition of each of: Event, Organizer, Member, Participant, Group, Category, Session, Crew, Registration, Custom field, Pass, Charge, Payment, Contribution, Goal, Update, Incident, Audience.
-- [ ] `GLOSSARY.md` includes the convention, cricket, golf, wedding and party examples from the plan.
+- [x] `GLOSSARY.md` has a one-line definition of each of: Event, Organizer, Member, Participant, Group, Category, Session, Crew, Registration, Custom field, Pass, Charge, Payment, Contribution, Goal, Update, Incident, Audience.
+- [x] `GLOSSARY.md` includes the convention, cricket, golf, wedding and party examples from the plan.
 - [ ] CI fails if the words `family`, `meal`, `derod`, `wedding`, `cricket`, `golf` or `tee` appear as whole words in identifiers or user-facing strings in `lib/` or `functions/src/`, outside the template data in Req 62.
-- [ ] The guardrail ignores comments, Riverpod's `.family`, and `fontFamily`. Any other exception is listed explicitly.
-- [ ] The architecture, RBAC and data-model sections of `CLAUDE.md` have a note that they are updated as each slice lands.
-- [ ] Tests for scenario GE-05 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] The guardrail ignores comments, Riverpod's `.family`, and `fontFamily`. Any other exception is listed explicitly.
+- [x] The architecture, RBAC and data-model sections of `CLAUDE.md` have a note that they are updated as each slice lands.
+- [x] Tests for scenario GE-05 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - Requirements: 1-2
@@ -120,11 +120,11 @@ Run functions tests under the emulators in CI, rename the convention suite to a 
 - `test_convention/`, `functions/test_convention/`, `functions/jest.convention.config.js`, `test_convention/generate_report.py`, `scripts/check_platform_plan.py`.
 
 ### Acceptance criteria
-- [ ] `npm test` for functions runs under the emulators in CI.
+- [x] `npm test` for functions runs under the emulators in CI.
 - [x] The job also triggers on `firestore.rules`, `storage.rules` and `firestore.indexes.json`, as well as `functions/**`.
 - [x] `test_convention/` and `functions/test_convention/` are renamed to `test_acceptance/`, with `generate_report.py` and `jest.convention.config.js` updated.
 - [x] The suite has one fixture per template: the convention fixture and its expected values stay as they are, and party, wedding, cricket and golf fixtures are added.
-- [ ] CI runs a list of finished scenario IDs from the acceptance suite, and fails if any of them goes red. Unfinished scenarios stay outside this list, so a planned gap does not block work.
+- [x] CI runs a list of finished scenario IDs from the acceptance suite, and fails if any of them goes red. Unfinished scenarios stay outside this list, so a planned gap does not block work.
 - [x] Automated tests use emulators only, and none writes to a real project.
 - [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
