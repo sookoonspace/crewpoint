@@ -1,0 +1,562 @@
+{
+ "event": {
+  "name": "Derod Gaam Convention 2027",
+  "nameGu": "દેરોદ ગામ સંમેલન ૨૦૨૭",
+  "start": "2027-07-16",
+  "end": "2027-07-19",
+  "tz": "America/Chicago",
+  "currency": "USD",
+  "capacity": 400
+ },
+ "meals": [
+  "M1",
+  "M2",
+  "M3",
+  "M4",
+  "M5",
+  "M6",
+  "M7",
+  "M8"
+ ],
+ "families": [
+  {
+   "id": "F1",
+   "surname": "Patel",
+   "city": "Dallas TX",
+   "lang": "en",
+   "channel": "app",
+   "tz": "America/Chicago",
+   "directory": true,
+   "arrive": "2027-07-16",
+   "lastMeal": "M7",
+   "hotel": null,
+   "payment": {
+    "method": "card",
+    "status": "paid",
+    "amount": 300
+   },
+   "sponsor": {
+    "tier": "Silver",
+    "amount": 501,
+    "received": true,
+    "item": "Water & soft drinks",
+    "recognition": true
+   },
+   "people": [
+    {
+     "name": "Amit",
+     "age": 45,
+     "diet": "V",
+     "shirt": "L",
+     "contact": true
+    },
+    {
+     "name": "Nisha",
+     "age": 42,
+     "diet": "V",
+     "shirt": "M"
+    },
+    {
+     "name": "Riya",
+     "age": 10,
+     "diet": "V",
+     "shirt": "YM",
+     "kidsAct": true
+    },
+    {
+     "name": "Dev",
+     "age": 6,
+     "diet": "V",
+     "shirt": "YS",
+     "kidsAct": true
+    }
+   ]
+  },
+  {
+   "id": "F2",
+   "surname": "Bhakta",
+   "city": "Chicago IL",
+   "lang": "en",
+   "channel": "app",
+   "tz": "America/Chicago",
+   "directory": true,
+   "arrive": "2027-07-16",
+   "lastMeal": "M8",
+   "hotel": {
+    "rooms": 1,
+    "nights": 3,
+    "confirmation": "HP123456"
+   },
+   "payment": {
+    "method": "zelle",
+    "status": "pending",
+    "amount": 300
+   },
+   "sponsor": {
+    "amount": 1999,
+    "received": false,
+    "item": "Sun Lunch",
+    "pledged": "2027-03-01",
+    "recognition": true
+   },
+   "people": [
+    {
+     "name": "Raj",
+     "age": 38,
+     "diet": "V",
+     "shirt": "L",
+     "contact": true
+    },
+    {
+     "name": "Priya",
+     "age": 36,
+     "diet": "V",
+     "shirt": "S"
+    },
+    {
+     "name": "Kiaan",
+     "age": 3,
+     "diet": "V",
+     "shirt": "2T"
+    }
+   ]
+  },
+  {
+   "id": "F3",
+   "surname": "Desai",
+   "city": "Edison NJ",
+   "lang": "gu",
+   "channel": "app",
+   "tz": "America/New_York",
+   "directory": true,
+   "arrive": "2027-07-16",
+   "lastMeal": "M8",
+   "hotel": {
+    "rooms": 2,
+    "nights": 3,
+    "confirmation": null
+   },
+   "payment": {
+    "method": null,
+    "status": "unpaid",
+    "amount": 0
+   },
+   "people": [
+    {
+     "name": "Kunal",
+     "age": 44,
+     "diet": "V",
+     "contact": true
+    },
+    {
+     "name": "Meera",
+     "age": 41,
+     "diet": "V"
+    },
+    {
+     "name": "Ramesh",
+     "age": 72,
+     "diet": "J",
+     "optOut": [
+      "M3"
+     ]
+    },
+    {
+     "name": "Kamla",
+     "age": 70,
+     "diet": "J",
+     "optOut": [
+      "M3"
+     ]
+    },
+    {
+     "name": "Neel",
+     "age": 17,
+     "diet": "V",
+     "born": "2009-07-17"
+    },
+    {
+     "name": "Asha",
+     "age": 8,
+     "diet": "V",
+     "kidsAct": true
+    },
+    {
+     "name": "Om",
+     "age": 4,
+     "diet": "V",
+     "kidsAct": true
+    }
+   ]
+  },
+  {
+   "id": "F4",
+   "surname": "Mistry",
+   "city": "Houston TX",
+   "lang": "gu",
+   "channel": "web",
+   "tz": "America/Chicago",
+   "directory": false,
+   "arrive": "2027-07-17T11:00",
+   "firstMeal": "M3",
+   "lastMeal": "M8",
+   "hotel": {
+    "rooms": 1,
+    "nights": 2,
+    "confirmation": "HP223344"
+   },
+   "payment": {
+    "method": "check",
+    "reference": "1043",
+    "status": "paid",
+    "amount": 300
+   },
+   "people": [
+    {
+     "name": "Savita",
+     "age": 74,
+     "diet": "V",
+     "shirt": "M",
+     "contact": true
+    }
+   ]
+  },
+  {
+   "id": "F5",
+   "surname": "Chauhan",
+   "city": "London UK",
+   "lang": "en",
+   "channel": "app",
+   "tz": "Europe/London",
+   "directory": true,
+   "arrive": "2027-07-16",
+   "lastMeal": "M8",
+   "hotel": {
+    "rooms": 1,
+    "nights": 5,
+    "confirmation": "HP334455"
+   },
+   "payment": {
+    "method": "card",
+    "status": "paid",
+    "amount": 450
+   },
+   "people": [
+    {
+     "name": "Vikram",
+     "age": 47,
+     "diet": "N",
+     "contact": true
+    },
+    {
+     "name": "Anjali",
+     "age": 45,
+     "diet": "N"
+    },
+    {
+     "name": "Rohan",
+     "age": 18,
+     "diet": "N"
+    },
+    {
+     "name": "Tara",
+     "age": 14,
+     "diet": "N"
+    },
+    {
+     "name": "Kabir",
+     "age": 9,
+     "diet": "N",
+     "kidsAct": true
+    }
+   ]
+  },
+  {
+   "id": "F6",
+   "surname": "Patel",
+   "city": "Toronto Canada",
+   "lang": "en",
+   "channel": "app",
+   "tz": "America/Toronto",
+   "directory": false,
+   "arrive": "2027-07-16",
+   "lastMeal": "M8",
+   "hotel": {
+    "rooms": 1,
+    "nights": 3,
+    "confirmation": null,
+    "confirmationLater": {
+     "value": "HP445566",
+     "on": "2027-06-10"
+    }
+   },
+   "payment": {
+    "method": "check-in",
+    "status": "due",
+    "amount": 0
+   },
+   "sponsor": {
+    "tier": "Gold",
+    "amount": 1001,
+    "received": true,
+    "receivedOn": "2027-03-20",
+    "pledged": "2027-01-15",
+    "recognition": false
+   },
+   "people": [
+    {
+     "name": "Hemant",
+     "age": 52,
+     "diet": "V",
+     "contact": true
+    },
+    {
+     "name": "Jaya",
+     "age": 50,
+     "diet": "N",
+     "optOut": [
+      "M2"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "F7",
+   "surname": "Bhakta",
+   "city": "Dallas TX",
+   "lang": "gu",
+   "channel": "app",
+   "tz": "America/Chicago",
+   "directory": false,
+   "arrive": "2027-07-16",
+   "lastMeal": "M7",
+   "hotel": null,
+   "payment": {
+    "method": "cash",
+    "status": "paid",
+    "amount": 300
+   },
+   "sponsor": {
+    "tier": "Platinum",
+    "amount": 3001,
+    "received": true,
+    "item": "Sun Lunch",
+    "recognition": true
+   },
+   "people": [
+    {
+     "name": "Mahesh",
+     "age": 50,
+     "diet": "V",
+     "contact": true
+    },
+    {
+     "name": "Leela",
+     "age": 48,
+     "diet": "V"
+    },
+    {
+     "name": "Sonal",
+     "age": 11,
+     "diet": "V",
+     "kidsAct": true
+    },
+    {
+     "name": "Jay",
+     "age": 5,
+     "diet": "V",
+     "kidsAct": true
+    }
+   ]
+  }
+ ],
+ "otherFamilies": [
+  {
+   "id": "F8",
+   "surname": "Shah",
+   "city": "Atlanta GA",
+   "cancelledOn": "2027-03-01",
+   "refund": 300,
+   "adults": 2
+  },
+  {
+   "id": "F9",
+   "surname": "Joshi",
+   "city": "Austin TX",
+   "walkIn": true,
+   "meals": [
+    "M4",
+    "M5",
+    "M6",
+    "M7"
+   ],
+   "people": [
+    {
+     "name": "Adult A",
+     "age": 40,
+     "diet": "V"
+    },
+    {
+     "name": "Adult B",
+     "age": 38,
+     "diet": "V"
+    },
+    {
+     "name": "Child",
+     "age": 7,
+     "diet": "V"
+    }
+   ],
+   "payment": {
+    "method": "cash",
+    "amount": 300
+   }
+  },
+  {
+   "id": "F10",
+   "surname": "Desai",
+   "city": "Houston TX",
+   "duplicateOf": "F3",
+   "people": [
+    {
+     "name": "Ramesh",
+     "age": 72,
+     "diet": "J"
+    },
+    {
+     "name": "Kamla",
+     "age": 70,
+     "diet": "J"
+    }
+   ]
+  }
+ ],
+ "sponsorItems": [
+  {
+   "name": "Welcome Dinner",
+   "ask": 7000,
+   "shareable": true,
+   "closed": false
+  },
+  {
+   "name": "Sat Breakfast",
+   "ask": 2500,
+   "shareable": true,
+   "closed": false
+  },
+  {
+   "name": "Sat Lunch",
+   "ask": 5000,
+   "shareable": true,
+   "closed": false
+  },
+  {
+   "name": "Bhajan Prasad",
+   "ask": null,
+   "shareable": null,
+   "closed": false
+  },
+  {
+   "name": "Sat Dinner",
+   "ask": 7000,
+   "shareable": true,
+   "closed": false
+  },
+  {
+   "name": "Sun Breakfast",
+   "ask": 2500,
+   "shareable": true,
+   "closed": false
+  },
+  {
+   "name": "Sun Lunch",
+   "ask": 5000,
+   "shareable": true,
+   "closed": false
+  },
+  {
+   "name": "Gala Night Dinner",
+   "ask": null,
+   "shareable": null,
+   "closed": true
+  },
+  {
+   "name": "Farewell Breakfast",
+   "ask": 2500,
+   "shareable": true,
+   "closed": false
+  },
+  {
+   "name": "Water & soft drinks",
+   "ask": 2500,
+   "shareable": true,
+   "closed": false
+  },
+  {
+   "name": "Karaoke & Garba",
+   "ask": 3000,
+   "shareable": true,
+   "closed": false
+  },
+  {
+   "name": "Gala night music / DJ",
+   "ask": 2500,
+   "shareable": false,
+   "closed": false
+  },
+  {
+   "name": "Gala night decoration",
+   "ask": 2000,
+   "shareable": true,
+   "closed": false
+  },
+  {
+   "name": "Paper products",
+   "ask": 2000,
+   "shareable": true,
+   "closed": false
+  },
+  {
+   "name": "Photography & video",
+   "ask": 2000,
+   "shareable": false,
+   "closed": false
+  }
+ ],
+ "hotel": {
+  "rate": 99,
+  "taxPct": 14.98
+ },
+ "fees": {
+  "family": 300,
+  "extraAdult": 150,
+  "kidUnder": 18
+ },
+ "budget": [
+  {
+   "line": "Caterer",
+   "estimate": 28000,
+   "actual": 27400
+  },
+  {
+   "line": "DJ",
+   "estimate": 2500,
+   "actual": 2500
+  },
+  {
+   "line": "Decorator",
+   "estimate": 2000,
+   "actual": 2250
+  },
+  {
+   "line": "Photographer",
+   "estimate": 2000,
+   "actual": 1800
+  },
+  {
+   "line": "Hotel bar",
+   "estimate": 1500,
+   "actual": 1350
+  }
+ ]
+}

@@ -1,0 +1,1101 @@
+[
+ {
+  "id": "A-01",
+  "title": "Event with dates, America/Chicago, venue address, Garland Hall.",
+  "status": "PARTIAL",
+  "gap": "Title and dates are stored. There is no event time zone or venue field.",
+  "tested": true
+ },
+ {
+  "id": "A-02",
+  "title": "Schedule from §1 incl. programs and kids activity; M3/K1 flagged outdoor; M8 \"location TBD\"; placeholder times editable.",
+  "status": "NOT BUILT",
+  "gap": "No schedule or session model.",
+  "tested": false
+ },
+ {
+  "id": "A-03",
+  "title": "Bilingual event name/description; Gujarati uses **દેરોદ**. Add a test that fails if **ડેરોડ** appears anywhere in Gujarati strings, templates, or seed text.",
+  "status": "PARTIAL",
+  "gap": "Spelling guard added and passing, but the app has no Gujarati content to guard.",
+  "tested": true
+ },
+ {
+  "id": "A-04",
+  "title": "Donation item list from §1 loaded, incl. a closed item (Gala Dinner) and an item with no amount (Bhajan Prasad).",
+  "status": "NOT BUILT",
+  "gap": "No donation item model in CrewPoint. Depends on the tool.",
+  "tested": false
+ },
+ {
+  "id": "A-05",
+  "title": "Map/directions entries: hotel address, Garland Hall, picnic park (TBD), parking.",
+  "status": "NOT BUILT",
+  "gap": "No maps or directions entries.",
+  "tested": false
+ },
+ {
+  "id": "L-01",
+  "title": "Google sign-in creates an account.",
+  "status": "NOT RUN",
+  "gap": "Implemented with unit tests, but real Google and Apple sign-in needs a person on a device.",
+  "tested": false
+ },
+ {
+  "id": "L-02",
+  "title": "Apple sign-in creates an account.",
+  "status": "NOT RUN",
+  "gap": "Implemented with unit tests, but real Google and Apple sign-in needs a person on a device.",
+  "tested": false
+ },
+ {
+  "id": "L-03",
+  "title": "Phone one-time code login (Meera, F3).",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen. CrewPoint has no phone or email one-time code.",
+  "tested": false
+ },
+ {
+  "id": "L-04",
+  "title": "Email one-time code login (Savita, F4, web only).",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen. CrewPoint has no phone or email one-time code.",
+  "tested": false
+ },
+ {
+  "id": "L-05",
+  "title": "Family contact invites a family member; invitee gets access to **that family only**.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen. CrewPoint has no phone or email one-time code.",
+  "tested": false
+ },
+ {
+  "id": "L-06",
+  "title": "Same person signs in with Google, later with email code using the same email → same account, not a duplicate `[ASSUMPTION]`.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen. CrewPoint has no phone or email one-time code.",
+  "tested": false
+ },
+ {
+  "id": "L-07",
+  "title": "Web link registration works with no app installed; app login later shows the same family.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen. CrewPoint has no phone or email one-time code.",
+  "tested": false
+ },
+ {
+  "id": "B-01",
+  "title": "Contact registers whole family with every per-person field: name, age (or date of birth), diet V/J/N, Derod relation, T-shirt size, arrival date/time, departure date, kids activity (shown only for under-18), per-meal attendance.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "B-02",
+  "title": "Per-person arrival/departure: F4 arrives Sat 11:00am → excluded from M1, M2, P1 automatically.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "B-03",
+  "title": "Per-meal, per-person opt-out (Jaya M2; Ramesh & Kamla M3).",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "B-04",
+  "title": "Headcounts, diet totals, kids activity count, T-shirt report match §4.",
+  "status": "NOT BUILT",
+  "gap": "No attendee data. Needs the roster import plus count logic.",
+  "tested": false
+ },
+ {
+  "id": "B-05",
+  "title": "Per-meal counts match §4 table, by diet.",
+  "status": "NOT BUILT",
+  "gap": "No attendee data. Needs the roster import plus count logic.",
+  "tested": false
+ },
+ {
+  "id": "B-06",
+  "title": "Family member (Meera) edits registration → counts update; audit shows who changed what.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "B-07",
+  "title": "Hotel section: intent (rooms, nights), confirmation number field; booking link + code shown after registration only.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "B-08",
+  "title": "Directory opt-in setting per family (default **off**).",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "B-09",
+  "title": "Registration form fully usable in Gujarati.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "B-10",
+  "title": "Export registrations + per-meal diet counts to CSV/Excel for the caterer.",
+  "status": "NOT BUILT",
+  "gap": "No registration or per-meal export, and no freeze.",
+  "tested": false
+ },
+ {
+  "id": "B-11",
+  "title": "Duplicate handling: system flags F10 as a likely duplicate; committee merges into F3; counts go from the before-merge values to the §4 values; F3's fee stays $600; the merge is logged; F10's contact loses access.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "B-12",
+  "title": "Capacity: admin sets a limit (400); registration past it goes to a waitlist; a cancellation offers the place to the waitlist; walk-ins past capacity warn but can be overridden by admin `[ASSUMPTION]`.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "B-13",
+  "title": "Registration closes on a set date; later changes need committee help.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "B-14",
+  "title": "Caterer count freeze: admin locks meal counts on a date; later changes are listed as a delta for the caterer.",
+  "status": "NOT BUILT",
+  "gap": "No registration or per-meal export, and no freeze.",
+  "tested": false
+ },
+ {
+  "id": "B-15",
+  "title": "After the Jul 3 hotel cutoff: the booking link is replaced by \"call the hotel\" and hotel reminders stop; F3 is listed for the hotel sub-team.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "C-01",
+  "title": "Hybrid fee calculation for every family matches §4 (incl. F4 single adult, F5 three adults, Neel/Rohan age boundary).",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "C-02",
+  "title": "Card payment in app (sandbox) → paid + receipt.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "C-03",
+  "title": "Zelle: family marks \"sent by Zelle\" → status **pending**; finance confirms → **paid** + receipt; totals before/after match §4.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "C-04",
+  "title": "Check (#1043) and cash recorded by finance with method and reference.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "C-05",
+  "title": "Pay at check-in: F6 shows \"$300 due at check-in\"; volunteer at desk records card/cash; totals after event match §4.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "C-06",
+  "title": "F8 cancels after paying → refund $300 (sandbox) or credit; removed from all counts and totals; cancellation record kept.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "C-07",
+  "title": "Receipts name the nonprofit and payment method.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "C-08",
+  "title": "Fee settings changeable by admin (family fee, extra-adult fee, kid age) and totals recalculate. Families already paid are not re-billed unless finance chooses to `[ASSUMPTION]`.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "C-09",
+  "title": "F1 adds a third adult after paying → owes **+$150**, and the unpaid reminder restarts for that amount.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "C-10",
+  "title": "F5 removes Rohan after paying $450 → **$150** refund due, handled by finance.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "C-11",
+  "title": "Partial cancellation: one person cancels, the family stays, counts and fee recalculate.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "C-12",
+  "title": "No-show: a family never checks in; pay-at-check-in F6 would stay owing $300 and is listed for finance, with meals still counted until the freeze.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "C-13",
+  "title": "Refund window: the cancellation deadline and refund percentage are settings. `[OWNER INPUT]` for the policy.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "C-14",
+  "title": "Zelle never arrives: finance rejects the pending report → the family is told and returns to unpaid.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "C-15",
+  "title": "Zelle amount differs from the fee → finance records the actual amount; the balance shows the difference.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "C-16",
+  "title": "Partial payment: F3 pays $300 of $600 → balance $300; reminders use the new balance.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "C-17",
+  "title": "Failed card: the family stays unpaid and is told why; no receipt.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "C-18",
+  "title": "Double submit or retried webhook → one charge and one receipt.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "C-19",
+  "title": "Chargeback: finance is notified; the family returns to owing.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "C-20",
+  "title": "Card processing fee: report net vs gross. Who absorbs the fee is `[OWNER INPUT]`.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "D-01",
+  "title": "Family picks an open item to sponsor and pledges an amount.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "D-02",
+  "title": "Several families share one item; % pledged and % received shown (Sun Lunch: 100% / 60%).",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "D-03",
+  "title": "Fully pledged and closed items can't be picked (Sun Lunch after F2, Gala Dinner).",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "D-04",
+  "title": "Pledge now, pay later; pledged vs received tracked; totals match §4.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "D-05",
+  "title": "General tier sponsorship (F6 Gold) not tied to an item.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "D-06",
+  "title": "Public thank-you list: names only, recognition opt-in respected, no amounts.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "D-07",
+  "title": "Business/vendor sponsor (non-family) can be added by finance.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "D-08",
+  "title": "Sponsor receipts.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "D-09",
+  "title": "F2 cancels the pledge → Sun Lunch reopens with $1,999 remaining; the reminder stops.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "D-10",
+  "title": "F2 pays $1,000 of $1,999 → received $4,001; reminders continue for $999.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "D-11",
+  "title": "A pledge above the remaining amount is rejected, or offered the remainder.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "D-12",
+  "title": "Two families pledge the last $1,999 at the same moment → one succeeds, the other is told.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "D-13",
+  "title": "Non-shareable items (Gala music/DJ, Photography & video) accept one sponsor for the full amount only.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "D-14",
+  "title": "Bhajan Prasad gets an amount later → existing pledges count toward it.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "D-15",
+  "title": "Donation receipts name the nonprofit and EIN, the date and amount, and state whether goods or services were received. Wording to be approved by the nonprofit's accountant, including sponsors who also attend `[OWNER INPUT]`.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "H-01",
+  "title": "Committee sub-teams (food, hotel, program, finance, picnic, registration); members assigned.",
+  "status": "NOT BUILT",
+  "gap": "No sub-teams. Only owner, admin and member exist.",
+  "tested": false
+ },
+ {
+  "id": "H-02",
+  "title": "Tasks with owner, due date, status, sub-team; overdue highlighted.",
+  "status": "PARTIAL",
+  "gap": "Owner, due date, status and overdue filter work. No sub-team on tasks.",
+  "tested": true
+ },
+ {
+  "id": "H-03",
+  "title": "Vendors (caterer, DJ, decorator, photographer, hotel bar) with contacts, contract file, deadlines; amounts visible to admin/finance only.",
+  "status": "NOT BUILT",
+  "gap": "No vendor model, contracts or deadlines.",
+  "tested": false
+ },
+ {
+  "id": "H-04",
+  "title": "Budget: estimate vs actual per line; visible to admin/finance only.",
+  "status": "NOT BUILT",
+  "gap": "Only a display-only `budgetEstimate` per task, readable by every member. No budget lines or actuals.",
+  "tested": false
+ },
+ {
+  "id": "H-05",
+  "title": "Permissions matrix from §2 — one test per role per restricted screen/API (UI **and** backend rules). Especially: committee member cannot read any money field via the API; volunteer sees only the balance of the family being checked in.",
+  "status": "PARTIAL",
+  "gap": "Outsiders are blocked, and members cannot change event settings. But every member can read all expenses and task budgets, and any signed-in user can read anyone's payment handles. Needs finance, committee and volunteer roles enforced in firestore.rules.",
+  "tested": true
+ },
+ {
+  "id": "H-06",
+  "title": "Dual roles: Amit (F1 contact, program committee) sees F1's fee and receipts, and no other family's money or the budget.",
+  "status": "NOT BUILT",
+  "gap": "No scoped roles exist.",
+  "tested": false
+ },
+ {
+  "id": "H-07",
+  "title": "Removing someone from the committee ends access immediately, including tasks, money and scanners; an admin cannot be the only one who can do so (at least 2 admins).",
+  "status": "PASS",
+  "gap": "Fixed in PR #40 and verified live on dev and stg. **Not yet deployed to prod.** The at-least-2-admins rule is a process point.",
+  "tested": true
+ },
+ {
+  "id": "V-01",
+  "title": "Shift schedule per volunteer.",
+  "status": "NOT BUILT",
+  "gap": "No shifts, scanner, counter or issue reports.",
+  "tested": false
+ },
+ {
+  "id": "V-02",
+  "title": "QR check-in scanner (see J-01).",
+  "status": "NOT BUILT",
+  "gap": "No shifts, scanner, counter or issue reports.",
+  "tested": false
+ },
+ {
+  "id": "V-03",
+  "title": "Meal-line counter: tap to count plates served by diet (V/J/N) per meal; totals visible to food team.",
+  "status": "NOT BUILT",
+  "gap": "No shifts, scanner, counter or issue reports.",
+  "tested": false
+ },
+ {
+  "id": "V-04",
+  "title": "Report an issue (category, text, optional photo): \"food running low\" → food team; \"lost child\" → all admins + committee immediately.",
+  "status": "NOT BUILT",
+  "gap": "No shifts, scanner, counter or issue reports.",
+  "tested": false
+ },
+ {
+  "id": "J-01",
+  "title": "QR code per family (in app and in email); scanning checks in the family and lets the volunteer tick which members are present (F4 alone on Sat; F9 walk-in gets a QR at the desk).",
+  "status": "NOT BUILT",
+  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "tested": false
+ },
+ {
+  "id": "J-02",
+  "title": "QR contains a token only — no names, phone, or email encoded.",
+  "status": "NOT BUILT",
+  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "tested": false
+ },
+ {
+  "id": "J-03",
+  "title": "Walk-in: committee registers F9 at the door, takes $300 cash, prints/shows QR; counts update for M4–M7.",
+  "status": "NOT BUILT",
+  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "tested": false
+ },
+ {
+  "id": "J-04",
+  "title": "Offline: check-in and meal counts work with no network; queue syncs later; same family scanned on two offline devices → **one** check-in after sync; meal counts from two devices **sum** correctly.",
+  "status": "NOT BUILT",
+  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "tested": false
+ },
+ {
+  "id": "J-05",
+  "title": "Live schedule \"now & next\" for everyone.",
+  "status": "NOT BUILT",
+  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "tested": false
+ },
+ {
+  "id": "J-06",
+  "title": "Personal agenda per family/person (F4 sees nothing before Sat 11am; F3 elders don't see Sat lunch; kids activity shows only for families with sign-ups).",
+  "status": "NOT BUILT",
+  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "tested": false
+ },
+ {
+  "id": "J-07",
+  "title": "Live update: a **committee member** (not admin) changes M3 location to \"Garland Hall (indoors)\" → schedule updates for everyone; volunteer and family accounts cannot do this.",
+  "status": "NOT BUILT",
+  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "tested": false
+ },
+ {
+  "id": "J-08",
+  "title": "Directory shows only opted-in families, never contact details.",
+  "status": "NOT BUILT",
+  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "tested": false
+ },
+ {
+  "id": "J-09",
+  "title": "Language toggle EN ⇄ GU on every event-day screen.",
+  "status": "NOT BUILT",
+  "gap": "English only. No Gujarati strings, and no language setting in the app.",
+  "tested": true
+ },
+ {
+  "id": "J-10",
+  "title": "Unpaid check-in: F3 is scanned with $600 due → check-in **succeeds**, the volunteer sees the balance and can record a payment, and finance is notified (N-23). Also applies to F6 if it declines to pay at the desk.",
+  "status": "NOT BUILT",
+  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "tested": false
+ },
+ {
+  "id": "J-11",
+  "title": "Scanning a cancelled family's QR (F8) or a merged one (F10) is rejected with a clear message.",
+  "status": "NOT BUILT",
+  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "tested": false
+ },
+ {
+  "id": "J-12",
+  "title": "Scanning the same family twice shows \"already checked in at <time>\" and does not double count.",
+  "status": "NOT BUILT",
+  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "tested": false
+ },
+ {
+  "id": "J-13",
+  "title": "No QR: the volunteer finds the family using the limited name search in §2, and the lookup is logged.",
+  "status": "NOT BUILT",
+  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "tested": false
+ },
+ {
+  "id": "J-14",
+  "title": "Paper fallback: admin prints a roster and meal sheet the night before, in case phones or network fail.",
+  "status": "NOT BUILT",
+  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "tested": false
+ },
+ {
+  "id": "J-15",
+  "title": "Partial arrival: part of a family checks in now and the rest later; both are recorded against one family.",
+  "status": "NOT BUILT",
+  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "tested": false
+ },
+ {
+  "id": "J-16",
+  "title": "Scanners stay signed in with no network for the whole shift, and a lost scanner can be revoked.",
+  "status": "NOT BUILT",
+  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "tested": false
+ },
+ {
+  "id": "K-01",
+  "title": "Final reconciliation for finance: fees + sponsorship received vs actual spend.",
+  "status": "NOT BUILT",
+  "gap": "No reconciliation or sponsor messaging.",
+  "tested": false
+ },
+ {
+  "id": "K-02",
+  "title": "Bulk thank-you to sponsors with receipts.",
+  "status": "NOT BUILT",
+  "gap": "No reconciliation or sponsor messaging.",
+  "tested": false
+ },
+ {
+  "id": "K-03",
+  "title": "Export all event data (for the next host city).",
+  "status": "PARTIAL",
+  "gap": "Expense CSV is complete, but cells starting with `=` are not neutralised, the PDF stops at 200 expenses, and there is no full export.",
+  "tested": true
+ },
+ {
+  "id": "X-01",
+  "title": "Import a roster of 400 people from the tool's export into CrewPoint, with all per-person fields and a validation report.",
+  "status": "NOT BUILT",
+  "gap": "No import path. This is the new work created by buying registration.",
+  "tested": false
+ },
+ {
+  "id": "X-02",
+  "title": "Re-import is safe: new families added, changes updated, nothing duplicated, and manual CrewPoint data kept.",
+  "status": "NOT BUILT",
+  "gap": "No import path. This is the new work created by buying registration.",
+  "tested": false
+ },
+ {
+  "id": "X-03",
+  "title": "A family cancelled in the tool is removed from counts and its QR is revoked on the next import.",
+  "status": "NOT BUILT",
+  "gap": "No import path. This is the new work created by buying registration.",
+  "tested": false
+ },
+ {
+  "id": "X-04",
+  "title": "Payment status and balance are imported, and a payment recorded at the door is reported back to finance for the tool.",
+  "status": "NOT BUILT",
+  "gap": "No import path. This is the new work created by buying registration.",
+  "tested": false
+ },
+ {
+  "id": "X-05",
+  "title": "A person signing in to CrewPoint is matched to their imported family by email or phone, never to another family's.",
+  "status": "NOT BUILT",
+  "gap": "No import path. This is the new work created by buying registration.",
+  "tested": false
+ },
+ {
+  "id": "X-06",
+  "title": "Import errors (missing diet, unknown age, duplicate email) are listed, and do not stop the good rows.",
+  "status": "NOT BUILT",
+  "gap": "No import path. This is the new work created by buying registration.",
+  "tested": false
+ },
+ {
+  "id": "X-07",
+  "title": "Tool outage or cancelled subscription: all data can still be exported.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "S-01",
+  "title": "400 people can belong to the event (the 50-member cap must not block this).",
+  "status": "FAIL",
+  "gap": "joinEvent stops at 50 members, and invite codes expire after 24 hours.",
+  "tested": true
+ },
+ {
+  "id": "S-02",
+  "title": "Import of 108 families finishes within **2 min** and headcounts match.",
+  "status": "NOT BUILT",
+  "gap": "No import path to measure.",
+  "tested": true
+ },
+ {
+  "id": "S-03",
+  "title": "The 7:00am morning summary to 400 recipients is fully handed to the mock transport within **5 min**, with a personal agenda each.",
+  "status": "PARTIAL",
+  "gap": "A 400-person send took about 2 s on the local emulator with a mock transport, inside the 30 s limit. Every recipient gets the same text, so a personal agenda is not possible yet. Production timing not measured.",
+  "tested": true
+ },
+ {
+  "id": "S-04",
+  "title": "Live update delivered to 400 within **60 s** (mock).",
+  "status": "PARTIAL",
+  "gap": "Delivery path handled 400 in about 2 s on the local emulator. There is no live-update feature using it, and real delivery time is not measured.",
+  "tested": true
+ },
+ {
+  "id": "S-05",
+  "title": "Check-in rush: 108 families over 60 min on 4 scanners, with each scan under **2 s** and no lost or double check-ins.",
+  "status": "NOT BUILT",
+  "gap": "No check-in or meal counting to load.",
+  "tested": false
+ },
+ {
+  "id": "S-06",
+  "title": "Meal line: 400 plates in 45 min across 2 counters, totals correct.",
+  "status": "NOT BUILT",
+  "gap": "No check-in or meal counting to load.",
+  "tested": false
+ },
+ {
+  "id": "S-07",
+  "title": "Event screens stay usable with 400 members: chat with **5,000 messages**, member list, and task list.",
+  "status": "PARTIAL",
+  "gap": "The ledger is fast at 400 members. One new message with 5,000 in chat took about 53 s and 4,902 screen updates on a Mac.",
+  "tested": true
+ },
+ {
+  "id": "S-08",
+  "title": "Monthly cost estimate for reads, writes, function runs, email and SMS at this size.",
+  "status": "PARTIAL",
+  "gap": "Rough estimate only, in section 2.1. Needs real traffic numbers.",
+  "tested": false
+ },
+ {
+  "id": "R-01",
+  "title": "Allergy and medical notes per person, kept separate from diet, visible to the food team as counts and to admins per person.",
+  "status": "NOT BUILT",
+  "gap": "No safety features or fields.",
+  "tested": false
+ },
+ {
+  "id": "R-02",
+  "title": "Emergency contact per family, visible to admins only and available offline.",
+  "status": "NOT BUILT",
+  "gap": "No safety features or fields.",
+  "tested": false
+ },
+ {
+  "id": "R-03",
+  "title": "Medical emergency issue category: alerts admins and committee at once, bypassing quiet hours.",
+  "status": "NOT BUILT",
+  "gap": "No safety features or fields.",
+  "tested": false
+ },
+ {
+  "id": "R-04",
+  "title": "Weather or outdoor change: moving M3/K1 indoors reaches everyone, including those who opted out of the meal.",
+  "status": "NOT BUILT",
+  "gap": "No safety features or fields.",
+  "tested": false
+ },
+ {
+  "id": "R-05",
+  "title": "Kids activity sign-in and sign-out by a named guardian.",
+  "status": "NOT BUILT",
+  "gap": "No safety features or fields.",
+  "tested": false
+ },
+ {
+  "id": "R-06",
+  "title": "Lost child alerts need an acknowledgement, and go back out if nobody responds within **2 min** `[ASSUMPTION]`.",
+  "status": "NOT BUILT",
+  "gap": "No safety features or fields.",
+  "tested": false
+ },
+ {
+  "id": "Z-01",
+  "title": "Children's data: only a parent enters it, birth dates are not shown to committee or volunteers, and only age bands appear in reports.",
+  "status": "FAIL",
+  "gap": "The privacy policy says CrewPoint is for ages 13 and up and does not knowingly collect data from under-13s. This event registers children as young as 3. Needs a policy change and legal review.",
+  "tested": false
+ },
+ {
+  "id": "Z-02",
+  "title": "Photo and video consent per family, including children, available to the photographer.",
+  "status": "NOT BUILT",
+  "gap": "No consent record or retention rule for event data.",
+  "tested": false
+ },
+ {
+  "id": "Z-03",
+  "title": "Liability waiver accepted at registration and recorded `[OWNER INPUT]`.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "Z-04",
+  "title": "UK and Canadian attendees: consent, access and deletion requests work, and the privacy policy covers them.",
+  "status": "PARTIAL",
+  "gap": "The policy covers EU/UK rights and deletion exists, but the user ID stays in expense splits and tasks, and personal subcollections survive. Canada is not mentioned.",
+  "tested": true
+ },
+ {
+  "id": "Z-05",
+  "title": "Email has a working unsubscribe for non-essential messages; SMS (if used) is registered and consented, with international cost understood.",
+  "status": "NOT BUILT",
+  "gap": "No email or SMS, so no unsubscribe.",
+  "tested": false
+ },
+ {
+  "id": "Z-06",
+  "title": "Tax and legal wording on receipts is approved, and records are kept for the required period `[OWNER INPUT]`.",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "tested": false
+ },
+ {
+  "id": "Z-07",
+  "title": "Data retention after the event: what is deleted, what passes to the next host (K-03), and with what consent.",
+  "status": "NOT BUILT",
+  "gap": "No consent record or retention rule for event data.",
+  "tested": false
+ },
+ {
+  "id": "O-01",
+  "title": "Billing alerts, budget caps and a named owner. A lapsed billing account must not be able to take the event down unnoticed, as happened on Nov 2, 2026.",
+  "status": "PARTIAL",
+  "gap": "A $5 and a $15 monthly budget cover the billing account. Uptime alerts exist on dev and prod. Stg has none, no check runs outside Google Cloud, and alert delivery is unconfirmed.",
+  "tested": false
+ },
+ {
+  "id": "O-02",
+  "title": "Crash reporting and backend error alerts reach a person during event hours.",
+  "status": "NOT BUILT",
+  "gap": "No crash reporting or analytics packages, and no backend error alerts. Dev and prod have one uptime alert each.",
+  "tested": false
+ },
+ {
+  "id": "O-03",
+  "title": "Automated Firestore backups, with a restore rehearsed.",
+  "status": "PARTIAL",
+  "gap": "Daily backups kept 14 days are on for all three projects, with point-in-time recovery on dev and prod. No restore has been rehearsed.",
+  "tested": false
+ },
+ {
+  "id": "O-04",
+  "title": "Email domain authenticated (SPF, DKIM, DMARC), with bounce handling and a test send to Gmail, Outlook and Yahoo.",
+  "status": "NOT BUILT",
+  "gap": "No email sending or domain setup in the repo.",
+  "tested": false
+ },
+ {
+  "id": "O-05",
+  "title": "App approved in the App Store and Google Play before announcement, with enough lead time for fixes.",
+  "status": "NOT RUN",
+  "gap": "Needs store console access or a visit to the venue.",
+  "tested": false
+ },
+ {
+  "id": "O-06",
+  "title": "Release freeze from Jul 9, with a rollback plan; old app versions keep working.",
+  "status": "NOT BUILT",
+  "gap": "No release freeze or on-call plan.",
+  "tested": false
+ },
+ {
+  "id": "O-07",
+  "title": "Venue network test at the Hyatt: Wi-Fi and cell coverage in Garland Hall and at the picnic park.",
+  "status": "NOT RUN",
+  "gap": "Needs store console access or a visit to the venue.",
+  "tested": false
+ },
+ {
+  "id": "O-08",
+  "title": "Event-day on-call plan and contacts.",
+  "status": "NOT BUILT",
+  "gap": "No release freeze or on-call plan.",
+  "tested": false
+ },
+ {
+  "id": "U-01",
+  "title": "Readable at 200% system text size, on every family and volunteer screen.",
+  "status": "PARTIAL",
+  "gap": "The dashboard is fine at 200% text. Other screens are untested, and family and volunteer screens do not exist.",
+  "tested": true
+ },
+ {
+  "id": "U-02",
+  "title": "Screen reader labels on registration, agenda and check-in.",
+  "status": "PARTIAL",
+  "gap": "Dashboard tap targets are labelled and sized. Other screens are untested.",
+  "tested": true
+ },
+ {
+  "id": "U-03",
+  "title": "Gujarati renders correctly (spelling **દેરોદ**) on iOS, Android, web, email and PDF receipts.",
+  "status": "FAIL",
+  "gap": "Gujarati is lost from PDF reports: Latin text extracts, Gujarati does not. Phone, web and email rendering are untested. Also see issue #29.",
+  "tested": true
+ },
+ {
+  "id": "U-04",
+  "title": "Colour contrast meets WCAG AA in light and dark mode.",
+  "status": "PARTIAL",
+  "gap": "The current palette is checked by existing tests. New screens are not built.",
+  "tested": false
+ },
+ {
+  "id": "U-05",
+  "title": "An older non-technical user (Savita, 74) can complete web registration and find her agenda, in Gujarati, unaided. Needs a real session with a person.",
+  "status": "NOT RUN",
+  "gap": "Needs a real session with an older user, once the screens exist.",
+  "tested": false
+ },
+ {
+  "id": "N-00",
+  "title": "Safety",
+  "status": "PASS",
+  "gap": "Push goes only through a mocked transport on the emulator. Email has no transport at all yet.",
+  "tested": true
+ },
+ {
+  "id": "N-01",
+  "title": "Registration confirmation",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen. CrewPoint has no email sending.",
+  "tested": false
+ },
+ {
+  "id": "N-02",
+  "title": "Family member invite",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen. CrewPoint has no email sending.",
+  "tested": false
+ },
+ {
+  "id": "N-03",
+  "title": "Payment receipt",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen. CrewPoint has no email sending.",
+  "tested": false
+ },
+ {
+  "id": "N-04",
+  "title": "Unpaid fee reminder",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen. CrewPoint has no email sending.",
+  "tested": false
+ },
+ {
+  "id": "N-05",
+  "title": "Hotel not booked",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen. CrewPoint has no email sending.",
+  "tested": false
+ },
+ {
+  "id": "N-06",
+  "title": "Pledge not received",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen. CrewPoint has no email sending.",
+  "tested": false
+ },
+ {
+  "id": "N-07",
+  "title": "Know before you go",
+  "status": "NOT BUILT",
+  "gap": "No email, segments, scheduled messages, history or de-duplication.",
+  "tested": false
+ },
+ {
+  "id": "N-08",
+  "title": "Morning summary",
+  "status": "PARTIAL",
+  "gap": "A daily digest exists, but it is opt-in, fires at 9:00am, and summarises tasks rather than an agenda.",
+  "tested": true
+ },
+ {
+  "id": "N-09",
+  "title": "15-minute session reminder",
+  "status": "NOT BUILT",
+  "gap": "Reminders exist for tasks only. Quiet hours also use the profile time zone, so F5's 6:45pm reminder would be dropped.",
+  "tested": true
+ },
+ {
+  "id": "N-10",
+  "title": "Quiet hours by recipient zone",
+  "status": "PARTIAL",
+  "gap": "The quiet-hours window is right for each time zone, but a blocked message is dropped rather than sent at 7:00am.",
+  "tested": true
+ },
+ {
+  "id": "N-11",
+  "title": "Live schedule change",
+  "status": "PARTIAL",
+  "gap": "Urgent chat bypasses quiet hours, which is the path a live update could use. There is no schedule-change message or email.",
+  "tested": true
+ },
+ {
+  "id": "N-12",
+  "title": "Segment messages",
+  "status": "NOT BUILT",
+  "gap": "No email, segments, scheduled messages, history or de-duplication.",
+  "tested": false
+ },
+ {
+  "id": "N-13",
+  "title": "Volunteer shift reminder",
+  "status": "NOT BUILT",
+  "gap": "No email, segments, scheduled messages, history or de-duplication.",
+  "tested": false
+ },
+ {
+  "id": "N-14",
+  "title": "Issue alerts",
+  "status": "PARTIAL",
+  "gap": "Urgent chat exists, but a muted event blocks it, so a lost-child alert can be missed. No issue categories.",
+  "tested": true
+ },
+ {
+  "id": "N-15",
+  "title": "Cancellation",
+  "status": "VENDOR",
+  "gap": "Requirement for the bought tool. Not testable until one is chosen. CrewPoint has no email sending.",
+  "tested": false
+ },
+ {
+  "id": "N-16",
+  "title": "Opt-out",
+  "status": "PARTIAL",
+  "gap": "Per-category opt-out works for push. No email categories.",
+  "tested": true
+ },
+ {
+  "id": "N-17",
+  "title": "De-duplication",
+  "status": "NOT BUILT",
+  "gap": "No email, segments, scheduled messages, history or de-duplication.",
+  "tested": false
+ },
+ {
+  "id": "N-18",
+  "title": "Delivery failure",
+  "status": "PARTIAL",
+  "gap": "Dead tokens are removed. Failures are not logged anywhere staff can see, and there is no email fallback.",
+  "tested": true
+ },
+ {
+  "id": "N-19",
+  "title": "Scheduled message admin",
+  "status": "NOT BUILT",
+  "gap": "No email, segments, scheduled messages, history or de-duplication.",
+  "tested": false
+ },
+ {
+  "id": "N-20",
+  "title": "History",
+  "status": "NOT BUILT",
+  "gap": "No email, segments, scheduled messages, history or de-duplication.",
+  "tested": false
+ },
+ {
+  "id": "N-21",
+  "title": "Language switch",
+  "status": "PARTIAL",
+  "gap": "Per-recipient language lookup exists, with English templates only.",
+  "tested": true
+ },
+ {
+  "id": "N-22",
+  "title": "Web-only coverage",
+  "status": "NOT BUILT",
+  "gap": "No email, segments, scheduled messages, history or de-duplication.",
+  "tested": false
+ },
+ {
+  "id": "N-23",
+  "title": "Finance: unpaid check-in",
+  "status": "NOT BUILT",
+  "gap": "No email, segments, scheduled messages, history or de-duplication.",
+  "tested": false
+ }
+]
