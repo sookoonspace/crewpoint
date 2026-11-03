@@ -10,9 +10,14 @@ const db = getFirestore();
  * - Caller must be admin/owner OR removing themselves (leave-event)
  * - Owner cannot be removed (prevents accidental orphaning)
  * - Removes target from both memberIds and adminIds atomically
+ * - When an admin removes someone, deletes the event's invite codes so the
+ *   removed member cannot rejoin with one they already have. Admins get a new
+ *   code automatically the next time they open the invite sheet, which also
+ *   lets them re-invite the person later. Leaving voluntarily keeps the code.
  *
  * Idempotency: `arrayRemove` is a no-op if the uid is already gone,
- * so retries converge on the same end state.
+ * and deleting already-deleted codes is too, so retries converge on the
+ * same end state.
  */
 export const removeEventMember = onCall(
   {timeoutSeconds: 30},
@@ -59,11 +64,20 @@ export const removeEventMember = onCall(
           );
         }
 
-        await db.collection("events").doc(eventId).update({
+        const batch = db.batch();
+        batch.update(db.collection("events").doc(eventId), {
           memberIds: FieldValue.arrayRemove(targetUserId),
           adminIds: FieldValue.arrayRemove(targetUserId),
           updatedAt: FieldValue.serverTimestamp(),
         });
+        if (!isSelfRemoval) {
+          const invites = await db
+            .collection("event_invites")
+            .where("eventId", "==", eventId)
+            .get();
+          invites.docs.forEach((invite) => batch.delete(invite.ref));
+        }
+        await batch.commit();
 
         return {success: true};
       }

@@ -343,6 +343,109 @@ describe('removeEventMember', () => {
   });
 });
 
+describe('removed members', () => {
+  const invite = async (code: string, eventId: string) =>
+    getAdminDb()
+      .collection('event_invites')
+      .doc(code)
+      .set({
+        eventId,
+        expiresAt: Timestamp.fromDate(new Date(Date.now() + 86400000)),
+      });
+  const remove = (uid: string, eventId: string, targetUserId: string) =>
+    ftest.wrap(removeEventMember)({auth: {uid}, data: {eventId, targetUserId}});
+  const join = (uid: string, joinCode: string) =>
+    ftest.wrap(joinEvent)({auth: {uid}, data: {joinCode}});
+
+  test('cannot rejoin with the code that was active when removed', async () => {
+    await seedEvent({eventId: 'evtK1', creatorUid: 'ownerK1', memberUids: ['ownerK1', 'kicked']});
+    await invite('KICK23', 'evtK1');
+
+    await remove('ownerK1', 'evtK1', 'kicked');
+
+    await expect(join('kicked', 'KICK23')).rejects.toMatchObject({code: 'not-found'});
+  });
+
+  test('removal only rotates codes for that event', async () => {
+    await seedEvent({eventId: 'evtK2', creatorUid: 'ownerK2', memberUids: ['ownerK2', 'kicked']});
+    await seedEvent({eventId: 'evtK2b', creatorUid: 'ownerK2b'});
+    await invite('KICK24', 'evtK2');
+    await invite('KEEP24', 'evtK2b');
+
+    await remove('ownerK2', 'evtK2', 'kicked');
+
+    const other = await getAdminDb().collection('event_invites').doc('KEEP24').get();
+    expect(other.exists).toBe(true);
+  });
+
+  test('an admin can re-invite through a new code', async () => {
+    await seedEvent({eventId: 'evtK3', creatorUid: 'ownerK3', memberUids: ['ownerK3', 'kicked']});
+    await invite('KICK25', 'evtK3');
+    await remove('ownerK3', 'evtK3', 'kicked');
+
+    const {code} = await ftest.wrap(generateInviteCode)({
+      auth: {uid: 'ownerK3'},
+      data: {eventId: 'evtK3'},
+    });
+    expect(code).not.toBe('KICK25');
+    await join('kicked', code);
+
+    const event = await getAdminDb().collection('events').doc('evtK3').get();
+    expect(event.data()!.memberIds).toContain('kicked');
+  });
+
+  test('leaving voluntarily keeps the code working for others', async () => {
+    await seedEvent({eventId: 'evtK4', creatorUid: 'ownerK4', memberUids: ['ownerK4', 'leaver']});
+    await invite('KEEP26', 'evtK4');
+
+    await remove('leaver', 'evtK4', 'leaver');
+    await join('newcomer', 'KEEP26');
+
+    const event = await getAdminDb().collection('events').doc('evtK4').get();
+    expect(event.data()!.memberIds).toContain('newcomer');
+  });
+
+  test('removed assignee cannot complete their task', async () => {
+    await seedEvent({eventId: 'evtK5', creatorUid: 'ownerK5'});
+    await getAdminDb().doc('events/evtK5/tasks/t1').set({
+      eventId: 'evtK5',
+      createdBy: 'ownerK5',
+      assigneeId: 'gone',
+      status: 'todo',
+    });
+
+    await expect(
+      ftest.wrap(markTaskComplete)({auth: {uid: 'gone'}, data: {eventId: 'evtK5', taskId: 't1'}})
+    ).rejects.toMatchObject({code: 'permission-denied'});
+  });
+
+  test('removed payer or payee cannot dispute a settlement', async () => {
+    await seedEvent({eventId: 'evtK6', creatorUid: 'ownerK6', memberUids: ['ownerK6', 'current']});
+    const db = getAdminDb();
+    await db.doc('events/evtK6/expenses/s1').set({
+      eventId: 'evtK6',
+      payerId: 'gone',
+      amount: 20,
+      isPayment: true,
+      splits: [{userId: 'ownerK6', amount: 20}],
+    });
+    await db.doc('events/evtK6/expenses/s2').set({
+      eventId: 'evtK6',
+      payerId: 'current',
+      amount: 20,
+      isPayment: true,
+      splits: [{userId: 'gone', amount: 20}],
+    });
+    const dispute = (uid: string, settlementId: string) =>
+      ftest.wrap(disputeSettlement)({auth: {uid}, data: {eventId: 'evtK6', settlementId}});
+
+    await expect(dispute('gone', 's1')).rejects.toMatchObject({code: 'permission-denied'});
+    await expect(dispute('gone', 's2')).rejects.toMatchObject({code: 'permission-denied'});
+    expect((await db.doc('events/evtK6/expenses/s1').get()).exists).toBe(true);
+    expect((await db.doc('events/evtK6/expenses/s2').get()).exists).toBe(true);
+  });
+});
+
 describe('markTaskComplete', () => {
   test('non-admin/non-assignee caller rejected with permission-denied', async () => {
     const eventId = 'evtT1';

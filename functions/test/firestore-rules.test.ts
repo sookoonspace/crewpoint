@@ -602,3 +602,61 @@ describe('eventMutes — self-only access (Phase 5)', () => {
     );
   });
 });
+
+describe('removed members lose write access', () => {
+  const E = 'events/evRemoved';
+  const T = `${E}/tasks`;
+
+  beforeEach(async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, E), {
+        creatorId: 'owner',
+        memberIds: ['owner', 'current'],
+        adminIds: ['owner'],
+        title: 'Event',
+      });
+      for (const uid of ['gone', 'current']) {
+        await setDoc(doc(db, `${E}/expenses/${uid}Exp`), {
+          eventId: 'evRemoved',
+          payerId: uid,
+          amount: 10,
+        });
+        await setDoc(doc(db, `${E}/messages/${uid}Msg`), {
+          senderId: uid,
+          text: 'hi',
+        });
+        await setDoc(doc(db, `${T}/${uid}Assigned`), {
+          eventId: 'evRemoved',
+          createdBy: 'owner',
+          assigneeId: uid,
+          title: 'x',
+        });
+        await setDoc(doc(db, `${T}/${uid}Created`), {
+          eventId: 'evRemoved',
+          createdBy: uid,
+          assigneeId: 'owner',
+          title: 'x',
+        });
+        await setDoc(doc(db, `${T}/${uid}Assigned/checklist/c1`), {done: false});
+        await setDoc(doc(db, `${T}/${uid}Created/checklist/c1`), {done: false});
+      }
+    });
+  });
+
+  const as = (uid: string) => env.authenticatedContext(uid).firestore();
+
+  test.each([
+    ['edit their old expense', (u: string) => updateDoc(doc(as(u), `${E}/expenses/${u}Exp`), {amount: 1})],
+    ['delete their old expense', (u: string) => deleteDoc(doc(as(u), `${E}/expenses/${u}Exp`))],
+    ['delete their old message', (u: string) => deleteDoc(doc(as(u), `${E}/messages/${u}Msg`))],
+    ['edit a task assigned to them', (u: string) => updateDoc(doc(as(u), `${T}/${u}Assigned`), {title: 'y'})],
+    ['delete a task they created', (u: string) => deleteDoc(doc(as(u), `${T}/${u}Created`))],
+    ['toggle a checklist item on an assigned task', (u: string) => updateDoc(doc(as(u), `${T}/${u}Assigned/checklist/c1`), {done: true})],
+    ['add a checklist item to a task they created', (u: string) => setDoc(doc(as(u), `${T}/${u}Created/checklist/c2`), {done: false})],
+    ['delete a checklist item from a task they created', (u: string) => deleteDoc(doc(as(u), `${T}/${u}Created/checklist/c1`))],
+  ])('%s: denied once removed, allowed while a member', async (_name, write) => {
+    await assertFails(write('gone'));
+    await assertSucceeds(write('current'));
+  });
+});

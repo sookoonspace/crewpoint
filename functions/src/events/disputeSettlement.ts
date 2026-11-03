@@ -8,7 +8,7 @@ const db = getFirestore();
  * disputeSettlement — rolls back a settlement that the payer or payee
  * disputes.
  *
- * - Caller must be the payer or the payee of the settlement
+ * - Caller must be a current member, and the payer or payee of the settlement
  * - Deletes the settlement expense
  * - Replaces the chat notice text with a "disputed" line
  *
@@ -65,7 +65,10 @@ export const disputeSettlement = onCall(
           );
         }
 
-        if (uid !== payerId && uid !== payeeId) {
+        const eventDoc = await db.collection("events").doc(eventId).get();
+        const memberIds: string[] = eventDoc.data()?.memberIds || [];
+
+        if ((uid !== payerId && uid !== payeeId) || !memberIds.includes(uid)) {
           throw new HttpsError(
             "permission-denied",
             "Only the payer or the payee can dispute this settlement."

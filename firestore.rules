@@ -2,7 +2,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper: check if user is a member of an event
+    // Helper: check if user is a member of an event. Every subcollection write
+    // must include this, including paths granted through payerId, senderId,
+    // assigneeId or createdBy: those fields outlive membership, so on their
+    // own they would let a removed member keep editing old records.
     function isEventMember(eventId) {
       let event = get(/databases/$(database)/documents/events/$(eventId));
       return request.auth.uid in event.data.memberIds;
@@ -45,6 +48,7 @@ service cloud.firestore {
           && request.resource.data.senderId == request.auth.uid;
 
         allow delete: if request.auth != null
+          && isEventMember(eventId)
           && resource.data.senderId == request.auth.uid;
 
         allow update: if false;
@@ -72,6 +76,7 @@ service cloud.firestore {
         // either could either move the task to a different event (data
         // integrity) or claim ownership (audit trail integrity).
         allow update: if request.auth != null
+          && isEventMember(eventId)
           && (eventDoc().creatorId == request.auth.uid
               || request.auth.uid in eventDoc().adminIds
               || resource.data.assigneeId == request.auth.uid)
@@ -80,6 +85,7 @@ service cloud.firestore {
 
         // Delete: only creator/owner/admin
         allow delete: if request.auth != null
+          && isEventMember(eventId)
           && (resource.data.createdBy == request.auth.uid
               || eventDoc().creatorId == request.auth.uid
               || request.auth.uid in eventDoc().adminIds);
@@ -89,12 +95,14 @@ service cloud.firestore {
           allow read: if request.auth != null && isEventMember(eventId);
 
           allow create, delete: if request.auth != null
+            && isEventMember(eventId)
             && (get(/databases/$(database)/documents/events/$(eventId)/tasks/$(taskId)).data.createdBy == request.auth.uid
                 || eventDoc().creatorId == request.auth.uid
                 || request.auth.uid in eventDoc().adminIds);
 
           // Update: same as create/delete OR the assignee toggling completion
           allow update: if request.auth != null
+            && isEventMember(eventId)
             && (get(/databases/$(database)/documents/events/$(eventId)/tasks/$(taskId)).data.createdBy == request.auth.uid
                 || eventDoc().creatorId == request.auth.uid
                 || request.auth.uid in eventDoc().adminIds
@@ -120,6 +128,7 @@ service cloud.firestore {
         // (amount, description, splits, receiptPath, isDonation,
         // isPayment) flow freely.
         allow update: if request.auth != null
+          && isEventMember(eventId)
           && (resource.data.payerId == request.auth.uid
               || eventDocForExpense().creatorId == request.auth.uid
               || request.auth.uid in eventDocForExpense().adminIds)
@@ -128,6 +137,7 @@ service cloud.firestore {
 
         // Delete: payer, event creator, or any admin.
         allow delete: if request.auth != null
+          && isEventMember(eventId)
           && (resource.data.payerId == request.auth.uid
               || eventDocForExpense().creatorId == request.auth.uid
               || request.auth.uid in eventDocForExpense().adminIds);
