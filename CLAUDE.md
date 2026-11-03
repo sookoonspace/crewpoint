@@ -45,6 +45,8 @@ CI (`.github/workflows/flutter.yml`) runs: build_runner → the Firebase-in-test
 
 ## Architecture
 
+Keep the Architecture sections below, including RBAC and the Firestore data model, up to date as each Stage 1 slice lands.
+
 ### Layering
 
 `lib/app/core/` (cross-feature) + `lib/app/features/<feature>/` where every feature is split `data/` (repositories, remote services, pure utilities) · `domain/` (models, repository interfaces) · `application/` (Riverpod notifiers/providers) · `presentation/` (screens, widgets). Features: `auth`, `budget`, `chat`, `dashboard`, `onboarding`, `profile`, `tasks`, `dev`.
@@ -109,6 +111,10 @@ Riverpod codegen (`riverpod_annotation` / `riverpod_generator`) was removed as u
 - Widget/journey tests select by stable keys named `domain.feature.action` — `Key('budget.settle.venmo')`, `Key('tasks.tile.{id}.status')`. Adding an interactive widget means adding a key.
 - `test/journeys/` drives flows through `*Robot` classes (`test/robots/`) over harnesses (`test/harness/`) that seed Drift + fake Firestore and stub auth. Extend an existing robot/harness rather than pumping widgets ad hoc.
 - Robots use bounded pumps instead of `pumpAndSettle` where a Drift/Firestore mirror keeps emitting — `pumpAndSettle` deadlocks there.
+
+## Naming
+
+Code uses only the general terms in `GLOSSARY.md`. CI fails if `family`, `meal`, `derod`, `wedding`, `cricket`, `golf` or `tee` appear as whole words in identifiers or user-facing strings in `lib/` or `functions/src/`, including `mealCount` and `meal_count`. Comments, Riverpod's `.family`, `fontFamily` and the template data are exempt. Any other exception goes in `listedExceptions` in `test_acceptance/naming_guardrail.dart`, but first move the word into a template, label or setting.
 
 ## Conventions
 
