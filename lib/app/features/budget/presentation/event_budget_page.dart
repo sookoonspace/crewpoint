@@ -10,6 +10,7 @@ import 'package:crewpoint_app/app/features/budget/data/expense_export_pipeline.d
 import 'package:crewpoint_app/app/features/budget/data/pay_link_builder.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
+import 'package:crewpoint_app/app/features/budget/domain/repositories/i_expense_repository.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/budget_screen.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/expense_modal.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/settle_sheet.dart';
@@ -301,17 +302,7 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
             memberIds: widget.event.memberIds,
             currencySymbol: symbol,
             initial: expense,
-            onSubmit: (updated, _) async {
-              final ok = await repo.updateExpense(updated);
-              if (!ok && context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Could not update expense'),
-                    backgroundColor: AppColors.terracotta,
-                  ),
-                );
-              }
-            },
+            onSubmit: (updated, _) => repo.saveExpense(updated),
           );
         }
 
@@ -391,28 +382,27 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
                   bytes: receipt.bytes,
                   contentType: receipt.contentType,
                 );
-                if (receiptUrl == null && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Receipt upload failed — saving expense without it',
-                      ),
-                      backgroundColor: AppColors.terracotta,
-                    ),
-                  );
-                }
               }
-              final ok = await repo.createExpense(
+              final result = await repo.saveExpense(
                 expense.copyWith(receiptPath: receiptUrl),
               );
-              if (!ok && context.mounted) {
+              // Only said once saved: when the save fails too, the form stays
+              // open with the receipt and a retry uploads it again.
+              final savedWithoutReceipt =
+                  result == ExpenseSaveResult.saved &&
+                  receipt != null &&
+                  receiptUrl == null;
+              if (savedWithoutReceipt && context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Failed to add expense'),
+                    content: Text(
+                      'Receipt upload failed — saved the expense without it',
+                    ),
                     backgroundColor: AppColors.terracotta,
                   ),
                 );
               }
+              return result;
             },
           ),
         );

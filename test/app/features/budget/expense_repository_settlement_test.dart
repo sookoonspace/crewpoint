@@ -12,6 +12,8 @@ import 'package:crewpoint_app/app/features/budget/data/expense_repository.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 
+import '../../../harness/fake_save_expense.dart';
+
 void main() {
   late AppDatabase db;
   late FakeFirebaseFirestore firestore;
@@ -38,6 +40,7 @@ void main() {
       expensesDao: ExpensesDao(db),
       splitsDao: ExpenseSplitsDao(db),
       firestore: firestore,
+      saveExpenseCall: fakeSaveExpenseCall(firestore),
     );
   });
 
@@ -72,7 +75,7 @@ void main() {
 
   test('a recorded settlement clears the debt in the ledger', () async {
     const members = ['payer', 'payee'];
-    await repository.createExpense(
+    await repository.saveExpense(
       const ExpenseModel(
         id: 'dinner',
         eventId: 'event-1',

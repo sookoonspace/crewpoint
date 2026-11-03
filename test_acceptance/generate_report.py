@@ -136,7 +136,9 @@ for line in open(sys.argv[1]):
 res.pop('_names')
 for t in json.load(open(sys.argv[2]))['testResults']:
     for a in t['assertionResults']:
-        note(a['title'][:4], a['status'] == 'passed')
+        # Later scenario families, such as FND, are not in this report.
+        if a['title'][:4] in A:
+            note(a['title'][:4], a['status'] == 'passed')
 
 summary = {k: (sum(v), len(v) - sum(v)) for k, v in res.items()}
 for i, (ok, bad) in summary.items():

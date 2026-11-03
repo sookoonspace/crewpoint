@@ -1,18 +1,28 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/services/image_service.dart';
 import 'package:crewpoint_app/app/core/widgets/custom_text_field.dart';
 import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
+import 'package:crewpoint_app/app/features/budget/domain/repositories/i_expense_repository.dart';
 
 /// Submit signature: receives the expense model AND the picked receipt
 /// (if any). The parent uploads the bytes out-of-band so the modal stays
 /// free of Firebase / Storage coupling. Web-safe — no `dart:io File`.
+///
+/// The form stays open until this reports [ExpenseSaveResult.saved], so what
+/// was entered survives a failure.
 typedef ExpenseSubmit =
-    void Function(ExpenseModel expense, PickedImage? receipt);
+    Future<ExpenseSaveResult> Function(
+      ExpenseModel expense,
+      PickedImage? receipt,
+    );
 
 /// Async receipt picker callback — returns null if the user cancels.
 typedef ReceiptPicker = Future<PickedImage?> Function();
@@ -108,6 +118,11 @@ class _ExpenseModalState extends State<ExpenseModal> {
   late final TextEditingController _descriptionController;
   late bool _isDonation;
   PickedImage? _pickedReceipt;
+  bool _saving = false;
+  ExpenseSaveResult? _failure;
+
+  /// Kept across retries, so a save that reached the server is not duplicated.
+  final String _newExpenseId = const Uuid().v4();
 
   bool get _isEdit => widget.initial != null;
 
@@ -139,8 +154,8 @@ class _ExpenseModalState extends State<ExpenseModal> {
     setState(() => _pickedReceipt = picked);
   }
 
-  void _submit() {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+  Future<void> _submit() async {
+    if (_saving || !(_formKey.currentState?.validate() ?? false)) return;
 
     final amount = double.tryParse(_amountController.text.trim()) ?? 0;
     final splits = ExpenseModel.calculateSplits(
@@ -152,7 +167,7 @@ class _ExpenseModalState extends State<ExpenseModal> {
 
     final initial = widget.initial;
     final expense = ExpenseModel(
-      id: initial?.id ?? const Uuid().v4(),
+      id: initial?.id ?? _newExpenseId,
       eventId: widget.eventId,
       payerId: widget.payerId,
       amount: amount,
@@ -166,8 +181,32 @@ class _ExpenseModalState extends State<ExpenseModal> {
       createdAt: initial?.createdAt,
     );
 
-    widget.onSubmit?.call(expense, _pickedReceipt);
-    Navigator.of(context).pop();
+    final onSubmit = widget.onSubmit;
+    if (onSubmit == null) {
+      Navigator.of(context).pop();
+      return;
+    }
+
+    setState(() {
+      _saving = true;
+      _failure = null;
+    });
+    ExpenseSaveResult result;
+    try {
+      result = await onSubmit(expense, _pickedReceipt);
+    } catch (e, st) {
+      log('Expense submit failed', error: e, stackTrace: st, name: 'budget');
+      result = ExpenseSaveResult.rejected;
+    }
+    if (!mounted) return;
+    if (result == ExpenseSaveResult.saved) {
+      Navigator.of(context).pop();
+      return;
+    }
+    setState(() {
+      _saving = false;
+      _failure = result;
+    });
   }
 
   @override
@@ -178,6 +217,7 @@ class _ExpenseModalState extends State<ExpenseModal> {
         : widget.memberIds.length;
     final splitAmount = splitCount > 0 ? amount / splitCount : 0.0;
     final canPickReceipt = widget.onPickReceipt != null;
+    final strings = context.strings.budget;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -243,9 +283,22 @@ class _ExpenseModalState extends State<ExpenseModal> {
                 'Split: ${widget.currencySymbol}${splitAmount.toStringAsFixed(2)} per person ($splitCount people)',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
+            if (_failure != null)
+              Text(
+                _failure == ExpenseSaveResult.needsConnection
+                    ? strings.expenseNeedsConnection
+                    : strings.expenseSaveRejected,
+                key: const Key('budget.expense.error'),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
             PrimaryButton(
               key: const Key('budget.expense.save'),
-              label: _isEdit ? 'Save changes' : 'Add Expense',
+              label: _failure == ExpenseSaveResult.needsConnection
+                  ? strings.expenseRetry
+                  : (_isEdit ? 'Save changes' : 'Add Expense'),
+              isLoading: _saving,
               onPressed: _submit,
             ),
           ],

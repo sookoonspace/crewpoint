@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/services/image_service.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
+import 'package:crewpoint_app/app/features/budget/domain/repositories/i_expense_repository.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/expense_modal.dart';
 
 // Smallest valid PNG decoder-compatible byte sequence used so Image.memory's
@@ -91,9 +92,10 @@ void main() {
               payerId: 'u1',
               memberIds: const ['u1', 'u2'],
               onPickReceipt: picker,
-              onSubmit: (expense, receipt) {
+              onSubmit: (expense, receipt) async {
                 submitted = expense;
                 submittedReceipt = receipt;
+                return ExpenseSaveResult.saved;
               },
             ),
           ),
@@ -138,7 +140,10 @@ void main() {
               payerId: 'u1',
               memberIds: const ['u1', 'u2'],
               initial: initial,
-              onSubmit: (expense, _) => submitted = expense,
+              onSubmit: (expense, _) async {
+                submitted = expense;
+                return ExpenseSaveResult.saved;
+              },
             ),
           ),
         ),

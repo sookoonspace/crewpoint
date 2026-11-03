@@ -73,7 +73,7 @@ Add `GLOSSARY.md` with the agreed general vocabulary, and a CI test that fails w
 ### Acceptance criteria
 - [x] `GLOSSARY.md` has a one-line definition of each of: Event, Organizer, Member, Participant, Group, Category, Session, Crew, Registration, Custom field, Pass, Charge, Payment, Contribution, Goal, Update, Incident, Audience.
 - [x] `GLOSSARY.md` includes the convention, cricket, golf, wedding and party examples from the plan.
-- [ ] CI fails if the words `family`, `meal`, `derod`, `wedding`, `cricket`, `golf` or `tee` appear as whole words in identifiers or user-facing strings in `lib/` or `functions/src/`, outside the template data in Req 62.
+- [x] CI fails if the words `family`, `meal`, `derod`, `wedding`, `cricket`, `golf` or `tee` appear as whole words in identifiers or user-facing strings in `lib/` or `functions/src/`, outside the template data in Req 62.
 - [x] The guardrail ignores comments, Riverpod's `.family`, and `fontFamily`. Any other exception is listed explicitly.
 - [x] The architecture, RBAC and data-model sections of `CLAUDE.md` have a note that they are updated as each slice lands.
 - [x] Tests for scenario GE-05 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
@@ -151,17 +151,17 @@ Move expense create and edit to a callable that validates money, and make the ex
 - Payment expense creation stays open until #50 closes it, so settle-up keeps working between the two items.
 
 ### Acceptance criteria
-- [ ] Expense create and edit go through a callable, listed in `functions/src/index.ts` and `docs/cloud-functions-guide.md`.
-- [ ] It rejects non-positive or non-finite amounts, amounts over a configured maximum, splits whose total differs from the amount by more than 0.01 per split, and payers or split users who are not members.
-- [ ] It writes `involvedUids` on every expense it saves.
-- [ ] Who may act keeps today's rule: a member adds an expense as its payer, and the payer, owner or admin may edit it.
-- [ ] Rules deny direct client expense create and update, apart from the payment path noted above.
-- [ ] Existing stored records stay readable, including negative payment splits.
-- [ ] Without a connection, the expense form keeps what was entered, explains that it needs a connection, and offers retry.
-- [ ] Forged amounts and splits are rejected in emulator tests.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] Tests for scenario FND-01 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] Expense create and edit go through a callable, listed in `functions/src/index.ts` and `docs/cloud-functions-guide.md`.
+- [x] It rejects non-positive or non-finite amounts, amounts over a configured maximum, splits whose total differs from the amount by more than 0.01 per split, and payers or split users who are not members.
+- [x] It writes `involvedUids` on every expense it saves.
+- [x] Who may act keeps today's rule: a member adds an expense as its payer, and the payer, owner or admin may edit it.
+- [x] Rules deny direct client expense create and update, apart from the payment path noted above.
+- [x] Existing stored records stay readable, including negative payment splits.
+- [x] Without a connection, the expense form keeps what was entered, explains that it needs a connection, and offers retry.
+- [x] Forged amounts and splits are rejected in emulator tests.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] Tests for scenario FND-01 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 26

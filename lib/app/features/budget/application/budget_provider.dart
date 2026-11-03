@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/features/budget/data/expense_repository.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
+import 'package:crewpoint_app/app/features/budget/domain/repositories/i_expense_repository.dart';
 
 class BudgetNotifier extends Notifier<List<ExpenseModel>> {
   BudgetNotifier({
@@ -27,8 +28,8 @@ class BudgetNotifier extends Notifier<List<ExpenseModel>> {
 
   double get totalExpenses => state.fold(0.0, (sum, e) => sum + e.amount);
 
-  Future<bool> createExpense(ExpenseModel expense) =>
-      _expenseRepository.createExpense(expense);
+  Future<ExpenseSaveResult> saveExpense(ExpenseModel expense) =>
+      _expenseRepository.saveExpense(expense);
 
   Future<bool> deleteExpense(String id) => _expenseRepository.deleteExpense(id);
 }

@@ -289,7 +289,7 @@ describe('users — Fix 1.B Option A: PII isolated in users/{uid}/private/profil
   });
 });
 
-describe('expenses update — payer/creator/admin allowed, others denied; payerId/eventId locked', () => {
+describe('expenses create and update — go through saveExpense, and only payments are created directly', () => {
   const eventId = 'evtExp';
   const creatorUid = 'creator1';
   const adminUid = 'admin1';
@@ -318,10 +318,10 @@ describe('expenses update — payer/creator/admin allowed, others denied; payerI
     });
   }
 
-  test('payer can update their own expense (amount, description)', async () => {
+  test('payer cannot update directly', async () => {
     await seed();
     const payerCtx = env.authenticatedContext(payerUid);
-    await assertSucceeds(
+    await assertFails(
       updateDoc(
         doc(payerCtx.firestore(), `events/${eventId}/expenses/${expenseId}`),
         {amount: 50, description: 'Edited'}
@@ -329,10 +329,10 @@ describe('expenses update — payer/creator/admin allowed, others denied; payerI
     );
   });
 
-  test('event creator can update any expense', async () => {
+  test('event creator cannot update directly', async () => {
     await seed();
     const creatorCtx = env.authenticatedContext(creatorUid);
-    await assertSucceeds(
+    await assertFails(
       updateDoc(
         doc(creatorCtx.firestore(), `events/${eventId}/expenses/${expenseId}`),
         {description: 'Creator edit'}
@@ -340,10 +340,10 @@ describe('expenses update — payer/creator/admin allowed, others denied; payerI
     );
   });
 
-  test('event admin can update any expense', async () => {
+  test('event admin cannot update directly', async () => {
     await seed();
     const adminCtx = env.authenticatedContext(adminUid);
-    await assertSucceeds(
+    await assertFails(
       updateDoc(
         doc(adminCtx.firestore(), `events/${eventId}/expenses/${expenseId}`),
         {amount: 75}
@@ -371,6 +371,30 @@ describe('expenses update — payer/creator/admin allowed, others denied; payerI
         {amount: 999}
       )
     );
+  });
+
+  test('a member cannot create a non-payment expense directly', async () => {
+    await seed();
+    const payerCtx = env.authenticatedContext(payerUid);
+    const ref = doc(payerCtx.firestore(), `events/${eventId}/expenses/forged`);
+    await assertFails(setDoc(ref, {eventId, payerId: payerUid, amount: -500, isPayment: false}));
+    await assertFails(setDoc(ref, {eventId, payerId: payerUid, amount: 5}));
+  });
+
+  test('a member can create a settlement payment as its payer', async () => {
+    await seed();
+    const payerCtx = env.authenticatedContext(payerUid);
+    const ref = doc(payerCtx.firestore(), `events/${eventId}/expenses/pay`);
+    await assertSucceeds(setDoc(ref, {eventId, payerId: payerUid, amount: 5, isPayment: true}));
+    const otherRef = doc(payerCtx.firestore(), `events/${eventId}/expenses/pay2`);
+    await assertFails(setDoc(otherRef, {eventId, payerId: memberUid, amount: 5, isPayment: true}));
+  });
+
+  test('a non-member cannot create a settlement payment', async () => {
+    await seed();
+    const ctx = env.authenticatedContext(outsiderUid);
+    const ref = doc(ctx.firestore(), `events/${eventId}/expenses/pay`);
+    await assertFails(setDoc(ref, {eventId, payerId: outsiderUid, amount: 5, isPayment: true}));
   });
 
   test('payer cannot reassign payerId via update', async () => {
@@ -647,7 +671,6 @@ describe('removed members lose write access', () => {
   const as = (uid: string) => env.authenticatedContext(uid).firestore();
 
   test.each([
-    ['edit their old expense', (u: string) => updateDoc(doc(as(u), `${E}/expenses/${u}Exp`), {amount: 1})],
     ['delete their old expense', (u: string) => deleteDoc(doc(as(u), `${E}/expenses/${u}Exp`))],
     ['delete their old message', (u: string) => deleteDoc(doc(as(u), `${E}/messages/${u}Msg`))],
     ['edit a task assigned to them', (u: string) => updateDoc(doc(as(u), `${T}/${u}Assigned`), {title: 'y'})],
