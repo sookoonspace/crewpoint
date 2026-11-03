@@ -69,7 +69,7 @@ put('H-03', NB, 'No vendor model, contracts or deadlines.', 'M')
 put('H-04', NB, 'Only a display-only `budgetEstimate` per task, readable by every member. No budget lines or actuals.', 'M')
 put('H-05', PA, 'Outsiders are blocked, and members cannot change event settings. But every member can read all expenses and task budgets, and any signed-in user can read anyone\'s payment handles. Needs finance, committee and volunteer roles enforced in firestore.rules.', 'L', '`H-05` tests (3 pass, 4 fail)')
 put('H-06', NB, 'No scoped roles exist.', 'M')
-put('H-07', PS, 'Fixed in PR #40 and verified live on dev, not yet deployed to stg or prod. The at-least-2-admins rule is a process point.', '', '`H-07` tests (3 pass), firestore.rules, removeEventMember.ts')
+put('H-07', PS, 'Fixed in PR #40 and verified live on dev and stg. **Not yet deployed to prod.** The at-least-2-admins rule is a process point.', '', '`H-07` tests (3 pass), firestore.rules, removeEventMember.ts')
 put('V-01 V-02 V-03 V-04', NB, 'No shifts, scanner, counter or issue reports.', 'L')
 put('J-01 J-02 J-03 J-04 J-05 J-06 J-07 J-08 J-10 J-11 J-12 J-13 J-14 J-15 J-16', NB, 'No check-in, QR, agenda, live schedule or directory. Offline covers reads only.', 'L')
 put('J-09', NB, 'English only. No Gujarati strings, and no language setting in the app.', 'L', '`J-09` test')
@@ -88,9 +88,9 @@ put('Z-01', FA, 'The privacy policy says CrewPoint is for ages 13 and up and doe
 put('Z-02 Z-07', NB, 'No consent record or retention rule for event data.', 'S')
 put('Z-04', PA, 'The policy covers EU/UK rights and deletion exists, but the user ID stays in expense splits and tasks, and personal subcollections survive. Canada is not mentioned.', 'M', '`Z-04` tests (2 fail), deleteUserAccount.ts')
 put('Z-05', NB, 'No email or SMS, so no unsubscribe.', 'S')
-put('O-01', PA, 'A $5 and a $15 monthly budget cover the billing account. An uptime alert exists on dev only. Stg and prod have no outage alert, and no check runs outside Google Cloud.', 'S', 'gcloud billing budgets list; Monitoring uptime check and alert policy on dev')
-put('O-02', NB, 'No crash reporting or analytics packages, and no backend error alerts. Dev has one uptime alert.', 'S', 'pubspec.yaml; Cloud Monitoring API: 0 policies')
-put('O-03', NB, 'No backup schedules on dev or prod, and point-in-time recovery is off. Data loss today would be permanent.', 'S', 'gcloud firestore backups schedules list: 0; databases describe: PITR disabled')
+put('O-01', PA, 'A $5 and a $15 monthly budget cover the billing account. Uptime alerts exist on dev and prod. Stg has none, no check runs outside Google Cloud, and alert delivery is unconfirmed.', 'S', 'gcloud billing budgets list; Monitoring uptime check and alert policy on dev')
+put('O-02', NB, 'No crash reporting or analytics packages, and no backend error alerts. Dev and prod have one uptime alert each.', 'S', 'pubspec.yaml; Cloud Monitoring API: 0 policies')
+put('O-03', PA, 'Daily backups kept 14 days are on for all three projects, with point-in-time recovery on dev and prod. No restore has been rehearsed.', 'S', 'gcloud firestore backups schedules list; databases describe; docs/ops/backups-and-alerts.md')
 put('O-04', NB, 'No email sending or domain setup in the repo.', 'S')
 put('O-05 O-07', NR, 'Needs store console access or a visit to the venue.')
 put('O-06 O-08', NB, 'No release freeze or on-call plan.', 'S')
@@ -187,17 +187,17 @@ w('**Most urgent, because they apply before any real data arrives:**\n')
 w('1. Choose the registration tool. The requirements in section 4 narrow the field quickly.')
 w('2. Change the privacy policy. It says CrewPoint is not for under-13s, and this event registers 3-year-olds.')
 w('3. Fix permissions. Every member can read all money today, which breaks your committee and volunteer rules.')
-w('4. Turn on backups. There are no backup schedules on dev or prod, and point-in-time recovery is off.\n')
+w('4. Deploy PR #40 to prod, and rehearse a restore. Backups are on, but none has been restored yet.\n')
 w('**How far to trust this:**\n')
 w(f'- {total_ok + total_bad} tests ran against the real app code and backend code: {total_ok} passed and {total_bad} failed. A failure here is a finding, and these tests sit outside CI so they don\'t block normal work.')
-w('- The tests ran on emulators with mocked push, and no real message was sent. Separately, H-07 was confirmed on live dev with throwaway accounts, which were then deleted.')
+w('- The tests ran on emulators with mocked push, and no real message was sent. Separately, H-07 was confirmed on live dev and stg with throwaway accounts, which were then deleted.')
 w('- Timings come from a Mac and a local emulator. Expect phones to be slower, and real delivery times are unmeasured.')
 w('- NOT BUILT comes from reading and searching the code. Those scenarios are registered as skipped tests, with the reason.')
-w('- PRs #39 (settlement fix) and #40 (removed members) are merged. #40 is deployed to dev only, and stg and prod still have the old rules. The Flutter results predate these merges, which changed no code those tests cover.\n')
+w('- PRs #39 (settlement fix) and #40 (removed members) are merged. #40 is deployed to dev and stg, and **prod still has the old rules and functions**. The Flutter results predate these merges, which changed no code those tests cover.\n')
 w('## 1. Inventory\n')
 w('| Area | Today |\n|---|---|')
 for a, b in [
-    ('Stack', 'Flutter 3.47 (iOS, Android, web), Firebase Auth, Firestore, Storage, Messaging, 15 Cloud Functions on Node 22, Drift on mobile'),
+    ('Stack', 'Flutter 3.47 (iOS, Android, web), Firebase Auth, Firestore, Storage, Messaging, 16 Cloud Functions on Node 22, Drift on mobile'),
     ('Data models', 'Events, tasks with checklists, expenses with splits, chat messages, users. **No** family, attendee, schedule, sponsor, vendor, shift or check-in model'),
     ('Auth', 'Google, Apple, email and password. **No** phone or email one-time code'),
     ('Roles', 'Owner, admin and member only, enforced in rules and functions. No finance, committee, volunteer or family roles'),
@@ -232,7 +232,7 @@ w('**P0: before announcing registration (Nov–Dec 2026)**\n')
 w('- **Choose the tool.** Check these first, because they are hardest to find: hybrid family fee (C-01), per-person meal choices and arrival times (B-01, B-03), Gujarati forms and emails (B-09, N-01), Zelle pending and offline payments (C-03, C-04), full data export (X-01), and sponsorship items with shared funding (D-02).')
 w('- **Privacy and legal:** Z-01, Z-03, Z-04, Z-05 and Z-06, including the nonprofit\'s legal name, EIN and receipt wording (D-15).')
 w('- **Permissions:** H-05 and H-06, before committee members and real data arrive.')
-w('- **Resilience:** O-01 alerts on prod, O-03 backups, O-04 email domain.\n')
+w('- **Resilience:** O-01 alert delivery check, O-03 restore rehearsal, O-04 email domain.\n')
 w('**P1: sponsorship and hotel push (Jan–Jun 2027)**\n')
 w('- Roster import (X), schedule and venue (A), sub-teams, vendors and budget (H), the 50-member cap (S-01), and app store approval (O-05).')
 w('- Accessibility (U-01…U-04) and notification controls (N-16…N-20).\n')
@@ -252,7 +252,7 @@ for n, (title, body) in enumerate([
     ('Scale limits', 'Replace the 50-member cap, and load chat in pages while saving only what changed. That one change removes the 53-second slowdown and most of the read cost (S-01, S-07).'),
     ('Messages are dropped, not delayed, and cannot be scheduled', 'Add a scheduled message queue that holds quiet-hours messages until 7:00am, uses event time during the event, and supports per-person content. Emergency alerts should ignore event mute (N-09, N-10, N-14, S-03).'),
     ('Account deletion leaves personal data behind', 'Remove the user ID from expense splits and tasks, and delete `chatReads` and `eventMutes`. The privacy policy promises anonymised records, so this is a compliance gap, and it can also split one deleted person into two in the ledger (Z-04).'),
-    ('No safety net', 'Turn on scheduled backups and crash reporting, extend outage alerts to prod, and name an on-call person. Small tasks, and the Nov 2 billing outage shows why they matter (O-01…O-03, O-08).'),
+    ('No safety net', 'Backups and outage alerts are now on. Rehearse a restore, add crash reporting and an outside billing check, and name an on-call person. Small tasks, and the Nov 2 billing outage shows why they matter (O-01…O-03, O-08).'),
 ], 1):
     w(f'{n}. **{title}.** {body}')
 w('\n## 6. Testability gaps\n')

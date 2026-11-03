@@ -2,28 +2,28 @@
 
 **Test spec:** [`CREWPOINT_CONVENTION_TEST_v3.md`](CREWPOINT_CONVENTION_TEST_v3.md) · **Run:** Nov 3, 2026 · **Branch:** `test/derod-convention-v2`, on `main` at `51f5cb8`, including PRs #39 and #40
 
-**Result: CrewPoint is not ready for this event, and most of the event-specific product does not exist yet.** Of 157 scenarios, 2 passes, 21 are partial, 3 fail, 65 are not built, 61 belong to the tool you are buying, and 5 need a person or outside access. The task, budget-split, chat and push foundations are sound, but they need permissions, Gujarati, email and an import path before they can serve this event.
+**Result: CrewPoint is not ready for this event, and most of the event-specific product does not exist yet.** Of 157 scenarios, 2 passes, 22 are partial, 3 fail, 64 are not built, 61 belong to the tool you are buying, and 5 need a person or outside access. The task, budget-split, chat and push foundations are sound, but they need permissions, Gujarati, email and an import path before they can serve this event.
 
 **Most urgent, because they apply before any real data arrives:**
 
 1. Choose the registration tool. The requirements in section 4 narrow the field quickly.
 2. Change the privacy policy. It says CrewPoint is not for under-13s, and this event registers 3-year-olds.
 3. Fix permissions. Every member can read all money today, which breaks your committee and volunteer rules.
-4. Turn on backups. There are no backup schedules on dev or prod, and point-in-time recovery is off.
+4. Deploy PR #40 to prod, and rehearse a restore. Backups are on, but none has been restored yet.
 
 **How far to trust this:**
 
 - 44 tests ran against the real app code and backend code: 21 passed and 23 failed. A failure here is a finding, and these tests sit outside CI so they don't block normal work.
-- The tests ran on emulators with mocked push, and no real message was sent. Separately, H-07 was confirmed on live dev with throwaway accounts, which were then deleted.
+- The tests ran on emulators with mocked push, and no real message was sent. Separately, H-07 was confirmed on live dev and stg with throwaway accounts, which were then deleted.
 - Timings come from a Mac and a local emulator. Expect phones to be slower, and real delivery times are unmeasured.
 - NOT BUILT comes from reading and searching the code. Those scenarios are registered as skipped tests, with the reason.
-- PRs #39 (settlement fix) and #40 (removed members) are merged. #40 is deployed to dev only, and stg and prod still have the old rules. The Flutter results predate these merges, which changed no code those tests cover.
+- PRs #39 (settlement fix) and #40 (removed members) are merged. #40 is deployed to dev and stg, and **prod still has the old rules and functions**. The Flutter results predate these merges, which changed no code those tests cover.
 
 ## 1. Inventory
 
 | Area | Today |
 |---|---|
-| Stack | Flutter 3.47 (iOS, Android, web), Firebase Auth, Firestore, Storage, Messaging, 15 Cloud Functions on Node 22, Drift on mobile |
+| Stack | Flutter 3.47 (iOS, Android, web), Firebase Auth, Firestore, Storage, Messaging, 16 Cloud Functions on Node 22, Drift on mobile |
 | Data models | Events, tasks with checklists, expenses with splits, chat messages, users. **No** family, attendee, schedule, sponsor, vendor, shift or check-in model |
 | Auth | Google, Apple, email and password. **No** phone or email one-time code |
 | Roles | Owner, admin and member only, enforced in rules and functions. No finance, committee, volunteer or family roles |
@@ -52,10 +52,10 @@
 | S: Scale | · | 4 | 1 | 3 | · | · | 8 |
 | R: Safety | · | · | · | 6 | · | · | 6 |
 | Z: Privacy | · | 1 | 1 | 3 | 2 | · | 7 |
-| O: Operations | · | 1 | · | 5 | · | 2 | 8 |
+| O: Operations | · | 2 | · | 4 | · | 2 | 8 |
 | U: Accessibility | · | 3 | 1 | · | · | 1 | 5 |
 | N: Notifications | 1 | 7 | · | 9 | 7 | · | 24 |
-| **Total** | **2** | **21** | **3** | **65** | **61** | **5** | **157** |
+| **Total** | **2** | **22** | **3** | **64** | **61** | **5** | **157** |
 
 ### 2.1 Cost estimate (S-08)
 
@@ -133,7 +133,7 @@ A rough, worst-case model, not a measurement. Chat loads the whole history, so 4
 | H-04 | Budget: estimate vs actual per line; visible to admin/finance only. | NOT BUILT |  | Only a display-only `budgetEstimate` per task, readable by every member. No budget lines or actuals. | M | P1 |
 | H-05 | Permissions matrix from §2 — one test per role per restricted screen/API (UI **and**… | PARTIAL | `H-05` tests (3 pass, 4 fail) | Outsiders are blocked, and members cannot change event settings. But every member can read all expenses and task budgets, and any signed-in user can read anyone's payment handles. Needs finance, committee and volunteer roles enforced in firestore.rules. | L | P0 |
 | H-06 | Dual roles: Amit (F1 contact, program committee) sees F1's fee and receipts, and no… | NOT BUILT |  | No scoped roles exist. | M | P0 |
-| H-07 | Removing someone from the committee ends access immediately, including tasks, money… | PASS | `H-07` tests (3 pass), firestore.rules, removeEventMember.ts | Fixed in PR #40 and verified live on dev, not yet deployed to stg or prod. The at-least-2-admins rule is a process point. | · | P1 |
+| H-07 | Removing someone from the committee ends access immediately, including tasks, money… | PASS | `H-07` tests (3 pass), firestore.rules, removeEventMember.ts | Fixed in PR #40 and verified live on dev and stg. **Not yet deployed to prod.** The at-least-2-admins rule is a process point. | · | P1 |
 | V-01 | Shift schedule per volunteer. | NOT BUILT |  | No shifts, scanner, counter or issue reports. | L | P2 |
 | V-02 | QR check-in scanner (see J-01). | NOT BUILT |  | No shifts, scanner, counter or issue reports. | L | P2 |
 | V-03 | Meal-line counter: tap to count plates served by diet (V/J/N) per meal; totals visible… | NOT BUILT |  | No shifts, scanner, counter or issue reports. | L | P2 |
@@ -185,9 +185,9 @@ A rough, worst-case model, not a measurement. Chat loads the whole history, so 4
 | Z-05 | Email has a working unsubscribe for non-essential messages; SMS (if used) is… | NOT BUILT |  | No email or SMS, so no unsubscribe. | S | P0 |
 | Z-06 | Tax and legal wording on receipts is approved, and records are kept for the required… | VENDOR |  | Requirement for the bought tool. Not testable until one is chosen. | · | P0 |
 | Z-07 | Data retention after the event: what is deleted, what passes to the next host (K-03),… | NOT BUILT |  | No consent record or retention rule for event data. | S | P3 |
-| O-01 | Billing alerts, budget caps and a named owner. A lapsed billing account must not be… | PARTIAL | gcloud billing budgets list; Monitoring uptime check and alert policy on dev | A $5 and a $15 monthly budget cover the billing account. An uptime alert exists on dev only. Stg and prod have no outage alert, and no check runs outside Google Cloud. | S | P0 |
-| O-02 | Crash reporting and backend error alerts reach a person during event hours. | NOT BUILT | pubspec.yaml; Cloud Monitoring API: 0 policies | No crash reporting or analytics packages, and no backend error alerts. Dev has one uptime alert. | S | P1 |
-| O-03 | Automated Firestore backups, with a restore rehearsed. | NOT BUILT | gcloud firestore backups schedules list: 0; databases describe: PITR disabled | No backup schedules on dev or prod, and point-in-time recovery is off. Data loss today would be permanent. | S | P0 |
+| O-01 | Billing alerts, budget caps and a named owner. A lapsed billing account must not be… | PARTIAL | gcloud billing budgets list; Monitoring uptime check and alert policy on dev | A $5 and a $15 monthly budget cover the billing account. Uptime alerts exist on dev and prod. Stg has none, no check runs outside Google Cloud, and alert delivery is unconfirmed. | S | P0 |
+| O-02 | Crash reporting and backend error alerts reach a person during event hours. | NOT BUILT | pubspec.yaml; Cloud Monitoring API: 0 policies | No crash reporting or analytics packages, and no backend error alerts. Dev and prod have one uptime alert each. | S | P1 |
+| O-03 | Automated Firestore backups, with a restore rehearsed. | PARTIAL | gcloud firestore backups schedules list; databases describe; docs/ops/backups-and-alerts.md | Daily backups kept 14 days are on for all three projects, with point-in-time recovery on dev and prod. No restore has been rehearsed. | S | P0 |
 | O-04 | Email domain authenticated (SPF, DKIM, DMARC), with bounce handling and a test send to… | NOT BUILT |  | No email sending or domain setup in the repo. | S | P0 |
 | O-05 | App approved in the App Store and Google Play before announcement, with enough lead… | NOT RUN |  | Needs store console access or a visit to the venue. | · | P1 |
 | O-06 | Release freeze from Jul 9, with a rollback plan; old app versions keep working. | NOT BUILT |  | No release freeze or on-call plan. | S | P2 |
@@ -230,7 +230,7 @@ A rough, worst-case model, not a measurement. Chat loads the whole history, so 4
 - **Choose the tool.** Check these first, because they are hardest to find: hybrid family fee (C-01), per-person meal choices and arrival times (B-01, B-03), Gujarati forms and emails (B-09, N-01), Zelle pending and offline payments (C-03, C-04), full data export (X-01), and sponsorship items with shared funding (D-02).
 - **Privacy and legal:** Z-01, Z-03, Z-04, Z-05 and Z-06, including the nonprofit's legal name, EIN and receipt wording (D-15).
 - **Permissions:** H-05 and H-06, before committee members and real data arrive.
-- **Resilience:** O-01 alerts on prod, O-03 backups, O-04 email domain.
+- **Resilience:** O-01 alert delivery check, O-03 restore rehearsal, O-04 email domain.
 
 **P1: sponsorship and hotel push (Jan–Jun 2027)**
 
@@ -257,7 +257,7 @@ A rough, worst-case model, not a measurement. Chat loads the whole history, so 4
 7. **Scale limits.** Replace the 50-member cap, and load chat in pages while saving only what changed. That one change removes the 53-second slowdown and most of the read cost (S-01, S-07).
 8. **Messages are dropped, not delayed, and cannot be scheduled.** Add a scheduled message queue that holds quiet-hours messages until 7:00am, uses event time during the event, and supports per-person content. Emergency alerts should ignore event mute (N-09, N-10, N-14, S-03).
 9. **Account deletion leaves personal data behind.** Remove the user ID from expense splits and tasks, and delete `chatReads` and `eventMutes`. The privacy policy promises anonymised records, so this is a compliance gap, and it can also split one deleted person into two in the ledger (Z-04).
-10. **No safety net.** Turn on scheduled backups and crash reporting, extend outage alerts to prod, and name an on-call person. Small tasks, and the Nov 2 billing outage shows why they matter (O-01…O-03, O-08).
+10. **No safety net.** Backups and outage alerts are now on. Rehearse a restore, add crash reporting and an outside billing check, and name an on-call person. Small tasks, and the Nov 2 billing outage shows why they matter (O-01…O-03, O-08).
 
 ## 6. Testability gaps
 

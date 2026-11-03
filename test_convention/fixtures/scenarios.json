@@ -479,7 +479,7 @@
   "id": "H-07",
   "title": "Removing someone from the committee ends access immediately, including tasks, money and scanners; an admin cannot be the only one who can do so (at least 2 admins).",
   "status": "PASS",
-  "gap": "Fixed in PR #40 and verified live on dev, not yet deployed to stg or prod. The at-least-2-admins rule is a process point.",
+  "gap": "Fixed in PR #40 and verified live on dev and stg. **Not yet deployed to prod.** The at-least-2-admins rule is a process point.",
   "tested": true
  },
  {
@@ -843,21 +843,21 @@
   "id": "O-01",
   "title": "Billing alerts, budget caps and a named owner. A lapsed billing account must not be able to take the event down unnoticed, as happened on Nov 2, 2026.",
   "status": "PARTIAL",
-  "gap": "A $5 and a $15 monthly budget cover the billing account. An uptime alert exists on dev only. Stg and prod have no outage alert, and no check runs outside Google Cloud.",
+  "gap": "A $5 and a $15 monthly budget cover the billing account. Uptime alerts exist on dev and prod. Stg has none, no check runs outside Google Cloud, and alert delivery is unconfirmed.",
   "tested": false
  },
  {
   "id": "O-02",
   "title": "Crash reporting and backend error alerts reach a person during event hours.",
   "status": "NOT BUILT",
-  "gap": "No crash reporting or analytics packages, and no backend error alerts. Dev has one uptime alert.",
+  "gap": "No crash reporting or analytics packages, and no backend error alerts. Dev and prod have one uptime alert each.",
   "tested": false
  },
  {
   "id": "O-03",
   "title": "Automated Firestore backups, with a restore rehearsed.",
-  "status": "NOT BUILT",
-  "gap": "No backup schedules on dev or prod, and point-in-time recovery is off. Data loss today would be permanent.",
+  "status": "PARTIAL",
+  "gap": "Daily backups kept 14 days are on for all three projects, with point-in-time recovery on dev and prod. No restore has been rehearsed.",
   "tested": false
  },
  {
