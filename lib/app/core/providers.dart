@@ -198,12 +198,32 @@ final currentUserIdProvider = Provider<String?>((ref) {
   };
 });
 
+/// Default impl wraps `FirebaseFunctions.instance`. Tests override with a fake.
+final createEventCallProvider = Provider<CreateEventCall>(
+  (_) => (event) async {
+    final callable = FirebaseFunctions.instance.httpsCallable(
+      'createEvent',
+      options: HttpsCallableOptions(timeout: const Duration(seconds: 20)),
+    );
+    await callable.call<Map<String, dynamic>>({
+      'eventId': event.id,
+      'title': event.title,
+      'description': event.description,
+      'eventType': event.eventType.name,
+      'currency': event.currency,
+      'startDate': event.startDate?.toUtc().toIso8601String(),
+      'endDate': event.endDate?.toUtc().toIso8601String(),
+    });
+  },
+);
+
 /// Event repository (Firestore source of truth + Drift mirror).
 final eventRepositoryProvider = Provider<EventRepository>((ref) {
   final db = ref.watch(databaseProvider);
   final repo = EventRepository(
     eventsDao: EventsDao(db),
     firestore: ref.watch(firestoreProvider),
+    createEventCall: ref.watch(createEventCallProvider),
   );
   ref.onDispose(repo.dispose);
   return repo;

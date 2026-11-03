@@ -11,11 +11,17 @@ void main() {
   late AppDatabase db;
   late FakeFirebaseFirestore firestore;
   late EventRepository repo;
+  late List<EventModel> sentEvents;
 
   setUp(() {
     db = AppDatabase(NativeDatabase.memory());
     firestore = FakeFirebaseFirestore();
-    repo = EventRepository(eventsDao: EventsDao(db), firestore: firestore);
+    sentEvents = [];
+    repo = EventRepository(
+      eventsDao: EventsDao(db),
+      firestore: firestore,
+      createEventCall: (event) async => sentEvents.add(event),
+    );
   });
 
   tearDown(() async {
@@ -24,62 +30,29 @@ void main() {
   });
 
   group('createEvent', () {
-    test(
-      'writes one document at events/{id} with the expected fields',
-      () async {
-        const event = EventModel(
-          id: 'evt-1',
-          title: 'Trip to Tahoe',
-          creatorId: 'uid-creator',
-          description: 'Snow weekend',
-          eventType: EventType.trip,
-          adminIds: ['uid-creator'],
-          memberIds: ['uid-creator'],
-          currency: 'USD',
-        );
-
-        await repo.createEvent(event);
-
-        final snap = await firestore.collection('events').get();
-        expect(snap.docs, hasLength(1));
-        final data = snap.docs.first.data();
-        expect(snap.docs.first.id, 'evt-1');
-        expect(data['title'], 'Trip to Tahoe');
-        expect(data['creatorId'], 'uid-creator');
-        expect(data['description'], 'Snow weekend');
-        expect(data['eventType'], 'trip');
-        expect(data['adminIds'], ['uid-creator']);
-        expect(data['memberIds'], ['uid-creator']);
-        expect(data['status'], 'active');
-        expect(data['currency'], 'USD');
-      },
+    const event = EventModel(
+      id: 'evt-1',
+      title: 'Trip to Tahoe',
+      creatorId: 'uid-creator',
     );
 
-    test('serializes startDate/endDate as Firestore Timestamps', () async {
-      final event = EventModel(
-        id: 'evt-2',
-        title: 'Conference',
-        creatorId: 'uid-1',
-        startDate: DateTime.utc(2026, 6, 1),
-        endDate: DateTime.utc(2026, 6, 3),
-      );
-
+    test('goes through the callable, and writes nothing directly', () async {
       await repo.createEvent(event);
 
-      final data = (await firestore.collection('events').doc('evt-2').get())
-          .data()!;
-      expect(data['startDate'], isA<Timestamp>());
-      expect(data['endDate'], isA<Timestamp>());
-      expect(
-        (data['startDate'] as Timestamp).toDate().toUtc(),
-        DateTime.utc(2026, 6, 1),
-      );
+      expect(sentEvents.single, same(event));
+      final snap = await firestore.collection('events').get();
+      expect(snap.docs, isEmpty);
     });
 
-    // The "throws on Firestore write failure" contract is exercised by the
-    // CreateEventScreen widget tests, which override `eventRepositoryProvider`
-    // with a fake whose `createEvent` throws. Unit-mocking `FirebaseFirestore`
-    // here would mean implementing sealed SDK types — too brittle.
+    test('passes on a failure for the screen to show', () async {
+      final failing = EventRepository(
+        eventsDao: EventsDao(db),
+        firestore: firestore,
+        createEventCall: (_) async => throw StateError('offline'),
+      );
+      addTearDown(failing.dispose);
+      expect(() => failing.createEvent(event), throwsStateError);
+    });
   });
 
   group('updateEvent', () {

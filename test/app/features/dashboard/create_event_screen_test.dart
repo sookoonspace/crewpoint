@@ -1,3 +1,4 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -13,8 +14,11 @@ import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/auth/data/auth_repository.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/dashboard/data/event_repository.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/create_event_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
+
+import '../../../harness/fake_create_event.dart';
 
 void main() {
   late AppDatabase database;
@@ -47,6 +51,9 @@ void main() {
       overrides: [
         databaseProvider.overrideWithValue(database),
         firestoreProvider.overrideWithValue(firestore),
+        createEventCallProvider.overrideWithValue(
+          fakeCreateEventCall(firestore),
+        ),
         if (authFactory != null) authProvider.overrideWith(authFactory),
         if (eventRepoOverride != null)
           eventRepositoryProvider.overrideWithValue(eventRepoOverride),
@@ -235,6 +242,42 @@ void main() {
       expect(docs.docs, isEmpty);
     },
   );
+
+  testWidgets('without a connection, keeps the form, explains and retries', (
+    tester,
+  ) async {
+    useTallViewport(tester);
+    final failing = _OfflineThenOnlineEventRepo(database, firestore);
+    await tester.pumpWidget(
+      buildApp(
+        authFactory: () => _StubAuthNotifier(
+          const AppUser(uid: 'uid-1', email: 'a@example.com'),
+        ),
+        eventRepoOverride: failing,
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('host.openCreate')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('createEvent.title')),
+      'Tahoe weekend',
+    );
+    await tester.tap(find.byKey(const Key('createEvent.submit')));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('needs a connection'), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
+    expect(find.text('Tahoe weekend'), findsOneWidget);
+    expect(find.text('Event created'), findsNothing);
+
+    await tester.tap(find.byKey(const Key('createEvent.submit')));
+    await tester.pumpAndSettle();
+
+    expect(failing.ids, hasLength(2));
+    expect(failing.ids[1], failing.ids[0], reason: 'a retry must not repeat');
+    expect(find.text('Event created'), findsOneWidget);
+  });
 }
 
 /// Test host that hosts a button to push CreateEventScreen onto the
@@ -288,7 +331,11 @@ class _UnusedAuthRepository implements AuthRepository {
 /// failure-path branch without needing to mock sealed Firestore types.
 class _FailingEventRepo extends EventRepository {
   _FailingEventRepo(AppDatabase db, FirebaseFirestore firestore)
-    : super(eventsDao: EventsDao(db), firestore: firestore);
+    : super(
+        eventsDao: EventsDao(db),
+        firestore: firestore,
+        createEventCall: (_) async {},
+      );
 
   @override
   Future<void> createEvent(_) async {
@@ -300,10 +347,34 @@ class _FailingEventRepo extends EventRepository {
 /// exercises the in-flight loading state.
 class _SlowEventRepo extends EventRepository {
   _SlowEventRepo(AppDatabase db, FirebaseFirestore firestore)
-    : super(eventsDao: EventsDao(db), firestore: firestore);
+    : super(
+        eventsDao: EventsDao(db),
+        firestore: firestore,
+        createEventCall: (_) async {},
+      );
 
   final Completer<void> completer = Completer<void>();
 
   @override
   Future<void> createEvent(_) => completer.future;
+}
+
+/// Fails once as if offline, then succeeds, recording the event IDs it was sent.
+class _OfflineThenOnlineEventRepo extends EventRepository {
+  _OfflineThenOnlineEventRepo(AppDatabase db, FirebaseFirestore firestore)
+    : super(
+        eventsDao: EventsDao(db),
+        firestore: firestore,
+        createEventCall: (_) async {},
+      );
+
+  final List<String> ids = [];
+
+  @override
+  Future<void> createEvent(EventModel event) async {
+    ids.add(event.id);
+    if (ids.length == 1) {
+      throw FirebaseFunctionsException(message: 'x', code: 'unavailable');
+    }
+  }
 }

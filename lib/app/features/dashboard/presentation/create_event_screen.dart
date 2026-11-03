@@ -8,7 +8,9 @@ import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
+import 'package:crewpoint_app/app/core/services/callable_errors.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/core/widgets/custom_text_field.dart';
 import 'package:crewpoint_app/app/core/widgets/form_card_shell.dart';
@@ -45,6 +47,10 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   late String _currency = widget.defaultCurrency;
   bool _isSubmitting = false;
   String? _errorMessage;
+  bool _needsConnection = false;
+
+  /// Kept across retries, so a create that reached the server is not repeated.
+  final String _eventId = const Uuid().v4();
 
   @override
   void dispose() {
@@ -83,11 +89,12 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     setState(() {
       _isSubmitting = true;
       _errorMessage = null;
+      _needsConnection = false;
     });
 
     final description = _descriptionController.text.trim();
     final event = EventModel(
-      id: const Uuid().v4(),
+      id: _eventId,
       title: _titleController.text.trim(),
       description: description.isEmpty ? null : description,
       eventType: _eventType,
@@ -128,7 +135,10 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       if (!mounted) return;
       setState(() {
         _isSubmitting = false;
-        _errorMessage = "Couldn't create event — try again";
+        _needsConnection = isConnectionFailure(e);
+        _errorMessage = _needsConnection
+            ? context.strings.dashboard.createEventNeedsConnection
+            : "Couldn't create event — try again";
       });
     }
   }
@@ -318,7 +328,9 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
 
                   PrimaryButton(
                     key: const Key('createEvent.submit'),
-                    label: 'Create Event',
+                    label: _needsConnection
+                        ? context.strings.dashboard.createEventRetry
+                        : 'Create Event',
                     onPressed: _isSubmitting ? null : _submit,
                     isLoading: _isSubmitting,
                   ),

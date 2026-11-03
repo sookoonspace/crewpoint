@@ -9,6 +9,9 @@ import 'package:crewpoint_app/app/core/database/app_database.dart';
 import 'package:crewpoint_app/app/core/database/daos/events_dao.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
+/// Calls the `createEvent` Cloud Function. Injected so tests never reach it.
+typedef CreateEventCall = Future<void> Function(EventModel event);
+
 /// Firestore-Write / Drift-Read repository for events.
 ///
 /// - Writes go to Firestore. Firestore SDK offline persistence handles
@@ -22,11 +25,14 @@ class EventRepository {
   EventRepository({
     required EventsDao eventsDao,
     required FirebaseFirestore firestore,
+    required CreateEventCall createEventCall,
   }) : _eventsDao = eventsDao,
-       _firestore = firestore;
+       _firestore = firestore,
+       _createEventCall = createEventCall;
 
   final EventsDao _eventsDao;
   final FirebaseFirestore _firestore;
+  final CreateEventCall _createEventCall;
   final Map<String, StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>
   _firestoreSubs = {};
 
@@ -36,12 +42,10 @@ class EventRepository {
   Query<Map<String, dynamic>> _userEventsQuery(String uid) =>
       _eventsRef.where('memberIds', arrayContains: uid);
 
-  /// Writes the event document to Firestore at `events/{id}` with server
-  /// timestamps for `createdAt` / `updatedAt`. Throws on failure — the
-  /// caller is responsible for surfacing the error to the UI.
-  Future<void> createEvent(EventModel event) async {
-    await _eventsRef.doc(event.id).set(_toFirestore(event));
-  }
+  /// Creates the event through the `createEvent` callable, which makes the
+  /// caller its Owner. Throws on failure — the caller is responsible for
+  /// surfacing the error to the UI. Safe to retry with the same event ID.
+  Future<void> createEvent(EventModel event) => _createEventCall(event);
 
   /// Updates the client-editable fields on `events/{id}`.
   ///
@@ -157,26 +161,6 @@ class EventRepository {
       ),
     );
   }
-
-  Map<String, dynamic> _toFirestore(EventModel event) => {
-    'id': event.id,
-    'title': event.title,
-    'description': event.description,
-    'eventType': event.eventType.name,
-    'creatorId': event.creatorId,
-    'adminIds': event.adminIds,
-    'memberIds': event.memberIds,
-    'status': event.status.name,
-    'currency': event.currency,
-    'startDate': event.startDate != null
-        ? Timestamp.fromDate(event.startDate!)
-        : null,
-    'endDate': event.endDate != null
-        ? Timestamp.fromDate(event.endDate!)
-        : null,
-    'createdAt': FieldValue.serverTimestamp(),
-    'updatedAt': FieldValue.serverTimestamp(),
-  };
 
   EventModel _fromFirestore(String id, Map<String, dynamic> data) => EventModel(
     id: id,

@@ -217,15 +217,15 @@ Create events only through a `createEvent` callable, with the caller as Owner, s
 - Until #66, the callable writes today's array shape.
 
 ### Acceptance criteria
-- [ ] Events are created only through the `createEvent` callable, with the caller as Owner.
-- [ ] Rules deny direct client creation of events.
-- [ ] Nobody can be listed as a member without their own action through the join flow or a permitted role assignment.
-- [ ] A failed creation leaves nothing behind.
-- [ ] Creation needs a connection. Without one, the form keeps what was entered, and explains and offers retry.
-- [ ] A client attempt to add a stranger as a member is rejected in emulator tests.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] Tests for scenario FND-03 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] Events are created only through the `createEvent` callable, with the caller as Owner.
+- [x] Rules deny direct client creation of events.
+- [x] Nobody can be listed as a member without their own action through the join flow or a permitted role assignment.
+- [x] A failed creation leaves nothing behind.
+- [x] Creation needs a connection. Without one, the form keeps what was entered, and explains and offers retry.
+- [x] A client attempt to add a stranger as a member is rejected in emulator tests.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] Tests for scenario FND-03 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 26

@@ -11,6 +11,7 @@ import 'package:crewpoint_app/app/core/database/app_database.dart'
     show ExpensesCompanion, ExpenseSplitsCompanion;
 import 'package:crewpoint_app/app/core/database/daos/expense_splits_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/expenses_dao.dart';
+import 'package:crewpoint_app/app/core/services/callable_errors.dart';
 import 'package:crewpoint_app/app/core/services/image_service.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/budget/domain/repositories/i_expense_repository.dart';
@@ -29,14 +30,6 @@ class ExpenseRepository implements IExpenseRepository {
        _saveExpenseCall = saveExpenseCall,
        _recordSettlementCall = recordSettlementCall,
        _imageService = imageService;
-
-  /// Error codes from a callable that never reached the server. Web reports a
-  /// failed network request as `internal`.
-  static const _connectionCodes = {
-    'unavailable',
-    'deadline-exceeded',
-    'internal',
-  };
 
   final ExpensesDao _expensesDao;
   final ExpenseSplitsDao _splitsDao;
@@ -201,7 +194,7 @@ class ExpenseRepository implements IExpenseRepository {
       await call();
     } on FirebaseFunctionsException catch (e, st) {
       log('Failed to save expense', error: e, stackTrace: st, name: 'budget');
-      return _connectionCodes.contains(e.code)
+      return isConnectionFailure(e)
           ? ExpenseSaveResult.needsConnection
           : ExpenseSaveResult.rejected;
     } catch (e, st) {
