@@ -28,6 +28,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../test/harness/dashboard_harness.dart';
+import '../test/harness/fake_create_event.dart';
 import 'seed.dart';
 
 class _FakeChat implements IChatService {
@@ -63,7 +64,11 @@ void main() {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
       final fs = FakeFirebaseFirestore();
-      final repo = EventRepository(eventsDao: EventsDao(db), firestore: fs);
+      final repo = EventRepository(
+        eventsDao: EventsDao(db),
+        firestore: fs,
+        createEventCall: fakeCreateEventCall(fs),
+      );
       await repo.createEvent(
         EventModel(
           id: _event.id,

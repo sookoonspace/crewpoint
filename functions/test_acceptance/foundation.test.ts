@@ -11,10 +11,13 @@ const ftest = firebaseFunctionsTest();
 getAdminApp();
 const {saveExpense} = require('../src/events/saveExpense');
 const {recordSettlement} = require('../src/events/recordSettlement');
+const {createEvent} = require('../src/events/createEvent');
 
 const E = 'foundation';
 const call = (uid: string, data: object) => ftest.wrap(saveExpense)({auth: {uid}, data});
 const invalid = expect.objectContaining({code: 'invalid-argument'});
+
+afterAll(() => ftest.cleanup());
 
 describe('FND-01 money writes', () => {
   let env: RulesTestEnvironment;
@@ -51,10 +54,7 @@ describe('FND-01 money writes', () => {
       });
     });
   });
-  afterAll(async () => {
-    await env.cleanup();
-    ftest.cleanup();
-  });
+  afterAll(() => env.cleanup());
 
   test('FND-01 the callable rejects forged amounts', async () => {
     for (const amount of [0, -1, NaN, Infinity, 1e12]) {
@@ -148,5 +148,49 @@ describe('FND-01 money writes', () => {
   test('FND-01 rules deny a direct expense edit', async () => {
     const db = env.authenticatedContext('member').firestore();
     await assertFails(updateDoc(doc(db, `events/${E}/expenses/old`), {amount: 9999}));
+  });
+});
+
+describe('FND-03 strangers', () => {
+  let env: RulesTestEnvironment;
+  const event = {creatorId: 'owner', adminIds: ['owner'], memberIds: ['owner'], title: 'Trip'};
+
+  beforeAll(async () => {
+    env = await getTestEnv();
+  });
+  beforeEach(async () => {
+    await clearFirestoreEmulator();
+    await env.clearFirestore();
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'events/mine'), event);
+    });
+  });
+  afterAll(() => env.cleanup());
+
+  const asOwner = () => env.authenticatedContext('owner').firestore();
+
+  test('FND-03 a client cannot create an event listing a stranger', async () => {
+    await assertFails(
+      setDoc(doc(asOwner(), 'events/new'), {
+        ...event,
+        memberIds: ['owner', 'stranger'],
+      })
+    );
+  });
+
+  test('FND-03 a client cannot add a stranger to an event', async () => {
+    await assertFails(
+      updateDoc(doc(asOwner(), 'events/mine'), {memberIds: ['owner', 'stranger']})
+    );
+  });
+
+  test('FND-03 the callable ignores members sent by the client', async () => {
+    await ftest.wrap(createEvent)({
+      auth: {uid: 'owner'},
+      data: {eventId: 'made', title: 'Trip', memberIds: ['owner', 'stranger']},
+    });
+    const saved = (await getAdminDb().doc('events/made').get()).data()!;
+    expect(saved.memberIds).toEqual(['owner']);
+    expect(saved.creatorId).toBe('owner');
   });
 });

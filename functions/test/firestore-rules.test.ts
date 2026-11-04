@@ -28,6 +28,32 @@ afterAll(async () => {
   await env.cleanup();
 });
 
+describe('events create — only the createEvent callable', () => {
+  test('a client cannot create an event directly, even as its owner', async () => {
+    const db = env.authenticatedContext('me').firestore();
+    await assertFails(
+      setDoc(doc(db, 'events/direct'), {
+        creatorId: 'me',
+        adminIds: ['me'],
+        memberIds: ['me'],
+        title: 'Direct',
+      })
+    );
+  });
+
+  test('a client cannot create an event listing a stranger', async () => {
+    const db = env.authenticatedContext('me').firestore();
+    await assertFails(
+      setDoc(doc(db, 'events/stranger'), {
+        creatorId: 'me',
+        adminIds: ['me'],
+        memberIds: ['me', 'stranger'],
+        title: 'With a stranger',
+      })
+    );
+  });
+});
+
 describe('events update — Fix 1.A: field-level guards on memberIds/adminIds/creatorId', () => {
   test('admin cannot promote another member to admin via direct events/{id} update', async () => {
     const eventId = 'evt1';

@@ -17,9 +17,9 @@ service cloud.firestore {
       allow read: if request.auth != null
         && request.auth.uid in resource.data.memberIds;
 
-      // Create: must set yourself as creator
-      allow create: if request.auth != null
-        && request.resource.data.creatorId == request.auth.uid;
+      // Create: only through the createEvent callable, with the caller as
+      // owner, so nobody can be listed as a member without their own action.
+      allow create: if false;
 
       // Update: admins or creator (client writes: title, description, dates, type, status).
       // Fix 1.A — field-level guard: clients must NOT mutate memberIds, adminIds,

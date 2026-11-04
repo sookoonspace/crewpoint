@@ -14,6 +14,8 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/dashboard_scre
 import 'package:crewpoint_app/app/features/dashboard/presentation/edit_event_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboard_screen.dart';
 
+import 'fake_create_event.dart';
+
 /// Forces an `Authenticated` state without going through Firebase auth.
 class _StubAuthNotifier extends AuthNotifier {
   _StubAuthNotifier(this._user)
@@ -87,6 +89,9 @@ class DashboardJourneyHarness {
       overrides: [
         databaseProvider.overrideWithValue(database),
         firestoreProvider.overrideWithValue(firestore),
+        createEventCallProvider.overrideWithValue(
+          fakeCreateEventCall(firestore),
+        ),
         authProvider.overrideWith(() => _StubAuthNotifier(currentUser)),
       ],
       child: MaterialApp.router(routerConfig: _router),

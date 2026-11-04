@@ -206,6 +206,8 @@ abstract class DashboardStrings {
 
   // CTA + list section headers.
   String get createEventCta;
+  String get createEventNeedsConnection;
+  String get createEventRetry;
   String upcomingEventsHeader(int count);
   String pastEventsHeader(int count);
 
@@ -655,6 +657,13 @@ class _EnglishDashboardStrings extends DashboardStrings {
 
   @override
   String get createEventCta => 'Create Event';
+
+  @override
+  String get createEventNeedsConnection =>
+      'Creating an event needs a connection. Check yours and try again.';
+
+  @override
+  String get createEventRetry => 'Retry';
 
   @override
   String upcomingEventsHeader(int count) => '$count UPCOMING EVENTS';
