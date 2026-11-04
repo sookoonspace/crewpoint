@@ -209,10 +209,24 @@ final createEventCallProvider = Provider<CreateEventCall>(
       'eventId': event.id,
       'title': event.title,
       'description': event.description,
-      'eventType': event.eventType.name,
+      'timeZone': event.timeZone,
       'currency': event.currency,
       'startDate': event.startDate?.toUtc().toIso8601String(),
       'endDate': event.endDate?.toUtc().toIso8601String(),
+    });
+  },
+);
+
+/// Default impl wraps `FirebaseFunctions.instance`. Tests override with a fake.
+final changeEventCurrencyCallProvider = Provider<ChangeEventCurrencyCall>(
+  (_) => (eventId, currency) async {
+    final callable = FirebaseFunctions.instance.httpsCallable(
+      'changeEventCurrency',
+      options: HttpsCallableOptions(timeout: const Duration(seconds: 20)),
+    );
+    await callable.call<Map<String, dynamic>>({
+      'eventId': eventId,
+      'currency': currency,
     });
   },
 );

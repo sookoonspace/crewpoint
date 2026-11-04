@@ -11,6 +11,16 @@ service cloud.firestore {
       return request.auth.uid in event.data.memberIds;
     }
 
+    // Compares with missing treated as null, so older events can be edited.
+    function fieldUnchanged(field) {
+      return request.resource.data.get(field, null) == resource.data.get(field, null);
+    }
+
+    function isPositiveIntOrNull(field) {
+      let value = request.resource.data.get(field, null);
+      return value == null || (value is int && value > 0);
+    }
+
     // Events collection
     match /events/{eventId} {
       // Read: only members (memberIds always includes creatorId and adminIds)
@@ -35,8 +45,20 @@ service cloud.firestore {
         && request.resource.data.adminIds == resource.data.adminIds
         && request.resource.data.creatorId == resource.data.creatorId
         // Currency stays fixed once an event holds money, which rules cannot
-        // check, so clients cannot change it at all.
-        && request.resource.data.get('currency', null) == resource.data.get('currency', null);
+        // check, so only the changeEventCurrency callable can change it.
+        && fieldUnchanged('currency')
+        // Choosing a verified organizer would raise the event's limits.
+        && fieldUnchanged('organizerId')
+        && fieldUnchanged('templateId')
+        // Older events keep their type's name as display text only.
+        && fieldUnchanged('eventType')
+        // Joining relies on this count, so only the server keeps it.
+        && fieldUnchanged('memberCount')
+        && isPositiveIntOrNull('capacity')
+        && isPositiveIntOrNull('memberLimit')
+        && (!('timeZone' in request.resource.data) || request.resource.data.timeZone is string)
+        && (!('venues' in request.resource.data) || request.resource.data.venues is list)
+        && (!('languages' in request.resource.data) || request.resource.data.languages is list);
 
       // Delete: only the creator
       allow delete: if request.auth != null
@@ -174,6 +196,13 @@ service cloud.firestore {
     }
 
     // Event invites — managed entirely by Cloud Functions via Admin SDK
+    // Written only by the server, so nobody can verify themselves.
+    match /organizers/{organizerId} {
+      allow read: if request.auth != null
+        && request.auth.uid == resource.data.ownerId;
+      allow write: if false;
+    }
+
     match /event_invites/{code} {
       allow read, write: if false;
     }

@@ -81,4 +81,76 @@ void main() {
       await tester.pumpAndSettle();
     },
   );
+
+  Future<DashboardJourneyHarness> openEvent(
+    WidgetTester tester, {
+    required String uid,
+  }) async {
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final harness = DashboardJourneyHarness(
+      currentUser: AppUser(uid: uid, email: '$uid@example.com'),
+    );
+    addTearDown(() async => harness.database.close());
+    await harness.firestore.collection('events').doc('evt-1').set({
+      'title': 'Convention',
+      'creatorId': 'owner-1',
+      'adminIds': ['owner-1'],
+      'memberIds': ['owner-1', 'member-1'],
+      'status': 'active',
+      'currency': 'USD',
+    });
+    await tester.pumpWidget(harness.buildApp());
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    await tester.tap(find.text('Convention'));
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    return harness;
+  }
+
+  testWidgets('an organizer reaches settings from the event and saves', (
+    tester,
+  ) async {
+    final harness = await openEvent(tester, uid: 'owner-1');
+
+    final entry = find.byKey(const Key('events.dashboard.settings'));
+    await tester.ensureVisible(entry);
+    await tester.pump();
+    await tester.tap(entry);
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    await tester.enterText(
+      find.byKey(const Key('events.settings.timeZone')),
+      'America/Chicago',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('events.settings.save')));
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    final saved = await harness.firestore.doc('events/evt-1').get();
+    expect(saved.data()!['timeZone'], 'America/Chicago');
+    expect(find.byKey(const Key('events.settings.save')), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 100));
+  });
+
+  testWidgets('a plain member has no way into settings', (tester) async {
+    await openEvent(tester, uid: 'member-1');
+
+    expect(find.byKey(const Key('events.dashboard.settings')), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 100));
+  });
 }

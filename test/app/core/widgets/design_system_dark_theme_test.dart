@@ -26,7 +26,7 @@ void main() {
       id: 'evt-a',
       title: 'Tahoe Trip',
       creatorId: 'me',
-      eventType: EventType.trip,
+      displayType: 'trip',
       memberIds: const ['me', 'bo'],
       startDate: DateTime(2026, 12, 12),
       endDate: DateTime(2026, 12, 15),

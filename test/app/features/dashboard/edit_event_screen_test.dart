@@ -9,7 +9,7 @@ void main() {
     title: 'Trip to Tahoe',
     creatorId: 'uid-1',
     description: 'Snow weekend',
-    eventType: EventType.trip,
+    displayType: 'trip',
     startDate: DateTime(2026, 6, 1),
     endDate: DateTime(2026, 6, 3),
     adminIds: const ['uid-1'],

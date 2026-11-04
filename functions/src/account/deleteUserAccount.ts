@@ -10,6 +10,7 @@ import {
   BatchOperation,
 } from "../utils/batch";
 import {deleteEventCompletely} from "../events/eventDeletion";
+import {ensurePersonalOrganizer} from "../events/organizers";
 import {withStructuredLogs} from "../utils/logging";
 
 const db = getFirestore();
@@ -112,7 +113,8 @@ async function anonymousIdFor(
  * Removes a person from a shared event:
  * - Replaces their ID with an anonymous one in expenses, tasks and messages
  * - Unassigns their tasks, and removes their urgent rate record
- * - Transfers creatorId to the first admin, or else the first remaining member
+ * - Transfers creatorId and organizerId to the first admin, or else the first
+ *   remaining member, who gets a personal organizer if they have none
  * - Removes them from memberIds and adminIds
  *
  * Membership changes last. A retry finds the event through memberIds, so it
@@ -195,12 +197,15 @@ export async function anonymizeUserInEvent(
     adminIds: FieldValue.arrayRemove(uid),
     memberCount: remainingMembers.length,
   };
-  if (eventData.creatorId === uid && remainingMembers.length > 0) {
+  if (remainingMembers.length > 0) {
     // Prefer first admin, fallback to first remaining member
     const remainingAdmins = adminIds.filter((a: string) => a !== uid);
-    updateData.creatorId = remainingAdmins.length > 0 ?
-      remainingAdmins[0] :
-      remainingMembers[0];
+    const nextOwner = remainingAdmins[0] ?? remainingMembers[0];
+    if (eventData.creatorId === uid) updateData.creatorId = nextOwner;
+    if (eventData.organizerId === uid) {
+      await ensurePersonalOrganizer(db, nextOwner);
+      updateData.organizerId = nextOwner;
+    }
   }
   await eventRef.update(updateData);
 }
@@ -288,6 +293,7 @@ export const deleteUserAccount = onCall(
           for (const sub of ["private", "chatReads", "eventMutes"]) {
             await streamDeleteSubcollection(userRef, sub);
           }
+          await db.collection("organizers").doc(uid).delete();
           await db.collection("users").doc(uid).delete();
 
           logger.info("deleteUserAccount firestore.complete", {

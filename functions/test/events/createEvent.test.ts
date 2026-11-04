@@ -17,7 +17,6 @@ const input = (over: object = {}) => ({
   eventId: 'evt',
   title: 'Trip',
   description: 'A trip',
-  eventType: 'trip',
   currency: 'EUR',
   startDate: '2027-03-01T10:00:00.000Z',
   ...over,
@@ -28,13 +27,67 @@ const rejected = (code: string) => expect.objectContaining({code});
 beforeEach(() => clearFirestoreEmulator());
 afterAll(() => ftest.cleanup());
 
+describe('createEvent configuration (Req 18, 18a, 21)', () => {
+  test('a title alone gives an event with every default', async () => {
+    await call('me', {eventId: 'evt', title: 'Only a title'});
+    const saved = (await eventDoc()).data()!;
+    expect(saved.organizerId).toBe('me');
+    expect(saved.templateId).toBe('blank');
+    expect(saved.timeZone).toBe('UTC');
+    expect(saved.venues).toEqual([]);
+    expect(saved.currency).toBe('USD');
+    expect(saved.languages).toEqual(['en']);
+    expect(saved.modules).toEqual({tasks: true, budget: true, chat: true});
+    expect(saved.labels).toEqual({});
+    expect(saved.settings).toEqual({});
+    expect(saved.capacity).toBeNull();
+    expect(saved.memberLimit).toBeNull();
+    expect(saved.eventType).toBeUndefined();
+  });
+
+  test('the device time zone is kept', async () => {
+    await call('me', input({timeZone: 'America/Chicago'}));
+    expect((await eventDoc()).data()!.timeZone).toBe('America/Chicago');
+  });
+
+  test('a zone the server does not know falls back to UTC, and creation still works', async () => {
+    await call('me', input({timeZone: 'GMT+05:30 from an odd phone'}));
+    expect((await eventDoc()).data()!.timeZone).toBe('UTC');
+  });
+
+  test('a time zone that is not text is refused', async () => {
+    await expect(call('me', input({timeZone: 5})))
+      .rejects.toEqual(rejected('invalid-argument'));
+  });
+
+  test('a personal organizer is created on the first event only', async () => {
+    await call('me', input());
+    const organizer = getAdminDb().doc('organizers/me');
+    expect((await organizer.get()).data()).toEqual(expect.objectContaining({
+      id: 'me',
+      ownerId: 'me',
+      kind: 'personal',
+      verified: false,
+    }));
+    await organizer.update({verified: true});
+    await call('me', input({eventId: 'second'}));
+    expect((await organizer.get()).data()!.verified).toBe(true);
+    const second = await getAdminDb().doc('events/second').get();
+    expect(second.data()!.organizerId).toBe('me');
+  });
+
+  test('a client cannot choose the organizer', async () => {
+    await call('me', input({organizerId: 'someone-verified'}));
+    expect((await eventDoc()).data()!.organizerId).toBe('me');
+  });
+});
+
 describe('createEvent', () => {
   test('creates the event with the caller as Owner', async () => {
     await call('me', input());
     const saved = (await eventDoc()).data()!;
     expect(saved.title).toBe('Trip');
     expect(saved.description).toBe('A trip');
-    expect(saved.eventType).toBe('trip');
     expect(saved.currency).toBe('EUR');
     expect(saved.creatorId).toBe('me');
     expect(saved.adminIds).toEqual(['me']);
@@ -66,7 +119,6 @@ describe('createEvent', () => {
     await call('me', {eventId: 'evt', title: 'Trip'});
     const saved = (await eventDoc()).data()!;
     expect(saved.description).toBeNull();
-    expect(saved.eventType).toBe('custom');
     expect(saved.currency).toBe('USD');
     expect(saved.startDate).toBeNull();
   });
@@ -102,7 +154,6 @@ describe('createEvent', () => {
     ['an invalid start date', {startDate: 'soon'}],
     ['an invalid end date', {endDate: 'later'}],
     ['a currency that is not a code', {currency: 'dollars'}],
-    ['an event type that is not text', {eventType: 5}],
   ])('rejects %s, and leaves nothing behind', async (_name, over) => {
     await expect(call('me', input(over))).rejects.toEqual(rejected('invalid-argument'));
     expect((await eventDoc()).exists).toBe(false);

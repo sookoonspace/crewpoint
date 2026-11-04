@@ -52,7 +52,7 @@ void main() {
       id: 'evt-a',
       title: 'Tahoe Ski Trip — Long enough title to push the layout',
       creatorId: 'me',
-      eventType: EventType.trip,
+      displayType: 'trip',
       memberIds: const ['me', 'bo', 'sk', 'jo'],
       startDate: DateTime(2026, 12, 12),
       endDate: DateTime(2026, 12, 15),

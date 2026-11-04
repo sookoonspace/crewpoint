@@ -271,25 +271,27 @@ class _EventHero extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.lg),
 
-              // Event type badge
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.xs,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.sage.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  event.eventType.label,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: AppColors.sageLight,
-                    fontWeight: FontWeight.w600,
+              // Event type badge, which newer events do not have.
+              if (event.typeLabel != null) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.xs,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.sage.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    event.typeLabel!,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: AppColors.sageLight,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.md),
+                const SizedBox(height: AppSpacing.md),
+              ],
 
               // Title
               Text(
@@ -640,6 +642,27 @@ class _EventActionsState extends ConsumerState<_EventActions> {
       crossAxisAlignment: .start,
       spacing: AppSpacing.md,
       children: [
+        if (widget.event.canManage(widget.currentUserId))
+          Card(
+            elevation: 0,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            shape: RoundedRectangleBorder(
+              borderRadius: AppRadius.borderLg,
+              side: BorderSide(
+                color: AppColors.lightGrey.withValues(alpha: 0.7),
+                width: 0.5,
+              ),
+            ),
+            child: ListTile(
+              key: const Key('events.dashboard.settings'),
+              leading: const Icon(AppIcons.actionSettings),
+              title: Text(context.strings.dashboard.settingsTitle),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () =>
+                  context.push('/dashboard/event/${widget.event.id}/settings'),
+            ),
+          ),
+
         // Archive toggle (admin/owner)
         if (isAdmin || isOwner)
           Card(

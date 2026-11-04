@@ -9,7 +9,7 @@ void main() {
     id: 'evt-1',
     title: 'Tahoe Ski Trip',
     creatorId: 'me',
-    eventType: EventType.trip,
+    displayType: 'trip',
     memberIds: const ['me', 'bo', 'sk'],
     startDate: DateTime(2026, 12, 12),
     endDate: DateTime(2026, 12, 15),
@@ -24,7 +24,7 @@ void main() {
   ) async {
     await pump(tester, EventTile(event: event, todo: 2, doing: 1, done: 3));
 
-    // Icon derived from EventType.trip.
+    // Icon derived from the display type.
     expect(find.byIcon(Icons.luggage_outlined), findsOneWidget);
     // Title.
     expect(find.text('Tahoe Ski Trip'), findsOneWidget);

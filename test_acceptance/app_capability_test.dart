@@ -80,6 +80,21 @@ void main() {
           endDate: DateTime.utc(2027, 7, 20),
         ),
       );
+      await repo.saveConfiguration(
+        EventModel(
+          id: _event.id,
+          title: _event.title,
+          creatorId: 'admin',
+          timeZone: 'America/Chicago',
+          venues: const [
+            EventVenue(
+              id: 'garland',
+              name: 'Garland Hall',
+              address: '1 Main St, Garland, TX',
+            ),
+          ],
+        ),
+      );
       return (await fs.doc('events/derod').get()).data()!;
     }
 
@@ -92,7 +107,11 @@ void main() {
 
     test('A-01 stores an event time zone and venue', () async {
       final d = await stored();
-      expect(d.keys, containsAll(<String>['timeZone', 'venue']));
+      expect(d['timeZone'], 'America/Chicago');
+      final venue =
+          (d['venues'] as List<dynamic>).single as Map<String, dynamic>;
+      expect(venue['name'], 'Garland Hall');
+      expect(venue['address'], '1 Main St, Garland, TX');
     });
   });
 

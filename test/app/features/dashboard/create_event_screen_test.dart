@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart';
 import 'package:crewpoint_app/app/core/database/daos/events_dao.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
+import 'package:crewpoint_app/app/core/services/device_timezone.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/auth/data/auth_repository.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
@@ -19,6 +20,11 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/create_event_s
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
 
 import '../../../harness/fake_create_event.dart';
+
+class _ChicagoTimezone implements IDeviceTimezone {
+  @override
+  Future<String> getLocalTimezone() async => 'America/Chicago';
+}
 
 void main() {
   late AppDatabase database;
@@ -54,6 +60,7 @@ void main() {
         createEventCallProvider.overrideWithValue(
           fakeCreateEventCall(firestore),
         ),
+        deviceTimezoneProvider.overrideWithValue(_ChicagoTimezone()),
         if (authFactory != null) authProvider.overrideWith(authFactory),
         if (eventRepoOverride != null)
           eventRepositoryProvider.overrideWithValue(eventRepoOverride),
@@ -94,6 +101,9 @@ void main() {
       expect(data['adminIds'], ['uid-42']);
       expect(data['memberIds'], ['uid-42']);
       expect(data['status'], 'active');
+      expect(data['timeZone'], 'America/Chicago');
+      expect(data['templateId'], 'blank');
+      expect(data['organizerId'], 'uid-42');
 
       // Screen popped — back on the host.
       expect(find.byKey(const Key('host.openCreate')), findsOneWidget);

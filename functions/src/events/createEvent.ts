@@ -1,6 +1,7 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {FieldValue, getFirestore, Timestamp} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
+import {preparePersonalOrganizer} from "./organizers";
 
 const db = getFirestore();
 
@@ -22,6 +23,15 @@ function optionalDate(value: unknown, field: string): Timestamp | null {
   return Timestamp.fromDate(date);
 }
 
+function isTimeZone(value: string): boolean {
+  try {
+    new Intl.DateTimeFormat("en", {timeZone: value});
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * createEvent — the only way to create an event, with the caller as Owner.
  * Membership never comes from the client, so nobody can be listed as a member
@@ -29,7 +39,8 @@ function optionalDate(value: unknown, field: string): Timestamp | null {
  *
  * The client chooses the ID, so a retry after a lost response changes nothing.
  * Everything is written in one transaction, so a failed creation leaves nothing
- * behind.
+ * behind. Only a title is required, and the first event also creates the
+ * caller's personal organizer.
  */
 export const createEvent = onCall({timeoutSeconds: 30}, async (request) => {
   if (!request.auth) {
@@ -43,9 +54,12 @@ export const createEvent = onCall({timeoutSeconds: 30}, async (request) => {
   const title = requireString(data.title, "title").trim();
   if (title.length === 0) throw invalid("title cannot be blank.");
   const description = optionalString(data.description, "description");
-  const eventType = optionalString(data.eventType, "eventType") ?? "custom";
   const currency = optionalString(data.currency, "currency") ?? "USD";
   if (!/^[A-Z]{3}$/.test(currency)) throw invalid("currency is not a code.");
+  // Phones can report zones the server does not know. That should not stop
+  // someone creating an event, and an organizer can correct it in settings.
+  const deviceZone = optionalString(data.timeZone, "timeZone");
+  const timeZone = deviceZone && isTimeZone(deviceZone) ? deviceZone : "UTC";
   const startDate = optionalDate(data.startDate, "startDate");
   const endDate = optionalDate(data.endDate, "endDate");
 
@@ -59,18 +73,29 @@ export const createEvent = onCall({timeoutSeconds: 30}, async (request) => {
           if (existing.data()!.creatorId === uid) return;
           throw new HttpsError("already-exists", "This ID is already in use.");
         }
+        const writeOrganizer = await preparePersonalOrganizer(db, tx, uid);
+        writeOrganizer();
         const now = FieldValue.serverTimestamp();
         tx.set(eventRef, {
           id: eventId,
           title,
           description,
-          eventType,
+          templateId: "blank",
           creatorId: uid,
+          organizerId: uid,
           adminIds: [uid],
           memberIds: [uid],
           memberCount: 1,
           status: "active",
           currency,
+          timeZone,
+          venues: [],
+          languages: ["en"],
+          modules: {tasks: true, budget: true, chat: true},
+          labels: {},
+          settings: {},
+          capacity: null,
+          memberLimit: null,
           startDate,
           endDate,
           createdAt: now,

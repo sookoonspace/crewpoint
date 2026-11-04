@@ -107,6 +107,107 @@ describe('events update — currency stays fixed', () => {
   });
 });
 
+describe('events update — configuration (Req 18, 18a, 18b)', () => {
+  const E = 'events/evtCfg';
+  const seed = () =>
+    env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), E), {
+        creatorId: 'owner',
+        organizerId: 'owner',
+        templateId: 'blank',
+        eventType: 'trip',
+        adminIds: ['owner', 'admin'],
+        memberIds: ['owner', 'admin', 'member'],
+        memberCount: 3,
+        currency: 'USD',
+        title: 'Trip',
+      });
+    });
+
+  test.each([
+    ['organizerId', 'someone-verified'],
+    ['templateId', 'party'],
+    ['eventType', 'social'],
+    ['memberCount', 1],
+  ])('even an admin cannot change %s directly', async (field, value) => {
+    await seed();
+    const db = env.authenticatedContext('admin').firestore();
+    await assertFails(updateDoc(doc(db, E), {[field]: value}));
+  });
+
+  test('an admin can set the configuration', async () => {
+    await seed();
+    const db = env.authenticatedContext('admin').firestore();
+    await assertSucceeds(updateDoc(doc(db, E), {
+      timeZone: 'America/Chicago',
+      venues: [{id: 'v1', name: 'Garland Hall', address: '1 Main St'}],
+      languages: ['en', 'gu'],
+      capacity: 500,
+      memberLimit: 100,
+    }));
+  });
+
+  test('capacity and the member limit can be cleared', async () => {
+    await seed();
+    const db = env.authenticatedContext('admin').firestore();
+    await assertSucceeds(updateDoc(doc(db, E), {capacity: null, memberLimit: null}));
+  });
+
+  test.each([
+    ['capacity', 0],
+    ['capacity', '500'],
+    ['memberLimit', -1],
+    ['memberLimit', 1.5],
+    ['timeZone', 5],
+    ['venues', 'Garland Hall'],
+    ['languages', 'en'],
+  ])('%s cannot be set to %p', async (field, value) => {
+    await seed();
+    const db = env.authenticatedContext('admin').firestore();
+    await assertFails(updateDoc(doc(db, E), {[field]: value}));
+  });
+
+  test('a plain member cannot set the configuration', async () => {
+    await seed();
+    const db = env.authenticatedContext('member').firestore();
+    await assertFails(updateDoc(doc(db, E), {capacity: 500}));
+  });
+
+  test('an older event without these fields can still be edited', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'events/old'), {
+        creatorId: 'owner',
+        adminIds: ['owner'],
+        memberIds: ['owner'],
+        title: 'Old',
+      });
+    });
+    const db = env.authenticatedContext('owner').firestore();
+    await assertSucceeds(updateDoc(doc(db, 'events/old'), {title: 'New'}));
+  });
+});
+
+describe('organizers — written only by the server', () => {
+  const O = 'organizers/me';
+  const seed = () =>
+    env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), O), {ownerId: 'me', verified: false});
+    });
+
+  test('the owner can read their organizer, and nobody else can', async () => {
+    await seed();
+    await assertSucceeds(getDoc(doc(env.authenticatedContext('me').firestore(), O)));
+    await assertFails(getDoc(doc(env.authenticatedContext('other').firestore(), O)));
+  });
+
+  test('nobody can verify themselves, or create an organizer', async () => {
+    await seed();
+    const db = env.authenticatedContext('me').firestore();
+    await assertFails(updateDoc(doc(db, O), {verified: true}));
+    await assertFails(setDoc(doc(db, 'organizers/new'), {ownerId: 'new', verified: true}));
+  });
+});
+
 describe('events create — only the createEvent callable', () => {
   test('a client cannot create an event directly, even as its owner', async () => {
     const db = env.authenticatedContext('me').firestore();

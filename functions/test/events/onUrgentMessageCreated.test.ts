@@ -19,11 +19,11 @@ const HOUR = 60 * 60 * 1000;
 const START = Date.UTC(2027, 0, 1, 12);
 
 let nextId = 0;
-async function urgent(sender: string, at: number, eventId = E, data: object = {}) {
+async function urgent(sender: string, at: number, eventId = E, data: object = {}, rates?: object) {
   const ref = getAdminDb().doc(`events/${eventId}/messages/m${nextId++}`);
   const message = {senderId: sender, text: 'Fire', isHighPriority: true, ...data};
   await ref.set(message);
-  await handleUrgentMessage({eventId, messageId: ref.id, data: message, ref, now: () => at});
+  await handleUrgentMessage({eventId, messageId: ref.id, data: message, ref, now: () => at, rates});
   return ref;
 }
 
@@ -47,6 +47,43 @@ beforeEach(async () => {
   for (const uid of ['owner', 'admin', 'member']) {
     await getAdminDb().doc(`users/${uid}/private/profile`).set({fcmTokens: [`tok-${uid}`]});
   }
+});
+
+describe('urgent rate reads organizer.verified (Req 24)', () => {
+  const rates = {verified: 2, unverified: 1};
+  const sendTwo = async () => {
+    await urgent('admin', START, E, {}, rates);
+    return urgent('admin', START + 1, E, {}, rates);
+  };
+
+  test('a verified organizer gets the verified rate', async () => {
+    await seedEvent(E, {organizerId: 'org'});
+    await getAdminDb().doc('organizers/org').set({verified: true});
+    const second = await sendTwo();
+    expect((await second.get()).data()!.urgentPushSkipped).toBeUndefined();
+  });
+
+  test('an unverified organizer gets the unverified rate', async () => {
+    await seedEvent(E, {organizerId: 'org'});
+    await getAdminDb().doc('organizers/org').set({verified: false});
+    const second = await sendTwo();
+    expect((await second.get()).data()!.urgentPushSkipped).toBe(true);
+  });
+
+  test.each([
+    ['an event from before organizers', {}],
+    ['a missing organizer', {organizerId: 'gone'}],
+  ])('%s counts as unverified', async (_, over) => {
+    await seedEvent(E, over);
+    const second = await sendTwo();
+    expect((await second.get()).data()!.urgentPushSkipped).toBe(true);
+  });
+
+  test('the event setting still wins over both', async () => {
+    await seedEvent(E, {organizerId: 'org', settings: {urgentRatePerHour: 2}});
+    const second = await sendTwo();
+    expect((await second.get()).data()!.urgentPushSkipped).toBeUndefined();
+  });
 });
 
 describe('urgent push rate limit', () => {

@@ -42,7 +42,6 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  EventType _eventType = EventType.custom;
   DateTime? _startDate;
   late String _currency = widget.defaultCurrency;
   bool _isSubmitting = false;
@@ -92,17 +91,19 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       _needsConnection = false;
     });
 
+    // The event starts in this person's zone. An organizer can change it.
+    final timeZone = await ref.read(deviceTimezoneProvider).getLocalTimezone();
     final description = _descriptionController.text.trim();
     final event = EventModel(
       id: _eventId,
       title: _titleController.text.trim(),
       description: description.isEmpty ? null : description,
-      eventType: _eventType,
       creatorId: uid,
       startDate: _startDate,
       adminIds: [uid],
       memberIds: [uid],
       currency: _currency,
+      timeZone: timeZone,
     );
 
     try {
@@ -162,32 +163,6 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 spacing: AppSpacing.lg,
                 children: [
-                  // Event Type
-                  Text(
-                    'Event Type',
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  Wrap(
-                    spacing: AppSpacing.sm,
-                    children: EventType.values.map((type) {
-                      final isSelected = _eventType == type;
-                      return ChoiceChip(
-                        label: Text(type.label),
-                        selected: isSelected,
-                        onSelected: _isSubmitting
-                            ? null
-                            : (_) => setState(() => _eventType = type),
-                        selectedColor: AppColors.sage,
-                        labelStyle: TextStyle(
-                          color: isSelected
-                              ? AppColors.white
-                              : Theme.of(context).colorScheme.onSurface,
-                        ),
-                      );
-                    }).toList(),
-                  ),
 
                   const SizedBox(height: AppSpacing.sm),
 
@@ -278,7 +253,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                     decoration: const InputDecoration(
                       prefixIcon: Icon(AppIcons.currency),
                       border: OutlineInputBorder(),
-                      helperText: 'Cannot be changed after creating the event.',
+                      helperText: 'Can be changed in settings until money is recorded.',
                     ),
                     items: [
                       for (final code in CreateEventScreen.supportedCurrencies)

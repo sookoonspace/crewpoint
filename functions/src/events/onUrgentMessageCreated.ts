@@ -6,11 +6,21 @@ import {
   getFirestore,
 } from "firebase-admin/firestore";
 import {sendCategorizedPush} from "../notifications/sendPush";
+import {isOrganizerVerified} from "./organizers";
 
 const db = getFirestore();
 
 /** Default urgent pushes per sender per event per hour. */
 export const DEFAULT_URGENT_RATE_PER_HOUR = 5;
+
+/**
+ * Default rates by whether the event's organizer is verified. They match until
+ * a verification flow exists, when unverified organizers can be limited (Req 24).
+ */
+export const DEFAULT_URGENT_RATES = {
+  verified: DEFAULT_URGENT_RATE_PER_HOUR,
+  unverified: DEFAULT_URGENT_RATE_PER_HOUR,
+};
 
 const WINDOW_MS = 60 * 60 * 1000;
 
@@ -47,6 +57,8 @@ interface UrgentMessage {
   ref: DocumentReference;
   /** Clock seam. */
   now?: () => number;
+  /** Default rates, unless the event sets its own. */
+  rates?: {verified: number; unverified: number};
 }
 
 /**
@@ -60,6 +72,7 @@ export async function handleUrgentMessage({
   data,
   ref,
   now = Date.now,
+  rates = DEFAULT_URGENT_RATES,
 }: UrgentMessage): Promise<void> {
   if (data.isHighPriority !== true) return;
 
@@ -87,7 +100,9 @@ export async function handleUrgentMessage({
   const limit =
     Number.isInteger(configured) && configured > 0 ?
       configured :
-      DEFAULT_URGENT_RATE_PER_HOUR;
+      (await isOrganizerVerified(db, eventData.organizerId)) ?
+        rates.verified :
+        rates.unverified;
   if (!(await takeUrgentSlot(eventId, senderId, limit, now()))) {
     await ref.update({urgentPushSkipped: true});
     logger.info(`Urgent message ${messageId} is over the rate; no push sent`);

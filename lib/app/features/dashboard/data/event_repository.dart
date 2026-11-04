@@ -12,6 +12,37 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 /// Calls the `createEvent` Cloud Function. Injected so tests never reach it.
 typedef CreateEventCall = Future<void> Function(EventModel event);
 
+/// Calls the `changeEventCurrency` Cloud Function. Injected so tests never
+/// reach it.
+typedef ChangeEventCurrencyCall =
+    Future<void> Function(String eventId, String currency);
+
+/// What happened to a write, which Firestore holds offline until it can send.
+enum EventWriteResult {
+  saved,
+
+  /// Queued on this device, and sent when the connection returns.
+  pending,
+  failed,
+}
+
+/// Waits a bounded time for [write], because a queued write never completes
+/// while offline. The write carries on after the wait ends.
+Future<EventWriteResult> settleEventWrite(
+  Future<void> write, {
+  Duration wait = const Duration(seconds: 8),
+}) async {
+  try {
+    await write.timeout(wait);
+    return EventWriteResult.saved;
+  } on TimeoutException {
+    return EventWriteResult.pending;
+  } catch (e, st) {
+    log('Event write failed', error: e, stackTrace: st, name: 'events');
+    return EventWriteResult.failed;
+  }
+}
+
 /// Firestore-Write / Drift-Read repository for events.
 ///
 /// - Writes go to Firestore. Firestore SDK offline persistence handles
@@ -49,9 +80,10 @@ class EventRepository {
 
   /// Updates the client-editable fields on `events/{id}`.
   ///
-  /// Editable: `title`, `description`, `eventType`, `startDate`, `endDate`,
-  /// `status`. NOT writable here (server-gatekept or data-integrity locked):
-  /// `currency`, `memberIds`, `adminIds`, `creatorId`, `createdAt`.
+  /// Editable: `title`, `description`, `startDate`, `endDate`, `status`. NOT
+  /// writable here (server-gatekept or data-integrity locked): `currency`,
+  /// `memberIds`, `adminIds`, `creatorId`, `organizerId`, `templateId`,
+  /// `createdAt`.
   ///
   /// Returns `false` on caught failure (log + bool), matching the rest of
   /// the app's mutation pattern. `createEvent` retains its throw signature
@@ -64,7 +96,6 @@ class EventRepository {
       await docRef.update({
         'title': updated.title,
         'description': updated.description,
-        'eventType': updated.eventType.name,
         'startDate': updated.startDate != null
             ? Timestamp.fromDate(updated.startDate!)
             : null,
@@ -80,6 +111,20 @@ class EventRepository {
       return false;
     }
   }
+
+  /// Saves what the settings screen edits. Currency goes through
+  /// `changeEventCurrency` instead, because it can be refused.
+  Future<EventWriteResult> saveConfiguration(EventModel updated) =>
+      settleEventWrite(
+        _eventsRef.doc(updated.id).update({
+          'timeZone': updated.timeZone,
+          'venues': updated.venues.map((v) => v.toMap()).toList(),
+          'languages': updated.languages,
+          'capacity': updated.capacity,
+          'memberLimit': updated.memberLimit,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }),
+      );
 
   /// Streams the events the user is a member of. Starts/reuses a Firestore
   /// listener that mirrors snapshots into Drift on mobile/desktop; returns
@@ -145,13 +190,23 @@ class EventRepository {
         title: event.title,
         creatorId: event.creatorId,
         description: Value(event.description),
-        eventType: Value(event.eventType.name),
+        eventType: Value(event.displayType ?? ''),
         startDate: Value(event.startDate),
         endDate: Value(event.endDate),
         adminIds: Value(jsonEncode(event.adminIds)),
         memberIds: Value(jsonEncode(event.memberIds)),
         status: Value(event.status.name),
         currency: Value(event.currency),
+        templateId: Value(event.templateId),
+        organizerId: Value(event.organizerId),
+        timeZone: Value(event.timeZone),
+        venues: Value(jsonEncode(event.venues.map((v) => v.toMap()).toList())),
+        languages: Value(jsonEncode(event.languages)),
+        modules: Value(jsonEncode(event.modules)),
+        labels: Value(jsonEncode(event.labels)),
+        settings: Value(jsonEncode(event.settings)),
+        capacity: Value(event.capacity),
+        memberLimit: Value(event.memberLimit),
         createdAt: event.createdAt != null
             ? Value(event.createdAt!)
             : const Value.absent(),
@@ -166,7 +221,19 @@ class EventRepository {
     id: id,
     title: (data['title'] as String?) ?? '',
     description: data['description'] as String?,
-    eventType: EventType.fromString(data['eventType'] as String?),
+    templateId: (data['templateId'] as String?) ?? EventModel.defaultTemplateId,
+    displayType: data['eventType'] as String?,
+    organizerId: data['organizerId'] as String?,
+    timeZone: (data['timeZone'] as String?) ?? EventModel.defaultTimeZone,
+    venues: _parseVenues(data['venues']),
+    languages: data['languages'] is List
+        ? _parseStringList(data['languages'])
+        : EventModel.defaultLanguages,
+    modules: _parseModules(data['modules']),
+    labels: _parseMap(data['labels']),
+    settings: _parseMap(data['settings']),
+    capacity: (data['capacity'] as num?)?.toInt(),
+    memberLimit: (data['memberLimit'] as num?)?.toInt(),
     creatorId: (data['creatorId'] as String?) ?? '',
     startDate: (data['startDate'] as Timestamp?)?.toDate(),
     endDate: (data['endDate'] as Timestamp?)?.toDate(),
@@ -182,7 +249,17 @@ class EventRepository {
     id: row.id,
     title: row.title,
     description: row.description,
-    eventType: EventType.fromString(row.eventType),
+    templateId: row.templateId,
+    displayType: row.eventType.isEmpty ? null : row.eventType,
+    organizerId: row.organizerId,
+    timeZone: row.timeZone,
+    venues: _parseVenues(_decodeJson(row.venues)),
+    languages: _decodeJsonStringList(row.languages),
+    modules: _parseModules(_decodeJson(row.modules)),
+    labels: _parseMap(_decodeJson(row.labels)),
+    settings: _parseMap(_decodeJson(row.settings)),
+    capacity: row.capacity,
+    memberLimit: row.memberLimit,
     creatorId: row.creatorId,
     startDate: row.startDate,
     endDate: row.endDate,
@@ -193,6 +270,33 @@ class EventRepository {
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   );
+
+  Object? _decodeJson(String json) {
+    try {
+      return jsonDecode(json);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  List<EventVenue> _parseVenues(Object? raw) {
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map<Object?, Object?>>()
+        .map((v) => EventVenue.fromMap(v.cast<String, dynamic>()))
+        .toList();
+  }
+
+  Map<String, bool> _parseModules(Object? raw) {
+    if (raw is! Map) return EventModel.defaultModules;
+    return {
+      for (final entry in raw.entries)
+        if (entry.value is bool) entry.key.toString(): entry.value as bool,
+    };
+  }
+
+  Map<String, dynamic> _parseMap(Object? raw) =>
+      raw is Map ? raw.cast<String, dynamic>() : const {};
 
   List<String> _parseStringList(Object? raw) {
     if (raw is List) return raw.map((e) => e.toString()).toList();

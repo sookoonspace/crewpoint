@@ -88,6 +88,37 @@ beforeEach(async () => {
 });
 afterAll(() => ftest.cleanup());
 
+describe('organizers on deletion (Req 18a)', () => {
+  test('the personal organizer goes, and the event moves to the next owner', async () => {
+    await user('owner');
+    await db().doc(E).update({organizerId: 'owner'});
+    await db().doc('organizers/owner').set({ownerId: 'owner', verified: false});
+    await remove('owner');
+    expect(await exists('organizers/owner')).toBe(false);
+    const event = await read(E);
+    expect(event.organizerId).toBe(event.creatorId);
+    expect(event.organizerId).not.toBe('owner');
+    expect((await read(`organizers/${event.creatorId}`)).ownerId).toBe(event.creatorId);
+  });
+
+  test('moving an event keeps the next owner\'s verified flag', async () => {
+    await user('owner');
+    await db().doc(E).update({organizerId: 'owner'});
+    await db().doc('organizers/ann').set({ownerId: 'ann', verified: true});
+    await remove('owner');
+    const event = await read(E);
+    expect(event.creatorId).toBe('ann');
+    expect((await read('organizers/ann')).verified).toBe(true);
+  });
+
+  test('another person leaving does not change the organizer', async () => {
+    await user('ann');
+    await db().doc(E).update({organizerId: 'owner'});
+    await remove('ann');
+    expect((await read(E)).organizerId).toBe('owner');
+  });
+});
+
 describe('deleting an account', () => {
   test('removes every personal document', async () => {
     await remove('ann');

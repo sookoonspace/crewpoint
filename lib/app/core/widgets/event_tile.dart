@@ -46,7 +46,7 @@ class EventTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Icon(
-                iconForEventType(event.eventType),
+                iconForEventType(event.displayType),
                 size: AppSizes.emojiTile,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
