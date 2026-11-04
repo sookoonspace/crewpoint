@@ -1,9 +1,13 @@
+import 'package:clock/clock.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
+import 'package:crewpoint_app/app/features/chat/domain/dispute_window.dart';
 import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
 import 'package:crewpoint_app/app/features/chat/presentation/chat_screen.dart';
 import 'package:crewpoint_app/app/features/chat/presentation/widgets/dispute_sheet.dart';
@@ -61,11 +65,36 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
     });
   }
 
+  /// Read when a dispute is opened, so that this costs nothing otherwise. Falls
+  /// back to the default offline, and the server still enforces the real value.
+  Future<int> _disputeWindowDays() async {
+    try {
+      final event = await ref
+          .read(firestoreProvider)
+          .collection('events')
+          .doc(widget.event.id)
+          .get();
+      return disputeWindowDaysFrom(
+        event.data()?['settings'] as Map<String, dynamic>?,
+      );
+    } catch (_) {
+      return defaultDisputeWindowDays;
+    }
+  }
+
   Future<void> _onDispute(ChatMessageModel m) async {
     final summary = m.text.isEmpty ? 'Settlement record' : m.text;
+    final windowDays = await _disputeWindowDays();
+    if (!mounted) return;
+    final isOpen = isDisputeWindowOpen(
+      settledAt: m.timestamp,
+      windowDays: windowDays,
+      now: clock.now(),
+    );
     await DisputeSheet.show(
       context: context,
       summary: summary,
+      closedAfterDays: isOpen ? null : windowDays,
       onDispute: () async {
         final dispute = ref.read(disputeSettlementCallableProvider);
         try {
@@ -77,11 +106,19 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
               backgroundColor: AppColors.sage,
             ),
           );
-        } catch (_) {
+        } catch (e) {
           if (!mounted) return;
+          // The server has the final say on the window.
+          final windowClosed =
+              e is FirebaseFunctionsException &&
+              e.code == 'failed-precondition';
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Could not dispute — try again'),
+            SnackBar(
+              content: Text(
+                windowClosed
+                    ? context.strings.chat.disputeWindowClosed(windowDays)
+                    : 'Could not dispute — try again',
+              ),
               backgroundColor: AppColors.terracotta,
             ),
           );

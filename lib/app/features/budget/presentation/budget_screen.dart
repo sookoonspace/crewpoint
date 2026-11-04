@@ -4,6 +4,7 @@ import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
+import 'package:crewpoint_app/app/features/budget/data/member_name_resolver.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/expense_tile.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/settle_sheet.dart';
@@ -130,6 +131,7 @@ class BudgetScreen extends StatelessWidget {
             _BalancesCard(
               balances: ledger.netBalances,
               memberNames: memberNames,
+              memberIds: memberIds,
               symbol: symbol,
             ),
             const SizedBox(height: AppSpacing.xl),
@@ -142,6 +144,7 @@ class BudgetScreen extends StatelessWidget {
             _SettleUpCard(
               settlements: ledger.settlements,
               memberNames: memberNames,
+              memberIds: memberIds,
               symbol: symbol,
               onSettle: (settlement) {
                 if (onRecordPayment != null) {
@@ -256,15 +259,27 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
+/// A person's name, or the label for someone who has left the event, so a debt
+/// stays visible without ever showing a raw ID.
+String _nameOf(
+  String uid,
+  Map<String, String> memberNames,
+  List<String> memberIds,
+) => memberIds.contains(uid)
+    ? (memberNames[uid] ?? uid)
+    : resolveMemberName(uid: uid, memberNames: memberNames);
+
 class _BalancesCard extends StatelessWidget {
   const _BalancesCard({
     required this.balances,
     required this.memberNames,
+    required this.memberIds,
     required this.symbol,
   });
 
   final Map<String, double> balances;
   final Map<String, String> memberNames;
+  final List<String> memberIds;
   final String symbol;
 
   @override
@@ -288,7 +303,7 @@ class _BalancesCard extends StatelessWidget {
           for (var i = 0; i < entries.length; i++) ...[
             if (i > 0) const Divider(height: 1, indent: 16, endIndent: 16),
             _BalanceRow(
-              name: memberNames[entries[i].key] ?? entries[i].key,
+              name: _nameOf(entries[i].key, memberNames, memberIds),
               balance: entries[i].value,
               symbol: symbol,
             ),
@@ -359,12 +374,14 @@ class _SettleUpCard extends StatelessWidget {
   const _SettleUpCard({
     required this.settlements,
     required this.memberNames,
+    required this.memberIds,
     required this.symbol,
     required this.onSettle,
   });
 
   final List<Settlement> settlements;
   final Map<String, String> memberNames;
+  final List<String> memberIds;
   final String symbol;
   final ValueChanged<Settlement> onSettle;
 
@@ -387,12 +404,12 @@ class _SettleUpCard extends StatelessWidget {
             if (i > 0) const Divider(height: 1, indent: 16, endIndent: 16),
             _SettlementRow(
               settlement: settlements[i],
-              fromName:
-                  memberNames[settlements[i].fromUserId] ??
-                  settlements[i].fromUserId,
-              toName:
-                  memberNames[settlements[i].toUserId] ??
-                  settlements[i].toUserId,
+              fromName: _nameOf(
+                settlements[i].fromUserId,
+                memberNames,
+                memberIds,
+              ),
+              toName: _nameOf(settlements[i].toUserId, memberNames, memberIds),
               symbol: symbol,
               onSettle: () => onSettle(settlements[i]),
             ),

@@ -21,6 +21,11 @@ function invalid(message: string): HttpsError {
  * and its chat notice together. The server writes the notice text, so neither
  * the amount nor the wording can be forged.
  *
+ * A member records a payment they made to someone in the event. Holders of
+ * `money.record` (owners and admins until permissions land) can also record a
+ * payment to or from someone who has left, so that a former member's debt can
+ * still be settled. Anyone else must have appeared on the event's expenses.
+ *
  * The client chooses the ID, which both documents share. Sending the same
  * settlement again changes nothing, so a retry after a lost response is safe.
  */
@@ -50,6 +55,24 @@ export const recordSettlement = onCall(
         const expenseRef = eventRef.collection("expenses").doc(settlementId);
         const noticeRef = eventRef.collection("messages").doc(settlementId);
 
+        // Older expenses have no involvedUids, so this reads the event's
+        // expenses, but only when someone in this settlement has left.
+        const hasHistory = async (person: string): Promise<boolean> => {
+          const expenses = await eventRef
+            .collection("expenses")
+            .select("payerId", "splits")
+            .get();
+          return expenses.docs.some((doc) => {
+            const expense = doc.data();
+            return (
+              expense.payerId === person ||
+              (expense.splits ?? []).some(
+                (split: {userId: string}) => split.userId === person
+              )
+            );
+          });
+        };
+
         await db.runTransaction(async (tx) => {
           const eventDoc = await tx.get(eventRef);
           if (!eventDoc.exists) {
@@ -58,16 +81,38 @@ export const recordSettlement = onCall(
           const event = eventDoc.data()!;
           const memberIds: string[] = event.memberIds || [];
 
-          if (payerId !== uid || !memberIds.includes(uid)) {
+          const adminIds: string[] = event.adminIds || [];
+          if (!memberIds.includes(uid)) {
             throw new HttpsError(
               "permission-denied",
-              "You can only record a payment that you made in your own event."
+              "Only event members can record a payment."
             );
           }
           if (payeeId === payerId) throw invalid("You cannot pay yourself.");
-          if (!memberIds.includes(payeeId)) {
-            throw invalid("The person paid must be an event member.");
+
+          const departed = [payerId, payeeId].filter(
+            (person) => !memberIds.includes(person)
+          );
+          for (const person of departed) {
+            if (!(await hasHistory(person))) {
+              throw invalid("Both people must belong to this event.");
+            }
           }
+
+          const canRecordForOthers =
+            event.creatorId === uid || adminIds.includes(uid);
+          const isOwnPaymentToMember =
+            payerId === uid && departed.length === 0;
+          if (!isOwnPaymentToMember) {
+            if (!canRecordForOthers || departed.length === 0) {
+              throw new HttpsError(
+                "permission-denied",
+                "You can only record a payment you made, or one for someone " +
+                  "who has left if you manage the event's money."
+              );
+            }
+          }
+
           const maxAmount =
             event.settings?.maxExpenseAmount ?? DEFAULT_MAX_EXPENSE_AMOUNT;
           if (amount > maxAmount) {
@@ -100,12 +145,16 @@ export const recordSettlement = onCall(
             isPayment: true,
             splits: [{userId: payeeId, amount}],
             involvedUids: [payerId, payeeId],
+            recordedBy: uid,
             updatedAt: timestamp,
           });
           const symbol = CURRENCY_SYMBOLS[event.currency] ?? "$";
+          const party = payerId !== uid ?
+            "on behalf of a former member" :
+            departed.length > 0 ? "with a former member" : "with a member";
           tx.set(noticeRef, {
-            senderId: payerId,
-            text: `Settled ${symbol}${amount.toFixed(2)} with a member`,
+            senderId: uid,
+            text: `Settled ${symbol}${amount.toFixed(2)} ${party}`,
             isHighPriority: false,
             kind: "settlement",
             timestamp,

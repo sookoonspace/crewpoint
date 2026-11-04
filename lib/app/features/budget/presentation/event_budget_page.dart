@@ -8,6 +8,7 @@ import 'package:crewpoint_app/app/core/services/app_lifecycle_source.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/budget/application/pending_settlement_notifier.dart';
 import 'package:crewpoint_app/app/features/budget/data/expense_export_pipeline.dart';
+import 'package:crewpoint_app/app/features/budget/data/member_name_resolver.dart';
 import 'package:crewpoint_app/app/features/budget/data/pay_link_builder.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
@@ -83,6 +84,16 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
     final auth = ref.read(authProvider);
     if (auth is! Authenticated) return;
     final myUid = auth.user.uid;
+
+    final event = widget.event;
+    final involvesDeparted =
+        !event.isMember(settlement.fromUserId) ||
+        !event.isMember(settlement.toUserId);
+    if (involvesDeparted) {
+      await _settleForDeparted(settlement, canRecord: event.isAdmin(myUid));
+      return;
+    }
+
     // V1: only show the sheet when the current user is the payer.
     if (settlement.fromUserId != myUid) return;
 
@@ -121,6 +132,75 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
           const SnackBar(content: Text('Copied — paste it where you settle')),
         );
       },
+    );
+  }
+
+  /// Someone who has left cannot use a pay link, so `money.record` holders
+  /// record the payment directly. Owners and admins hold it until permissions
+  /// land.
+  Future<void> _settleForDeparted(
+    Settlement settlement, {
+    required bool canRecord,
+  }) async {
+    final strings = context.strings.budget;
+    if (!canRecord) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(strings.settleOnBehalfNeedsOrganizer)),
+      );
+      return;
+    }
+    final names = await _namesFor(settlement);
+    if (!mounted) return;
+    final symbol = _currencySymbol(widget.event.currency);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(strings.settleOnBehalfTitle),
+        content: Text(
+          strings.settleOnBehalfBody(
+            '$symbol${settlement.amount.toStringAsFixed(2)}',
+            names.from,
+            names.to,
+          ),
+        ),
+        actions: [
+          TextButton(
+            key: const Key('budget.settle.onBehalf.cancel'),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(strings.settleOnBehalfCancel),
+          ),
+          FilledButton(
+            key: const Key('budget.settle.onBehalf.confirm'),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(strings.settleOnBehalfConfirm),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final repo = ref.read(expenseRepositoryProvider);
+    await _recordSettlement(
+      payerId: settlement.fromUserId,
+      payeeId: settlement.toUserId,
+      amount: settlement.amount,
+      settlementId: repo.newSettlementId(widget.event.id),
+    );
+  }
+
+  Future<({String from, String to})> _namesFor(Settlement settlement) async {
+    final users = await ref.read(
+      usersByIdProvider(usersByIds(widget.event.memberIds)).future,
+    );
+    String nameOf(String uid) => resolveMemberName(
+      uid: uid,
+      memberNames: {
+        for (final entry in users.entries)
+          entry.key: entry.value.displayName ?? entry.value.email,
+      },
+    );
+    return (
+      from: nameOf(settlement.fromUserId),
+      to: nameOf(settlement.toUserId),
     );
   }
 
@@ -242,23 +322,30 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
     if (confirmed != true) return;
 
     final repo = ref.read(expenseRepositoryProvider);
-    await _recordSettlement(pending, repo.newSettlementId(widget.event.id));
+    await _recordSettlement(
+      payerId: pending.payerId,
+      payeeId: pending.payeeId,
+      amount: pending.amount,
+      settlementId: repo.newSettlementId(widget.event.id),
+    );
   }
 
   /// Records a confirmed payment, and offers retry with the same [settlementId]
   /// when there is no connection, so it can never be recorded twice.
-  Future<void> _recordSettlement(
-    PendingSettlement pending,
-    String settlementId,
-  ) async {
+  Future<void> _recordSettlement({
+    required String payerId,
+    required String payeeId,
+    required double amount,
+    required String settlementId,
+  }) async {
     final result = await ref
         .read(expenseRepositoryProvider)
         .recordSettlement(
           eventId: widget.event.id,
           settlementId: settlementId,
-          payerId: pending.payerId,
-          payeeId: pending.payeeId,
-          amount: pending.amount,
+          payerId: payerId,
+          payeeId: payeeId,
+          amount: amount,
         );
     if (result == ExpenseSaveResult.saved || !mounted) return;
     final strings = context.strings.budget;
@@ -276,7 +363,12 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
             ? SnackBarAction(
                 key: const Key('budget.settle.retry'),
                 label: strings.expenseRetry,
-                onPressed: () => _recordSettlement(pending, settlementId),
+                onPressed: () => _recordSettlement(
+                  payerId: payerId,
+                  payeeId: payeeId,
+                  amount: amount,
+                  settlementId: settlementId,
+                ),
               )
             : null,
       ),

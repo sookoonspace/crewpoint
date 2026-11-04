@@ -1,8 +1,12 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
+import {clock} from "../utils/clock";
 import {requireString, withStructuredLogs} from "../utils/logging";
 
 const db = getFirestore();
+
+export const DEFAULT_DISPUTE_WINDOW_DAYS = 30;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * disputeSettlement — rolls back a settlement that the payer or payee
@@ -11,6 +15,9 @@ const db = getFirestore();
  * - Caller must be a current member, and the payer or payee of the settlement
  * - Deletes the settlement expense
  * - Replaces the chat notice text with a "disputed" line
+ *
+ * - Limited to `settings.disputeWindowDays` (default 30) after it was recorded,
+ *   measured from when the server created the document
  *
  * The chat notice has the same id as the expense (idempotent on
  * retries).
@@ -68,10 +75,26 @@ export const disputeSettlement = onCall(
         const eventDoc = await db.collection("events").doc(eventId).get();
         const memberIds: string[] = eventDoc.data()?.memberIds || [];
 
-        if ((uid !== payerId && uid !== payeeId) || !memberIds.includes(uid)) {
+        const isParty =
+          uid === payerId || uid === payeeId || uid === expense.recordedBy;
+        if (!isParty || !memberIds.includes(uid)) {
           throw new HttpsError(
             "permission-denied",
             "Only the payer or the payee can dispute this settlement."
+          );
+        }
+
+        const configured = eventDoc.data()?.settings?.disputeWindowDays;
+        const windowDays =
+          typeof configured === "number" && configured > 0 ?
+            configured :
+            DEFAULT_DISPUTE_WINDOW_DAYS;
+        const closesAt =
+          expenseDoc.createTime!.toMillis() + windowDays * DAY_MS;
+        if (clock.now() > closesAt) {
+          throw new HttpsError(
+            "failed-precondition",
+            `Settlements can only be disputed within ${windowDays} days.`
           );
         }
 

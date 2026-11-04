@@ -9,8 +9,10 @@ import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/format/event_date_range.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/loading_animation.dart';
+import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/mute_event_sheet.dart';
@@ -430,27 +432,73 @@ class _QuickLinkCard extends StatelessWidget {
 }
 
 /// Archive, Leave, Delete actions for the event dashboard.
-class _EventActions extends StatefulWidget {
+class _EventActions extends ConsumerStatefulWidget {
   const _EventActions({required this.event, required this.currentUserId});
 
   final EventModel event;
   final String currentUserId;
 
   @override
-  State<_EventActions> createState() => _EventActionsState();
+  ConsumerState<_EventActions> createState() => _EventActionsState();
 }
 
-class _EventActionsState extends State<_EventActions> {
+class _EventActionsState extends ConsumerState<_EventActions> {
   bool _isLoading = false;
 
+  /// The person's outstanding balance, or null if it is settled or cannot be
+  /// worked out. Leaving is never blocked, so a failure here just skips the
+  /// warning.
+  Future<double?> _outstandingBalance() async {
+    // Keeps the stream listened to while this waits. A read with no listener
+    // can leave the provider paused, and the wait would never finish.
+    final subscription = ref.listenManual(
+      expenseListProvider(widget.event.id).future,
+      (_, _) {},
+    );
+    try {
+      final expenses = await subscription.read().timeout(
+        const Duration(seconds: 3),
+      );
+      final balance = BalanceLedger.calculate(
+        expenses: expenses,
+        memberIds: widget.event.memberIds,
+      ).netBalances[widget.currentUserId];
+      return balance != null && balance.abs() > 0.01 ? balance : null;
+    } catch (_) {
+      return null;
+    } finally {
+      subscription.close();
+    }
+  }
+
   Future<void> _leaveEvent() async {
+    final balance = await _outstandingBalance();
+    if (!mounted) return;
+    final warning = balance == null
+        ? null
+        : context.strings.dashboard.leaveEventBalanceWarning(
+            balance.abs().toStringAsFixed(2),
+          );
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Leave Event?'),
-        content: const Text(
-          'You will lose access to this event. '
-          'Your past messages and expenses will remain.',
+        content: Column(
+          mainAxisSize: .min,
+          crossAxisAlignment: .start,
+          spacing: AppSpacing.sm,
+          children: [
+            const Text(
+              'You will lose access to this event. '
+              'Your past messages and expenses will remain.',
+            ),
+            if (warning != null)
+              Text(
+                warning,
+                key: const Key('event.leave.balanceWarning'),
+                style: TextStyle(color: Theme.of(ctx).colorScheme.error),
+              ),
+          ],
         ),
         actions: [
           TextButton(
@@ -458,6 +506,7 @@ class _EventActionsState extends State<_EventActions> {
             child: const Text('Cancel'),
           ),
           TextButton(
+            key: const Key('event.leave.confirm'),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text(
               'Leave',
@@ -652,6 +701,7 @@ class _EventActionsState extends State<_EventActions> {
               ),
             ),
             child: ListTile(
+              key: const Key('event.action.leave'),
               leading: Icon(
                 AppIcons.actionLogout,
                 color: Theme.of(context).colorScheme.onSurface,

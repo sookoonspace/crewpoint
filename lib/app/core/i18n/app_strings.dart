@@ -208,6 +208,7 @@ abstract class DashboardStrings {
   String get createEventCta;
   String get createEventNeedsConnection;
   String get createEventRetry;
+  String leaveEventBalanceWarning(String amount);
   String upcomingEventsHeader(int count);
   String pastEventsHeader(int count);
 
@@ -249,6 +250,9 @@ abstract class ChatStrings {
 
   /// Shown to the sender on an urgent message that alerted nobody.
   String get urgentLimitReached;
+
+  /// Shown instead of the dispute option once the window has closed.
+  String disputeWindowClosed(int days);
 }
 
 /// User-facing strings for the cross-event Budget tab — the Financial Ledger.
@@ -261,6 +265,11 @@ abstract class BudgetStrings {
   String get expenseRetry;
   String get settlementNeedsConnection;
   String get settlementRejected;
+  String get settleOnBehalfTitle;
+  String settleOnBehalfBody(String amount, String from, String to);
+  String get settleOnBehalfConfirm;
+  String get settleOnBehalfCancel;
+  String get settleOnBehalfNeedsOrganizer;
 
   // Ledger surface.
   String get ledgerAppBarTitle;
@@ -441,6 +450,11 @@ class _EnglishChatStrings extends ChatStrings {
   String get urgentBadge => 'URGENT';
 
   @override
+  String disputeWindowClosed(int days) =>
+      'This settlement can no longer be disputed, because more than $days days '
+      'have passed.';
+
+  @override
   String get urgentLimitReached =>
       'Saved, but nobody was alerted: you have reached the limit for urgent '
       'messages. Try again later.';
@@ -466,6 +480,25 @@ class _EnglishBudgetStrings extends BudgetStrings {
 
   @override
   String get settlementRejected => 'This payment could not be recorded.';
+
+  @override
+  String get settleOnBehalfTitle => 'Record this payment?';
+
+  @override
+  String settleOnBehalfBody(String amount, String from, String to) =>
+      'This records that $from paid $to $amount. One of them has left the '
+      'event, so nothing is sent to a payment app.';
+
+  @override
+  String get settleOnBehalfConfirm => 'Record payment';
+
+  @override
+  String get settleOnBehalfCancel => 'Cancel';
+
+  @override
+  String get settleOnBehalfNeedsOrganizer =>
+      'This person has left the event, so an organizer needs to record this '
+      'payment.';
 
   @override
   String get ledgerAppBarTitle => 'Budget';
@@ -672,6 +705,11 @@ class _EnglishDashboardStrings extends DashboardStrings {
 
   @override
   String get createEventRetry => 'Retry';
+
+  @override
+  String leaveEventBalanceWarning(String amount) =>
+      'You have an outstanding balance of $amount. You can still leave, and '
+      'it stays visible to the event so it can be settled.';
 
   @override
   String upcomingEventsHeader(int count) => '$count UPCOMING EVENTS';
