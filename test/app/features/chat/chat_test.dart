@@ -93,8 +93,12 @@ void main() {
   group('ChatScreen', () {
     testWidgets('shows critical alert button', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: ChatScreen(messages: [], currentUserId: 'user-1'),
+        MaterialApp(
+          home: ChatScreen(
+            messages: const [],
+            currentUserId: 'user-1',
+            onSendCriticalAlert: (_) {},
+          ),
         ),
       );
 

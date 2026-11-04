@@ -78,6 +78,7 @@ class ChatRepository implements IChatRepository {
                     senderId: Value(m.senderId),
                     content: Value(m.text),
                     isHighPriority: Value(m.isHighPriority),
+                    urgentPushSkipped: Value(m.urgentPushSkipped),
                     timestamp: Value(m.timestamp),
                   ),
                 );
@@ -274,6 +275,7 @@ class ChatRepository implements IChatRepository {
     timestamp: m.timestamp,
     isHighPriority: m.isHighPriority,
     kind: ChatMessageKind.fromString(m.kind),
+    urgentPushSkipped: m.urgentPushSkipped,
   );
 
   ChatMessageModel _rowToDomain(db.ChatMessage row) => ChatMessageModel(
@@ -283,5 +285,6 @@ class ChatRepository implements IChatRepository {
     text: row.content,
     timestamp: row.timestamp,
     isHighPriority: row.isHighPriority,
+    urgentPushSkipped: row.urgentPushSkipped,
   );
 }

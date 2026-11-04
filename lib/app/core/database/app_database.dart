@@ -84,6 +84,8 @@ class ChatMessages extends Table {
   TextColumn get content => text()();
   BoolColumn get isHighPriority =>
       boolean().withDefault(const Constant(false))();
+  BoolColumn get urgentPushSkipped =>
+      boolean().withDefault(const Constant(false))();
   DateTimeColumn get timestamp => dateTime()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
@@ -146,7 +148,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -191,6 +193,18 @@ class AppDatabase extends _$AppDatabase {
           'PRIMARY KEY (event_id, uid)'
           ')',
         );
+      }
+      if (from < 8) {
+        // Safe to re-run after a partial migration, like the step above.
+        final columns = await customSelect(
+          'PRAGMA table_info(chat_messages)',
+        ).get();
+        final hasColumn = columns.any(
+          (c) => c.data['name'] == 'urgent_push_skipped',
+        );
+        if (columns.isNotEmpty && !hasColumn) {
+          await m.addColumn(chatMessages, chatMessages.urgentPushSkipped);
+        }
       }
     },
   );

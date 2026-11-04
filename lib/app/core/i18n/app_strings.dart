@@ -246,6 +246,9 @@ abstract class ChatStrings {
 
   /// Rendered as a small terracotta pill on rows marked critical/urgent.
   String get urgentBadge;
+
+  /// Shown to the sender on an urgent message that alerted nobody.
+  String get urgentLimitReached;
 }
 
 /// User-facing strings for the cross-event Budget tab — the Financial Ledger.
@@ -436,6 +439,11 @@ class _EnglishChatStrings extends ChatStrings {
 
   @override
   String get urgentBadge => 'URGENT';
+
+  @override
+  String get urgentLimitReached =>
+      'Saved, but nobody was alerted: you have reached the limit for urgent '
+      'messages. Try again later.';
 }
 
 class _EnglishBudgetStrings extends BudgetStrings {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
@@ -114,16 +115,18 @@ class _ChatScreenState extends State<ChatScreen> {
         toolbarHeight: kToolbarHeight + 16,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(
-              AppIcons.statusUrgent,
-              color: AppColors.terracotta,
+          if (widget.onSendCriticalAlert != null)
+            IconButton(
+              key: const Key('chat.urgent.open'),
+              icon: const Icon(
+                AppIcons.statusUrgent,
+                color: AppColors.terracotta,
+              ),
+              onPressed: () => CriticalAlertModal.show(
+                context: context,
+                onSend: widget.onSendCriticalAlert,
+              ),
             ),
-            onPressed: () => CriticalAlertModal.show(
-              context: context,
-              onSend: widget.onSendCriticalAlert,
-            ),
-          ),
         ],
       ),
       body: ContentMaxWidth(
@@ -172,6 +175,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   isHighPriority: message.isHighPriority,
                                   senderName: senderName,
                                   kind: message.kind,
+                                  urgentPushSkipped: message.urgentPushSkipped,
                                 ),
                           isCurrentUser:
                               message.senderId == widget.currentUserId,
@@ -258,6 +262,11 @@ class _MessageInput extends StatelessWidget {
                     hintText: s.messageInputHint,
                     border: InputBorder.none,
                   ),
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(
+                      ChatMessageModel.maxTextLength,
+                    ),
+                  ],
                   textInputAction: TextInputAction.send,
                   onSubmitted: (_) => onSend(),
                 ),

@@ -54,7 +54,7 @@ export const deleteEvent = onCall(
           );
         }
 
-        for (const sub of ["messages", "expenses", "tasks"]) {
+        for (const sub of ["messages", "expenses", "tasks", "urgentRates"]) {
           await streamDeleteSubcollection(eventRef, sub);
         }
 
