@@ -74,5 +74,6 @@ class FirestoreChatService implements IChatService {
     timestamp: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
     isHighPriority: data['isHighPriority'] as bool? ?? false,
     kind: data['kind'] as String?,
+    urgentPushSkipped: data['urgentPushSkipped'] as bool? ?? false,
   );
 }

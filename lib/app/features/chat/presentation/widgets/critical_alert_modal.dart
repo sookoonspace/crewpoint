@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/widgets/custom_text_field.dart';
+import 'package:crewpoint_app/app/core/widgets/forms/app_text_field.dart';
 import 'package:crewpoint_app/app/core/widgets/destructive_button.dart';
 
 class CriticalAlertModal extends StatefulWidget {
@@ -84,9 +85,11 @@ class _CriticalAlertModalState extends State<CriticalAlertModal> {
               }),
             ),
           ),
-          CustomTextField(
+          AppTextField(
+            key: const Key('chat.urgent.custom'),
             hintText: 'Or type a custom alert...',
             controller: _customController,
+            maxLength: ChatMessageModel.maxTextLength,
             onChanged: (_) => setState(() => _selectedAlert = null),
           ),
           DestructiveButton(label: 'Send Alert', onPressed: _send),

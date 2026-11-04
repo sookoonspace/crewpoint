@@ -107,6 +107,25 @@ void main() {
     expect(localRows, hasLength(1));
   });
 
+  test('the urgent limit flag survives the Drift mirror', () async {
+    final stream = repo.watchMessages('event-1');
+    final seen = stream.firstWhere(
+      (messages) => messages.any((m) => m.urgentPushSkipped),
+    );
+    service.emit('event-1', [
+      ChatMessage(
+        id: 'm1',
+        eventId: 'event-1',
+        senderId: 'sender',
+        text: 'Fire',
+        timestamp: DateTime(2027),
+        isHighPriority: true,
+        urgentPushSkipped: true,
+      ),
+    ]);
+    expect((await seen).single.urgentPushSkipped, isTrue);
+  });
+
   test('Drift cache caps at maxCachedRows, evicting oldest first', () async {
     final stream = repo.watchMessages('event-1');
     final sub = stream.listen((_) {});

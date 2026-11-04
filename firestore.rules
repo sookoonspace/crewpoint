@@ -48,7 +48,16 @@ service cloud.firestore {
           && request.resource.data.senderId == request.auth.uid
           // Notices such as `settlement` and `settlement_disputed` are written
           // only by the server, so a member cannot forge one.
-          && !('kind' in request.resource.data);
+          && !('kind' in request.resource.data)
+          // Set only by the server, when a sender is over the urgent rate.
+          && !('urgentPushSkipped' in request.resource.data)
+          && request.resource.data.text is string
+          && request.resource.data.text.size() <= 4000
+          // Urgent sending needs `chat.urgent`, which owners and admins hold
+          // until permissions land.
+          && (request.resource.data.get('isHighPriority', false) != true
+              || get(/databases/$(database)/documents/events/$(eventId)).data.creatorId == request.auth.uid
+              || request.auth.uid in get(/databases/$(database)/documents/events/$(eventId)).data.adminIds);
 
         allow delete: if request.auth != null
           && isEventMember(eventId)

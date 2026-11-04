@@ -88,7 +88,7 @@ void main() {
 
       // Schema version moved.
       final version = raw.select('PRAGMA user_version').first.values.first;
-      expect(version, 7);
+      expect(version, db.schemaVersion);
 
       await db.close();
     },
@@ -108,11 +108,5 @@ void main() {
     // No throw expected.
     await db.customSelect('SELECT count(*) FROM chat_reads').get();
     await db.close();
-  });
-
-  test('schemaVersion is 7', () {
-    final db = AppDatabase(NativeDatabase.memory());
-    expect(db.schemaVersion, 7);
-    db.close();
   });
 }

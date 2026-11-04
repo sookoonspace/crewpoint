@@ -6,12 +6,18 @@ import {assertFails} from '@firebase/rules-unit-testing';
 import {doc, setDoc, updateDoc} from 'firebase/firestore';
 import {clearFirestoreEmulator, getAdminApp, getAdminDb, getTestEnv} from '../test/setup';
 
+const mockSendEach = jest.fn();
+jest.mock('firebase-admin/messaging', () => ({
+  getMessaging: () => ({sendEach: mockSendEach}),
+}));
+
 const firebaseFunctionsTest = require('firebase-functions-test');
 const ftest = firebaseFunctionsTest();
 getAdminApp();
 const {saveExpense} = require('../src/events/saveExpense');
 const {recordSettlement} = require('../src/events/recordSettlement');
 const {createEvent} = require('../src/events/createEvent');
+const {handleUrgentMessage} = require('../src/events/onUrgentMessageCreated');
 
 const E = 'foundation';
 const call = (uid: string, data: object) => ftest.wrap(saveExpense)({auth: {uid}, data});
@@ -192,5 +198,71 @@ describe('FND-03 strangers', () => {
     const saved = (await getAdminDb().doc('events/made').get()).data()!;
     expect(saved.memberIds).toEqual(['owner']);
     expect(saved.creatorId).toBe('owner');
+  });
+});
+
+describe('FND-04 urgent messages', () => {
+  let env: RulesTestEnvironment;
+  const event = {
+    title: 'Trip',
+    creatorId: 'owner',
+    adminIds: ['owner'],
+    memberIds: ['owner', 'member'],
+  };
+  const NOW = Date.UTC(2027, 0, 1);
+
+  beforeAll(async () => {
+    env = await getTestEnv();
+  });
+  beforeEach(async () => {
+    await clearFirestoreEmulator();
+    await env.clearFirestore();
+    mockSendEach.mockReset();
+    mockSendEach.mockImplementation(async (m: unknown[]) => ({
+      responses: m.map(() => ({success: true})),
+    }));
+    await getAdminDb().doc('events/urgent').set(event);
+    await getAdminDb().doc('users/member/private/profile').set({fcmTokens: ['tok']});
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'events/urgent'), event);
+    });
+  });
+  afterAll(() => env.cleanup());
+
+  async function urgentFrom(id: string, at: number) {
+    const ref = getAdminDb().doc(`events/urgent/messages/${id}`);
+    const data = {senderId: 'owner', text: 'Fire', isHighPriority: true};
+    await ref.set(data);
+    await handleUrgentMessage({eventId: 'urgent', messageId: id, data, ref, now: () => at});
+    return ref;
+  }
+
+  test('FND-04 sending urgent needs permission', async () => {
+    const db = env.authenticatedContext('member').firestore();
+    await assertFails(
+      setDoc(doc(db, 'events/urgent/messages/m'), {
+        senderId: 'member',
+        text: 'Fire',
+        isHighPriority: true,
+      })
+    );
+  });
+
+  test('FND-04 message text is limited to 4,000 characters', async () => {
+    const db = env.authenticatedContext('member').firestore();
+    await assertFails(
+      setDoc(doc(db, 'events/urgent/messages/m'), {senderId: 'member', text: 'a'.repeat(4001)})
+    );
+  });
+
+  test('FND-04 over the rate, the message is saved with no push, and flagged', async () => {
+    for (let i = 0; i < 5; i++) await urgentFrom(`m${i}`, NOW + i);
+    expect(mockSendEach).toHaveBeenCalledTimes(5);
+
+    const sixth = await urgentFrom('m5', NOW + 5);
+    expect(mockSendEach).toHaveBeenCalledTimes(5);
+    const saved = (await sixth.get()).data()!;
+    expect(saved.text).toBe('Fire');
+    expect(saved.urgentPushSkipped).toBe(true);
   });
 });

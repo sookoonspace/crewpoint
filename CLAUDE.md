@@ -60,7 +60,7 @@ Keep the Architecture sections below, including RBAC and the Firestore data mode
 - **`kIsWeb` forks to the raw Firestore stream** — Drift on web is Wasm/in-memory, so mirroring buys nothing there. Any new mirrored stream needs the same fork.
 - Mirror subscriptions are torn down through `ref.onDispose(() => repo.disposeMirror(key))` in the provider, not by the repository itself.
 
-Drift schema is at v7 with explicit migrations in `lib/app/core/database/app_database.dart`; tables are declared inline there, DAOs in `database/daos/`. Bumping the schema means adding a migration step *and* a `test/database/migration_vN_to_vN+1_test.dart`.
+Drift schema is at v8 with explicit migrations in `lib/app/core/database/app_database.dart`; tables are declared inline there, DAOs in `database/daos/`. Bumping the schema means adding a migration step *and* a `test/database/migration_vN_to_vN+1_test.dart`.
 
 ### Providers
 

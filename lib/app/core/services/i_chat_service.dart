@@ -27,6 +27,7 @@ class ChatMessage {
     required this.timestamp,
     this.isHighPriority = false,
     this.kind,
+    this.urgentPushSkipped = false,
   });
 
   final String id;
@@ -38,4 +39,8 @@ class ChatMessage {
 
   /// Raw kind tag — used by the domain layer to map to [ChatMessageKind].
   final String? kind;
+
+  /// Set by the server when the sender was over the urgent rate, so the message
+  /// was saved but nobody was alerted.
+  final bool urgentPushSkipped;
 }

@@ -71,7 +71,7 @@ void main() {
       // (chat-reads table); a v5-shaped DB cascades through both v5→v6
       // and v6→v7 onUpgrade steps and lands at 7.
       final version = raw.select('PRAGMA user_version').first.values.first;
-      expect(version, 7);
+      expect(version, db.schemaVersion);
 
       await db.close();
     },

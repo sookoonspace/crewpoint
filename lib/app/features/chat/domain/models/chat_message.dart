@@ -20,7 +20,11 @@ class ChatMessageModel {
     this.isHighPriority = false,
     this.senderName,
     this.kind = ChatMessageKind.normal,
+    this.urgentPushSkipped = false,
   });
+
+  /// The most text a message can hold, matching `firestore.rules`.
+  static const int maxTextLength = 4000;
 
   final String id;
   final String eventId;
@@ -30,4 +34,7 @@ class ChatMessageModel {
   final bool isHighPriority;
   final String? senderName;
   final ChatMessageKind kind;
+
+  /// The sender was over the urgent rate, so nobody was alerted.
+  final bool urgentPushSkipped;
 }

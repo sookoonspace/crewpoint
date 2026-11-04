@@ -28,6 +28,59 @@ afterAll(async () => {
   await env.cleanup();
 });
 
+describe('messages — urgent permission and size', () => {
+  const E = 'events/evtMsg';
+  const as = (uid: string) => env.authenticatedContext(uid).firestore();
+  const seed = () =>
+    env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), E), {
+        creatorId: 'owner',
+        adminIds: ['owner', 'admin'],
+        memberIds: ['owner', 'admin', 'member'],
+      });
+    });
+  const send = (uid: string, data: object) =>
+    setDoc(doc(as(uid), `${E}/messages/m-${uid}`), {senderId: uid, text: 'hi', ...data});
+
+  test.each(['owner', 'admin'])('%s can send an urgent message', async (uid) => {
+    await seed();
+    await assertSucceeds(send(uid, {isHighPriority: true}));
+  });
+
+  test('a member cannot send an urgent message', async () => {
+    await seed();
+    await assertFails(send('member', {isHighPriority: true}));
+  });
+
+  test('a member can send a normal message', async () => {
+    await seed();
+    await assertSucceeds(send('member', {isHighPriority: false}));
+    await assertSucceeds(send('admin', {}));
+  });
+
+  test('text can be 4,000 characters, and no more', async () => {
+    await seed();
+    await assertSucceeds(send('member', {text: 'a'.repeat(4000)}));
+    await assertFails(send('admin', {text: 'a'.repeat(4001)}));
+  });
+
+  test('text must be text', async () => {
+    await seed();
+    await assertFails(send('member', {text: 5}));
+  });
+
+  test('a client cannot set the skipped flag', async () => {
+    await seed();
+    await assertFails(send('member', {urgentPushSkipped: true}));
+  });
+
+  test('the rate limit record cannot be read or written', async () => {
+    await seed();
+    await assertFails(getDoc(doc(as('admin'), `${E}/urgentRates/admin`)));
+    await assertFails(setDoc(doc(as('admin'), `${E}/urgentRates/admin`), {sentAt: []}));
+  });
+});
+
 describe('events create — only the createEvent callable', () => {
   test('a client cannot create an event directly, even as its owner', async () => {
     const db = env.authenticatedContext('me').firestore();

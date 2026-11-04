@@ -123,7 +123,10 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
         isSending: _isSending,
         lastSendFailed: _lastSendFailed,
         onSendMessage: (text) => _send(text),
-        onSendCriticalAlert: (text) => _send(text, isHighPriority: true),
+        // Needs `chat.urgent`, which owners and admins hold until permissions land.
+        onSendCriticalAlert: widget.event.isAdmin(uid)
+            ? (text) => _send(text, isHighPriority: true)
+            : null,
         onTapSettlement: _onDispute,
       ),
       loading: () => Scaffold(

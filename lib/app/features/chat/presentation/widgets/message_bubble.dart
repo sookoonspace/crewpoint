@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
@@ -137,6 +138,17 @@ class MessageBubble extends StatelessWidget {
                   : Theme.of(context).colorScheme.onSurface,
             ),
           ),
+          if (isCurrentUser && message.urgentPushSkipped)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.xs),
+              child: Text(
+                context.strings.chat.urgentLimitReached,
+                key: const Key('chat.message.urgentLimited'),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ),
         ],
       ),
     );
