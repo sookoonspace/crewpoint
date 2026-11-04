@@ -1,6 +1,6 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {getFirestore} from "firebase-admin/firestore";
-import {streamDeleteSubcollection} from "../utils/batch";
+import {deleteEventCompletely} from "./eventDeletion";
 import {requireString, withStructuredLogs} from "../utils/logging";
 
 const db = getFirestore();
@@ -54,23 +54,7 @@ export const deleteEvent = onCall(
           );
         }
 
-        for (const sub of ["messages", "expenses", "tasks", "urgentRates"]) {
-          await streamDeleteSubcollection(eventRef, sub);
-        }
-
-        const inviteCodes = await db
-          .collection("event_invites")
-          .where("eventId", "==", eventId)
-          .get();
-        if (!inviteCodes.empty) {
-          const batch = db.batch();
-          for (const doc of inviteCodes.docs) {
-            batch.delete(doc.ref);
-          }
-          await batch.commit();
-        }
-
-        await eventRef.delete();
+        await deleteEventCompletely(eventRef, eventData);
 
         return {success: true};
       }

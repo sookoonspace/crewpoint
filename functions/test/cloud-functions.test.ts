@@ -1090,7 +1090,7 @@ describe('deleteUserAccount', () => {
         .collection('messages')
         .doc('m1')
         .get();
-      expect(msgAfter.data()!.senderId).toBe('deleted_user');
+      expect(msgAfter.data()!.senderId).toMatch(/^deleted_/);
 
       // Expenses anonymized.
       const expAfter = await db
@@ -1099,7 +1099,7 @@ describe('deleteUserAccount', () => {
         .collection('expenses')
         .doc('e1')
         .get();
-      expect(expAfter.data()!.payerId).toBe('deleted_user');
+      expect(expAfter.data()!.payerId).toMatch(/^deleted_/);
 
       // Tasks unassigned.
       const taskAfter = await db

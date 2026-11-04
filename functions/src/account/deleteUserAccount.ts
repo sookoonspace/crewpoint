@@ -1,5 +1,6 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions/v2";
+import {createHmac, randomBytes} from "crypto";
 import {getAuth} from "firebase-admin/auth";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {getStorage} from "firebase-admin/storage";
@@ -8,6 +9,7 @@ import {
   streamDeleteSubcollection,
   BatchOperation,
 } from "../utils/batch";
+import {deleteEventCompletely} from "../events/eventDeletion";
 import {withStructuredLogs} from "../utils/logging";
 
 const db = getFirestore();
@@ -83,32 +85,107 @@ export async function deleteAuthUserWithRetry(
 }
 
 /**
- * Deletes an event and all its subcollections (messages, expenses,
- * tasks). Bounded memory via paged streaming deletes — safe for events
- * with arbitrarily large subcollections.
+ * The anonymous ID that stands in for a deleted person in one event.
+ *
+ * One person gets one ID per event, so a ledger still balances and two deleted
+ * people are never merged. It comes from a per-event secret only the server can
+ * read, so it cannot be traced back to the person, yet a retry after a partial
+ * failure gets the same ID instead of splitting them in two.
  */
-async function deleteEventCompletely(
-  eventRef: FirebaseFirestore.DocumentReference
-): Promise<void> {
-  for (const sub of ["messages", "expenses", "tasks"]) {
-    await streamDeleteSubcollection(eventRef, sub);
-  }
-  await eventRef.delete();
+async function anonymousIdFor(
+  eventRef: FirebaseFirestore.DocumentReference,
+  uid: string
+): Promise<string> {
+  const secretRef = eventRef.collection("anonymisation").doc("secret");
+  const secret = await db.runTransaction(async (tx) => {
+    const existing = await tx.get(secretRef);
+    if (existing.exists) return existing.data()!.value as string;
+    const value = randomBytes(32).toString("hex");
+    tx.set(secretRef, {value});
+    return value;
+  });
+  const digest = createHmac("sha256", secret).update(uid).digest("hex");
+  return `deleted_${digest.slice(0, 24)}`;
 }
 
 /**
- * Anonymizes a user's data in a shared event:
- * - Transfers creatorId to first admin (or first remaining member)
- * - Removes user from memberIds and adminIds
- * - Anonymizes messages/expenses
- * - Unassigns tasks
+ * Removes a person from a shared event:
+ * - Replaces their ID with an anonymous one in expenses, tasks and messages
+ * - Unassigns their tasks, and removes their urgent rate record
+ * - Transfers creatorId to the first admin, or else the first remaining member
+ * - Removes them from memberIds and adminIds
+ *
+ * Membership changes last. A retry finds the event through memberIds, so it
+ * must stay until the shared records are clean.
  */
-async function anonymizeUserInEvent(
+export async function anonymizeUserInEvent(
   eventRef: FirebaseFirestore.DocumentReference,
   eventData: FirebaseFirestore.DocumentData,
   uid: string
 ): Promise<void> {
-  const ops: BatchOperation[] = [];
+  const anonymousId = await anonymousIdFor(eventRef, uid);
+  const swap = (id: string) => (id === uid ? anonymousId : id);
+
+  // Several queries can match one document, so changes merge by path.
+  const updates = new Map<string, BatchOperation>();
+  const change = (
+    ref: FirebaseFirestore.DocumentReference,
+    data: Record<string, unknown>
+  ) => {
+    const existing = updates.get(ref.path);
+    updates.set(ref.path, {
+      type: "update",
+      ref,
+      data: {...existing?.data, ...data},
+    });
+  };
+
+  const replaceIn = async (
+    collection: string,
+    field: string,
+    replacement: string | null
+  ) => {
+    const matches = await eventRef
+      .collection(collection)
+      .where(field, "==", uid)
+      .get();
+    matches.docs.forEach((doc) => change(doc.ref, {[field]: replacement}));
+  };
+
+  await replaceIn("messages", "senderId", anonymousId);
+  await replaceIn("messages", "payerId", anonymousId);
+  await replaceIn("messages", "payeeId", anonymousId);
+  await replaceIn("tasks", "createdBy", anonymousId);
+  await replaceIn("tasks", "completedBy", anonymousId);
+  await replaceIn("tasks", "assigneeId", null);
+
+  // Older expenses have no involvedUids, and Firestore cannot query inside a
+  // list of splits, so this reads the event's expenses.
+  const expenses = await eventRef
+    .collection("expenses")
+    .select("payerId", "splits", "involvedUids")
+    .get();
+  for (const doc of expenses.docs) {
+    const expense = doc.data();
+    const splits: {userId: string; amount: number}[] = expense.splits ?? [];
+    const involved: string[] = expense.involvedUids ?? [];
+    const isInvolved =
+      expense.payerId === uid ||
+      involved.includes(uid) ||
+      splits.some((split) => split.userId === uid);
+    if (!isInvolved) continue;
+    const data: Record<string, unknown> = {payerId: swap(expense.payerId)};
+    if (expense.splits) {
+      data.splits = splits.map((s) => ({...s, userId: swap(s.userId)}));
+    }
+    if (expense.involvedUids) data.involvedUids = involved.map(swap);
+    change(doc.ref, data);
+  }
+
+  await commitInChunks([
+    ...updates.values(),
+    {type: "delete", ref: eventRef.collection("urgentRates").doc(uid)},
+  ]);
 
   const memberIds: string[] = eventData.memberIds || [];
   const adminIds: string[] = eventData.adminIds || [];
@@ -118,49 +195,14 @@ async function anonymizeUserInEvent(
     adminIds: FieldValue.arrayRemove(uid),
     memberCount: remainingMembers.length,
   };
-
-  // Transfer ownership if user is creator
   if (eventData.creatorId === uid && remainingMembers.length > 0) {
     // Prefer first admin, fallback to first remaining member
     const remainingAdmins = adminIds.filter((a: string) => a !== uid);
-    updateData.creatorId = remainingAdmins.length > 0
-      ? remainingAdmins[0]
-      : remainingMembers[0];
+    updateData.creatorId = remainingAdmins.length > 0 ?
+      remainingAdmins[0] :
+      remainingMembers[0];
   }
-
-  ops.push({type: "update", ref: eventRef, data: updateData});
-
-  // Anonymize messages
-  const messagesSnapshot = await eventRef
-    .collection("messages")
-    .where("senderId", "==", uid)
-    .get();
-
-  for (const doc of messagesSnapshot.docs) {
-    ops.push({type: "update", ref: doc.ref, data: {senderId: "deleted_user"}});
-  }
-
-  // Anonymize expenses
-  const expensesSnapshot = await eventRef
-    .collection("expenses")
-    .where("payerId", "==", uid)
-    .get();
-
-  for (const doc of expensesSnapshot.docs) {
-    ops.push({type: "update", ref: doc.ref, data: {payerId: "deleted_user"}});
-  }
-
-  // Unassign tasks
-  const tasksSnapshot = await eventRef
-    .collection("tasks")
-    .where("assigneeId", "==", uid)
-    .get();
-
-  for (const doc of tasksSnapshot.docs) {
-    ops.push({type: "update", ref: doc.ref, data: {assigneeId: null}});
-  }
-
-  await commitInChunks(ops);
+  await eventRef.update(updateData);
 }
 
 /**
@@ -178,8 +220,7 @@ async function deleteUserStorage(uid: string): Promise<void> {
  * Server-side account deletion in the order specified by the spec:
  * 1. Verify the caller (`request.auth.uid`).
  * 2. Firestore: delete solo events / anonymize shared events / transfer
- *    ownership / delete `users/{uid}/private/profile` / delete
- *    `users/{uid}`. Wrapped — failure throws `HttpsError` with
+ *    ownership / delete personal subcollections / delete `users/{uid}`. Wrapped — failure throws `HttpsError` with
  *    `details.stage = 'firestore'`, `details.code = 'firestore-cleanup-failed'`.
  * 3. Storage: delete `users/{uid}/`. Failure is **non-fatal** — logged
  *    as a structured warning, function continues to the auth stage.
@@ -235,32 +276,18 @@ export const deleteUserAccount = onCall(
             const memberIds: string[] = eventData.memberIds || [];
 
             if (memberIds.length <= 1) {
-              await deleteEventCompletely(eventDoc.ref);
+              await deleteEventCompletely(eventDoc.ref, eventData);
             } else {
               await anonymizeUserInEvent(eventDoc.ref, eventData, uid);
             }
           }
 
-          // Firestore does NOT cascade-delete subcollections, so we
-          // explicitly tear down the private/profile subdoc before
-          // deleting the parent user doc. Idempotent on retry.
-          await db
-            .collection("users")
-            .doc(uid)
-            .collection("private")
-            .doc("profile")
-            .delete()
-            .catch((err: unknown) => {
-              logger.warn(
-                `deleteUserAccount private subdoc cleanup warning for ${uid}`,
-                {
-                  op: "deleteUserAccount",
-                  uid,
-                  stage: STAGE_FIRESTORE,
-                  error: err instanceof Error ? err.message : String(err),
-                }
-              );
-            });
+          // Firestore does NOT cascade-delete subcollections, so personal
+          // documents go before the parent user doc. Idempotent on retry.
+          const userRef = db.collection("users").doc(uid);
+          for (const sub of ["private", "chatReads", "eventMutes"]) {
+            await streamDeleteSubcollection(userRef, sub);
+          }
           await db.collection("users").doc(uid).delete();
 
           logger.info("deleteUserAccount firestore.complete", {
