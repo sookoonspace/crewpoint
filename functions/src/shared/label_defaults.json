@@ -1,0 +1,20 @@
+{
+  "event": {"one": "Event", "other": "Events"},
+  "organizer": {"one": "Organizer", "other": "Organizers"},
+  "member": {"one": "Member", "other": "Members"},
+  "participant": {"one": "Participant", "other": "Participants"},
+  "group": {"one": "Group", "other": "Groups"},
+  "category": {"one": "Category", "other": "Categories"},
+  "session": {"one": "Session", "other": "Sessions"},
+  "crew": {"one": "Crew", "other": "Crews"},
+  "registration": {"one": "Registration", "other": "Registrations"},
+  "customField": {"one": "Custom field", "other": "Custom fields"},
+  "pass": {"one": "Pass", "other": "Passes"},
+  "charge": {"one": "Charge", "other": "Charges"},
+  "payment": {"one": "Payment", "other": "Payments"},
+  "contribution": {"one": "Contribution", "other": "Contributions"},
+  "goal": {"one": "Goal", "other": "Goals"},
+  "update": {"one": "Update", "other": "Updates"},
+  "incident": {"one": "Incident", "other": "Incidents"},
+  "audience": {"one": "Audience", "other": "Audiences"}
+}

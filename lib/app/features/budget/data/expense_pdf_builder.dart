@@ -34,6 +34,10 @@ const int kMaxRenderedExpenses = 200;
   return (rendered: expenses.take(maxRendered).toList(), truncated: true);
 }
 
+/// The heading above the balances, using the event's word for a member.
+String memberBalancesHeading(EventModel event) =>
+    '${event.words.one('member')} balances';
+
 /// Builds a branded expense report PDF for an event.
 ///
 /// Pure Dart: only the `pdf` package is imported. No Flutter / Firebase
@@ -78,7 +82,7 @@ Future<Uint8List> buildExpenseReport({
       build: (context) => [
         _header(event),
         pw.SizedBox(height: 16),
-        _balancesBlock(ledger, memberNames, event.currency),
+        _balancesBlock(event, ledger, memberNames, event.currency),
         pw.SizedBox(height: 16),
         _settlementsBlock(ledger.settlements, memberNames, event.currency),
         pw.SizedBox(height: 16),
@@ -148,6 +152,7 @@ pw.Widget _header(EventModel event) {
 }
 
 pw.Widget _balancesBlock(
+  EventModel event,
   BalanceLedger ledger,
   Map<String, String> memberNames,
   String currency,
@@ -165,7 +170,7 @@ pw.Widget _balancesBlock(
       ),
       pw.SizedBox(height: 8),
       pw.Text(
-        'Member balances',
+        memberBalancesHeading(event),
         style: pw.TextStyle(
           fontSize: 12,
           fontWeight: pw.FontWeight.bold,

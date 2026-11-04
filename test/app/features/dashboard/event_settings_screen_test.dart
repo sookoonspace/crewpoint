@@ -381,6 +381,53 @@ void main() {
     });
   });
 
+  group('labels (Req 20)', () {
+    Future<void> openLabels(WidgetTester tester) async {
+      await tester.tap(find.byKey(_key('labels')));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('renaming a concept saves only what was typed', (tester) async {
+      await pump(tester);
+      await openLabels(tester);
+      await tester.enterText(find.byKey(_key('label.group.one')), 'Team');
+      await tester.enterText(find.byKey(_key('label.group.other')), 'Teams');
+      await tester.ensureVisible(find.byKey(_key('save')));
+      await save(tester);
+      expect((await stored())['labels'], {
+        'group': {'one': 'Team', 'other': 'Teams'},
+      });
+    });
+
+    testWidgets('emptying a box goes back to the default', (tester) async {
+      await pump(
+        tester,
+        event: _event.copyWith(
+          labels: const {
+            'group': {'one': 'Team', 'other': 'Teams'},
+          },
+        ),
+      );
+      await openLabels(tester);
+      expect(find.text('Team'), findsOneWidget);
+      await tester.enterText(find.byKey(_key('label.group.one')), '');
+      await tester.enterText(find.byKey(_key('label.group.other')), '');
+      await tester.ensureVisible(find.byKey(_key('save')));
+      await save(tester);
+      expect((await stored())['labels'], isEmpty);
+    });
+
+    testWidgets('leaving without saving asks first', (tester) async {
+      await pump(tester);
+      await openLabels(tester);
+      await tester.enterText(find.byKey(_key('label.group.one')), 'Team');
+      await tester.pump();
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(find.text('Discard changes?'), findsOneWidget);
+    });
+  });
+
   group('capacity (Req 18b)', () {
     testWidgets('shows the count against capacity', (tester) async {
       await pump(tester);

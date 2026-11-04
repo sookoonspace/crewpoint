@@ -28,8 +28,7 @@ class EventTile extends StatelessWidget {
   String _dateRange() => formatEventDateRange(event.startDate, event.endDate);
 
   String _memberCount() {
-    final n = event.memberIds.length;
-    return n == 1 ? '1 member' : '$n members';
+    return event.words.count('member', event.memberIds.length);
   }
 
   @override

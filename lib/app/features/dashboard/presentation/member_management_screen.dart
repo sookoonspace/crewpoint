@@ -88,7 +88,7 @@ class _MemberManagementScreenState
                   ? 'Owner'
                   : memberIsAdmin
                   ? 'Admin'
-                  : 'Member',
+                  : event.words.one('member'),
               roleColor: memberIsOwner
                   ? AppColors.sage
                   : memberIsAdmin
@@ -106,8 +106,11 @@ class _MemberManagementScreenState
       ),
       floatingActionButton: (isOwner || isAdmin)
           ? FloatingActionButton(
-              onPressed: () =>
-                  AddMemberSheet.show(context: context, eventId: event.id),
+              onPressed: () => AddMemberSheet.show(
+                memberLabel: event.words.other('member'),
+                context: context,
+                eventId: event.id,
+              ),
               backgroundColor: AppColors.sage,
               foregroundColor: AppColors.white,
               child: const Icon(AppIcons.memberAdd),
@@ -120,7 +123,7 @@ class _MemberManagementScreenState
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Remove Member?'),
+        title: Text('Remove ${widget.event.words.one('member')}?'),
         content: const Text(
           'They will lose access to this event. '
           'Their past messages and expenses will remain.',
@@ -155,8 +158,8 @@ class _MemberManagementScreenState
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Member removed'),
+          SnackBar(
+            content: Text('${widget.event.words.one('member')} removed'),
             backgroundColor: AppColors.sage,
           ),
         );

@@ -1,3 +1,4 @@
+import {resolveLabel} from "../notifications/labels";
 import {onDocumentWritten} from "firebase-functions/v2/firestore";
 import {logger} from "firebase-functions/v2";
 import {sendCategorizedPush} from "../notifications/sendPush";
@@ -17,6 +18,18 @@ export function newJoiners(
   if (!before) return [];
   const beforeSet = new Set(before);
   return after.filter((uid) => !beforeSet.has(uid));
+}
+
+/** The push text, using the event's word for a member. */
+export function memberJoinedText(
+  eventTitle: string,
+  labels: Record<string, unknown> | undefined
+): {title: string; body: string} {
+  const member = resolveLabel(labels, "member", "one").toLowerCase();
+  return {
+    title: `New ${member} in ${eventTitle}`,
+    body: `Tap to review the ${member} list.`,
+  };
 }
 
 /**
@@ -71,8 +84,7 @@ export const onMemberJoined = onDocumentWritten(
         senderId: joiner,
         category: "member_joined",
         eventId,
-        title: `New member in ${eventTitle}`,
-        body: "Tap to review the member list.",
+        ...memberJoinedText(eventTitle, after.labels),
         deepLink: `/dashboard/event/${eventId}/members`,
         extraData: {eventId, joinerId: joiner},
       });

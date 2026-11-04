@@ -147,6 +147,7 @@ describe('events update — configuration (Req 18, 18a, 18b)', () => {
       timeZone: 'America/Chicago',
       venues: [{id: 'v1', name: 'Garland Hall', address: '1 Main St'}],
       languages: ['en', 'gu'],
+      labels: {group: {one: 'Team', other: 'Teams'}},
       capacity: 500,
       memberLimit: 100,
     }));
@@ -166,6 +167,7 @@ describe('events update — configuration (Req 18, 18a, 18b)', () => {
     ['timeZone', 5],
     ['venues', 'Garland Hall'],
     ['languages', 'en'],
+    ['labels', 'Team'],
   ])('%s cannot be set to %p', async (field, value) => {
     await seed();
     const db = env.authenticatedContext('admin').firestore();

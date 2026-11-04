@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:async';
 import 'dart:developer' as developer;
 
@@ -10,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:crewpoint_app/app/core/labels/label_resolver.dart';
 import 'package:crewpoint_app/app/core/env/app_flavor.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/router/app_router.dart';
@@ -89,6 +91,10 @@ Future<void> _resolveFlavorFromNativeBuild() async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  LabelDefaults.current = LabelDefaults.fromJson(
+    jsonDecode(await rootBundle.loadString(LabelDefaults.assetPath))
+        as Map<String, dynamic>,
+  );
   // The native build names the flavor on iOS and Android, so `--flavor`
   // alone is sufficient there. Must precede FirebaseService.initialize:
   // the native Firebase SDK has already auto-initialized [DEFAULT] from

@@ -602,3 +602,13 @@ describe('GE-08 event status', () => {
     await expect(invoke(joinEvent, 'new', {joinCode: 'STATUS'})).rejects.toEqual(refused);
   });
 });
+
+describe('GE-01 message text', () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const {memberJoinedText} = require('../src/events/onMemberJoined');
+
+  test('GE-01 a push uses the event\'s word', () => {
+    const labels = {member: {one: 'Volunteer', other: 'Volunteers'}};
+    expect(memberJoinedText('Convention', labels).title).toBe('New volunteer in Convention');
+  });
+});
