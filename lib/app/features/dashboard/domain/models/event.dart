@@ -69,6 +69,13 @@ class EventModel {
   /// Check if [uid] is an admin (or owner — owner is implicit admin).
   bool isAdmin(String uid) => creatorId == uid || adminIds.contains(uid);
 
+  /// Whether [actor] may remove [target], matching `removeEventMember`: the
+  /// owner can remove anyone else, and an admin can remove other members.
+  bool canRemoveMember({required String actor, required String target}) =>
+      actor != target &&
+      !isOwner(target) &&
+      (isOwner(actor) || (isAdmin(actor) && !isAdmin(target)));
+
   /// Check if [uid] is a member (memberIds includes admins and owner).
   bool isMember(String uid) => memberIds.contains(uid);
 

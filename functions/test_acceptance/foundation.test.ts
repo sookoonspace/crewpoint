@@ -24,6 +24,7 @@ const {deleteUserAccount} = require('../src/account/deleteUserAccount');
 const {deleteEvent} = require('../src/events/deleteEvent');
 const {disputeSettlement} = require('../src/events/disputeSettlement');
 const {clock} = require('../src/utils/clock');
+const {removeEventMember} = require('../src/events/removeEventMember');
 
 const E = 'foundation';
 const call = (uid: string, data: object) => ftest.wrap(saveExpense)({auth: {uid}, data});
@@ -460,5 +461,51 @@ describe('departed members and disputes', () => {
     jest.spyOn(clock, 'now').mockReturnValue(created + 31 * 24 * 60 * 60 * 1000);
     await ftest.wrap(disputeSettlement)({auth: {uid: 'owner'}, data: {eventId: 'left', settlementId: 's'}});
     expect((await db().doc(`${E}/expenses/s`).get()).exists).toBe(false);
+  });
+});
+
+describe('FND-12 administration', () => {
+  let env: RulesTestEnvironment;
+  const E = 'events/admin';
+  const event = {
+    title: 'T',
+    creatorId: 'owner',
+    adminIds: ['owner', 'a1', 'a2'],
+    memberIds: ['owner', 'a1', 'a2', 'm'],
+    currency: 'USD',
+  };
+  const remove = (uid: string, targetUserId: string) =>
+    ftest.wrap(removeEventMember)({auth: {uid}, data: {eventId: 'admin', targetUserId}});
+
+  beforeAll(async () => {
+    env = await getTestEnv();
+  });
+  beforeEach(async () => {
+    await clearFirestoreEmulator();
+    await env.clearFirestore();
+    await getAdminDb().doc(E).set(event);
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), E), event);
+    });
+  });
+  afterAll(() => env.cleanup());
+
+  test('FND-12 an admin cannot remove another admin, and the owner can', async () => {
+    await expect(remove('a1', 'a2')).rejects.toEqual(
+      expect.objectContaining({code: 'permission-denied'})
+    );
+    await remove('owner', 'a2');
+    expect((await getAdminDb().doc(E).get()).data()!.memberIds).not.toContain('a2');
+  });
+
+  test('FND-12 an owner cannot leave without transferring ownership', async () => {
+    await expect(remove('owner', 'owner')).rejects.toEqual(
+      expect.objectContaining({code: 'failed-precondition'})
+    );
+  });
+
+  test('FND-12 currency cannot be changed directly', async () => {
+    const db = env.authenticatedContext('owner').firestore();
+    await assertFails(updateDoc(doc(db, E), {currency: 'EUR'}));
   });
 });

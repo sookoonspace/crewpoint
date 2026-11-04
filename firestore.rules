@@ -33,7 +33,10 @@ service cloud.firestore {
             || request.auth.uid in resource.data.adminIds)
         && request.resource.data.memberIds == resource.data.memberIds
         && request.resource.data.adminIds == resource.data.adminIds
-        && request.resource.data.creatorId == resource.data.creatorId;
+        && request.resource.data.creatorId == resource.data.creatorId
+        // Currency stays fixed once an event holds money, which rules cannot
+        // check, so clients cannot change it at all.
+        && request.resource.data.get('currency', null) == resource.data.get('currency', null);
 
       // Delete: only the creator
       allow delete: if request.auth != null

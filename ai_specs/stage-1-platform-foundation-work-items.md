@@ -428,13 +428,13 @@ Limit who can remove whom, require a transfer before an owner leaves, and lock c
 - Co-owners and transfer arrive in #69. Until then, only the owner can remove an admin, and an owner cannot leave.
 
 ### Acceptance criteria
-- [ ] Removing a member needs `members.manage`.
-- [ ] Only an Owner or Co-owner can remove someone with `members.manage`.
-- [ ] Owners can only leave after transferring ownership.
-- [ ] Currency cannot change once an event has any expense or charge, on the server and in the UI.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] Tests for scenario FND-12 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] Removing a member needs `members.manage`.
+- [x] Only an Owner or Co-owner can remove someone with `members.manage`.
+- [x] Owners can only leave after transferring ownership.
+- [x] Currency cannot change once an event has any expense or charge, on the server and in the UI.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] Tests for scenario FND-12 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - Requirements: 17
@@ -455,6 +455,7 @@ Add the new event fields with defaults so a new event needs only a title, a pers
 - `lib/app/features/dashboard/domain/models/` (`EventType`, `EventStatus`), `lib/app/features/dashboard/domain/event_type_emoji.dart`, `edit_event_screen.dart`, `lib/app/core/router/app_router.dart`, and `lib/app/core/database/app_database.dart` (schema v7).
 - Any Drift bump adds a migration step and a `test/database/migration_vN_to_vN+1_test.dart`.
 - Open Question 1: Stage 1 only adds the `organizer.verified` flag.
+- Since #58, rules deny every client change to `currency`. If event settings let an organizer change it, add a callable that refuses once the event has any expense or charge (Req 17), and disable the control in the UI once that is the case.
 
 ### Acceptance criteria
 - [ ] Events gain `organizerId`, `timeZone`, `venues`, `currency`, `languages`, `status`, `modules`, `labels`, `settings`, `capacity` and `memberLimit`, with defaults so a new event needs only a title.

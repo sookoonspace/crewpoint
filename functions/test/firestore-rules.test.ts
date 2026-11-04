@@ -81,6 +81,32 @@ describe('messages — urgent permission and size', () => {
   });
 });
 
+describe('events update — currency stays fixed', () => {
+  const E = 'events/evtCur';
+  const seed = () =>
+    env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), E), {
+        creatorId: 'owner',
+        adminIds: ['owner', 'admin'],
+        memberIds: ['owner', 'admin'],
+        currency: 'USD',
+        title: 'Trip',
+      });
+    });
+
+  test.each(['owner', 'admin'])('%s cannot change currency directly', async (uid) => {
+    await seed();
+    const db = env.authenticatedContext(uid).firestore();
+    await assertFails(updateDoc(doc(db, E), {currency: 'EUR'}));
+  });
+
+  test('other event fields can still be edited', async () => {
+    await seed();
+    const db = env.authenticatedContext('admin').firestore();
+    await assertSucceeds(updateDoc(doc(db, E), {title: 'New'}));
+  });
+});
+
 describe('events create — only the createEvent callable', () => {
   test('a client cannot create an event directly, even as its owner', async () => {
     const db = env.authenticatedContext('me').firestore();

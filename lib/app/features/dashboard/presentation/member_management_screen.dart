@@ -75,10 +75,10 @@ class _MemberManagementScreenState
             final memberId = event.memberIds[index];
             final memberIsOwner = event.isOwner(memberId);
             final memberIsAdmin = event.isAdmin(memberId);
-            final canRemove =
-                (isOwner || isAdmin) &&
-                !memberIsOwner &&
-                memberId != currentUserId;
+            final canRemove = event.canRemoveMember(
+              actor: currentUserId,
+              target: memberId,
+            );
             final isProcessing = _processingIds.contains(memberId);
 
             return _MemberTile(
