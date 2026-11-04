@@ -6,17 +6,18 @@ const db = getFirestore();
 
 /**
  * markTaskComplete — transitions a task to `done`, stamping
- * completedAt/completedBy.
+ * completedAt/completedBy. Rules deny clients these writes, so this is the only
+ * way to finish a task.
  *
- * - Caller must be a current member, and the event owner, an admin, or the
- *   task assignee. `assigneeId` outlives membership, so it is not enough alone.
+ * - Caller must be a current member, and the event owner, an admin, the task's
+ *   creator or its assignee. `assigneeId` and `createdBy` outlive membership, so
+ *   neither is enough alone.
  * - Reserves a server-side seam for future side effects (notifications,
  *   ledger hooks)
  *
- * Idempotency: a retry that finds the task already in `done` state will
- * re-stamp `completedAt`/`completedBy` to the second invocation's
- * timestamp/uid. Callers should treat completion as a write-once event;
- * the second-write semantics are acceptable for V1 (no audit trail).
+ * Completion is a write-once event: a second call on a finished task succeeds
+ * and changes nothing, so the first `completedBy` stands. Reopening a task
+ * clears it, and completing it again then counts as a new completion.
  */
 export const markTaskComplete = onCall(
   {timeoutSeconds: 30},
@@ -37,42 +38,46 @@ export const markTaskComplete = onCall(
     return withStructuredLogs(
       {op: "markTaskComplete", uid, args: {eventId, taskId}},
       async () => {
-        const eventDoc = await db.collection("events").doc(eventId).get();
-        if (!eventDoc.exists) {
-          throw new HttpsError("not-found", "Event not found.");
-        }
-        const eventData = eventDoc.data()!;
-        const adminIds: string[] = eventData.adminIds || [];
+        const eventRef = db.collection("events").doc(eventId);
+        const taskRef = eventRef.collection("tasks").doc(taskId);
 
-        const taskRef = db
-          .collection("events")
-          .doc(eventId)
-          .collection("tasks")
-          .doc(taskId);
-        const taskDoc = await taskRef.get();
-        if (!taskDoc.exists) {
-          throw new HttpsError("not-found", "Task not found.");
-        }
-        const taskData = taskDoc.data()!;
+        await db.runTransaction(async (tx) => {
+          const eventDoc = await tx.get(eventRef);
+          if (!eventDoc.exists) {
+            throw new HttpsError("not-found", "Event not found.");
+          }
+          const eventData = eventDoc.data()!;
+          const adminIds: string[] = eventData.adminIds || [];
+          const memberIds: string[] = eventData.memberIds || [];
 
-        const isOwner = eventData.creatorId === uid;
-        const isAdmin = adminIds.includes(uid);
-        const memberIds: string[] = eventData.memberIds || [];
-        const isAssignee =
-          taskData.assigneeId === uid && memberIds.includes(uid);
+          const taskDoc = await tx.get(taskRef);
+          if (!taskDoc.exists) {
+            throw new HttpsError("not-found", "Task not found.");
+          }
+          const taskData = taskDoc.data()!;
 
-        if (!isOwner && !isAdmin && !isAssignee) {
-          throw new HttpsError(
-            "permission-denied",
-            "Only the event owner, admins, or the assignee can complete tasks."
-          );
-        }
+          const isOwner = eventData.creatorId === uid;
+          const isAdmin = adminIds.includes(uid);
+          const isCreatorOrAssignee =
+            memberIds.includes(uid) &&
+            (taskData.createdBy === uid || taskData.assigneeId === uid);
 
-        await taskRef.update({
-          status: "done",
-          completedAt: FieldValue.serverTimestamp(),
-          completedBy: uid,
-          updatedAt: FieldValue.serverTimestamp(),
+          if (!isOwner && !isAdmin && !isCreatorOrAssignee) {
+            throw new HttpsError(
+              "permission-denied",
+              "Only the event owner, admins, the creator or the assignee " +
+                "can complete tasks."
+            );
+          }
+
+          if (taskData.status === "done") return;
+
+          tx.update(taskRef, {
+            status: "done",
+            completedAt: FieldValue.serverTimestamp(),
+            completedBy: uid,
+            updatedAt: FieldValue.serverTimestamp(),
+          });
         });
 
         return {success: true};

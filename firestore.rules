@@ -74,24 +74,49 @@ service cloud.firestore {
 
         allow read: if request.auth != null && isEventMember(eventId);
 
-        // Create: any event member; must set themselves as createdBy
+        // `tasks.manage` and a task's creator may edit it. Owners and admins
+        // hold `tasks.manage` until permissions land.
+        function canEditTask(task) {
+          return eventDoc().creatorId == request.auth.uid
+            || request.auth.uid in eventDoc().adminIds
+            || task.createdBy == request.auth.uid;
+        }
+
+        // markTaskComplete is the only way to finish a task. A client may keep
+        // a finished task finished while editing it, or reopen it, which clears
+        // who completed it. It can never set or rewrite those fields.
+        function completionIsUntouched() {
+          let next = request.resource.data;
+          let reopening = next.get('status', null) != 'done'
+            && next.get('completedAt', null) == null
+            && next.get('completedBy', null) == null;
+          return (next.get('status', null) != 'done' || resource.data.get('status', null) == 'done')
+            && (reopening
+                || !next.diff(resource.data).affectedKeys().hasAny(['completedAt', 'completedBy']));
+        }
+
+        allow read: if request.auth != null && isEventMember(eventId);
+
+        // Create: any event member; must set themselves as createdBy, and a new
+        // task cannot start finished.
         allow create: if request.auth != null
           && isEventMember(eventId)
           && request.resource.data.createdBy == request.auth.uid
-          && request.resource.data.eventId == eventId;
+          && request.resource.data.eventId == eventId
+          && request.resource.data.get('status', null) != 'done'
+          && request.resource.data.get('completedAt', null) == null
+          && request.resource.data.get('completedBy', null) == null;
 
-        // Update: owner, admins, or the assignee
-        // (status changes routed through markTaskComplete CF for ->done).
-        // Fix 1.C — field-level guard: clients must NOT mutate eventId or
-        // createdBy. eventId pinpoints the parent event and is set on
-        // create; createdBy records authorship. An assignee rewriting
-        // either could either move the task to a different event (data
-        // integrity) or claim ownership (audit trail integrity).
+        // Update: an assignee may change only status. Fix 1.C — clients must
+        // NOT mutate eventId or createdBy: eventId pinpoints the parent event,
+        // and createdBy records authorship.
         allow update: if request.auth != null
           && isEventMember(eventId)
-          && (eventDoc().creatorId == request.auth.uid
-              || request.auth.uid in eventDoc().adminIds
-              || resource.data.assigneeId == request.auth.uid)
+          && (canEditTask(resource.data)
+              || (resource.data.assigneeId == request.auth.uid
+                  && request.resource.data.diff(resource.data).affectedKeys()
+                      .hasOnly(['status', 'completedAt', 'completedBy', 'updatedAt'])))
+          && completionIsUntouched()
           && request.resource.data.eventId == resource.data.eventId
           && request.resource.data.createdBy == resource.data.createdBy;
 
@@ -112,13 +137,15 @@ service cloud.firestore {
                 || eventDoc().creatorId == request.auth.uid
                 || request.auth.uid in eventDoc().adminIds);
 
-          // Update: same as create/delete OR the assignee toggling completion
+          // Update: anyone who can edit the task, or the assignee ticking it off.
           allow update: if request.auth != null
             && isEventMember(eventId)
             && (get(/databases/$(database)/documents/events/$(eventId)/tasks/$(taskId)).data.createdBy == request.auth.uid
                 || eventDoc().creatorId == request.auth.uid
                 || request.auth.uid in eventDoc().adminIds
-                || get(/databases/$(database)/documents/events/$(eventId)/tasks/$(taskId)).data.assigneeId == request.auth.uid);
+                || (get(/databases/$(database)/documents/events/$(eventId)/tasks/$(taskId)).data.assigneeId == request.auth.uid
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['isCompleted', 'updatedAt'])));
         }
       }
 

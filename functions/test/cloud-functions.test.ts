@@ -516,6 +516,56 @@ describe('markTaskComplete', () => {
     expect(after.data()!.status).toBe('done');
     expect(after.data()!.completedBy).toBe('assignee');
   });
+
+  async function seedTask(eventId: string, task: object = {}) {
+    await seedEvent({
+      eventId,
+      creatorUid: 'owner',
+      memberUids: ['owner', 'creator', 'assignee', 'other'],
+      adminUids: ['owner'],
+    });
+    const ref = getAdminDb().doc(`events/${eventId}/tasks/t`);
+    await ref.set({eventId, createdBy: 'creator', assigneeId: 'assignee', status: 'todo', ...task});
+    return ref;
+  }
+
+  test('a second completion does not overwrite the first', async () => {
+    const ref = await seedTask('evtT3');
+    const wrapped = ftest.wrap(markTaskComplete);
+    await wrapped({auth: {uid: 'assignee'}, data: {eventId: 'evtT3', taskId: 't'}});
+    const first = (await ref.get()).data()!;
+
+    const result = await wrapped({auth: {uid: 'owner'}, data: {eventId: 'evtT3', taskId: 't'}});
+
+    expect(result).toEqual({success: true});
+    const after = (await ref.get()).data()!;
+    expect(after.completedBy).toBe('assignee');
+    expect(after.completedAt.isEqual(first.completedAt)).toBe(true);
+  });
+
+  test('a task that was reopened can be completed again', async () => {
+    const ref = await seedTask('evtT4', {status: 'todo', completedBy: null, completedAt: null});
+    const wrapped = ftest.wrap(markTaskComplete);
+    await wrapped({auth: {uid: 'owner'}, data: {eventId: 'evtT4', taskId: 't'}});
+    expect((await ref.get()).data()!.completedBy).toBe('owner');
+  });
+
+  test("the task's creator may complete it", async () => {
+    const ref = await seedTask('evtT5');
+    await ftest.wrap(markTaskComplete)({
+      auth: {uid: 'creator'},
+      data: {eventId: 'evtT5', taskId: 't'},
+    });
+    expect((await ref.get()).data()!.completedBy).toBe('creator');
+  });
+
+  test('a removed creator may not complete it', async () => {
+    await seedTask('evtT6');
+    await getAdminDb().doc('events/evtT6').update({memberIds: ['owner', 'assignee']});
+    await expect(
+      ftest.wrap(markTaskComplete)({auth: {uid: 'creator'}, data: {eventId: 'evtT6', taskId: 't'}})
+    ).rejects.toMatchObject({code: 'permission-denied'});
+  });
 });
 
 describe('generateInviteCode', () => {

@@ -398,10 +398,13 @@ class TaskRepository implements ITaskRepository {
   @override
   Future<bool> updateTask(TaskModel task) async {
     try {
-      await _tasksRef(task.eventId).doc(task.id).update({
-        ..._toFirestore(task),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      // Status changes go through [updateStatus]. Rules deny writing completion
+      // fields, and re-sending a server timestamp could not match it exactly.
+      final fields = _toFirestore(task)
+        ..remove('status')
+        ..remove('completedAt')
+        ..remove('completedBy');
+      await _tasksRef(task.eventId).doc(task.id).update(fields);
       await _upsertDrift(task);
       return true;
     } catch (e, st) {
@@ -480,10 +483,9 @@ class TaskRepository implements ITaskRepository {
     'status': task.status.name,
     'priority': task.priority,
     'dueDate': task.dueDate != null ? Timestamp.fromDate(task.dueDate!) : null,
-    'completedAt': task.completedAt != null
-        ? Timestamp.fromDate(task.completedAt!)
-        : null,
-    'completedBy': task.completedBy,
+    // Only markTaskComplete sets these, so a client write leaves them empty.
+    'completedAt': null,
+    'completedBy': null,
     'budgetEstimate': task.budgetEstimate,
     'updatedAt': FieldValue.serverTimestamp(),
   };
