@@ -14,6 +14,7 @@ CreateEventCall fakeCreateEventCall(FirebaseFirestore firestore) =>
         'creatorId': uid,
         'adminIds': [uid],
         'memberIds': [uid],
+        'memberCount': 1,
         'status': 'active',
         'currency': event.currency,
         'startDate': event.startDate == null

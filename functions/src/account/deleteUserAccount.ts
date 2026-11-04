@@ -116,6 +116,7 @@ async function anonymizeUserInEvent(
   const updateData: Record<string, unknown> = {
     memberIds: FieldValue.arrayRemove(uid),
     adminIds: FieldValue.arrayRemove(uid),
+    memberCount: remainingMembers.length,
   };
 
   // Transfer ownership if user is creator

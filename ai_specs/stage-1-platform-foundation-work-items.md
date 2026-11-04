@@ -310,14 +310,14 @@ Replace the fixed 50-member limit with an optional `memberLimit`, enforced by a 
 - `memberLimit` caps logins. `capacity` is a separate setting, added in #59.
 
 ### Acceptance criteria
-- [ ] `memberLimit` caps how many people can log in to an event. It is optional and off by default, and no value means unlimited.
-- [ ] The fixed 50-member limit is gone.
-- [ ] Joining uses a transaction on `memberCount`, so simultaneous joins cannot exceed the limit.
-- [ ] A test runs 8 joins at one place remaining and must admit exactly 1.
-- [ ] Existing events have a correct `memberCount`.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] Tests for scenarios FND-06, S-01 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] `memberLimit` caps how many people can log in to an event. It is optional and off by default, and no value means unlimited.
+- [x] The fixed 50-member limit is gone.
+- [x] Joining uses a transaction on `memberCount`, so simultaneous joins cannot exceed the limit.
+- [x] A test runs 8 joins at one place remaining and must admit exactly 1.
+- [x] Existing events have a correct `memberCount`.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] Tests for scenarios FND-06, S-01 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - Requirements: 12, 55
