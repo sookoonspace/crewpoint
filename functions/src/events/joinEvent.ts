@@ -1,6 +1,7 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
+import {assertOpenToJoin} from "./eventStatus";
 
 const db = getFirestore();
 
@@ -71,6 +72,7 @@ export const joinEvent = onCall(
           }
 
           const eventData = eventDoc.data()!;
+          assertOpenToJoin(eventData);
           const memberIds: string[] = eventData.memberIds || [];
 
           if (memberIds.includes(uid)) {

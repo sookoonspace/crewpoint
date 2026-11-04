@@ -15,6 +15,7 @@ class BudgetScreen extends StatelessWidget {
     required this.expenses,
     required this.memberIds,
     this.currency = 'USD',
+    this.canAddExpense = true,
     this.memberNames = const {},
     this.appBarTitle,
     this.onAddExpense,
@@ -28,6 +29,9 @@ class BudgetScreen extends StatelessWidget {
   final List<ExpenseModel> expenses;
   final List<String> memberIds;
   final String currency;
+
+  /// False once the event is archived.
+  final bool canAddExpense;
   final Map<String, String> memberNames;
 
   /// AppBar title — the parent (`EventBudgetPage`) wires the event
@@ -185,13 +189,15 @@ class BudgetScreen extends StatelessWidget {
             ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        key: const Key('budget.expense.create'),
-        onPressed: onAddExpense,
-        backgroundColor: AppColors.sage,
-        foregroundColor: AppColors.white,
-        child: const Icon(AppIcons.actionAdd),
-      ),
+      floatingActionButton: canAddExpense
+          ? FloatingActionButton(
+              key: const Key('budget.expense.create'),
+              onPressed: onAddExpense,
+              backgroundColor: AppColors.sage,
+              foregroundColor: AppColors.white,
+              child: const Icon(AppIcons.actionAdd),
+            )
+          : null,
     );
   }
 }

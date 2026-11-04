@@ -19,6 +19,7 @@ class ChatScreen extends StatefulWidget {
     this.memberNames = const {},
     this.appBarTitle,
     this.isSending = false,
+    this.readOnly = false,
     this.lastSendFailed = false,
     this.onSendMessage,
     this.onSendCriticalAlert,
@@ -35,6 +36,9 @@ class ChatScreen extends StatefulWidget {
   /// when unset.
   final String? appBarTitle;
   final bool isSending;
+
+  /// True once the event is archived, when nobody can send.
+  final bool readOnly;
   final bool lastSendFailed;
   final ValueChanged<String>? onSendMessage;
   final ValueChanged<String>? onSendCriticalAlert;
@@ -187,12 +191,25 @@ class _ChatScreenState extends State<ChatScreen> {
                       },
                     ),
             ),
-            _MessageInput(
-              controller: _controller,
-              onSend: _send,
-              isSending: widget.isSending,
-              lastSendFailed: widget.lastSendFailed,
-            ),
+            if (widget.readOnly)
+              SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Text(
+                    s.readOnlyNotice,
+                    key: const Key('chat.composer.readOnly'),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              )
+            else
+              _MessageInput(
+                controller: _controller,
+                onSend: _send,
+                isSending: widget.isSending,
+                lastSendFailed: widget.lastSendFailed,
+              ),
           ],
         ),
       ),

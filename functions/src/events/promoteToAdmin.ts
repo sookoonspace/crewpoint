@@ -1,6 +1,7 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
+import {assertNotArchived} from "./eventStatus";
 
 const db = getFirestore();
 
@@ -39,6 +40,7 @@ export const promoteToAdmin = onCall(
         }
 
         const eventData = eventDoc.data()!;
+        assertNotArchived(eventData);
         const memberIds: string[] = eventData.memberIds || [];
 
         if (eventData.creatorId !== uid) {

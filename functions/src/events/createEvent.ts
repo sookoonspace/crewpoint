@@ -86,7 +86,7 @@ export const createEvent = onCall({timeoutSeconds: 30}, async (request) => {
           adminIds: [uid],
           memberIds: [uid],
           memberCount: 1,
-          status: "active",
+          status: "draft",
           currency,
           timeZone,
           venues: [],

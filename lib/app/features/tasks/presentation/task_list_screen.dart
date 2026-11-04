@@ -131,13 +131,15 @@ class TaskListScreen extends StatelessWidget {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        key: const Key('tasks.list.create'),
-        onPressed: onCreateTask,
-        backgroundColor: AppColors.sage,
-        foregroundColor: AppColors.white,
-        child: const Icon(AppIcons.actionAdd),
-      ),
+      floatingActionButton: event.canEditTasks(currentUserId)
+          ? FloatingActionButton(
+              key: const Key('tasks.list.create'),
+              onPressed: onCreateTask,
+              backgroundColor: AppColors.sage,
+              foregroundColor: AppColors.white,
+              child: const Icon(AppIcons.actionAdd),
+            )
+          : null,
     );
   }
 }

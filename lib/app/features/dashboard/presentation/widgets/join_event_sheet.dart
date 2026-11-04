@@ -1,5 +1,6 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
@@ -49,6 +50,7 @@ class _JoinEventSheetState extends State<JoinEventSheet> {
       _errorMessage = null;
     });
 
+    final strings = context.strings.dashboard;
     try {
       final callable = FirebaseFunctions.instance.httpsCallable('joinEvent');
       await callable.call<Map<String, dynamic>>({'joinCode': code});
@@ -70,6 +72,7 @@ class _JoinEventSheetState extends State<JoinEventSheet> {
             'not-found' => 'This code is invalid or has expired.',
             'already-exists' => "You're already a member of this event.",
             'resource-exhausted' => 'This event is full.',
+            'failed-precondition' => strings.notOpenToJoin,
             _ => 'Something went wrong. Please try again.',
           };
         });

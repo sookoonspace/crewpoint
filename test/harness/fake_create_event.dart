@@ -16,7 +16,7 @@ CreateEventCall fakeCreateEventCall(FirebaseFirestore firestore) =>
         'adminIds': [uid],
         'memberIds': [uid],
         'memberCount': 1,
-        'status': 'active',
+        'status': 'draft',
         'currency': event.currency,
         'timeZone': event.timeZone,
         'venues': <Object>[],

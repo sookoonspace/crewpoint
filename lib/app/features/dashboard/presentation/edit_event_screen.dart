@@ -99,10 +99,7 @@ class _EditEventScreenState extends State<EditEventScreen> {
   Widget build(BuildContext context) {
     final df = DateFormat.yMMMd();
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Edit Event'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Edit Event'), elevation: 0),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(
           horizontal: Breakpoints.screenHorizontalPadding(context),
@@ -210,7 +207,9 @@ class _EditEventScreenState extends State<EditEventScreen> {
                     onChanged: (archived) => setState(() {
                       _status = archived
                           ? EventStatus.archived
-                          : EventStatus.active;
+                          : widget.initial.status == EventStatus.archived
+                          ? widget.initial.restoredStatus(DateTime.now())
+                          : widget.initial.status;
                     }),
                     activeThumbColor: AppColors.sage,
                   ),

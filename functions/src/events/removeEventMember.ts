@@ -1,6 +1,7 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
+import {assertNotArchived} from "./eventStatus";
 
 const db = getFirestore();
 
@@ -53,6 +54,7 @@ export const removeEventMember = onCall(
           }
 
           const eventData = eventDoc.data()!;
+          assertNotArchived(eventData);
           const adminIds: string[] = eventData.adminIds || [];
           const memberIds: string[] = eventData.memberIds || [];
 

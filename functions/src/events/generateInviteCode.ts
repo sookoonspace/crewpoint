@@ -2,6 +2,7 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions/v2";
 import {FieldValue, Timestamp, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
+import {assertOpenToJoin} from "./eventStatus";
 
 const db = getFirestore();
 
@@ -66,6 +67,7 @@ export const generateInviteCode = onCall(
           throw new HttpsError("not-found", "Event not found.");
         }
         const eventData = eventDoc.data()!;
+        assertOpenToJoin(eventData);
         const adminIds: string[] = eventData.adminIds || [];
         const isAuthorized =
           eventData.creatorId === uid || adminIds.includes(uid);

@@ -212,6 +212,23 @@ abstract class DashboardStrings {
   String upcomingEventsHeader(int count);
   String pastEventsHeader(int count);
 
+  // Event status.
+  String get statusDraft;
+  String get statusPublished;
+  String get statusLive;
+  String get statusEnded;
+  String get statusArchived;
+  String get draftCreated;
+  String get publishAndInvite;
+  String get publishEvent;
+  String get publishEventSubtitle;
+  String get publishFailed;
+  String get notOpenToInvites;
+  String get notOpenToJoin;
+  String get settingsStatus;
+  String get settingsStatusDraftUnavailable;
+  String get settingsArchivedNotice;
+
   // Event settings.
   String get settingsTitle;
   String get settingsNoAccess;
@@ -255,6 +272,8 @@ abstract class DashboardStrings {
 /// User-facing strings for the cross-event Chat tab — the Global Inbox.
 abstract class ChatStrings {
   const ChatStrings();
+
+  String get readOnlyNotice;
 
   // Global inbox surface.
   String get inboxAppBarTitle;
@@ -441,6 +460,9 @@ class _EnglishStrings extends AppStrings {
 
 class _EnglishChatStrings extends ChatStrings {
   const _EnglishChatStrings();
+
+  @override
+  String get readOnlyNotice => 'This event is archived, so chat is read-only.';
 
   @override
   String get inboxAppBarTitle => 'Chat';
@@ -704,6 +726,40 @@ class _EnglishNavStrings extends NavStrings {
 class _EnglishDashboardStrings extends DashboardStrings {
   const _EnglishDashboardStrings();
 
+  @override
+  String get statusDraft => 'Draft';
+  @override
+  String get statusPublished => 'Published';
+  @override
+  String get statusLive => 'Live';
+  @override
+  String get statusEnded => 'Ended';
+  @override
+  String get statusArchived => 'Archived';
+  @override
+  String get draftCreated => 'Draft created. Only organizers can see it.';
+  @override
+  String get publishAndInvite => 'Publish and invite';
+  @override
+  String get publishEvent => 'Publish event';
+  @override
+  String get publishEventSubtitle =>
+      'This draft is visible only to organizers. Publish it to invite people.';
+  @override
+  String get publishFailed => "Couldn't publish the event. Try again.";
+  @override
+  String get notOpenToInvites =>
+      'Invites work only while the event is published or live.';
+  @override
+  String get notOpenToJoin => 'This event is not open to joining right now.';
+  @override
+  String get settingsStatus => 'Status';
+  @override
+  String get settingsStatusDraftUnavailable =>
+      'This event has members, so it cannot go back to draft.';
+  @override
+  String get settingsArchivedNotice =>
+      'This event is archived and read-only. Change its status to restore it.';
   @override
   String get settingsTitle => 'Event settings';
   @override

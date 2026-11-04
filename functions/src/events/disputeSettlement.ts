@@ -2,6 +2,7 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {clock} from "../utils/clock";
 import {requireString, withStructuredLogs} from "../utils/logging";
+import {assertNotArchived} from "./eventStatus";
 
 const db = getFirestore();
 
@@ -73,6 +74,7 @@ export const disputeSettlement = onCall(
         }
 
         const eventDoc = await db.collection("events").doc(eventId).get();
+        assertNotArchived(eventDoc.data() ?? {});
         const memberIds: string[] = eventDoc.data()?.memberIds || [];
 
         const isParty =

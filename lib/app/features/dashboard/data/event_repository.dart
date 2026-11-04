@@ -57,13 +57,16 @@ class EventRepository {
     required EventsDao eventsDao,
     required FirebaseFirestore firestore,
     required CreateEventCall createEventCall,
-  }) : _eventsDao = eventsDao,
+    DateTime Function() now = DateTime.now,
+  }) : _now = now,
+       _eventsDao = eventsDao,
        _firestore = firestore,
        _createEventCall = createEventCall;
 
   final EventsDao _eventsDao;
   final FirebaseFirestore _firestore;
   final CreateEventCall _createEventCall;
+  final DateTime Function() _now;
   final Map<String, StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>
   _firestoreSubs = {};
 
@@ -93,6 +96,12 @@ class EventRepository {
       final docRef = _eventsRef.doc(updated.id);
       final existing = await docRef.get();
       if (!existing.exists) return false;
+      final data = existing.data()!;
+      final currentStatus = EventStatus.fromStored(
+        data['status'] as String?,
+        (data['endDate'] as Timestamp?)?.toDate(),
+        _now(),
+      );
       await docRef.update({
         'title': updated.title,
         'description': updated.description,
@@ -102,7 +111,7 @@ class EventRepository {
         'endDate': updated.endDate != null
             ? Timestamp.fromDate(updated.endDate!)
             : null,
-        'status': updated.status.name,
+        if (updated.status != currentStatus) ..._statusChange(updated.status),
         'updatedAt': FieldValue.serverTimestamp(),
       });
       return true;
@@ -114,17 +123,41 @@ class EventRepository {
 
   /// Saves what the settings screen edits. Currency goes through
   /// `changeEventCurrency` instead, because it can be refused.
-  Future<EventWriteResult> saveConfiguration(EventModel updated) =>
+  ///
+  /// Pass [previousStatus] when the status may have changed. An archived event
+  /// allows only a restore, so nothing else is written then.
+  Future<EventWriteResult> saveConfiguration(
+    EventModel updated, {
+    EventStatus? previousStatus,
+  }) => settleEventWrite(
+    _eventsRef.doc(updated.id).update({
+      if (previousStatus != EventStatus.archived) ...{
+        'timeZone': updated.timeZone,
+        'venues': updated.venues.map((v) => v.toMap()).toList(),
+        'languages': updated.languages,
+        'capacity': updated.capacity,
+        'memberLimit': updated.memberLimit,
+      },
+      if (previousStatus != null && previousStatus != updated.status)
+        ..._statusChange(updated.status),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }),
+  );
+
+  /// Changes status by hand. Times that have already passed then no longer
+  /// move the event automatically.
+  Future<EventWriteResult> setStatus(String eventId, EventStatus status) =>
       settleEventWrite(
-        _eventsRef.doc(updated.id).update({
-          'timeZone': updated.timeZone,
-          'venues': updated.venues.map((v) => v.toMap()).toList(),
-          'languages': updated.languages,
-          'capacity': updated.capacity,
-          'memberLimit': updated.memberLimit,
+        _eventsRef.doc(eventId).update({
+          ..._statusChange(status),
           'updatedAt': FieldValue.serverTimestamp(),
         }),
       );
+
+  Map<String, Object> _statusChange(EventStatus status) => {
+    'status': status.name,
+    'statusSetAt': FieldValue.serverTimestamp(),
+  };
 
   /// Streams the events the user is a member of. Starts/reuses a Firestore
   /// listener that mirrors snapshots into Drift on mobile/desktop; returns
@@ -239,7 +272,11 @@ class EventRepository {
     endDate: (data['endDate'] as Timestamp?)?.toDate(),
     adminIds: _parseStringList(data['adminIds']),
     memberIds: _parseStringList(data['memberIds']),
-    status: EventStatus.fromString(data['status'] as String?),
+    status: EventStatus.fromStored(
+      data['status'] as String?,
+      (data['endDate'] as Timestamp?)?.toDate(),
+      _now(),
+    ),
     currency: (data['currency'] as String?) ?? 'USD',
     createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
     updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
@@ -265,7 +302,7 @@ class EventRepository {
     endDate: row.endDate,
     adminIds: _decodeJsonStringList(row.adminIds),
     memberIds: _decodeJsonStringList(row.memberIds),
-    status: EventStatus.fromString(row.status),
+    status: EventStatus.fromStored(row.status, row.endDate, _now()),
     currency: row.currency,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,

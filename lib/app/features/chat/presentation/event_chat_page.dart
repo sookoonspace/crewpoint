@@ -158,6 +158,7 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
         memberNames: memberNames,
         appBarTitle: widget.event.title,
         isSending: _isSending,
+        readOnly: !widget.event.allowsChatAndMoney,
         lastSendFailed: _lastSendFailed,
         onSendMessage: (text) => _send(text),
         // Needs `chat.urgent`, which owners and admins hold until permissions land.

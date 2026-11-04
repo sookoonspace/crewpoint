@@ -99,20 +99,112 @@ void main() {
     });
   });
 
-  group('EventStatus', () {
-    test('fromString parses active and archived', () {
-      expect(EventStatus.fromString('active'), equals(EventStatus.active));
-      expect(EventStatus.fromString('archived'), equals(EventStatus.archived));
+  group('EventStatus (Req 19)', () {
+    final now = DateTime.utc(2027, 6, 1);
+
+    test('reads the five statuses', () {
+      for (final status in EventStatus.values) {
+        expect(EventStatus.fromStored(status.name, null, now), status);
+      }
+      expect(EventStatus.values.map((s) => s.name), [
+        'draft',
+        'published',
+        'live',
+        'ended',
+        'archived',
+      ]);
     });
 
-    test('fromString defaults to active for unknown values', () {
-      expect(EventStatus.fromString('completed'), equals(EventStatus.active));
-      expect(EventStatus.fromString(null), equals(EventStatus.active));
+    test('active maps to ended once the end date has passed', () {
+      final past = DateTime.utc(2027, 5, 1);
+      expect(EventStatus.fromStored('active', past, now), EventStatus.ended);
     });
 
-    test('name serializes correctly', () {
-      expect(EventStatus.active.name, equals('active'));
-      expect(EventStatus.archived.name, equals('archived'));
+    test('active maps to published otherwise', () {
+      final future = DateTime.utc(2027, 7, 1);
+      expect(
+        EventStatus.fromStored('active', future, now),
+        EventStatus.published,
+      );
+      expect(
+        EventStatus.fromStored('active', null, now),
+        EventStatus.published,
+      );
+      expect(EventStatus.fromStored(null, null, now), EventStatus.published);
+    });
+  });
+
+  group('what each status allows (GE-08)', () {
+    EventModel at(EventStatus status) => EventModel(
+      id: 'e1',
+      title: 'T',
+      creatorId: 'owner',
+      adminIds: const ['admin'],
+      memberIds: const ['owner', 'admin', 'member'],
+      status: status,
+    );
+
+    test('a draft is visible only to organizers', () {
+      final draft = at(EventStatus.draft);
+      expect(draft.isVisibleTo('owner'), isTrue);
+      expect(draft.isVisibleTo('admin'), isTrue);
+      expect(draft.isVisibleTo('member'), isFalse);
+      expect(at(EventStatus.published).isVisibleTo('member'), isTrue);
+    });
+
+    test('only published and live are open to joining', () {
+      for (final status in EventStatus.values) {
+        expect(
+          at(status).isJoinable,
+          status == EventStatus.published || status == EventStatus.live,
+          reason: status.name,
+        );
+      }
+    });
+
+    test('chat and money stay open until archived', () {
+      for (final status in EventStatus.values) {
+        expect(
+          at(status).allowsChatAndMoney,
+          status != EventStatus.archived,
+          reason: status.name,
+        );
+      }
+    });
+
+    test('tasks close to members once ended, and to all once archived', () {
+      expect(at(EventStatus.live).canEditTasks('member'), isTrue);
+      expect(at(EventStatus.ended).canEditTasks('member'), isFalse);
+      expect(at(EventStatus.ended).canEditTasks('admin'), isTrue);
+      expect(at(EventStatus.archived).canEditTasks('owner'), isFalse);
+    });
+
+    test('an event can go back to draft only with no plain members', () {
+      expect(at(EventStatus.published).canBeDraft, isFalse);
+      expect(
+        const EventModel(
+          id: 'e1',
+          title: 'T',
+          creatorId: 'owner',
+          adminIds: ['admin'],
+          memberIds: ['owner', 'admin'],
+        ).canBeDraft,
+        isTrue,
+      );
+    });
+
+    test('restoring goes to ended after the end date, or else published', () {
+      final now = DateTime.utc(2027, 6, 1);
+      expect(
+        at(
+          EventStatus.archived,
+        ).copyWith(endDate: DateTime.utc(2027, 5, 1)).restoredStatus(now),
+        EventStatus.ended,
+      );
+      expect(
+        at(EventStatus.archived).restoredStatus(now),
+        EventStatus.published,
+      );
     });
   });
 
@@ -123,7 +215,7 @@ void main() {
       expect(event.adminIds, isEmpty);
       expect(event.memberIds, isEmpty);
       expect(event.templateId, equals('blank'));
-      expect(event.status, equals(EventStatus.active));
+      expect(event.status, equals(EventStatus.published));
       expect(event.startDate, isNull);
     });
   });

@@ -1,6 +1,7 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
+import {assertTasksOpen} from "./eventStatus";
 
 const db = getFirestore();
 
@@ -47,6 +48,7 @@ export const markTaskComplete = onCall(
             throw new HttpsError("not-found", "Event not found.");
           }
           const eventData = eventDoc.data()!;
+          assertTasksOpen(eventData, uid);
           const adminIds: string[] = eventData.adminIds || [];
           const memberIds: string[] = eventData.memberIds || [];
 

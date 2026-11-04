@@ -47,7 +47,7 @@ void main() {
       expect(data['creatorId'], 'uid-42');
       expect(data['adminIds'], ['uid-42']);
       expect(data['memberIds'], ['uid-42']);
-      expect(data['status'], 'active');
+      expect(data['status'], 'draft');
 
       // Tap the tile → resolve-by-ID navigates to EventDashboardScreen.
       // Closes the user-reported "Event not found" bug end-to-end.
@@ -58,6 +58,14 @@ void main() {
       // screen (and didn't fall through to EventNotFoundScreen).
       expect(find.text('Tahoe Trip'), findsWidgets);
       expect(find.byKey(const Key('event.notFound.back')), findsNothing);
+
+      // A new event is a draft, so publish it before inviting anyone.
+      expect(
+        find.byKey(const Key('eventDashboard.inviteMembers.tile')),
+        findsNothing,
+      );
+      await tester.tap(find.byKey(const Key('events.dashboard.publish')));
+      await tester.pumpAndSettle();
 
       // Tap the new Invite Members tile (admin-only; harness's currentUser
       // is the creator) → AddMemberSheet opens. The CF isn't initialized

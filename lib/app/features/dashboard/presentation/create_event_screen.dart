@@ -15,6 +15,7 @@ import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/core/widgets/custom_text_field.dart';
 import 'package:crewpoint_app/app/core/widgets/form_card_shell.dart';
 import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
+import 'package:crewpoint_app/app/features/dashboard/data/event_repository.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
 
@@ -91,6 +92,8 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       _needsConnection = false;
     });
 
+    final repository = ref.read(eventRepositoryProvider);
+    final strings = context.strings.dashboard;
     // The event starts in this person's zone. An organizer can change it.
     final timeZone = await ref.read(deviceTimezoneProvider).getLocalTimezone();
     final description = _descriptionController.text.trim();
@@ -107,7 +110,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     );
 
     try {
-      await ref.read(eventRepositoryProvider).createEvent(event);
+      await repository.createEvent(event);
       if (!mounted) return;
       navigator.pop();
       // 6s gives the user time to read "Event created" and tap "Share
@@ -120,13 +123,26 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       // Navigator." The Navigator's own context resolves cleanly.
       messenger.showSnackBar(
         SnackBar(
-          content: const Text('Event created'),
+          content: Text(strings.draftCreated),
           action: SnackBarAction(
-            label: 'Share invite',
-            onPressed: () => AddMemberSheet.show(
-              context: navigator.context,
-              eventId: event.id,
-            ),
+            label: strings.publishAndInvite,
+            onPressed: () async {
+              final result = await repository.setStatus(
+                event.id,
+                EventStatus.published,
+              );
+              if (result == EventWriteResult.saved) {
+                if (!navigator.mounted) return;
+                await AddMemberSheet.show(
+                  context: navigator.context,
+                  eventId: event.id,
+                );
+              } else {
+                messenger.showSnackBar(
+                  SnackBar(content: Text(strings.publishFailed)),
+                );
+              }
+            },
           ),
           duration: const Duration(seconds: 6),
         ),
@@ -163,7 +179,6 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 spacing: AppSpacing.lg,
                 children: [
-
                   const SizedBox(height: AppSpacing.sm),
 
                   // Title
@@ -253,7 +268,8 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                     decoration: const InputDecoration(
                       prefixIcon: Icon(AppIcons.currency),
                       border: OutlineInputBorder(),
-                      helperText: 'Can be changed in settings until money is recorded.',
+                      helperText:
+                          'Can be changed in settings until money is recorded.',
                     ),
                     items: [
                       for (final code in CreateEventScreen.supportedCurrencies)
