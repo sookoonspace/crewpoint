@@ -365,14 +365,14 @@ Make account and event deletion remove everything they should, while keeping sha
 - `functions/src/account/deleteUserAccount.ts` and `functions/src/events/deleteEvent.ts`. #78 adds participant data, and #69 adds owner succession.
 
 ### Acceptance criteria
-- [ ] Account deletion removes `chatReads` and `eventMutes`.
-- [ ] In shared records, it replaces the user ID in expense splits, `involvedUids`, `createdBy` and `completedBy` with one anonymous ID per person per event.
-- [ ] A ledger still balances after deletion, and two deleted people are never merged.
-- [ ] Event deletion also removes checklists, new subcollections, and members' per-event personal documents.
-- [ ] Emulator tests prove deletion completeness.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] Tests for scenarios FND-08, Z-04 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] Account deletion removes `chatReads` and `eventMutes`.
+- [x] In shared records, it replaces the user ID in expense splits, `involvedUids`, `createdBy` and `completedBy` with one anonymous ID per person per event.
+- [x] A ledger still balances after deletion, and two deleted people are never merged.
+- [x] Event deletion also removes checklists, new subcollections, and members' per-event personal documents.
+- [x] Emulator tests prove deletion completeness.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] Tests for scenarios FND-08, Z-04 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 28

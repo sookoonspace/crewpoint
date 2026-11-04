@@ -20,6 +20,8 @@ const {createEvent} = require('../src/events/createEvent');
 const {handleUrgentMessage} = require('../src/events/onUrgentMessageCreated');
 const {markTaskComplete} = require('../src/events/markTaskComplete');
 const {joinEvent} = require('../src/events/joinEvent');
+const {deleteUserAccount} = require('../src/account/deleteUserAccount');
+const {deleteEvent} = require('../src/events/deleteEvent');
 
 const E = 'foundation';
 const call = (uid: string, data: object) => ftest.wrap(saveExpense)({auth: {uid}, data});
@@ -356,5 +358,50 @@ describe('FND-06 member limit', () => {
     await seed({memberIds: Array.from({length: 60}, (_, i) => `u${i}`), memberCount: 60});
     await join('new');
     expect((await getAdminDb().doc('events/full').get()).data()!.memberCount).toBe(61);
+  });
+});
+
+describe('FND-08 deletion', () => {
+  const E = 'events/gone';
+  const db = () => getAdminDb();
+  const exists = async (path: string) => (await db().doc(path).get()).exists;
+
+  beforeEach(async () => {
+    await clearFirestoreEmulator();
+    await db().doc(E).set({title: 'T', creatorId: 'owner', adminIds: ['owner'], memberIds: ['owner', 'fnd8']});
+    await db().doc(`${E}/expenses/e`).set({
+      payerId: 'owner',
+      amount: 10,
+      involvedUids: ['owner', 'fnd8'],
+      splits: [
+        {userId: 'owner', amount: 5},
+        {userId: 'fnd8', amount: 5},
+      ],
+    });
+    await db().doc(`${E}/tasks/t`).set({createdBy: 'fnd8', completedBy: 'fnd8'});
+    await db().doc(`${E}/tasks/t/checklist/c`).set({text: 'x'});
+    await db().doc('users/fnd8/chatReads/gone').set({lastReadAt: 'x'});
+    await db().doc('users/fnd8/eventMutes/gone').set({mutedUntil: 'x'});
+    const {getAuth} = require('firebase-admin/auth');
+    await getAuth().deleteUser('fnd8').catch(() => undefined);
+    await getAuth().createUser({uid: 'fnd8'});
+  });
+
+  test('FND-08 account deletion leaves no user ID, and removes personal documents', async () => {
+    await ftest.wrap(deleteUserAccount)({auth: {uid: 'fnd8'}, data: {}});
+    const shared = JSON.stringify([
+      (await db().doc(`${E}/expenses/e`).get()).data(),
+      (await db().doc(`${E}/tasks/t`).get()).data(),
+    ]);
+    expect(shared).not.toContain('fnd8');
+    expect(await exists('users/fnd8/chatReads/gone')).toBe(false);
+    expect(await exists('users/fnd8/eventMutes/gone')).toBe(false);
+  });
+
+  test('FND-08 event deletion removes checklists and personal documents', async () => {
+    await ftest.wrap(deleteEvent)({auth: {uid: 'owner'}, data: {eventId: 'gone'}});
+    expect(await exists(`${E}/tasks/t/checklist/c`)).toBe(false);
+    expect(await exists('users/fnd8/chatReads/gone')).toBe(false);
+    expect(await exists('users/fnd8/eventMutes/gone')).toBe(false);
   });
 });
