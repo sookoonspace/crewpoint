@@ -509,3 +509,96 @@ describe('FND-12 administration', () => {
     await assertFails(updateDoc(doc(db, E), {currency: 'EUR'}));
   });
 });
+
+describe('GE-08 event status', () => {
+  /* eslint-disable @typescript-eslint/no-var-requires */
+  const {createEvent} = require('../src/events/createEvent');
+  const {joinEvent} = require('../src/events/joinEvent');
+  const {saveExpense} = require('../src/events/saveExpense');
+  const {markTaskComplete} = require('../src/events/markTaskComplete');
+  const {runStatusChanges} = require('../src/events/eventStatus');
+  const {Timestamp} = require('firebase-admin/firestore');
+  /* eslint-enable @typescript-eslint/no-var-requires */
+  const store = () => getAdminDb();
+  const ref = () => store().doc('events/status');
+  const invoke = (fn: unknown, uid: string, data: object) =>
+    ftest.wrap(fn)({auth: {uid}, data});
+  const refused = expect.objectContaining({code: 'failed-precondition'});
+
+  beforeEach(() => clearFirestoreEmulator());
+
+  const seedEvent = async (status: string) => {
+    await ref().set({
+      title: 'Status',
+      creatorId: 'owner',
+      adminIds: ['owner'],
+      memberIds: ['owner', 'member', 'other'],
+      currency: 'USD',
+      timeZone: 'UTC',
+      status,
+    });
+    await store().doc('event_invites/STATUS').set({
+      eventId: 'status',
+      expiresAt: Timestamp.fromMillis(Date.now() + 86400000),
+    });
+    await ref().collection('tasks').doc('t').set({
+      eventId: 'status',
+      title: 'T',
+      assigneeId: 'member',
+      createdBy: 'member',
+      status: 'todo',
+    });
+  };
+  const expense = {
+    eventId: 'status',
+    expenseId: 'x',
+    payerId: 'member',
+    amount: 10,
+    description: 'Lunch',
+    isDonation: false,
+    splits: [{userId: 'member', amount: 5}, {userId: 'other', amount: 5}],
+  };
+
+  test('GE-08 a new event is a draft that nobody can join', async () => {
+    await invoke(createEvent, 'owner', {eventId: 'status', title: 'New'});
+    expect((await ref().get()).data()!.status).toBe('draft');
+    await store().doc('event_invites/STATUS').set({eventId: 'status'});
+    await expect(invoke(joinEvent, 'new', {joinCode: 'STATUS'})).rejects.toEqual(refused);
+  });
+
+  test('GE-08 a published event is open to joining', async () => {
+    await seedEvent('published');
+    await invoke(joinEvent, 'new', {joinCode: 'STATUS'});
+    expect((await ref().get()).data()!.memberIds).toContain('new');
+  });
+
+  test('GE-08 start and end times move an event on a schedule', async () => {
+    await seedEvent('published');
+    await ref().update({
+      startDate: Timestamp.fromDate(new Date('2027-06-01T15:00:00Z')),
+      endDate: Timestamp.fromDate(new Date('2027-06-03T18:00:00Z')),
+    });
+    await runStatusChanges(store(), new Date('2027-06-02T00:00:00Z'));
+    expect((await ref().get()).data()!.status).toBe('live');
+    await runStatusChanges(store(), new Date('2027-06-04T00:00:00Z'));
+    expect((await ref().get()).data()!.status).toBe('ended');
+  });
+
+  test('GE-08 after an event ends, expenses stay open and tasks close', async () => {
+    await seedEvent('ended');
+    await invoke(saveExpense, 'member', expense);
+    expect((await ref().collection('expenses').doc('x').get()).exists).toBe(true);
+    await expect(invoke(markTaskComplete, 'member', {eventId: 'status', taskId: 't'}))
+      .rejects.toEqual(refused);
+    await invoke(markTaskComplete, 'owner', {eventId: 'status', taskId: 't'});
+    expect((await ref().collection('tasks').doc('t').get()).data()!.status).toBe('done');
+  });
+
+  test('GE-08 an archived event is read-only for everyone', async () => {
+    await seedEvent('archived');
+    await expect(invoke(saveExpense, 'owner', {...expense, payerId: 'owner'})).rejects.toEqual(refused);
+    await expect(invoke(markTaskComplete, 'owner', {eventId: 'status', taskId: 't'}))
+      .rejects.toEqual(refused);
+    await expect(invoke(joinEvent, 'new', {joinCode: 'STATUS'})).rejects.toEqual(refused);
+  });
+});

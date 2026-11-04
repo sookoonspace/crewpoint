@@ -1,6 +1,7 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
+import {assertNotArchived} from "./eventStatus";
 
 const db = getFirestore();
 
@@ -41,6 +42,14 @@ export const demoteAdmin = onCall(
         }
 
         const eventData = eventDoc.data()!;
+        assertNotArchived(eventData);
+        // Nobody but organizers can see a draft, so its members must stay so.
+        if (eventData.status === "draft") {
+          throw new HttpsError(
+            "failed-precondition",
+            "Publish this event before changing its admins."
+          );
+        }
         const adminIds: string[] = eventData.adminIds || [];
 
         if (eventData.creatorId !== uid) {

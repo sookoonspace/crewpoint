@@ -11,6 +11,28 @@ service cloud.firestore {
       return request.auth.uid in event.data.memberIds;
     }
 
+    function eventData(eventId) {
+      return get(/databases/$(database)/documents/events/$(eventId)).data;
+    }
+
+    // Archived events are read-only for everyone.
+    function isNotArchived(eventId) {
+      return eventData(eventId).get('status', 'active') != 'archived';
+    }
+
+    // `event.manage` means owner or admin until permissions land.
+    function canManageEvent(eventId) {
+      return eventData(eventId).creatorId == request.auth.uid
+        || request.auth.uid in eventData(eventId).adminIds;
+    }
+
+    // Once an event ends, only `event.manage` can change its tasks. Settlements,
+    // expenses and chat stay open.
+    function tasksAreOpen(eventId) {
+      return isNotArchived(eventId)
+        && (eventData(eventId).get('status', 'active') != 'ended' || canManageEvent(eventId));
+    }
+
     // Compares with missing treated as null, so older events can be edited.
     function fieldUnchanged(field) {
       return request.resource.data.get(field, null) == resource.data.get(field, null);
@@ -23,8 +45,16 @@ service cloud.firestore {
 
     // Events collection
     match /events/{eventId} {
-      // Read: only members (memberIds always includes creatorId and adminIds)
-      allow read: if request.auth != null
+      // Read: only members (memberIds always includes creatorId and adminIds).
+      // A draft is visible only to `event.manage`. A list query cannot express
+      // that, so joining, demoting and moving back to draft all keep plain
+      // members out of drafts, and this check covers direct reads.
+      allow get: if request.auth != null
+        && request.auth.uid in resource.data.memberIds
+        && (resource.data.get('status', 'active') != 'draft'
+            || resource.data.creatorId == request.auth.uid
+            || request.auth.uid in resource.data.adminIds);
+      allow list: if request.auth != null
         && request.auth.uid in resource.data.memberIds;
 
       // Create: only through the createEvent callable, with the caller as
@@ -54,6 +84,16 @@ service cloud.firestore {
         && fieldUnchanged('eventType')
         // Joining relies on this count, so only the server keeps it.
         && fieldUnchanged('memberCount')
+        // Archived events only allow a restore, by changing status.
+        && (resource.data.get('status', 'active') != 'archived'
+            || request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['status', 'statusSetAt', 'updatedAt']))
+        && (fieldUnchanged('status')
+            || (request.resource.data.status in ['draft', 'published', 'live', 'ended', 'archived']
+                && request.resource.data.statusSetAt == request.time
+                && (request.resource.data.status != 'draft'
+                    || request.resource.data.memberIds.hasOnly(
+                        request.resource.data.adminIds.concat([request.resource.data.creatorId])))))
         && isPositiveIntOrNull('capacity')
         && isPositiveIntOrNull('memberLimit')
         && (!('timeZone' in request.resource.data) || request.resource.data.timeZone is string)
@@ -70,6 +110,7 @@ service cloud.firestore {
 
         allow create: if request.auth != null
           && isEventMember(eventId)
+          && isNotArchived(eventId)
           && request.resource.data.senderId == request.auth.uid
           // Notices such as `settlement` and `settlement_disputed` are written
           // only by the server, so a member cannot forge one.
@@ -86,6 +127,7 @@ service cloud.firestore {
 
         allow delete: if request.auth != null
           && isEventMember(eventId)
+          && isNotArchived(eventId)
           && resource.data.senderId == request.auth.uid;
 
         allow update: if false;
@@ -126,6 +168,7 @@ service cloud.firestore {
         // task cannot start finished.
         allow create: if request.auth != null
           && isEventMember(eventId)
+          && tasksAreOpen(eventId)
           && request.resource.data.createdBy == request.auth.uid
           && request.resource.data.eventId == eventId
           && request.resource.data.get('status', null) != 'done'
@@ -137,6 +180,7 @@ service cloud.firestore {
         // and createdBy records authorship.
         allow update: if request.auth != null
           && isEventMember(eventId)
+          && tasksAreOpen(eventId)
           && (canEditTask(resource.data)
               || (resource.data.assigneeId == request.auth.uid
                   && request.resource.data.diff(resource.data).affectedKeys()
@@ -148,6 +192,7 @@ service cloud.firestore {
         // Delete: only creator/owner/admin
         allow delete: if request.auth != null
           && isEventMember(eventId)
+          && tasksAreOpen(eventId)
           && (resource.data.createdBy == request.auth.uid
               || eventDoc().creatorId == request.auth.uid
               || request.auth.uid in eventDoc().adminIds);
@@ -158,6 +203,7 @@ service cloud.firestore {
 
           allow create, delete: if request.auth != null
             && isEventMember(eventId)
+            && tasksAreOpen(eventId)
             && (get(/databases/$(database)/documents/events/$(eventId)/tasks/$(taskId)).data.createdBy == request.auth.uid
                 || eventDoc().creatorId == request.auth.uid
                 || request.auth.uid in eventDoc().adminIds);
@@ -165,6 +211,7 @@ service cloud.firestore {
           // Update: anyone who can edit the task, or the assignee ticking it off.
           allow update: if request.auth != null
             && isEventMember(eventId)
+            && tasksAreOpen(eventId)
             && (get(/databases/$(database)/documents/events/$(eventId)/tasks/$(taskId)).data.createdBy == request.auth.uid
                 || eventDoc().creatorId == request.auth.uid
                 || request.auth.uid in eventDoc().adminIds
@@ -189,6 +236,7 @@ service cloud.firestore {
         // Delete: payer, event creator, or any admin.
         allow delete: if request.auth != null
           && isEventMember(eventId)
+          && isNotArchived(eventId)
           && (resource.data.payerId == request.auth.uid
               || eventDocForExpense().creatorId == request.auth.uid
               || request.auth.uid in eventDocForExpense().adminIds);

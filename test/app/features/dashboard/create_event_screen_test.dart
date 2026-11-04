@@ -100,7 +100,7 @@ void main() {
       expect(data['creatorId'], 'uid-42');
       expect(data['adminIds'], ['uid-42']);
       expect(data['memberIds'], ['uid-42']);
-      expect(data['status'], 'active');
+      expect(data['status'], 'draft');
       expect(data['timeZone'], 'America/Chicago');
       expect(data['templateId'], 'blank');
       expect(data['organizerId'], 'uid-42');
@@ -108,14 +108,14 @@ void main() {
       // Screen popped — back on the host.
       expect(find.byKey(const Key('host.openCreate')), findsOneWidget);
       expect(find.byKey(const Key('createEvent.submit')), findsNothing);
-      expect(find.text('Event created'), findsOneWidget);
+      expect(find.textContaining('Draft created'), findsOneWidget);
       // Post-create share affordance is visible on the success SnackBar.
-      expect(find.text('Share invite'), findsOneWidget);
+      expect(find.text('Publish and invite'), findsOneWidget);
     },
   );
 
   testWidgets(
-    'post-create SnackBar Share invite action opens AddMemberSheet for the new event',
+    'post-create SnackBar publishes the draft and opens AddMemberSheet',
     (tester) async {
       useTallViewport(tester);
       await tester.pumpWidget(
@@ -137,14 +137,16 @@ void main() {
       await tester.tap(find.byKey(const Key('createEvent.submit')));
       await tester.pumpAndSettle();
 
-      // SnackBar visible with Share invite action.
-      expect(find.text('Event created'), findsOneWidget);
-      expect(find.text('Share invite'), findsOneWidget);
+      // SnackBar visible with the publish action.
+      expect(find.textContaining('Draft created'), findsOneWidget);
+      expect(find.text('Publish and invite'), findsOneWidget);
 
-      // Tap the action → AddMemberSheet opens.
-      await tester.tap(find.text('Share invite'));
+      // Tap the action → the event is published and AddMemberSheet opens.
+      await tester.tap(find.text('Publish and invite'));
       await tester.pumpAndSettle();
       expect(find.byType(AddMemberSheet), findsOneWidget);
+      final created = await firestore.collection('events').get();
+      expect(created.docs.single.data()['status'], 'published');
 
       // Contract: dismiss the sheet → user is back on the host (the
       // dashboard scaffold the screen popped to). Proves the
@@ -286,7 +288,7 @@ void main() {
 
     expect(failing.ids, hasLength(2));
     expect(failing.ids[1], failing.ids[0], reason: 'a retry must not repeat');
-    expect(find.text('Event created'), findsOneWidget);
+    expect(find.textContaining('Draft created'), findsOneWidget);
   });
 }
 

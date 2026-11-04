@@ -85,7 +85,7 @@ Each fix keeps working for current members, and has a regression test written fi
 18a. A personal organizer is created automatically for each user on first event creation. Organization details such as legal name and tax ID arrive in Stage 2. `creatorId` stays as a read-only record of who created the event, and no permission check uses it.
 18b. `capacity` is how many people can attend, with or without an account. Stage 1 stores it and shows the count against it. Enforcement and waitlists arrive with registration in Stage 2. [L18]
 19. Status values are exactly `draft`, `published`, `live`, `ended`, `archived`, and they mean:
-    - **`draft`:** visible only to `event.manage`. Nobody can join.
+    - **`draft`:** the status of a new event. Visible only to `event.manage`. Nobody can join. An event with plain members cannot go back to it. [L23]
     - **`published`:** visible to members and open to joining. An organizer moves an event here.
     - **`live`:** set automatically from the start time, in the event's time zone. An organizer can also set it by hand.
     - **`ended`:** set automatically after the end time, or by hand. **Settlements, expenses and chat stay open**, and everything else is read-only except to `event.manage`. [L20]
@@ -570,6 +570,20 @@ Answer: Accepted.
 Decision: Use this migration mapping, and keep these two actions open to every member except Observer and Vendor.
 
 Reason: Req 34 preserves everyone's access.
+
+### L23
+
+Status: current
+
+Question: What status does a new event start in?
+
+Recommended Answer: Published, so it can be shared straight away.
+
+Answer: Draft.
+
+Decision: New events start as `draft`. After creating one, the organizer is offered "Publish and invite", and a draft's event screen offers Publish in place of inviting. An event with plain members cannot go back to draft.
+
+Reason: Nothing is visible to others until the organizer chooses to publish. The event itself is still created with no further screens (Req 63).
 
 </details>
 

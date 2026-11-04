@@ -14,7 +14,7 @@ void main() {
     endDate: DateTime(2026, 6, 3),
     adminIds: const ['uid-1'],
     memberIds: const ['uid-1', 'uid-2'],
-    status: EventStatus.active,
+    status: EventStatus.published,
     currency: 'USD',
   );
 

@@ -13,7 +13,9 @@ import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/loading_animation.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
+import 'package:crewpoint_app/app/features/dashboard/data/event_repository.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/event_status_label.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/mute_event_sheet.dart';
 
@@ -100,6 +102,33 @@ class EventDashboardScreen extends StatelessWidget {
                       if (uid == null || !event.isAdmin(uid)) {
                         return const SizedBox.shrink();
                       }
+                      if (event.status == EventStatus.draft) {
+                        final strings = context.strings.dashboard;
+                        return Padding(
+                          padding: const EdgeInsets.only(top: AppSpacing.md),
+                          child: _QuickLinkCard(
+                            key: const Key('events.dashboard.publish'),
+                            icon: AppIcons.memberAdd,
+                            label: strings.publishEvent,
+                            subtitle: strings.publishEventSubtitle,
+                            color: AppColors.terracotta,
+                            onTap: () async {
+                              final messenger = ScaffoldMessenger.of(context);
+                              final result = await ref
+                                  .read(eventRepositoryProvider)
+                                  .setStatus(event.id, EventStatus.published);
+                              if (result == EventWriteResult.failed) {
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text(strings.publishFailed),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                        );
+                      }
+                      if (!event.isJoinable) return const SizedBox.shrink();
                       return Padding(
                         padding: const EdgeInsets.only(top: AppSpacing.md),
                         child: _QuickLinkCard(
@@ -322,8 +351,8 @@ class _EventHero extends StatelessWidget {
                   ],
                 ),
 
-              // Status badge for archived
-              if (event.status == EventStatus.archived) ...[
+              // Status badge. Published is the normal state, so it has none.
+              if (event.status != EventStatus.published) ...[
                 const SizedBox(height: AppSpacing.md),
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -335,7 +364,8 @@ class _EventHero extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    'Archived',
+                    eventStatusLabel(context.strings.dashboard, event.status),
+                    key: const Key('events.dashboard.status'),
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: AppColors.terracottaLight,
                     ),
@@ -689,7 +719,7 @@ class _EventActionsState extends ConsumerState<_EventActions> {
                   final updated = widget.event.copyWith(
                     status: archived
                         ? EventStatus.archived
-                        : EventStatus.active,
+                        : widget.event.restoredStatus(DateTime.now()),
                   );
                   final ok = await ref
                       .read(eventRepositoryProvider)

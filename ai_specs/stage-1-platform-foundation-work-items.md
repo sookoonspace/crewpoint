@@ -458,21 +458,21 @@ Add the new event fields with defaults so a new event needs only a title, a pers
 - Since #58, rules deny every client change to `currency`. If event settings let an organizer change it, add a callable that refuses once the event has any expense or charge (Req 17), and disable the control in the UI once that is the case.
 
 ### Acceptance criteria
-- [ ] Events gain `organizerId`, `timeZone`, `venues`, `currency`, `languages`, `status`, `modules`, `labels`, `settings`, `capacity` and `memberLimit`, with defaults so a new event needs only a title.
-- [ ] A personal organizer is created automatically for each user on first event creation. Legal name and tax ID wait for Stage 2.
-- [ ] `creatorId` stays as a read-only record of who created the event, and no permission check uses it once #66 lands.
-- [ ] `capacity` is how many people can attend, with or without an account. It is stored and the count is shown against it. Enforcement and waitlists wait for Stage 2.
-- [ ] `EventType` is replaced with `templateId`. The current values map to `blank`, keeping their names as display text only.
-- [ ] Anyone signed in may create events.
-- [ ] An `organizer.verified` flag exists, which the urgent rate limit reads, with no verification flow yet.
-- [ ] The `settings` route exists under `/dashboard/event/:eventId` and is visible only to `event.manage`. #60, #62 and #72 add status, modules and expense access to it.
-- [ ] Key on every interactive widget follows `domain.feature.action`.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
-- [ ] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
-- [ ] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
-- [ ] Tests for scenarios A-01, GE-07 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] Events gain `organizerId`, `timeZone`, `venues`, `currency`, `languages`, `status`, `modules`, `labels`, `settings`, `capacity` and `memberLimit`, with defaults so a new event needs only a title.
+- [x] A personal organizer is created automatically for each user on first event creation. Legal name and tax ID wait for Stage 2.
+- [x] `creatorId` stays as a read-only record of who created the event, and no permission check uses it once #66 lands.
+- [x] `capacity` is how many people can attend, with or without an account. It is stored and the count is shown against it. Enforcement and waitlists wait for Stage 2.
+- [x] `EventType` is replaced with `templateId`. The current values map to `blank`, keeping their names as display text only.
+- [x] Anyone signed in may create events.
+- [x] An `organizer.verified` flag exists, which the urgent rate limit reads, with no verification flow yet.
+- [x] The `settings` route exists under `/dashboard/event/:eventId` and is visible only to `event.manage`. #60, #62 and #72 add status, modules and expense access to it.
+- [x] Key on every interactive widget follows `domain.feature.action`.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
+- [x] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
+- [x] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
+- [x] Tests for scenarios A-01, GE-07 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 6
@@ -660,6 +660,7 @@ Add the permission catalogue, role presets, server-calculated member documents a
 - `firestore.rules`, `functions/src/events/` and `docs/cloud-functions-guide.md`.
 - Member documents also hold group IDs for own-group checks (Req 26b), filled in by #75 and #78, and `expenses.readAll` per Technical Decision 4a, set from the access setting by #72.
 - Automated tests use emulators and a seeded old-shape fixture. Running the script on a real project is a deliberate manual step in #66.
+- Since #60, the status mapping is `mapLegacyStatus` in `functions/src/events/eventStatus.ts`. Use it in the migration script. Until then `active` keeps working everywhere it is read. Member documents must keep plain members out of drafts (L23), because list queries cannot filter them out in rules.
 
 ### Acceptance criteria
 - [ ] `events/{id}/members/{uid}` holds `uid`, `roleIds`, `crewIds`, `permissions`, `participantId` and `joinedAt`.
@@ -1176,6 +1177,7 @@ Add one shareable, role-carrying link and QR code per event, with an organizer-s
 - `functions/src/events/generateInviteCode.ts`, `lib/app/core/router/app_router.dart` (router is built once and uses `refreshListenable`), and `ai_specs/invite-share-spec.md`.
 - QR rendering gets a new interface and provider. New dependencies use the exact resolved version as the caret floor.
 - Stage 1 has one active invite per event, so a convention cannot send individual invites until Stage 2. Per-group, single-use and personal links, and opening links directly in the app, wait for Stage 2.
+- Since #60, new events start as `draft` (L23), and `generateInviteCode` and `joinEvent` refuse unless the event is published or live. The invite link and `/join/:code` must do the same, and explain it to the person joining.
 
 ### Acceptance criteria
 - [ ] There is one shareable link and QR code per event, carrying a role, with an expiry the organizer sets.
@@ -1504,6 +1506,7 @@ Add the six system templates as data, make the first step of creation a picker, 
 - `createEvent` from #51, `lib/app/features/dashboard/presentation/create_event_screen.dart`, `test/robots/create_event_robot.dart`, and `pubspec.yaml` for the assets folder.
 - Template files are the guardrail's only exception for event-specific words (Req 2).
 - Since #59, `createEvent` always writes `templateId: 'blank'` and ignores any client value. Accept a validated template ID here. `eventType` is display text on older events only, and rules deny changing it or `templateId`.
+- Since #60, new events start as `draft` (L23), including events from templates. Creation still has no further screens (Req 63), and the organizer is then offered "Publish and invite". PA-01's under-a-minute test covers creating the event.
 
 ### Acceptance criteria
 - [ ] System templates are data only, in versioned JSON files under `assets/templates/`, also read by functions, so they need no separate seeding per environment: Blank, Party, Wedding, Cricket tournament, Golf outing, Convention.

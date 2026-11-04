@@ -78,11 +78,13 @@ Conditional imports handle compile-time platform splits: `database/connection/na
 
 ### RBAC
 
-Double-enforced. Client gates UI via `Event.isOwner` / `isAdmin` / `isMember` and per-feature predicates (`TaskModel.canChangeStatus`); `firestore.rules` and the Cloud Functions enforce the same contract server-side. Privileged mutations are callables, not direct writes — `createEvent`, `changeEventCurrency`, `joinEvent`, `removeEventMember`, `promoteToAdmin`, `demoteAdmin`, `deleteEvent`, `markTaskComplete`, `saveExpense`, `recordSettlement`, `disputeSettlement`, `generateInviteCode`, `deleteUserAccount`. Firestore triggers (`onUrgentMessageCreated`, `onTaskAssigned`, `onExpenseCreated`, `onSettlementDisputed`, `onMemberJoined`, `onTaskDueScheduled`, `onDigestSummary`) drive push. All exported from `functions/src/index.ts`; `docs/cloud-functions-guide.md` holds the authoritative Function Registry.
+Double-enforced. Client gates UI via `Event.isOwner` / `isAdmin` / `isMember` and per-feature predicates (`TaskModel.canChangeStatus`); `firestore.rules` and the Cloud Functions enforce the same contract server-side. Privileged mutations are callables, not direct writes — `createEvent`, `changeEventCurrency`, `joinEvent`, `removeEventMember`, `promoteToAdmin`, `demoteAdmin`, `deleteEvent`, `markTaskComplete`, `saveExpense`, `recordSettlement`, `disputeSettlement`, `generateInviteCode`, `deleteUserAccount`. Firestore triggers (`onUrgentMessageCreated`, `onTaskAssigned`, `onExpenseCreated`, `onSettlementDisputed`, `onMemberJoined`, `onTaskDueScheduled`, `onDigestSummary`) drive push. `onEventStatusScheduled` moves events to `live` and `ended`. All exported from `functions/src/index.ts`; `docs/cloud-functions-guide.md` holds the authoritative Function Registry.
 
 Firestore data model: `events/{eventId}` with `messages`, `tasks` (+ `tasks/{id}/checklist`), `expenses` subcollections; `organizers/{uid}` (a person's personal organizer, written only by the server, holding `verified`); `event_invites/{code}`; `users/{uid}` with `private`, `chatReads`, `eventMutes` subcollections.
 
 Events carry `templateId`, `organizerId`, `timeZone`, `venues`, `currency`, `languages`, `status`, `modules`, `labels`, `settings`, `capacity` and `memberLimit`, and need only a title. `eventType` survives on older events as display text only. Older events lack the new fields, so reads must fall back to the same defaults as `createEvent`.
+
+`status` is `draft`, `published`, `live`, `ended` or `archived`, and new events start as `draft`. Older events may still hold `active` until the #65 migration, which reads as `ended` past the end date, or else `published`. `firestore.rules` and `functions/src/events/eventStatus.ts` enforce what each status allows, and `EventModel` mirrors that for the UI. Plain members must never be in a draft, because list queries cannot filter them out in rules: anything that adds a plain member has to refuse drafts.
 
 ### UI conventions
 

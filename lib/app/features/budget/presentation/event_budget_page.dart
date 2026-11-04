@@ -460,6 +460,7 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
           expenses: expenses,
           memberIds: widget.event.memberIds,
           currency: widget.event.currency,
+          canAddExpense: widget.event.allowsChatAndMoney,
           memberNames: memberNames,
           appBarTitle: widget.event.title,
           onEditExpense: (expense) =>

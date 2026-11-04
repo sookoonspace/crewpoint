@@ -1,6 +1,7 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
+import {assertNotArchived} from "./eventStatus";
 
 const db = getFirestore();
 
@@ -36,6 +37,7 @@ export const changeEventCurrency = onCall(
           if (!event.exists) {
             throw new HttpsError("not-found", "Event not found.");
           }
+          assertNotArchived(event.data()!);
           const {creatorId, adminIds = [], currency: current} = event.data()!;
           if (creatorId !== uid && !adminIds.includes(uid)) {
             throw new HttpsError(

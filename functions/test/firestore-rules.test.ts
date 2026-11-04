@@ -11,6 +11,11 @@ import {
   deleteDoc,
   arrayUnion,
   arrayRemove,
+  collection,
+  getDocs,
+  query,
+  serverTimestamp,
+  where,
 } from 'firebase/firestore';
 import {getTestEnv} from './setup';
 
@@ -184,6 +189,170 @@ describe('events update — configuration (Req 18, 18a, 18b)', () => {
     });
     const db = env.authenticatedContext('owner').firestore();
     await assertSucceeds(updateDoc(doc(db, 'events/old'), {title: 'New'}));
+  });
+});
+
+describe('event status (Req 19, GE-08)', () => {
+  const E = 'events/evtStatus';
+  const seed = (status: string | undefined, over: object = {}) =>
+    env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, E), {
+        creatorId: 'owner',
+        adminIds: ['owner', 'admin'],
+        memberIds: ['owner', 'admin', 'member'],
+        title: 'Convention',
+        ...(status ? {status} : {}),
+        ...over,
+      });
+      await setDoc(doc(db, `${E}/tasks/t1`), {
+        eventId: 'evtStatus',
+        title: 'Task',
+        createdBy: 'member',
+        assigneeId: 'member',
+        status: 'todo',
+      });
+      await setDoc(doc(db, `${E}/tasks/t1/checklist/c1`), {
+        text: 'Item',
+        isCompleted: false,
+      });
+      await setDoc(doc(db, `${E}/messages/m1`), {senderId: 'member', text: 'Hi'});
+      await setDoc(doc(db, `${E}/expenses/x1`), {payerId: 'member', amount: 1});
+    });
+  const as = (uid: string) => env.authenticatedContext(uid).firestore();
+  const message = (uid: string) => ({senderId: uid, text: 'Hello'});
+  const task = (uid: string) => ({eventId: 'evtStatus', title: 'New', createdBy: uid});
+
+  describe('changing status', () => {
+    const change = (uid: string, status: string) =>
+      updateDoc(doc(as(uid), E), {status, statusSetAt: serverTimestamp()});
+
+    test.each(['draft', 'published', 'live', 'ended', 'archived'])('an organizer can set %s', async (status) => {
+      await seed('published', {memberIds: ['owner', 'admin']});
+      await assertSucceeds(change('admin', status));
+    });
+
+    test.each(['active', 'finished', ''])('%p is not a status', async (status) => {
+      await seed('published');
+      await assertFails(change('admin', status));
+    });
+
+    test('a plain member cannot change it', async () => {
+      await seed('published');
+      await assertFails(change('member', 'ended'));
+    });
+
+    test('a change by hand must record when it happened', async () => {
+      await seed('published');
+      await assertFails(updateDoc(doc(as('admin'), E), {status: 'ended'}));
+    });
+
+    test('an event with plain members cannot go back to draft', async () => {
+      await seed('published');
+      await assertFails(change('admin', 'draft'));
+    });
+
+    test('an event from before statuses can still be edited', async () => {
+      await seed('active');
+      await assertSucceeds(updateDoc(doc(as('admin'), E), {title: 'New'}));
+    });
+  });
+
+  describe('draft', () => {
+    test('an organizer can read it', async () => {
+      await seed('draft');
+      await assertSucceeds(getDoc(doc(as('admin'), E)));
+    });
+
+    test('a plain member cannot, even if one is listed', async () => {
+      await seed('draft');
+      await assertFails(getDoc(doc(as('member'), E)));
+    });
+
+    test('the event list still works for members', async () => {
+      await seed('published');
+      await assertSucceeds(
+        getDocs(query(collection(as('member'), 'events'), where('memberIds', 'array-contains', 'member'))),
+      );
+    });
+  });
+
+  describe.each(['published', 'live', 'active'])('%s', (status) => {
+    test('members can chat and work on tasks', async () => {
+      await seed(status);
+      await assertSucceeds(setDoc(doc(as('member'), `${E}/messages/new`), message('member')));
+      await assertSucceeds(setDoc(doc(as('member'), `${E}/tasks/new`), task('member')));
+      await assertSucceeds(updateDoc(doc(as('member'), `${E}/tasks/t1`), {title: 'Edited'}));
+    });
+  });
+
+  describe('ended', () => {
+    test('chat stays open', async () => {
+      await seed('ended');
+      await assertSucceeds(setDoc(doc(as('member'), `${E}/messages/new`), message('member')));
+    });
+
+    test('expenses stay open', async () => {
+      await seed('ended');
+      await assertSucceeds(deleteDoc(doc(as('member'), `${E}/expenses/x1`)));
+    });
+
+    test('tasks are read-only to a plain member', async () => {
+      await seed('ended');
+      const db = as('member');
+      await assertSucceeds(getDoc(doc(db, `${E}/tasks/t1`)));
+      await assertFails(setDoc(doc(db, `${E}/tasks/new`), task('member')));
+      await assertFails(updateDoc(doc(db, `${E}/tasks/t1`), {title: 'Edited'}));
+      await assertFails(deleteDoc(doc(db, `${E}/tasks/t1`)));
+      await assertFails(updateDoc(doc(db, `${E}/tasks/t1/checklist/c1`), {isCompleted: true}));
+    });
+
+    test('tasks stay editable to an organizer', async () => {
+      await seed('ended');
+      const db = as('admin');
+      await assertSucceeds(setDoc(doc(db, `${E}/tasks/new`), task('admin')));
+      await assertSucceeds(updateDoc(doc(db, `${E}/tasks/t1`), {title: 'Edited'}));
+      await assertSucceeds(updateDoc(doc(db, `${E}/tasks/t1/checklist/c1`), {isCompleted: true}));
+    });
+  });
+
+  describe('archived', () => {
+    test('everyone can still read', async () => {
+      await seed('archived');
+      await assertSucceeds(getDoc(doc(as('member'), E)));
+      await assertSucceeds(getDoc(doc(as('member'), `${E}/messages/m1`)));
+    });
+
+    test.each(['owner', 'member'])('%s cannot write anything', async (uid) => {
+      await seed('archived');
+      const db = as(uid);
+      await assertFails(updateDoc(doc(db, E), {title: 'New'}));
+      await assertFails(setDoc(doc(db, `${E}/messages/new`), message(uid)));
+      await assertFails(deleteDoc(doc(db, `${E}/messages/m1`)));
+      await assertFails(setDoc(doc(db, `${E}/tasks/new`), task(uid)));
+      await assertFails(updateDoc(doc(db, `${E}/tasks/t1`), {title: 'Edited'}));
+      await assertFails(deleteDoc(doc(db, `${E}/tasks/t1`)));
+      await assertFails(updateDoc(doc(db, `${E}/tasks/t1/checklist/c1`), {isCompleted: true}));
+      await assertFails(deleteDoc(doc(db, `${E}/expenses/x1`)));
+    });
+
+    test('an organizer can restore it, changing nothing else', async () => {
+      await seed('archived');
+      const db = as('admin');
+      await assertFails(
+        updateDoc(doc(db, E), {status: 'published', statusSetAt: serverTimestamp(), title: 'New'}),
+      );
+      await assertSucceeds(
+        updateDoc(doc(db, E), {status: 'published', statusSetAt: serverTimestamp()}),
+      );
+    });
+
+    test('a plain member cannot restore it', async () => {
+      await seed('archived');
+      await assertFails(
+        updateDoc(doc(as('member'), E), {status: 'published', statusSetAt: serverTimestamp()}),
+      );
+    });
   });
 });
 

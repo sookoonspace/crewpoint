@@ -13,6 +13,7 @@ import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
 import 'package:crewpoint_app/app/features/dashboard/data/event_repository.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/create_event_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/event_status_label.dart';
 
 /// Parses a positive whole number. Empty gives null, and anything else invalid
 /// is reported by the field's validator.
@@ -104,6 +105,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
   late final TextEditingController _memberLimit;
   late final List<_VenueRow> _venues;
   late String _currency;
+  late EventStatus _status;
   bool _dirty = false;
   bool _saving = false;
   String? _error;
@@ -127,7 +129,11 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
         ),
     ];
     _currency = event.currency;
+    _status = event.status;
   }
+
+  /// An archived event can only be restored.
+  bool get _archived => widget.event.status == EventStatus.archived;
 
   TextEditingController _tracked(String text) =>
       TextEditingController(text: text)..addListener(_markDirty);
@@ -191,7 +197,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     final event = widget.event;
     // Currency goes first because it can be refused, and a refusal then leaves
     // everything as it was, with the form still filled in.
-    if (_currency != event.currency) {
+    if (!_archived && _currency != event.currency) {
       try {
         await ref.read(changeEventCurrencyCallProvider)(event.id, _currency);
       } catch (e) {
@@ -215,7 +221,9 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     final result = await ref
         .read(eventRepositoryProvider)
         .saveConfiguration(
+          previousStatus: event.status,
           event.copyWith(
+            status: _status,
             timeZone: _timeZone.text.trim(),
             venues: [
               for (final venue in _venues)
@@ -296,7 +304,8 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     final hasMoney = expenses.value?.isNotEmpty ?? false;
     // Until the list arrives the answer is unknown, and the server has the
     // final say either way.
-    final currencyEnabled = expenses.hasValue && !hasMoney && !_saving;
+    final currencyEnabled =
+        expenses.hasValue && !hasMoney && !_saving && !_archived;
     final currencies = {
       ...CreateEventScreen.supportedCurrencies,
       event.currency,
@@ -323,8 +332,48 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 spacing: AppSpacing.lg,
                 children: [
+                  if (_archived)
+                    Text(
+                      strings.settingsArchivedNotice,
+                      key: const Key('events.settings.archivedNotice'),
+                    ),
+                  DropdownButtonFormField<EventStatus>(
+                    key: const Key('events.settings.status'),
+                    initialValue: _status,
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      labelText: strings.settingsStatus,
+                      helperText:
+                          event.canBeDraft || event.status == EventStatus.draft
+                          ? null
+                          : strings.settingsStatusDraftUnavailable,
+                      helperMaxLines: 3,
+                      border: const OutlineInputBorder(),
+                    ),
+                    items: [
+                      for (final status in EventStatus.values)
+                        DropdownMenuItem(
+                          value: status,
+                          enabled:
+                              status != EventStatus.draft ||
+                              event.canBeDraft ||
+                              event.status == EventStatus.draft,
+                          child: Text(eventStatusLabel(strings, status)),
+                        ),
+                    ],
+                    onChanged: _saving
+                        ? null
+                        : (value) {
+                            if (value == null) return;
+                            setState(() {
+                              _status = value;
+                              _dirty = true;
+                            });
+                          },
+                  ),
                   TextFormField(
                     key: const Key('events.settings.timeZone'),
+                    enabled: !_archived,
                     controller: _timeZone,
                     decoration: InputDecoration(
                       labelText: strings.settingsTimeZone,
@@ -351,19 +400,21 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
                   for (final (index, venue) in _venues.indexed)
                     _VenueFields(
                       key: ValueKey(venue.id),
+                      enabled: !_archived,
                       index: index,
                       venue: venue,
                       onRemove: () => _removeVenue(venue),
                     ),
-                  Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: TextButton.icon(
-                      key: const Key('events.settings.venue.add'),
-                      onPressed: _addVenue,
-                      icon: const Icon(Icons.add),
-                      label: Text(strings.settingsVenueAdd),
+                  if (!_archived)
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: TextButton.icon(
+                        key: const Key('events.settings.venue.add'),
+                        onPressed: _addVenue,
+                        icon: const Icon(Icons.add),
+                        label: Text(strings.settingsVenueAdd),
+                      ),
                     ),
-                  ),
                   DropdownButtonFormField<String>(
                     key: const Key('events.settings.currency'),
                     initialValue: _currency,
@@ -392,6 +443,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
                   ),
                   TextFormField(
                     key: const Key('events.settings.languages'),
+                    enabled: !_archived,
                     controller: _languages,
                     decoration: InputDecoration(
                       labelText: strings.settingsLanguages,
@@ -408,6 +460,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
                   ),
                   TextFormField(
                     key: const Key('events.settings.capacity'),
+                    enabled: !_archived,
                     controller: _capacity,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
@@ -422,6 +475,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
                   ),
                   TextFormField(
                     key: const Key('events.settings.memberLimit'),
+                    enabled: !_archived,
                     controller: _memberLimit,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
@@ -459,11 +513,13 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
 class _VenueFields extends StatelessWidget {
   const _VenueFields({
     super.key,
+    required this.enabled,
     required this.index,
     required this.venue,
     required this.onRemove,
   });
 
+  final bool enabled;
   final int index;
   final _VenueRow venue;
   final VoidCallback onRemove;
@@ -481,6 +537,7 @@ class _VenueFields extends StatelessWidget {
             children: [
               TextFormField(
                 key: Key('events.settings.venue.$index.name'),
+                enabled: enabled,
                 controller: venue.name,
                 decoration: InputDecoration(
                   labelText: strings.settingsVenueName,
@@ -492,6 +549,7 @@ class _VenueFields extends StatelessWidget {
               ),
               TextFormField(
                 key: Key('events.settings.venue.$index.address'),
+                enabled: enabled,
                 controller: venue.address,
                 decoration: InputDecoration(
                   labelText: strings.settingsVenueAddress,
@@ -504,7 +562,7 @@ class _VenueFields extends StatelessWidget {
         IconButton(
           key: Key('events.settings.venue.$index.remove'),
           tooltip: strings.settingsVenueRemove,
-          onPressed: onRemove,
+          onPressed: enabled ? onRemove : null,
           icon: const Icon(Icons.delete_outline),
         ),
       ],

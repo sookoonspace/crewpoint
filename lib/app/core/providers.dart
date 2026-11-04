@@ -250,7 +250,9 @@ final dashboardEventsProvider = StreamProvider<List<EventModel>>((ref) {
   if (uid == null) return Stream.value(const <EventModel>[]);
   final repo = ref.watch(eventRepositoryProvider);
   ref.onDispose(() => repo.disposeMirror(uid));
-  return repo.watchEventsForUser(uid);
+  return repo
+      .watchEventsForUser(uid)
+      .map((events) => events.where((e) => e.isVisibleTo(uid)).toList());
 });
 
 /// Looks up a single event by id from the user's dashboard event list.

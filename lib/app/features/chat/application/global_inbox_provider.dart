@@ -59,7 +59,7 @@ final globalInboxProvider = Provider.family<AsyncValue<List<InboxRow>>, String>(
       };
     }
 
-    final activeEvents = events.where((e) => e.status == EventStatus.active);
+    final activeEvents = events.where((e) => e.status != EventStatus.archived);
     final rows = <InboxRow>[];
     for (final event in activeEvents) {
       final messagesAsync = ref.watch(chatMessagesProvider(event.id));

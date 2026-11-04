@@ -4,6 +4,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
@@ -71,6 +72,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
       _errorMessage = null;
     });
 
+    final strings = context.strings.dashboard;
     try {
       final generate = widget.generateInviteCode ?? _callGenerateInviteCode;
       final code = await generate(widget.eventId);
@@ -89,6 +91,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
           _errorMessage = switch (e.code) {
             'permission-denied' => 'Only admins can generate invite codes.',
             'not-found' => 'Event not found.',
+            'failed-precondition' => strings.notOpenToInvites,
             _ => 'Failed to generate code. Please try again.',
           };
         });

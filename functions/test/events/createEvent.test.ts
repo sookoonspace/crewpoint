@@ -92,7 +92,7 @@ describe('createEvent', () => {
     expect(saved.creatorId).toBe('me');
     expect(saved.adminIds).toEqual(['me']);
     expect(saved.memberIds).toEqual(['me']);
-    expect(saved.status).toBe('active');
+    expect(saved.status).toBe('draft');
     expect(saved.id).toBe('evt');
     expect(saved.memberCount).toBe(1);
     expect(saved.createdAt).toBeDefined();
@@ -112,7 +112,7 @@ describe('createEvent', () => {
     expect(saved.memberIds).toEqual(['me']);
     expect(saved.adminIds).toEqual(['me']);
     expect(saved.creatorId).toBe('me');
-    expect(saved.status).toBe('active');
+    expect(saved.status).toBe('draft');
   });
 
   test('needs only a title', async () => {

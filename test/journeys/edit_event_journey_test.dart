@@ -85,6 +85,7 @@ void main() {
   Future<DashboardJourneyHarness> openEvent(
     WidgetTester tester, {
     required String uid,
+    String status = 'published',
   }) async {
     tester.view.physicalSize = const Size(1200, 2400);
     tester.view.devicePixelRatio = 1.0;
@@ -100,7 +101,7 @@ void main() {
       'creatorId': 'owner-1',
       'adminIds': ['owner-1'],
       'memberIds': ['owner-1', 'member-1'],
-      'status': 'active',
+      'status': status,
       'currency': 'USD',
     });
     await tester.pumpWidget(harness.buildApp());
@@ -149,6 +150,60 @@ void main() {
     await openEvent(tester, uid: 'member-1');
 
     expect(find.byKey(const Key('events.dashboard.settings')), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 100));
+  });
+
+  testWidgets('an organizer publishes a draft from the event', (tester) async {
+    final harness = await openEvent(tester, uid: 'owner-1', status: 'draft');
+
+    expect(find.byKey(const Key('events.dashboard.status')), findsOneWidget);
+    expect(
+      find.byKey(const Key('eventDashboard.inviteMembers.tile')),
+      findsNothing,
+    );
+    final publish = find.byKey(const Key('events.dashboard.publish'));
+    await tester.ensureVisible(publish);
+    await tester.pump();
+    await tester.tap(publish);
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    final saved = await harness.firestore.doc('events/evt-1').get();
+    expect(saved.data()!['status'], 'published');
+    expect(find.byKey(const Key('events.dashboard.publish')), findsNothing);
+    expect(
+      find.byKey(const Key('eventDashboard.inviteMembers.tile')),
+      findsOneWidget,
+    );
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 100));
+  });
+
+  testWidgets('a plain member does not see a draft listed', (tester) async {
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final harness = DashboardJourneyHarness(
+      currentUser: const AppUser(uid: 'member-1', email: 'm@example.com'),
+    );
+    addTearDown(() async => harness.database.close());
+    await harness.firestore.collection('events').doc('evt-1').set({
+      'title': 'Secret draft',
+      'creatorId': 'owner-1',
+      'adminIds': ['owner-1'],
+      'memberIds': ['owner-1', 'member-1'],
+      'status': 'draft',
+    });
+    await tester.pumpWidget(harness.buildApp());
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(find.text('Secret draft'), findsNothing);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(milliseconds: 100));

@@ -166,7 +166,7 @@ void main() {
         expect(tahoe.templateId, 'blank');
         expect(tahoe.adminIds, ['uid-1']);
         expect(tahoe.memberIds, ['uid-1', 'uid-2']);
-        expect(tahoe.status, EventStatus.active);
+        expect(tahoe.status, EventStatus.published);
         expect(tahoe.currency, 'USD');
       },
     );
@@ -348,6 +348,89 @@ void main() {
       expect(event.capacity, 500);
       expect(event.memberLimit, 100);
       configRepo.disposeMirror('owner');
+    });
+  });
+
+  group('status (Req 19)', () {
+    Future<void> seed(String status, {Timestamp? endDate}) =>
+        firestore.doc('events/evt').set({
+          'title': 'Convention',
+          'creatorId': 'owner',
+          'memberIds': ['owner'],
+          'adminIds': ['owner'],
+          'status': status,
+          'endDate': ?endDate,
+        });
+    Future<Map<String, dynamic>> stored() async =>
+        (await firestore.doc('events/evt').get()).data()!;
+    const event = EventModel(id: 'evt', title: 'New', creatorId: 'owner');
+
+    test('setStatus records when the change happened', () async {
+      await seed('draft');
+      final result = await repo.setStatus('evt', EventStatus.published);
+      expect(result, EventWriteResult.saved);
+      final data = await stored();
+      expect(data['status'], 'published');
+      expect(data['statusSetAt'], isNotNull);
+    });
+
+    test('editing an older active event does not change its status', () async {
+      await seed('active');
+      await repo.updateEvent(event);
+      final data = await stored();
+      expect(data['title'], 'New');
+      expect(data['status'], 'active');
+      expect(data.containsKey('statusSetAt'), isFalse);
+    });
+
+    test('updateEvent records a real status change', () async {
+      await seed('published');
+      await repo.updateEvent(event.copyWith(status: EventStatus.archived));
+      final data = await stored();
+      expect(data['status'], 'archived');
+      expect(data['statusSetAt'], isNotNull);
+    });
+
+    test('saveConfiguration writes status only when it changed', () async {
+      await seed('published');
+      await repo.saveConfiguration(
+        event,
+        previousStatus: EventStatus.published,
+      );
+      expect((await stored()).containsKey('statusSetAt'), isFalse);
+
+      await repo.saveConfiguration(
+        event.copyWith(status: EventStatus.ended),
+        previousStatus: EventStatus.published,
+      );
+      expect((await stored())['status'], 'ended');
+    });
+
+    test('restoring an archived event writes only its status', () async {
+      await seed('archived');
+      await repo.saveConfiguration(
+        event.copyWith(status: EventStatus.published, capacity: 5),
+        previousStatus: EventStatus.archived,
+      );
+      final data = await stored();
+      expect(data['status'], 'published');
+      expect(data.containsKey('capacity'), isFalse);
+      expect(data.containsKey('timeZone'), isFalse);
+    });
+
+    test('an older active event reads by its end date', () async {
+      final clocked = EventRepository(
+        eventsDao: EventsDao(db),
+        firestore: firestore,
+        createEventCall: fakeCreateEventCall(firestore),
+        now: () => DateTime.utc(2027, 6, 1),
+      );
+      await seed('active', endDate: Timestamp.fromDate(DateTime.utc(2027)));
+      final events = await clocked
+          .watchEventsForUser('owner')
+          .firstWhere((list) => list.isNotEmpty);
+      expect(events.single.status, EventStatus.ended);
+      clocked.disposeMirror('owner');
     });
   });
 }

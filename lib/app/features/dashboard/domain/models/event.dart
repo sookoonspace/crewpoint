@@ -26,14 +26,38 @@ class EventVenue {
   int get hashCode => Object.hash(id, name, address);
 }
 
-/// Event status.
+/// Event status (Req 19).
 enum EventStatus {
-  active,
+  /// Visible only to `event.manage`, and nobody can join.
+  draft,
+
+  /// Visible to members and open to joining.
+  published,
+
+  /// Set automatically from the start time, or by hand.
+  live,
+
+  /// Set automatically after the end time, or by hand. Settlements, expenses
+  /// and chat stay open, and everything else is read-only except to
+  /// `event.manage`.
+  ended,
+
+  /// Set by hand, and read-only for everyone. `event.manage` can restore it.
   archived;
 
-  static EventStatus fromString(String? value) => switch (value) {
-    'archived' => EventStatus.archived,
-    _ => EventStatus.active,
+  /// Reads a stored status. An event from before these statuses is `active`,
+  /// which means `ended` if its end date has passed, or else `published`.
+  static EventStatus fromStored(
+    String? value,
+    DateTime? endDate,
+    DateTime now,
+  ) => switch (value) {
+    'draft' => draft,
+    'published' => published,
+    'live' => live,
+    'ended' => ended,
+    'archived' => archived,
+    _ => (endDate != null && !endDate.isAfter(now)) ? ended : published,
   };
 }
 
@@ -59,7 +83,7 @@ class EventModel {
     this.endDate,
     this.adminIds = const [],
     this.memberIds = const [],
-    this.status = EventStatus.active,
+    this.status = EventStatus.published,
     this.currency = 'USD',
     this.createdAt,
     this.updatedAt,
@@ -114,6 +138,33 @@ class EventModel {
   /// Whether [uid] holds `event.manage`, which means owner or admin until
   /// permissions land.
   bool canManage(String uid) => isAdmin(uid);
+
+  /// A draft is visible only to `event.manage`.
+  bool isVisibleTo(String uid) => status != EventStatus.draft || canManage(uid);
+
+  bool get isJoinable =>
+      status == EventStatus.published || status == EventStatus.live;
+
+  /// Settlements, expenses and chat stay open until an event is archived.
+  bool get allowsChatAndMoney => status != EventStatus.archived;
+
+  /// Once an event ends, only `event.manage` can change its tasks.
+  bool canEditTasks(String uid) => switch (status) {
+    EventStatus.archived => false,
+    EventStatus.ended => canManage(uid),
+    _ => true,
+  };
+
+  /// Nobody but organizers may see a draft, so an event with plain members
+  /// cannot go back to one.
+  bool get canBeDraft =>
+      memberIds.every((uid) => uid == creatorId || adminIds.contains(uid));
+
+  /// The status an archived event returns to.
+  EventStatus restoredStatus(DateTime now) =>
+      (endDate != null && !endDate!.isAfter(now))
+      ? EventStatus.ended
+      : EventStatus.published;
 
   /// Check if [uid] is the event owner (creator).
   bool isOwner(String uid) => creatorId == uid;

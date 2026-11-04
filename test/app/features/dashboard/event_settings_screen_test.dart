@@ -319,6 +319,68 @@ void main() {
     });
   });
 
+  group('status (Req 19)', () {
+    Future<void> choose(WidgetTester tester, String label) async {
+      await tester.tap(find.byKey(_key('status')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(label).last);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('an organizer changes the status by hand', (tester) async {
+      await pump(tester);
+      await choose(tester, 'Live');
+      await save(tester);
+      final data = await stored();
+      expect(data['status'], 'live');
+      expect(data['statusSetAt'], isNotNull);
+    });
+
+    testWidgets('an event with members cannot pick draft', (tester) async {
+      await pump(tester);
+      expect(find.textContaining('cannot go back to draft'), findsOneWidget);
+      await tester.tap(find.byKey(_key('status')));
+      await tester.pumpAndSettle();
+      final draft = tester.widget<DropdownMenuItem<EventStatus>>(
+        find.ancestor(
+          of: find.text('Draft').last,
+          matching: find.byType(DropdownMenuItem<EventStatus>),
+        ),
+      );
+      expect(draft.enabled, isFalse);
+    });
+
+    testWidgets('an organizer-only event can go back to draft', (tester) async {
+      await pump(
+        tester,
+        event: const EventModel(
+          id: 'evt',
+          title: 'Convention',
+          creatorId: 'owner',
+          memberIds: ['owner'],
+        ),
+      );
+      await choose(tester, 'Draft');
+      await save(tester);
+      expect((await stored())['status'], 'draft');
+    });
+
+    testWidgets('an archived event can only be restored', (tester) async {
+      await pump(tester, event: _event.copyWith(status: EventStatus.archived));
+      expect(find.byKey(_key('archivedNotice')), findsOneWidget);
+      expect(find.byKey(_key('venue.add')), findsNothing);
+      expect(
+        tester.widget<TextFormField>(find.byKey(_key('capacity'))).enabled,
+        isFalse,
+      );
+      await choose(tester, 'Published');
+      await save(tester);
+      final data = await stored();
+      expect(data['status'], 'published');
+      expect(data.containsKey('timeZone'), isFalse);
+    });
+  });
+
   group('capacity (Req 18b)', () {
     testWidgets('shows the count against capacity', (tester) async {
       await pump(tester);

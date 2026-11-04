@@ -2,6 +2,7 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 import {DEFAULT_MAX_EXPENSE_AMOUNT} from "./saveExpense";
+import {assertNotArchived} from "./eventStatus";
 
 const db = getFirestore();
 
@@ -79,6 +80,7 @@ export const recordSettlement = onCall(
             throw new HttpsError("not-found", "Event not found.");
           }
           const event = eventDoc.data()!;
+          assertNotArchived(event);
           const memberIds: string[] = event.memberIds || [];
 
           const adminIds: string[] = event.adminIds || [];
