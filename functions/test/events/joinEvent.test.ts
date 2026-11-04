@@ -127,3 +127,47 @@ describe('joinEvent and memberLimit', () => {
     expect((await event()).data()!.memberCount).toBe(1);
   });
 });
+
+describe('removeEventMember and who may remove whom', () => {
+  const remove = (uid: string, targetUserId: string) =>
+    ftest.wrap(removeEventMember)({auth: {uid}, data: {eventId: E, targetUserId}});
+  const members = () => event().then((e) => e.data()!.memberIds);
+
+  beforeEach(() =>
+    seed({adminIds: ['owner', 'admin', 'admin2']}, ['owner', 'admin', 'admin2', 'member', 'other'])
+  );
+
+  test('an admin can remove a member', async () => {
+    await remove('admin', 'member');
+    expect(await members()).not.toContain('member');
+  });
+
+  test('an admin cannot remove another admin', async () => {
+    await expect(remove('admin', 'admin2')).rejects.toMatchObject({code: 'permission-denied'});
+    expect(await members()).toContain('admin2');
+  });
+
+  test('the owner can remove an admin', async () => {
+    await remove('owner', 'admin');
+    expect(await members()).not.toContain('admin');
+  });
+
+  test('an admin can still leave', async () => {
+    await remove('admin', 'admin');
+    expect(await members()).not.toContain('admin');
+  });
+
+  test('a member cannot remove anyone', async () => {
+    await expect(remove('member', 'other')).rejects.toMatchObject({code: 'permission-denied'});
+    await expect(remove('member', 'admin')).rejects.toMatchObject({code: 'permission-denied'});
+  });
+
+  test('nobody can remove the owner', async () => {
+    await expect(remove('admin', 'owner')).rejects.toMatchObject({code: 'failed-precondition'});
+  });
+
+  test('an owner cannot leave without transferring ownership', async () => {
+    await expect(remove('owner', 'owner')).rejects.toMatchObject({code: 'failed-precondition'});
+    expect(await members()).toContain('owner');
+  });
+});

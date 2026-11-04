@@ -7,8 +7,10 @@ const db = getFirestore();
 /**
  * removeEventMember — removes a user from an event.
  *
- * - Caller must be admin/owner OR removing themselves (leave-event)
- * - Owner cannot be removed (prevents accidental orphaning)
+ * - Caller must be admin/owner OR removing themselves (leave-event). This is
+ *   `members.manage`, which owners and admins hold until permissions land.
+ * - Only the owner can remove an admin, who also holds `members.manage`
+ * - Owner cannot be removed, and cannot leave without transferring ownership
  * - Removes target from both memberIds and adminIds atomically
  * - When an admin removes someone, deletes the event's invite codes so the
  *   removed member cannot rejoin with one they already have. Admins get a new
@@ -68,7 +70,19 @@ export const removeEventMember = onCall(
           if (targetUserId === eventData.creatorId) {
             throw new HttpsError(
               "failed-precondition",
-              "The event owner cannot be removed."
+              "The event owner cannot be removed, and can only leave after " +
+                "transferring ownership."
+            );
+          }
+
+          if (
+            adminIds.includes(targetUserId) &&
+            !isSelfRemoval &&
+            eventData.creatorId !== uid
+          ) {
+            throw new HttpsError(
+              "permission-denied",
+              "Only the event owner can remove an admin."
             );
           }
 
