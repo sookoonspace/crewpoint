@@ -212,6 +212,41 @@ abstract class DashboardStrings {
   String upcomingEventsHeader(int count);
   String pastEventsHeader(int count);
 
+  // Event settings.
+  String get settingsTitle;
+  String get settingsNoAccess;
+  String get settingsBack;
+  String get settingsTimeZone;
+  String get settingsTimeZoneHelp;
+  String get settingsTimeZoneInvalid;
+  String get settingsVenues;
+  String get settingsVenuesEmpty;
+  String get settingsVenueName;
+  String get settingsVenueNameRequired;
+  String get settingsVenueAddress;
+  String get settingsVenueAdd;
+  String get settingsVenueRemove;
+  String get settingsCurrency;
+  String get settingsCurrencyHelp;
+  String get settingsCurrencyLocked;
+  String get settingsLanguages;
+  String get settingsLanguagesHelp;
+  String get settingsLanguagesInvalid;
+  String get settingsCapacity;
+  String settingsCapacityCount(int count, int? capacity);
+  String get settingsMemberLimit;
+  String get settingsMemberLimitHelp;
+  String get settingsWholeNumber;
+  String get settingsSave;
+  String get settingsSaved;
+  String get settingsPending;
+  String get settingsNeedsConnection;
+  String get settingsFailed;
+  String get settingsDiscardTitle;
+  String get settingsDiscardBody;
+  String get settingsDiscard;
+  String get settingsKeepEditing;
+
   // Error state.
   String get errorLoading;
   String get retryCta;
@@ -668,6 +703,80 @@ class _EnglishNavStrings extends NavStrings {
 
 class _EnglishDashboardStrings extends DashboardStrings {
   const _EnglishDashboardStrings();
+
+  @override
+  String get settingsTitle => 'Event settings';
+  @override
+  String get settingsNoAccess => 'Only organizers can change event settings.';
+  @override
+  String get settingsBack => 'Back to the event';
+  @override
+  String get settingsTimeZone => 'Time zone';
+  @override
+  String get settingsTimeZoneHelp => 'For example, America/Chicago';
+  @override
+  String get settingsTimeZoneInvalid =>
+      'Enter a zone name such as America/Chicago';
+  @override
+  String get settingsVenues => 'Venues';
+  @override
+  String get settingsVenuesEmpty => 'No venues yet.';
+  @override
+  String get settingsVenueName => 'Venue name';
+  @override
+  String get settingsVenueNameRequired => 'Enter a name, or remove this venue';
+  @override
+  String get settingsVenueAddress => 'Address (optional)';
+  @override
+  String get settingsVenueAdd => 'Add venue';
+  @override
+  String get settingsVenueRemove => 'Remove venue';
+  @override
+  String get settingsCurrency => 'Currency';
+  @override
+  String get settingsCurrencyHelp => 'Can change until money is recorded.';
+  @override
+  String get settingsCurrencyLocked =>
+      'This event has money recorded, so its currency cannot change.';
+  @override
+  String get settingsLanguages => 'Languages';
+  @override
+  String get settingsLanguagesHelp => 'Language codes, such as en, es';
+  @override
+  String get settingsLanguagesInvalid =>
+      'Enter at least one code, separated by commas';
+  @override
+  String get settingsCapacity => 'Capacity (optional)';
+  @override
+  String settingsCapacityCount(int count, int? capacity) =>
+      capacity == null ? '$count attending' : '$count of $capacity attending';
+  @override
+  String get settingsMemberLimit => 'Member limit (optional)';
+  @override
+  String get settingsMemberLimitHelp =>
+      'How many people can log in. Leave empty for no limit.';
+  @override
+  String get settingsWholeNumber => 'Enter a whole number above zero';
+  @override
+  String get settingsSave => 'Save settings';
+  @override
+  String get settingsSaved => 'Settings saved';
+  @override
+  String get settingsPending =>
+      "You're offline. These settings will save when you reconnect.";
+  @override
+  String get settingsNeedsConnection =>
+      'Changing the currency needs a connection. Nothing was saved.';
+  @override
+  String get settingsFailed => "Couldn't save settings. Try again.";
+  @override
+  String get settingsDiscardTitle => 'Discard changes?';
+  @override
+  String get settingsDiscardBody => 'Your changes have not been saved.';
+  @override
+  String get settingsDiscard => 'Discard';
+  @override
+  String get settingsKeepEditing => 'Keep editing';
 
   @override
   String get noEventsTitle => 'No events yet';

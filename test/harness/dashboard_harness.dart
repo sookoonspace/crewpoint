@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
+import 'package:crewpoint_app/app/core/services/device_timezone.dart';
 import 'package:crewpoint_app/app/core/widgets/event_guard.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/auth/data/auth_repository.dart';
@@ -13,6 +14,7 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/create_event_s
 import 'package:crewpoint_app/app/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/edit_event_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboard_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/event_settings_screen.dart';
 
 import 'fake_create_event.dart';
 
@@ -62,6 +64,13 @@ class DashboardJourneyHarness {
             ),
             routes: [
               GoRoute(
+                path: 'settings',
+                builder: (_, state) => EventGuard(
+                  eventId: state.pathParameters['eventId'] ?? '',
+                  child: (event) => EventSettingsScreen(event: event),
+                ),
+              ),
+              GoRoute(
                 path: 'edit',
                 builder: (_, state) => EventGuard(
                   eventId: state.pathParameters['eventId'] ?? '',
@@ -89,6 +98,9 @@ class DashboardJourneyHarness {
       overrides: [
         databaseProvider.overrideWithValue(database),
         firestoreProvider.overrideWithValue(firestore),
+        deviceTimezoneProvider.overrideWithValue(
+          const LocalNameDeviceTimezone(),
+        ),
         createEventCallProvider.overrideWithValue(
           fakeCreateEventCall(firestore),
         ),

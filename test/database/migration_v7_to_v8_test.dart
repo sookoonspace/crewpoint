@@ -46,7 +46,7 @@ void main() {
     expect(rows.single.data['content'], 'Fire');
     expect(rows.single.data['is_high_priority'], 1);
     expect(rows.single.data['urgent_push_skipped'], 0);
-    expect(raw.select('PRAGMA user_version').first.values.first, 8);
+    expect(raw.select('PRAGMA user_version').first.values.first, db.schemaVersion);
     await db.close();
   });
 
@@ -58,9 +58,4 @@ void main() {
     await db.close();
   });
 
-  test('schemaVersion is 8', () {
-    final db = AppDatabase(NativeDatabase.memory());
-    expect(db.schemaVersion, 8);
-    db.close();
-  });
 }

@@ -19,7 +19,7 @@ void main() {
     id: 'evt-a',
     title: 'Tahoe Trip',
     creatorId: 'uid-1',
-    eventType: EventType.trip,
+    displayType: 'trip',
     memberIds: ['uid-1'],
   );
   const tTodo = TaskModel(

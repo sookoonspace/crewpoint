@@ -600,6 +600,7 @@ Display all dates in the event's time zone, and keep stored times correct across
 ### Required context
 - `lib/app/core/services/device_timezone.dart` (`IDeviceTimezone`) and `pubspec.yaml`.
 - `pubspec.yaml` constraints carry the exact resolved version as the caret floor. The `analyzer` and `sqlite3_flutter_libs` holds stay.
+- Since #59, `timeZone` is stored on every event and edited on the settings screen as a validated text field, because the zone list arrives with the `timezone` package. Replace it with a picker here. `createEvent` falls back to `UTC` for a zone the server does not know.
 
 ### Acceptance criteria
 - [ ] All dates display in the event's time zone, with the zone shown where a viewer's device differs.
@@ -827,6 +828,7 @@ Add co-owners, confirmed transfer and return of ownership, and automatic success
 
 ### Required context
 - `functions/src/account/deleteUserAccount.ts`. Ownership uses server transactions (Req 76).
+- Since #59, `organizerId` follows ownership when an account is deleted (`anonymizeUserInEvent`, using `ensurePersonalOrganizer`). Ownership transfer must move it the same way, and #66 must stop permission checks using `creatorId`.
 
 ### Acceptance criteria
 - [ ] An event has one Owner and any number of Co-owners.
@@ -1022,6 +1024,7 @@ Add participants who may have no account, including children, groups, and a page
 ### Required context
 - New feature folder follows `data/domain/application/presentation`. Providers are hand-written in `lib/app/core/providers.dart`, with no `@riverpod`.
 - Rosters stay online and paged, and are never fully mirrored (Req 74). `test/harness/dashboard_harness.dart` and `test/robots/` show the journey pattern, with bounded pumps.
+- Since #59, the settings screen shows `capacity` against `memberIds.length`, the only count that exists so far. Once participants exist, count them instead, because capacity includes people without accounts (Req 18b).
 
 ### Acceptance criteria
 - [ ] `participants`, `groups` and per-participant `private` documents exist, with rules.
@@ -1238,6 +1241,7 @@ Let organizers build a multi-day schedule of sessions across venues, and edit ti
 ### Required context
 - `lib/app/core/database/app_database.dart`: new mirrored tables need a Drift bump, a migration test, the `kIsWeb` fork, and teardown via `ref.onDispose`.
 - Times follow #63.
+- Since #59, `venues` holds `{id, name, address}` on the event, edited on the settings screen. Add map link, directions and "to be announced" here. A-01 is finished with this item, once venues are complete, so add it to the finished list then.
 
 ### Acceptance criteria
 - [ ] `sessions` hold title, start, end, venue, type (free text with suggestions), tags, capacity and eligibility.
@@ -1499,6 +1503,7 @@ Add the six system templates as data, make the first step of creation a picker, 
 ### Required context
 - `createEvent` from #51, `lib/app/features/dashboard/presentation/create_event_screen.dart`, `test/robots/create_event_robot.dart`, and `pubspec.yaml` for the assets folder.
 - Template files are the guardrail's only exception for event-specific words (Req 2).
+- Since #59, `createEvent` always writes `templateId: 'blank'` and ignores any client value. Accept a validated template ID here. `eventType` is display text on older events only, and rules deny changing it or `templateId`.
 
 ### Acceptance criteria
 - [ ] System templates are data only, in versioned JSON files under `assets/templates/`, also read by functions, so they need no separate seeding per environment: Blank, Party, Wedding, Cricket tournament, Golf outing, Convention.

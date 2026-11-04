@@ -34,22 +34,68 @@ void main() {
     });
   });
 
-  group('EventType', () {
-    test('fromString parses known types', () {
-      expect(EventType.fromString('trip'), equals(EventType.trip));
-      expect(EventType.fromString('project'), equals(EventType.project));
-      expect(EventType.fromString('social'), equals(EventType.social));
-      expect(EventType.fromString('custom'), equals(EventType.custom));
+  group('configuration (Req 18, 21)', () {
+    const event = EventModel(id: 'e1', title: 'Only a title', creatorId: 'u1');
+
+    test('a new event needs only a title', () {
+      expect(event.templateId, 'blank');
+      expect(event.displayType, isNull);
+      expect(event.organizerId, isNull);
+      expect(event.timeZone, 'UTC');
+      expect(event.venues, isEmpty);
+      expect(event.currency, 'USD');
+      expect(event.languages, ['en']);
+      expect(event.modules, {'tasks': true, 'budget': true, 'chat': true});
+      expect(event.labels, isEmpty);
+      expect(event.settings, isEmpty);
+      expect(event.capacity, isNull);
+      expect(event.memberLimit, isNull);
     });
 
-    test('fromString defaults to custom for unknown values', () {
-      expect(EventType.fromString('unknown'), equals(EventType.custom));
-      expect(EventType.fromString(null), equals(EventType.custom));
+    test('an old type name is display text only', () {
+      const old = EventModel(
+        id: 'e1',
+        title: 'Tahoe',
+        creatorId: 'u1',
+        displayType: 'trip',
+      );
+      expect(old.typeLabel, 'Trip');
+      expect(old.templateId, 'blank');
+      expect(event.typeLabel, isNull);
     });
 
-    test('label returns human-readable name', () {
-      expect(EventType.trip.label, equals('Trip'));
-      expect(EventType.project.label, equals('Project'));
+    test('capacity and member limit can be set and cleared', () {
+      final set = event.copyWith(capacity: 500, memberLimit: 100);
+      expect(set.capacity, 500);
+      expect(set.memberLimit, 100);
+      final kept = set.copyWith(title: 'New');
+      expect(kept.capacity, 500);
+      expect(kept.memberLimit, 100);
+      final cleared = set.copyWith(clearCapacity: true, clearMemberLimit: true);
+      expect(cleared.capacity, isNull);
+      expect(cleared.memberLimit, isNull);
+    });
+
+    test('event.manage means owner or admin until permissions land', () {
+      const managed = EventModel(
+        id: 'e1',
+        title: 'T',
+        creatorId: 'owner',
+        adminIds: ['admin'],
+        memberIds: ['owner', 'admin', 'member'],
+      );
+      expect(managed.canManage('owner'), isTrue);
+      expect(managed.canManage('admin'), isTrue);
+      expect(managed.canManage('member'), isFalse);
+    });
+
+    test('venues compare by value and survive a round trip', () {
+      const venue = EventVenue(id: 'v', name: 'Hall', address: '1 Main St');
+      expect(EventVenue.fromMap(venue.toMap()), venue);
+      expect(
+        EventVenue.fromMap(const {'id': 'v', 'name': 'Hall'}).address,
+        isNull,
+      );
     });
   });
 
@@ -76,7 +122,7 @@ void main() {
 
       expect(event.adminIds, isEmpty);
       expect(event.memberIds, isEmpty);
-      expect(event.eventType, equals(EventType.custom));
+      expect(event.templateId, equals('blank'));
       expect(event.status, equals(EventStatus.active));
       expect(event.startDate, isNull);
     });

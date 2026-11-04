@@ -1,23 +1,29 @@
-/// Event types for categorization and filtering.
-enum EventType {
-  trip,
-  project,
-  social,
-  custom;
+/// A place an event happens. Map link, directions and "to be announced" arrive
+/// with sessions.
+class EventVenue {
+  const EventVenue({required this.id, required this.name, this.address});
 
-  String get label => switch (this) {
-    EventType.trip => 'Trip',
-    EventType.project => 'Project',
-    EventType.social => 'Social',
-    EventType.custom => 'Custom',
-  };
+  factory EventVenue.fromMap(Map<String, dynamic> map) => EventVenue(
+    id: (map['id'] as String?) ?? '',
+    name: (map['name'] as String?) ?? '',
+    address: map['address'] as String?,
+  );
 
-  static EventType fromString(String? value) => switch (value) {
-    'trip' => EventType.trip,
-    'project' => EventType.project,
-    'social' => EventType.social,
-    _ => EventType.custom,
-  };
+  final String id;
+  final String name;
+  final String? address;
+
+  Map<String, dynamic> toMap() => {'id': id, 'name': name, 'address': address};
+
+  @override
+  bool operator ==(Object other) =>
+      other is EventVenue &&
+      other.id == id &&
+      other.name == name &&
+      other.address == address;
+
+  @override
+  int get hashCode => Object.hash(id, name, address);
 }
 
 /// Event status.
@@ -38,7 +44,17 @@ class EventModel {
     required this.title,
     required this.creatorId,
     this.description,
-    this.eventType = EventType.custom,
+    this.templateId = defaultTemplateId,
+    this.displayType,
+    this.organizerId,
+    this.timeZone = defaultTimeZone,
+    this.venues = const [],
+    this.languages = defaultLanguages,
+    this.modules = defaultModules,
+    this.labels = const {},
+    this.settings = const {},
+    this.capacity,
+    this.memberLimit,
     this.startDate,
     this.endDate,
     this.adminIds = const [],
@@ -49,10 +65,35 @@ class EventModel {
     this.updatedAt,
   });
 
+  static const defaultTemplateId = 'blank';
+  static const defaultTimeZone = 'UTC';
+  static const defaultLanguages = ['en'];
+  static const defaultModules = {'tasks': true, 'budget': true, 'chat': true};
+
   final String id;
   final String title;
   final String? description;
-  final EventType eventType;
+  final String templateId;
+
+  /// The name of the old event type, kept as display text only (Req 21). Newer
+  /// events have none.
+  final String? displayType;
+
+  /// Null on an event from before organizers.
+  final String? organizerId;
+  final String timeZone;
+  final List<EventVenue> venues;
+  final List<String> languages;
+  final Map<String, bool> modules;
+  final Map<String, dynamic> labels;
+  final Map<String, dynamic> settings;
+
+  /// How many people can attend, with or without an account. Not enforced in
+  /// Stage 1. Null means not set.
+  final int? capacity;
+
+  /// How many people can log in to the event. Null means unlimited.
+  final int? memberLimit;
   final String creatorId;
   final DateTime? startDate;
   final DateTime? endDate;
@@ -62,6 +103,17 @@ class EventModel {
   final String currency;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+
+  /// [displayType] with a capital letter, or null when there is none.
+  String? get typeLabel {
+    final type = displayType;
+    if (type == null || type.isEmpty) return null;
+    return '${type[0].toUpperCase()}${type.substring(1)}';
+  }
+
+  /// Whether [uid] holds `event.manage`, which means owner or admin until
+  /// permissions land.
+  bool canManage(String uid) => isAdmin(uid);
 
   /// Check if [uid] is the event owner (creator).
   bool isOwner(String uid) => creatorId == uid;
@@ -82,10 +134,17 @@ class EventModel {
   EventModel copyWith({
     String? title,
     String? description,
-    EventType? eventType,
     DateTime? startDate,
     DateTime? endDate,
     EventStatus? status,
+    String? currency,
+    String? timeZone,
+    List<EventVenue>? venues,
+    List<String>? languages,
+    int? capacity,
+    int? memberLimit,
+    bool clearCapacity = false,
+    bool clearMemberLimit = false,
     bool clearStartDate = false,
     bool clearEndDate = false,
   }) {
@@ -94,13 +153,23 @@ class EventModel {
       title: title ?? this.title,
       creatorId: creatorId,
       description: description ?? this.description,
-      eventType: eventType ?? this.eventType,
+      templateId: templateId,
+      displayType: displayType,
+      organizerId: organizerId,
+      timeZone: timeZone ?? this.timeZone,
+      venues: venues ?? this.venues,
+      languages: languages ?? this.languages,
+      modules: modules,
+      labels: labels,
+      settings: settings,
+      capacity: clearCapacity ? null : (capacity ?? this.capacity),
+      memberLimit: clearMemberLimit ? null : (memberLimit ?? this.memberLimit),
       startDate: clearStartDate ? null : (startDate ?? this.startDate),
       endDate: clearEndDate ? null : (endDate ?? this.endDate),
       adminIds: adminIds,
       memberIds: memberIds,
       status: status ?? this.status,
-      currency: currency,
+      currency: currency ?? this.currency,
       createdAt: createdAt,
       updatedAt: updatedAt,
     );

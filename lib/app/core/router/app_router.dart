@@ -23,6 +23,7 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/create_event_s
 import 'package:crewpoint_app/app/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/edit_event_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/event_settings_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/member_management_screen.dart';
 import 'package:crewpoint_app/app/features/onboarding/presentation/onboarding_screen.dart';
@@ -177,6 +178,13 @@ GoRouter createRouter({
                             builder: (_, ref, _) =>
                                 _EditEventRouteScreen(event: event),
                           ),
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'settings',
+                        builder: (_, state) => EventGuard(
+                          eventId: _resolveEventId(state),
+                          child: (event) => EventSettingsScreen(event: event),
                         ),
                       ),
                       GoRoute(

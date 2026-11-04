@@ -257,7 +257,7 @@ class _MyTasksList extends StatelessWidget {
           _EventGroup(
             eventId: row.event.id,
             title: row.event.title,
-            icon: iconForEventType(row.event.eventType),
+            icon: iconForEventType(row.event.displayType),
           ),
         );
       }

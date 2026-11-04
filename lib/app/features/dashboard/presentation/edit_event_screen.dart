@@ -11,8 +11,8 @@ import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
 /// Edit screen for an existing event. Pure presentation — emits the
-/// updated [EventModel] via `onSubmit`. Currency is intentionally NOT
-/// editable here (data-integrity boundary; see spec `<boundaries>`).
+/// updated [EventModel] via `onSubmit`. Currency is in event settings, because
+/// changing it can be refused.
 ///
 /// Date pickers use `firstDate: DateTime(2000)` so admins can correct
 /// back-dated events without `CreateEventScreen`'s `DateTime.now()` clamp
@@ -31,7 +31,6 @@ class _EditEventScreenState extends State<EditEventScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
-  late EventType _eventType;
   late DateTime? _startDate;
   late DateTime? _endDate;
   late EventStatus _status;
@@ -44,7 +43,6 @@ class _EditEventScreenState extends State<EditEventScreen> {
     _descriptionController = TextEditingController(
       text: widget.initial.description ?? '',
     );
-    _eventType = widget.initial.eventType;
     _startDate = widget.initial.startDate;
     _endDate = widget.initial.endDate;
     _status = widget.initial.status;
@@ -88,7 +86,6 @@ class _EditEventScreenState extends State<EditEventScreen> {
       description: _descriptionController.text.trim().isEmpty
           ? null
           : _descriptionController.text.trim(),
-      eventType: _eventType,
       startDate: _startDate,
       endDate: _endDate,
       clearStartDate: _startDate == null,
@@ -121,24 +118,6 @@ class _EditEventScreenState extends State<EditEventScreen> {
                 crossAxisAlignment: .start,
                 spacing: AppSpacing.lg,
                 children: [
-                  // Event type chips
-                  Wrap(
-                    spacing: AppSpacing.sm,
-                    children: EventType.values.map((type) {
-                      final isSelected = _eventType == type;
-                      return ChoiceChip(
-                        label: Text(type.label),
-                        selected: isSelected,
-                        onSelected: (_) => setState(() => _eventType = type),
-                        selectedColor: AppColors.sage,
-                        labelStyle: TextStyle(
-                          color: isSelected
-                              ? AppColors.white
-                              : AppColors.charcoal,
-                        ),
-                      );
-                    }).toList(),
-                  ),
                   CustomTextField(
                     key: const Key('editEvent.title'),
                     hintText: 'Title',

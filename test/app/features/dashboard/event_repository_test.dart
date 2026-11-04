@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:drift/native.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
@@ -6,6 +8,8 @@ import 'package:crewpoint_app/app/core/database/app_database.dart';
 import 'package:crewpoint_app/app/core/database/daos/events_dao.dart';
 import 'package:crewpoint_app/app/features/dashboard/data/event_repository.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
+
+import '../../../harness/fake_create_event.dart';
 
 void main() {
   late AppDatabase db;
@@ -74,7 +78,7 @@ void main() {
         title: 'New Title',
         creatorId: 'uid-1',
         description: 'New desc',
-        eventType: EventType.project,
+        displayType: 'project', // must NOT be written
         startDate: DateTime.utc(2026, 6, 1),
         endDate: DateTime.utc(2026, 6, 3),
         adminIds: ['hacker'], // must NOT be written
@@ -90,7 +94,7 @@ void main() {
           .data()!;
       expect(data['title'], 'New Title');
       expect(data['description'], 'New desc');
-      expect(data['eventType'], 'project');
+      expect(data['eventType'], 'trip');
       expect(
         (data['startDate'] as Timestamp).toDate().toUtc(),
         DateTime.utc(2026, 6, 1),
@@ -158,7 +162,8 @@ void main() {
         final tahoe = emission.firstWhere((e) => e.id == 'evt-1');
         expect(tahoe.creatorId, 'uid-1');
         expect(tahoe.description, 'Snow weekend');
-        expect(tahoe.eventType, EventType.trip);
+        expect(tahoe.displayType, 'trip');
+        expect(tahoe.templateId, 'blank');
         expect(tahoe.adminIds, ['uid-1']);
         expect(tahoe.memberIds, ['uid-1', 'uid-2']);
         expect(tahoe.status, EventStatus.active);
@@ -232,5 +237,117 @@ void main() {
         expect(reEmission.first.title, 'Tahoe');
       },
     );
+  });
+
+  group('configuration (Req 18, 21)', () {
+    late EventRepository configRepo;
+
+    setUp(() {
+      configRepo = EventRepository(
+        eventsDao: EventsDao(db),
+        firestore: firestore,
+        createEventCall: fakeCreateEventCall(firestore),
+      );
+    });
+
+    const venue = EventVenue(id: 'v', name: 'Garland Hall', address: '1 Main');
+
+    Future<void> seed() => firestore.doc('events/evt').set({
+      'title': 'Tahoe',
+      'creatorId': 'owner',
+      'eventType': 'trip',
+      'memberIds': ['owner'],
+      'adminIds': ['owner'],
+      'currency': 'USD',
+    });
+
+    test('saves what settings edits, and nothing else', () async {
+      await seed();
+      final result = await configRepo.saveConfiguration(
+        const EventModel(
+          id: 'evt',
+          title: 'NOT WRITTEN',
+          creatorId: 'owner',
+          currency: 'EUR',
+          timeZone: 'America/Chicago',
+          venues: [venue],
+          languages: ['en', 'gu'],
+          capacity: 500,
+          memberLimit: 100,
+        ),
+      );
+      expect(result, EventWriteResult.saved);
+      final data = (await firestore.doc('events/evt').get()).data()!;
+      expect(data['title'], 'Tahoe');
+      expect(data['currency'], 'USD');
+      expect(data['timeZone'], 'America/Chicago');
+      expect(data['venues'], [venue.toMap()]);
+      expect(data['languages'], ['en', 'gu']);
+      expect(data['capacity'], 500);
+      expect(data['memberLimit'], 100);
+    });
+
+    test('a missing event reports a failure', () async {
+      final result = await configRepo.saveConfiguration(
+        const EventModel(id: 'nope', title: 'T', creatorId: 'owner'),
+      );
+      expect(result, EventWriteResult.failed);
+    });
+
+    test('a write that cannot finish offline reports pending', () async {
+      final result = await settleEventWrite(
+        Completer<void>().future,
+        wait: Duration.zero,
+      );
+      expect(result, EventWriteResult.pending);
+    });
+
+    test('an event from before these fields reads with defaults', () async {
+      await seed();
+      final events = await configRepo
+          .watchEventsForUser('owner')
+          .firstWhere((list) => list.isNotEmpty);
+      final event = events.single;
+      expect(event.templateId, 'blank');
+      expect(event.displayType, 'trip');
+      expect(event.organizerId, isNull);
+      expect(event.timeZone, 'UTC');
+      expect(event.languages, ['en']);
+      expect(event.modules['tasks'], isTrue);
+      configRepo.disposeMirror('owner');
+    });
+
+    test('configuration survives the Drift mirror', () async {
+      await firestore.doc('events/evt').set({
+        'title': 'Hall',
+        'creatorId': 'owner',
+        'organizerId': 'owner',
+        'templateId': 'blank',
+        'memberIds': ['owner'],
+        'timeZone': 'America/Chicago',
+        'venues': [venue.toMap()],
+        'languages': ['gu'],
+        'modules': {'tasks': false},
+        'labels': {'group': 'Team'},
+        'settings': {'urgentRatePerHour': 3},
+        'capacity': 500,
+        'memberLimit': 100,
+      });
+      final events = await configRepo
+          .watchEventsForUser('owner')
+          .firstWhere((list) => list.isNotEmpty);
+      final event = events.single;
+      expect(event.displayType, isNull);
+      expect(event.organizerId, 'owner');
+      expect(event.timeZone, 'America/Chicago');
+      expect(event.venues, [venue]);
+      expect(event.languages, ['gu']);
+      expect(event.modules, {'tasks': false});
+      expect(event.labels, {'group': 'Team'});
+      expect(event.settings, {'urgentRatePerHour': 3});
+      expect(event.capacity, 500);
+      expect(event.memberLimit, 100);
+      configRepo.disposeMirror('owner');
+    });
   });
 }

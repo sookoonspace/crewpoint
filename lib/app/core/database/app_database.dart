@@ -25,6 +25,7 @@ class Events extends Table {
   TextColumn get id => text()();
   TextColumn get title => text().withLength(min: 1, max: 200)();
   TextColumn get description => text().nullable()();
+  // Display text only since schema v9 (Req 21). Empty for newer events.
   TextColumn get eventType => text().withDefault(const Constant('custom'))();
   TextColumn get creatorId => text()();
   DateTimeColumn get startDate => dateTime().nullable()();
@@ -34,6 +35,19 @@ class Events extends Table {
       text().withDefault(const Constant('[]'))(); // JSON
   TextColumn get status => text().withDefault(const Constant('active'))();
   TextColumn get currency => text().withDefault(const Constant('USD'))();
+  TextColumn get templateId => text().withDefault(const Constant('blank'))();
+  TextColumn get organizerId => text().nullable()();
+  TextColumn get timeZone => text().withDefault(const Constant('UTC'))();
+  TextColumn get venues => text().withDefault(const Constant('[]'))(); // JSON
+  TextColumn get languages =>
+      text().withDefault(const Constant('["en"]'))(); // JSON
+  TextColumn get modules => text().withDefault(
+    const Constant('{"tasks":true,"budget":true,"chat":true}'),
+  )(); // JSON
+  TextColumn get labels => text().withDefault(const Constant('{}'))(); // JSON
+  TextColumn get settings => text().withDefault(const Constant('{}'))(); // JSON
+  IntColumn get capacity => integer().nullable()();
+  IntColumn get memberLimit => integer().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 
@@ -148,7 +162,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -204,6 +218,28 @@ class AppDatabase extends _$AppDatabase {
         );
         if (columns.isNotEmpty && !hasColumn) {
           await m.addColumn(chatMessages, chatMessages.urgentPushSkipped);
+        }
+      }
+      if (from < 9) {
+        // Safe to re-run after a partial migration, like the steps above.
+        final existing = await customSelect('PRAGMA table_info(events)').get();
+        final names = existing.map((c) => c.data['name']).toSet();
+        final added = <String, GeneratedColumn<Object>>{
+          'template_id': events.templateId,
+          'organizer_id': events.organizerId,
+          'time_zone': events.timeZone,
+          'venues': events.venues,
+          'languages': events.languages,
+          'modules': events.modules,
+          'labels': events.labels,
+          'settings': events.settings,
+          'capacity': events.capacity,
+          'member_limit': events.memberLimit,
+        };
+        for (final entry in added.entries) {
+          if (existing.isNotEmpty && !names.contains(entry.key)) {
+            await m.addColumn(events, entry.value);
+          }
         }
       }
     },

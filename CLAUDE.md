@@ -60,7 +60,7 @@ Keep the Architecture sections below, including RBAC and the Firestore data mode
 - **`kIsWeb` forks to the raw Firestore stream** — Drift on web is Wasm/in-memory, so mirroring buys nothing there. Any new mirrored stream needs the same fork.
 - Mirror subscriptions are torn down through `ref.onDispose(() => repo.disposeMirror(key))` in the provider, not by the repository itself.
 
-Drift schema is at v8 with explicit migrations in `lib/app/core/database/app_database.dart`; tables are declared inline there, DAOs in `database/daos/`. Bumping the schema means adding a migration step *and* a `test/database/migration_vN_to_vN+1_test.dart`.
+Drift schema is at v9 with explicit migrations in `lib/app/core/database/app_database.dart`; tables are declared inline there, DAOs in `database/daos/`. Bumping the schema means adding a migration step *and* a `test/database/migration_vN_to_vN+1_test.dart`.
 
 ### Providers
 
@@ -78,9 +78,11 @@ Conditional imports handle compile-time platform splits: `database/connection/na
 
 ### RBAC
 
-Double-enforced. Client gates UI via `Event.isOwner` / `isAdmin` / `isMember` and per-feature predicates (`TaskModel.canChangeStatus`); `firestore.rules` and the Cloud Functions enforce the same contract server-side. Privileged mutations are callables, not direct writes — `createEvent`, `joinEvent`, `removeEventMember`, `promoteToAdmin`, `demoteAdmin`, `deleteEvent`, `markTaskComplete`, `saveExpense`, `recordSettlement`, `disputeSettlement`, `generateInviteCode`, `deleteUserAccount`. Firestore triggers (`onUrgentMessageCreated`, `onTaskAssigned`, `onExpenseCreated`, `onSettlementDisputed`, `onMemberJoined`, `onTaskDueScheduled`, `onDigestSummary`) drive push. All exported from `functions/src/index.ts`; `docs/cloud-functions-guide.md` holds the authoritative Function Registry.
+Double-enforced. Client gates UI via `Event.isOwner` / `isAdmin` / `isMember` and per-feature predicates (`TaskModel.canChangeStatus`); `firestore.rules` and the Cloud Functions enforce the same contract server-side. Privileged mutations are callables, not direct writes — `createEvent`, `changeEventCurrency`, `joinEvent`, `removeEventMember`, `promoteToAdmin`, `demoteAdmin`, `deleteEvent`, `markTaskComplete`, `saveExpense`, `recordSettlement`, `disputeSettlement`, `generateInviteCode`, `deleteUserAccount`. Firestore triggers (`onUrgentMessageCreated`, `onTaskAssigned`, `onExpenseCreated`, `onSettlementDisputed`, `onMemberJoined`, `onTaskDueScheduled`, `onDigestSummary`) drive push. All exported from `functions/src/index.ts`; `docs/cloud-functions-guide.md` holds the authoritative Function Registry.
 
-Firestore data model: `events/{eventId}` with `messages`, `tasks` (+ `tasks/{id}/checklist`), `expenses` subcollections; `event_invites/{code}`; `users/{uid}` with `private`, `chatReads`, `eventMutes` subcollections.
+Firestore data model: `events/{eventId}` with `messages`, `tasks` (+ `tasks/{id}/checklist`), `expenses` subcollections; `organizers/{uid}` (a person's personal organizer, written only by the server, holding `verified`); `event_invites/{code}`; `users/{uid}` with `private`, `chatReads`, `eventMutes` subcollections.
+
+Events carry `templateId`, `organizerId`, `timeZone`, `venues`, `currency`, `languages`, `status`, `modules`, `labels`, `settings`, `capacity` and `memberLimit`, and need only a title. `eventType` survives on older events as display text only. Older events lack the new fields, so reads must fall back to the same defaults as `createEvent`.
 
 ### UI conventions
 
