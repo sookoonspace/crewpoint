@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:csv/csv.dart';
+import 'package:crewpoint_app/app/core/utils/csv_safety.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
@@ -44,7 +45,7 @@ List<String> _row(
   EventModel event,
   Map<String, String> memberNames,
 ) {
-  return [
+  final cells = [
     e.id,
     e.createdAt?.toIso8601String() ?? '',
     e.payerId,
@@ -59,4 +60,5 @@ List<String> _row(
       for (final s in e.splits) {'userId': s.userId, 'amount': s.amount},
     ]),
   ];
+  return cells.map(neutraliseCsvCell).toList();
 }

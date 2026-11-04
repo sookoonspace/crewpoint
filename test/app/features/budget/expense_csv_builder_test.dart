@@ -65,4 +65,58 @@ void main() {
     // Splits column is a JSON-encoded array, itself CSV-quoted.
     expect(csv.contains('"[{""userId"":""u1""'), isTrue);
   });
+
+  group('formula cells', () {
+    String csvWith(ExpenseModel expense, {Map<String, String>? names}) =>
+        buildExpenseCsv(
+          event: _event,
+          expenses: [expense],
+          memberNames: names ?? const {},
+        );
+
+    for (final lead in ['=', '+', '-', '@', '\t', '\r']) {
+      test('neutralises a description starting with ${lead.codeUnitAt(0)}', () {
+        final csv = csvWith(
+          ExpenseModel(
+            id: 'e',
+            eventId: 'evt-1',
+            payerId: 'u1',
+            amount: 1,
+            description: '${lead}cmd',
+          ),
+        );
+        expect(csv, contains("'${lead}cmd"));
+      });
+    }
+
+    test('neutralises a member name and a receipt path', () {
+      final csv = csvWith(
+        const ExpenseModel(
+          id: 'e',
+          eventId: 'evt-1',
+          payerId: 'u1',
+          amount: 1,
+          receiptPath: '@SUM(1)',
+        ),
+        names: const {'u1': '=Evil'},
+      );
+      expect(csv, contains("'=Evil"));
+      expect(csv, contains("'@SUM(1)"));
+    });
+
+    test('leaves ordinary cells unchanged', () {
+      final csv = csvWith(
+        const ExpenseModel(
+          id: 'e',
+          eventId: 'evt-1',
+          payerId: 'u1',
+          amount: 12.5,
+          description: 'Dinner',
+        ),
+      );
+      expect(csv, contains('12.5'));
+      expect(csv, contains('Dinner'));
+      expect(csv, isNot(contains("'")));
+    });
+  });
 }

@@ -339,12 +339,12 @@ Neutralise formula cells in every CSV export.
 - `lib/app/features/budget/data/expense_csv_builder.dart`, `lib/app/features/budget/data/expense_export_pipeline.dart`, `lib/app/features/tasks/data/task_export_pipeline.dart`. Keep the helper free of Flutter and Firebase imports.
 
 ### Acceptance criteria
-- [ ] Cells that begin with `=`, `+`, `-`, `@`, tab or carriage return are neutralised in every export.
-- [ ] Later CSV exports, including counts and rosters in #84, can use the same helper.
-- [ ] Unit tests cover each leading character.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] Tests for scenario FND-07 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] Cells that begin with `=`, `+`, `-`, `@`, tab or carriage return are neutralised in every export.
+- [x] Later CSV exports, including counts and rosters in #84, can use the same helper.
+- [x] Unit tests cover each leading character.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] Tests for scenario FND-07 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - Requirements: 13

@@ -215,6 +215,25 @@ void main() {
     });
   });
 
+  test('FND-07 every leading formula character is neutralised in exports', () {
+    for (final lead in ['=', '+', '-', '@', '\t', '\r']) {
+      final csv = buildExpenseCsv(
+        event: _event,
+        expenses: [
+          ExpenseModel(
+            id: 'e',
+            eventId: 'derod',
+            payerId: 'admin',
+            amount: 1,
+            description: '${lead}cmd',
+          ),
+        ],
+        memberNames: const {'admin': 'Admin'},
+      );
+      expect(csv, contains("'${lead}cmd"));
+    }
+  });
+
   group('U-03 Gujarati rendering in PDF', () {
     Future<String> extract(String text) async {
       final bytes = await buildExpenseReport(
