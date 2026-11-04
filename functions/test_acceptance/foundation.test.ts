@@ -19,6 +19,7 @@ const {recordSettlement} = require('../src/events/recordSettlement');
 const {createEvent} = require('../src/events/createEvent');
 const {handleUrgentMessage} = require('../src/events/onUrgentMessageCreated');
 const {markTaskComplete} = require('../src/events/markTaskComplete');
+const {joinEvent} = require('../src/events/joinEvent');
 
 const E = 'foundation';
 const call = (uid: string, data: object) => ftest.wrap(saveExpense)({auth: {uid}, data});
@@ -317,5 +318,43 @@ describe('FND-05 task permissions', () => {
     await complete({auth: {uid: 'assignee'}, data: {eventId: 'tasks', taskId: 't'}});
     await complete({auth: {uid: 'owner'}, data: {eventId: 'tasks', taskId: 't'}});
     expect((await getAdminDb().doc(T).get()).data()!.completedBy).toBe('assignee');
+  });
+});
+
+describe('FND-06 member limit', () => {
+  const join = (uid: string) =>
+    ftest.wrap(joinEvent)({auth: {uid}, data: {joinCode: 'LIMIT2'}});
+
+  async function seed(over: object) {
+    await clearFirestoreEmulator();
+    await getAdminDb().doc('events/full').set({
+      title: 'Trip',
+      creatorId: 'owner',
+      adminIds: ['owner'],
+      memberIds: ['owner'],
+      memberCount: 1,
+      ...over,
+    });
+    await getAdminDb().doc('event_invites/LIMIT2').set({
+      eventId: 'full',
+      expiresAt: new Date(Date.now() + 86400000),
+    });
+  }
+
+  test('FND-06 8 simultaneous joins at one place remaining admit exactly 1', async () => {
+    await seed({memberLimit: 2});
+    const results = await Promise.allSettled(
+      Array.from({length: 8}, (_, i) => join(`j${i}`))
+    );
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    const saved = (await getAdminDb().doc('events/full').get()).data()!;
+    expect(saved.memberIds).toHaveLength(2);
+    expect(saved.memberCount).toBe(2);
+  });
+
+  test('FND-06 with no memberLimit, joining is not capped', async () => {
+    await seed({memberIds: Array.from({length: 60}, (_, i) => `u${i}`), memberCount: 60});
+    await join('new');
+    expect((await getAdminDb().doc('events/full').get()).data()!.memberCount).toBe(61);
   });
 });

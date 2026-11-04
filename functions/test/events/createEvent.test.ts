@@ -41,6 +41,7 @@ describe('createEvent', () => {
     expect(saved.memberIds).toEqual(['me']);
     expect(saved.status).toBe('active');
     expect(saved.id).toBe('evt');
+    expect(saved.memberCount).toBe(1);
     expect(saved.createdAt).toBeDefined();
     expect(saved.updatedAt).toBeDefined();
     expect(saved.startDate.toDate().toISOString()).toBe('2027-03-01T10:00:00.000Z');

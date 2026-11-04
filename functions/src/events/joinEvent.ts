@@ -3,20 +3,21 @@ import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 
 const db = getFirestore();
-const MAX_MEMBERS = 50;
 
 /**
  * joinEvent — verifies a join code and adds the caller to the event.
  *
  * - Code must exist and not be expired
  * - Caller must not already be a member
- * - Event must not exceed `MAX_MEMBERS` (50) members
+ * - Event must not exceed `memberLimit`, which caps how many people can log in.
+ *   It is optional, and no value means unlimited.
  *
- * Idempotency: safe to retry. A retry whose first attempt already
- * added the caller will hit the already-exists branch (the `arrayUnion`
- * has no idempotency on the wire, but `memberIds.includes(uid)` guards
- * against duplicate additions across retries within reasonable
- * windows — the underlying Firestore array-membership invariant).
+ * The check and the write share one transaction, so simultaneous joins cannot
+ * exceed the limit. `memberCount` comes from `memberIds`, so an event from before
+ * `memberCount` existed is corrected the first time someone joins.
+ *
+ * Idempotency: safe to retry. A retry whose first attempt already added the
+ * caller hits the already-exists branch.
  */
 export const joinEvent = onCall(
   {timeoutSeconds: 30},
@@ -61,38 +62,42 @@ export const joinEvent = onCall(
 
         const eventId: string = codeData.eventId;
 
-        const eventDoc = await db.collection("events").doc(eventId).get();
-        if (!eventDoc.exists) {
-          throw new HttpsError("not-found", "Event no longer exists.");
-        }
+        const eventRef = db.collection("events").doc(eventId);
 
-        const eventData = eventDoc.data()!;
-        const memberIds: string[] = eventData.memberIds || [];
+        return db.runTransaction(async (tx) => {
+          const eventDoc = await tx.get(eventRef);
+          if (!eventDoc.exists) {
+            throw new HttpsError("not-found", "Event no longer exists.");
+          }
 
-        if (memberIds.includes(uid)) {
-          throw new HttpsError(
-            "already-exists",
-            "You're already a member of this event."
-          );
-        }
+          const eventData = eventDoc.data()!;
+          const memberIds: string[] = eventData.memberIds || [];
 
-        if (memberIds.length >= MAX_MEMBERS) {
-          throw new HttpsError(
-            "resource-exhausted",
-            `This event is full (max ${MAX_MEMBERS} members).`
-          );
-        }
+          if (memberIds.includes(uid)) {
+            throw new HttpsError(
+              "already-exists",
+              "You're already a member of this event."
+            );
+          }
 
-        await db.collection("events").doc(eventId).update({
-          memberIds: FieldValue.arrayUnion(uid),
-          updatedAt: FieldValue.serverTimestamp(),
+          const memberLimit = eventData.memberLimit;
+          const hasLimit = Number.isInteger(memberLimit) && memberLimit > 0;
+          if (hasLimit && memberIds.length >= memberLimit) {
+            throw new HttpsError("resource-exhausted", "This event is full.");
+          }
+
+          tx.update(eventRef, {
+            memberIds: FieldValue.arrayUnion(uid),
+            memberCount: memberIds.length + 1,
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+
+          return {
+            eventId,
+            title: eventData.title,
+            eventType: eventData.eventType,
+          };
         });
-
-        return {
-          eventId,
-          title: eventData.title,
-          eventType: eventData.eventType,
-        };
       }
     );
   }

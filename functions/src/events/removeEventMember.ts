@@ -38,46 +38,50 @@ export const removeEventMember = onCall(
     return withStructuredLogs(
       {op: "removeEventMember", uid, args: {eventId, targetUserId}},
       async () => {
-        const eventDoc = await db.collection("events").doc(eventId).get();
-        if (!eventDoc.exists) {
-          throw new HttpsError("not-found", "Event not found.");
-        }
+        const eventRef = db.collection("events").doc(eventId);
+        const invites = await db
+          .collection("event_invites")
+          .where("eventId", "==", eventId)
+          .get();
 
-        const eventData = eventDoc.data()!;
-        const adminIds: string[] = eventData.adminIds || [];
+        await db.runTransaction(async (tx) => {
+          const eventDoc = await tx.get(eventRef);
+          if (!eventDoc.exists) {
+            throw new HttpsError("not-found", "Event not found.");
+          }
 
-        const callerIsAuthorized =
-          eventData.creatorId === uid || adminIds.includes(uid);
-        const isSelfRemoval = uid === targetUserId;
+          const eventData = eventDoc.data()!;
+          const adminIds: string[] = eventData.adminIds || [];
+          const memberIds: string[] = eventData.memberIds || [];
 
-        if (!callerIsAuthorized && !isSelfRemoval) {
-          throw new HttpsError(
-            "permission-denied",
-            "Only admins and the event owner can remove members."
-          );
-        }
+          const callerIsAuthorized =
+            eventData.creatorId === uid || adminIds.includes(uid);
+          const isSelfRemoval = uid === targetUserId;
 
-        if (targetUserId === eventData.creatorId) {
-          throw new HttpsError(
-            "failed-precondition",
-            "The event owner cannot be removed."
-          );
-        }
+          if (!callerIsAuthorized && !isSelfRemoval) {
+            throw new HttpsError(
+              "permission-denied",
+              "Only admins and the event owner can remove members."
+            );
+          }
 
-        const batch = db.batch();
-        batch.update(db.collection("events").doc(eventId), {
-          memberIds: FieldValue.arrayRemove(targetUserId),
-          adminIds: FieldValue.arrayRemove(targetUserId),
-          updatedAt: FieldValue.serverTimestamp(),
+          if (targetUserId === eventData.creatorId) {
+            throw new HttpsError(
+              "failed-precondition",
+              "The event owner cannot be removed."
+            );
+          }
+
+          tx.update(eventRef, {
+            memberIds: FieldValue.arrayRemove(targetUserId),
+            adminIds: FieldValue.arrayRemove(targetUserId),
+            memberCount: memberIds.filter((m) => m !== targetUserId).length,
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+          if (!isSelfRemoval) {
+            invites.docs.forEach((invite) => tx.delete(invite.ref));
+          }
         });
-        if (!isSelfRemoval) {
-          const invites = await db
-            .collection("event_invites")
-            .where("eventId", "==", eventId)
-            .get();
-          invites.docs.forEach((invite) => batch.delete(invite.ref));
-        }
-        await batch.commit();
 
         return {success: true};
       }

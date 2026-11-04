@@ -68,6 +68,7 @@ export const createEvent = onCall({timeoutSeconds: 30}, async (request) => {
           creatorId: uid,
           adminIds: [uid],
           memberIds: [uid],
+          memberCount: 1,
           status: "active",
           currency,
           startDate,
