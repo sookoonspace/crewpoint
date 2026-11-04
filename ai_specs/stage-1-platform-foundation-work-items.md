@@ -281,13 +281,13 @@ Make task edit permissions match between UI and rules, and keep `markTaskComplet
 - `lib/app/features/tasks/domain/models/task.dart` (`canChangeStatus`), the tasks block in `firestore.rules`, `functions/src/events/markTaskComplete.ts`, and `test/robots/tasks_robot.dart`.
 
 ### Acceptance criteria
-- [ ] `tasks.manage` and a task's creator may edit it. An assignee may change only status and checklist. UI and rules match.
-- [ ] Clients cannot write `done`, `completedAt` or `completedBy` directly, so `markTaskComplete` stays the only path.
-- [ ] A second completion does not overwrite the first `completedBy`.
-- [ ] Any member may still create a task.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] Tests for scenario FND-05 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] `tasks.manage` and a task's creator may edit it. An assignee may change only status and checklist. UI and rules match.
+- [x] Clients cannot write `done`, `completedAt` or `completedBy` directly, so `markTaskComplete` stays the only path.
+- [x] A second completion does not overwrite the first `completedBy`.
+- [x] Any member may still create a task.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] Tests for scenario FND-05 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 26

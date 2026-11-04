@@ -283,6 +283,120 @@ describe('tasks update — Fix 1.C: field-level guards on eventId/createdBy', ()
   });
 });
 
+describe('tasks — who may edit, and completion only through markTaskComplete', () => {
+  const E = 'events/evtTP';
+  const T = `${E}/tasks/t1`;
+  const as = (uid: string) => env.authenticatedContext(uid).firestore();
+
+  async function seed(task: object = {}) {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, E), {
+        creatorId: 'owner',
+        adminIds: ['owner', 'admin'],
+        memberIds: ['owner', 'admin', 'creator', 'assignee', 'member'],
+      });
+      await setDoc(doc(db, T), {
+        eventId: 'evtTP',
+        createdBy: 'creator',
+        assigneeId: 'assignee',
+        title: 'Buy snacks',
+        status: 'todo',
+        ...task,
+      });
+      await setDoc(doc(db, `${T}/checklist/c1`), {text: 'Chips', isCompleted: false});
+    });
+  }
+
+  test.each(['owner', 'admin', 'creator'])('%s may edit any task field', async (uid) => {
+    await seed();
+    await assertSucceeds(
+      updateDoc(doc(as(uid), T), {title: 'New', assigneeId: 'member', status: 'in_progress'})
+    );
+  });
+
+  test('another member may not edit', async () => {
+    await seed();
+    await assertFails(updateDoc(doc(as('member'), T), {title: 'New'}));
+    await assertFails(updateDoc(doc(as('member'), T), {status: 'in_progress'}));
+  });
+
+  test('an assignee may change status', async () => {
+    await seed();
+    await assertSucceeds(updateDoc(doc(as('assignee'), T), {status: 'in_progress'}));
+  });
+
+  test.each([
+    ['title', {title: 'New'}],
+    ['description', {description: 'New'}],
+    ['assignee', {assigneeId: 'member'}],
+    ['due date', {dueDate: null}],
+    ['status and title together', {status: 'in_progress', title: 'New'}],
+  ])('an assignee may not change %s', async (_name, change) => {
+    await seed();
+    await assertFails(updateDoc(doc(as('assignee'), T), change));
+  });
+
+  test('an assignee may tick a checklist item, and not rewrite it', async () => {
+    await seed();
+    const item = doc(as('assignee'), `${T}/checklist/c1`);
+    await assertSucceeds(updateDoc(item, {isCompleted: true}));
+    await assertFails(updateDoc(item, {text: 'Changed'}));
+  });
+
+  test('the creator may rewrite a checklist item', async () => {
+    await seed();
+    await assertSucceeds(updateDoc(doc(as('creator'), `${T}/checklist/c1`), {text: 'Changed'}));
+  });
+
+  test.each(['owner', 'admin', 'creator', 'assignee'])(
+    '%s cannot mark a task done directly',
+    async (uid) => {
+      await seed();
+      await assertFails(updateDoc(doc(as(uid), T), {status: 'done'}));
+    }
+  );
+
+  test.each(['owner', 'creator', 'assignee'])('%s cannot write completion fields', async (uid) => {
+    await seed();
+    await assertFails(updateDoc(doc(as(uid), T), {completedBy: uid}));
+    await assertFails(updateDoc(doc(as(uid), T), {completedAt: new Date()}));
+    await assertFails(
+      updateDoc(doc(as(uid), T), {status: 'in_progress', completedBy: uid})
+    );
+  });
+
+  test('completion cannot be rewritten on a finished task', async () => {
+    await seed({status: 'done', completedBy: 'assignee', completedAt: new Date(0)});
+    await assertFails(updateDoc(doc(as('owner'), T), {completedBy: 'owner'}));
+    await assertFails(updateDoc(doc(as('owner'), T), {completedBy: null}));
+  });
+
+  test('a finished task can be reopened, which clears completion', async () => {
+    await seed({status: 'done', completedBy: 'assignee', completedAt: new Date(0)});
+    await assertSucceeds(
+      updateDoc(doc(as('assignee'), T), {status: 'todo', completedAt: null, completedBy: null})
+    );
+  });
+
+  test('a finished task can still be edited', async () => {
+    await seed({status: 'done', completedBy: 'assignee', completedAt: new Date(0)});
+    await assertSucceeds(updateDoc(doc(as('creator'), T), {title: 'New'}));
+  });
+
+  test('any member may create a task, but not a finished one', async () => {
+    await seed();
+    const base = {eventId: 'evtTP', createdBy: 'member', title: 'New'};
+    const ref = (id: string) => doc(as('member'), `${E}/tasks/${id}`);
+    await assertSucceeds(
+      setDoc(ref('a'), {...base, status: 'todo', completedAt: null, completedBy: null})
+    );
+    await assertFails(setDoc(ref('b'), {...base, status: 'done'}));
+    await assertFails(setDoc(ref('c'), {...base, status: 'todo', completedBy: 'member'}));
+    await assertFails(setDoc(ref('d'), {...base, status: 'todo', completedAt: new Date()}));
+  });
+});
+
 describe('users — Fix 1.B Option A: PII isolated in users/{uid}/private/profile', () => {
   test('self can read own users/{uid}/private/profile', async () => {
     const selfUid = 'selfB1';
@@ -753,9 +867,9 @@ describe('removed members lose write access', () => {
   test.each([
     ['delete their old expense', (u: string) => deleteDoc(doc(as(u), `${E}/expenses/${u}Exp`))],
     ['delete their old message', (u: string) => deleteDoc(doc(as(u), `${E}/messages/${u}Msg`))],
-    ['edit a task assigned to them', (u: string) => updateDoc(doc(as(u), `${T}/${u}Assigned`), {title: 'y'})],
+    ['change status on a task assigned to them', (u: string) => updateDoc(doc(as(u), `${T}/${u}Assigned`), {status: 'in_progress'})],
     ['delete a task they created', (u: string) => deleteDoc(doc(as(u), `${T}/${u}Created`))],
-    ['toggle a checklist item on an assigned task', (u: string) => updateDoc(doc(as(u), `${T}/${u}Assigned/checklist/c1`), {done: true})],
+    ['toggle a checklist item on an assigned task', (u: string) => updateDoc(doc(as(u), `${T}/${u}Assigned/checklist/c1`), {isCompleted: true})],
     ['add a checklist item to a task they created', (u: string) => setDoc(doc(as(u), `${T}/${u}Created/checklist/c2`), {done: false})],
     ['delete a checklist item from a task they created', (u: string) => deleteDoc(doc(as(u), `${T}/${u}Created/checklist/c1`))],
   ])('%s: denied once removed, allowed while a member', async (_name, write) => {

@@ -2,7 +2,7 @@
 // Acceptance tests for the Stage 1 foundation fixes. Test names start with the
 // scenario ID. Runs on the emulators only.
 import {RulesTestEnvironment} from '@firebase/rules-unit-testing';
-import {assertFails} from '@firebase/rules-unit-testing';
+import {assertFails, assertSucceeds} from '@firebase/rules-unit-testing';
 import {doc, setDoc, updateDoc} from 'firebase/firestore';
 import {clearFirestoreEmulator, getAdminApp, getAdminDb, getTestEnv} from '../test/setup';
 
@@ -18,6 +18,7 @@ const {saveExpense} = require('../src/events/saveExpense');
 const {recordSettlement} = require('../src/events/recordSettlement');
 const {createEvent} = require('../src/events/createEvent');
 const {handleUrgentMessage} = require('../src/events/onUrgentMessageCreated');
+const {markTaskComplete} = require('../src/events/markTaskComplete');
 
 const E = 'foundation';
 const call = (uid: string, data: object) => ftest.wrap(saveExpense)({auth: {uid}, data});
@@ -264,5 +265,57 @@ describe('FND-04 urgent messages', () => {
     const saved = (await sixth.get()).data()!;
     expect(saved.text).toBe('Fire');
     expect(saved.urgentPushSkipped).toBe(true);
+  });
+});
+
+describe('FND-05 task permissions', () => {
+  let env: RulesTestEnvironment;
+  const E = 'events/tasks';
+  const T = `${E}/tasks/t`;
+  const event = {
+    creatorId: 'owner',
+    adminIds: ['owner'],
+    memberIds: ['owner', 'creator', 'assignee', 'member'],
+  };
+  const task = {eventId: 'tasks', createdBy: 'creator', assigneeId: 'assignee', status: 'todo', title: 'X'};
+  const as = (uid: string) => env.authenticatedContext(uid).firestore();
+
+  beforeAll(async () => {
+    env = await getTestEnv();
+  });
+  beforeEach(async () => {
+    await clearFirestoreEmulator();
+    await env.clearFirestore();
+    await getAdminDb().doc(E).set(event);
+    await getAdminDb().doc(T).set(task);
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), E), event);
+      await setDoc(doc(ctx.firestore(), T), task);
+    });
+  });
+  afterAll(() => env.cleanup());
+
+  test('FND-05 an assignee may change status, and nothing else', async () => {
+    await assertSucceeds(updateDoc(doc(as('assignee'), T), {status: 'in_progress'}));
+    await assertFails(updateDoc(doc(as('assignee'), T), {title: 'Changed'}));
+  });
+
+  test('FND-05 the creator and managers may edit, and other members may not', async () => {
+    await assertSucceeds(updateDoc(doc(as('creator'), T), {title: 'A'}));
+    await assertSucceeds(updateDoc(doc(as('owner'), T), {title: 'B'}));
+    await assertFails(updateDoc(doc(as('member'), T), {title: 'C'}));
+  });
+
+  test('FND-05 clients cannot write completion directly', async () => {
+    await assertFails(updateDoc(doc(as('owner'), T), {status: 'done'}));
+    await assertFails(updateDoc(doc(as('owner'), T), {completedBy: 'owner'}));
+    await assertFails(updateDoc(doc(as('owner'), T), {completedAt: new Date()}));
+  });
+
+  test('FND-05 a second completion keeps the first completedBy', async () => {
+    const complete = ftest.wrap(markTaskComplete);
+    await complete({auth: {uid: 'assignee'}, data: {eventId: 'tasks', taskId: 't'}});
+    await complete({auth: {uid: 'owner'}, data: {eventId: 'tasks', taskId: 't'}});
+    expect((await getAdminDb().doc(T).get()).data()!.completedBy).toBe('assignee');
   });
 });

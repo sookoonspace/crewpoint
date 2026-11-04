@@ -70,7 +70,8 @@ class TaskModel {
     );
   }
 
-  /// RBAC: caller may transition `status` if owner, admin, or assignee.
+  /// RBAC: caller may transition `status` if owner, admin, creator or assignee,
+  /// matching `firestore.rules` and `markTaskComplete`.
   bool canChangeStatus({
     required bool isOwner,
     required bool isAdmin,
@@ -78,7 +79,8 @@ class TaskModel {
   }) =>
       isOwner ||
       isAdmin ||
-      (currentUserId != null && assigneeId == currentUserId);
+      (currentUserId != null &&
+          (assigneeId == currentUserId || createdBy == currentUserId));
 
   /// RBAC: caller may edit other fields or delete.
   bool canEditOrDelete({
