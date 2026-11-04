@@ -22,6 +22,8 @@ const {markTaskComplete} = require('../src/events/markTaskComplete');
 const {joinEvent} = require('../src/events/joinEvent');
 const {deleteUserAccount} = require('../src/account/deleteUserAccount');
 const {deleteEvent} = require('../src/events/deleteEvent');
+const {disputeSettlement} = require('../src/events/disputeSettlement');
+const {clock} = require('../src/utils/clock');
 
 const E = 'foundation';
 const call = (uid: string, data: object) => ftest.wrap(saveExpense)({auth: {uid}, data});
@@ -403,5 +405,60 @@ describe('FND-08 deletion', () => {
     expect(await exists(`${E}/tasks/t/checklist/c`)).toBe(false);
     expect(await exists('users/fnd8/chatReads/gone')).toBe(false);
     expect(await exists('users/fnd8/eventMutes/gone')).toBe(false);
+  });
+});
+
+describe('departed members and disputes', () => {
+  const E = 'events/left';
+  const db = () => getAdminDb();
+  const settle = (uid: string, payerId: string, payeeId: string) =>
+    ftest.wrap(recordSettlement)({
+      auth: {uid},
+      data: {eventId: 'left', settlementId: 's', payerId, payeeId, amount: 10},
+    });
+
+  beforeEach(async () => {
+    await clearFirestoreEmulator();
+    await db().doc(E).set({creatorId: 'owner', adminIds: ['owner'], memberIds: ['owner', 'member']});
+    await db().doc(`${E}/expenses/e`).set({
+      payerId: 'member',
+      amount: 20,
+      splits: [
+        {userId: 'departed', amount: 10},
+        {userId: 'member', amount: 10},
+      ],
+    });
+  });
+  afterEach(() => jest.restoreAllMocks());
+
+  test('FND-09 a settlement can be recorded for a departed person', async () => {
+    await settle('owner', 'departed', 'member');
+    const saved = (await db().doc(`${E}/expenses/s`).get()).data()!;
+    expect(saved.payerId).toBe('departed');
+    expect(saved.recordedBy).toBe('owner');
+  });
+
+  test('FND-09 a member without permission cannot record for them', async () => {
+    await expect(settle('member', 'departed', 'member')).rejects.toEqual(
+      expect.objectContaining({code: 'permission-denied'})
+    );
+  });
+
+  test('FND-10 a dispute after the window is refused', async () => {
+    await settle('member', 'member', 'owner');
+    const created = (await db().doc(`${E}/expenses/s`).get()).createTime!.toMillis();
+    jest.spyOn(clock, 'now').mockReturnValue(created + 31 * 24 * 60 * 60 * 1000);
+    await expect(
+      ftest.wrap(disputeSettlement)({auth: {uid: 'owner'}, data: {eventId: 'left', settlementId: 's'}})
+    ).rejects.toEqual(expect.objectContaining({code: 'failed-precondition'}));
+  });
+
+  test('FND-10 a setting changes the dispute window', async () => {
+    await db().doc(E).update({settings: {disputeWindowDays: 60}});
+    await settle('member', 'member', 'owner');
+    const created = (await db().doc(`${E}/expenses/s`).get()).createTime!.toMillis();
+    jest.spyOn(clock, 'now').mockReturnValue(created + 31 * 24 * 60 * 60 * 1000);
+    await ftest.wrap(disputeSettlement)({auth: {uid: 'owner'}, data: {eventId: 'left', settlementId: 's'}});
+    expect((await db().doc(`${E}/expenses/s`).get()).exists).toBe(false);
   });
 });

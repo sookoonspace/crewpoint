@@ -2,11 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 
 /// Bottom sheet asking the payer or payee to either confirm or dispute a
 /// recorded settlement. Pure presentation — caller owns the side effects.
 class DisputeSheet extends StatelessWidget {
-  const DisputeSheet({super.key, required this.summary, this.onDispute});
+  const DisputeSheet({
+    super.key,
+    required this.summary,
+    this.onDispute,
+    this.closedAfterDays,
+  });
 
   /// Short human-readable line e.g. "You settled \$25 with Alex".
   final String summary;
@@ -14,10 +20,15 @@ class DisputeSheet extends StatelessWidget {
   /// Fires when the user picks "Dispute". Cancel just closes the sheet.
   final VoidCallback? onDispute;
 
+  /// When set, the dispute window has closed: this explains why instead of
+  /// offering the dispute.
+  final int? closedAfterDays;
+
   static Future<void> show({
     required BuildContext context,
     required String summary,
     VoidCallback? onDispute,
+    int? closedAfterDays,
   }) {
     return showModalBottomSheet<void>(
       context: context,
@@ -26,7 +37,11 @@ class DisputeSheet extends StatelessWidget {
           top: Radius.circular(AppRadius.xxl),
         ),
       ),
-      builder: (_) => DisputeSheet(summary: summary, onDispute: onDispute),
+      builder: (_) => DisputeSheet(
+        summary: summary,
+        onDispute: onDispute,
+        closedAfterDays: closedAfterDays,
+      ),
     );
   }
 
@@ -55,15 +70,19 @@ class DisputeSheet extends StatelessWidget {
           Text(
             summary,
             textAlign: TextAlign.center,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
-          Text(
-            'Disputing will remove this settlement and restore the balance.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
-          ),
+          if (closedAfterDays == null)
+            Text(
+              'Disputing will remove this settlement and restore the balance.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 12,
+              ),
+            ),
           FilledButton(
             key: const Key('chat.dispute.cancel'),
             onPressed: () => Navigator.of(context).pop(),
@@ -73,19 +92,29 @@ class DisputeSheet extends StatelessWidget {
             ),
             child: const Text('All good — keep it'),
           ),
-          OutlinedButton(
-            key: const Key('chat.dispute.confirm'),
-            onPressed: () {
-              Navigator.of(context).pop();
-              onDispute?.call();
-            },
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
-              foregroundColor: AppColors.terracotta,
-              side: const BorderSide(color: AppColors.terracotta),
+          if (closedAfterDays != null)
+            Text(
+              context.strings.chat.disputeWindowClosed(closedAfterDays!),
+              key: const Key('chat.dispute.closed'),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            )
+          else
+            OutlinedButton(
+              key: const Key('chat.dispute.confirm'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                onDispute?.call();
+              },
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                foregroundColor: AppColors.terracotta,
+                side: const BorderSide(color: AppColors.terracotta),
+              ),
+              child: const Text('Dispute this settlement'),
             ),
-            child: const Text('Dispute this settlement'),
-          ),
         ],
       ),
     );

@@ -396,15 +396,15 @@ Let former members' debts be settled, warn people leaving with a balance, and ti
 - Open Question 2: the 30-day default is a setting, and can change.
 
 ### Acceptance criteria
-- [ ] Debts stay visible, labelled by the existing "(no longer in event)" name.
-- [ ] Anyone with `money.record` can record a settlement on a departed person's behalf.
-- [ ] Leaving shows a warning if the person has an outstanding balance. Leaving is not blocked.
-- [ ] `settings.disputeWindowDays` (default 30) limits disputes, enforced in `disputeSettlement`.
-- [ ] The dispute option explains when the window has closed.
-- [ ] Time checks use `Clock` in the app and a clock seam in the backend.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] Tests for scenarios FND-09, FND-10 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] Debts stay visible, labelled by the existing "(no longer in event)" name.
+- [x] Anyone with `money.record` can record a settlement on a departed person's behalf.
+- [x] Leaving shows a warning if the person has an outstanding balance. Leaving is not blocked.
+- [x] `settings.disputeWindowDays` (default 30) limits disputes, enforced in `disputeSettlement`.
+- [x] The dispute option explains when the window has closed.
+- [x] Time checks use `Clock` in the app and a clock seam in the backend.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] Tests for scenarios FND-09, FND-10 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 27
