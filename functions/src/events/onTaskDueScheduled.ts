@@ -2,6 +2,7 @@ import {onSchedule} from "firebase-functions/v2/scheduler";
 import {logger} from "firebase-functions/v2";
 import {Timestamp, getFirestore} from "firebase-admin/firestore";
 import {sendCategorizedPush} from "../notifications/sendPush";
+import {isModuleOn} from "./eventModules";
 
 /**
  * Window length (hours) for the due-soon scan. Tasks whose `dueDate`
@@ -123,6 +124,14 @@ export const onTaskDueScheduled = onSchedule(
         logger.warn(
           `onTaskDueScheduled: task ${taskId} missing eventId; skipping`
         );
+        skipped++;
+        continue;
+      }
+
+      // Tasks may be turned off for this event. Leave the task unflagged, so a
+      // reminder can still go out if they are turned back on in time.
+      const eventDoc = await db.collection("events").doc(eventId).get();
+      if (!isModuleOn(eventDoc.data() ?? {}, "tasks")) {
         skipped++;
         continue;
       }

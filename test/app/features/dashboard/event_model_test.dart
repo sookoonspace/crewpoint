@@ -64,6 +64,18 @@ void main() {
       expect(event.typeLabel, isNull);
     });
 
+    test('a module is on unless turned off', () {
+      expect(event.isModuleOn('tasks'), isTrue);
+      const off = EventModel(
+        id: 'e1',
+        title: 'T',
+        creatorId: 'u1',
+        modules: {'tasks': false},
+      );
+      expect(off.isModuleOn('tasks'), isFalse);
+      expect(off.isModuleOn('chat'), isTrue);
+    });
+
     test('capacity and member limit can be set and cleared', () {
       final set = event.copyWith(capacity: 500, memberLimit: 100);
       expect(set.capacity, 500);

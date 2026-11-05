@@ -110,6 +110,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
   late final Map<String, TextEditingController> _labels;
   late String _currency;
   late EventStatus _status;
+  late final Map<String, bool> _modules;
   bool _dirty = false;
   bool _saving = false;
   String? _error;
@@ -134,6 +135,10 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     ];
     _currency = event.currency;
     _status = event.status;
+    _modules = {
+      for (final module in EventModel.defaultModules.keys)
+        module: event.isModuleOn(module),
+    };
     _labels = {
       for (final concept in LabelDefaults.current.concepts)
         for (final form in const ['one', 'other'])
@@ -264,6 +269,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
             ],
             languages: _parseLanguages(_languages.text),
             labels: _enteredLabels(),
+            modules: _modules,
             capacity: capacity,
             clearCapacity: capacity == null,
             memberLimit: memberLimit,
@@ -513,6 +519,36 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
                       border: const OutlineInputBorder(),
                     ),
                     validator: _validateCount,
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        strings.settingsModules,
+                        style: theme.textTheme.titleSmall,
+                      ),
+                      Text(
+                        strings.settingsModulesHelp,
+                        style: theme.textTheme.bodySmall,
+                      ),
+                      for (final (module, label) in [
+                        ('chat', strings.moduleChat),
+                        ('budget', strings.moduleBudget),
+                        ('tasks', strings.moduleTasks),
+                      ])
+                        SwitchListTile(
+                          key: Key('events.settings.module.$module'),
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(label),
+                          value: _modules[module]!,
+                          onChanged: _archived
+                              ? null
+                              : (on) => setState(() {
+                                  _modules[module] = on;
+                                  _dirty = true;
+                                }),
+                        ),
+                    ],
                   ),
                   ExpansionTile(
                     key: const Key('events.settings.labels'),

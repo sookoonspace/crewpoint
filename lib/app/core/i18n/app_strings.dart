@@ -231,6 +231,18 @@ abstract class DashboardStrings {
 
   String inviteLabel(String membersWord);
 
+  // Event hub and modules.
+  String get moduleChat;
+  String get moduleChatSubtitle;
+  String get moduleBudget;
+  String get moduleBudgetSubtitle;
+  String get moduleTasks;
+  String get moduleTasksSubtitle;
+  String get hubEmpty;
+  String get moduleOff;
+  String get settingsModules;
+  String get settingsModulesHelp;
+
   // Event settings.
   String get settingsLabels;
   String get settingsLabelsHelp;
@@ -768,6 +780,30 @@ class _EnglishDashboardStrings extends DashboardStrings {
       'This event is archived and read-only. Change its status to restore it.';
   @override
   String inviteLabel(String membersWord) => 'Invite $membersWord';
+  @override
+  String get moduleChat => 'Chat';
+  @override
+  String get moduleChatSubtitle => 'Messages & alerts';
+  @override
+  String get moduleBudget => 'Budget';
+  @override
+  String get moduleBudgetSubtitle => 'Expenses & settlements';
+  @override
+  String get moduleTasks => 'Tasks';
+  @override
+  String get moduleTasksSubtitle => 'To-dos & assignments';
+  @override
+  String get hubEmpty =>
+      'Nothing is turned on for this event yet. An organizer can turn things '
+      'on in event settings.';
+  @override
+  String get moduleOff => 'This part of the event is turned off.';
+  @override
+  String get settingsModules => 'What this event uses';
+  @override
+  String get settingsModulesHelp =>
+      'Turning something off hides it and keeps its data for when it comes '
+      'back.';
   @override
   String get settingsLabels => 'Words used in this event';
   @override

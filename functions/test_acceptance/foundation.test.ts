@@ -612,3 +612,52 @@ describe('GE-01 message text', () => {
     expect(memberJoinedText('Convention', labels).title).toBe('New volunteer in Convention');
   });
 });
+
+describe('GE-02 modules', () => {
+  const store = () => getAdminDb();
+  const ref = () => store().doc('events/mod');
+  const refused = expect.objectContaining({code: 'failed-precondition'});
+  const expense = {
+    eventId: 'mod',
+    expenseId: 'x',
+    payerId: 'member',
+    amount: 10,
+    description: 'Lunch',
+    isDonation: false,
+    splits: [{userId: 'member', amount: 5}, {userId: 'other', amount: 5}],
+  };
+
+  beforeEach(async () => {
+    await clearFirestoreEmulator();
+    await ref().set({
+      creatorId: 'owner',
+      adminIds: ['owner'],
+      memberIds: ['owner', 'member', 'other'],
+      currency: 'USD',
+      status: 'published',
+    });
+  });
+
+  test('GE-02 a turned-off module rejects writes and keeps its data', async () => {
+    await call('member', expense);
+    await ref().update({modules: {budget: false}});
+    await expect(call('member', {...expense, expenseId: 'y'})).rejects.toEqual(refused);
+    expect((await ref().collection('expenses').doc('x').get()).exists).toBe(true);
+    await ref().update({modules: {budget: true}});
+    await call('member', {...expense, expenseId: 'y'});
+    expect((await ref().collection('expenses').doc('y').get()).exists).toBe(true);
+  });
+
+  test('GE-02 tasks turned off refuse completion', async () => {
+    await ref().update({modules: {tasks: false}});
+    await ref().collection('tasks').doc('t').set({
+      eventId: 'mod',
+      assigneeId: 'member',
+      createdBy: 'member',
+      status: 'todo',
+    });
+    await expect(
+      ftest.wrap(markTaskComplete)({auth: {uid: 'member'}, data: {eventId: 'mod', taskId: 't'}}),
+    ).rejects.toEqual(refused);
+  });
+});

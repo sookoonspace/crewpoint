@@ -3,6 +3,7 @@ import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {clock} from "../utils/clock";
 import {requireString, withStructuredLogs} from "../utils/logging";
 import {assertNotArchived} from "./eventStatus";
+import {assertModuleOn} from "./eventModules";
 
 const db = getFirestore();
 
@@ -75,6 +76,7 @@ export const disputeSettlement = onCall(
 
         const eventDoc = await db.collection("events").doc(eventId).get();
         assertNotArchived(eventDoc.data() ?? {});
+        assertModuleOn(eventDoc.data() ?? {}, "budget");
         const memberIds: string[] = eventDoc.data()?.memberIds || [];
 
         const isParty =

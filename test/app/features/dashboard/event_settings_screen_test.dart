@@ -428,6 +428,44 @@ void main() {
     });
   });
 
+  group('modules (Req 22)', () {
+    testWidgets('an organizer turns one off and on', (tester) async {
+      await pump(tester);
+      await tester.tap(find.byKey(_key('module.budget')));
+      await tester.pump();
+      await save(tester);
+      expect((await stored())['modules'], {
+        'tasks': true,
+        'budget': false,
+        'chat': true,
+      });
+    });
+
+    testWidgets('an event that turned one off shows it off', (tester) async {
+      await pump(
+        tester,
+        event: _event.copyWith(modules: const {'tasks': false}),
+      );
+      expect(
+        tester.widget<SwitchListTile>(find.byKey(_key('module.tasks'))).value,
+        isFalse,
+      );
+      expect(
+        tester.widget<SwitchListTile>(find.byKey(_key('module.chat'))).value,
+        isTrue,
+      );
+    });
+
+    testWidgets('changing one counts as unsaved', (tester) async {
+      await pump(tester);
+      await tester.tap(find.byKey(_key('module.chat')));
+      await tester.pump();
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(find.text('Discard changes?'), findsOneWidget);
+    });
+  });
+
   group('capacity (Req 18b)', () {
     testWidgets('shows the count against capacity', (tester) async {
       await pump(tester);

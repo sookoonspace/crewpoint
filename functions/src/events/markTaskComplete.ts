@@ -2,6 +2,7 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 import {assertTasksOpen} from "./eventStatus";
+import {assertModuleOn} from "./eventModules";
 
 const db = getFirestore();
 
@@ -49,6 +50,7 @@ export const markTaskComplete = onCall(
           }
           const eventData = eventDoc.data()!;
           assertTasksOpen(eventData, uid);
+          assertModuleOn(eventData, "tasks");
           const adminIds: string[] = eventData.adminIds || [];
           const memberIds: string[] = eventData.memberIds || [];
 
