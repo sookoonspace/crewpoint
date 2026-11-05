@@ -35,7 +35,7 @@ final myAssignedTasksProvider =
       }
 
       final rows = <MyAssignedTaskRow>[];
-      for (final event in events) {
+      for (final event in events.where((e) => e.isModuleOn('tasks'))) {
         final tasksAsync = ref.watch(taskListProvider(event.id));
         final tasks = tasksAsync.value;
         if (tasks == null) {

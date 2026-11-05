@@ -151,34 +151,7 @@ class EventDashboardScreen extends StatelessWidget {
 
                   const SizedBox(height: AppSpacing.xl),
 
-                  // Quick-link cards. No `extra:` payload — child routes
-                  // resolve the event by id via EventGuard.
-                  _QuickLinkCard(
-                    icon: AppIcons.navChatFilled,
-                    label: 'Chat',
-                    subtitle: 'Messages & alerts',
-                    color: AppColors.sage,
-                    onTap: () =>
-                        context.push('/dashboard/event/${event.id}/chat'),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  _QuickLinkCard(
-                    icon: AppIcons.navBudgetFilled,
-                    label: 'Budget',
-                    subtitle: 'Expenses & settlements',
-                    color: AppColors.terracotta,
-                    onTap: () =>
-                        context.push('/dashboard/event/${event.id}/budget'),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  _QuickLinkCard(
-                    icon: AppIcons.statusDone,
-                    label: 'Tasks',
-                    subtitle: 'To-dos & assignments',
-                    color: Theme.of(context).colorScheme.onSurface,
-                    onTap: () =>
-                        context.push('/dashboard/event/${event.id}/tasks'),
-                  ),
+                  _ModuleHub(event: event),
 
                   const SizedBox(height: AppSpacing.xl),
 
@@ -199,6 +172,86 @@ class EventDashboardScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// One entry per enabled module, in a list that becomes a grid from 840 px. No
+/// `extra:` payload, because child routes resolve the event by id via
+/// EventGuard.
+class _ModuleHub extends StatelessWidget {
+  const _ModuleHub({required this.event});
+
+  final EventModel event;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = context.strings.dashboard;
+    Widget entry(
+      String module,
+      IconData icon,
+      String label,
+      String subtitle,
+      Color color,
+    ) => _QuickLinkCard(
+      key: Key('events.hub.$module'),
+      icon: icon,
+      label: label,
+      subtitle: subtitle,
+      color: color,
+      onTap: () => context.push('/dashboard/event/${event.id}/$module'),
+    );
+
+    final entries = [
+      if (event.isModuleOn('chat'))
+        entry(
+          'chat',
+          AppIcons.navChatFilled,
+          strings.moduleChat,
+          strings.moduleChatSubtitle,
+          AppColors.sage,
+        ),
+      if (event.isModuleOn('budget'))
+        entry(
+          'budget',
+          AppIcons.navBudgetFilled,
+          strings.moduleBudget,
+          strings.moduleBudgetSubtitle,
+          AppColors.terracotta,
+        ),
+      if (event.isModuleOn('tasks'))
+        entry(
+          'tasks',
+          AppIcons.statusDone,
+          strings.moduleTasks,
+          strings.moduleTasksSubtitle,
+          Theme.of(context).colorScheme.onSurface,
+        ),
+    ];
+
+    if (entries.isEmpty) {
+      return Text(strings.hubEmpty, key: const Key('events.hub.empty'));
+    }
+    if (MediaQuery.sizeOf(context).width < Breakpoints.mediumMax) {
+      return Column(
+        key: const Key('events.hub.list'),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: AppSpacing.md,
+        children: entries,
+      );
+    }
+    return LayoutBuilder(
+      builder: (_, constraints) {
+        final width = (constraints.maxWidth - AppSpacing.md) / 2;
+        return Wrap(
+          key: const Key('events.hub.grid'),
+          spacing: AppSpacing.md,
+          runSpacing: AppSpacing.md,
+          children: [
+            for (final card in entries) SizedBox(width: width, child: card),
+          ],
+        );
+      },
     );
   }
 }

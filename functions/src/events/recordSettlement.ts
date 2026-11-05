@@ -3,6 +3,7 @@ import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 import {DEFAULT_MAX_EXPENSE_AMOUNT} from "./saveExpense";
 import {assertNotArchived} from "./eventStatus";
+import {assertModuleOn} from "./eventModules";
 
 const db = getFirestore();
 
@@ -81,6 +82,7 @@ export const recordSettlement = onCall(
           }
           const event = eventDoc.data()!;
           assertNotArchived(event);
+          assertModuleOn(event, "budget");
           const memberIds: string[] = event.memberIds || [];
 
           const adminIds: string[] = event.adminIds || [];

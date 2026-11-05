@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:crewpoint_app/app/core/widgets/module_guard.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
@@ -204,21 +205,33 @@ GoRouter createRouter({
                         path: 'budget',
                         builder: (_, state) => EventGuard(
                           eventId: _resolveEventId(state),
-                          child: (event) => EventBudgetPage(event: event),
+                          child: (event) => ModuleGuard(
+                            event: event,
+                            module: 'budget',
+                            child: EventBudgetPage(event: event),
+                          ),
                         ),
                       ),
                       GoRoute(
                         path: 'chat',
                         builder: (_, state) => EventGuard(
                           eventId: _resolveEventId(state),
-                          child: (event) => EventChatPage(event: event),
+                          child: (event) => ModuleGuard(
+                            event: event,
+                            module: 'chat',
+                            child: EventChatPage(event: event),
+                          ),
                         ),
                       ),
                       GoRoute(
                         path: 'tasks',
                         builder: (_, state) => EventGuard(
                           eventId: _resolveEventId(state),
-                          child: (event) => EventTasksPage(event: event),
+                          child: (event) => ModuleGuard(
+                            event: event,
+                            module: 'tasks',
+                            child: EventTasksPage(event: event),
+                          ),
                         ),
                         routes: [
                           GoRoute(
@@ -228,9 +241,13 @@ GoRouter createRouter({
                                   state.pathParameters['taskId'] ?? '';
                               return EventGuard(
                                 eventId: _resolveEventId(state),
-                                child: (event) => EventTaskDetailPage(
+                                child: (event) => ModuleGuard(
                                   event: event,
-                                  taskId: taskId,
+                                  module: 'tasks',
+                                  child: EventTaskDetailPage(
+                                    event: event,
+                                    taskId: taskId,
+                                  ),
                                 ),
                               );
                             },

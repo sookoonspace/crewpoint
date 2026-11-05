@@ -101,7 +101,7 @@ final globalBalanceLedgerProvider =
       final debts = <DebtRow>[];
       final allExpenses = <RecentExpenseRow>[];
 
-      for (final event in events) {
+      for (final event in events.where((e) => e.isModuleOn('budget'))) {
         final expensesAsync = ref.watch(expenseListProvider(event.id));
         final expenses = expensesAsync.value;
         if (expenses == null) {

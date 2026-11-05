@@ -84,6 +84,8 @@ Firestore data model: `events/{eventId}` with `messages`, `tasks` (+ `tasks/{id}
 
 Events carry `templateId`, `organizerId`, `timeZone`, `venues`, `currency`, `languages`, `status`, `modules`, `labels`, `settings`, `capacity` and `memberLimit`, and need only a title. `eventType` survives on older events as display text only. Older events lack the new fields, so reads must fall back to the same defaults as `createEvent`.
 
+`modules` turns `tasks`, `budget` and `chat` on and off, and a module missing from the map is on. Turned-off modules keep their data. New server paths and rules for a module must check `isModuleOn`, and routes use `ModuleGuard`.
+
 `status` is `draft`, `published`, `live`, `ended` or `archived`, and new events start as `draft`. Older events may still hold `active` until the #65 migration, which reads as `ended` past the end date, or else `published`. `firestore.rules` and `functions/src/events/eventStatus.ts` enforce what each status allows, and `EventModel` mirrors that for the UI. Plain members must never be in a draft, because list queries cannot filter them out in rules: anything that adds a plain member has to refuse drafts.
 
 ### UI conventions

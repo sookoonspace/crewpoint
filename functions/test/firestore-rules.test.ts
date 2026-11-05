@@ -358,6 +358,71 @@ describe('event status (Req 19, GE-08)', () => {
   });
 });
 
+describe('modules (Req 22, GE-02)', () => {
+  const E = 'events/evtMod';
+  const seed = (modules?: object) =>
+    env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, E), {
+        creatorId: 'owner',
+        adminIds: ['owner'],
+        memberIds: ['owner', 'member'],
+        status: 'published',
+        title: 'T',
+        ...(modules ? {modules} : {}),
+      });
+      await setDoc(doc(db, `${E}/messages/m1`), {senderId: 'member', text: 'Hi'});
+      await setDoc(doc(db, `${E}/tasks/t1`), {
+        eventId: 'evtMod',
+        title: 'T',
+        createdBy: 'member',
+        assigneeId: 'member',
+        status: 'todo',
+      });
+      await setDoc(doc(db, `${E}/tasks/t1/checklist/c1`), {text: 'I', isCompleted: false});
+      await setDoc(doc(db, `${E}/expenses/x1`), {payerId: 'member', amount: 1});
+    });
+  const member = () => env.authenticatedContext('member').firestore();
+  const newTask = {eventId: 'evtMod', title: 'New', createdBy: 'member'};
+
+  test('an organizer can turn a module off, and a member cannot', async () => {
+    await seed();
+    await assertFails(updateDoc(doc(member(), E), {modules: {chat: false}}));
+    const owner = env.authenticatedContext('owner').firestore();
+    await assertSucceeds(updateDoc(doc(owner, E), {modules: {chat: false}}));
+    await assertFails(updateDoc(doc(owner, E), {modules: 'none'}));
+  });
+
+  test('with chat off, nobody can send, and messages can still be read', async () => {
+    await seed({chat: false});
+    await assertFails(setDoc(doc(member(), `${E}/messages/new`), {senderId: 'member', text: 'Hi'}));
+    await assertFails(deleteDoc(doc(member(), `${E}/messages/m1`)));
+    await assertSucceeds(getDoc(doc(member(), `${E}/messages/m1`)));
+  });
+
+  test('with tasks off, nobody can change tasks', async () => {
+    await seed({tasks: false});
+    await assertFails(setDoc(doc(member(), `${E}/tasks/new`), newTask));
+    await assertFails(updateDoc(doc(member(), `${E}/tasks/t1`), {title: 'E'}));
+    await assertFails(deleteDoc(doc(member(), `${E}/tasks/t1`)));
+    await assertFails(updateDoc(doc(member(), `${E}/tasks/t1/checklist/c1`), {isCompleted: true}));
+  });
+
+  test('with budget off, expenses cannot be deleted', async () => {
+    await seed({budget: false});
+    await assertFails(deleteDoc(doc(member(), `${E}/expenses/x1`)));
+  });
+
+  test.each([[undefined], [{chat: true, tasks: true, budget: true}], [{budget: false}]])(
+    'other modules keep working with %j',
+    async (modules) => {
+      await seed(modules);
+      await assertSucceeds(setDoc(doc(member(), `${E}/messages/new`), {senderId: 'member', text: 'Hi'}));
+      await assertSucceeds(setDoc(doc(member(), `${E}/tasks/new`), newTask));
+    },
+  );
+});
+
 describe('organizers — written only by the server', () => {
   const O = 'organizers/me';
   const seed = () =>

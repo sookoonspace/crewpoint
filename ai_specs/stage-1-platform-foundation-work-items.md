@@ -535,18 +535,18 @@ Add a label resolver with one shared defaults file, used across screens, exports
 - `lib/app/core/i18n/app_strings.dart`, `functions/src/notifications/templates.ts`, and the export pipelines.
 
 ### Acceptance criteria
-- [ ] A label resolver returns an event's label, or the default for a concept, with singular and plural.
-- [ ] It is used by screens, exports and message text.
-- [ ] Changing a label changes it everywhere with no restart.
-- [ ] Label defaults live in one shared data file, read by both the app and the backend, so the two cannot drift apart.
-- [ ] Organizers rename concepts from event settings.
-- [ ] Unit tests cover the resolver.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
-- [ ] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
-- [ ] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
-- [ ] Tests for scenario GE-01 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] A label resolver returns an event's label, or the default for a concept, with singular and plural.
+- [x] It is used by screens, exports and message text.
+- [x] Changing a label changes it everywhere with no restart.
+- [x] Label defaults live in one shared data file, read by both the app and the backend, so the two cannot drift apart.
+- [x] Organizers rename concepts from event settings.
+- [x] Unit tests cover the resolver.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
+- [x] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
+- [x] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
+- [x] Tests for scenario GE-01 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 4

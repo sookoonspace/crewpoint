@@ -2,6 +2,7 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 import {assertNotArchived} from "./eventStatus";
+import {assertModuleOn} from "./eventModules";
 
 const db = getFirestore();
 
@@ -87,6 +88,7 @@ export const saveExpense = onCall({timeoutSeconds: 30}, async (request) => {
         }
         const event = eventDoc.data()!;
         assertNotArchived(event);
+        assertModuleOn(event, "budget");
         const memberIds: string[] = event.memberIds || [];
         const adminIds: string[] = event.adminIds || [];
 

@@ -144,6 +144,10 @@ class EventModel {
   /// permissions land.
   bool canManage(String uid) => isAdmin(uid);
 
+  /// A module is on unless turned off, so events from before modules keep
+  /// working. Turning one off keeps its data.
+  bool isModuleOn(String module) => modules[module] ?? true;
+
   /// A draft is visible only to `event.manage`.
   bool isVisibleTo(String uid) => status != EventStatus.draft || canManage(uid);
 
@@ -198,6 +202,7 @@ class EventModel {
     List<EventVenue>? venues,
     List<String>? languages,
     Map<String, dynamic>? labels,
+    Map<String, bool>? modules,
     int? capacity,
     int? memberLimit,
     bool clearCapacity = false,
@@ -216,7 +221,7 @@ class EventModel {
       timeZone: timeZone ?? this.timeZone,
       venues: venues ?? this.venues,
       languages: languages ?? this.languages,
-      modules: modules,
+      modules: modules ?? this.modules,
       labels: labels ?? this.labels,
       settings: settings,
       capacity: clearCapacity ? null : (capacity ?? this.capacity),

@@ -20,6 +20,11 @@ service cloud.firestore {
       return eventData(eventId).get('status', 'active') != 'archived';
     }
 
+    // A module is on unless turned off. Reads stay open, and data is kept.
+    function isModuleOn(eventId, module) {
+      return eventData(eventId).get('modules', {}).get(module, true) != false;
+    }
+
     // `event.manage` means owner or admin until permissions land.
     function canManageEvent(eventId) {
       return eventData(eventId).creatorId == request.auth.uid
@@ -30,6 +35,7 @@ service cloud.firestore {
     // expenses and chat stay open.
     function tasksAreOpen(eventId) {
       return isNotArchived(eventId)
+        && isModuleOn(eventId, 'tasks')
         && (eventData(eventId).get('status', 'active') != 'ended' || canManageEvent(eventId));
     }
 
@@ -99,7 +105,8 @@ service cloud.firestore {
         && (!('timeZone' in request.resource.data) || request.resource.data.timeZone is string)
         && (!('venues' in request.resource.data) || request.resource.data.venues is list)
         && (!('languages' in request.resource.data) || request.resource.data.languages is list)
-        && (!('labels' in request.resource.data) || request.resource.data.labels is map);
+        && (!('labels' in request.resource.data) || request.resource.data.labels is map)
+        && (!('modules' in request.resource.data) || request.resource.data.modules is map);
 
       // Delete: only the creator
       allow delete: if request.auth != null
@@ -112,6 +119,7 @@ service cloud.firestore {
         allow create: if request.auth != null
           && isEventMember(eventId)
           && isNotArchived(eventId)
+          && isModuleOn(eventId, 'chat')
           && request.resource.data.senderId == request.auth.uid
           // Notices such as `settlement` and `settlement_disputed` are written
           // only by the server, so a member cannot forge one.
@@ -129,6 +137,7 @@ service cloud.firestore {
         allow delete: if request.auth != null
           && isEventMember(eventId)
           && isNotArchived(eventId)
+          && isModuleOn(eventId, 'chat')
           && resource.data.senderId == request.auth.uid;
 
         allow update: if false;
@@ -238,6 +247,7 @@ service cloud.firestore {
         allow delete: if request.auth != null
           && isEventMember(eventId)
           && isNotArchived(eventId)
+          && isModuleOn(eventId, 'budget')
           && (resource.data.payerId == request.auth.uid
               || eventDocForExpense().creatorId == request.auth.uid
               || request.auth.uid in eventDocForExpense().adminIds);

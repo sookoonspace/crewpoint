@@ -59,7 +59,9 @@ final globalInboxProvider = Provider.family<AsyncValue<List<InboxRow>>, String>(
       };
     }
 
-    final activeEvents = events.where((e) => e.status != EventStatus.archived);
+    final activeEvents = events.where(
+      (e) => e.status != EventStatus.archived && e.isModuleOn('chat'),
+    );
     final rows = <InboxRow>[];
     for (final event in activeEvents) {
       final messagesAsync = ref.watch(chatMessagesProvider(event.id));

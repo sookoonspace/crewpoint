@@ -136,6 +136,7 @@ class EventRepository {
         'venues': updated.venues.map((v) => v.toMap()).toList(),
         'languages': updated.languages,
         'labels': updated.labels,
+        'modules': updated.modules,
         'capacity': updated.capacity,
         'memberLimit': updated.memberLimit,
       },
