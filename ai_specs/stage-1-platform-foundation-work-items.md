@@ -498,22 +498,22 @@ Add the five event statuses with their access rules, automatic changes on a sche
 - #65 carries the status mapping into the migration script.
 
 ### Acceptance criteria
-- [ ] Status values are exactly `draft`, `published`, `live`, `ended`, `archived`.
-- [ ] `draft` is visible only to `event.manage`, and nobody can join.
-- [ ] `published` is visible to members and open to joining. An organizer moves an event here.
-- [ ] `live` is set automatically from the start time, in the event's time zone. An organizer can also set it by hand.
-- [ ] `ended` is set automatically after the end time, or by hand. Settlements, expenses and chat stay open, and everything else is read-only except to `event.manage`.
-- [ ] `archived` is set by hand and read-only for everyone. `event.manage` can restore it.
-- [ ] Events without dates stay in their current status until changed by hand.
-- [ ] The mapping turns `active` into `ended` if the end date has passed, or else `published`, and `archived` stays `archived`.
-- [ ] Automatic changes run on a schedule with a clock seam.
-- [ ] Rules enforce read-only states on the server.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
-- [ ] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
-- [ ] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
-- [ ] Tests for scenario GE-08 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] Status values are exactly `draft`, `published`, `live`, `ended`, `archived`.
+- [x] `draft` is visible only to `event.manage`, and nobody can join.
+- [x] `published` is visible to members and open to joining. An organizer moves an event here.
+- [x] `live` is set automatically from the start time, in the event's time zone. An organizer can also set it by hand.
+- [x] `ended` is set automatically after the end time, or by hand. Settlements, expenses and chat stay open, and everything else is read-only except to `event.manage`.
+- [x] `archived` is set by hand and read-only for everyone. `event.manage` can restore it.
+- [x] Events without dates stay in their current status until changed by hand.
+- [x] The mapping turns `active` into `ended` if the end date has passed, or else `published`, and `archived` stays `archived`.
+- [x] Automatic changes run on a schedule with a clock seam.
+- [x] Rules enforce read-only states on the server.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
+- [x] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
+- [x] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
+- [x] Tests for scenario GE-08 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 7

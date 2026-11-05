@@ -229,7 +229,13 @@ abstract class DashboardStrings {
   String get settingsStatusDraftUnavailable;
   String get settingsArchivedNotice;
 
+  String inviteLabel(String membersWord);
+
   // Event settings.
+  String get settingsLabels;
+  String get settingsLabelsHelp;
+  String settingsLabelOne(String defaultWord);
+  String settingsLabelOther(String defaultWord);
   String get settingsTitle;
   String get settingsNoAccess;
   String get settingsBack;
@@ -760,6 +766,18 @@ class _EnglishDashboardStrings extends DashboardStrings {
   @override
   String get settingsArchivedNotice =>
       'This event is archived and read-only. Change its status to restore it.';
+  @override
+  String inviteLabel(String membersWord) => 'Invite $membersWord';
+  @override
+  String get settingsLabels => 'Words used in this event';
+  @override
+  String get settingsLabelsHelp =>
+      'Rename anything to suit your event. Leave a box empty to keep the '
+      'usual word.';
+  @override
+  String settingsLabelOne(String defaultWord) => 'One: $defaultWord';
+  @override
+  String settingsLabelOther(String defaultWord) => 'Many: $defaultWord';
   @override
   String get settingsTitle => 'Event settings';
   @override

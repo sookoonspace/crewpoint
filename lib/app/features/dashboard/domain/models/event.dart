@@ -1,3 +1,5 @@
+import 'package:crewpoint_app/app/core/labels/label_resolver.dart';
+
 /// A place an event happens. Map link, directions and "to be announced" arrive
 /// with sessions.
 class EventVenue {
@@ -128,6 +130,9 @@ class EventModel {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
+  /// This event's words for each concept.
+  LabelResolver get words => LabelResolver(labels);
+
   /// [displayType] with a capital letter, or null when there is none.
   String? get typeLabel {
     final type = displayType;
@@ -192,6 +197,7 @@ class EventModel {
     String? timeZone,
     List<EventVenue>? venues,
     List<String>? languages,
+    Map<String, dynamic>? labels,
     int? capacity,
     int? memberLimit,
     bool clearCapacity = false,
@@ -211,7 +217,7 @@ class EventModel {
       venues: venues ?? this.venues,
       languages: languages ?? this.languages,
       modules: modules,
-      labels: labels,
+      labels: labels ?? this.labels,
       settings: settings,
       capacity: clearCapacity ? null : (capacity ?? this.capacity),
       memberLimit: clearMemberLimit ? null : (memberLimit ?? this.memberLimit),

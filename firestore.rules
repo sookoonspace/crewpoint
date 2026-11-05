@@ -98,7 +98,8 @@ service cloud.firestore {
         && isPositiveIntOrNull('memberLimit')
         && (!('timeZone' in request.resource.data) || request.resource.data.timeZone is string)
         && (!('venues' in request.resource.data) || request.resource.data.venues is list)
-        && (!('languages' in request.resource.data) || request.resource.data.languages is list);
+        && (!('languages' in request.resource.data) || request.resource.data.languages is list)
+        && (!('labels' in request.resource.data) || request.resource.data.labels is map);
 
       // Delete: only the creator
       allow delete: if request.auth != null

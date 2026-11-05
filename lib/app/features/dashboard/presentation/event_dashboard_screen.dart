@@ -61,7 +61,7 @@ class EventDashboardScreen extends StatelessWidget {
 
                   // Member avatars row
                   _MembersPreview(
-                    memberCount: event.memberIds.length,
+                    label: event.words.count('member', event.memberIds.length),
                     onTap: () =>
                         context.push('/dashboard/event/${event.id}/members'),
                   ),
@@ -134,12 +134,15 @@ class EventDashboardScreen extends StatelessWidget {
                         child: _QuickLinkCard(
                           key: const Key('eventDashboard.inviteMembers.tile'),
                           icon: AppIcons.memberAdd,
-                          label: 'Invite Members',
+                          label: context.strings.dashboard.inviteLabel(
+                            event.words.other('member'),
+                          ),
                           subtitle: 'Share a code to add people',
                           color: AppColors.terracotta,
                           onTap: () => AddMemberSheet.show(
                             context: context,
                             eventId: event.id,
+                            memberLabel: event.words.other('member'),
                           ),
                         ),
                       );
@@ -381,9 +384,9 @@ class _EventHero extends StatelessWidget {
 }
 
 class _MembersPreview extends StatelessWidget {
-  const _MembersPreview({required this.memberCount, this.onTap});
+  const _MembersPreview({required this.label, this.onTap});
 
-  final int memberCount;
+  final String label;
   final VoidCallback? onTap;
 
   @override
@@ -400,7 +403,7 @@ class _MembersPreview extends StatelessWidget {
       ),
       child: ListTile(
         leading: const Icon(AppIcons.members, color: AppColors.sage),
-        title: Text('$memberCount member${memberCount != 1 ? 's' : ''}'),
+        title: Text(label),
         trailing: Icon(
           AppIcons.chevronRight,
           color: Theme.of(context).colorScheme.onSurfaceVariant,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
+import 'package:crewpoint_app/app/core/labels/label_resolver.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
@@ -104,6 +105,9 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
   late final TextEditingController _capacity;
   late final TextEditingController _memberLimit;
   late final List<_VenueRow> _venues;
+
+  /// One box for each form of each concept, keyed `concept.form`.
+  late final Map<String, TextEditingController> _labels;
   late String _currency;
   late EventStatus _status;
   bool _dirty = false;
@@ -130,6 +134,13 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     ];
     _currency = event.currency;
     _status = event.status;
+    _labels = {
+      for (final concept in LabelDefaults.current.concepts)
+        for (final form in const ['one', 'other'])
+          '$concept.$form': _tracked(
+            event.words.customForm(concept, form) ?? '',
+          ),
+    };
   }
 
   /// An archived event can only be restored.
@@ -154,6 +165,9 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     _languages.dispose();
     _capacity.dispose();
     _memberLimit.dispose();
+    for (final box in _labels.values) {
+      box.dispose();
+    }
     for (final venue in _venues) {
       venue.dispose();
     }
@@ -174,6 +188,19 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     });
     venue.dispose();
   }
+
+  /// Only what the organizer typed. Empty boxes keep the default, so a default
+  /// that later improves still reaches this event.
+  Map<String, dynamic> _enteredLabels() => {
+    for (final concept in LabelDefaults.current.concepts)
+      if (_labels['$concept.one']!.text.trim().isNotEmpty ||
+          _labels['$concept.other']!.text.trim().isNotEmpty)
+        concept: {
+          for (final form in const ['one', 'other'])
+            if (_labels['$concept.$form']!.text.trim().isNotEmpty)
+              form: _labels['$concept.$form']!.text.trim(),
+        },
+  };
 
   String? _validateCount(String? value) {
     final text = value?.trim() ?? '';
@@ -236,6 +263,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
                 ),
             ],
             languages: _parseLanguages(_languages.text),
+            labels: _enteredLabels(),
             capacity: capacity,
             clearCapacity: capacity == null,
             memberLimit: memberLimit,
@@ -486,6 +514,27 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
                     ),
                     validator: _validateCount,
                   ),
+                  ExpansionTile(
+                    key: const Key('events.settings.labels'),
+                    tilePadding: EdgeInsets.zero,
+                    title: Text(strings.settingsLabels),
+                    subtitle: Text(strings.settingsLabelsHelp),
+                    childrenPadding: const EdgeInsets.only(
+                      bottom: AppSpacing.md,
+                    ),
+                    children: [
+                      for (final concept in LabelDefaults.current.concepts)
+                        Padding(
+                          padding: const EdgeInsets.only(top: AppSpacing.md),
+                          child: _LabelFields(
+                            concept: concept,
+                            enabled: !_archived,
+                            one: _labels['$concept.one']!,
+                            other: _labels['$concept.other']!,
+                          ),
+                        ),
+                    ],
+                  ),
                   if (_error != null)
                     Text(
                       _error!,
@@ -506,6 +555,51 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _LabelFields extends StatelessWidget {
+  const _LabelFields({
+    required this.concept,
+    required this.enabled,
+    required this.one,
+    required this.other,
+  });
+
+  final String concept;
+  final bool enabled;
+  final TextEditingController one;
+  final TextEditingController other;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = context.strings.dashboard;
+    final defaults = LabelDefaults.current;
+    return Column(
+      spacing: AppSpacing.sm,
+      children: [
+        TextFormField(
+          key: Key('events.settings.label.$concept.one'),
+          enabled: enabled,
+          controller: one,
+          decoration: InputDecoration(
+            labelText: strings.settingsLabelOne(defaults.form(concept, 'one')),
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        TextFormField(
+          key: Key('events.settings.label.$concept.other'),
+          enabled: enabled,
+          controller: other,
+          decoration: InputDecoration(
+            labelText: strings.settingsLabelOther(
+              defaults.form(concept, 'other'),
+            ),
+            border: const OutlineInputBorder(),
+          ),
+        ),
+      ],
     );
   }
 }

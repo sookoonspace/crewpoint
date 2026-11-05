@@ -90,6 +90,7 @@ Events carry `templateId`, `organizerId`, `timeZone`, `venues`, `currency`, `lan
 
 - Design tokens live in `core/constants/` (`AppColors`, `AppSpacing`, `AppRadius`, `AppTypography`, `AppSizes`, `AppIcons`, `Breakpoints`, `wcag.dart`). Screens read themed tokens from `Theme.of(context).colorScheme` — `AppColors` feeds `AppTheme.light()/dark()`; hardcoding a palette constant in a widget defeats dark mode.
 - User-facing strings go through `context.strings` (`core/i18n/app_strings.dart`), shaped so an ARB-backed adapter can drop in later. Don't inline literals in UI.
+- Words for general concepts (member, group, session and the rest of `GLOSSARY.md`) come from `event.words`, so organizers can rename them. Defaults live in `functions/src/shared/label_defaults.json`, which the app loads as an asset and functions import, so edit only that file. Backend text uses `resolveLabel`.
 - `ResponsiveShell` switches bottom-nav → NavigationRail at 840 px; `ContentMaxWidth` + `Breakpoints.screenHorizontalPadding(context)` are the canonical page wrappers.
 - Dart 3.10+ dot-shorthand enum syntax (`brightness: .light`) is used in newer code.
 

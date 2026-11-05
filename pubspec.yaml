@@ -157,4 +157,5 @@ flutter:
   assets:
     - assets/animations/
     - assets/legal/
+    - functions/src/shared/label_defaults.json
     - assets/images/auth/

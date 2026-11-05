@@ -4,6 +4,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:crewpoint_app/app/core/labels/label_resolver.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
@@ -23,10 +24,14 @@ class AddMemberSheet extends StatefulWidget {
   const AddMemberSheet({
     super.key,
     required this.eventId,
+    this.memberLabel,
     this.generateInviteCode,
   });
 
   final String eventId;
+
+  /// This event's word for members. Null uses the default.
+  final String? memberLabel;
 
   /// Test seam. Defaults to the real `generateInviteCode` callable.
   final GenerateInviteCodeCall? generateInviteCode;
@@ -34,6 +39,7 @@ class AddMemberSheet extends StatefulWidget {
   static Future<void> show({
     required BuildContext context,
     required String eventId,
+    String? memberLabel,
     GenerateInviteCodeCall? generateInviteCode,
   }) {
     return showModalBottomSheet<void>(
@@ -46,6 +52,7 @@ class AddMemberSheet extends StatefulWidget {
       ),
       builder: (_) => AddMemberSheet(
         eventId: eventId,
+        memberLabel: memberLabel,
         generateInviteCode: generateInviteCode,
       ),
     );
@@ -167,7 +174,9 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
           ),
 
           Text(
-            'Invite Members',
+            context.strings.dashboard.inviteLabel(
+              widget.memberLabel ?? const LabelResolver({}).other('member'),
+            ),
             style: Theme.of(
               context,
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
