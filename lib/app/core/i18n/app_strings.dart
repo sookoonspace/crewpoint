@@ -253,7 +253,8 @@ abstract class DashboardStrings {
   String get settingsBack;
   String get settingsTimeZone;
   String get settingsTimeZoneHelp;
-  String get settingsTimeZoneInvalid;
+  String get settingsTimeZoneSearch;
+  String get settingsTimeZoneNone;
   String get settingsVenues;
   String get settingsVenuesEmpty;
   String get settingsVenueName;
@@ -823,10 +824,12 @@ class _EnglishDashboardStrings extends DashboardStrings {
   @override
   String get settingsTimeZone => 'Time zone';
   @override
-  String get settingsTimeZoneHelp => 'For example, America/Chicago';
+  String get settingsTimeZoneHelp =>
+      'Dates and times show in this zone for everyone.';
   @override
-  String get settingsTimeZoneInvalid =>
-      'Enter a zone name such as America/Chicago';
+  String get settingsTimeZoneSearch => 'Search, for example Chicago';
+  @override
+  String get settingsTimeZoneNone => 'No matching zone.';
   @override
   String get settingsVenues => 'Venues';
   @override

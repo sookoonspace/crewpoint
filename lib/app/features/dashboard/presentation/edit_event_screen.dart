@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:crewpoint_app/app/core/format/event_time.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
@@ -43,8 +44,8 @@ class _EditEventScreenState extends State<EditEventScreen> {
     _descriptionController = TextEditingController(
       text: widget.initial.description ?? '',
     );
-    _startDate = widget.initial.startDate;
-    _endDate = widget.initial.endDate;
+    _startDate = widget.initial.displayStart;
+    _endDate = widget.initial.displayEnd;
     _status = widget.initial.status;
   }
 
@@ -86,8 +87,9 @@ class _EditEventScreenState extends State<EditEventScreen> {
       description: _descriptionController.text.trim().isEmpty
           ? null
           : _descriptionController.text.trim(),
-      startDate: _startDate,
-      endDate: _endDate,
+      startDate: _startDate == null ? null : storedCalendarDate(_startDate!),
+      endDate: _endDate == null ? null : storedCalendarDate(_endDate!),
+      dateOnly: true,
       clearStartDate: _startDate == null,
       clearEndDate: _endDate == null,
       status: _status,

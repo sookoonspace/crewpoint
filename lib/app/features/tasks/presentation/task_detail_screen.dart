@@ -138,14 +138,14 @@ class TaskDetailScreen extends StatelessWidget {
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     Text(
-                      'Due ${DateFormat.yMMMd().format(task.dueDate!)}',
+                      'Due ${DateFormat.yMMMd().format(event.inZone(task.dueDate!))}',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ],
                 ),
               if (task.status == TaskStatus.done && task.completedAt != null)
                 Text(
-                  'Completed ${DateFormat.yMMMd().format(task.completedAt!)}'
+                  'Completed ${DateFormat.yMMMd().format(event.inZone(task.completedAt!))}'
                   '${task.completedBy != null ? ' by ${_completedByLabel(task.completedBy!)}' : ''}',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),

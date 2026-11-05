@@ -80,8 +80,7 @@ void main() {
         ),
       ];
       const ledger = LedgerSummary(
-        totalOwedToYou: 0,
-        totalYouOwe: 75,
+        totalsByCurrency: {'USD': CurrencyTotals(owedToYou: 0, youOwe: 75)},
         debts: [],
         recentExpenses: [],
       );

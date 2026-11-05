@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
+import 'package:crewpoint_app/app/core/format/event_time.dart';
 import 'package:crewpoint_app/app/core/labels/label_resolver.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
@@ -28,7 +29,6 @@ List<String> _parseLanguages(String text) => text
     .toList();
 
 final _languageCode = RegExp(r'^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$');
-final _zoneName = RegExp(r'^[A-Za-z_]+(/[A-Za-z0-9_+-]+)*$');
 
 class _VenueRow {
   _VenueRow({required this.id, String name = '', String address = ''})
@@ -206,6 +206,14 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
               form: _labels['$concept.$form']!.text.trim(),
         },
   };
+
+  Future<void> _pickTimeZone() async {
+    final picked = await showDialog<String>(
+      context: context,
+      builder: (_) => const _TimeZonePicker(),
+    );
+    if (picked != null) _timeZone.text = picked;
+  }
 
   String? _validateCount(String? value) {
     final text = value?.trim() ?? '';
@@ -409,15 +417,15 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
                     key: const Key('events.settings.timeZone'),
                     enabled: !_archived,
                     controller: _timeZone,
+                    readOnly: true,
+                    onTap: _pickTimeZone,
                     decoration: InputDecoration(
                       labelText: strings.settingsTimeZone,
                       helperText: strings.settingsTimeZoneHelp,
+                      helperMaxLines: 3,
+                      suffixIcon: const Icon(Icons.arrow_drop_down),
                       border: const OutlineInputBorder(),
                     ),
-                    validator: (value) =>
-                        _zoneName.hasMatch(value?.trim() ?? '')
-                        ? null
-                        : strings.settingsTimeZoneInvalid,
                   ),
                   Text(
                     strings.settingsVenues,
@@ -589,6 +597,60 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TimeZonePicker extends StatefulWidget {
+  const _TimeZonePicker();
+
+  @override
+  State<_TimeZonePicker> createState() => _TimeZonePickerState();
+}
+
+class _TimeZonePickerState extends State<_TimeZonePicker> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = context.strings.dashboard;
+    final query = _query.toLowerCase().replaceAll(' ', '_');
+    final zones = allTimeZones
+        .where((zone) => zone.toLowerCase().contains(query))
+        .toList();
+    return AlertDialog(
+      title: Text(strings.settingsTimeZone),
+      content: SizedBox(
+        width: 420,
+        height: MediaQuery.sizeOf(context).height * 0.6,
+        child: Column(
+          spacing: AppSpacing.md,
+          children: [
+            TextField(
+              key: const Key('events.settings.timeZone.search'),
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: strings.settingsTimeZoneSearch,
+                prefixIcon: const Icon(Icons.search),
+                border: const OutlineInputBorder(),
+              ),
+              onChanged: (value) => setState(() => _query = value),
+            ),
+            Expanded(
+              child: zones.isEmpty
+                  ? Center(child: Text(strings.settingsTimeZoneNone))
+                  : ListView.builder(
+                      itemCount: zones.length,
+                      itemBuilder: (_, index) => ListTile(
+                        key: Key('events.settings.timeZone.${zones[index]}'),
+                        title: Text(zones[index]),
+                        onTap: () => Navigator.of(context).pop(zones[index]),
+                      ),
+                    ),
+            ),
+          ],
         ),
       ),
     );

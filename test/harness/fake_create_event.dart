@@ -19,6 +19,7 @@ CreateEventCall fakeCreateEventCall(FirebaseFirestore firestore) =>
         'status': 'draft',
         'currency': event.currency,
         'timeZone': event.timeZone,
+        'dateOnly': event.dateOnly,
         'venues': <Object>[],
         'languages': ['en'],
         'modules': {'tasks': true, 'budget': true, 'chat': true},

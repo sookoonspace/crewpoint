@@ -35,7 +35,7 @@ class RecentExpenseTile extends StatelessWidget {
     if (diff.inHours < 24) return '${diff.inHours}h';
     if (diff.inDays == 1) return 'yesterday';
     if (diff.inDays < 30) return '${diff.inDays}d';
-    return DateFormat.MMMd().format(when);
+    return DateFormat.MMMd().format(row.event.inZone(when));
   }
 
   @override

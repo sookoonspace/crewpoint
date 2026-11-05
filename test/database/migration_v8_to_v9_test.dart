@@ -55,7 +55,10 @@ void main() {
     expect(row['settings'], '{}');
     expect(row['capacity'], isNull);
     expect(row['member_limit'], isNull);
-    expect(raw.select('PRAGMA user_version').first.values.first, 9);
+    expect(
+      raw.select('PRAGMA user_version').first.values.first,
+      db.schemaVersion,
+    );
     await db.close();
   });
 
@@ -65,11 +68,5 @@ void main() {
     final rows = await db.customSelect('SELECT time_zone FROM events').get();
     expect(rows.single.data['time_zone'], 'UTC');
     await db.close();
-  });
-
-  test('schemaVersion is 9', () {
-    final db = AppDatabase(NativeDatabase.memory());
-    expect(db.schemaVersion, 9);
-    db.close();
   });
 }

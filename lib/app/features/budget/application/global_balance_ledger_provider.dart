@@ -47,22 +47,28 @@ class RecentExpenseRow {
 /// Aggregated cross-event balance state powering the Budget tab. Sums
 /// are in the user's default display currency (V1: USD); see the
 /// multi-currency disclaimer in the spec for the trade-off.
+/// What the user is owed and owes in one currency.
+class CurrencyTotals {
+  const CurrencyTotals({required this.owedToYou, required this.youOwe});
+
+  final double owedToYou;
+  final double youOwe;
+}
+
 class LedgerSummary {
   const LedgerSummary({
-    required this.totalOwedToYou,
-    required this.totalYouOwe,
+    required this.totalsByCurrency,
     required this.debts,
     required this.recentExpenses,
   });
 
   const LedgerSummary.empty()
-    : totalOwedToYou = 0,
-      totalYouOwe = 0,
+    : totalsByCurrency = const {},
       debts = const <DebtRow>[],
       recentExpenses = const <RecentExpenseRow>[];
 
-  final double totalOwedToYou;
-  final double totalYouOwe;
+  /// Kept apart, because amounts in different currencies cannot be added.
+  final Map<String, CurrencyTotals> totalsByCurrency;
   final List<DebtRow> debts;
   final List<RecentExpenseRow> recentExpenses;
 }
@@ -96,8 +102,8 @@ final globalBalanceLedgerProvider =
         return const AsyncData(LedgerSummary.empty());
       }
 
-      var totalOwedToYou = 0.0;
-      var totalYouOwe = 0.0;
+      final owedToYou = <String, double>{};
+      final youOwe = <String, double>{};
       final debts = <DebtRow>[];
       final allExpenses = <RecentExpenseRow>[];
 
@@ -170,9 +176,17 @@ final globalBalanceLedgerProvider =
           if (settlement.amount.toStringAsFixed(2) == '0.00') continue;
 
           if (settlement.toUserId == uid) {
-            totalOwedToYou += settlement.amount;
+            owedToYou.update(
+              event.currency,
+              (sum) => sum + settlement.amount,
+              ifAbsent: () => settlement.amount,
+            );
           } else if (settlement.fromUserId == uid) {
-            totalYouOwe += settlement.amount;
+            youOwe.update(
+              event.currency,
+              (sum) => sum + settlement.amount,
+              ifAbsent: () => settlement.amount,
+            );
             debts.add(
               DebtRow(
                 counterpartyUid: settlement.toUserId,
@@ -203,8 +217,13 @@ final globalBalanceLedgerProvider =
 
       return AsyncData(
         LedgerSummary(
-          totalOwedToYou: _round(totalOwedToYou),
-          totalYouOwe: _round(totalYouOwe),
+          totalsByCurrency: {
+            for (final currency in {...owedToYou.keys, ...youOwe.keys})
+              currency: CurrencyTotals(
+                owedToYou: _round(owedToYou[currency] ?? 0),
+                youOwe: _round(youOwe[currency] ?? 0),
+              ),
+          },
           debts: debts,
           recentExpenses: recent,
         ),

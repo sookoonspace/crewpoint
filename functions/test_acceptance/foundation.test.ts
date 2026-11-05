@@ -661,3 +661,22 @@ describe('GE-02 modules', () => {
     ).rejects.toEqual(refused);
   });
 });
+
+describe('GE-07 time zones', () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const {nextStatus} = require('../src/events/eventStatus');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const {Timestamp} = require('firebase-admin/firestore');
+
+  test('GE-07 the same date starts when it does in each event zone', () => {
+    const event = (timeZone: string) => ({
+      status: 'published',
+      timeZone,
+      dateOnly: true,
+      startDate: Timestamp.fromDate(new Date('2027-07-17T00:00:00Z')),
+    });
+    const now = new Date('2027-07-16T20:00:00Z');
+    expect(nextStatus(event('Asia/Tokyo'), now)).toBe('live');
+    expect(nextStatus(event('America/Chicago'), now)).toBeNull();
+  });
+});

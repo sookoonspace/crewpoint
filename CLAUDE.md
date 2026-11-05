@@ -60,7 +60,7 @@ Keep the Architecture sections below, including RBAC and the Firestore data mode
 - **`kIsWeb` forks to the raw Firestore stream** — Drift on web is Wasm/in-memory, so mirroring buys nothing there. Any new mirrored stream needs the same fork.
 - Mirror subscriptions are torn down through `ref.onDispose(() => repo.disposeMirror(key))` in the provider, not by the repository itself.
 
-Drift schema is at v9 with explicit migrations in `lib/app/core/database/app_database.dart`; tables are declared inline there, DAOs in `database/daos/`. Bumping the schema means adding a migration step *and* a `test/database/migration_vN_to_vN+1_test.dart`.
+Drift schema is at v10 with explicit migrations in `lib/app/core/database/app_database.dart`; tables are declared inline there, DAOs in `database/daos/`. Bumping the schema means adding a migration step *and* a `test/database/migration_vN_to_vN+1_test.dart`.
 
 ### Providers
 
@@ -83,6 +83,8 @@ Double-enforced. Client gates UI via `Event.isOwner` / `isAdmin` / `isMember` an
 Firestore data model: `events/{eventId}` with `messages`, `tasks` (+ `tasks/{id}/checklist`), `expenses` subcollections; `organizers/{uid}` (a person's personal organizer, written only by the server, holding `verified`); `event_invites/{code}`; `users/{uid}` with `private`, `chatReads`, `eventMutes` subcollections.
 
 Events carry `templateId`, `organizerId`, `timeZone`, `venues`, `currency`, `languages`, `status`, `modules`, `labels`, `settings`, `capacity` and `memberLimit`, and need only a title. `eventType` survives on older events as display text only. Older events lack the new fields, so reads must fall back to the same defaults as `createEvent`.
+
+Event dates are calendar dates: with `dateOnly: true` they are stored as midnight UTC on the chosen date, and read through `event.displayStart` and `displayEnd`, never `startDate` directly. Other times show through `event.inZone`, and a chosen day converts with `event.startOfDay`. Helpers are in `core/format/event_time.dart`.
 
 `modules` turns `tasks`, `budget` and `chat` on and off, and a module missing from the map is on. Turned-off modules keep their data. New server paths and rules for a module must check `isModuleOn`, and routes use `ModuleGuard`.
 

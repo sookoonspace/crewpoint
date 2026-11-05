@@ -132,8 +132,9 @@ void main() {
         inbox: const AsyncData([]),
         ledger: AsyncData(
           LedgerSummary(
-            totalOwedToYou: 0,
-            totalYouOwe: 30,
+            totalsByCurrency: const {
+              'USD': CurrencyTotals(owedToYou: 0, youOwe: 30),
+            },
             debts: [_debt(amount: 10), _debt(amount: 20)],
             recentExpenses: const [],
           ),

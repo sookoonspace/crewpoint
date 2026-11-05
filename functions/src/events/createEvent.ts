@@ -89,6 +89,7 @@ export const createEvent = onCall({timeoutSeconds: 30}, async (request) => {
           status: "draft",
           currency,
           timeZone,
+          dateOnly: data.dateOnly === true,
           venues: [],
           languages: ["en"],
           modules: {tasks: true, budget: true, chat: true},

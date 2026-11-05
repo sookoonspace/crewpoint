@@ -123,24 +123,31 @@ class _LedgerBody extends ConsumerWidget {
       return _LedgerEmptyState(strings: strings);
     }
 
-    // Detect mixed currencies for the disclaimer banner. V1 display
-    // default is USD; a non-USD per-row currency triggers the banner.
-    final hasMixedCurrency =
-        ledger.debts.any((d) => d.currency != 'USD') ||
-        ledger.recentExpenses.any((r) => r.event.currency != 'USD');
+    final totals = ledger.totalsByCurrency;
 
     return ListView(
       key: const Key('budget.ledger.list'),
       children: [
-        BalanceTile(
-          key: const Key('budget.balance'),
-          owedToYou: ledger.totalOwedToYou,
-          youOwe: ledger.totalYouOwe,
-          currencyCode: 'USD',
-          multiCurrencyDisclaimer: hasMixedCurrency
-              ? strings.budget.multiCurrencyDisclaimer
-              : null,
-        ),
+        // One card per currency, because amounts in different currencies
+        // cannot be added.
+        if (totals.isEmpty)
+          BalanceTile(
+            key: const Key('budget.balance'),
+            owedToYou: 0,
+            youOwe: 0,
+            currencyCode: ledger.recentExpenses.isEmpty
+                ? 'USD'
+                : ledger.recentExpenses.first.event.currency,
+          ),
+        for (final (index, entry) in totals.entries.indexed)
+          BalanceTile(
+            key: index == 0
+                ? const Key('budget.balance')
+                : Key('budget.balance.${entry.key}'),
+            owedToYou: entry.value.owedToYou,
+            youOwe: entry.value.youOwe,
+            currencyCode: entry.key,
+          ),
         // Debts section. When there are no debts the BalanceTile hero
         // already paints "$0.00 — all settled"; the previous
         // LedgerAllSettledChip in this else branch duplicated that

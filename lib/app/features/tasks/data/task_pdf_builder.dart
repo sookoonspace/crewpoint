@@ -1,3 +1,4 @@
+import 'package:intl/intl.dart';
 import 'dart:typed_data';
 
 import 'package:pdf/pdf.dart';
@@ -50,7 +51,12 @@ Future<Uint8List> buildTaskReport({
           TaskStatus.inProgress,
           TaskStatus.todo,
         ]) ...[
-          _statusSection(status, grouped[status] ?? const [], memberNames),
+          _statusSection(
+            event,
+            status,
+            grouped[status] ?? const [],
+            memberNames,
+          ),
           pw.SizedBox(height: 12),
         ],
       ],
@@ -96,6 +102,7 @@ pw.Widget _header(EventModel event) {
 }
 
 pw.Widget _statusSection(
+  EventModel event,
   TaskStatus status,
   List<TaskModel> tasks,
   Map<String, String> memberNames,
@@ -121,16 +128,22 @@ pw.Widget _statusSection(
           ),
         )
       else
-        for (final t in tasks) _taskRow(t, memberNames),
+        for (final t in tasks) _taskRow(event, t, memberNames),
     ],
   );
 }
 
-pw.Widget _taskRow(TaskModel task, Map<String, String> memberNames) {
+pw.Widget _taskRow(
+  EventModel event,
+  TaskModel task,
+  Map<String, String> memberNames,
+) {
   final assignee = task.assigneeId == null
       ? null
       : resolveMemberName(uid: task.assigneeId, memberNames: memberNames);
-  final dueLabel = task.dueDate?.toIso8601String().split('T').first;
+  final dueLabel = task.dueDate == null
+      ? null
+      : DateFormat('yyyy-MM-dd').format(event.inZone(task.dueDate!));
   final progress = checklistProgressLabel(task);
 
   final completedLabel = task.status == TaskStatus.done
@@ -138,7 +151,7 @@ pw.Widget _taskRow(TaskModel task, Map<String, String> memberNames) {
           if (task.completedBy != null)
             'by ${resolveMemberName(uid: task.completedBy, memberNames: memberNames)}',
           if (task.completedAt != null)
-            'at ${task.completedAt!.toIso8601String().split('T').first}',
+            'at ${DateFormat('yyyy-MM-dd').format(event.inZone(task.completedAt!))}',
         ].where((s) => s.isNotEmpty).join(' ')
       : null;
 

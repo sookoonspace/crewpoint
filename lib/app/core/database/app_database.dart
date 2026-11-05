@@ -48,6 +48,7 @@ class Events extends Table {
   TextColumn get settings => text().withDefault(const Constant('{}'))(); // JSON
   IntColumn get capacity => integer().nullable()();
   IntColumn get memberLimit => integer().nullable()();
+  BoolColumn get dateOnly => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 
@@ -162,7 +163,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -240,6 +241,14 @@ class AppDatabase extends _$AppDatabase {
           if (existing.isNotEmpty && !names.contains(entry.key)) {
             await m.addColumn(events, entry.value);
           }
+        }
+      }
+      if (from < 10) {
+        // Safe to re-run after a partial migration, like the steps above.
+        final existing = await customSelect('PRAGMA table_info(events)').get();
+        final hasColumn = existing.any((c) => c.data['name'] == 'date_only');
+        if (existing.isNotEmpty && !hasColumn) {
+          await m.addColumn(events, events.dateOnly);
         }
       }
     },

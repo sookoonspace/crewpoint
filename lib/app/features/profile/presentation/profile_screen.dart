@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -24,6 +25,19 @@ import 'package:crewpoint_app/app/features/profile/presentation/widgets/delete_a
 import 'package:crewpoint_app/app/features/profile/presentation/widgets/sign_out_sheet.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/widgets/theme_switcher_sheet.dart';
 import 'package:crewpoint_app/app/features/tasks/application/my_assigned_tasks_provider.dart';
+
+/// What the user owes, one amount per currency, because they cannot be added.
+String formatAmountsYouOwe(LedgerSummary ledger) {
+  final owed = [
+    for (final entry in ledger.totalsByCurrency.entries)
+      if (entry.value.youOwe > 0)
+        NumberFormat.simpleCurrency(
+          name: entry.key,
+          decimalDigits: 0,
+        ).format(entry.value.youOwe),
+  ];
+  return owed.isEmpty ? r'$0' : owed.join(' + ');
+}
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -55,10 +69,8 @@ class ProfileScreen extends ConsumerWidget {
       data: (rows) => rows.length.toString(),
       orElse: () => null,
     );
-    String? owedValue() => ledgerAsync.maybeWhen(
-      data: (l) => '\$${l.totalYouOwe.toStringAsFixed(0)}',
-      orElse: () => null,
-    );
+    String? owedValue() =>
+        ledgerAsync.maybeWhen(data: formatAmountsYouOwe, orElse: () => null);
 
     final s = context.strings.profile;
 

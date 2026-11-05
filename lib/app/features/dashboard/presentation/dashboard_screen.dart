@@ -41,9 +41,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   DashboardFilter _filter = DashboardFilter.upcoming;
 
   bool _isPast(EventModel e, DateTime now) {
-    final boundary = e.endDate ?? e.startDate;
-    if (boundary == null) return false;
-    return boundary.isBefore(DateTime(now.year, now.month, now.day));
+    return e.isPast(now);
   }
 
   @override

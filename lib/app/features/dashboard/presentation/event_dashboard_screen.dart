@@ -2,6 +2,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:crewpoint_app/app/core/format/event_time.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
@@ -263,7 +264,10 @@ class _EventHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateLabel = formatEventDateRange(event.startDate, event.endDate);
+    final dateLabel = formatEventDateRange(
+      event.displayStart,
+      event.displayEnd,
+    );
 
     return Container(
       decoration: const BoxDecoration(
@@ -398,10 +402,22 @@ class _EventHero extends StatelessWidget {
                       size: AppSizes.iconXs,
                       color: AppColors.sageLight,
                     ),
-                    Text(
-                      dateLabel,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.sageLight,
+                    Flexible(
+                      child: Consumer(
+                        builder: (_, ref, _) {
+                          // Named only where the viewer's device differs.
+                          final note = zoneNoteFor(
+                            event.timeZone,
+                            ref.watch(deviceZoneNameProvider).value,
+                            at: DateTime.now(),
+                          );
+                          return Text(
+                            note == null ? dateLabel : '$dateLabel · $note',
+                            key: const Key('events.dashboard.dates'),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: AppColors.sageLight),
+                          );
+                        },
                       ),
                     ),
                   ],

@@ -128,11 +128,21 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
     }
 
+    await tester.tap(find.byKey(const Key('events.settings.timeZone')));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
     await tester.enterText(
-      find.byKey(const Key('events.settings.timeZone')),
-      'America/Chicago',
+      find.byKey(const Key('events.settings.timeZone.search')),
+      'chicago',
     );
     await tester.pump();
+    await tester.tap(
+      find.byKey(const Key('events.settings.timeZone.America/Chicago')),
+    );
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
     await tester.tap(find.byKey(const Key('events.settings.save')));
     for (var i = 0; i < 20; i++) {
       await tester.pump(const Duration(milliseconds: 50));

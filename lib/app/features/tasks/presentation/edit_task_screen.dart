@@ -58,7 +58,9 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
       text: widget.initial.budgetEstimate?.toString() ?? '',
     );
     _assigneeId = widget.initial.assigneeId;
-    _dueDate = widget.initial.dueDate;
+    _dueDate = widget.initial.dueDate == null
+        ? null
+        : widget.event.calendarDay(widget.initial.dueDate!);
     _priority = widget.initial.priority;
   }
 
@@ -86,7 +88,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
           : _descriptionController.text.trim(),
       assigneeId: _assigneeId,
       priority: _priority,
-      dueDate: _dueDate,
+      dueDate: _dueDate == null ? null : widget.event.startOfDay(_dueDate!),
       budgetEstimate: budget,
       clearBudgetEstimate: budget == null,
     );
