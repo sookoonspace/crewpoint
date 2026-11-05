@@ -111,6 +111,7 @@ class EventRepository {
         'endDate': updated.endDate != null
             ? Timestamp.fromDate(updated.endDate!)
             : null,
+        'dateOnly': updated.dateOnly,
         if (updated.status != currentStatus) ..._statusChange(updated.status),
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -242,6 +243,7 @@ class EventRepository {
         settings: Value(jsonEncode(event.settings)),
         capacity: Value(event.capacity),
         memberLimit: Value(event.memberLimit),
+        dateOnly: Value(event.dateOnly),
         createdAt: event.createdAt != null
             ? Value(event.createdAt!)
             : const Value.absent(),
@@ -269,6 +271,7 @@ class EventRepository {
     settings: _parseMap(data['settings']),
     capacity: (data['capacity'] as num?)?.toInt(),
     memberLimit: (data['memberLimit'] as num?)?.toInt(),
+    dateOnly: data['dateOnly'] == true,
     creatorId: (data['creatorId'] as String?) ?? '',
     startDate: (data['startDate'] as Timestamp?)?.toDate(),
     endDate: (data['endDate'] as Timestamp?)?.toDate(),
@@ -299,6 +302,7 @@ class EventRepository {
     settings: _parseMap(_decodeJson(row.settings)),
     capacity: row.capacity,
     memberLimit: row.memberLimit,
+    dateOnly: row.dateOnly,
     creatorId: row.creatorId,
     startDate: row.startDate,
     endDate: row.endDate,

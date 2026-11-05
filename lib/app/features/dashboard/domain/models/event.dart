@@ -1,3 +1,4 @@
+import 'package:crewpoint_app/app/core/format/event_time.dart';
 import 'package:crewpoint_app/app/core/labels/label_resolver.dart';
 
 /// A place an event happens. Map link, directions and "to be announced" arrive
@@ -81,6 +82,7 @@ class EventModel {
     this.settings = const {},
     this.capacity,
     this.memberLimit,
+    this.dateOnly = false,
     this.startDate,
     this.endDate,
     this.adminIds = const [],
@@ -120,6 +122,11 @@ class EventModel {
 
   /// How many people can log in to the event. Null means unlimited.
   final int? memberLimit;
+
+  /// Whether [startDate] and [endDate] are calendar dates, stored as midnight
+  /// UTC so they stay on the chosen date in every zone. False on older events,
+  /// whose dates are midnight on the device that created them.
+  final bool dateOnly;
   final String creatorId;
   final DateTime? startDate;
   final DateTime? endDate;
@@ -143,6 +150,39 @@ class EventModel {
   /// Whether [uid] holds `event.manage`, which means owner or admin until
   /// permissions land.
   bool canManage(String uid) => isAdmin(uid);
+
+  /// The dates to show or edit, as local dates.
+  DateTime? get displayStart => _display(startDate);
+  DateTime? get displayEnd => _display(endDate);
+
+  DateTime? _display(DateTime? date) {
+    if (date == null) return null;
+    if (!dateOnly) return date.toLocal();
+    final utc = date.toUtc();
+    return DateTime(utc.year, utc.month, utc.day);
+  }
+
+  /// [instant] as the clock reads where the event is.
+  DateTime inZone(DateTime instant) => inEventZone(instant, timeZone);
+
+  /// The instant a chosen calendar day starts where the event is.
+  DateTime startOfDay(DateTime picked) =>
+      eventLocalToUtc(picked.year, picked.month, picked.day, timeZone);
+
+  /// The calendar day [instant] falls on where the event is, as a local date.
+  DateTime calendarDay(DateTime instant) {
+    final there = inZone(instant);
+    return DateTime(there.year, there.month, there.day);
+  }
+
+  /// Whether the event's last day is over where the event is.
+  bool isPast(DateTime now) {
+    final last = dateOnly ? displayEnd ?? displayStart : null;
+    if (last != null) return last.isBefore(calendarDay(now));
+    final boundary = endDate ?? startDate;
+    if (boundary == null) return false;
+    return boundary.isBefore(DateTime(now.year, now.month, now.day));
+  }
 
   /// A module is on unless turned off, so events from before modules keep
   /// working. Turning one off keeps its data.
@@ -170,8 +210,7 @@ class EventModel {
       memberIds.every((uid) => uid == creatorId || adminIds.contains(uid));
 
   /// The status an archived event returns to.
-  EventStatus restoredStatus(DateTime now) =>
-      (endDate != null && !endDate!.isAfter(now))
+  EventStatus restoredStatus(DateTime now) => (endDate != null && isPast(now))
       ? EventStatus.ended
       : EventStatus.published;
 
@@ -203,6 +242,7 @@ class EventModel {
     List<String>? languages,
     Map<String, dynamic>? labels,
     Map<String, bool>? modules,
+    bool? dateOnly,
     int? capacity,
     int? memberLimit,
     bool clearCapacity = false,
@@ -226,6 +266,7 @@ class EventModel {
       settings: settings,
       capacity: clearCapacity ? null : (capacity ?? this.capacity),
       memberLimit: clearMemberLimit ? null : (memberLimit ?? this.memberLimit),
+      dateOnly: dateOnly ?? this.dateOnly,
       startDate: clearStartDate ? null : (startDate ?? this.startDate),
       endDate: clearEndDate ? null : (endDate ?? this.endDate),
       adminIds: adminIds,

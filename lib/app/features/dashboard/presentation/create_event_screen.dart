@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+import 'package:crewpoint_app/app/core/format/event_time.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
@@ -102,7 +103,8 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       title: _titleController.text.trim(),
       description: description.isEmpty ? null : description,
       creatorId: uid,
-      startDate: _startDate,
+      startDate: _startDate == null ? null : storedCalendarDate(_startDate!),
+      dateOnly: true,
       adminIds: [uid],
       memberIds: [uid],
       currency: _currency,

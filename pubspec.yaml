@@ -95,6 +95,7 @@ dependencies:
   printing: ^5.13.0
   csv: ^8.0.0
   web: ^1.1.0
+  timezone: ^0.11.2
 
 dev_dependencies:
   flutter_test:

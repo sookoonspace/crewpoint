@@ -63,7 +63,9 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
       text: initial?.budgetEstimate?.toString() ?? '',
     );
     _assigneeId = initial?.assigneeId;
-    _dueDate = initial?.dueDate;
+    _dueDate = initial?.dueDate == null
+        ? null
+        : widget.event.calendarDay(initial!.dueDate!);
     _priority = initial?.priority ?? 0;
   }
 
@@ -96,7 +98,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
       assigneeId: _assigneeId,
       createdBy: widget.currentUserId,
       priority: _priority,
-      dueDate: _dueDate,
+      dueDate: _dueDate == null ? null : widget.event.startOfDay(_dueDate!),
       budgetEstimate: budget,
       checklistItems: widget.initial?.checklistItems ?? const [],
     );

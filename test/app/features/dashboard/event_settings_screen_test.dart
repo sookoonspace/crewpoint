@@ -144,7 +144,12 @@ void main() {
   group('saving', () {
     testWidgets('saves every field and goes back', (tester) async {
       await pump(tester);
-      await tester.enterText(find.byKey(_key('timeZone')), 'America/Chicago');
+      await tester.tap(find.byKey(_key('timeZone')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(_key('timeZone.search')), 'chicago');
+      await tester.pump();
+      await tester.tap(find.byKey(_key('timeZone.America/Chicago')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(_key('venue.add')));
       await tester.pump();
       await tester.enterText(find.byKey(_key('venue.0.name')), 'Garland Hall');
@@ -222,7 +227,6 @@ void main() {
         ('capacity', '0'),
         ('capacity', 'many'),
         ('memberLimit', '-1'),
-        ('timeZone', 'not a zone'),
         ('languages', ''),
         ('languages', 'english language'),
       ]) {

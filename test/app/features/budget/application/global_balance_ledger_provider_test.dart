@@ -71,8 +71,8 @@ void main() {
       final result = await _readAfterPump(container, 'me');
       expect(result, isA<AsyncData<LedgerSummary>>());
       final ledger = result.requireValue;
-      expect(ledger.totalOwedToYou, 50);
-      expect(ledger.totalYouOwe, 0);
+      expect((ledger.totalsByCurrency['USD']?.owedToYou ?? 0), 50);
+      expect((ledger.totalsByCurrency['USD']?.youOwe ?? 0), 0);
       expect(ledger.debts, isEmpty);
       expect(ledger.recentExpenses, hasLength(1));
       expect(ledger.recentExpenses.single.expense.id, 'exp-a-1');
@@ -116,7 +116,7 @@ void main() {
 
     final result = await _readAfterPump(container, 'me');
     final ledger = result.requireValue;
-    expect(ledger.totalOwedToYou, 20);
+    expect((ledger.totalsByCurrency['USD']?.owedToYou ?? 0), 20);
     expect(ledger.recentExpenses, hasLength(1));
   });
 
@@ -182,8 +182,8 @@ void main() {
 
       final result = await _readAfterPump(container, 'me');
       final ledger = result.requireValue;
-      expect(ledger.totalYouOwe, 130);
-      expect(ledger.totalOwedToYou, 0);
+      expect((ledger.totalsByCurrency['USD']?.youOwe ?? 0), 130);
+      expect((ledger.totalsByCurrency['USD']?.owedToYou ?? 0), 0);
       expect(ledger.debts, hasLength(2));
       expect(ledger.debts[0].counterpartyUid, 'carol');
       expect(ledger.debts[0].amount, 100);
@@ -234,8 +234,8 @@ void main() {
     final result = await _readAfterPump(container, 'me');
     final ledger = result.requireValue;
     expect(ledger.debts, isEmpty);
-    expect(ledger.totalOwedToYou, 0);
-    expect(ledger.totalYouOwe, 0);
+    expect((ledger.totalsByCurrency['USD']?.owedToYou ?? 0), 0);
+    expect((ledger.totalsByCurrency['USD']?.youOwe ?? 0), 0);
   });
 
   test('recent expenses capped at 20, sorted by createdAt desc', () async {
@@ -589,8 +589,8 @@ void main() {
 
       final result = await _readAfterPump(container, 'me');
       final ledger = result.requireValue;
-      expect(ledger.totalOwedToYou, 0);
-      expect(ledger.totalYouOwe, 0);
+      expect((ledger.totalsByCurrency['USD']?.owedToYou ?? 0), 0);
+      expect((ledger.totalsByCurrency['USD']?.youOwe ?? 0), 0);
       expect(ledger.debts, isEmpty);
       expect(ledger.recentExpenses, isEmpty);
     },

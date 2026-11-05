@@ -274,46 +274,60 @@ void main() {
     },
   );
 
-  testWidgets(
-    'multi-currency disclaimer renders only when an event currency is non-USD',
-    (tester) async {
-      const eventEur = EventModel(
-        id: 'evt-eur',
-        title: 'Paris',
-        creatorId: 'me',
-        memberIds: ['me', 'bob'],
-        currency: 'EUR',
-      );
-      final exp = ExpenseModel(
-        id: 'exp-1',
-        eventId: 'evt-eur',
-        payerId: 'bob',
-        amount: 20,
-        splits: const [
-          ExpenseSplit(userId: 'bob', amount: 10),
-          ExpenseSplit(userId: 'me', amount: 10),
+  testWidgets('each currency gets its own card, and they are not added', (
+    tester,
+  ) async {
+    const usd = EventModel(
+      id: 'evt-usd',
+      title: 'Dallas',
+      creatorId: 'me',
+      memberIds: ['me', 'bob'],
+    );
+    const eur = EventModel(
+      id: 'evt-eur',
+      title: 'Paris',
+      creatorId: 'me',
+      memberIds: ['me', 'bob'],
+      currency: 'EUR',
+    );
+    ExpenseModel owed(String eventId) => ExpenseModel(
+      id: 'exp-$eventId',
+      eventId: eventId,
+      payerId: 'bob',
+      amount: 100,
+      splits: const [
+        ExpenseSplit(userId: 'bob', amount: 50),
+        ExpenseSplit(userId: 'me', amount: 50),
+      ],
+      createdAt: DateTime(2026, 5, 14),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          currentUserIdProvider.overrideWith((ref) => 'me'),
+          dashboardEventsProvider.overrideWith(
+            (ref) => Stream.value(const [usd, eur]),
+          ),
+          expenseListProvider.overrideWith(
+            (ref, eventId) => Stream.value([owed(eventId)]),
+          ),
+          _emptyRosterOverride,
         ],
-        createdAt: DateTime(2026, 5, 14),
-      );
+        child: const MaterialApp(home: BudgetLedgerScreen()),
+      ),
+    );
+    await _pumpFrames(tester);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            currentUserIdProvider.overrideWith((ref) => 'me'),
-            dashboardEventsProvider.overrideWith(
-              (ref) => Stream.value(const [eventEur]),
-            ),
-            expenseListProvider.overrideWith(
-              (ref, eventId) => Stream.value([exp]),
-            ),
-            _emptyRosterOverride,
-          ],
-          child: const MaterialApp(home: BudgetLedgerScreen()),
-        ),
-      );
-      await _pumpFrames(tester);
-
-      expect(find.byKey(const Key('balance.tile.disclaimer')), findsOneWidget);
-    },
-  );
+    expect(find.byKey(const Key('budget.balance')), findsOneWidget);
+    expect(find.byKey(const Key('budget.balance.EUR')), findsOneWidget);
+    expect(find.byKey(const Key('balance.tile.disclaimer')), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('budget.balance')),
+        matching: find.textContaining('100'),
+      ),
+      findsNothing,
+    );
+  });
 }

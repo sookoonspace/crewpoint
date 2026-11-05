@@ -45,6 +45,14 @@ describe('createEvent configuration (Req 18, 18a, 21)', () => {
     expect(saved.eventType).toBeUndefined();
   });
 
+  test('dates can be marked as date-only', async () => {
+    await call('me', input({dateOnly: true}));
+    expect((await eventDoc()).data()!.dateOnly).toBe(true);
+    await call('me', input({eventId: 'other'}));
+    const other = await getAdminDb().doc('events/other').get();
+    expect(other.data()!.dateOnly).toBe(false);
+  });
+
   test('the device time zone is kept', async () => {
     await call('me', input({timeZone: 'America/Chicago'}));
     expect((await eventDoc()).data()!.timeZone).toBe('America/Chicago');

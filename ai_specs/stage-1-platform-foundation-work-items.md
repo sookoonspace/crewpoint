@@ -569,18 +569,18 @@ Let organizers turn modules on and off, and make the event screen a hub of the e
 - Agenda arrives in #82. Until then, the hub shows enabled modules only.
 
 ### Acceptance criteria
-- [ ] Turning a module off hides its screens and entry points, and its server paths reject writes.
-- [ ] Its data is kept, and comes back when turned on.
-- [ ] The global Tasks, Chat and Budget tabs leave out that event's data for that module.
-- [ ] The event screen shows one entry per enabled module plus Agenda, in a list that scrolls at 375 px and a grid from 840 px.
-- [ ] Settings is visible only to `event.manage`.
-- [ ] Back returns to the event screen, cancel discards with the confirmation in Req 73, and a person who loses access goes to the event list as in Req 76.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
-- [ ] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
-- [ ] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
-- [ ] Tests for scenario GE-02 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] Turning a module off hides its screens and entry points, and its server paths reject writes.
+- [x] Its data is kept, and comes back when turned on.
+- [x] The global Tasks, Chat and Budget tabs leave out that event's data for that module.
+- [x] The event screen shows one entry per enabled module plus Agenda, in a list that scrolls at 375 px and a grid from 840 px.
+- [x] Settings is visible only to `event.manage`.
+- [x] Back returns to the event screen, cancel discards with the confirmation in Req 73, and a person who loses access goes to the event list as in Req 76.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
+- [x] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
+- [x] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
+- [x] Tests for scenario GE-02 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 5
@@ -661,6 +661,7 @@ Add the permission catalogue, role presets, server-calculated member documents a
 - Member documents also hold group IDs for own-group checks (Req 26b), filled in by #75 and #78, and `expenses.readAll` per Technical Decision 4a, set from the access setting by #72.
 - Automated tests use emulators and a seeded old-shape fixture. Running the script on a real project is a deliberate manual step in #66.
 - Since #60, the status mapping is `mapLegacyStatus` in `functions/src/events/eventStatus.ts`. Use it in the migration script. Until then `active` keeps working everywhere it is read. Member documents must keep plain members out of drafts (L23), because list queries cannot filter them out in rules.
+- Since #63, older events have no `dateOnly` and may have no `timeZone`. The migration should set `timeZone` from the creator's stored zone when known, and convert `startDate` and `endDate` to midnight UTC on the date they show on that zone, with `dateOnly: true`. Task due dates on older events are midnight on the creator's device, so check they read correctly in the event's zone.
 
 ### Acceptance criteria
 - [ ] `events/{id}/members/{uid}` holds `uid`, `roleIds`, `crewIds`, `permissions`, `participantId` and `joinedAt`.

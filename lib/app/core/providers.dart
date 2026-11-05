@@ -210,11 +210,17 @@ final createEventCallProvider = Provider<CreateEventCall>(
       'title': event.title,
       'description': event.description,
       'timeZone': event.timeZone,
+      'dateOnly': event.dateOnly,
       'currency': event.currency,
       'startDate': event.startDate?.toUtc().toIso8601String(),
       'endDate': event.endDate?.toUtc().toIso8601String(),
     });
   },
+);
+
+/// The viewer's zone, to show an event's zone only where it differs.
+final deviceZoneNameProvider = FutureProvider<String>(
+  (ref) => ref.watch(deviceTimezoneProvider).getLocalTimezone(),
 );
 
 /// Default impl wraps `FirebaseFunctions.instance`. Tests override with a fake.

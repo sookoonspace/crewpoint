@@ -123,6 +123,47 @@ describe('nextStatus', () => {
     expect(nextStatus(data, at('2027-06-03T18:00:00Z'))).toBe('ended');
   });
 
+  describe('date-only events (Req 23)', () => {
+    // Stored as midnight UTC on the chosen date.
+    const data = (timeZone: string) => ({
+      status: 'published',
+      timeZone,
+      dateOnly: true,
+      startDate: ts('2027-06-01T00:00:00Z'),
+      endDate: ts('2027-06-03T00:00:00Z'),
+    });
+
+    test('go live at the start of the day in the event zone', () => {
+      // Midnight on June 1 in Chicago, in daylight time, is 05:00 UTC.
+      expect(nextStatus(data('America/Chicago'), at('2027-06-01T04:59:00Z'))).toBeNull();
+      expect(nextStatus(data('America/Chicago'), at('2027-06-01T05:00:00Z'))).toBe('live');
+      // Midnight on June 1 in Tokyo is 15:00 UTC the day before.
+      expect(nextStatus(data('Asia/Tokyo'), at('2027-05-31T15:00:00Z'))).toBe('live');
+    });
+
+    test('end after the last day in the event zone', () => {
+      const live = {...data('America/Chicago'), status: 'live'};
+      expect(nextStatus(live, at('2027-06-04T04:59:00Z'))).toBeNull();
+      expect(nextStatus(live, at('2027-06-04T05:00:00Z'))).toBe('ended');
+    });
+
+    test('use the right offset across daylight saving', () => {
+      // Chicago's clocks moved on 14 March 2027, from UTC-6 to UTC-5.
+      const across = {
+        status: 'published',
+        timeZone: 'America/Chicago',
+        dateOnly: true,
+        startDate: ts('2027-03-15T00:00:00Z'),
+      };
+      expect(nextStatus(across, at('2027-03-15T04:59:00Z'))).toBeNull();
+      expect(nextStatus(across, at('2027-03-15T05:00:00Z'))).toBe('live');
+    });
+
+    test('fall back to UTC for an unknown zone', () => {
+      expect(nextStatus(data('Mars/Base'), at('2027-06-01T00:00:00Z'))).toBe('live');
+    });
+  });
+
   describe('a change by hand is respected', () => {
     test('published by hand after the start stays published', () => {
       const data = event({

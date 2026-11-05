@@ -25,7 +25,8 @@ class EventTile extends StatelessWidget {
   final int done;
   final VoidCallback? onTap;
 
-  String _dateRange() => formatEventDateRange(event.startDate, event.endDate);
+  String _dateRange() =>
+      formatEventDateRange(event.displayStart, event.displayEnd);
 
   String _memberCount() {
     return event.words.count('member', event.memberIds.length);
