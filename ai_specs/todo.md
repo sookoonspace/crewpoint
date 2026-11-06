@@ -11,6 +11,14 @@ Triaged against the code on 2026-11-03 (#47):
 ## Required before moving to prod
 - **Lawyer approval of the privacy policy** (`assets/legal/privacy-policy.md`). The updated policy must cover children, since events can register young participants, and Canada. Today it says CrewPoint is for ages 13 and up. Do not move the platform work in #44 to prod until this is approved. Owner: to be arranged by the product owner. Added 2026-11-03.
 
+## Permissions cutover follow-up
+- `[Stage 1]` **Remove the `memberIds` and `adminIds` arrays**, after a stable period on member documents (Req 34, step 6), and on prod once the lawyer approves. Before removing them:
+  - Move what still reads them: the members list and expense splits in the app; the push recipients in `onUrgentMessageCreated` and other triggers; `joinEvent`'s duplicate and limit checks; and `deleteEventCompletely`.
+  - Drop the functions' fallback to the arrays (`legacyRoleIds` in `readPermissions`).
+  - Drop the `allow list` rule for older builds, and the draft check that relies on the arrays.
+  - Simplify the test helpers that map arrays to member documents: `getTestEnv`'s sync, `seedMemberDocs` and `fakeMemberships`.
+  - Runbook: `docs/ops/permissions-cutover.md`. Added 2026-11-06 (#66).
+
 ## Tasks
 - `[Stage 4]` Kanban board view (3 columns, drag-to-move) — alternative to current list view
 - `[Stage 4]` Task attachments file storage (model has `TaskAttachment`, no Drift/Storage wiring)
