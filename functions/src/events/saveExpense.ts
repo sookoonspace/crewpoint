@@ -4,6 +4,7 @@ import {requireString, withStructuredLogs} from "../utils/logging";
 import {assertNotArchived} from "./eventStatus";
 import {assertModuleOn} from "./eventModules";
 
+import {contributes, readPermissions} from "./members";
 const db = getFirestore();
 
 /** Matches the limit in the expense form. `settings.maxExpenseAmount` overrides it. */
@@ -90,7 +91,6 @@ export const saveExpense = onCall({timeoutSeconds: 30}, async (request) => {
         assertNotArchived(event);
         assertModuleOn(event, "budget");
         const memberIds: string[] = event.memberIds || [];
-        const adminIds: string[] = event.adminIds || [];
 
         const maxAmount =
           event.settings?.maxExpenseAmount ?? DEFAULT_MAX_EXPENSE_AMOUNT;
@@ -119,18 +119,25 @@ export const saveExpense = onCall({timeoutSeconds: 30}, async (request) => {
           }
           const canEdit =
             existing.payerId === uid ||
-            event.creatorId === uid ||
-            adminIds.includes(uid);
+            (await readPermissions(tx, eventRef, event, uid)).includes(
+              "money.record"
+            );
           if (!canEdit) {
             throw new HttpsError(
               "permission-denied",
-              "Only the payer, owner or an admin can edit this expense."
+              "Only the payer, or someone who records money, can edit this " +
+                "expense."
             );
           }
         } else if (payerId !== uid) {
           throw new HttpsError(
             "permission-denied",
             "You can only add an expense that you paid for."
+          );
+        } else if (!(await contributes(tx, eventRef, event, uid))) {
+          throw new HttpsError(
+            "permission-denied",
+            "Observers and vendors cannot add expenses."
           );
         }
 

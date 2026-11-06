@@ -1,4 +1,8 @@
-import {memberRef, prepareRoleChange} from "../events/members";
+import {
+  holdersOf,
+  memberRef,
+  prepareRoleChange,
+} from "../events/members";
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions/v2";
 import {createHmac, randomBytes} from "crypto";
@@ -114,7 +118,8 @@ async function anonymousIdFor(
  * Removes a person from a shared event:
  * - Replaces their ID with an anonymous one in expenses, tasks and messages
  * - Unassigns their tasks, and removes their urgent rate record
- * - Transfers creatorId and organizerId to the first admin, or else the first
+ * - Transfers creatorId and organizerId to someone holding `event.manage`, or
+ *   else the first
  *   remaining member, who gets a personal organizer if they have none
  * - Removes them from memberIds and adminIds, and deletes their member
  *   document. A new owner's member document takes the Owner role.
@@ -192,7 +197,6 @@ export async function anonymizeUserInEvent(
   ]);
 
   const memberIds: string[] = eventData.memberIds || [];
-  const adminIds: string[] = eventData.adminIds || [];
   const remainingMembers = memberIds.filter((m: string) => m !== uid);
   const updateData: Record<string, unknown> = {
     memberIds: FieldValue.arrayRemove(uid),
@@ -201,9 +205,11 @@ export async function anonymizeUserInEvent(
   };
   let nextOwner: string | null = null;
   if (remainingMembers.length > 0) {
-    // Prefer first admin, fallback to first remaining member
-    const remainingAdmins = adminIds.filter((a: string) => a !== uid);
-    const successor = remainingAdmins[0] ?? remainingMembers[0];
+    // Prefer someone who manages the event, or else the first remaining member.
+    const managers = (await holdersOf(eventRef, "event.manage")).filter(
+      (m) => m !== uid && remainingMembers.includes(m)
+    );
+    const successor = managers[0] ?? remainingMembers[0];
     if (eventData.creatorId === uid) {
       updateData.creatorId = successor;
       nextOwner = successor;

@@ -664,24 +664,24 @@ Add the permission catalogue, role presets, server-calculated member documents a
 - Since #63, older events have no `dateOnly` and may have no `timeZone`. The migration should set `timeZone` from the creator's stored zone when known, and convert `startDate` and `endDate` to midnight UTC on the date they show on that zone, with `dateOnly: true`. Task due dates on older events are midnight on the creator's device, so check they read correctly in the event's zone.
 
 ### Acceptance criteria
-- [ ] `events/{id}/members/{uid}` holds `uid`, `roleIds`, `crewIds`, `permissions`, `participantId` and `joinedAt`.
-- [ ] The catalogue is exactly: `event.manage`, `event.transfer`, `members.manage`, `roles.manage`, `schedule.edit`, `updates.send`, `participants.read`, `participants.edit`, `participants.readPrivate`, `participants.import`, `group.readOwn`, `group.editOwn`, `registrations.manage`, `money.read`, `money.record`, `money.refund`, `money.dueAtDoor`, `budget.read`, `budget.edit`, `expenses.readAll`, `contributions.manage`, `tasks.manage`, `chat.send`, `chat.urgent`, `messages.send`, `checkin.scan`, `checkin.lookup`, `counts.read`, `incidents.report`, `incidents.receive`, `reports.export`, `competition.manage`, `scores.enter`.
-- [ ] Owner holds all permissions; Co-owner all except `event.transfer`; Admin all except `event.transfer` and `roles.manage`.
-- [ ] Finance holds `money.read`, `money.record`, `money.refund`, `budget.read`, `budget.edit`, `expenses.readAll`, `contributions.manage`, `participants.read`, `counts.read`, `reports.export`, `chat.send`.
-- [ ] Crew lead holds `tasks.manage`, `schedule.edit`, `updates.send`, `participants.read`, `participants.edit`, `money.dueAtDoor`, `counts.read`, `chat.send`, `chat.urgent`, `messages.send`, `incidents.report`, `incidents.receive`.
-- [ ] Crew member holds `updates.send`, `participants.read`, `money.dueAtDoor`, `counts.read`, `chat.send`, `incidents.report`, `incidents.receive`.
-- [ ] Volunteer holds `checkin.scan`, `checkin.lookup`, `money.dueAtDoor`, `incidents.report`, `chat.send`. Scorer holds `scores.enter`, `chat.send`. Sponsor and Participant hold `chat.send`.
-- [ ] Vendor holds none beyond Req 32. Observer holds none: read-only access to the event and published schedule.
-- [ ] Every preset includes `group.readOwn`, and every member can read the event and its published schedule. `group.editOwn` is granted to a group's contact and to linked adults in that group.
-- [ ] Organizers may edit presets per event and add custom roles. The data model supports this, and #67 adds the screens.
-- [ ] A callable recalculates `permissions` on the member document whenever a role or assignment changes. Clients cannot write it.
-- [ ] An idempotent admin script with a dry-run mode converts each event, preserving everyone's access and old data, including status and `involvedUids`, using the migration mapping above. #71 adds `budgetEstimate`.
-- [ ] A verification script compares every event's old arrays with its new members.
-- [ ] Callables that change membership write both the arrays and member documents from this item on, so rollback and verification stay accurate until the arrays are removed.
-- [ ] `createEvent` writes the owner's member document.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] Tests for scenarios H-01, GE-03, GAP-CRK-29, GAP-CON-30 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] `events/{id}/members/{uid}` holds `uid`, `roleIds`, `crewIds`, `permissions`, `participantId` and `joinedAt`.
+- [x] The catalogue is exactly: `event.manage`, `event.transfer`, `members.manage`, `roles.manage`, `schedule.edit`, `updates.send`, `participants.read`, `participants.edit`, `participants.readPrivate`, `participants.import`, `group.readOwn`, `group.editOwn`, `registrations.manage`, `money.read`, `money.record`, `money.refund`, `money.dueAtDoor`, `budget.read`, `budget.edit`, `expenses.readAll`, `contributions.manage`, `tasks.manage`, `chat.send`, `chat.urgent`, `messages.send`, `checkin.scan`, `checkin.lookup`, `counts.read`, `incidents.report`, `incidents.receive`, `reports.export`, `competition.manage`, `scores.enter`.
+- [x] Owner holds all permissions; Co-owner all except `event.transfer`; Admin all except `event.transfer` and `roles.manage`.
+- [x] Finance holds `money.read`, `money.record`, `money.refund`, `budget.read`, `budget.edit`, `expenses.readAll`, `contributions.manage`, `participants.read`, `counts.read`, `reports.export`, `chat.send`.
+- [x] Crew lead holds `tasks.manage`, `schedule.edit`, `updates.send`, `participants.read`, `participants.edit`, `money.dueAtDoor`, `counts.read`, `chat.send`, `chat.urgent`, `messages.send`, `incidents.report`, `incidents.receive`.
+- [x] Crew member holds `updates.send`, `participants.read`, `money.dueAtDoor`, `counts.read`, `chat.send`, `incidents.report`, `incidents.receive`.
+- [x] Volunteer holds `checkin.scan`, `checkin.lookup`, `money.dueAtDoor`, `incidents.report`, `chat.send`. Scorer holds `scores.enter`, `chat.send`. Sponsor and Participant hold `chat.send`.
+- [x] Vendor holds none beyond Req 32. Observer holds none: read-only access to the event and published schedule.
+- [x] Every preset includes `group.readOwn`, and every member can read the event and its published schedule. `group.editOwn` is granted to a group's contact and to linked adults in that group.
+- [x] Organizers may edit presets per event and add custom roles. The data model supports this, and #67 adds the screens.
+- [x] A callable recalculates `permissions` on the member document whenever a role or assignment changes. Clients cannot write it.
+- [x] An idempotent admin script with a dry-run mode converts each event, preserving everyone's access and old data, including status and `involvedUids`, using the migration mapping above. #71 adds `budgetEstimate`.
+- [x] A verification script compares every event's old arrays with its new members.
+- [x] Callables that change membership write both the arrays and member documents from this item on, so rollback and verification stay accurate until the arrays are removed.
+- [x] `createEvent` writes the owner's member document.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] Tests for scenarios H-01, GE-03, GAP-CRK-29, GAP-CON-30 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - Requirements: 25 (data), 26, 26a, 26b, 27, 34 (script)
@@ -752,6 +752,11 @@ Move every rule, callable, trigger and UI gate to permissions, switch "my events
 - #62 Stage 1.3: Modules and event hub
 - #64 Stage 1.4: Minimum app version
 - #65 Stage 1.4: Permissions, presets, member documents and migration script
+
+### Notes
+- **H-06 finishes with #72.** This item proves combined roles (the union) and own-group access through `editsOwnGroup`. "Sees no other money" needs expense reads limited to `involvedUids`, which is #72. The H-06 money test is in the acceptance suite as a planned gap, and H-06 joins the finished list when #72 lands.
+- **Permissions chosen for checks the catalogue does not name.** Deleting an event uses `event.transfer`, which only the Owner holds. Editing or deleting someone else's expense, and recording a payment for someone who has left, use `money.record`. Removing someone who holds `members.manage`, and promoting or demoting, use `roles.manage`. Event-level notices of a new member go to `members.manage` holders.
+- **No "last admin" guard.** The creator is always Owner and cannot be demoted, so an event can never lose everyone who manages it.
 
 ## #67 Stage 1.4: Role screens and invite carrying a role
 

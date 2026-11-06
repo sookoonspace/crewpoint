@@ -4,7 +4,7 @@
  */
 import {Timestamp} from 'firebase-admin/firestore';
 import {clearFirestoreEmulator, getAdminApp, getAdminDb} from '../setup';
-import {PRESET_ROLES} from '../../src/events/permissions';
+import {PRESET_ROLES, computePermissions} from '../../src/events/permissions';
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 const firebaseFunctionsTest = require('firebase-functions-test');
@@ -71,7 +71,9 @@ describe('joinEvent', () => {
 
 async function seedMembers() {
   for (const [uid, roleIds] of [['owner', ['owner']], ['admin', ['admin']], ['plain', ['participant']]]) {
-    await getAdminDb().doc(`events/${E}/members/${uid}`).set({uid, roleIds, permissions: []});
+    await getAdminDb().doc(`events/${E}/members/${uid}`).set({
+      uid, roleIds, permissions: computePermissions(roleIds as string[], {}),
+    });
   }
 }
 

@@ -2,18 +2,20 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 import {assertNotArchived} from "./eventStatus";
-import {prepareRoleChange} from "./members";
+import {
+  prepareRoleChange,
+  readRoleIds,
+  requirePermission,
+} from "./members";
 
 const db = getFirestore();
 
 /**
  * demoteAdmin — removes admin role from an event member.
  *
- * - Caller must be event owner (creatorId)
- * - Target must currently be in adminIds
- * - Owner cannot be demoted
- * - Refuses to demote the last remaining admin (would leave the
- *   event in a degraded zero-admins state)
+ * - Caller must hold `roles.manage` (owners and co-owners)
+ * - Target must hold the Admin role
+ * - Owner cannot be demoted, so the event always keeps its owner
  * - Removes target from adminIds via arrayRemove (stays in memberIds), and
  *   removes Admin from their member document, leaving Participant if no
  *   role is left
@@ -55,34 +57,32 @@ export const demoteAdmin = onCall(
               "Publish this event before changing its admins."
             );
           }
-          const adminIds: string[] = eventData.adminIds || [];
+          await requirePermission(
+            tx,
+            eventRef,
+            eventData,
+            uid,
+            "roles.manage",
+            "Only an owner or co-owner can demote admins."
+          );
 
-          if (eventData.creatorId !== uid) {
-            throw new HttpsError(
-              "permission-denied",
-              "Only the event owner can demote admins."
-            );
-          }
-
-          if (targetUserId === eventData.creatorId) {
+          const theirRoles = await readRoleIds(
+            tx,
+            eventRef,
+            eventData,
+            targetUserId
+          );
+          if (theirRoles.includes("owner")) {
             throw new HttpsError(
               "failed-precondition",
               "The event owner cannot be demoted."
             );
           }
 
-          if (!adminIds.includes(targetUserId)) {
+          if (!theirRoles.includes("admin")) {
             throw new HttpsError(
               "failed-precondition",
               "Target user is not an admin of this event."
-            );
-          }
-
-          if (adminIds.length <= 1) {
-            throw new HttpsError(
-              "failed-precondition",
-              "Cannot demote the last remaining admin. " +
-                "Promote another member first."
             );
           }
 

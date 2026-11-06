@@ -171,14 +171,15 @@ export function assertOpenToJoin(event: DocumentData): void {
 }
 
 /**
- * After an event ends, tasks are read-only except to `event.manage`, which means
- * owner or admin until permissions land.
+ * After an event ends, tasks are read-only except to `event.manage`.
+ * [permissions] are the caller's.
  */
-export function assertTasksOpen(event: DocumentData, uid: string): void {
+export function assertTasksOpen(
+  event: DocumentData,
+  permissions: readonly string[]
+): void {
   assertNotArchived(event);
-  const canManage =
-    event.creatorId === uid || (event.adminIds ?? []).includes(uid);
-  if (event.status === "ended" && !canManage) {
+  if (event.status === "ended" && !permissions.includes("event.manage")) {
     throw refuse("This event has ended, so its tasks cannot be changed.");
   }
 }

@@ -2,13 +2,30 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // The caller's member document (Req 25). Only server code writes it.
+    function memberPath(eventId) {
+      return /databases/$(database)/documents/events/$(eventId)/members/$(request.auth.uid);
+    }
+
     // Helper: check if user is a member of an event. Every subcollection write
     // must include this, including paths granted through payerId, senderId,
     // assigneeId or createdBy: those fields outlive membership, so on their
     // own they would let a removed member keep editing old records.
     function isEventMember(eventId) {
-      let event = get(/databases/$(database)/documents/events/$(eventId));
-      return request.auth.uid in event.data.memberIds;
+      return exists(memberPath(eventId));
+    }
+
+    // One permission, checked with one member-document read (Req 27).
+    function can(eventId, permission) {
+      return isEventMember(eventId)
+        && permission in get(memberPath(eventId)).data.permissions;
+    }
+
+    // Adding your own expense and creating tasks are open to every member
+    // except Observer and Vendor, since no permission covers them (Req 34).
+    function contributes(eventId) {
+      return isEventMember(eventId)
+        && !get(memberPath(eventId)).data.roleIds.hasOnly(['observer', 'vendor']);
     }
 
     function eventData(eventId) {
@@ -25,10 +42,8 @@ service cloud.firestore {
       return eventData(eventId).get('modules', {}).get(module, true) != false;
     }
 
-    // `event.manage` means owner or admin until permissions land.
     function canManageEvent(eventId) {
-      return eventData(eventId).creatorId == request.auth.uid
-        || request.auth.uid in eventData(eventId).adminIds;
+      return can(eventId, 'event.manage');
     }
 
     // Once an event ends, only `event.manage` can change its tasks. Settlements,
@@ -51,15 +66,15 @@ service cloud.firestore {
 
     // Events collection
     match /events/{eventId} {
-      // Read: only members (memberIds always includes creatorId and adminIds).
-      // A draft is visible only to `event.manage`. A list query cannot express
-      // that, so joining, demoting and moving back to draft all keep plain
-      // members out of drafts, and this check covers direct reads.
+      // Read: only members. A draft is visible only to `event.manage`. The app
+      // finds its events through member documents and reads each one.
       allow get: if request.auth != null
-        && request.auth.uid in resource.data.memberIds
+        && isEventMember(eventId)
         && (resource.data.get('status', 'active') != 'draft'
-            || resource.data.creatorId == request.auth.uid
-            || request.auth.uid in resource.data.adminIds);
+            || can(eventId, 'event.manage'));
+      // Kept for app builds older than the cutover, until the arrays go. A list
+      // query cannot check drafts, so joining, role changes and moving back to
+      // draft all keep plain members out of drafts.
       allow list: if request.auth != null
         && request.auth.uid in resource.data.memberIds;
 
@@ -75,8 +90,7 @@ service cloud.firestore {
       // admin client could escalate other users to admin or eject members
       // outside the audited CF paths.
       allow update: if request.auth != null
-        && (resource.data.creatorId == request.auth.uid
-            || request.auth.uid in resource.data.adminIds)
+        && can(eventId, 'event.manage')
         && request.resource.data.memberIds == resource.data.memberIds
         && request.resource.data.adminIds == resource.data.adminIds
         && request.resource.data.creatorId == resource.data.creatorId
@@ -108,13 +122,12 @@ service cloud.firestore {
         && (!('labels' in request.resource.data) || request.resource.data.labels is map)
         && (!('modules' in request.resource.data) || request.resource.data.modules is map);
 
-      // Delete: only the creator
+      // Delete: only the Owner, the one role holding `event.transfer`.
       allow delete: if request.auth != null
-        && resource.data.creatorId == request.auth.uid;
+        && can(eventId, 'event.transfer');
 
       // Member documents and the event's roles (Req 25, 27). Only server code
-      // writes them, so nobody can grant themselves a permission. Reads use
-      // the arrays until #66 moves them to member documents.
+      // writes them, so nobody can grant themselves a permission.
       match /members/{memberId} {
         allow read: if request.auth != null && isEventMember(eventId);
         allow write: if false;
@@ -130,7 +143,7 @@ service cloud.firestore {
         allow read: if request.auth != null && isEventMember(eventId);
 
         allow create: if request.auth != null
-          && isEventMember(eventId)
+          && can(eventId, 'chat.send')
           && isNotArchived(eventId)
           && isModuleOn(eventId, 'chat')
           && request.resource.data.senderId == request.auth.uid
@@ -141,11 +154,9 @@ service cloud.firestore {
           && !('urgentPushSkipped' in request.resource.data)
           && request.resource.data.text is string
           && request.resource.data.text.size() <= 4000
-          // Urgent sending needs `chat.urgent`, which owners and admins hold
-          // until permissions land.
+          // Urgent sending needs `chat.urgent`.
           && (request.resource.data.get('isHighPriority', false) != true
-              || get(/databases/$(database)/documents/events/$(eventId)).data.creatorId == request.auth.uid
-              || request.auth.uid in get(/databases/$(database)/documents/events/$(eventId)).data.adminIds);
+              || can(eventId, 'chat.urgent'));
 
         allow delete: if request.auth != null
           && isEventMember(eventId)
@@ -158,17 +169,12 @@ service cloud.firestore {
 
       // Tasks subcollection
       match /tasks/{taskId} {
-        function eventDoc() {
-          return get(/databases/$(database)/documents/events/$(eventId)).data;
-        }
 
         allow read: if request.auth != null && isEventMember(eventId);
 
-        // `tasks.manage` and a task's creator may edit it. Owners and admins
-        // hold `tasks.manage` until permissions land.
+        // `tasks.manage` and a task's creator may edit it.
         function canEditTask(task) {
-          return eventDoc().creatorId == request.auth.uid
-            || request.auth.uid in eventDoc().adminIds
+          return can(eventId, 'tasks.manage')
             || task.createdBy == request.auth.uid;
         }
 
@@ -187,10 +193,10 @@ service cloud.firestore {
 
         allow read: if request.auth != null && isEventMember(eventId);
 
-        // Create: any event member; must set themselves as createdBy, and a new
-        // task cannot start finished.
+        // Create: any member but Observer and Vendor; must set themselves as
+        // createdBy, and a new task cannot start finished.
         allow create: if request.auth != null
-          && isEventMember(eventId)
+          && contributes(eventId)
           && tasksAreOpen(eventId)
           && request.resource.data.createdBy == request.auth.uid
           && request.resource.data.eventId == eventId
@@ -212,13 +218,11 @@ service cloud.firestore {
           && request.resource.data.eventId == resource.data.eventId
           && request.resource.data.createdBy == resource.data.createdBy;
 
-        // Delete: only creator/owner/admin
+        // Delete: the task's creator, or `tasks.manage`
         allow delete: if request.auth != null
           && isEventMember(eventId)
           && tasksAreOpen(eventId)
-          && (resource.data.createdBy == request.auth.uid
-              || eventDoc().creatorId == request.auth.uid
-              || request.auth.uid in eventDoc().adminIds);
+          && canEditTask(resource.data);
 
         // Checklist items subcollection
         match /checklist/{itemId} {
@@ -227,17 +231,13 @@ service cloud.firestore {
           allow create, delete: if request.auth != null
             && isEventMember(eventId)
             && tasksAreOpen(eventId)
-            && (get(/databases/$(database)/documents/events/$(eventId)/tasks/$(taskId)).data.createdBy == request.auth.uid
-                || eventDoc().creatorId == request.auth.uid
-                || request.auth.uid in eventDoc().adminIds);
+            && canEditTask(get(/databases/$(database)/documents/events/$(eventId)/tasks/$(taskId)).data);
 
           // Update: anyone who can edit the task, or the assignee ticking it off.
           allow update: if request.auth != null
             && isEventMember(eventId)
             && tasksAreOpen(eventId)
-            && (get(/databases/$(database)/documents/events/$(eventId)/tasks/$(taskId)).data.createdBy == request.auth.uid
-                || eventDoc().creatorId == request.auth.uid
-                || request.auth.uid in eventDoc().adminIds
+            && (canEditTask(get(/databases/$(database)/documents/events/$(eventId)/tasks/$(taskId)).data)
                 || (get(/databases/$(database)/documents/events/$(eventId)/tasks/$(taskId)).data.assigneeId == request.auth.uid
                     && request.resource.data.diff(resource.data).affectedKeys()
                         .hasOnly(['isCompleted', 'updatedAt'])));
@@ -246,9 +246,6 @@ service cloud.firestore {
 
       // Expenses subcollection
       match /expenses/{expenseId} {
-        function eventDocForExpense() {
-          return get(/databases/$(database)/documents/events/$(eventId)).data;
-        }
 
         allow read: if request.auth != null && isEventMember(eventId);
 
@@ -256,15 +253,21 @@ service cloud.firestore {
         // callables, because rules cannot loop over splits to check they add up.
         allow create, update: if false;
 
-        // Delete: payer, event creator, or any admin.
+        // Delete: the payer, or `money.record`.
         allow delete: if request.auth != null
           && isEventMember(eventId)
           && isNotArchived(eventId)
           && isModuleOn(eventId, 'budget')
           && (resource.data.payerId == request.auth.uid
-              || eventDocForExpense().creatorId == request.auth.uid
-              || request.auth.uid in eventDocForExpense().adminIds);
+              || can(eventId, 'money.record'));
       }
+    }
+
+    // "My events" (Req 25): a collection-group query on member documents.
+    // Anyone may read their own, in any event.
+    match /{path=**}/members/{memberId} {
+      allow read: if request.auth != null
+        && resource.data.uid == request.auth.uid;
     }
 
     // Event invites — managed entirely by Cloud Functions via Admin SDK

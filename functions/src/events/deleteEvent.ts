@@ -3,6 +3,7 @@ import {getFirestore} from "firebase-admin/firestore";
 import {deleteEventCompletely} from "./eventDeletion";
 import {requireString, withStructuredLogs} from "../utils/logging";
 
+import {requirePermission} from "./members";
 const db = getFirestore();
 
 /**
@@ -47,12 +48,15 @@ export const deleteEvent = onCall(
         }
 
         const eventData = eventDoc.data()!;
-        if (eventData.creatorId !== uid) {
-          throw new HttpsError(
-            "permission-denied",
-            "Only the event creator can delete the event."
-          );
-        }
+        // Only the Owner holds `event.transfer`, and deleting is theirs too.
+        await requirePermission(
+          null,
+          eventRef,
+          eventData,
+          uid,
+          "event.transfer",
+          "Only the event owner can delete the event."
+        );
 
         await deleteEventCompletely(eventRef, eventData);
 

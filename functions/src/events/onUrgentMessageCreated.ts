@@ -7,6 +7,7 @@ import {
 } from "firebase-admin/firestore";
 import {sendCategorizedPush} from "../notifications/sendPush";
 import {isOrganizerVerified} from "./organizers";
+import {readPermissions} from "./members";
 
 const db = getFirestore();
 
@@ -86,12 +87,16 @@ export async function handleUrgentMessage({
   }
   const eventData = eventDoc.data()!;
   const memberIds: string[] = eventData.memberIds || [];
-  const adminIds: string[] = eventData.adminIds || [];
   const eventTitle = (eventData.title as string | undefined) ?? "Event";
 
-  // Rules already require this. Holders of `chat.urgent` replace this check
-  // when permissions land.
-  if (eventData.creatorId !== senderId && !adminIds.includes(senderId)) {
+  // Rules already require `chat.urgent`, and this checks it again.
+  const permissions = await readPermissions(
+    null,
+    eventDoc.ref,
+    eventData,
+    senderId
+  );
+  if (!permissions.includes("chat.urgent")) {
     logger.warn(`Urgent message ${messageId} from a sender without permission`);
     return;
   }

@@ -156,21 +156,26 @@ describe('promoteToAdmin', () => {
 
 describe('demoteAdmin', () => {
   test(
-    'refuses to demote the last remaining admin with failed-precondition',
+    'demoting the last admin leaves the owner, who cannot be demoted',
     async () => {
+      // The creator is Owner whatever adminIds says, so the event always keeps
+      // someone with every permission (#66).
       await seedEvent({
         eventId: 'evtD1',
         creatorUid: 'creatorD1',
         memberUids: ['creatorD1', 'adminD1'],
-        // Creator is NOT in adminIds — demoting adminD1 leaves zero admins.
         adminUids: ['adminD1'],
       });
 
       const wrapped = ftest.wrap(demoteAdmin);
+      await wrapped({
+        auth: {uid: 'creatorD1'},
+        data: {eventId: 'evtD1', targetUserId: 'adminD1'},
+      });
       await expect(
         wrapped({
           auth: {uid: 'creatorD1'},
-          data: {eventId: 'evtD1', targetUserId: 'adminD1'},
+          data: {eventId: 'evtD1', targetUserId: 'creatorD1'},
         })
       ).rejects.toMatchObject({code: 'failed-precondition'});
     }

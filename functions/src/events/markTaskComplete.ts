@@ -2,6 +2,7 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 import {assertTasksOpen} from "./eventStatus";
+import {readPermissions} from "./members";
 import {assertModuleOn} from "./eventModules";
 
 const db = getFirestore();
@@ -49,9 +50,14 @@ export const markTaskComplete = onCall(
             throw new HttpsError("not-found", "Event not found.");
           }
           const eventData = eventDoc.data()!;
-          assertTasksOpen(eventData, uid);
+          const permissions = await readPermissions(
+            tx,
+            eventRef,
+            eventData,
+            uid
+          );
+          assertTasksOpen(eventData, permissions);
           assertModuleOn(eventData, "tasks");
-          const adminIds: string[] = eventData.adminIds || [];
           const memberIds: string[] = eventData.memberIds || [];
 
           const taskDoc = await tx.get(taskRef);
@@ -60,16 +66,15 @@ export const markTaskComplete = onCall(
           }
           const taskData = taskDoc.data()!;
 
-          const isOwner = eventData.creatorId === uid;
-          const isAdmin = adminIds.includes(uid);
+          const managesTasks = permissions.includes("tasks.manage");
           const isCreatorOrAssignee =
             memberIds.includes(uid) &&
             (taskData.createdBy === uid || taskData.assigneeId === uid);
 
-          if (!isOwner && !isAdmin && !isCreatorOrAssignee) {
+          if (!managesTasks && !isCreatorOrAssignee) {
             throw new HttpsError(
               "permission-denied",
-              "Only the event owner, admins, the creator or the assignee " +
+              "Only someone who manages tasks, the creator or the assignee " +
                 "can complete tasks."
             );
           }
