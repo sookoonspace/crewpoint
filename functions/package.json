@@ -10,7 +10,8 @@
     "logs": "firebase functions:log",
     "test": "firebase emulators:exec --project demo-crewpoint --only firestore,auth 'jest --runInBand'",
     "test:watch": "firebase emulators:exec --project demo-crewpoint --only firestore,auth 'jest --runInBand --watch'",
-    "test:acceptance": "firebase emulators:exec --project demo-crewpoint --only firestore,auth 'jest --runInBand --config jest.acceptance.config.js'"
+    "test:acceptance": "firebase emulators:exec --project demo-crewpoint --only firestore,auth 'jest --runInBand --config jest.acceptance.config.js'",
+    "gen:roles": "tsx scripts/writeRolePresets.ts"
   },
   "engines": {
     "node": "22"

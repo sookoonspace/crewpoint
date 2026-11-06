@@ -3,6 +3,8 @@ import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 import {assertOpenToJoin} from "./eventStatus";
 import {memberDoc, memberRef, readEventRoles} from "./members";
+import {inviteRoleId} from "./generateInviteCode";
+import {PRESET_ROLES, isAdminLevel} from "./permissions";
 
 const db = getFirestore();
 
@@ -10,6 +12,8 @@ const db = getFirestore();
  * joinEvent — verifies a join code and adds the caller to the event.
  *
  * - Code must exist and not be expired
+ * - The invite's role is applied (Req 31). A role the event has removed since,
+ *   or an invite from before roles, gives Participant
  * - Caller must not already be a member
  * - Event must not exceed `memberLimit`, which caps how many people can log in.
  *   It is optional, and no value means unlimited.
@@ -90,18 +94,27 @@ export const joinEvent = onCall(
           }
 
           const roles = await readEventRoles(tx, eventRef);
+          const invited = inviteRoleId(codeData);
+          const roleId =
+            invited !== "owner" && (PRESET_ROLES[invited] || roles[invited]) ?
+              invited :
+              "participant";
           tx.set(
             memberRef(eventRef, uid),
-            memberDoc(uid, {roleIds: ["participant"]}, roles)
+            memberDoc(uid, {roleIds: [roleId]}, roles)
           );
           tx.update(eventRef, {
             memberIds: FieldValue.arrayUnion(uid),
+            ...(isAdminLevel([roleId]) ?
+              {adminIds: FieldValue.arrayUnion(uid)} :
+              {}),
             memberCount: memberIds.length + 1,
             updatedAt: FieldValue.serverTimestamp(),
           });
 
           return {
             eventId,
+            roleId,
             title: eventData.title,
             eventType: eventData.eventType,
           };

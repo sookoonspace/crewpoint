@@ -1,0 +1,255 @@
+{
+  "permissions": [
+    "event.manage",
+    "event.transfer",
+    "members.manage",
+    "roles.manage",
+    "schedule.edit",
+    "updates.send",
+    "participants.read",
+    "participants.edit",
+    "participants.readPrivate",
+    "participants.import",
+    "group.readOwn",
+    "group.editOwn",
+    "registrations.manage",
+    "money.read",
+    "money.record",
+    "money.refund",
+    "money.dueAtDoor",
+    "budget.read",
+    "budget.edit",
+    "expenses.readAll",
+    "contributions.manage",
+    "tasks.manage",
+    "chat.send",
+    "chat.urgent",
+    "messages.send",
+    "checkin.scan",
+    "checkin.lookup",
+    "counts.read",
+    "incidents.report",
+    "incidents.receive",
+    "reports.export",
+    "competition.manage",
+    "scores.enter"
+  ],
+  "presets": [
+    {
+      "id": "owner",
+      "name": "Owner",
+      "permissions": [
+        "event.manage",
+        "event.transfer",
+        "members.manage",
+        "roles.manage",
+        "schedule.edit",
+        "updates.send",
+        "participants.read",
+        "participants.edit",
+        "participants.readPrivate",
+        "participants.import",
+        "group.readOwn",
+        "group.editOwn",
+        "registrations.manage",
+        "money.read",
+        "money.record",
+        "money.refund",
+        "money.dueAtDoor",
+        "budget.read",
+        "budget.edit",
+        "expenses.readAll",
+        "contributions.manage",
+        "tasks.manage",
+        "chat.send",
+        "chat.urgent",
+        "messages.send",
+        "checkin.scan",
+        "checkin.lookup",
+        "counts.read",
+        "incidents.report",
+        "incidents.receive",
+        "reports.export",
+        "competition.manage",
+        "scores.enter"
+      ]
+    },
+    {
+      "id": "coOwner",
+      "name": "Co-owner",
+      "permissions": [
+        "event.manage",
+        "members.manage",
+        "roles.manage",
+        "schedule.edit",
+        "updates.send",
+        "participants.read",
+        "participants.edit",
+        "participants.readPrivate",
+        "participants.import",
+        "group.readOwn",
+        "group.editOwn",
+        "registrations.manage",
+        "money.read",
+        "money.record",
+        "money.refund",
+        "money.dueAtDoor",
+        "budget.read",
+        "budget.edit",
+        "expenses.readAll",
+        "contributions.manage",
+        "tasks.manage",
+        "chat.send",
+        "chat.urgent",
+        "messages.send",
+        "checkin.scan",
+        "checkin.lookup",
+        "counts.read",
+        "incidents.report",
+        "incidents.receive",
+        "reports.export",
+        "competition.manage",
+        "scores.enter"
+      ]
+    },
+    {
+      "id": "admin",
+      "name": "Admin",
+      "permissions": [
+        "event.manage",
+        "members.manage",
+        "schedule.edit",
+        "updates.send",
+        "participants.read",
+        "participants.edit",
+        "participants.readPrivate",
+        "participants.import",
+        "group.readOwn",
+        "group.editOwn",
+        "registrations.manage",
+        "money.read",
+        "money.record",
+        "money.refund",
+        "money.dueAtDoor",
+        "budget.read",
+        "budget.edit",
+        "expenses.readAll",
+        "contributions.manage",
+        "tasks.manage",
+        "chat.send",
+        "chat.urgent",
+        "messages.send",
+        "checkin.scan",
+        "checkin.lookup",
+        "counts.read",
+        "incidents.report",
+        "incidents.receive",
+        "reports.export",
+        "competition.manage",
+        "scores.enter"
+      ]
+    },
+    {
+      "id": "finance",
+      "name": "Finance",
+      "permissions": [
+        "money.read",
+        "money.record",
+        "money.refund",
+        "budget.read",
+        "budget.edit",
+        "expenses.readAll",
+        "contributions.manage",
+        "participants.read",
+        "counts.read",
+        "reports.export",
+        "chat.send",
+        "group.readOwn"
+      ]
+    },
+    {
+      "id": "crewLead",
+      "name": "Crew lead",
+      "permissions": [
+        "tasks.manage",
+        "schedule.edit",
+        "updates.send",
+        "participants.read",
+        "participants.edit",
+        "money.dueAtDoor",
+        "counts.read",
+        "chat.send",
+        "chat.urgent",
+        "messages.send",
+        "incidents.report",
+        "incidents.receive",
+        "group.readOwn"
+      ]
+    },
+    {
+      "id": "crewMember",
+      "name": "Crew member",
+      "permissions": [
+        "updates.send",
+        "participants.read",
+        "money.dueAtDoor",
+        "counts.read",
+        "chat.send",
+        "incidents.report",
+        "incidents.receive",
+        "group.readOwn"
+      ]
+    },
+    {
+      "id": "volunteer",
+      "name": "Volunteer",
+      "permissions": [
+        "checkin.scan",
+        "checkin.lookup",
+        "money.dueAtDoor",
+        "incidents.report",
+        "chat.send",
+        "group.readOwn"
+      ]
+    },
+    {
+      "id": "scorer",
+      "name": "Scorer",
+      "permissions": [
+        "scores.enter",
+        "chat.send",
+        "group.readOwn"
+      ]
+    },
+    {
+      "id": "vendor",
+      "name": "Vendor",
+      "permissions": [
+        "group.readOwn"
+      ]
+    },
+    {
+      "id": "sponsor",
+      "name": "Sponsor",
+      "permissions": [
+        "chat.send",
+        "group.readOwn"
+      ]
+    },
+    {
+      "id": "participant",
+      "name": "Participant",
+      "permissions": [
+        "chat.send",
+        "group.readOwn"
+      ]
+    },
+    {
+      "id": "observer",
+      "name": "Observer",
+      "permissions": [
+        "group.readOwn"
+      ]
+    }
+  ]
+}

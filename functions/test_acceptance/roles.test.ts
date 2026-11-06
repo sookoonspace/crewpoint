@@ -11,6 +11,8 @@ const firebaseFunctionsTest = require('firebase-functions-test');
 const ftest = firebaseFunctionsTest();
 getAdminApp();
 const {setMemberRoles, saveEventRole} = require('../src/events/roles');
+const {generateInviteCode} = require('../src/events/generateInviteCode');
+const {joinEvent} = require('../src/events/joinEvent');
 
 const E = 'roles';
 const member = async (uid: string) =>
@@ -60,6 +62,15 @@ describe('roles', () => {
   test('GAP-CON-30 a Vendor holds nothing beyond their own group', async () => {
     await assign('vendor', ['vendor']);
     expect((await member('vendor')).permissions).toEqual(['group.readOwn']);
+  });
+});
+
+describe('invites carry a role', () => {
+  test('GAP-ANY-33 an owner invites a speaker straight into a role, with no promotion after', async () => {
+    const {code} = await ftest.wrap(generateInviteCode)({auth: {uid: 'owner'}, data: {eventId: E, roleId: 'crewMember'}});
+    await ftest.wrap(joinEvent)({auth: {uid: 'speaker'}, data: {joinCode: code}});
+    expect((await member('speaker')).roleIds).toEqual(['crewMember']);
+    expect((await member('speaker')).permissions).toContain('incidents.report');
   });
 });
 

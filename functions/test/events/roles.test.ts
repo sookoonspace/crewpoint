@@ -9,7 +9,7 @@ import {PRESET_ROLES, computePermissions} from '../../src/events/permissions';
 const firebaseFunctionsTest = require('firebase-functions-test');
 const ftest = firebaseFunctionsTest();
 getAdminApp();
-const {setMemberRoles, saveEventRole} = require('../../src/events/roles');
+const {setMemberRoles, saveEventRole, deleteEventRole} = require('../../src/events/roles');
 /* eslint-enable @typescript-eslint/no-var-requires */
 
 const E = 'evt';
@@ -177,5 +177,51 @@ describe('saveEventRole guards', () => {
     await getAdminDb().doc(`events/${E}`).delete();
     await expect(saveRole('owner', {roleId: 'x', name: 'X', permissions: []}))
       .rejects.toEqual(rejected('not-found'));
+  });
+});
+
+const deleteRole = (uid: string, roleId: unknown) =>
+  ftest.wrap(deleteEventRole)({auth: {uid}, data: {eventId: E, roleId}});
+
+describe('deleteEventRole', () => {
+  test('deleting an edited preset resets it, and recalculates its holders', async () => {
+    await seed();
+    await saveRole('owner', {roleId: 'participant', name: 'Guest', permissions: ['counts.read']});
+    await deleteRole('owner', 'participant');
+    expect(await role('participant')).toBeUndefined();
+    expect((await member('m'))?.permissions).toEqual(computePermissions(['participant'], {}));
+  });
+
+  test('a custom role nobody holds is deleted', async () => {
+    await seed();
+    await saveRole('owner', {roleId: 'hospitality', name: 'Hospitality', permissions: ['chat.send']});
+    await deleteRole('owner', 'hospitality');
+    expect(await role('hospitality')).toBeUndefined();
+  });
+
+  test('a custom role someone still holds is kept, so nobody is left with no role', async () => {
+    await seed();
+    await saveRole('owner', {roleId: 'hospitality', name: 'Hospitality', permissions: ['chat.send']});
+    await assign('owner', 'm', ['hospitality']);
+    await expect(deleteRole('owner', 'hospitality')).rejects.toEqual(rejected('failed-precondition'));
+    expect(await role('hospitality')).toBeDefined();
+  });
+
+  test('needs roles.manage, and the event must be open and exist', async () => {
+    await seed();
+    await saveRole('owner', {roleId: 'x', name: 'X', permissions: []});
+    await expect(deleteRole('admin', 'x')).rejects.toEqual(rejected('permission-denied'));
+    await expect(deleteRole('owner', 'a/b')).rejects.toEqual(rejected('invalid-argument'));
+    await getAdminDb().doc(`events/${E}`).update({status: 'archived'});
+    await expect(deleteRole('owner', 'x')).rejects.toEqual(rejected('failed-precondition'));
+    await getAdminDb().doc(`events/${E}`).delete();
+    await expect(deleteRole('owner', 'x')).rejects.toEqual(rejected('not-found'));
+    expect(await role('x')).toBeDefined();
+  });
+
+  test('deleting a role the event has no version of changes nothing', async () => {
+    await seed();
+    await deleteRole('owner', 'finance');
+    expect((await member('m'))?.roleIds).toEqual(['participant']);
   });
 });
