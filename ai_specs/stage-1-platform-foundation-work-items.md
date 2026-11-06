@@ -603,15 +603,15 @@ Display all dates in the event's time zone, and keep stored times correct across
 - Since #59, `timeZone` is stored on every event and edited on the settings screen as a validated text field, because the zone list arrives with the `timezone` package. Replace it with a picker here. `createEvent` falls back to `UTC` for a zone the server does not know.
 
 ### Acceptance criteria
-- [ ] All dates display in the event's time zone, with the zone shown where a viewer's device differs.
-- [ ] Session times are stored in UTC along with the event's zone.
-- [ ] Date-only events stay on the chosen calendar date in every zone.
-- [ ] Times stay correct across daylight-saving changes.
-- [ ] The `timezone` package and its web data are added, with the exact resolved version as the caret floor.
-- [ ] Time logic uses `Clock` and is covered by unit tests, including a daylight-saving change.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] Tests for scenario GE-07 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] All dates display in the event's time zone, with the zone shown where a viewer's device differs.
+- [x] Session times are stored in UTC along with the event's zone.
+- [x] Date-only events stay on the chosen calendar date in every zone.
+- [x] Times stay correct across daylight-saving changes.
+- [x] The `timezone` package and its web data are added, with the exact resolved version as the caret floor.
+- [x] Time logic uses `Clock` and is covered by unit tests, including a daylight-saving change.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] Tests for scenario GE-07 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 6

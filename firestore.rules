@@ -262,6 +262,13 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // App config, such as the minimum app version. Read before sign-in, so
+    // it is public. Changed only from the console or the Admin SDK.
+    match /config/app {
+      allow read: if true;
+      allow write: if false;
+    }
+
     match /event_invites/{code} {
       allow read, write: if false;
     }

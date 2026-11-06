@@ -444,6 +444,34 @@ describe('organizers — written only by the server', () => {
   });
 });
 
+describe('config/app — public read, no client write', () => {
+  const C = 'config/app';
+  const seed = () =>
+    env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), C), {minVersion: '1.0.0'});
+    });
+
+  test('anyone can read it, even signed out', async () => {
+    await seed();
+    await assertSucceeds(getDoc(doc(env.unauthenticatedContext().firestore(), C)));
+    await assertSucceeds(getDoc(doc(env.authenticatedContext('me').firestore(), C)));
+  });
+
+  test('no client can write it', async () => {
+    await seed();
+    const db = env.authenticatedContext('me').firestore();
+    await assertFails(updateDoc(doc(db, C), {minVersion: '0.0.1'}));
+    await assertFails(setDoc(doc(db, 'config/other'), {minVersion: '0.0.1'}));
+  });
+
+  test('other config documents stay private', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'config/secret'), {x: 1});
+    });
+    await assertFails(getDoc(doc(env.authenticatedContext('me').firestore(), 'config/secret')));
+  });
+});
+
 describe('events create — only the createEvent callable', () => {
   test('a client cannot create an event directly, even as its owner', async () => {
     const db = env.authenticatedContext('me').firestore();

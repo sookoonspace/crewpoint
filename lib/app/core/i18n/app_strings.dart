@@ -35,6 +35,7 @@ abstract class AppStrings {
   BudgetStrings get budget;
   ProfileStrings get profile;
   NavStrings get nav;
+  UpdateStrings get update;
 
   /// Static English fallback. Used by service-layer code that has no
   /// `BuildContext` in scope (e.g. `firebaseAuthErrorMessage`). UI code
@@ -457,6 +458,9 @@ class _EnglishStrings extends AppStrings {
 
   @override
   ErrorStrings get errors => const _EnglishErrorStrings();
+
+  @override
+  UpdateStrings get update => const _EnglishUpdateStrings();
 
   @override
   TasksStrings get tasks => const _EnglishTasksStrings();
@@ -1247,4 +1251,38 @@ class _EnglishErrorStrings extends ErrorStrings {
   @override
   String get genericFallback =>
       'An unexpected error occurred. Please try again.';
+}
+
+/// The full-screen message shown below the minimum app version (Req 34a).
+abstract class UpdateStrings {
+  const UpdateStrings();
+
+  String get title;
+  String get body;
+  String get openStore;
+  String get reload;
+
+  /// Shown when there is no store link, so the person knows where to look.
+  String get noStoreLink;
+}
+
+class _EnglishUpdateStrings extends UpdateStrings {
+  const _EnglishUpdateStrings();
+
+  @override
+  String get title => 'Update CrewPoint';
+
+  @override
+  String get body =>
+      'This version of CrewPoint is no longer supported. Update to keep '
+      'using it.';
+
+  @override
+  String get openStore => 'Update now';
+
+  @override
+  String get reload => 'Reload';
+
+  @override
+  String get noStoreLink => 'Get the latest version from your app store.';
 }

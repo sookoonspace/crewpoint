@@ -72,7 +72,7 @@ Drift schema is at v10 with explicit migrations in `lib/app/core/database/app_da
 
 ### Test seams
 
-Every platform call is behind an interface so tests never touch a real SDK: `IAuthService`, `IUserRepository`, `IFcmGateway`, `IChatService`, `IUrlLauncher`, `IFileExporter`, `IAppBadgePlatform`, `INotificationChannels`, `IDeviceTimezone`, `AppLifecycleSource`, and injected `Clock` for time-sensitive logic (e.g. the settle-confirm window). Adding a new platform dependency means adding a seam + provider, not calling the plugin from a widget.
+Every platform call is behind an interface so tests never touch a real SDK: `IAuthService`, `IUserRepository`, `IFcmGateway`, `IChatService`, `IUrlLauncher`, `IFileExporter`, `IAppBadgePlatform`, `INotificationChannels`, `IDeviceTimezone`, `IAppInfo`, `IAppConfigSource`, `IPageReloader`, `AppLifecycleSource`, and injected `Clock` for time-sensitive logic (e.g. the settle-confirm window). Adding a new platform dependency means adding a seam + provider, not calling the plugin from a widget.
 
 Conditional imports handle compile-time platform splits: `database/connection/native.dart` vs `web.dart`, `services/file_export_service_native.dart` vs `_web.dart` (`if (dart.library.html)`).
 
@@ -80,7 +80,7 @@ Conditional imports handle compile-time platform splits: `database/connection/na
 
 Double-enforced. Client gates UI via `Event.isOwner` / `isAdmin` / `isMember` and per-feature predicates (`TaskModel.canChangeStatus`); `firestore.rules` and the Cloud Functions enforce the same contract server-side. Privileged mutations are callables, not direct writes — `createEvent`, `changeEventCurrency`, `joinEvent`, `removeEventMember`, `promoteToAdmin`, `demoteAdmin`, `deleteEvent`, `markTaskComplete`, `saveExpense`, `recordSettlement`, `disputeSettlement`, `generateInviteCode`, `deleteUserAccount`. Firestore triggers (`onUrgentMessageCreated`, `onTaskAssigned`, `onExpenseCreated`, `onSettlementDisputed`, `onMemberJoined`, `onTaskDueScheduled`, `onDigestSummary`) drive push. `onEventStatusScheduled` moves events to `live` and `ended`. All exported from `functions/src/index.ts`; `docs/cloud-functions-guide.md` holds the authoritative Function Registry.
 
-Firestore data model: `events/{eventId}` with `messages`, `tasks` (+ `tasks/{id}/checklist`), `expenses` subcollections; `organizers/{uid}` (a person's personal organizer, written only by the server, holding `verified`); `event_invites/{code}`; `users/{uid}` with `private`, `chatReads`, `eventMutes` subcollections.
+Firestore data model: `events/{eventId}` with `messages`, `tasks` (+ `tasks/{id}/checklist`), `expenses` subcollections; `organizers/{uid}` (a person's personal organizer, written only by the server, holding `verified`); `event_invites/{code}`; `config/app` (public read, no client write; `minVersion` and optional `storeUrls.ios` / `storeUrls.android`, set from the console); `users/{uid}` with `private`, `chatReads`, `eventMutes` subcollections.
 
 Events carry `templateId`, `organizerId`, `timeZone`, `venues`, `currency`, `languages`, `status`, `modules`, `labels`, `settings`, `capacity` and `memberLimit`, and need only a title. `eventType` survives on older events as display text only. Older events lack the new fields, so reads must fall back to the same defaults as `createEvent`.
 
@@ -89,6 +89,8 @@ Event dates are calendar dates: with `dateOnly: true` they are stored as midnigh
 `modules` turns `tasks`, `budget` and `chat` on and off, and a module missing from the map is on. Turned-off modules keep their data. New server paths and rules for a module must check `isModuleOn`, and routes use `ModuleGuard`.
 
 `status` is `draft`, `published`, `live`, `ended` or `archived`, and new events start as `draft`. Older events may still hold `active` until the #65 migration, which reads as `ended` past the end date, or else `published`. `firestore.rules` and `functions/src/events/eventStatus.ts` enforce what each status allows, and `EventModel` mirrors that for the UI. Plain members must never be in a draft, because list queries cannot filter them out in rules: anything that adds a plain member has to refuse drafts.
+
+Below `config/app.minVersion`, `AppUpdateGate` in `MaterialApp.router`'s `builder` replaces the app with an upgrade screen: a store link on mobile, a reload on web. Android falls back to the Play Store page for the package, while iOS needs `storeUrls.ios`. If the document can't be read within five seconds, the app carries on.
 
 ### UI conventions
 
