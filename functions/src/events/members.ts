@@ -1,4 +1,5 @@
 import {FieldValue} from "firebase-admin/firestore";
+import {HttpsError} from "firebase-functions/v2/https";
 import {
   EventRoles,
   Permission,
@@ -117,12 +118,68 @@ export function rebuildMember(
  * to. Someone outside the event has none.
  */
 export async function readPermissions(
-  tx: FirebaseFirestore.Transaction,
+  tx: FirebaseFirestore.Transaction | null,
   eventRef: FirebaseFirestore.DocumentReference,
   eventData: FirebaseFirestore.DocumentData,
   uid: string
 ): Promise<Permission[]> {
-  const doc = await tx.get(memberRef(eventRef, uid));
+  const ref = memberRef(eventRef, uid);
+  const doc = tx ? await tx.get(ref) : await ref.get();
   if (doc.exists) return doc.data()!.permissions ?? [];
   return computePermissions(legacyRoleIds(eventData, uid), {});
+}
+
+/** Refuses unless [uid] holds [permission] in the event. */
+export async function requirePermission(
+  tx: FirebaseFirestore.Transaction | null,
+  eventRef: FirebaseFirestore.DocumentReference,
+  eventData: FirebaseFirestore.DocumentData,
+  uid: string,
+  permission: Permission,
+  message: string
+): Promise<Permission[]> {
+  const held = await readPermissions(tx, eventRef, eventData, uid);
+  if (!held.includes(permission)) {
+    throw new HttpsError("permission-denied", message);
+  }
+  return held;
+}
+
+/**
+ * Whether [uid] may add their own expenses and create tasks: every member
+ * except those holding only Observer or Vendor (Req 34).
+ */
+export async function contributes(
+  tx: FirebaseFirestore.Transaction | null,
+  eventRef: FirebaseFirestore.DocumentReference,
+  eventData: FirebaseFirestore.DocumentData,
+  uid: string
+): Promise<boolean> {
+  const roleIds = await readRoleIds(tx, eventRef, eventData, uid);
+  return roleIds.some((r) => r !== "observer" && r !== "vendor");
+}
+
+/** Everyone in the event holding [permission]. */
+export async function holdersOf(
+  eventRef: FirebaseFirestore.DocumentReference,
+  permission: Permission
+): Promise<string[]> {
+  const snapshot = await eventRef
+    .collection("members")
+    .where("permissions", "array-contains", permission)
+    .get();
+  return snapshot.docs.map((doc) => doc.id);
+}
+
+/** [uid]'s roles, from their member document or the old arrays. */
+export async function readRoleIds(
+  tx: FirebaseFirestore.Transaction | null,
+  eventRef: FirebaseFirestore.DocumentReference,
+  eventData: FirebaseFirestore.DocumentData,
+  uid: string
+): Promise<string[]> {
+  const ref = memberRef(eventRef, uid);
+  const doc = tx ? await tx.get(ref) : await ref.get();
+  if (doc.exists) return doc.data()!.roleIds ?? [];
+  return legacyRoleIds(eventData, uid);
 }

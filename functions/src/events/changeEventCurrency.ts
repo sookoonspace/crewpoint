@@ -2,6 +2,7 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 import {assertNotArchived} from "./eventStatus";
+import {requirePermission} from "./members";
 
 const db = getFirestore();
 
@@ -38,13 +39,15 @@ export const changeEventCurrency = onCall(
             throw new HttpsError("not-found", "Event not found.");
           }
           assertNotArchived(event.data()!);
-          const {creatorId, adminIds = [], currency: current} = event.data()!;
-          if (creatorId !== uid && !adminIds.includes(uid)) {
-            throw new HttpsError(
-              "permission-denied",
-              "Only an organizer can change the currency."
-            );
-          }
+          const current = event.data()!.currency;
+          await requirePermission(
+            tx,
+            eventRef,
+            event.data()!,
+            uid,
+            "event.manage",
+            "Only an organizer can change the currency."
+          );
           // Nothing to do, so a retry after a lost response succeeds.
           if (current === currency) return;
           for (const name of MONEY_COLLECTIONS) {

@@ -4,6 +4,7 @@ import {FieldValue, Timestamp, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 import {assertOpenToJoin} from "./eventStatus";
 
+import {requirePermission} from "./members";
 const db = getFirestore();
 
 // Characters: A-Z minus ambiguous (O, I, L) + 2-9.
@@ -68,15 +69,14 @@ export const generateInviteCode = onCall(
         }
         const eventData = eventDoc.data()!;
         assertOpenToJoin(eventData);
-        const adminIds: string[] = eventData.adminIds || [];
-        const isAuthorized =
-          eventData.creatorId === uid || adminIds.includes(uid);
-        if (!isAuthorized) {
-          throw new HttpsError(
-            "permission-denied",
-            "Only admins and the event owner can generate invite codes."
-          );
-        }
+        await requirePermission(
+          null,
+          eventDoc.ref,
+          eventData,
+          uid,
+          "members.manage",
+          "Only people who manage members can generate invite codes."
+        );
 
         const invitesRef = db.collection("event_invites");
 

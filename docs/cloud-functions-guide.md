@@ -158,6 +158,7 @@ one currently in the codebase, and the index that serves it:
 | `collectionGroup('private').where('notificationPrefs.dailyDigest', '==', true)` | `onDigestSummary` | `fieldOverrides` → `private.notificationPrefs.dailyDigest`, `COLLECTION_GROUP` ASC |
 | `collectionGroup('tasks').where('assigneeId','==').where('status','!=')` | `onDigestSummary` | composite → `tasks` (`assigneeId` ASC, `status` ASC), `COLLECTION_GROUP` |
 | `collectionGroup('expenses').where('payerId','!=')` | `onDigestSummary` | `fieldOverrides` → `expenses.payerId`, `COLLECTION_GROUP` ASC |
+| `collectionGroup('members').where('uid','==')` | the app's "My events" (#66) | `fieldOverrides` → `members.uid`, `COLLECTION_GROUP` ASC |
 
 The last three all sit inside `onDigestSummary`. The `private` query runs first, so while
 it was failing the other two had never executed — fixing only the reported index would

@@ -5,6 +5,7 @@ import {DEFAULT_MAX_EXPENSE_AMOUNT} from "./saveExpense";
 import {assertNotArchived} from "./eventStatus";
 import {assertModuleOn} from "./eventModules";
 
+import {readPermissions} from "./members";
 const db = getFirestore();
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -85,7 +86,6 @@ export const recordSettlement = onCall(
           assertModuleOn(event, "budget");
           const memberIds: string[] = event.memberIds || [];
 
-          const adminIds: string[] = event.adminIds || [];
           if (!memberIds.includes(uid)) {
             throw new HttpsError(
               "permission-denied",
@@ -103,8 +103,9 @@ export const recordSettlement = onCall(
             }
           }
 
-          const canRecordForOthers =
-            event.creatorId === uid || adminIds.includes(uid);
+          const canRecordForOthers = (
+            await readPermissions(tx, eventRef, event, uid)
+          ).includes("money.record");
           const isOwnPaymentToMember =
             payerId === uid && departed.length === 0;
           if (!isOwnPaymentToMember) {

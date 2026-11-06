@@ -2,16 +2,16 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 import {assertNotArchived} from "./eventStatus";
-import {memberRef} from "./members";
+import {memberRef, readPermissions, readRoleIds} from "./members";
 
 const db = getFirestore();
 
 /**
  * removeEventMember — removes a user from an event.
  *
- * - Caller must be admin/owner OR removing themselves (leave-event). This is
- *   `members.manage`, which owners and admins hold until permissions land.
- * - Only the owner can remove an admin, who also holds `members.manage`
+ * - Caller must hold `members.manage`, or be removing themselves (leave-event)
+ * - Removing someone who holds `members.manage` needs `roles.manage`, which
+ *   owners and co-owners hold
  * - Owner cannot be removed, and cannot leave without transferring ownership
  * - Removes target from both memberIds and adminIds, and deletes their
  *   member document, atomically
@@ -57,21 +57,22 @@ export const removeEventMember = onCall(
 
           const eventData = eventDoc.data()!;
           assertNotArchived(eventData);
-          const adminIds: string[] = eventData.adminIds || [];
           const memberIds: string[] = eventData.memberIds || [];
-
-          const callerIsAuthorized =
-            eventData.creatorId === uid || adminIds.includes(uid);
           const isSelfRemoval = uid === targetUserId;
+          const [mine, theirs, theirRoles] = await Promise.all([
+            readPermissions(tx, eventRef, eventData, uid),
+            readPermissions(tx, eventRef, eventData, targetUserId),
+            readRoleIds(tx, eventRef, eventData, targetUserId),
+          ]);
 
-          if (!callerIsAuthorized && !isSelfRemoval) {
+          if (!mine.includes("members.manage") && !isSelfRemoval) {
             throw new HttpsError(
               "permission-denied",
-              "Only admins and the event owner can remove members."
+              "Only people who manage members can remove someone."
             );
           }
 
-          if (targetUserId === eventData.creatorId) {
+          if (theirRoles.includes("owner")) {
             throw new HttpsError(
               "failed-precondition",
               "The event owner cannot be removed, and can only leave after " +
@@ -80,13 +81,13 @@ export const removeEventMember = onCall(
           }
 
           if (
-            adminIds.includes(targetUserId) &&
+            theirs.includes("members.manage") &&
             !isSelfRemoval &&
-            eventData.creatorId !== uid
+            !mine.includes("roles.manage")
           ) {
             throw new HttpsError(
               "permission-denied",
-              "Only the event owner can remove an admin."
+              "Only an owner or co-owner can remove someone who manages members."
             );
           }
 

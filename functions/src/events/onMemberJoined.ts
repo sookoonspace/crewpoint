@@ -2,6 +2,7 @@ import {resolveLabel} from "../notifications/labels";
 import {onDocumentWritten} from "firebase-functions/v2/firestore";
 import {logger} from "firebase-functions/v2";
 import {sendCategorizedPush} from "../notifications/sendPush";
+import {holdersOf} from "./members";
 
 /**
  * Returns the uids that appear in [after] but not in [before].
@@ -63,21 +64,17 @@ export const onMemberJoined = onDocumentWritten(
 
     const eventId = event.params.eventId;
     const eventTitle = (after.title as string | undefined) ?? "Event";
-    const adminIds = (after.adminIds as string[] | undefined) ?? [];
-
-    if (adminIds.length === 0) {
-      logger.warn(
-        `onMemberJoined: event ${eventId} has no admins to notify ` +
-          `(${joiners.length} joiner(s))`
-      );
-      return;
-    }
+    const eventRef = event.data!.after.ref;
 
     for (const joiner of joiners) {
-      // Recipients = admins minus the joiner (in case a future flow lands
-      // them in both arrays at once).
-      const recipientUids = adminIds.filter((uid) => uid !== joiner);
-      if (recipientUids.length === 0) continue;
+      const recipientUids = await memberJoinedRecipients(eventRef, joiner);
+      if (recipientUids.length === 0) {
+        logger.warn(
+          `onMemberJoined: event ${eventId} has nobody managing members ` +
+            `to tell about ${joiner}`
+        );
+        continue;
+      }
 
       const result = await sendCategorizedPush({
         recipientUids,
@@ -96,3 +93,15 @@ export const onMemberJoined = onDocumentWritten(
     }
   }
 );
+
+/**
+ * Who hears that [joiner] joined: everyone holding `members.manage`, except
+ * the joiner.
+ */
+export async function memberJoinedRecipients(
+  eventRef: FirebaseFirestore.DocumentReference,
+  joiner: string
+): Promise<string[]> {
+  const holders = await holdersOf(eventRef, "members.manage");
+  return holders.filter((uid) => uid !== joiner);
+}

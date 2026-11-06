@@ -12,6 +12,7 @@ import {
   arrayUnion,
   arrayRemove,
   collection,
+  collectionGroup,
   getDocs,
   query,
   serverTimestamp,
@@ -1298,5 +1299,104 @@ describe('removed members lose write access', () => {
   ])('%s: denied once removed, allowed while a member', async (_name, write) => {
     await assertFails(write('gone'));
     await assertSucceeds(write('current'));
+  });
+});
+
+describe('rules read permissions from member documents (#66)', () => {
+  const E = 'events/perm';
+  const as = (uid: string) => env.authenticatedContext(uid).firestore();
+  const people: Record<string, string[]> = {
+    owner: ['owner'],
+    finance: ['finance'],
+    lead: ['crewLead'],
+    plain: ['participant'],
+    observer: ['observer'],
+    vendor: ['vendor'],
+    manager: ['custom'],
+  };
+
+  async function seed(over: object = {}) {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, E), {
+        title: 'Fest',
+        status: 'published',
+        creatorId: 'owner',
+        adminIds: ['owner'],
+        memberIds: Object.keys(people),
+        ...over,
+      });
+      const {computePermissions} = await import('../src/events/permissions');
+      const roles = {custom: {permissions: ['event.manage']}};
+      for (const [uid, roleIds] of Object.entries(people)) {
+        await setDoc(doc(db, `${E}/members/${uid}`), {
+          uid, roleIds, crewIds: [], permissions: computePermissions(roleIds, roles),
+        });
+      }
+      await setDoc(doc(db, `${E}/expenses/x`), {payerId: 'plain', amount: 5});
+      await setDoc(doc(db, `${E}/tasks/t`), {eventId: 'perm', title: 'T', createdBy: 'plain', status: 'todo'});
+    });
+  }
+
+  test('money.record lets Finance delete an expense it did not pay', async () => {
+    await seed();
+    await assertSucceeds(deleteDoc(doc(as('finance'), `${E}/expenses/x`)));
+  });
+
+  test('tasks.manage lets a Crew lead edit any task, and a Participant cannot', async () => {
+    await seed();
+    await assertSucceeds(updateDoc(doc(as('lead'), `${E}/tasks/t`), {title: 'Lead'}));
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `${E}/tasks/t2`), {eventId: 'perm', title: 'T', createdBy: 'lead', status: 'todo'});
+    });
+    await assertFails(updateDoc(doc(as('plain'), `${E}/tasks/t2`), {title: 'No'}));
+  });
+
+  test('chat.urgent lets a Crew lead send urgent, and chat.send is needed at all', async () => {
+    await seed();
+    const message = (uid: string, urgent: boolean) =>
+      setDoc(doc(as(uid), `${E}/messages/${uid}${urgent}`), {senderId: uid, text: 'Hi', isHighPriority: urgent});
+    await assertSucceeds(message('lead', true));
+    await assertFails(message('plain', true));
+    await assertSucceeds(message('plain', false));
+    await assertFails(message('observer', false));
+  });
+
+  test('Observer and Vendor cannot create tasks, and everyone else can', async () => {
+    await seed();
+    const task = (uid: string) =>
+      setDoc(doc(as(uid), `${E}/tasks/new-${uid}`), {eventId: 'perm', title: 'N', createdBy: uid, status: 'todo'});
+    await assertFails(task('observer'));
+    await assertFails(task('vendor'));
+    await assertSucceeds(task('plain'));
+    await assertSucceeds(task('finance'));
+  });
+
+  test('a custom role with event.manage can change settings', async () => {
+    await seed();
+    await assertSucceeds(updateDoc(doc(as('manager'), E), {title: 'Renamed'}));
+    await assertFails(updateDoc(doc(as('lead'), E), {title: 'No'}));
+  });
+
+  test('without a member document there is no access, even if still in the array', async () => {
+    await seed({skipMemberSync: true});
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await deleteDoc(doc(ctx.firestore(), `${E}/members/plain`));
+    });
+    await assertFails(getDoc(doc(as('plain'), `${E}/tasks/t`)));
+  });
+
+  test('a draft is visible only with event.manage', async () => {
+    await seed({status: 'draft'});
+    await assertSucceeds(getDoc(doc(as('manager'), E)));
+    await assertFails(getDoc(doc(as('lead'), E)));
+  });
+
+  test('My events: anyone can list their own member documents, and only their own', async () => {
+    await seed();
+    const mine = query(collectionGroup(as('plain'), 'members'), where('uid', '==', 'plain'));
+    await assertSucceeds(getDocs(mine));
+    const theirs = query(collectionGroup(as('plain'), 'members'), where('uid', '==', 'owner'));
+    await assertFails(getDocs(theirs));
   });
 });

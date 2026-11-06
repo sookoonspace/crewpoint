@@ -2,7 +2,9 @@
 // Acceptance tests for the data parts of roles (#65). Test names start with the
 // scenario ID. These scenarios finish with the role screens in #67, so they are
 // not yet on the finished list. Runs on the emulators only.
-import {clearFirestoreEmulator, getAdminApp, getAdminDb} from '../test/setup';
+import {assertFails, RulesTestEnvironment} from '@firebase/rules-unit-testing';
+import {doc, getDoc, setDoc} from 'firebase/firestore';
+import {clearFirestoreEmulator, getAdminApp, getAdminDb, getTestEnv} from '../test/setup';
 import {PRESET_ROLES, computePermissions} from '../src/events/permissions';
 
 const firebaseFunctionsTest = require('firebase-functions-test');
@@ -58,5 +60,41 @@ describe('roles', () => {
   test('GAP-CON-30 a Vendor holds nothing beyond their own group', async () => {
     await assign('vendor', ['vendor']);
     expect((await member('vendor')).permissions).toEqual(['group.readOwn']);
+  });
+});
+
+describe('H-06 dual roles', () => {
+  test('H-06 two roles grant the union of their permissions', async () => {
+    await assign('lead', ['crewMember', 'scorer']);
+    const permissions = (await member('lead')).permissions;
+    expect(permissions).toEqual(expect.arrayContaining(['incidents.report', 'scores.enter']));
+    expect(permissions).not.toContain('money.read');
+  });
+
+  test("H-06 a group's contact edits their own group, whatever their roles", async () => {
+    await getAdminDb().doc(`events/${E}/members/lead`).set({uid: 'lead', roleIds: ['participant'], editsOwnGroup: true});
+    await assign('lead', ['crewMember']);
+    expect((await member('lead')).permissions).toEqual(expect.arrayContaining(['group.readOwn', 'group.editOwn']));
+  });
+
+  // Planned gap until #72 limits expense reads to the people involved.
+  test('H-06 sees no expense they are not part of', async () => {
+    const env: RulesTestEnvironment = await getTestEnv();
+    try {
+      await env.withSecurityRulesDisabled(async (ctx) => {
+        const db = ctx.firestore();
+        await setDoc(doc(db, 'events/h06'), {
+          title: 'Convention', status: 'published', creatorId: 'owner',
+          adminIds: ['owner'], memberIds: ['owner', 'amit', 'other'],
+        });
+        await setDoc(doc(db, 'events/h06/expenses/fee'), {
+          payerId: 'other', amount: 50, splits: [{userId: 'other', amount: 50}], involvedUids: ['other'],
+        });
+      });
+      await assertFails(getDoc(doc(env.authenticatedContext('amit').firestore(), 'events/h06/expenses/fee')));
+    } finally {
+      await env.clearFirestore();
+      await env.cleanup();
+    }
   });
 });

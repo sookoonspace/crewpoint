@@ -2,14 +2,14 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 import {assertNotArchived} from "./eventStatus";
-import {prepareRoleChange} from "./members";
+import {prepareRoleChange, requirePermission} from "./members";
 
 const db = getFirestore();
 
 /**
  * promoteToAdmin — promotes an event member to admin.
  *
- * - Caller must be event owner (creatorId)
+ * - Caller must hold `roles.manage` (owners and co-owners)
  * - Target must be an existing member
  * - Adds target to adminIds via arrayUnion, and swaps Participant for Admin
  *   on their member document
@@ -47,12 +47,14 @@ export const promoteToAdmin = onCall(
           assertNotArchived(eventData);
           const memberIds: string[] = eventData.memberIds || [];
 
-          if (eventData.creatorId !== uid) {
-            throw new HttpsError(
-              "permission-denied",
-              "Only the event owner can promote admins."
-            );
-          }
+          await requirePermission(
+            tx,
+            eventRef,
+            eventData,
+            uid,
+            "roles.manage",
+            "Only an owner or co-owner can promote admins."
+          );
 
           if (!memberIds.includes(targetUserId)) {
             throw new HttpsError(
