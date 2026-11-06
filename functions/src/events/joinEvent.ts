@@ -2,6 +2,7 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 import {assertOpenToJoin} from "./eventStatus";
+import {memberDoc, memberRef, readEventRoles} from "./members";
 
 const db = getFirestore();
 
@@ -88,6 +89,11 @@ export const joinEvent = onCall(
             throw new HttpsError("resource-exhausted", "This event is full.");
           }
 
+          const roles = await readEventRoles(tx, eventRef);
+          tx.set(
+            memberRef(eventRef, uid),
+            memberDoc(uid, {roleIds: ["participant"]}, roles)
+          );
           tx.update(eventRef, {
             memberIds: FieldValue.arrayUnion(uid),
             memberCount: memberIds.length + 1,

@@ -444,6 +444,38 @@ describe('organizers — written only by the server', () => {
   });
 });
 
+describe('members and roles — read by members, written only by the server', () => {
+  const seed = () =>
+    env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, 'events/e'), {
+        creatorId: 'owner', adminIds: ['owner'], memberIds: ['owner', 'm'],
+        status: 'published',
+      });
+      await setDoc(doc(db, 'events/e/members/m'), {uid: 'm', roleIds: ['participant'], permissions: ['chat.send']});
+      await setDoc(doc(db, 'events/e/roles/custom'), {name: 'Custom', permissions: ['chat.send']});
+    });
+
+  test('members can read member and role documents, and outsiders cannot', async () => {
+    await seed();
+    const member = env.authenticatedContext('m').firestore();
+    const outsider = env.authenticatedContext('x').firestore();
+    await assertSucceeds(getDoc(doc(member, 'events/e/members/m')));
+    await assertSucceeds(getDoc(doc(member, 'events/e/roles/custom')));
+    await assertFails(getDoc(doc(outsider, 'events/e/members/m')));
+    await assertFails(getDoc(doc(outsider, 'events/e/roles/custom')));
+  });
+
+  test('nobody can write permissions or roles directly, not even the owner', async () => {
+    await seed();
+    const owner = env.authenticatedContext('owner').firestore();
+    const member = env.authenticatedContext('m').firestore();
+    await assertFails(updateDoc(doc(member, 'events/e/members/m'), {permissions: ['event.manage']}));
+    await assertFails(setDoc(doc(owner, 'events/e/members/new'), {uid: 'new', roleIds: ['admin']}));
+    await assertFails(setDoc(doc(owner, 'events/e/roles/custom'), {name: 'X', permissions: []}));
+  });
+});
+
 describe('config/app — public read, no client write', () => {
   const C = 'config/app';
   const seed = () =>

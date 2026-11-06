@@ -2,6 +2,7 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 import {assertNotArchived} from "./eventStatus";
+import {prepareRoleChange} from "./members";
 
 const db = getFirestore();
 
@@ -13,7 +14,9 @@ const db = getFirestore();
  * - Owner cannot be demoted
  * - Refuses to demote the last remaining admin (would leave the
  *   event in a degraded zero-admins state)
- * - Removes target from adminIds via arrayRemove (stays in memberIds)
+ * - Removes target from adminIds via arrayRemove (stays in memberIds), and
+ *   removes Admin from their member document, leaving Participant if no
+ *   role is left
  *
  * Idempotency: arrayRemove is no-op when uid is already gone.
  */
@@ -36,54 +39,68 @@ export const demoteAdmin = onCall(
     return withStructuredLogs(
       {op: "demoteAdmin", uid, args: {eventId, targetUserId}},
       async () => {
-        const eventDoc = await db.collection("events").doc(eventId).get();
-        if (!eventDoc.exists) {
-          throw new HttpsError("not-found", "Event not found.");
-        }
+        const eventRef = db.collection("events").doc(eventId);
+        await db.runTransaction(async (tx) => {
+          const eventDoc = await tx.get(eventRef);
+          if (!eventDoc.exists) {
+            throw new HttpsError("not-found", "Event not found.");
+          }
 
-        const eventData = eventDoc.data()!;
-        assertNotArchived(eventData);
-        // Nobody but organizers can see a draft, so its members must stay so.
-        if (eventData.status === "draft") {
-          throw new HttpsError(
-            "failed-precondition",
-            "Publish this event before changing its admins."
+          const eventData = eventDoc.data()!;
+          assertNotArchived(eventData);
+          // Nobody but organizers can see a draft, so its members must stay so.
+          if (eventData.status === "draft") {
+            throw new HttpsError(
+              "failed-precondition",
+              "Publish this event before changing its admins."
+            );
+          }
+          const adminIds: string[] = eventData.adminIds || [];
+
+          if (eventData.creatorId !== uid) {
+            throw new HttpsError(
+              "permission-denied",
+              "Only the event owner can demote admins."
+            );
+          }
+
+          if (targetUserId === eventData.creatorId) {
+            throw new HttpsError(
+              "failed-precondition",
+              "The event owner cannot be demoted."
+            );
+          }
+
+          if (!adminIds.includes(targetUserId)) {
+            throw new HttpsError(
+              "failed-precondition",
+              "Target user is not an admin of this event."
+            );
+          }
+
+          if (adminIds.length <= 1) {
+            throw new HttpsError(
+              "failed-precondition",
+              "Cannot demote the last remaining admin. " +
+                "Promote another member first."
+            );
+          }
+
+          const writeMember = await prepareRoleChange(
+            tx,
+            eventRef,
+            eventData,
+            targetUserId,
+            (roleIds) => {
+              const left = roleIds.filter((r) => r !== "admin");
+              return left.length > 0 ? left : ["participant"];
+            }
           );
-        }
-        const adminIds: string[] = eventData.adminIds || [];
-
-        if (eventData.creatorId !== uid) {
-          throw new HttpsError(
-            "permission-denied",
-            "Only the event owner can demote admins."
-          );
-        }
-
-        if (targetUserId === eventData.creatorId) {
-          throw new HttpsError(
-            "failed-precondition",
-            "The event owner cannot be demoted."
-          );
-        }
-
-        if (!adminIds.includes(targetUserId)) {
-          throw new HttpsError(
-            "failed-precondition",
-            "Target user is not an admin of this event."
-          );
-        }
-
-        if (adminIds.length <= 1) {
-          throw new HttpsError(
-            "failed-precondition",
-            "Cannot demote the last remaining admin. " +
-              "Promote another member first."
-          );
-        }
-
-        await db.collection("events").doc(eventId).update({
-          adminIds: FieldValue.arrayRemove(targetUserId),
-          updatedAt: FieldValue.serverTimestamp(),
+          writeMember();
+          tx.update(eventRef, {
+            adminIds: FieldValue.arrayRemove(targetUserId),
+            updatedAt: FieldValue.serverTimestamp(),
+          });
         });
 
         return {success: true};

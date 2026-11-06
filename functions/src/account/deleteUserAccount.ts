@@ -1,3 +1,4 @@
+import {memberRef, prepareRoleChange} from "../events/members";
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions/v2";
 import {createHmac, randomBytes} from "crypto";
@@ -115,7 +116,8 @@ async function anonymousIdFor(
  * - Unassigns their tasks, and removes their urgent rate record
  * - Transfers creatorId and organizerId to the first admin, or else the first
  *   remaining member, who gets a personal organizer if they have none
- * - Removes them from memberIds and adminIds
+ * - Removes them from memberIds and adminIds, and deletes their member
+ *   document. A new owner's member document takes the Owner role.
  *
  * Membership changes last. A retry finds the event through memberIds, so it
  * must stay until the shared records are clean.
@@ -197,17 +199,32 @@ export async function anonymizeUserInEvent(
     adminIds: FieldValue.arrayRemove(uid),
     memberCount: remainingMembers.length,
   };
+  let nextOwner: string | null = null;
   if (remainingMembers.length > 0) {
     // Prefer first admin, fallback to first remaining member
     const remainingAdmins = adminIds.filter((a: string) => a !== uid);
-    const nextOwner = remainingAdmins[0] ?? remainingMembers[0];
-    if (eventData.creatorId === uid) updateData.creatorId = nextOwner;
+    const successor = remainingAdmins[0] ?? remainingMembers[0];
+    if (eventData.creatorId === uid) {
+      updateData.creatorId = successor;
+      nextOwner = successor;
+    }
     if (eventData.organizerId === uid) {
-      await ensurePersonalOrganizer(db, nextOwner);
-      updateData.organizerId = nextOwner;
+      await ensurePersonalOrganizer(db, successor);
+      updateData.organizerId = successor;
     }
   }
-  await eventRef.update(updateData);
+  await db.runTransaction(async (tx) => {
+    // The next owner takes the Owner role in place of Admin or Participant.
+    const writeOwner = nextOwner ?
+      await prepareRoleChange(tx, eventRef, eventData, nextOwner, (ids) => [
+        ...ids.filter((r) => !["owner", "admin", "participant"].includes(r)),
+        "owner",
+      ]) :
+      () => undefined;
+    writeOwner();
+    tx.delete(memberRef(eventRef, uid));
+    tx.update(eventRef, updateData);
+  });
 }
 
 /**

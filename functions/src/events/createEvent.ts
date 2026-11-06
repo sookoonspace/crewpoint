@@ -2,6 +2,7 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {FieldValue, getFirestore, Timestamp} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 import {preparePersonalOrganizer} from "./organizers";
+import {memberDoc, memberRef} from "./members";
 
 const db = getFirestore();
 
@@ -102,6 +103,8 @@ export const createEvent = onCall({timeoutSeconds: 30}, async (request) => {
           createdAt: now,
           updatedAt: now,
         });
+        // A new event has no role documents yet, so presets apply.
+        tx.set(memberRef(eventRef, uid), memberDoc(uid, {roleIds: ["owner"]}, {}));
       });
       return {success: true};
     }

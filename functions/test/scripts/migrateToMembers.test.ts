@@ -1,0 +1,162 @@
+/**
+ * Req 34 (script): an idempotent admin script, with a dry run, converts each
+ * event to member documents while keeping everyone's access and old data.
+ * Runs on a seeded old-shape fixture in the emulators only.
+ */
+import {Timestamp} from 'firebase-admin/firestore';
+import {clearFirestoreEmulator, getAdminApp, getAdminDb} from '../setup';
+import {migrateToMembers} from '../../scripts/migrateToMembers';
+import {computePermissions} from '../../src/events/permissions';
+
+getAdminApp();
+
+const db = () => getAdminDb();
+const NOW = new Date('2026-11-06T12:00:00Z');
+const member = async (e: string, uid: string) =>
+  (await db().doc(`events/${e}/members/${uid}`).get()).data();
+const event = async (e: string) => (await db().doc(`events/${e}`).get()).data()!;
+const run = (dryRun = false) => migrateToMembers(db(), {dryRun, now: NOW});
+
+/** An event as the app wrote it before Stage 1. */
+async function seedOld(id: string, over: object = {}) {
+  await db().doc(`events/${id}`).set({
+    title: 'Old trip',
+    eventType: 'trip',
+    status: 'active',
+    creatorId: 'c',
+    adminIds: ['c', 'a'],
+    memberIds: ['c', 'a', 'm'],
+    createdAt: Timestamp.fromDate(new Date('2025-01-01T00:00:00Z')),
+    ...over,
+  });
+}
+
+beforeEach(() => clearFirestoreEmulator());
+
+describe('migrateToMembers', () => {
+  test('writes member documents from the arrays, and keeps the arrays', async () => {
+    await seedOld('e1');
+    await run();
+    expect(await member('e1', 'c')).toEqual({
+      uid: 'c',
+      roleIds: ['owner'],
+      crewIds: [],
+      permissions: computePermissions(['owner'], {}),
+      participantId: null,
+      joinedAt: Timestamp.fromDate(new Date('2025-01-01T00:00:00Z')),
+    });
+    expect((await member('e1', 'a'))?.roleIds).toEqual(['admin']);
+    expect((await member('e1', 'm'))?.roleIds).toEqual(['participant']);
+    const saved = await event('e1');
+    expect(saved.memberIds).toEqual(['c', 'a', 'm']);
+    expect(saved.adminIds).toEqual(['c', 'a']);
+  });
+
+  test('a dry run reports what would change, and writes nothing', async () => {
+    await seedOld('e1');
+    const result = await run(true);
+    expect(result).toEqual(expect.objectContaining({events: 1, memberDocs: 3}));
+    expect(await member('e1', 'c')).toBeUndefined();
+    expect((await event('e1')).status).toBe('active');
+  });
+
+  test('status maps from active, and memberCount comes from the arrays', async () => {
+    const day = (iso: string) => Timestamp.fromDate(new Date(iso));
+    await seedOld('past', {endDate: day('2026-10-01T00:00:00Z')});
+    await seedOld('future', {endDate: day('2027-01-01T00:00:00Z')});
+    await seedOld('noEnd');
+    await seedOld('draft', {status: 'draft', memberIds: ['c', 'a']});
+    const result = await run();
+    expect((await event('past')).status).toBe('ended');
+    expect((await event('future')).status).toBe('published');
+    expect((await event('noEnd')).status).toBe('published');
+    expect((await event('draft')).status).toBe('draft');
+    expect((await event('past')).memberCount).toBe(3);
+    expect((await event('draft')).memberCount).toBe(2);
+    expect(result.statuses).toBe(3);
+  });
+
+  test('an event ending today is not ended until its end date is over', async () => {
+    // Before #63, dates were midnight on the creator's device.
+    await seedOld('today', {endDate: Timestamp.fromDate(new Date('2026-11-06T05:00:00Z'))});
+    await run();
+    expect((await event('today')).status).toBe('published');
+  });
+
+  test('older expenses get involvedUids, and newer ones are left alone', async () => {
+    await seedOld('e1');
+    const expenses = db().collection('events/e1/expenses');
+    await expenses.doc('old').set({
+      payerId: 'a', amount: 30, splits: [{userId: 'a', amount: 10}, {userId: 'm', amount: 20}],
+    });
+    await expenses.doc('payment').set({
+      payerId: 'm', amount: 5, isPayment: true, splits: [{userId: 'a', amount: 5}],
+    });
+    await expenses.doc('new').set({payerId: 'c', splits: [], involvedUids: ['c', 'kept']});
+    const result = await run();
+    expect((await expenses.doc('old').get()).data()!.involvedUids).toEqual(['a', 'm']);
+    expect((await expenses.doc('payment').get()).data()!.involvedUids).toEqual(['m', 'a']);
+    expect((await expenses.doc('new').get()).data()!.involvedUids).toEqual(['c', 'kept']);
+    expect(result.involvedUids).toBe(2);
+  });
+
+  describe('dates', () => {
+    const at = (iso: string) => Timestamp.fromDate(new Date(iso));
+    const iso = async (e: string, field: string) =>
+      ((await event(e))[field] as Timestamp).toDate().toISOString();
+    const creatorZone = (zone: string) =>
+      db().doc('users/c/private/profile').set({notificationPrefs: {timezone: zone}});
+
+    test("take the creator's zone, and become the day they showed there", async () => {
+      await creatorZone('America/New_York');
+      // Midnight in New York, either side of the clocks changing on 8 March.
+      await seedOld('ny', {startDate: at('2026-03-07T05:00:00Z'), endDate: at('2026-03-12T04:00:00Z')});
+      await run();
+      const saved = await event('ny');
+      expect(saved.timeZone).toBe('America/New_York');
+      expect(saved.dateOnly).toBe(true);
+      expect(await iso('ny', 'startDate')).toBe('2026-03-07T00:00:00.000Z');
+      expect(await iso('ny', 'endDate')).toBe('2026-03-12T00:00:00.000Z');
+    });
+
+    test("an event's own zone wins over the creator's", async () => {
+      await creatorZone('America/New_York');
+      await seedOld('in', {timeZone: 'Asia/Kolkata', startDate: at('2026-03-09T18:30:00Z')});
+      await run();
+      expect((await event('in')).timeZone).toBe('Asia/Kolkata');
+      expect(await iso('in', 'startDate')).toBe('2026-03-10T00:00:00.000Z');
+    });
+
+    test('with no zone known, dates are left alone and counted', async () => {
+      await seedOld('unknown', {startDate: at('2026-03-09T18:30:00Z')});
+      const result = await run();
+      const saved = await event('unknown');
+      expect(saved.timeZone).toBeUndefined();
+      expect(saved.dateOnly).toBeUndefined();
+      expect(await iso('unknown', 'startDate')).toBe('2026-03-09T18:30:00.000Z');
+      expect(result.unknownZones).toBe(1);
+    });
+
+    test('date-only events are left alone', async () => {
+      await creatorZone('America/New_York');
+      await seedOld('done', {timeZone: 'UTC', dateOnly: true, startDate: at('2026-03-10T00:00:00Z')});
+      const result = await run();
+      expect(await iso('done', 'startDate')).toBe('2026-03-10T00:00:00.000Z');
+      expect(result.dates).toBe(0);
+    });
+  });
+
+  test('running it again changes nothing, and keeps later role changes', async () => {
+    await db().doc('users/c/private/profile').set({notificationPrefs: {timezone: 'Europe/London'}});
+    await seedOld('e1', {startDate: Timestamp.fromDate(new Date('2026-07-01T23:00:00Z'))});
+    await db().doc('events/e1/expenses/x').set({payerId: 'a', splits: [{userId: 'm', amount: 1}]});
+    await run();
+    await db().doc('events/e1/members/m').update({roleIds: ['finance']});
+    const again = await run();
+    expect(again).toEqual({
+      events: 1, memberDocs: 0, statuses: 0, memberCounts: 0,
+      involvedUids: 0, dates: 0, unknownZones: 0,
+    });
+    expect((await member('e1', 'm'))?.roleIds).toEqual(['finance']);
+  });
+});

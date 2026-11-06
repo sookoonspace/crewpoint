@@ -2,6 +2,7 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 import {assertNotArchived} from "./eventStatus";
+import {prepareRoleChange} from "./members";
 
 const db = getFirestore();
 
@@ -10,7 +11,8 @@ const db = getFirestore();
  *
  * - Caller must be event owner (creatorId)
  * - Target must be an existing member
- * - Adds target to adminIds via arrayUnion
+ * - Adds target to adminIds via arrayUnion, and swaps Participant for Admin
+ *   on their member document
  *
  * Idempotency: arrayUnion is no-op when uid is already present, so
  * retries converge.
@@ -34,32 +36,46 @@ export const promoteToAdmin = onCall(
     return withStructuredLogs(
       {op: "promoteToAdmin", uid, args: {eventId, targetUserId}},
       async () => {
-        const eventDoc = await db.collection("events").doc(eventId).get();
-        if (!eventDoc.exists) {
-          throw new HttpsError("not-found", "Event not found.");
-        }
+        const eventRef = db.collection("events").doc(eventId);
+        await db.runTransaction(async (tx) => {
+          const eventDoc = await tx.get(eventRef);
+          if (!eventDoc.exists) {
+            throw new HttpsError("not-found", "Event not found.");
+          }
 
-        const eventData = eventDoc.data()!;
-        assertNotArchived(eventData);
-        const memberIds: string[] = eventData.memberIds || [];
+          const eventData = eventDoc.data()!;
+          assertNotArchived(eventData);
+          const memberIds: string[] = eventData.memberIds || [];
 
-        if (eventData.creatorId !== uid) {
-          throw new HttpsError(
-            "permission-denied",
-            "Only the event owner can promote admins."
+          if (eventData.creatorId !== uid) {
+            throw new HttpsError(
+              "permission-denied",
+              "Only the event owner can promote admins."
+            );
+          }
+
+          if (!memberIds.includes(targetUserId)) {
+            throw new HttpsError(
+              "failed-precondition",
+              "Target user is not a member of this event."
+            );
+          }
+
+          const writeMember = await prepareRoleChange(
+            tx,
+            eventRef,
+            eventData,
+            targetUserId,
+            (roleIds) => [
+              ...roleIds.filter((r) => r !== "participant" && r !== "admin"),
+              "admin",
+            ]
           );
-        }
-
-        if (!memberIds.includes(targetUserId)) {
-          throw new HttpsError(
-            "failed-precondition",
-            "Target user is not a member of this event."
-          );
-        }
-
-        await db.collection("events").doc(eventId).update({
-          adminIds: FieldValue.arrayUnion(targetUserId),
-          updatedAt: FieldValue.serverTimestamp(),
+          writeMember();
+          tx.update(eventRef, {
+            adminIds: FieldValue.arrayUnion(targetUserId),
+            updatedAt: FieldValue.serverTimestamp(),
+          });
         });
 
         return {success: true};

@@ -128,16 +128,20 @@ All deployed Cloud Functions, kept up-to-date as features are added.
 | Function | Trigger | Module | Description | Timeout | Added |
 |----------|---------|--------|-------------|---------|-------|
 | `deleteUserAccount` | HTTPS Callable | `account/` | Server-side account deletion: anonymizes shared data, transfers event ownership, deletes solo events, clears storage, removes Auth user | 120s | 2026-04-21 |
-| `promoteToAdmin` | HTTPS Callable | `events/` | Owner-only: promotes an event member to admin (arrayUnion into `adminIds`). Requires target to already be a member. | 30s | 2026-04-25 |
-| `demoteAdmin` | HTTPS Callable | `events/` | Owner-only: removes admin role from an event member (arrayRemove from `adminIds`). Owner cannot be demoted. | 30s | 2026-04-25 |
+| `promoteToAdmin` | HTTPS Callable | `events/` | Owner-only: promotes an event member to admin (arrayUnion into `adminIds`), swapping Participant for Admin on their member document and recalculating `permissions`. Requires target to already be a member. | 30s | 2026-04-25 |
+| `demoteAdmin` | HTTPS Callable | `events/` | Owner-only: removes admin role from an event member (arrayRemove from `adminIds`), and from their member document, leaving Participant if no role is left. Owner cannot be demoted. | 30s | 2026-04-25 |
 | `markTaskComplete` | HTTPS Callable | `events/` | Owner / admin / assignee transitions a task to `done`, stamping `completedAt` + `completedBy` server-side. Reserves a seam for future side effects (notifications, ledger hooks). | 30s | 2026-04-26 |
 | `disputeSettlement` | HTTPS Callable | `events/` | Payer or payee rolls back a settlement: deletes the `isPayment` expense, replaces the chat notice with `kind: 'settlement_disputed'`. | 30s | 2026-04-27 |
-| `createEvent` | HTTPS Callable | `events/` | The only way to create an event, with the caller as Owner, in `draft`. Membership never comes from the client. Safe to retry. | 30s | 2026-11-03 |
+| `createEvent` | HTTPS Callable | `events/` | The only way to create an event, with the caller as Owner, in `draft`, including the owner's member document. Membership never comes from the client. Safe to retry. | 30s | 2026-11-03 |
 | `onEventStatusScheduled` | Scheduled (every 15 minutes) | `events/` | Moves events to `live` at their start time and `ended` after their end time, in the event's time zone. A time that passed before a change by hand does not count. | 60s | 2026-11-04 |
 | `changeEventCurrency` | HTTPS Callable | `events/` | Owner or admin changes an event's currency. Refused once the event has any expense or charge, which rules cannot check. Safe to retry. | 30s | 2026-11-04 |
+| `setMemberRoles` | HTTPS Callable | `events/` | A `roles.manage` holder replaces a member's roles. Recalculates `permissions` and keeps `adminIds` in step. The Owner role moves only by transfer, and a draft keeps only admin-level members. | 30s | 2026-11-06 |
+| `saveEventRole` | HTTPS Callable | `events/` | A `roles.manage` holder saves an event's own version of a preset, or a custom role, in `events/{id}/roles/{roleId}`, and recalculates everyone holding it. The Owner role cannot be edited. | 60s | 2026-11-06 |
 | `saveExpense` | HTTPS Callable | `events/` | Member adds an expense as its payer, or the payer, owner or admin edits it. Validates amounts, splits and members, and writes `involvedUids`. The only way to write a non-payment expense. | 30s | 2026-11-03 |
 | `recordSettlement` | HTTPS Callable | `events/` | Payer records a payment. Writes the `isPayment` expense and its `settlement` chat notice together, with server-written text. Safe to retry. | 30s | 2026-11-03 |
 | `onUrgentMessageCreated` | Firestore-trigger v2 (`onDocumentCreated` on `events/{eid}/messages/{mid}`) | `events/` | Fans out an FCM push when an urgent (high-priority) chat message is created. Loads recipients from event memberIds, skips the sender, chunks tokens at 500 with `sendEachForMulticast`, prunes dead tokens via batched arrayRemove. `retry: false`. | 30s | 2026-04-28 |
+
+Membership callables (`createEvent`, `joinEvent`, `removeEventMember`, `promoteToAdmin`, `demoteAdmin`, `setMemberRoles`, `deleteUserAccount`) write both the old arrays and `events/{id}/members/{uid}` until #66 moves reads over, so rollback and verification stay accurate. Admin scripts for that cutover are `functions/scripts/migrateToMembers.ts` (dry run unless `--write`) and `functions/scripts/verifyMembers.ts`.
 
 > **Note:** this table is incomplete — 16 functions are exported from
 > `functions/src/index.ts` and only the rows above are documented. Treat
