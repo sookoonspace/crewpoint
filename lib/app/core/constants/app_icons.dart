@@ -61,6 +61,7 @@ abstract final class AppIcons {
   static const IconData actionMoreHoriz = Icons.more_horiz;
   static const IconData actionOpenInNew = Icons.open_in_new;
   static const IconData actionRetry = Icons.refresh;
+  static const IconData appUpdate = Icons.system_update_outlined;
   static const IconData actionSearch = Icons.search;
   static const IconData actionLogout = Icons.logout;
   static final IconData actionShare =

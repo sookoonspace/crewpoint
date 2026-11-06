@@ -26,7 +26,12 @@ import 'package:crewpoint_app/app/core/services/file_export_service.dart';
 import 'package:crewpoint_app/app/core/services/file_export_service_native.dart'
     if (dart.library.html) 'package:crewpoint_app/app/core/services/file_export_service_web.dart';
 import 'package:crewpoint_app/app/core/services/i_auth_service.dart';
+import 'package:crewpoint_app/app/core/services/page_reloader.dart';
+import 'package:crewpoint_app/app/core/services/page_reloader_native.dart'
+    if (dart.library.html) 'package:crewpoint_app/app/core/services/page_reloader_web.dart';
 import 'package:crewpoint_app/app/core/services/secure_storage_service.dart';
+import 'package:crewpoint_app/app/core/version/app_version_check.dart';
+import 'package:crewpoint_app/app/core/version/app_version_services.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/auth/data/auth_repository.dart';
 import 'package:crewpoint_app/app/features/auth/data/firebase_auth_service.dart';
@@ -439,6 +444,31 @@ final settleUpControllerProvider = Provider<SettleUpController>((ref) {
 /// fake.
 final fileExporterProvider = Provider<IFileExporter>(
   (_) => createFileExporter(),
+);
+
+/// Reloads the page on web, to fetch a newer build. Does nothing natively.
+final pageReloaderProvider = Provider<IPageReloader>(
+  (_) => createPageReloader(),
+);
+
+/// Reads the public `config/app` document (Req 34a).
+final appConfigSourceProvider = Provider<IAppConfigSource>(
+  (ref) => FirestoreAppConfigSource(ref.watch(firestoreProvider)),
+);
+
+/// The running app's version, from `package_info_plus`.
+final appInfoProvider = Provider<IAppInfo>((_) => const PackageInfoAppInfo());
+
+final appPlatformProvider = Provider<AppPlatform>((_) => currentAppPlatform());
+
+/// Checked once at startup. Null means the app carries on, including when
+/// the config cannot be read.
+final appUpdateRequirementProvider = FutureProvider<AppUpdateRequirement?>(
+  (ref) => AppVersionCheck(
+    config: ref.watch(appConfigSourceProvider),
+    appInfo: ref.watch(appInfoProvider),
+    platform: ref.watch(appPlatformProvider),
+  ).run(),
 );
 
 /// Callable signature for the `disputeSettlement` Cloud Function.
