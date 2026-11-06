@@ -420,35 +420,19 @@ void main() {
         assigneeId: 'user-2',
       );
       expect(
-        task.canChangeStatus(
-          isOwner: true,
-          isAdmin: false,
-          currentUserId: 'owner',
-        ),
+        task.canChangeStatus(managesTasks: true, currentUserId: 'owner'),
         isTrue,
       );
       expect(
-        task.canChangeStatus(
-          isOwner: false,
-          isAdmin: true,
-          currentUserId: 'admin',
-        ),
+        task.canChangeStatus(managesTasks: true, currentUserId: 'admin'),
         isTrue,
       );
       expect(
-        task.canChangeStatus(
-          isOwner: false,
-          isAdmin: false,
-          currentUserId: 'user-2',
-        ),
+        task.canChangeStatus(managesTasks: false, currentUserId: 'user-2'),
         isTrue,
       );
       expect(
-        task.canChangeStatus(
-          isOwner: false,
-          isAdmin: false,
-          currentUserId: 'random',
-        ),
+        task.canChangeStatus(managesTasks: false, currentUserId: 'random'),
         isFalse,
       );
     });
@@ -462,28 +446,16 @@ void main() {
         assigneeId: 'user-2',
       );
       expect(
-        task.canEditOrDelete(
-          isOwner: true,
-          isAdmin: false,
-          currentUserId: 'owner',
-        ),
+        task.canEditOrDelete(managesTasks: true, currentUserId: 'owner'),
         isTrue,
       );
       expect(
-        task.canEditOrDelete(
-          isOwner: false,
-          isAdmin: false,
-          currentUserId: 'creator-1',
-        ),
+        task.canEditOrDelete(managesTasks: false, currentUserId: 'creator-1'),
         isTrue,
       );
       // Assignee cannot edit/delete (only toggle status / checklist)
       expect(
-        task.canEditOrDelete(
-          isOwner: false,
-          isAdmin: false,
-          currentUserId: 'user-2',
-        ),
+        task.canEditOrDelete(managesTasks: false, currentUserId: 'user-2'),
         isFalse,
       );
     });

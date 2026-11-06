@@ -17,6 +17,7 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboar
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_settings_screen.dart';
 
 import 'fake_create_event.dart';
+import 'member_docs.dart';
 
 /// Forces an `Authenticated` state without going through Firebase auth.
 class _StubAuthNotifier extends AuthNotifier {
@@ -98,6 +99,7 @@ class DashboardJourneyHarness {
       overrides: [
         databaseProvider.overrideWithValue(database),
         firestoreProvider.overrideWithValue(firestore),
+        membershipsSourceProvider.overrideWithValue(fakeMemberships(firestore)),
         deviceTimezoneProvider.overrideWithValue(
           const LocalNameDeviceTimezone(),
         ),

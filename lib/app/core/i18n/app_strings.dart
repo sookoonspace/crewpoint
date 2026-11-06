@@ -191,6 +191,9 @@ abstract class TasksStrings {
 abstract class DashboardStrings {
   const DashboardStrings();
 
+  /// Shown when someone loses access to an event they had open (#66).
+  String lostAccess(String eventTitle);
+
   String get noEventsTitle;
   String get noEventsSubtitle;
   String get joinWithCode;
@@ -438,6 +441,7 @@ abstract class ErrorStrings {
   String get popupBlocked;
   String get popupCancelled;
   String get tooManyRequests;
+  String get permissionDenied;
   String get genericFallback;
 }
 
@@ -748,6 +752,10 @@ class _EnglishNavStrings extends NavStrings {
 
 class _EnglishDashboardStrings extends DashboardStrings {
   const _EnglishDashboardStrings();
+
+  @override
+  String lostAccess(String eventTitle) =>
+      'You no longer have access to $eventTitle.';
 
   @override
   String get statusDraft => 'Draft';
@@ -1217,6 +1225,11 @@ class _EnglishAuthStrings extends AuthStrings {
 
 class _EnglishErrorStrings extends ErrorStrings {
   const _EnglishErrorStrings();
+
+  @override
+  String get permissionDenied =>
+      "You don't have permission to do that. Your role in this event may "
+      'have changed.';
 
   @override
   String get invalidEmail => 'The email address is invalid.';

@@ -9,6 +9,18 @@ import 'package:crewpoint_app/app/core/database/app_database.dart';
 import 'package:crewpoint_app/app/core/database/daos/events_dao.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
+/// My membership of one event: its ID, and my roles and permissions there.
+typedef Membership = ({
+  String eventId,
+  List<String> roleIds,
+  Set<String> perms,
+});
+
+/// Streams [uid]'s memberships across events. Production reads member
+/// documents with a collection-group query. Injected so tests can change
+/// memberships live, which the fake Firestore cannot do for that query.
+typedef MembershipsSource = Stream<List<Membership>> Function(String uid);
+
 /// Calls the `createEvent` Cloud Function. Injected so tests never reach it.
 typedef CreateEventCall = Future<void> Function(EventModel event);
 
@@ -58,7 +70,9 @@ class EventRepository {
     required FirebaseFirestore firestore,
     required CreateEventCall createEventCall,
     DateTime Function() now = DateTime.now,
+    MembershipsSource? memberships,
   }) : _now = now,
+       _membershipsOverride = memberships,
        _eventsDao = eventsDao,
        _firestore = firestore,
        _createEventCall = createEventCall;
@@ -67,14 +81,114 @@ class EventRepository {
   final FirebaseFirestore _firestore;
   final CreateEventCall _createEventCall;
   final DateTime Function() _now;
-  final Map<String, StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>
-  _firestoreSubs = {};
+  final MembershipsSource? _membershipsOverride;
+  final Map<String, StreamSubscription<List<EventModel>>> _firestoreSubs = {};
 
   CollectionReference<Map<String, dynamic>> get _eventsRef =>
       _firestore.collection('events');
 
-  Query<Map<String, dynamic>> _userEventsQuery(String uid) =>
-      _eventsRef.where('memberIds', arrayContains: uid);
+  /// "My events" (Req 25): my member documents across every event.
+  Stream<List<Membership>> _myMemberships(String uid) =>
+      _membershipsOverride?.call(uid) ??
+      _firestore
+          .collectionGroup('members')
+          .where('uid', isEqualTo: uid)
+          .snapshots()
+          .map(
+            (snap) => [
+              for (final doc in snap.docs)
+                if (doc.reference.parent.parent?.id case final eventId?)
+                  (
+                    eventId: eventId,
+                    roleIds: _parseStringList(doc.data()['roleIds']),
+                    perms: _parseStringList(doc.data()['permissions']).toSet(),
+                  ),
+            ],
+          );
+
+  /// Events [uid] has a member document in, each carrying their roles and
+  /// permissions. Reads every event document on its own, since rules check
+  /// each one. Emits once every listed event has loaded or failed, and again
+  /// on any change, including a role change.
+  Stream<List<EventModel>> _myEvents(String uid) {
+    late final StreamController<List<EventModel>> controller;
+    StreamSubscription<List<Membership>>? membershipSub;
+    final eventSubs =
+        <String, StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>>{};
+    final access = <String, ({List<String> roleIds, Set<String> perms})>{};
+    final events = <String, EventModel?>{};
+    var listed = false;
+
+    void emit() {
+      if (!listed || controller.isClosed) return;
+      if (access.keys.any((id) => !events.containsKey(id))) return;
+      controller.add([
+        for (final MapEntry(key: id, value: mine) in access.entries)
+          if (events[id] case final event?)
+            event.copyWithAccess(
+              viewerId: uid,
+              roleIds: mine.roleIds,
+              permissions: mine.perms,
+            ),
+      ]);
+    }
+
+    void watchEvent(String id) {
+      eventSubs[id] = _eventsRef
+          .doc(id)
+          .snapshots()
+          .listen(
+            (doc) {
+              final data = doc.data();
+              events[id] = data == null ? null : _fromFirestore(doc.id, data);
+              emit();
+            },
+            onError: (Object e, StackTrace st) {
+              log(
+                'Event $id unreadable',
+                error: e,
+                stackTrace: st,
+                name: 'events',
+              );
+              events[id] = null;
+              emit();
+            },
+          );
+    }
+
+    controller = StreamController<List<EventModel>>(
+      onListen: () {
+        membershipSub = _myMemberships(uid).listen(
+          (memberships) {
+            final ids = <String>{};
+            for (final m in memberships) {
+              ids.add(m.eventId);
+              access[m.eventId] = (roleIds: m.roleIds, perms: m.perms);
+              if (!eventSubs.containsKey(m.eventId)) watchEvent(m.eventId);
+            }
+            for (final gone in access.keys.toSet().difference(ids)) {
+              access.remove(gone);
+              events.remove(gone);
+              eventSubs.remove(gone)?.cancel();
+            }
+            listed = true;
+            emit();
+          },
+          onError: (Object e, StackTrace st) {
+            log('Memberships failed', error: e, stackTrace: st, name: 'events');
+            controller.addError(e, st);
+          },
+        );
+      },
+      onCancel: () async {
+        await membershipSub?.cancel();
+        for (final sub in eventSubs.values) {
+          await sub.cancel();
+        }
+      },
+    );
+    return controller.stream;
+  }
 
   /// Creates the event through the `createEvent` callable, which makes the
   /// caller its Owner. Throws on failure — the caller is responsible for
@@ -167,12 +281,7 @@ class EventRepository {
   /// a Drift-backed stream on those platforms. On web, returns the
   /// Firestore snapshot stream directly.
   Stream<List<EventModel>> watchEventsForUser(String uid) {
-    if (kIsWeb) {
-      return _userEventsQuery(uid).snapshots().map(
-        (snap) =>
-            snap.docs.map((doc) => _fromFirestore(doc.id, doc.data())).toList(),
-      );
-    }
+    if (kIsWeb) return _myEvents(uid);
     _ensureFirestoreMirror(uid);
     return _eventsDao.watchAllEvents().map(
       (rows) => rows.map(_toDomain).toList(),
@@ -181,9 +290,9 @@ class EventRepository {
 
   void _ensureFirestoreMirror(String uid) {
     if (_firestoreSubs.containsKey(uid)) return;
-    _firestoreSubs[uid] = _userEventsQuery(uid).snapshots().listen(
-      (snap) {
-        _mirrorSnapshot(snap).catchError((Object e, StackTrace st) {
+    _firestoreSubs[uid] = _myEvents(uid).listen(
+      (events) {
+        _mirrorEvents(events).catchError((Object e, StackTrace st) {
           log('Mirror failed', error: e, stackTrace: st, name: 'events');
         });
       },
@@ -193,11 +302,10 @@ class EventRepository {
     );
   }
 
-  Future<void> _mirrorSnapshot(QuerySnapshot<Map<String, dynamic>> snap) async {
+  Future<void> _mirrorEvents(List<EventModel> events) async {
     final remoteIds = <String>{};
-    for (final doc in snap.docs) {
-      remoteIds.add(doc.id);
-      final event = _fromFirestore(doc.id, doc.data());
+    for (final event in events) {
+      remoteIds.add(event.id);
       await _upsertDrift(event);
     }
     final localRows = await _eventsDao.allEvents();
@@ -244,6 +352,15 @@ class EventRepository {
         capacity: Value(event.capacity),
         memberLimit: Value(event.memberLimit),
         dateOnly: Value(event.dateOnly),
+        viewerId: Value(event.viewerId),
+        myRoleIds: Value(
+          event.myRoleIds == null ? null : jsonEncode(event.myRoleIds),
+        ),
+        myPermissions: Value(
+          event.myPermissions == null
+              ? null
+              : jsonEncode(event.myPermissions!.toList()),
+        ),
         createdAt: event.createdAt != null
             ? Value(event.createdAt!)
             : const Value.absent(),
@@ -312,6 +429,13 @@ class EventRepository {
     currency: row.currency,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+    viewerId: row.viewerId,
+    myRoleIds: row.myRoleIds == null
+        ? null
+        : _decodeJsonStringList(row.myRoleIds!),
+    myPermissions: row.myPermissions == null
+        ? null
+        : _decodeJsonStringList(row.myPermissions!).toSet(),
   );
 
   Object? _decodeJson(String json) {

@@ -10,6 +10,7 @@ import 'package:crewpoint_app/app/features/dashboard/data/event_repository.dart'
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
 import '../../../harness/fake_create_event.dart';
+import '../../../harness/member_docs.dart';
 
 void main() {
   late AppDatabase db;
@@ -119,6 +120,114 @@ void main() {
     });
   });
 
+  group('My events through member documents (#66)', () {
+    Future<void> event(String id, {String status = 'published'}) => firestore
+        .doc('events/$id')
+        .set({'title': id, 'creatorId': 'owner', 'status': status});
+    Future<void> member(
+      String eventId,
+      List<String> roles,
+      List<String> perms,
+    ) => firestore.doc('events/$eventId/members/me').set({
+      'uid': 'me',
+      'roleIds': roles,
+      'permissions': perms,
+    });
+
+    test(
+      'lists events with a member document, and carries my access',
+      () async {
+        await event('a');
+        await event('b');
+        await member('a', ['finance'], ['money.record', 'chat.send']);
+
+        final events = await repo
+            .watchEventsForUser('me')
+            .firstWhere((list) => list.isNotEmpty);
+        final a = events.single;
+        expect(a.id, 'a');
+        expect(a.viewerId, 'me');
+        expect(a.myRoleIds, ['finance']);
+        expect(a.can('me', 'money.record'), isTrue);
+        expect(a.can('me', 'event.manage'), isFalse);
+      },
+    );
+
+    // Live membership changes go through the seam, since the fake Firestore
+    // sends collection-group results only once.
+    late StreamController<List<Membership>> live;
+    EventRepository liveRepo() {
+      live = StreamController<List<Membership>>.broadcast();
+      final r = EventRepository(
+        eventsDao: EventsDao(db),
+        firestore: firestore,
+        createEventCall: (_) async {},
+        memberships: (_) => live.stream,
+      );
+      addTearDown(() async {
+        await r.dispose();
+        await live.close();
+      });
+      return r;
+    }
+
+    Membership mine(String id, List<String> roles, Set<String> perms) =>
+        (eventId: id, roleIds: roles, perms: perms);
+
+    test('a role change shows on the open stream', () async {
+      await event('a');
+      final r = liveRepo();
+      final stream = r.watchEventsForUser('me');
+      final first = stream.firstWhere((l) => l.isNotEmpty);
+      live.add([
+        mine('a', ['participant'], {'chat.send'}),
+      ]);
+      expect((await first).single.can('me', 'tasks.manage'), isFalse);
+
+      final after = stream.firstWhere(
+        (l) => l.isNotEmpty && l.single.can('me', 'tasks.manage'),
+      );
+      live.add([
+        mine('a', ['crewLead'], {'tasks.manage', 'chat.send'}),
+      ]);
+      expect((await after).single.myRoleIds, ['crewLead']);
+    });
+
+    test('losing the member document drops the event', () async {
+      await event('a');
+      final r = liveRepo();
+      final stream = r.watchEventsForUser('me');
+      final first = stream.firstWhere((l) => l.isNotEmpty);
+      live.add([
+        mine('a', ['participant'], {'chat.send'}),
+      ]);
+      await first;
+
+      final empty = stream.firstWhere((l) => l.isEmpty);
+      live.add([]);
+      expect(await empty, isEmpty);
+    });
+
+    test('joining an event adds it to the open stream', () async {
+      await event('a');
+      await event('b');
+      final r = liveRepo();
+      final stream = r.watchEventsForUser('me');
+      final one = stream.firstWhere((l) => l.length == 1);
+      live.add([
+        mine('a', ['participant'], {'chat.send'}),
+      ]);
+      await one;
+
+      final two = stream.firstWhere((l) => l.length == 2);
+      live.add([
+        mine('a', ['participant'], {'chat.send'}),
+        mine('b', ['participant'], {'chat.send'}),
+      ]);
+      expect((await two).map((e) => e.id).toSet(), {'a', 'b'});
+    });
+  });
+
   group('watchEventsForUser', () {
     test(
       'mirrors Firestore docs into Drift and emits matching EventModels',
@@ -151,6 +260,8 @@ void main() {
           'status': 'active',
         });
 
+        await seedMemberDocs(firestore);
+
         final stream = repo.watchEventsForUser('uid-1');
         final emission = await stream.firstWhere(
           (events) => events.length == 2,
@@ -181,6 +292,8 @@ void main() {
           'status': 'active',
         });
 
+        await seedMemberDocs(firestore);
+
         final stream = repo.watchEventsForUser('uid-1');
         await stream.firstWhere((events) => events.length == 1);
 
@@ -189,25 +302,6 @@ void main() {
 
         final afterDelete = await stream.firstWhere((events) => events.isEmpty);
         expect(afterDelete, isEmpty);
-      },
-    );
-
-    test(
-      'returned stream emits an updated list when a new event is added',
-      () async {
-        final stream = repo.watchEventsForUser('uid-1');
-        final initial = await stream.first;
-        expect(initial, isEmpty);
-
-        await firestore.collection('events').doc('evt-new').set({
-          'title': 'Just added',
-          'creatorId': 'uid-1',
-          'memberIds': ['uid-1'],
-          'status': 'active',
-        });
-
-        final next = await stream.firstWhere((events) => events.isNotEmpty);
-        expect(next.first.title, 'Just added');
       },
     );
   });
@@ -224,6 +318,7 @@ void main() {
         });
 
         // First mirror.
+        await seedMemberDocs(firestore);
         final firstStream = repo.watchEventsForUser('uid-1');
         await firstStream.firstWhere((e) => e.length == 1);
 
@@ -232,6 +327,7 @@ void main() {
         repo.disposeMirror('uid-1'); // idempotent — must not throw
 
         // Re-watching should re-establish the listener and re-emit.
+        await seedMemberDocs(firestore);
         final secondStream = repo.watchEventsForUser('uid-1');
         final reEmission = await secondStream.firstWhere((e) => e.length == 1);
         expect(reEmission.first.title, 'Tahoe');
@@ -304,6 +400,7 @@ void main() {
 
     test('an event from before these fields reads with defaults', () async {
       await seed();
+      await seedMemberDocs(firestore);
       final events = await configRepo
           .watchEventsForUser('owner')
           .firstWhere((list) => list.isNotEmpty);
@@ -333,6 +430,7 @@ void main() {
         'capacity': 500,
         'memberLimit': 100,
       });
+      await seedMemberDocs(firestore);
       final events = await configRepo
           .watchEventsForUser('owner')
           .firstWhere((list) => list.isNotEmpty);
@@ -426,6 +524,7 @@ void main() {
         now: () => DateTime.utc(2027, 6, 1),
       );
       await seed('active', endDate: Timestamp.fromDate(DateTime.utc(2027)));
+      await seedMemberDocs(firestore);
       final events = await clocked
           .watchEventsForUser('owner')
           .firstWhere((list) => list.isNotEmpty);

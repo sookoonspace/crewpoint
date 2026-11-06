@@ -49,6 +49,11 @@ class Events extends Table {
   IntColumn get capacity => integer().nullable()();
   IntColumn get memberLimit => integer().nullable()();
   BoolColumn get dateOnly => boolean().withDefault(const Constant(false))();
+  // Since v11 (#66): the signed-in person's access, from their member
+  // document. Null on rows synced before, which fall back to the arrays.
+  TextColumn get viewerId => text().nullable()();
+  TextColumn get myRoleIds => text().nullable()(); // JSON
+  TextColumn get myPermissions => text().nullable()(); // JSON
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 
@@ -163,7 +168,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -249,6 +254,20 @@ class AppDatabase extends _$AppDatabase {
         final hasColumn = existing.any((c) => c.data['name'] == 'date_only');
         if (existing.isNotEmpty && !hasColumn) {
           await m.addColumn(events, events.dateOnly);
+        }
+      }
+      if (from < 11) {
+        final existing = await customSelect('PRAGMA table_info(events)').get();
+        final names = existing.map((c) => c.data['name']).toSet();
+        final added = <String, GeneratedColumn<Object>>{
+          'viewer_id': events.viewerId,
+          'my_role_ids': events.myRoleIds,
+          'my_permissions': events.myPermissions,
+        };
+        for (final entry in added.entries) {
+          if (existing.isNotEmpty && !names.contains(entry.key)) {
+            await m.addColumn(events, entry.value);
+          }
         }
       }
     },

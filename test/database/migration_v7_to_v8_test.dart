@@ -46,7 +46,10 @@ void main() {
     expect(rows.single.data['content'], 'Fire');
     expect(rows.single.data['is_high_priority'], 1);
     expect(rows.single.data['urgent_push_skipped'], 0);
-    expect(raw.select('PRAGMA user_version').first.values.first, db.schemaVersion);
+    expect(
+      raw.select('PRAGMA user_version').first.values.first,
+      db.schemaVersion,
+    );
     await db.close();
   });
 
@@ -57,5 +60,4 @@ void main() {
     expect(rows, hasLength(1));
     await db.close();
   });
-
 }

@@ -18,12 +18,11 @@ void main() {
   );
 
   group('canChangeStatus matches the rules', () {
-    bool can(String uid, {bool owner = false, bool admin = false}) => task
-        .canChangeStatus(isOwner: owner, isAdmin: admin, currentUserId: uid);
+    bool can(String uid, {bool manages = false}) =>
+        task.canChangeStatus(managesTasks: manages, currentUserId: uid);
 
-    test('owner, admin, creator and assignee may', () {
-      expect(can('x', owner: true), isTrue);
-      expect(can('x', admin: true), isTrue);
+    test('tasks.manage, creator and assignee may', () {
+      expect(can('x', manages: true), isTrue);
       expect(can('creator'), isTrue);
       expect(can('assignee'), isTrue);
     });
@@ -32,12 +31,11 @@ void main() {
   });
 
   group('canEditOrDelete matches the rules', () {
-    bool can(String uid, {bool owner = false, bool admin = false}) => task
-        .canEditOrDelete(isOwner: owner, isAdmin: admin, currentUserId: uid);
+    bool can(String uid, {bool manages = false}) =>
+        task.canEditOrDelete(managesTasks: manages, currentUserId: uid);
 
-    test('owner, admin and creator may', () {
-      expect(can('x', owner: true), isTrue);
-      expect(can('x', admin: true), isTrue);
+    test('tasks.manage and creator may', () {
+      expect(can('x', manages: true), isTrue);
       expect(can('creator'), isTrue);
     });
 

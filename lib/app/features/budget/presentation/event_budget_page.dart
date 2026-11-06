@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:crewpoint_app/app/core/services/callable_errors.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
@@ -90,7 +91,10 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
         !event.isMember(settlement.fromUserId) ||
         !event.isMember(settlement.toUserId);
     if (involvesDeparted) {
-      await _settleForDeparted(settlement, canRecord: event.isAdmin(myUid));
+      await _settleForDeparted(
+        settlement,
+        canRecord: event.can(myUid, 'money.record'),
+      );
       return;
     }
 
@@ -407,7 +411,7 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
           orElse: () => <String, String>{},
         );
         bool canMutate(ExpenseModel expense) =>
-            uid == expense.payerId || widget.event.isAdmin(uid);
+            uid == expense.payerId || widget.event.can(uid, 'money.record');
 
         Future<void> editExpense(ExpenseModel expense) async {
           await ExpenseModal.show(
@@ -460,7 +464,9 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
           expenses: expenses,
           memberIds: widget.event.memberIds,
           currency: widget.event.currency,
-          canAddExpense: widget.event.allowsChatAndMoney,
+          // Observers and Vendors cannot add expenses (Req 34).
+          canAddExpense:
+              widget.event.allowsChatAndMoney && widget.event.contributes(uid),
           memberNames: memberNames,
           appBarTitle: widget.event.title,
           onEditExpense: (expense) =>
@@ -529,7 +535,15 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
       ),
       error: (e, _) => Scaffold(
         appBar: AppBar(title: const Text('Budget'), elevation: 0),
-        body: Center(child: Text('Error: $e')),
+        body: Center(
+          child: Text(
+            userMessageFor(
+              e,
+              strings: context.strings.errors,
+              fallback: context.strings.errors.genericFallback,
+            ),
+          ),
+        ),
       ),
     );
   }

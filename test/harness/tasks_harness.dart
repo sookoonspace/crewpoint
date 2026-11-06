@@ -17,6 +17,7 @@ import 'package:crewpoint_app/app/features/profile/data/firestore_user_repositor
 import 'package:crewpoint_app/app/features/tasks/data/task_repository.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/event_task_detail_page.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/event_tasks_page.dart';
+import 'member_docs.dart';
 
 /// Forces an `Authenticated` state without going through Firebase auth.
 class _StubAuthNotifier extends AuthNotifier {
@@ -84,6 +85,7 @@ class TasksHarness {
       overrides: [
         databaseProvider.overrideWithValue(database),
         firestoreProvider.overrideWithValue(firestore),
+        membershipsSourceProvider.overrideWithValue(fakeMemberships(firestore)),
         taskRepositoryProvider.overrideWithValue(repo),
         authProvider.overrideWith(() => _StubAuthNotifier(currentUser)),
       ],
@@ -100,6 +102,7 @@ class TasksHarness {
       overrides: [
         databaseProvider.overrideWithValue(database),
         firestoreProvider.overrideWithValue(firestore),
+        membershipsSourceProvider.overrideWithValue(fakeMemberships(firestore)),
         taskRepositoryProvider.overrideWithValue(repo),
         userRepositoryProvider.overrideWithValue(
           FirestoreUserRepository(firestore: firestore),

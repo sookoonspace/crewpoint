@@ -2,6 +2,88 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
 void main() {
+  group('permissions (#66)', () {
+    const arrays = EventModel(
+      id: 'e1',
+      title: 'Fest',
+      creatorId: 'owner',
+      adminIds: ['owner', 'admin'],
+      memberIds: ['owner', 'admin', 'plain'],
+    );
+
+    test("the viewer's own member document decides", () {
+      final finance = arrays.copyWithAccess(
+        viewerId: 'plain',
+        roleIds: const ['finance'],
+        permissions: const {'money.record', 'chat.send'},
+      );
+      expect(finance.can('plain', 'money.record'), isTrue);
+      expect(finance.can('plain', 'event.manage'), isFalse);
+    });
+
+    test('a role change while the screen is open shows straight away', () {
+      final before = arrays.copyWithAccess(
+        viewerId: 'plain',
+        roleIds: const ['participant'],
+        permissions: const {'chat.send'},
+      );
+      final after = before.copyWithAccess(
+        viewerId: 'plain',
+        roleIds: const ['crewLead'],
+        permissions: const {'tasks.manage', 'chat.send'},
+      );
+      expect(before.can('plain', 'tasks.manage'), isFalse);
+      expect(after.can('plain', 'tasks.manage'), isTrue);
+    });
+
+    test(
+      'without a member document, the old arrays map as the server does',
+      () {
+        expect(arrays.can('owner', 'event.transfer'), isTrue);
+        expect(arrays.can('admin', 'event.manage'), isTrue);
+        expect(arrays.can('admin', 'roles.manage'), isFalse);
+        expect(arrays.can('admin', 'event.transfer'), isFalse);
+        expect(arrays.can('plain', 'chat.send'), isTrue);
+        expect(arrays.can('plain', 'event.manage'), isFalse);
+        expect(arrays.can('stranger', 'chat.send'), isFalse);
+      },
+    );
+
+    test('Observer and Vendor do not contribute, and everyone else does', () {
+      EventModel as(List<String> roles) => arrays.copyWithAccess(
+        viewerId: 'plain',
+        roleIds: roles,
+        permissions: const {},
+      );
+      expect(as(const ['observer']).contributes('plain'), isFalse);
+      expect(as(const ['vendor', 'observer']).contributes('plain'), isFalse);
+      expect(as(const ['vendor', 'scorer']).contributes('plain'), isTrue);
+      expect(arrays.contributes('plain'), isTrue);
+      expect(arrays.contributes('stranger'), isFalse);
+    });
+
+    test('a draft is visible only with event.manage', () {
+      final draft = arrays.copyWithAccess(
+        viewerId: 'plain',
+        roleIds: const ['custom'],
+        permissions: const {'event.manage'},
+      );
+      expect(
+        const EventModel(
+          id: 'e',
+          title: 'T',
+          creatorId: 'o',
+          status: EventStatus.draft,
+        ).isVisibleTo('x'),
+        isFalse,
+      );
+      expect(
+        draft.copyWith(status: EventStatus.draft).isVisibleTo('plain'),
+        isTrue,
+      );
+    });
+  });
+
   group('EventModel role helpers', () {
     const event = EventModel(
       id: 'e1',
@@ -18,11 +100,11 @@ void main() {
       expect(event.isOwner('stranger'), isFalse);
     });
 
-    test('isAdmin returns true for creator and adminIds', () {
-      expect(event.isAdmin('owner'), isTrue);
-      expect(event.isAdmin('admin1'), isTrue);
-      expect(event.isAdmin('member1'), isFalse);
-      expect(event.isAdmin('stranger'), isFalse);
+    test('admins map to Admin, without transfer or roles', () {
+      expect(event.can('admin1', 'event.manage'), isTrue);
+      expect(event.can('admin1', 'roles.manage'), isFalse);
+      expect(event.can('member1', 'event.manage'), isFalse);
+      expect(event.can('stranger', 'chat.send'), isFalse);
     });
 
     test('isMember returns true for anyone in memberIds', () {

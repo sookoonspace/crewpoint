@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
+import 'package:crewpoint_app/app/core/services/callable_errors.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
@@ -39,8 +41,7 @@ class EventTaskDetailPage extends ConsumerWidget {
       taskChecklistProvider((eventId: event.id, taskId: taskId)),
     );
     final repo = ref.watch(taskRepositoryProvider);
-    final isOwner = event.isOwner(uid);
-    final isAdmin = event.isAdmin(uid);
+    final managesTasks = event.can(uid, 'tasks.manage');
 
     return asyncTasks.when(
       data: (tasks) {
@@ -56,13 +57,11 @@ class EventTaskDetailPage extends ConsumerWidget {
         }
 
         final canEdit = task.canEditOrDelete(
-          isOwner: isOwner,
-          isAdmin: isAdmin,
+          managesTasks: managesTasks,
           currentUserId: uid,
         );
         final canChangeStatus = task.canChangeStatus(
-          isOwner: isOwner,
-          isAdmin: isAdmin,
+          managesTasks: managesTasks,
           currentUserId: uid,
         );
 
@@ -252,7 +251,15 @@ class EventTaskDetailPage extends ConsumerWidget {
           ),
           error: (e, _) => Scaffold(
             appBar: AppBar(title: Text(task.title), elevation: 0),
-            body: Center(child: Text('Checklist error: $e')),
+            body: Center(
+              child: Text(
+                userMessageFor(
+                  e,
+                  strings: context.strings.errors,
+                  fallback: context.strings.errors.genericFallback,
+                ),
+              ),
+            ),
           ),
         );
       },
@@ -262,7 +269,15 @@ class EventTaskDetailPage extends ConsumerWidget {
       ),
       error: (e, _) => Scaffold(
         appBar: AppBar(title: const Text('Task'), elevation: 0),
-        body: Center(child: Text('Error: $e')),
+        body: Center(
+          child: Text(
+            userMessageFor(
+              e,
+              strings: context.strings.errors,
+              fallback: context.strings.errors.genericFallback,
+            ),
+          ),
+        ),
       ),
     );
   }
