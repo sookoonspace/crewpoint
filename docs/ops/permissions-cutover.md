@@ -98,4 +98,4 @@ Member documents can stay, since the previous rules ignore them. `functions/test
 
 | Date | Project | Backup | Migration report | Verification | By |
 |---|---|---|---|---|---|
-| | | | | | |
+| 2026-11-06 | crewpoint-dev | `6b14dc14-7fd6-47cb-b27d-2119732bb278` (daily, 13:33 UTC that day) | 4 events: 7 member documents, 4 statuses, 4 counts, 3 `involvedUids`, 0 dates; 3 `unknownZones` (`447b2540`, `7d0029d6`, `abfab18f`, dates at midnight US Central, left as they are). A second dry run found nothing left. | Every event matches, before and after deploying. Functions (commit `588377f`) then rules and indexes deployed; `onTaskAssigned` needed one retry after a Google 500. Minimum version not raised yet. | Claude, approved by the owner |
