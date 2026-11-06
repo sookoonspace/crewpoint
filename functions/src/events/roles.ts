@@ -192,3 +192,62 @@ export const saveEventRole = onCall({timeoutSeconds: 60}, async (request) => {
     }
   );
 });
+
+/**
+ * deleteEventRole — removes an event's own version of a role (Req 26a). For a
+ * preset this resets it to the built-in permissions and recalculates everyone
+ * holding it. A custom role is deleted only while nobody holds it, so nobody
+ * is left with no role.
+ */
+export const deleteEventRole = onCall({timeoutSeconds: 60}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Must be signed in.");
+  }
+  const uid = request.auth.uid;
+  const data = (request.data ?? {}) as Record<string, unknown>;
+  const eventId = requireString(data.eventId, "eventId");
+  const roleId = requireString(data.roleId, "roleId");
+  if (!/^[A-Za-z0-9_-]{1,40}$/.test(roleId)) {
+    throw new HttpsError("invalid-argument", "roleId is not valid.");
+  }
+
+  return withStructuredLogs(
+    {op: "deleteEventRole", uid, args: {eventId, roleId}},
+    async () => {
+      const eventRef = db.collection("events").doc(eventId);
+      await db.runTransaction(async (tx) => {
+        const eventDoc = await tx.get(eventRef);
+        if (!eventDoc.exists) {
+          throw new HttpsError("not-found", "Event not found.");
+        }
+        const eventData = eventDoc.data()!;
+        assertNotArchived(eventData);
+        const mine = await readPermissions(tx, eventRef, eventData, uid);
+        if (!mine.includes("roles.manage")) {
+          throw new HttpsError(
+            "permission-denied",
+            "Only owners and co-owners can change roles."
+          );
+        }
+        const roles = await readEventRoles(tx, eventRef);
+        const holders = await tx.get(
+          eventRef.collection("members").where("roleIds", "array-contains", roleId)
+        );
+        if (!PRESET_ROLES[roleId] && !holders.empty) {
+          throw new HttpsError(
+            "failed-precondition",
+            "Take this role off everyone who holds it first."
+          );
+        }
+        if (!roles[roleId]) return;
+        const next = {...roles};
+        delete next[roleId];
+        tx.delete(eventRef.collection("roles").doc(roleId));
+        holders.docs.forEach((doc) =>
+          tx.set(doc.ref, rebuildMember(doc.id, doc.data(), next))
+        );
+      });
+      return {success: true};
+    }
+  );
+});
