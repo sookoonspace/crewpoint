@@ -40,10 +40,11 @@ function requireEmulatorHost(): void {
  *   2. acquire an `authenticatedContext()` for the assertion,
  *   3. call `clearFirestore()` between tests to keep state isolated.
  */
-export async function getTestEnv(): Promise<RulesTestEnvironment> {
+export async function getTestEnv(
+  rulesPath = path.resolve(__dirname, '..', '..', 'firestore.rules')
+): Promise<RulesTestEnvironment> {
   requireEmulatorHost();
 
-  const rulesPath = path.resolve(__dirname, '..', '..', 'firestore.rules');
   const rules = fs.readFileSync(rulesPath, 'utf8');
 
   const env = await initializeTestEnvironment({
