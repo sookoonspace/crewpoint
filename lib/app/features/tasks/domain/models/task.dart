@@ -72,25 +72,20 @@ class TaskModel {
 
   /// RBAC: caller may transition `status` if owner, admin, creator or assignee,
   /// matching `firestore.rules` and `markTaskComplete`.
+  /// [managesTasks] is whether the caller holds `tasks.manage`.
   bool canChangeStatus({
-    required bool isOwner,
-    required bool isAdmin,
+    required bool managesTasks,
     required String? currentUserId,
   }) =>
-      isOwner ||
-      isAdmin ||
+      managesTasks ||
       (currentUserId != null &&
           (assigneeId == currentUserId || createdBy == currentUserId));
 
   /// RBAC: caller may edit other fields or delete.
   bool canEditOrDelete({
-    required bool isOwner,
-    required bool isAdmin,
+    required bool managesTasks,
     required String? currentUserId,
-  }) =>
-      isOwner ||
-      isAdmin ||
-      (currentUserId != null && createdBy == currentUserId);
+  }) => managesTasks || (currentUserId != null && createdBy == currentUserId);
 
   /// Returns a fresh `TaskModel` that's a duplicate of this one, ready
   /// for the Tasks overflow → Duplicate flow to push into the Create

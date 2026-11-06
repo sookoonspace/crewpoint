@@ -1,6 +1,8 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
+import 'package:crewpoint_app/app/core/services/callable_errors.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
@@ -8,7 +10,9 @@ import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
+import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/member.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
 
 /// Member management screen — shows members with roles, remove/promote actions.
@@ -35,8 +39,19 @@ class _MemberManagementScreenState
   Widget build(BuildContext context) {
     final event = widget.event;
     final currentUserId = widget.currentUserId;
-    final isOwner = event.isOwner(currentUserId);
-    final isAdmin = event.isAdmin(currentUserId);
+    // Each person's roles come from their member document, live. An event
+    // with none falls back to the old arrays.
+    final members = {
+      for (final m
+          in ref.watch(eventMembersProvider(event.id)).value ??
+              const <MemberModel>[])
+        m.uid: m,
+    };
+    List<String> rolesOf(String uid) =>
+        members[uid]?.roleIds ?? event.rolesOf(uid);
+    bool memberCan(String uid, String permission) =>
+        members[uid]?.permissions.contains(permission) ??
+        event.can(uid, permission);
 
     final asyncUsers = ref.watch(
       usersByIdProvider(usersByIds(event.memberIds)),
@@ -73,29 +88,29 @@ class _MemberManagementScreenState
           itemCount: event.memberIds.length,
           itemBuilder: (context, index) {
             final memberId = event.memberIds[index];
-            final memberIsOwner = event.isOwner(memberId);
-            final memberIsAdmin = event.isAdmin(memberId);
+            final roles = rolesOf(memberId);
+            final memberIsOwner = roles.contains('owner');
+            final memberIsAdmin = roles.contains('admin');
             final canRemove = event.canRemoveMember(
               actor: currentUserId,
               target: memberId,
+              targetCan: (p) => memberCan(memberId, p),
+              targetIsOwner: memberIsOwner,
             );
             final isProcessing = _processingIds.contains(memberId);
 
             return _MemberTile(
               memberId: memberId,
               displayName: displayNames[memberId],
-              role: memberIsOwner
-                  ? 'Owner'
-                  : memberIsAdmin
-                  ? 'Admin'
-                  : event.words.one('member'),
+              role: _roleLabel(roles, event.words.one('member')),
               roleColor: memberIsOwner
                   ? AppColors.sage
                   : memberIsAdmin
                   ? AppColors.info
                   : AppColors.mediumGrey,
               canRemove: canRemove,
-              canPromote: isOwner && !memberIsOwner,
+              canPromote:
+                  event.can(currentUserId, 'roles.manage') && !memberIsOwner,
               isAdmin: memberIsAdmin,
               isProcessing: isProcessing,
               onRemove: () => _removeMember(memberId),
@@ -104,7 +119,7 @@ class _MemberManagementScreenState
           },
         ),
       ),
-      floatingActionButton: (isOwner || isAdmin)
+      floatingActionButton: event.can(currentUserId, 'members.manage')
           ? FloatingActionButton(
               onPressed: () => AddMemberSheet.show(
                 memberLabel: event.words.other('member'),
@@ -117,6 +132,16 @@ class _MemberManagementScreenState
             )
           : null,
     );
+  }
+
+  /// The names of [roleIds], with Participant shown as the event's own word.
+  String _roleLabel(List<String> roleIds, String memberWord) {
+    if (roleIds.isEmpty) return memberWord;
+    return roleIds
+        .map(
+          (id) => id == 'participant' ? memberWord : presetRoleNames[id] ?? id,
+        )
+        .join(', ');
   }
 
   Future<void> _removeMember(String targetId) async {
@@ -164,11 +189,18 @@ class _MemberManagementScreenState
           ),
         );
       }
-    } catch (_) {
+    } catch (e, st) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to remove member'),
+          SnackBar(
+            content: Text(
+              userMessageFor(
+                e,
+                stackTrace: st,
+                strings: context.strings.errors,
+                fallback: 'Failed to remove member',
+              ),
+            ),
             backgroundColor: AppColors.terracotta,
           ),
         );
@@ -199,12 +231,19 @@ class _MemberManagementScreenState
           ),
         );
       }
-    } catch (_) {
+    } catch (e, st) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              currentlyAdmin ? 'Failed to demote admin' : 'Failed to promote',
+              userMessageFor(
+                e,
+                stackTrace: st,
+                strings: context.strings.errors,
+                fallback: currentlyAdmin
+                    ? 'Failed to demote admin'
+                    : 'Failed to promote',
+              ),
             ),
             backgroundColor: AppColors.terracotta,
           ),

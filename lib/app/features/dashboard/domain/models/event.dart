@@ -91,6 +91,9 @@ class EventModel {
     this.currency = 'USD',
     this.createdAt,
     this.updatedAt,
+    this.viewerId,
+    this.myRoleIds,
+    this.myPermissions,
   });
 
   static const defaultTemplateId = 'blank';
@@ -137,6 +140,13 @@ class EventModel {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
+  /// Who [myRoleIds] and [myPermissions] belong to: the signed-in person, read
+  /// from their member document (Req 25). Null when there is none, such as an
+  /// event built in a test from the old arrays.
+  final String? viewerId;
+  final List<String>? myRoleIds;
+  final Set<String>? myPermissions;
+
   /// This event's words for each concept.
   LabelResolver get words => LabelResolver(labels);
 
@@ -147,9 +157,48 @@ class EventModel {
     return '${type[0].toUpperCase()}${type.substring(1)}';
   }
 
-  /// Whether [uid] holds `event.manage`, which means owner or admin until
-  /// permissions land.
-  bool canManage(String uid) => isAdmin(uid);
+  /// Whether [uid] holds `event.manage`.
+  bool canManage(String uid) => can(uid, 'event.manage');
+
+  /// Whether [uid] holds [permission]. For the viewer, this is their member
+  /// document, so it changes live with their roles. For anyone else, or an
+  /// event with no member document, it maps the old arrays as the server's
+  /// fallback does: creator as Owner, admins as Admin, others as Participant.
+  bool can(String uid, String permission) {
+    final mine = myPermissions;
+    if (uid == viewerId && mine != null) return mine.contains(permission);
+    return _legacyPermissions(uid).contains(permission);
+  }
+
+  Set<String> _legacyPermissions(String uid) {
+    if (creatorId == uid) return _everything;
+    if (adminIds.contains(uid)) return _adminPermissions;
+    if (memberIds.contains(uid)) return const {'group.readOwn', 'chat.send'};
+    return const {};
+  }
+
+  /// [uid]'s roles, from their member document or the old arrays.
+  List<String> rolesOf(String uid) {
+    final mine = myRoleIds;
+    if (uid == viewerId && mine != null) return mine;
+    if (creatorId == uid) return const ['owner'];
+    if (adminIds.contains(uid)) return const ['admin'];
+    if (memberIds.contains(uid)) return const ['participant'];
+    return const [];
+  }
+
+  /// Adding your own expense and creating tasks are open to every member
+  /// except those holding only Observer or Vendor (Req 34).
+  bool contributes(String uid) =>
+      rolesOf(uid).any((r) => r != 'observer' && r != 'vendor');
+
+  /// The same event, seen by [viewerId] with these roles and permissions.
+  EventModel copyWithAccess({
+    required String viewerId,
+    required List<String> roleIds,
+    required Set<String> permissions,
+  }) =>
+      _copy(viewerId: viewerId, myRoleIds: roleIds, myPermissions: permissions);
 
   /// The dates to show or edit, as local dates.
   DateTime? get displayStart => _display(startDate);
@@ -214,18 +263,23 @@ class EventModel {
       ? EventStatus.ended
       : EventStatus.published;
 
-  /// Check if [uid] is the event owner (creator).
-  bool isOwner(String uid) => creatorId == uid;
+  /// Whether [uid] holds the Owner role.
+  bool isOwner(String uid) => rolesOf(uid).contains('owner');
 
-  /// Check if [uid] is an admin (or owner — owner is implicit admin).
-  bool isAdmin(String uid) => creatorId == uid || adminIds.contains(uid);
-
-  /// Whether [actor] may remove [target], matching `removeEventMember`: the
-  /// owner can remove anyone else, and an admin can remove other members.
-  bool canRemoveMember({required String actor, required String target}) =>
+  /// Whether [actor] may remove [target], matching `removeEventMember`:
+  /// `members.manage` is needed, and `roles.manage` too when [target] also
+  /// manages members. The owner cannot be removed. [targetCan] answers for
+  /// [target], from their member document.
+  bool canRemoveMember({
+    required String actor,
+    required String target,
+    required bool Function(String permission) targetCan,
+    required bool targetIsOwner,
+  }) =>
       actor != target &&
-      !isOwner(target) &&
-      (isOwner(actor) || (isAdmin(actor) && !isAdmin(target)));
+      !targetIsOwner &&
+      can(actor, 'members.manage') &&
+      (!targetCan('members.manage') || can(actor, 'roles.manage'));
 
   /// Check if [uid] is a member (memberIds includes admins and owner).
   bool isMember(String uid) => memberIds.contains(uid);
@@ -249,6 +303,51 @@ class EventModel {
     bool clearMemberLimit = false,
     bool clearStartDate = false,
     bool clearEndDate = false,
+  }) {
+    return _copy(
+      title: title,
+      description: description,
+      startDate: startDate,
+      endDate: endDate,
+      status: status,
+      currency: currency,
+      timeZone: timeZone,
+      venues: venues,
+      languages: languages,
+      labels: labels,
+      modules: modules,
+      dateOnly: dateOnly,
+      capacity: capacity,
+      memberLimit: memberLimit,
+      clearCapacity: clearCapacity,
+      clearMemberLimit: clearMemberLimit,
+      clearStartDate: clearStartDate,
+      clearEndDate: clearEndDate,
+    );
+  }
+
+  EventModel _copy({
+    String? title,
+    String? description,
+    DateTime? startDate,
+    DateTime? endDate,
+    EventStatus? status,
+    String? currency,
+    String? timeZone,
+    List<EventVenue>? venues,
+    List<String>? languages,
+    Map<String, dynamic>? labels,
+    Map<String, bool>? modules,
+    bool? dateOnly,
+    int? capacity,
+    int? memberLimit,
+    bool clearCapacity = false,
+    bool clearMemberLimit = false,
+    bool clearStartDate = false,
+    bool clearEndDate = false,
+    String? viewerId,
+    List<String>? myRoleIds,
+    Set<String>? myPermissions,
   }) {
     return EventModel(
       id: id,
@@ -275,6 +374,50 @@ class EventModel {
       currency: currency ?? this.currency,
       createdAt: createdAt,
       updatedAt: updatedAt,
+      viewerId: viewerId ?? this.viewerId,
+      myRoleIds: myRoleIds ?? this.myRoleIds,
+      myPermissions: myPermissions ?? this.myPermissions,
     );
   }
 }
+
+const _everything = {
+  'event.manage',
+  'event.transfer',
+  'members.manage',
+  'roles.manage',
+  'schedule.edit',
+  'updates.send',
+  'participants.read',
+  'participants.edit',
+  'participants.readPrivate',
+  'participants.import',
+  'group.readOwn',
+  'group.editOwn',
+  'registrations.manage',
+  'money.read',
+  'money.record',
+  'money.refund',
+  'money.dueAtDoor',
+  'budget.read',
+  'budget.edit',
+  'expenses.readAll',
+  'contributions.manage',
+  'tasks.manage',
+  'chat.send',
+  'chat.urgent',
+  'messages.send',
+  'checkin.scan',
+  'checkin.lookup',
+  'counts.read',
+  'incidents.report',
+  'incidents.receive',
+  'reports.export',
+  'competition.manage',
+  'scores.enter',
+};
+
+final _adminPermissions = _everything.difference(const {
+  'event.transfer',
+  'roles.manage',
+});

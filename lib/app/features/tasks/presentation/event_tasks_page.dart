@@ -2,6 +2,8 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
+import 'package:crewpoint_app/app/core/services/callable_errors.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
@@ -173,7 +175,15 @@ class _EventTasksPageState extends ConsumerState<EventTasksPage> {
       ),
       error: (e, _) => Scaffold(
         appBar: AppBar(title: const Text('Tasks'), elevation: 0),
-        body: Center(child: Text('Error: $e')),
+        body: Center(
+          child: Text(
+            userMessageFor(
+              e,
+              strings: context.strings.errors,
+              fallback: context.strings.errors.genericFallback,
+            ),
+          ),
+        ),
       ),
     );
   }

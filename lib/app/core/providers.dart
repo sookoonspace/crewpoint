@@ -54,6 +54,7 @@ import 'package:crewpoint_app/app/features/dashboard/data/event_mute_repository.
 import 'package:crewpoint_app/app/features/dashboard/data/event_repository.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event_mute.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/member.dart';
 import 'package:crewpoint_app/app/core/database/daos/events_dao.dart';
 import 'package:crewpoint_app/app/features/tasks/data/task_repository.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
@@ -243,12 +244,18 @@ final changeEventCurrencyCallProvider = Provider<ChangeEventCurrencyCall>(
 );
 
 /// Event repository (Firestore source of truth + Drift mirror).
+/// Where "My events" memberships come from. Null in the app, which reads
+/// member documents with a collection-group query. Tests override it, since
+/// the fake Firestore sends collection-group results only once.
+final membershipsSourceProvider = Provider<MembershipsSource?>((_) => null);
+
 final eventRepositoryProvider = Provider<EventRepository>((ref) {
   final db = ref.watch(databaseProvider);
   final repo = EventRepository(
     eventsDao: EventsDao(db),
     firestore: ref.watch(firestoreProvider),
     createEventCall: ref.watch(createEventCallProvider),
+    memberships: ref.watch(membershipsSourceProvider),
   );
   ref.onDispose(repo.dispose);
   return repo;
@@ -264,6 +271,26 @@ final dashboardEventsProvider = StreamProvider<List<EventModel>>((ref) {
   return repo
       .watchEventsForUser(uid)
       .map((events) => events.where((e) => e.isVisibleTo(uid)).toList());
+});
+
+/// Everyone's member document in an event (Req 25): roles and permissions.
+/// Read straight from Firestore, whose cache keeps it offline. Empty for an
+/// event with no member documents, where callers fall back to the arrays.
+final eventMembersProvider = StreamProvider.family<List<MemberModel>, String>((
+  ref,
+  eventId,
+) {
+  return ref
+      .watch(firestoreProvider)
+      .collection('events')
+      .doc(eventId)
+      .collection('members')
+      .snapshots()
+      .map(
+        (snap) => snap.docs
+            .map((doc) => MemberModel.fromFirestore(doc.id, doc.data()))
+            .toList(),
+      );
 });
 
 /// Looks up a single event by id from the user's dashboard event list.

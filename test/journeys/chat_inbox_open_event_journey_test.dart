@@ -17,6 +17,7 @@ import 'package:crewpoint_app/app/features/chat/presentation/chat_inbox_screen.d
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
 import '../robots/chat_inbox_robot.dart';
+import '../harness/member_docs.dart';
 
 void main() {
   testWidgets(
@@ -69,6 +70,9 @@ void main() {
         ProviderScope(
           overrides: [
             firestoreProvider.overrideWithValue(firestore),
+            membershipsSourceProvider.overrideWithValue(
+              fakeMemberships(firestore),
+            ),
             databaseProvider.overrideWithValue(db),
             chatRepositoryProvider.overrideWithValue(repo),
             currentUserIdProvider.overrideWith((ref) => 'me'),

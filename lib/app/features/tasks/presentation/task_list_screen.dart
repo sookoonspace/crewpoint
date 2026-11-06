@@ -45,8 +45,7 @@ class TaskListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isOwner = event.isOwner(currentUserId);
-    final isAdmin = event.isAdmin(currentUserId);
+    final managesTasks = event.can(currentUserId, 'tasks.manage');
     final isEmpty = groups.isEmpty;
     final s = context.strings.tasks;
 
@@ -113,8 +112,7 @@ class TaskListScreen extends StatelessWidget {
                             TaskTile(
                               task: task,
                               canChangeStatus: task.canChangeStatus(
-                                isOwner: isOwner,
-                                isAdmin: isAdmin,
+                                managesTasks: managesTasks,
                                 currentUserId: currentUserId,
                               ),
                               currencyCode: event.currency,
@@ -131,7 +129,9 @@ class TaskListScreen extends StatelessWidget {
           ],
         ),
       ),
-      floatingActionButton: event.canEditTasks(currentUserId)
+      // Observers and Vendors cannot create tasks (Req 34).
+      floatingActionButton:
+          event.canEditTasks(currentUserId) && event.contributes(currentUserId)
           ? FloatingActionButton(
               key: const Key('tasks.list.create'),
               onPressed: onCreateTask,

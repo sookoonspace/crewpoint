@@ -3,11 +3,63 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/event_guard.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
 void main() {
+  testWidgets(
+    'losing access while on the event explains, and returns to the list',
+    (tester) async {
+      final controller = StreamController<List<EventModel>>();
+      addTearDown(controller.close);
+      const target = EventModel(id: 'evt-1', title: 'Fest', creatorId: 'u');
+      final router = GoRouter(
+        initialLocation: '/dashboard/event/evt-1',
+        routes: [
+          GoRoute(
+            path: '/dashboard',
+            builder: (_, _) => const Scaffold(body: Text('Event list')),
+            routes: [
+              GoRoute(
+                path: 'event/:id',
+                builder: (_, state) => EventGuard(
+                  eventId: state.pathParameters['id']!,
+                  child: (event) => Scaffold(body: Text(event.title)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            dashboardEventsProvider.overrideWith((ref) => controller.stream),
+          ],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      controller.add(const [target]);
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Fest'), findsOneWidget);
+
+      controller.add(const []);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 800));
+      await tester.pump();
+
+      expect(find.text('Event list'), findsOneWidget);
+      expect(find.text('You no longer have access to Fest.'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
   testWidgets('shows progress while dashboardEventsProvider is loading', (
     tester,
   ) async {

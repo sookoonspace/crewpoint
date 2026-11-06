@@ -1,11 +1,19 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crewpoint_app/app/features/dashboard/data/event_repository.dart';
 
+import 'member_docs.dart';
+
 /// Stands in for the `createEvent` callable, writing what the server would.
 /// Its validation is covered by `functions/test/events/createEvent.test.ts`.
 CreateEventCall fakeCreateEventCall(FirebaseFirestore firestore) =>
     (event) async {
       final uid = event.creatorId;
+      // The server writes the owner's member document in the same transaction.
+      await firestore.doc('events/${event.id}/members/$uid').set({
+        'uid': uid,
+        'roleIds': ['owner'],
+        'permissions': legacyPermissions('owner'),
+      });
       await firestore.collection('events').doc(event.id).set({
         'id': event.id,
         'title': event.title,

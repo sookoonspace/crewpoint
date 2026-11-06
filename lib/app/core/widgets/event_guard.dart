@@ -8,6 +8,7 @@ import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
@@ -38,6 +39,10 @@ class _EventGuardState extends ConsumerState<EventGuard> {
   Timer? _graceTimer;
   bool _graceElapsed = false;
 
+  /// The event as last shown. If it then disappears, the person has lost
+  /// access, such as being removed, rather than following a bad link.
+  EventModel? _shown;
+
   @override
   void initState() {
     super.initState();
@@ -58,6 +63,7 @@ class _EventGuardState extends ConsumerState<EventGuard> {
     if (old.eventId != widget.eventId) {
       _cancelGrace();
       _graceElapsed = false;
+      _shown = null;
       // Re-evaluate against current state for the new id.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || widget.eventId.isEmpty) return;
@@ -82,8 +88,22 @@ class _EventGuardState extends ConsumerState<EventGuard> {
     _graceTimer = Timer(const Duration(milliseconds: 750), () {
       if (!mounted) return;
       _graceTimer = null;
+      final lost = _shown;
+      if (lost != null) {
+        _leaveAfterLostAccess(lost);
+        return;
+      }
       setState(() => _graceElapsed = true);
     });
+  }
+
+  void _leaveAfterLostAccess(EventModel lost) {
+    _shown = null;
+    developer.log('Lost access to ${lost.id}', name: 'router');
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      SnackBar(content: Text(context.strings.dashboard.lostAccess(lost.title))),
+    );
+    context.go('/dashboard');
   }
 
   void _evaluate(AsyncValue<List<EventModel>> async) {
@@ -117,7 +137,13 @@ class _EventGuardState extends ConsumerState<EventGuard> {
 
     final asyncEvents = ref.watch(dashboardEventsProvider);
     final event = ref.watch(eventByIdProvider(widget.eventId));
-    if (event != null) return widget.child(event);
+    if (event != null) {
+      _shown = event;
+      return widget.child(event);
+    }
+    // Keep showing the event until it is confirmed gone, then leave.
+    final shown = _shown;
+    if (shown != null) return widget.child(shown);
 
     return asyncEvents.when(
       loading: () => const _ProgressScaffold(),

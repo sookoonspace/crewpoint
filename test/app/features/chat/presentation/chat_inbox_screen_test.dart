@@ -16,6 +16,7 @@ import 'package:crewpoint_app/app/features/chat/data/firestore_chat_service.dart
 import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
 import 'package:crewpoint_app/app/features/chat/presentation/chat_inbox_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
+import '../../../../harness/member_docs.dart';
 
 /// Lottie loops forever — bounded pumps, not pumpAndSettle.
 Future<void> _pumpFrames(WidgetTester tester) async {
@@ -70,6 +71,7 @@ class _ChatInboxTestBaseline {
   /// shadow).
   List<dynamic> get baseOverrides => <dynamic>[
     firestoreProvider.overrideWithValue(firestore),
+    membershipsSourceProvider.overrideWithValue(fakeMemberships(firestore)),
     databaseProvider.overrideWithValue(db),
     chatRepositoryProvider.overrideWithValue(repo),
   ];

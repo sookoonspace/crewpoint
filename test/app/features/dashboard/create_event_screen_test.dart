@@ -20,6 +20,7 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/create_event_s
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
 
 import '../../../harness/fake_create_event.dart';
+import '../../../harness/member_docs.dart';
 
 class _ChicagoTimezone implements IDeviceTimezone {
   @override
@@ -57,6 +58,7 @@ void main() {
       overrides: [
         databaseProvider.overrideWithValue(database),
         firestoreProvider.overrideWithValue(firestore),
+        membershipsSourceProvider.overrideWithValue(fakeMemberships(firestore)),
         createEventCallProvider.overrideWithValue(
           fakeCreateEventCall(firestore),
         ),

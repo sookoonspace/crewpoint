@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:crewpoint_app/app/core/services/callable_errors.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
@@ -158,11 +159,13 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
         memberNames: memberNames,
         appBarTitle: widget.event.title,
         isSending: _isSending,
-        readOnly: !widget.event.allowsChatAndMoney,
+        // Observers and Vendors read chat without `chat.send`.
+        readOnly:
+            !widget.event.allowsChatAndMoney ||
+            !widget.event.can(uid, 'chat.send'),
         lastSendFailed: _lastSendFailed,
         onSendMessage: (text) => _send(text),
-        // Needs `chat.urgent`, which owners and admins hold until permissions land.
-        onSendCriticalAlert: widget.event.isAdmin(uid)
+        onSendCriticalAlert: widget.event.can(uid, 'chat.urgent')
             ? (text) => _send(text, isHighPriority: true)
             : null,
         onTapSettlement: _onDispute,
@@ -179,7 +182,15 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
           title: Text(widget.event.title, overflow: TextOverflow.ellipsis),
           elevation: 0,
         ),
-        body: Center(child: Text('Error: $e')),
+        body: Center(
+          child: Text(
+            userMessageFor(
+              e,
+              strings: context.strings.errors,
+              fallback: context.strings.errors.genericFallback,
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -77,7 +77,7 @@ class EventDashboardScreen extends StatelessWidget {
                   Consumer(
                     builder: (_, ref, _) {
                       final uid = ref.watch(currentUserIdProvider);
-                      if (uid == null || !event.isAdmin(uid)) {
+                      if (uid == null || !event.canManage(uid)) {
                         return const SizedBox.shrink();
                       }
                       return Padding(
@@ -96,11 +96,11 @@ class EventDashboardScreen extends StatelessWidget {
                   ),
 
                   // Invite Members tile — admin/owner only. Explicit
-                  // null-uid guard so we don't rely on isAdmin('') semantics.
+                  // null-uid guard so we don't rely on canManage('') semantics.
                   Consumer(
                     builder: (_, ref, _) {
                       final uid = ref.watch(currentUserIdProvider);
-                      if (uid == null || !event.isAdmin(uid)) {
+                      if (uid == null || !event.canManage(uid)) {
                         return const SizedBox.shrink();
                       }
                       if (event.status == EventStatus.draft) {
@@ -342,7 +342,7 @@ class _EventHero extends StatelessWidget {
                   Consumer(
                     builder: (_, ref, _) {
                       final uid = ref.watch(currentUserIdProvider);
-                      if (uid == null || !event.isAdmin(uid)) {
+                      if (uid == null || !event.canManage(uid)) {
                         return const SizedBox.shrink();
                       }
                       return IconButton(
@@ -737,8 +737,10 @@ class _EventActionsState extends ConsumerState<_EventActions> {
       );
     }
 
-    final isOwner = widget.event.isOwner(widget.currentUserId);
-    final isAdmin = widget.event.isAdmin(widget.currentUserId);
+    final uid = widget.currentUserId;
+    final isOwner = widget.event.isOwner(uid);
+    // Deleting is the Owner's, through `event.transfer`.
+    final canDelete = widget.event.can(uid, 'event.transfer');
 
     return Column(
       crossAxisAlignment: .start,
@@ -765,8 +767,8 @@ class _EventActionsState extends ConsumerState<_EventActions> {
             ),
           ),
 
-        // Archive toggle (admin/owner)
-        if (isAdmin || isOwner)
+        // Archive toggle (`event.manage`)
+        if (widget.event.canManage(uid))
           Card(
             elevation: 0,
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -844,7 +846,7 @@ class _EventActionsState extends ConsumerState<_EventActions> {
           ),
 
         // Delete event (owner only) — danger zone
-        if (isOwner) ...[
+        if (canDelete) ...[
           const SizedBox(height: AppSpacing.lg),
           Card(
             elevation: 0,
