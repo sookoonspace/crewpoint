@@ -634,13 +634,13 @@ Read a minimum version at startup and show an upgrade message below it, so the a
 - `lib/app/core/router/app_router.dart`: never rebuild or recreate the router.
 
 ### Acceptance criteria
-- [ ] The app reads a public `config/app` document at startup, using `package_info_plus` behind a new seam.
-- [ ] Rules allow public read of `config/app`, and no client write.
-- [ ] Below the minimum, it shows a full-screen upgrade message, with a store link on mobile and a reload on web.
-- [ ] If the document cannot be read, the app continues normally.
-- [ ] Widget tests cover below-minimum, at-minimum and read-failure, on mobile and web variants.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] The app reads a public `config/app` document at startup, using `package_info_plus` behind a new seam.
+- [x] Rules allow public read of `config/app`, and no client write.
+- [x] Below the minimum, it shows a full-screen upgrade message, with a store link on mobile and a reload on web.
+- [x] If the document cannot be read, the app continues normally.
+- [x] Widget tests cover below-minimum, at-minimum and read-failure, on mobile and web variants.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - Requirements: 34a

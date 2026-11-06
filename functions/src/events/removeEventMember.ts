@@ -2,6 +2,7 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 import {assertNotArchived} from "./eventStatus";
+import {memberRef} from "./members";
 
 const db = getFirestore();
 
@@ -12,7 +13,8 @@ const db = getFirestore();
  *   `members.manage`, which owners and admins hold until permissions land.
  * - Only the owner can remove an admin, who also holds `members.manage`
  * - Owner cannot be removed, and cannot leave without transferring ownership
- * - Removes target from both memberIds and adminIds atomically
+ * - Removes target from both memberIds and adminIds, and deletes their
+ *   member document, atomically
  * - When an admin removes someone, deletes the event's invite codes so the
  *   removed member cannot rejoin with one they already have. Admins get a new
  *   code automatically the next time they open the invite sheet, which also
@@ -88,6 +90,7 @@ export const removeEventMember = onCall(
             );
           }
 
+          tx.delete(memberRef(eventRef, targetUserId));
           tx.update(eventRef, {
             memberIds: FieldValue.arrayRemove(targetUserId),
             adminIds: FieldValue.arrayRemove(targetUserId),

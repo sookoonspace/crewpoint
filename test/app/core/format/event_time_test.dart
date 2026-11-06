@@ -117,5 +117,35 @@ void main() {
       expect(stored, DateTime.utc(2027, 7, 16, 15));
       expect(event.calendarDay(stored), DateTime(2027, 7, 17));
     });
+
+    // Older due dates are midnight on the creator's device. The migration
+    // gives the event the creator's zone, so they read as the chosen day.
+    test(
+      'an older due date reads correctly once the event has the creator zone',
+      () {
+        for (final (zone, instant) in [
+          ('America/New_York', DateTime.utc(2026, 3, 10, 4)),
+          ('Asia/Kolkata', DateTime.utc(2026, 3, 9, 18, 30)),
+          ('Pacific/Auckland', DateTime.utc(2026, 3, 9, 11)),
+        ]) {
+          final migrated = EventModel(
+            id: 'e',
+            title: 'T',
+            creatorId: 'u',
+            timeZone: zone,
+          );
+          expect(
+            migrated.calendarDay(instant),
+            DateTime(2026, 3, 10),
+            reason: zone,
+          );
+          expect(
+            DateFormat('yyyy-MM-dd').format(migrated.inZone(instant)),
+            '2026-03-10',
+            reason: zone,
+          );
+        }
+      },
+    );
   });
 }

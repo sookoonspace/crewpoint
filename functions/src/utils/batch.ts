@@ -3,7 +3,7 @@ import {getFirestore} from "firebase-admin/firestore";
 const BATCH_LIMIT = 500;
 
 export interface BatchOperation {
-  type: "delete" | "update";
+  type: "delete" | "update" | "set";
   ref: FirebaseFirestore.DocumentReference;
   data?: Record<string, unknown>;
 }
@@ -26,6 +26,8 @@ export async function commitInChunks(
         batch.delete(op.ref);
       } else if (op.type === "update" && op.data) {
         batch.update(op.ref, op.data);
+      } else if (op.type === "set" && op.data) {
+        batch.set(op.ref, op.data);
       }
     }
 

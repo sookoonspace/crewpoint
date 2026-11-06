@@ -112,6 +112,19 @@ service cloud.firestore {
       allow delete: if request.auth != null
         && resource.data.creatorId == request.auth.uid;
 
+      // Member documents and the event's roles (Req 25, 27). Only server code
+      // writes them, so nobody can grant themselves a permission. Reads use
+      // the arrays until #66 moves them to member documents.
+      match /members/{memberId} {
+        allow read: if request.auth != null && isEventMember(eventId);
+        allow write: if false;
+      }
+
+      match /roles/{roleId} {
+        allow read: if request.auth != null && isEventMember(eventId);
+        allow write: if false;
+      }
+
       // Messages subcollection
       match /messages/{messageId} {
         allow read: if request.auth != null && isEventMember(eventId);
