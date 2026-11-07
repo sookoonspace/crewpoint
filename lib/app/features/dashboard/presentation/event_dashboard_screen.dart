@@ -16,6 +16,7 @@ import 'package:crewpoint_app/app/core/widgets/loading_animation.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
 import 'package:crewpoint_app/app/features/dashboard/data/event_repository.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/member.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/event_status_label.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/mute_event_sheet.dart';
@@ -100,10 +101,11 @@ class EventDashboardScreen extends StatelessWidget {
                   Consumer(
                     builder: (_, ref, _) {
                       final uid = ref.watch(currentUserIdProvider);
-                      if (uid == null || !event.canManage(uid)) {
-                        return const SizedBox.shrink();
-                      }
+                      if (uid == null) return const SizedBox.shrink();
                       if (event.status == EventStatus.draft) {
+                        if (!event.canManage(uid)) {
+                          return const SizedBox.shrink();
+                        }
                         final strings = context.strings.dashboard;
                         return Padding(
                           padding: const EdgeInsets.only(top: AppSpacing.md),
@@ -129,7 +131,11 @@ class EventDashboardScreen extends StatelessWidget {
                           ),
                         );
                       }
-                      if (!event.isJoinable) return const SizedBox.shrink();
+                      // Inviting matches generateInviteCode: members.manage.
+                      if (!event.isJoinable ||
+                          !event.can(uid, 'members.manage')) {
+                        return const SizedBox.shrink();
+                      }
                       return Padding(
                         padding: const EdgeInsets.only(top: AppSpacing.md),
                         child: _QuickLinkCard(
@@ -144,6 +150,7 @@ class EventDashboardScreen extends StatelessWidget {
                             context: context,
                             eventId: event.id,
                             memberLabel: event.words.other('member'),
+                            canChooseRole: event.can(uid, 'roles.manage'),
                           ),
                         ),
                       );
@@ -575,9 +582,23 @@ class _EventActionsState extends ConsumerState<_EventActions> {
     }
   }
 
+  /// Whether the person leaving is the only one who can manage members
+  /// (Req 31, H-07). Member documents are read live; until they load, or on an
+  /// event without them, no warning is shown and leaving is never blocked.
+  bool _isLastMemberManager() {
+    final me = widget.currentUserId;
+    final members = ref.read(eventMembersProvider(widget.event.id)).value;
+    final holders = [
+      for (final m in members ?? const <MemberModel>[])
+        if (m.permissions.contains('members.manage')) m.uid,
+    ];
+    return holders.length == 1 && holders.single == me;
+  }
+
   Future<void> _leaveEvent() async {
     final balance = await _outstandingBalance();
     if (!mounted) return;
+    final lastManager = _isLastMemberManager();
     final warning = balance == null
         ? null
         : context.strings.dashboard.leaveEventBalanceWarning(
@@ -600,6 +621,12 @@ class _EventActionsState extends ConsumerState<_EventActions> {
               Text(
                 warning,
                 key: const Key('event.leave.balanceWarning'),
+                style: TextStyle(color: Theme.of(ctx).colorScheme.error),
+              ),
+            if (lastManager)
+              Text(
+                context.strings.roles.leaveLastManagerWarning,
+                key: const Key('event.leave.lastManagerWarning'),
                 style: TextStyle(color: Theme.of(ctx).colorScheme.error),
               ),
           ],
@@ -730,6 +757,8 @@ class _EventActionsState extends ConsumerState<_EventActions> {
 
   @override
   Widget build(BuildContext context) {
+    // Kept listened to, so the leave dialog knows who else manages members.
+    ref.watch(eventMembersProvider(widget.event.id));
     if (_isLoading) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),

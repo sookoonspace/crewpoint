@@ -27,6 +27,9 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/edit_event_scr
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_settings_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/member_management_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/roles/member_detail_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_editor_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/roles/roles_screen.dart';
 import 'package:crewpoint_app/app/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/budget_ledger_screen.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/event_budget_page.dart';
@@ -200,6 +203,37 @@ GoRouter createRouter({
                             ),
                           ),
                         ),
+                        routes: [
+                          GoRoute(
+                            path: ':uid',
+                            builder: (_, state) => EventGuard(
+                              eventId: _resolveEventId(state),
+                              child: (event) => MemberDetailScreen(
+                                event: event,
+                                uid: state.pathParameters['uid'] ?? '',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      GoRoute(
+                        path: 'roles',
+                        builder: (_, state) => EventGuard(
+                          eventId: _resolveEventId(state),
+                          child: (event) => RolesScreen(event: event),
+                        ),
+                        routes: [
+                          GoRoute(
+                            path: ':roleId',
+                            builder: (_, state) => EventGuard(
+                              eventId: _resolveEventId(state),
+                              child: (event) => RoleEditorScreen(
+                                event: event,
+                                roleId: state.pathParameters['roleId'] ?? '',
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       GoRoute(
                         path: 'budget',

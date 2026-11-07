@@ -3,6 +3,9 @@ import 'dart:developer';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:crewpoint_app/app/core/providers.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:crewpoint_app/app/core/labels/label_resolver.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
@@ -13,19 +16,14 @@ import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/widgets/loading_animation.dart';
 import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
 
-/// Callable signature for the `generateInviteCode` Cloud Function. Mirrors
-/// `MarkTaskCompleteCall` in `TaskRepository` — the seam exists so widget
-/// tests can pump this sheet without touching Firebase.
-typedef GenerateInviteCodeCall = Future<String?> Function(String eventId);
-
-/// Bottom sheet that generates and displays a join code for inviting members.
-/// Code generation is server-side via generateInviteCode Cloud Function.
-class AddMemberSheet extends StatefulWidget {
+/// Bottom sheet showing the event's one active invite (Req 31). The code is
+/// made on the server by `generateInviteCode`, through [memberCallsProvider].
+class AddMemberSheet extends ConsumerStatefulWidget {
   const AddMemberSheet({
     super.key,
     required this.eventId,
     this.memberLabel,
-    this.generateInviteCode,
+    this.canChooseRole = false,
   });
 
   final String eventId;
@@ -33,14 +31,15 @@ class AddMemberSheet extends StatefulWidget {
   /// This event's word for members. Null uses the default.
   final String? memberLabel;
 
-  /// Test seam. Defaults to the real `generateInviteCode` callable.
-  final GenerateInviteCodeCall? generateInviteCode;
+  /// Whether the viewer holds `roles.manage`, and so may pick the role the
+  /// invite carries. Everyone else invites Participants.
+  final bool canChooseRole;
 
   static Future<void> show({
     required BuildContext context,
     required String eventId,
     String? memberLabel,
-    GenerateInviteCodeCall? generateInviteCode,
+    bool canChooseRole = false,
   }) {
     return showModalBottomSheet<void>(
       context: context,
@@ -53,27 +52,32 @@ class AddMemberSheet extends StatefulWidget {
       builder: (_) => AddMemberSheet(
         eventId: eventId,
         memberLabel: memberLabel,
-        generateInviteCode: generateInviteCode,
+        canChooseRole: canChooseRole,
       ),
     );
   }
 
   @override
-  State<AddMemberSheet> createState() => _AddMemberSheetState();
+  ConsumerState<AddMemberSheet> createState() => _AddMemberSheetState();
 }
 
-class _AddMemberSheetState extends State<AddMemberSheet> {
+class _AddMemberSheetState extends ConsumerState<AddMemberSheet> {
   String? _code;
+  String? _roleId;
   bool _isLoading = true;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _generateCode();
+    // Without `roles.manage`, the invite is always for Participants. With it,
+    // opening the sheet keeps whatever role the active invite carries.
+    _generateCode(roleId: widget.canChooseRole ? null : 'participant');
   }
 
-  Future<void> _generateCode() async {
+  /// Gets the active invite, replacing it when [roleId] differs from its role
+  /// or [rotate] is set.
+  Future<void> _generateCode({String? roleId, bool rotate = false}) async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -81,12 +85,18 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
 
     final strings = context.strings.dashboard;
     try {
-      final generate = widget.generateInviteCode ?? _callGenerateInviteCode;
-      final code = await generate(widget.eventId);
+      final invite = await ref
+          .read(memberCallsProvider)
+          .generateInviteCode(
+            eventId: widget.eventId,
+            roleId: roleId ?? _roleId,
+            rotate: rotate,
+          );
 
       if (mounted) {
         setState(() {
-          _code = code;
+          _code = invite.code;
+          _roleId = invite.roleId;
           _isLoading = false;
         });
       }
@@ -115,17 +125,6 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
     }
   }
 
-  /// Real callable — the default for [AddMemberSheet.generateInviteCode].
-  static Future<String?> _callGenerateInviteCode(String eventId) async {
-    final callable = FirebaseFunctions.instance.httpsCallable(
-      'generateInviteCode',
-    );
-    final result = await callable.call<Map<String, dynamic>>({
-      'eventId': eventId,
-    });
-    return result.data['code'] as String?;
-  }
-
   void _copyCode() {
     if (_code == null) return;
     Clipboard.setData(ClipboardData(text: _code!));
@@ -142,6 +141,43 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
     if (_code == null) return;
     await SharePlus.instance.share(
       ShareParams(text: 'Join my event on CrewPoint! Use code: $_code'),
+    );
+  }
+
+  /// The role the invite carries. Changing it replaces the code.
+  Widget _rolePicker(BuildContext context) {
+    final strings = context.strings.roles;
+    final roles = [
+      for (final role
+          in ref.watch(eventRolesProvider(widget.eventId)).value ??
+              const <RoleDefinition>[])
+        if (!role.isOwner) role,
+    ];
+    final current = _roleId ?? 'participant';
+    return Column(
+      crossAxisAlignment: .stretch,
+      spacing: AppSpacing.xs,
+      children: [
+        DropdownButtonFormField<String>(
+          key: const Key('dashboard.invite.role'),
+          initialValue: roles.any((r) => r.id == current) ? current : null,
+          decoration: InputDecoration(labelText: strings.inviteRoleLabel),
+          items: [
+            for (final role in roles)
+              DropdownMenuItem(
+                key: Key('dashboard.invite.role.${role.id}'),
+                value: role.id,
+                child: Text(role.name),
+              ),
+          ],
+          onChanged: (roleId) {
+            if (roleId != null && roleId != _roleId) {
+              _generateCode(roleId: roleId);
+            }
+          },
+        ),
+        Text(strings.inviteRoleHint, style: Theme.of(context).textTheme.bodySmall),
+      ],
     );
   }
 
@@ -209,6 +245,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
                     textAlign: TextAlign.center,
                   ),
                   TextButton(
+                    key: const Key('dashboard.invite.retry'),
                     onPressed: _generateCode,
                     child: const Text('Try Again'),
                   ),
@@ -216,6 +253,7 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
               ),
             )
           else if (_code != null) ...[
+            if (widget.canChooseRole) _rolePicker(context),
             Text(
               'Share this code with people you want to invite',
               style: Theme.of(context).textTheme.bodyMedium,
@@ -279,8 +317,11 @@ class _AddMemberSheetState extends State<AddMemberSheet> {
               ],
             ),
 
+            // Replaces the code and keeps the role, for a code that may have
+            // leaked.
             TextButton(
-              onPressed: _generateCode,
+              key: const Key('dashboard.invite.rotate'),
+              onPressed: () => _generateCode(rotate: true),
               child: const Text('Generate New Code'),
             ),
           ],

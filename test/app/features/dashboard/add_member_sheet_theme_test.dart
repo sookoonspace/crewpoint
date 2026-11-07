@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/theme/app_theme.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
+
+import '../../../harness/fake_member_calls.dart';
 
 const _codeKey = Key('dashboard.invite.code');
 const _code = 'ZUPQ8D';
@@ -10,10 +14,11 @@ const _code = 'ZUPQ8D';
 /// call is made. Returns once the code has rendered.
 Future<void> _pumpSheet(WidgetTester tester, ThemeData theme) async {
   await tester.pumpWidget(
-    MaterialApp(
-      theme: theme,
-      home: const Scaffold(
-        body: AddMemberSheet(eventId: 'e1', generateInviteCode: _stubGenerate),
+    ProviderScope(
+      overrides: [memberCallsProvider.overrideWithValue(FakeMemberCalls(code: _code))],
+      child: MaterialApp(
+        theme: theme,
+        home: const Scaffold(body: AddMemberSheet(eventId: 'e1')),
       ),
     ),
   );
@@ -21,8 +26,6 @@ Future<void> _pumpSheet(WidgetTester tester, ThemeData theme) async {
   await tester.pump();
   await tester.pump();
 }
-
-Future<String?> _stubGenerate(String eventId) async => _code;
 
 /// The rounded box the code is painted on — the nearest ancestor
 /// [Container] with a [BoxDecoration].

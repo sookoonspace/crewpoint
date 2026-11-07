@@ -13,7 +13,10 @@ import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/member.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/roles/roles_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
+import 'package:go_router/go_router.dart';
 
 /// Member management screen — shows members with roles, remove/promote actions.
 class MemberManagementScreen extends ConsumerStatefulWidget {
@@ -49,6 +52,19 @@ class _MemberManagementScreenState
     };
     List<String> rolesOf(String uid) =>
         members[uid]?.roleIds ?? event.rolesOf(uid);
+    // Custom roles show their own name, and edited presets their new one.
+    final roleNames = {
+      for (final role
+          in ref.watch(eventRolesProvider(event.id)).value ??
+              RoleCatalogue.current.presets)
+        // An unedited Participant shows as the event's own word.
+        role.id: role.id == 'participant' && !role.isEdited
+            ? event.words.one('member')
+            : role.name,
+    };
+    final canOpenDetail =
+        event.can(currentUserId, 'members.manage') ||
+        event.can(currentUserId, 'roles.manage');
     bool memberCan(String uid, String permission) =>
         members[uid]?.permissions.contains(permission) ??
         event.can(uid, permission);
@@ -76,6 +92,16 @@ class _MemberManagementScreenState
       appBar: AppBar(
         title: Text('Members (${event.memberIds.length})'),
         elevation: 0,
+        actions: [
+          if (canViewRoles(event, currentUserId))
+            TextButton.icon(
+              key: const Key('members.roles'),
+              onPressed: () =>
+                  context.push('/dashboard/event/${event.id}/roles'),
+              icon: const Icon(AppIcons.shield),
+              label: Text(context.strings.roles.title),
+            ),
+        ],
       ),
       body: ContentMaxWidth(
         key: const Key('memberManagement.body.clamped'),
@@ -102,7 +128,12 @@ class _MemberManagementScreenState
             return _MemberTile(
               memberId: memberId,
               displayName: displayNames[memberId],
-              role: _roleLabel(roles, event.words.one('member')),
+              role: _roleLabel(roles, roleNames, event.words.one('member')),
+              onOpen: canOpenDetail || memberId == currentUserId
+                  ? () => context.push(
+                      '/dashboard/event/${event.id}/members/$memberId',
+                    )
+                  : null,
               roleColor: memberIsOwner
                   ? AppColors.sage
                   : memberIsAdmin
@@ -121,10 +152,12 @@ class _MemberManagementScreenState
       ),
       floatingActionButton: event.can(currentUserId, 'members.manage')
           ? FloatingActionButton(
+              key: const Key('members.invite'),
               onPressed: () => AddMemberSheet.show(
                 memberLabel: event.words.other('member'),
                 context: context,
                 eventId: event.id,
+                canChooseRole: event.can(currentUserId, 'roles.manage'),
               ),
               backgroundColor: AppColors.sage,
               foregroundColor: AppColors.white,
@@ -134,14 +167,14 @@ class _MemberManagementScreenState
     );
   }
 
-  /// The names of [roleIds], with Participant shown as the event's own word.
-  String _roleLabel(List<String> roleIds, String memberWord) {
+  /// The names of [roleIds].
+  String _roleLabel(
+    List<String> roleIds,
+    Map<String, String> names,
+    String memberWord,
+  ) {
     if (roleIds.isEmpty) return memberWord;
-    return roleIds
-        .map(
-          (id) => id == 'participant' ? memberWord : presetRoleNames[id] ?? id,
-        )
-        .join(', ');
+    return roleIds.map((id) => names[id] ?? id).join(', ');
   }
 
   Future<void> _removeMember(String targetId) async {
@@ -173,13 +206,9 @@ class _MemberManagementScreenState
 
     setState(() => _processingIds.add(targetId));
     try {
-      final callable = FirebaseFunctions.instance.httpsCallable(
-        'removeEventMember',
-      );
-      await callable.call<Map<String, dynamic>>({
-        'eventId': widget.event.id,
-        'targetUserId': targetId,
-      });
+      await ref
+          .read(memberCallsProvider)
+          .removeMember(eventId: widget.event.id, uid: targetId);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -267,6 +296,7 @@ class _MemberTile extends StatelessWidget {
     this.displayName,
     this.onRemove,
     this.onToggleAdmin,
+    this.onOpen,
   });
 
   final String memberId;
@@ -279,6 +309,9 @@ class _MemberTile extends StatelessWidget {
   final bool isProcessing;
   final VoidCallback? onRemove;
   final VoidCallback? onToggleAdmin;
+
+  /// Opens Member detail, when the viewer may see it.
+  final VoidCallback? onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -326,6 +359,9 @@ class _MemberTile extends StatelessWidget {
         ),
       ),
       child: ListTile(
+        key: Key('members.tile.$memberId'),
+        onTap: onOpen,
+        minTileHeight: 56,
         leading: CircleAvatar(
           backgroundColor: AppColors.sageLight.withValues(alpha: 0.3),
           child: const Icon(AppIcons.navProfileFilled, color: AppColors.sage),
