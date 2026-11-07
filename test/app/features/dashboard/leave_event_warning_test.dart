@@ -1,6 +1,7 @@
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/member.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,8 +28,9 @@ ExpenseModel _expense(String payer, String owing) => ExpenseModel(
 
 Future<void> _openLeave(
   WidgetTester tester,
-  Stream<List<ExpenseModel>> expenses,
-) async {
+  Stream<List<ExpenseModel>> expenses, {
+  List<MemberModel> members = const [],
+}) async {
   tester.view.physicalSize = const Size(1200, 3000);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
@@ -38,6 +40,7 @@ Future<void> _openLeave(
       overrides: [
         currentUserIdProvider.overrideWithValue('me'),
         expenseListProvider.overrideWith((ref, _) => expenses),
+        eventMembersProvider.overrideWith((ref, _) => Stream.value(members)),
       ],
       child: const MaterialApp(home: EventDashboardScreen(event: _event)),
     ),
@@ -49,6 +52,13 @@ Future<void> _openLeave(
 }
 
 const _warning = Key('event.leave.balanceWarning');
+const _lastManager = Key('event.leave.lastManagerWarning');
+
+MemberModel _member(String uid, {bool manages = false}) => MemberModel(
+  uid: uid,
+  roleIds: [manages ? 'admin' : 'participant'],
+  permissions: {'chat.send', if (manages) 'members.manage'},
+);
 const _leave = Key('event.leave.confirm');
 
 void main() {
@@ -76,5 +86,40 @@ void main() {
     await _openLeave(tester, Stream.error(StateError('offline')));
     expect(find.byKey(_warning), findsNothing);
     expect(find.byKey(_leave), findsOneWidget);
+  });
+
+  testWidgets(
+    'H-07 warns the only person who can manage members before they leave',
+    (tester) async {
+      await _openLeave(
+        tester,
+        Stream.value(const []),
+        members: [_member('me', manages: true), _member('owner')],
+      );
+      expect(find.byKey(_lastManager), findsOneWidget);
+      expect(find.byKey(_leave), findsOneWidget);
+    },
+  );
+
+  testWidgets('no such warning while someone else can manage members', (
+    tester,
+  ) async {
+    await _openLeave(
+      tester,
+      Stream.value(const []),
+      members: [_member('me', manages: true), _member('owner', manages: true)],
+    );
+    expect(find.byKey(_lastManager), findsNothing);
+  });
+
+  testWidgets('no such warning for someone who does not manage members', (
+    tester,
+  ) async {
+    await _openLeave(
+      tester,
+      Stream.value(const []),
+      members: [_member('me'), _member('owner', manages: true)],
+    );
+    expect(find.byKey(_lastManager), findsNothing);
   });
 }

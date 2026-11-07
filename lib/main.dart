@@ -14,6 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crewpoint_app/app/core/widgets/app_update_gate.dart';
 import 'package:crewpoint_app/app/core/format/event_time.dart';
 import 'package:crewpoint_app/app/core/labels/label_resolver.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
 import 'package:crewpoint_app/app/core/env/app_flavor.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/router/app_router.dart';
@@ -96,6 +97,10 @@ Future<void> main() async {
   initEventTimeZones();
   LabelDefaults.current = LabelDefaults.fromJson(
     jsonDecode(await rootBundle.loadString(LabelDefaults.assetPath))
+        as Map<String, dynamic>,
+  );
+  RoleCatalogue.current = RoleCatalogue.fromJson(
+    jsonDecode(await rootBundle.loadString(RoleCatalogue.assetPath))
         as Map<String, dynamic>,
   );
   // The native build names the flavor on iOS and Android, so `--flavor`

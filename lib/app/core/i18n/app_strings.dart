@@ -36,6 +36,7 @@ abstract class AppStrings {
   ProfileStrings get profile;
   NavStrings get nav;
   UpdateStrings get update;
+  RoleStrings get roles;
 
   /// Static English fallback. Used by service-layer code that has no
   /// `BuildContext` in scope (e.g. `firebaseAuthErrorMessage`). UI code
@@ -483,6 +484,9 @@ class _EnglishStrings extends AppStrings {
 
   @override
   NavStrings get nav => const _EnglishNavStrings();
+
+  @override
+  RoleStrings get roles => const _EnglishRoleStrings();
 }
 
 class _EnglishChatStrings extends ChatStrings {
@@ -1298,4 +1302,265 @@ class _EnglishUpdateStrings extends UpdateStrings {
 
   @override
   String get noStoreLink => 'Get the latest version from your app store.';
+}
+
+/// The Roles, Role editor and Member detail screens, and invite roles (#67).
+abstract class RoleStrings {
+  const RoleStrings();
+
+  // Roles
+  String get title;
+  String get presetsHeading;
+  String get customHeading;
+  String get noCustomRoles;
+  String get noCustomRolesHint;
+  String get newRole;
+  String permissionCount(int count);
+  String get edited;
+  String get loadFailed;
+  String get retry;
+  String get noAccessTitle;
+  String get noAccessBody;
+  String get readOnly;
+
+  // Role editor
+  String get nameLabel;
+  String get nameRequired;
+  String nameTooLong(int max);
+  String get permissionsHeading;
+  String get save;
+  String get saved;
+  String get saveFailed;
+  String get ownerFixed;
+  String get reset;
+  String get resetTitle;
+  String get resetBody;
+  String get resetDone;
+  String get delete;
+  String get deleteTitle;
+  String get deleteBody;
+  String get deleted;
+  String get deleteFailed;
+  String get discardTitle;
+  String get discardBody;
+  String get keepEditing;
+  String get discard;
+  String get cancel;
+  String get roleNotFound;
+
+  /// The heading for a group of permissions in the editor.
+  String permissionGroup(String group);
+
+  /// A permission's name, for someone who has never seen the catalogue.
+  String permission(String id);
+
+  // Member detail
+  String get rolesHeading;
+  String get grantsHeading;
+  String get grantsNothing;
+  String get saveRoles;
+  String get rolesSaved;
+  String get rolesSaveFailed;
+  String get pickOneRole;
+  String get ownerNote;
+  String get remove;
+  String removeTitle(String member);
+  String get removeBody;
+  String removed(String member);
+  String get removeFailed;
+  String memberGone(String member);
+  String get you;
+
+  // Invite and leave
+  String get inviteRoleLabel;
+  String get inviteRoleHint;
+  String get inviteRoleFailed;
+  String get leaveLastManagerWarning;
+}
+
+class _EnglishRoleStrings extends RoleStrings {
+  const _EnglishRoleStrings();
+
+  @override
+  String get title => 'Roles';
+  @override
+  String get presetsHeading => 'Built-in roles';
+  @override
+  String get customHeading => 'Custom roles';
+  @override
+  String get noCustomRoles => 'No custom roles yet';
+  @override
+  String get noCustomRolesHint =>
+      'Make a role with exactly what one job needs.';
+  @override
+  String get newRole => 'New role';
+  @override
+  String permissionCount(int count) =>
+      count == 1 ? '1 permission' : '$count permissions';
+  @override
+  String get edited => 'Edited';
+  @override
+  String get loadFailed => "Couldn't load this. Check your connection.";
+  @override
+  String get retry => 'Try again';
+  @override
+  String get noAccessTitle => "You can't open this";
+  @override
+  String get noAccessBody =>
+      'Only people who manage members or roles can see this page.';
+  @override
+  String get readOnly => 'Only owners and co-owners can change roles.';
+
+  @override
+  String get nameLabel => 'Name';
+  @override
+  String get nameRequired => 'Give the role a name.';
+  @override
+  String nameTooLong(int max) => 'Use $max characters or fewer.';
+  @override
+  String get permissionsHeading => 'What this role can do';
+  @override
+  String get save => 'Save';
+  @override
+  String get saved => 'Role saved';
+  @override
+  String get saveFailed =>
+      "Couldn't save the role. Your changes are still here, so try again.";
+  @override
+  String get ownerFixed =>
+      'The Owner can always do everything. Ownership moves only through a '
+      'transfer.';
+  @override
+  String get reset => 'Reset to built-in';
+  @override
+  String get resetTitle => 'Reset this role?';
+  @override
+  String get resetBody =>
+      'Everyone with this role goes back to its built-in permissions.';
+  @override
+  String get resetDone => 'Role reset';
+  @override
+  String get delete => 'Delete role';
+  @override
+  String get deleteTitle => 'Delete this role?';
+  @override
+  String get deleteBody =>
+      'A role can be deleted only when nobody holds it. This cannot be undone.';
+  @override
+  String get deleted => 'Role deleted';
+  @override
+  String get deleteFailed =>
+      "Couldn't delete the role. Take it off everyone who holds it first.";
+  @override
+  String get discardTitle => 'Discard changes?';
+  @override
+  String get discardBody => "Your changes haven't been saved.";
+  @override
+  String get keepEditing => 'Keep editing';
+  @override
+  String get discard => 'Discard';
+  @override
+  String get cancel => 'Cancel';
+  @override
+  String get roleNotFound => 'This role no longer exists.';
+
+  @override
+  String permissionGroup(String group) => switch (group) {
+    'event' => 'Event',
+    'people' => 'People and roles',
+    'schedule' => 'Schedule and updates',
+    'participants' => 'Participants and groups',
+    'money' => 'Money',
+    'tasks' => 'Tasks',
+    'chat' => 'Chat',
+    'checkin' => 'Check-in and counts',
+    'safety' => 'Safety',
+    'competition' => 'Reports and competition',
+    _ => group,
+  };
+
+  @override
+  String permission(String id) => switch (id) {
+    'event.manage' => 'Change event settings',
+    'event.transfer' => 'Transfer or delete the event',
+    'members.manage' => 'Invite and remove people',
+    'roles.manage' => 'Change roles',
+    'schedule.edit' => 'Edit the schedule',
+    'updates.send' => 'Post updates',
+    'participants.read' => 'See participants',
+    'participants.edit' => 'Edit participants',
+    'participants.readPrivate' => 'See private participant details',
+    'participants.import' => 'Import participants',
+    'group.readOwn' => 'See their own group',
+    'group.editOwn' => 'Edit their own group',
+    'registrations.manage' => 'Manage registrations',
+    'money.read' => 'See money',
+    'money.record' => 'Record and edit payments',
+    'money.refund' => 'Give refunds',
+    'money.dueAtDoor' => 'Take payment at the door',
+    'budget.read' => 'See the budget',
+    'budget.edit' => 'Edit the budget',
+    'expenses.readAll' => 'See every expense',
+    'contributions.manage' => 'Manage contributions',
+    'tasks.manage' => "Manage everyone's tasks",
+    'chat.send' => 'Send chat messages',
+    'chat.urgent' => 'Send urgent messages',
+    'messages.send' => 'Send messages to participants',
+    'checkin.scan' => 'Scan people in',
+    'checkin.lookup' => 'Look people up at check-in',
+    'counts.read' => 'See counts',
+    'incidents.report' => 'Report incidents',
+    'incidents.receive' => 'Receive incident alerts',
+    'reports.export' => 'Export reports',
+    'competition.manage' => 'Run the competition',
+    'scores.enter' => 'Enter scores',
+    _ => id,
+  };
+
+  @override
+  String get rolesHeading => 'Roles';
+  @override
+  String get grantsHeading => 'What they can do';
+  @override
+  String get grantsNothing =>
+      'Read the event and its published schedule, nothing more.';
+  @override
+  String get saveRoles => 'Save roles';
+  @override
+  String get rolesSaved => 'Roles saved';
+  @override
+  String get rolesSaveFailed =>
+      "Couldn't save the roles. Your choices are still here, so try again.";
+  @override
+  String get pickOneRole => 'Choose at least one role.';
+  @override
+  String get ownerNote => 'Ownership moves only through a transfer.';
+  @override
+  String get remove => 'Remove from event';
+  @override
+  String removeTitle(String member) => 'Remove $member?';
+  @override
+  String get removeBody =>
+      'They lose access straight away. Their past messages and expenses stay.';
+  @override
+  String removed(String member) => '$member removed';
+  @override
+  String get removeFailed => "Couldn't remove them. Try again.";
+  @override
+  String memberGone(String member) =>
+      'This ${member.toLowerCase()} is no longer in the event.';
+  @override
+  String get you => 'You';
+
+  @override
+  String get inviteRoleLabel => 'Joins as';
+  @override
+  String get inviteRoleHint =>
+      'Changing the role makes a new code. The old one stops working.';
+  @override
+  String get inviteRoleFailed => "Couldn't change the role. Try again.";
+  @override
+  String get leaveLastManagerWarning =>
+      "You're the only one who can invite and remove people. Give someone "
+      'else that permission first, or nobody will be able to.';
 }

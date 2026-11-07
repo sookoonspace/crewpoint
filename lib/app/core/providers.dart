@@ -55,6 +55,8 @@ import 'package:crewpoint_app/app/features/dashboard/data/event_repository.dart'
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event_mute.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/member.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
+import 'package:crewpoint_app/app/features/dashboard/data/member_calls.dart';
 import 'package:crewpoint_app/app/core/database/daos/events_dao.dart';
 import 'package:crewpoint_app/app/features/tasks/data/task_repository.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
@@ -292,6 +294,29 @@ final eventMembersProvider = StreamProvider.family<List<MemberModel>, String>((
             .toList(),
       );
 });
+
+/// The member and role callables. Tests override it with a fake.
+final memberCallsProvider = Provider<MemberCalls>(
+  (_) => const FirebaseMemberCalls(),
+);
+
+/// An event's roles (Req 26a): the presets with the event's own versions, then
+/// its custom roles. Read straight from Firestore, whose cache keeps it
+/// offline.
+final eventRolesProvider =
+    StreamProvider.family<List<RoleDefinition>, String>((ref, eventId) {
+      return ref
+          .watch(firestoreProvider)
+          .collection('events')
+          .doc(eventId)
+          .collection('roles')
+          .snapshots()
+          .map(
+            (snap) => resolveRoles(RoleCatalogue.current, {
+              for (final doc in snap.docs) doc.id: doc.data(),
+            }),
+          );
+    });
 
 /// Looks up a single event by id from the user's dashboard event list.
 /// Returns null when the event isn't in the list (loading, deleted, or the

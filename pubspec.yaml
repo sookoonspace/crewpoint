@@ -159,4 +159,5 @@ flutter:
     - assets/animations/
     - assets/legal/
     - functions/src/shared/label_defaults.json
+    - functions/src/shared/role_presets.json
     - assets/images/auth/

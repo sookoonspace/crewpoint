@@ -436,9 +436,9 @@
  {
   "id": "H-01",
   "title": "Committee sub-teams (food, hotel, program, finance, picnic, registration); members assigned.",
-  "status": "NOT BUILT",
-  "gap": "No sub-teams. Only owner, admin and member exist.",
-  "tested": false
+  "status": "PASS",
+  "gap": "Built in #65 and #67: committee roles such as Finance and Crew lead, custom roles, and a Roles screen to assign them.",
+  "tested": true
  },
  {
   "id": "H-02",
