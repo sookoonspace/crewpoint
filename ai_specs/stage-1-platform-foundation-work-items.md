@@ -775,7 +775,7 @@ Add the Roles, Role editor and Member detail screens, custom roles, and a role a
 - [ ] An event has one active invite, which carries a role applied on join.
 - [ ] An owner can invite someone directly into a role, with no promotion needed after joining.
 - [ ] Removing someone with permission revokes write access on all paths, and existing behaviour from PR #40 is retained, including rotating the code.
-- [ ] An event with one remaining `members.manage` holder warns before that person leaves.
+- [ ] Leaving warns when it would leave at most one person holding `members.manage`, naming them, so there is always a backup. It never blocks leaving.
 - [ ] A robot journey shows role assignment changing access live.
 - [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
 - [ ] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.

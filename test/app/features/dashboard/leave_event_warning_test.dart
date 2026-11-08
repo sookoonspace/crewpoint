@@ -1,4 +1,6 @@
 import 'package:crewpoint_app/app/core/providers.dart';
+import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
+import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/member.dart';
@@ -41,6 +43,17 @@ Future<void> _openLeave(
         currentUserIdProvider.overrideWithValue('me'),
         expenseListProvider.overrideWith((ref, _) => expenses),
         eventMembersProvider.overrideWith((ref, _) => Stream.value(members)),
+        usersByIdProvider.overrideWith(
+          (ref, key) async => {
+            for (final uid in key.split(','))
+              if (_names[uid] != null)
+                uid: AppUser(
+                  uid: uid,
+                  email: '$uid@example.com',
+                  displayName: _names[uid],
+                ),
+          },
+        ),
       ],
       child: const MaterialApp(home: EventDashboardScreen(event: _event)),
     ),
@@ -51,6 +64,7 @@ Future<void> _openLeave(
   await tester.pump(const Duration(milliseconds: 400));
 }
 
+const _names = {'owner': 'Olivia', 'co': 'Chris'};
 const _warning = Key('event.leave.balanceWarning');
 const _lastManager = Key('event.leave.lastManagerWarning');
 
@@ -89,25 +103,61 @@ void main() {
   });
 
   testWidgets(
-    'H-07 warns the only person who can manage members before they leave',
+    'H-07 warns an Admin when only the Owner would be left to manage members',
     (tester) async {
       await _openLeave(
         tester,
         Stream.value(const []),
-        members: [_member('me', manages: true), _member('owner')],
+        members: [
+          _member('me', manages: true),
+          _member('owner', manages: true),
+          _member('sam'),
+        ],
       );
       expect(find.byKey(_lastManager), findsOneWidget);
-      expect(find.byKey(_leave), findsOneWidget);
+      expect(
+        find.text(
+          'After you leave, only Olivia can invite and remove people. Give '
+          'someone else that permission first, so there is always a backup.',
+        ),
+        findsOneWidget,
+      );
+      // A warning, never a block.
+      expect(
+        tester.widget<TextButton>(find.byKey(_leave)).onPressed,
+        isNotNull,
+      );
     },
   );
 
-  testWidgets('no such warning while someone else can manage members', (
+  testWidgets('H-07 warns the only person who can manage members', (
     tester,
   ) async {
     await _openLeave(
       tester,
       Stream.value(const []),
-      members: [_member('me', manages: true), _member('owner', manages: true)],
+      members: [_member('me', manages: true), _member('sam')],
+    );
+    expect(
+      find.text(
+        "You're the only one who can invite and remove people. Give someone "
+        'else that permission first, or nobody will be able to.',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('no warning while two others can still manage members', (
+    tester,
+  ) async {
+    await _openLeave(
+      tester,
+      Stream.value(const []),
+      members: [
+        _member('me', manages: true),
+        _member('owner', manages: true),
+        _member('co', manages: true),
+      ],
     );
     expect(find.byKey(_lastManager), findsNothing);
   });
