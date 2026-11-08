@@ -42,6 +42,9 @@ class TaskRepository implements ITaskRepository {
   final MarkTaskCompleteCall _markTaskComplete;
   final Map<String, StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>
   _firestoreSubs = {};
+
+  /// The assignee each event's mirror is limited to, or null for all tasks.
+  final Map<String, String?> _mirrorScopes = {};
   final Map<String, StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>
   _checklistSubs = {};
 
@@ -60,8 +63,19 @@ class TaskRepository implements ITaskRepository {
   CollectionReference<Map<String, dynamic>> _tasksRef(String eventId) =>
       _firestore.collection('events').doc(eventId).collection('tasks');
 
+  /// The tasks a reader may list. A Vendor or Observer must filter on
+  /// `assigneeId`, because rules refuse a query that could return a task
+  /// they cannot read (Req 32).
+  Query<Map<String, dynamic>> _tasksQuery(String eventId, String? assigneeId) =>
+      assigneeId == null
+      ? _tasksRef(eventId)
+      : _tasksRef(eventId).where('assigneeId', isEqualTo: assigneeId);
+
   @override
-  Stream<List<TaskModel>> watchTasksByEventId(String eventId) {
+  Stream<List<TaskModel>> watchTasksByEventId(
+    String eventId, {
+    String? assigneeId,
+  }) {
     // Web has no Drift persistence (Wasm is in-memory) and the empty-table
     // watch on Wasm Drift does not reliably emit its first frame. Match
     // `EventRepository.watchEventsForUser`'s web fork: read straight from
@@ -69,14 +83,16 @@ class TaskRepository implements ITaskRepository {
     // same as the pre-`_hydrate` legacy behavior. The detail-page subscribes
     // to the per-task checklist subcollection separately.
     if (kIsWeb) {
-      return _tasksRef(eventId).snapshots().map(
+      return _tasksQuery(eventId, assigneeId).snapshots().map(
         (snap) => snap.docs
             .map((doc) => _fromFirestore(doc.id, eventId, doc.data()))
             .toList(),
       );
     }
-    _ensureFirestoreMirror(eventId);
-    return _tasksDao.watchTasksByEventId(eventId).asyncMap(_hydrate);
+    _ensureFirestoreMirror(eventId, assigneeId);
+    return _tasksDao
+        .watchTasksByEventId(eventId, assigneeId: assigneeId)
+        .asyncMap(_hydrate);
   }
 
   /// Loads checklist rows for the supplied task rows in a single batched
@@ -95,18 +111,35 @@ class TaskRepository implements ITaskRepository {
     }).toList();
   }
 
-  void _ensureFirestoreMirror(String eventId) {
-    if (_firestoreSubs.containsKey(eventId)) return;
-    _firestoreSubs[eventId] = _tasksRef(eventId).snapshots().listen(
-      (snap) {
-        _mirrorSnapshot(eventId, snap).catchError((Object e, StackTrace st) {
-          log('Mirror failed', error: e, stackTrace: st, name: 'tasks');
-        });
-      },
-      onError: (Object e, StackTrace st) {
-        log('Firestore stream error', error: e, stackTrace: st, name: 'tasks');
-      },
-    );
+  /// Starts the event's mirror, or restarts it when the reader's access
+  /// changed. A narrower mirror deletes the rows it no longer returns.
+  void _ensureFirestoreMirror(String eventId, String? assigneeId) {
+    if (_firestoreSubs.containsKey(eventId) &&
+        _mirrorScopes[eventId] == assigneeId) {
+      return;
+    }
+    _firestoreSubs.remove(eventId)?.cancel();
+    _mirrorScopes[eventId] = assigneeId;
+    _firestoreSubs[eventId] = _tasksQuery(eventId, assigneeId)
+        .snapshots()
+        .listen(
+          (snap) {
+            _mirrorSnapshot(eventId, snap).catchError((
+              Object e,
+              StackTrace st,
+            ) {
+              log('Mirror failed', error: e, stackTrace: st, name: 'tasks');
+            });
+          },
+          onError: (Object e, StackTrace st) {
+            log(
+              'Firestore stream error',
+              error: e,
+              stackTrace: st,
+              name: 'tasks',
+            );
+          },
+        );
   }
 
   Future<void> _mirrorSnapshot(
@@ -129,6 +162,7 @@ class TaskRepository implements ITaskRepository {
 
   void disposeMirror(String eventId) {
     _firestoreSubs.remove(eventId)?.cancel();
+    _mirrorScopes.remove(eventId);
   }
 
   /// Cancels all live Firestore subscriptions. Call from `ref.onDispose` or

@@ -62,6 +62,61 @@ void main() {
       expect(arrays.contributes('stranger'), isFalse);
     });
 
+    group('what a Vendor or Observer reads (Req 32)', () {
+      EventModel as(List<String> roles, Set<String> permissions) =>
+          arrays.copyWithAccess(
+            viewerId: 'plain',
+            roleIds: roles,
+            permissions: permissions,
+          );
+
+      test('only their own tasks, unless the role holds tasks.manage', () {
+        expect(as(const ['vendor'], const {}).readsAllTasks('plain'), isFalse);
+        expect(
+          as(const ['vendor'], const {'tasks.manage'}).readsAllTasks('plain'),
+          isTrue,
+        );
+        expect(
+          as(const ['participant'], const {}).readsAllTasks('plain'),
+          isTrue,
+        );
+      });
+
+      test(
+        'only their own expenses, unless money.read or expenses.readAll',
+        () {
+          expect(
+            as(const ['observer'], const {}).readsAllExpenses('plain'),
+            isFalse,
+          );
+          expect(
+            as(
+              const ['observer'],
+              const {'money.read'},
+            ).readsAllExpenses('plain'),
+            isTrue,
+          );
+          expect(
+            as(
+              const ['vendor'],
+              const {'expenses.readAll'},
+            ).readsAllExpenses('plain'),
+            isTrue,
+          );
+          expect(arrays.readsAllExpenses('plain'), isTrue);
+        },
+      );
+
+      test('chat only with chat.send', () {
+        expect(as(const ['vendor'], const {}).readsChat('plain'), isFalse);
+        expect(
+          as(const ['observer'], const {'chat.send'}).readsChat('plain'),
+          isTrue,
+        );
+        expect(arrays.readsChat('plain'), isTrue);
+      });
+    });
+
     test('a draft is visible only with event.manage', () {
       final draft = arrays.copyWithAccess(
         viewerId: 'plain',

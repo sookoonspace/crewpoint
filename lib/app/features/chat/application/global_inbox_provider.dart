@@ -60,7 +60,11 @@ final globalInboxProvider = Provider.family<AsyncValue<List<InboxRow>>, String>(
     }
 
     final activeEvents = events.where(
-      (e) => e.status != EventStatus.archived && e.isModuleOn('chat'),
+      (e) =>
+          e.status != EventStatus.archived &&
+          e.isModuleOn('chat') &&
+          // Reading chat needs `chat.send` (Req 32).
+          e.readsChat(uid),
     );
     final rows = <InboxRow>[];
     for (final event in activeEvents) {

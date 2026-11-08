@@ -20,7 +20,12 @@ enum ExpenseSaveResult { saved, needsConnection, rejected }
 
 /// Abstract expense repository.
 abstract class IExpenseRepository {
-  Stream<List<ExpenseModel>> watchExpensesByEventId(String eventId);
+  /// An event's expenses, or only those [involving] pays for or shares in
+  /// when set, for a Vendor or Observer (Req 32).
+  Stream<List<ExpenseModel>> watchExpensesByEventId(
+    String eventId, {
+    String? involving,
+  });
   Future<List<ExpenseModel>> getExpensesByEventId(String eventId);
   Future<ExpenseSaveResult> saveExpense(ExpenseModel expense);
   Future<bool> deleteExpense(String id);

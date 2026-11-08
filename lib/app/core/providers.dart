@@ -305,20 +305,22 @@ final memberCallsProvider = Provider<MemberCalls>(
 /// An event's roles (Req 26a): the presets with the event's own versions, then
 /// its custom roles. Read straight from Firestore, whose cache keeps it
 /// offline.
-final eventRolesProvider =
-    StreamProvider.family<List<RoleDefinition>, String>((ref, eventId) {
-      return ref
-          .watch(firestoreProvider)
-          .collection('events')
-          .doc(eventId)
-          .collection('roles')
-          .snapshots()
-          .map(
-            (snap) => resolveRoles(RoleCatalogue.current, {
-              for (final doc in snap.docs) doc.id: doc.data(),
-            }),
-          );
-    });
+final eventRolesProvider = StreamProvider.family<List<RoleDefinition>, String>((
+  ref,
+  eventId,
+) {
+  return ref
+      .watch(firestoreProvider)
+      .collection('events')
+      .doc(eventId)
+      .collection('roles')
+      .snapshots()
+      .map(
+        (snap) => resolveRoles(RoleCatalogue.current, {
+          for (final doc in snap.docs) doc.id: doc.data(),
+        }),
+      );
+});
 
 /// An event's crews (Req 33), by name. Read straight from Firestore, whose
 /// cache keeps it offline.
@@ -333,13 +335,10 @@ final eventCrewsProvider = StreamProvider.family<List<CrewModel>, String>((
       .collection('crews')
       .snapshots()
       .map(
-        (snap) =>
-            [
-              for (final doc in snap.docs)
-                CrewModel.fromFirestore(doc.id, doc.data()),
-            ]..sort(
-              (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-            ),
+        (snap) => [
+          for (final doc in snap.docs)
+            CrewModel.fromFirestore(doc.id, doc.data()),
+        ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase())),
       );
 });
 
@@ -388,8 +387,32 @@ final taskListProvider = StreamProvider.family<List<TaskModel>, String>((
   eventId,
 ) {
   final repo = ref.watch(taskRepositoryProvider);
+  final assigneeId = ref.watch(taskReadScopeProvider(eventId));
   ref.onDispose(() => repo.disposeMirror(eventId));
-  return repo.watchTasksByEventId(eventId);
+  return repo.watchTasksByEventId(eventId, assigneeId: assigneeId);
+});
+
+/// Whose tasks the signed-in person lists in an event: null for every task,
+/// or their own uid when, as a Vendor or Observer, they read only tasks
+/// assigned to them (Req 32). Follows role changes live.
+final taskReadScopeProvider = Provider.family<String?, String>((ref, eventId) {
+  final me = ref.watch(currentUserIdProvider);
+  final event = ref.watch(eventByIdProvider(eventId));
+  if (me == null || event == null || event.readsAllTasks(me)) return null;
+  return me;
+});
+
+/// Whose expenses the signed-in person lists in an event: null for every
+/// expense, or their own uid when, as a Vendor or Observer, they read only
+/// expenses they paid or share in (Req 32). Follows role changes live.
+final expenseReadScopeProvider = Provider.family<String?, String>((
+  ref,
+  eventId,
+) {
+  final me = ref.watch(currentUserIdProvider);
+  final event = ref.watch(eventByIdProvider(eventId));
+  if (me == null || event == null || event.readsAllExpenses(me)) return null;
+  return me;
 });
 
 /// Live stream of checklist items for a given (eventId, taskId) pair.
@@ -472,8 +495,9 @@ final expenseListProvider = StreamProvider.family<List<ExpenseModel>, String>((
   eventId,
 ) {
   final repo = ref.watch(expenseRepositoryProvider);
+  final involving = ref.watch(expenseReadScopeProvider(eventId));
   ref.onDispose(() => repo.disposeMirror(eventId));
-  return repo.watchExpensesByEventId(eventId);
+  return repo.watchExpensesByEventId(eventId, involving: involving);
 });
 
 /// Chat service (Firestore-backed for V1).
@@ -501,6 +525,15 @@ final chatRepositoryProvider = Provider<ChatRepository>((ref) {
 /// Live stream of chat messages for an event (Drift-mirrored).
 final chatMessagesProvider =
     StreamProvider.family<List<ChatMessageModel>, String>((ref, eventId) {
+      // Reading chat needs `chat.send` (Req 32), so a Vendor or Observer
+      // without it subscribes to nothing.
+      final me = ref.watch(currentUserIdProvider);
+      final readsChat = ref.watch(
+        eventByIdProvider(
+          eventId,
+        ).select((e) => e == null || me == null || e.readsChat(me)),
+      );
+      if (!readsChat) return Stream.value(const []);
       final repo = ref.watch(chatRepositoryProvider);
       ref.onDispose(() => repo.disposeMirror(eventId));
       return repo.watchMessages(eventId);

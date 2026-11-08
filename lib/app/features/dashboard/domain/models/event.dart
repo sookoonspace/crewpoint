@@ -192,6 +192,23 @@ class EventModel {
   bool contributes(String uid) =>
       rolesOf(uid).any((r) => r != 'observer' && r != 'vendor');
 
+  /// Whether [uid] reads every task, or only those assigned to them, as a
+  /// Vendor or Observer does unless their role holds `tasks.manage` (Req 32).
+  /// Mirrors `readsTask` in `firestore.rules`.
+  bool readsAllTasks(String uid) =>
+      contributes(uid) || can(uid, 'tasks.manage');
+
+  /// Whether [uid] reads every expense, or only those they paid or share in,
+  /// as a Vendor or Observer does unless their role holds `money.read` or
+  /// `expenses.readAll` (Req 32).
+  bool readsAllExpenses(String uid) =>
+      contributes(uid) ||
+      can(uid, 'money.read') ||
+      can(uid, 'expenses.readAll');
+
+  /// Reading chat needs `chat.send` (Req 32).
+  bool readsChat(String uid) => can(uid, 'chat.send');
+
   /// The same event, seen by [viewerId] with these roles and permissions.
   EventModel copyWithAccess({
     required String viewerId,

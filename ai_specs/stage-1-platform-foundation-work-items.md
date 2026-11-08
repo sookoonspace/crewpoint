@@ -876,14 +876,14 @@ Limit Vendors to their own tasks and payments, and prove every role against ever
 - #71, #72 and later items add restricted paths, and extend this matrix as they land.
 
 ### Acceptance criteria
-- [ ] Vendors see only tasks assigned to them, and their own payments or documents.
-- [ ] A sponsor, vendor or observer sees only what their role allows.
-- [ ] A role matrix test proves every role against every restricted path, on the server and in the UI, using the Req 26a table.
-- [ ] Committee-style roles cannot read any money field through the API. The money fields arrive in #71 (`budgetEstimate`, payment handles) and #72 (expense access), which add these rows to this matrix; until then every contributing member reads expenses, as today.
-- [ ] The matrix shows Observer and Vendor cannot create tasks or expenses, and other roles can.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] Tests for scenarios H-05, WE-08 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] Vendors see only tasks assigned to them, and their own payments or documents.
+- [x] A sponsor, vendor or observer sees only what their role allows.
+- [x] A role matrix test proves every role against every restricted path, on the server and in the UI, using the Req 26a table.
+- [x] Committee-style roles cannot read any money field through the API. The money fields arrive in #71 (`budgetEstimate`, payment handles) and #72 (expense access), which add these rows to this matrix; until then every contributing member reads expenses, as today.
+- [x] The matrix shows Observer and Vendor cannot create tasks or expenses, and other roles can.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] Tests for scenarios H-05, WE-08 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 12

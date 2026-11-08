@@ -16,7 +16,12 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     dao = TasksDao(db);
     container = ProviderContainer(
-      overrides: [databaseProvider.overrideWithValue(db)],
+      overrides: [
+        databaseProvider.overrideWithValue(db),
+        taskReadScopeProvider('evt-a').overrideWithValue(null),
+        // A Vendor or Observer, who counts only tasks assigned to them.
+        taskReadScopeProvider('evt-v').overrideWithValue('vendor-1'),
+      ],
     );
   });
 
@@ -25,12 +30,18 @@ void main() {
     await db.close();
   });
 
-  TasksCompanion task(String id, String eventId, String status) {
+  TasksCompanion task(
+    String id,
+    String eventId,
+    String status, {
+    String? assigneeId,
+  }) {
     return TasksCompanion(
       id: Value(id),
       eventId: Value(eventId),
       title: Value('Task $id'),
       status: Value(status),
+      assigneeId: Value(assigneeId),
     );
   }
 
@@ -54,4 +65,18 @@ void main() {
     expect(emissions.last.value, (todo: 0, doing: 1, done: 1));
     sub.close();
   });
+
+  test(
+    'a Vendor or Observer counts only tasks assigned to them (Req 32)',
+    () async {
+      await dao.insertTask(task('t1', 'evt-v', 'todo', assigneeId: 'vendor-1'));
+      await dao.insertTask(task('t2', 'evt-v', 'todo', assigneeId: 'other'));
+      final sub = container.listen(eventTaskCountsProvider('evt-v'), (_, _) {});
+      addTearDown(sub.close);
+      final counts = await container.read(
+        eventTaskCountsProvider('evt-v').future,
+      );
+      expect(counts, (todo: 1, doing: 0, done: 0));
+    },
+  );
 }
