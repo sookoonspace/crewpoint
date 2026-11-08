@@ -1,3 +1,4 @@
+import 'package:crewpoint_app/app/features/participants/data/participant_repository.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/my_balance.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -408,6 +409,29 @@ final taskBudgetsProvider = StreamProvider.family<Map<String, double>, String>((
   );
   if (!reads) return Stream.value(const {});
   return ref.watch(taskRepositoryProvider).watchBudgets(eventId);
+});
+
+/// Participants and groups, read online (Req 43). Never mirrored.
+final participantRepositoryProvider = Provider<ParticipantRepository>(
+  (ref) => ParticipantRepository(firestore: ref.watch(firestoreProvider)),
+);
+
+/// The signed-in person's own member document in an event, live, for what is
+/// not on [EventModel], such as their group IDs (Req 26b). Null outside it.
+final myMemberProvider = StreamProvider.family<MemberModel?, String>((
+  ref,
+  eventId,
+) {
+  final me = ref.watch(currentUserIdProvider);
+  if (me == null) return Stream.value(null);
+  return ref
+      .watch(firestoreProvider)
+      .doc('events/$eventId/members/$me')
+      .snapshots()
+      .map((doc) {
+        final data = doc.data();
+        return data == null ? null : MemberModel.fromFirestore(doc.id, data);
+      });
 });
 
 /// Calls `getMyBalance`. Tests override this.

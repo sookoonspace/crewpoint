@@ -19,6 +19,8 @@ import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider
 import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_access.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/expense_access_screen.dart';
+import 'package:crewpoint_app/app/features/participants/presentation/participant_screen.dart';
+import 'package:crewpoint_app/app/features/participants/presentation/roster_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/member_management_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/crews_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/member_detail_screen.dart';
@@ -75,18 +77,27 @@ class RolesHarness {
       'sam': ['participant'],
     },
     ExpenseAccess? expenseAccess,
+    Map<String, List<String>> groupIds = const {},
   }) async {
     final presets = resolveRoles(RoleCatalogue.current, const {});
     final access = expenseAccess ?? const ExpenseAccess.everyone();
     for (final entry in roles.entries) {
+      final groups = groupIds[entry.key] ?? const <String>[];
+      final permissions = computePermissions(
+        entry.value,
+        presets,
+        readsAllExpenses: access.readsAll(entry.key, entry.value),
+      );
       await firestore.doc('events/$eventId/members/${entry.key}').set({
         'uid': entry.key,
         'roleIds': entry.value,
-        'permissions': computePermissions(
-          entry.value,
-          presets,
-          readsAllExpenses: access.readsAll(entry.key, entry.value),
-        ),
+        'permissions': [
+          for (final p in RoleCatalogue.current.permissions)
+            if (permissions.contains(p) ||
+                (p == 'group.editOwn' && groups.isNotEmpty))
+              p,
+        ],
+        if (groups.isNotEmpty) 'groupIds': groups,
       });
     }
     await firestore.doc('events/$eventId').set({
@@ -166,6 +177,26 @@ class RolesHarness {
                       child: (event) => MemberDetailScreen(
                         event: event,
                         uid: state.pathParameters['uid']!,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              GoRoute(
+                path: 'people',
+                builder: (_, _) => EventGuard(
+                  eventId: eventId,
+                  child: (event) => RosterScreen(event: event),
+                ),
+                routes: [
+                  GoRoute(
+                    path: ':participantId',
+                    builder: (_, state) => EventGuard(
+                      eventId: eventId,
+                      child: (event) => ParticipantScreen(
+                        event: event,
+                        participantId: state.pathParameters['participantId']!,
+                        initialGroupId: state.uri.queryParameters['group'],
                       ),
                     ),
                   ),

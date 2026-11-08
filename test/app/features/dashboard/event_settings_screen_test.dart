@@ -65,6 +65,7 @@ void main() {
       ProviderScope(
         overrides: [
           currentUserIdProvider.overrideWithValue(uid),
+          firestoreProvider.overrideWithValue(firestore),
           expenseListProvider(
             event.id,
           ).overrideWith((_) => expenseStream ?? Stream.value(expenses)),
@@ -142,6 +143,45 @@ void main() {
     testWidgets('an admin sees the form', (tester) async {
       await pump(tester, uid: 'admin');
       expect(find.byKey(_key('save')), findsOneWidget);
+    });
+  });
+
+  group('capacity (Req 18b, PA-05)', () {
+    testWidgets('counts everyone attending, with or without an account', (
+      tester,
+    ) async {
+      for (final (id, status) in [
+        ('a', 'active'),
+        ('b', 'active'),
+        ('c', 'active'),
+        ('d', 'active'),
+        ('gone', 'cancelled'),
+      ]) {
+        await firestore.doc('events/evt/participants/$id').set({
+          'name': id,
+          'sortName': id,
+          'isChild': false,
+          'status': status,
+        });
+      }
+      await pump(tester);
+      await tester.pumpAndSettle();
+      // Three members have accounts; four people are attending.
+      expect(find.text('4 of 500 attending'), findsOneWidget);
+    });
+
+    testWidgets('shows the count alone when no capacity is set', (
+      tester,
+    ) async {
+      await firestore.doc('events/evt/participants/a').set({
+        'name': 'a',
+        'sortName': 'a',
+        'isChild': false,
+        'status': 'active',
+      });
+      await pump(tester, event: _event.copyWith(clearCapacity: true));
+      await tester.pumpAndSettle();
+      expect(find.text('1 attending'), findsOneWidget);
     });
   });
 
@@ -500,20 +540,6 @@ void main() {
       await tester.pageBack();
       await tester.pumpAndSettle();
       expect(find.text('Discard changes?'), findsOneWidget);
-    });
-  });
-
-  group('capacity (Req 18b)', () {
-    testWidgets('shows the count against capacity', (tester) async {
-      await pump(tester);
-      expect(find.text('3 of 500 attending'), findsOneWidget);
-    });
-
-    testWidgets('shows the count alone when no capacity is set', (
-      tester,
-    ) async {
-      await pump(tester, event: _event.copyWith(clearCapacity: true));
-      expect(find.text('3 attending'), findsOneWidget);
     });
   });
 

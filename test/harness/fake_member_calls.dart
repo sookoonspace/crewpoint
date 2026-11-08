@@ -76,6 +76,80 @@ class FakeMemberCalls implements MemberCalls {
   /// Saves the setting, logs the change, and recalculates every member, as
   /// `setExpenseAccess` does.
   @override
+  Future<void> saveGroup({
+    required String eventId,
+    required String groupId,
+    required String name,
+  }) async {
+    calls.add('saveGroup:$groupId:$name');
+    _maybeFail();
+    if (firestore == null) return;
+    final ref = _event(eventId).collection('groups').doc(groupId);
+    final existing = await ref.get();
+    await ref.set({
+      'name': name.trim(),
+      'sortName': name.trim().toLowerCase(),
+      if (!existing.exists) 'adultUids': <String>[],
+    }, SetOptions(merge: true));
+  }
+
+  /// Links the adults and copies the group onto their member documents, as
+  /// `setGroupAdults` does.
+  @override
+  Future<void> setGroupAdults({
+    required String eventId,
+    required String groupId,
+    required List<String> uids,
+  }) async {
+    calls.add('setGroupAdults:$groupId:${uids.join(',')}');
+    _maybeFail();
+    if (firestore == null) return;
+    final ref = _event(eventId).collection('groups').doc(groupId);
+    final before = ((await ref.get()).data()?['adultUids'] as List? ?? [])
+        .cast<String>();
+    await ref.update({'adultUids': uids});
+    for (final uid in {...before, ...uids}) {
+      final member = _event(eventId).collection('members').doc(uid);
+      final data = (await member.get()).data();
+      if (data == null) continue;
+      final ids = {...((data['groupIds'] as List?) ?? []).cast<String>()};
+      uids.contains(uid) ? ids.add(groupId) : ids.remove(groupId);
+      final perms = {...((data['permissions'] as List?) ?? []).cast<String>()};
+      ids.isEmpty ? perms.remove('group.editOwn') : perms.add('group.editOwn');
+      await member.update({
+        'groupIds': ids.toList(),
+        'permissions': [
+          for (final p in RoleCatalogue.current.permissions)
+            if (perms.contains(p)) p,
+        ],
+      });
+    }
+  }
+
+  @override
+  Future<void> deleteGroup({
+    required String eventId,
+    required String groupId,
+  }) async {
+    calls.add('deleteGroup:$groupId');
+    _maybeFail();
+    if (firestore == null) return;
+    final people = await _event(eventId)
+        .collection('participants')
+        .where('groupId', isEqualTo: groupId)
+        .limit(1)
+        .get();
+    if (people.docs.isNotEmpty) {
+      throw FirebaseFunctionsException(
+        code: 'failed-precondition',
+        message: 'Move or remove the people in this group first.',
+      );
+    }
+    await setGroupAdults(eventId: eventId, groupId: groupId, uids: const []);
+    await _event(eventId).collection('groups').doc(groupId).delete();
+  }
+
+  @override
   Future<void> setExpenseAccess({
     required String eventId,
     required ExpenseAccess access,

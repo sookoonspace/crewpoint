@@ -41,6 +41,7 @@ abstract class AppStrings {
   CrewStrings get crews;
   TransferStrings get transfer;
   ExpenseAccessStrings get expenseAccess;
+  PeopleStrings get people;
 
   /// Static English fallback. Used by service-layer code that has no
   /// `BuildContext` in scope (e.g. `firebaseAuthErrorMessage`). UI code
@@ -501,6 +502,9 @@ class _EnglishStrings extends AppStrings {
   @override
   ExpenseAccessStrings get expenseAccess =>
       const _EnglishExpenseAccessStrings();
+
+  @override
+  PeopleStrings get people => const _EnglishPeopleStrings();
 }
 
 class _EnglishChatStrings extends ChatStrings {
@@ -1590,6 +1594,185 @@ class _EnglishRoleStrings extends RoleStrings {
 
 /// The Crews screen and task crews (#68). [crew] and [crews] are the event's
 /// own words for the concept, from `event.words`.
+/// The roster, participant and group screens (Req 40, 43). Concept words,
+/// such as the event's word for a participant or a group, come from
+/// `event.words` and are passed in.
+abstract class PeopleStrings {
+  const PeopleStrings();
+
+  String searchHint(String participants);
+  String get hubSubtitle;
+  String get onlineNote;
+  String filterByGroup(String group);
+  String allGroups(String groups);
+  String clearGroup(String group);
+  String manageGroup(String group);
+  String add(String participant);
+  String emptyTitle(String participants);
+  String emptyHint(String group);
+  String get loadFailed;
+  String get retry;
+  String get loadMore;
+  String get child;
+  String noGroup(String group);
+  String newTitle(String participant);
+  String get nameLabel;
+  String get nameRequired;
+  String nameTooLong(int max);
+  String groupLabel(String group);
+  String newGroup(String group);
+  String newGroupName(String group);
+  String get childLabel;
+  String get childHelp;
+  String get birthDateLabel;
+  String get birthDateHelp;
+  String get clearBirthDate;
+  String get save;
+  String get saved;
+  String get saveFailed;
+  String get delete;
+  String deleteTitle(String name);
+  String get deleteBody;
+  String get deleted;
+  String get deleteFailed;
+  String notFound(String participant);
+  String get readOnly;
+  String groupSearchHint(String groups);
+  String noGroupsFound(String groups);
+  String groupNameLabel(String group);
+  String get rename;
+  String get adultsHeading;
+  String adultsHelp(String group);
+  String get noMembers;
+  String deleteGroupTitle(String name);
+  String deleteGroupBody(String group);
+  String get groupSaved;
+  String get groupDeleted;
+  String get groupSaveFailed;
+}
+
+class _EnglishPeopleStrings extends PeopleStrings {
+  const _EnglishPeopleStrings();
+
+  @override
+  String searchHint(String participants) =>
+      'Search ${participants.toLowerCase()} by name';
+  @override
+  String get hubSubtitle => 'Who is coming, with or without an account';
+  @override
+  String get onlineNote =>
+      'Needs a connection. This list is not kept on your device.';
+  @override
+  String filterByGroup(String group) => 'Filter by ${group.toLowerCase()}';
+  @override
+  String allGroups(String groups) => 'All ${groups.toLowerCase()}';
+  @override
+  String clearGroup(String group) => 'Show every ${group.toLowerCase()}';
+  @override
+  String manageGroup(String group) => 'Manage ${group.toLowerCase()}';
+  @override
+  String add(String participant) => 'Add ${participant.toLowerCase()}';
+  @override
+  String emptyTitle(String participants) =>
+      'No ${participants.toLowerCase()} yet';
+  @override
+  String emptyHint(String group) =>
+      'Add people attending, with or without an account. Put people who come '
+      'together in the same ${group.toLowerCase()}.';
+  @override
+  String get loadFailed =>
+      "Couldn't load. This list needs a connection, so check yours and try "
+      'again.';
+  @override
+  String get retry => 'Try again';
+  @override
+  String get loadMore => 'Show more';
+  @override
+  String get child => 'Child';
+  @override
+  String noGroup(String group) => 'No ${group.toLowerCase()}';
+  @override
+  String newTitle(String participant) => 'New ${participant.toLowerCase()}';
+  @override
+  String get nameLabel => 'Name';
+  @override
+  String get nameRequired => 'Enter a name.';
+  @override
+  String nameTooLong(int max) => 'Use $max characters or fewer.';
+  @override
+  String groupLabel(String group) => group;
+  @override
+  String newGroup(String group) => 'New ${group.toLowerCase()}';
+  @override
+  String newGroupName(String group) => '$group name';
+  @override
+  String get childLabel => 'Child';
+  @override
+  String get childHelp =>
+      'Children have no account. Only a parent or guardian linked to their '
+      'group, or an organizer, can add or change them.';
+  @override
+  String get birthDateLabel => 'Birth date (private)';
+  @override
+  String get birthDateHelp =>
+      'Seen only by organizers who can read private details, and by the '
+      "adults linked to this person's group. Reports show age bands.";
+  @override
+  String get clearBirthDate => 'Clear birth date';
+  @override
+  String get save => 'Save';
+  @override
+  String get saved => 'Saved';
+  @override
+  String get saveFailed =>
+      "Couldn't save. Your changes are still here, so try again.";
+  @override
+  String get delete => 'Remove';
+  @override
+  String deleteTitle(String name) => 'Remove $name?';
+  @override
+  String get deleteBody =>
+      'They will no longer be counted for this event. This cannot be undone.';
+  @override
+  String get deleted => 'Removed';
+  @override
+  String get deleteFailed => "Couldn't remove. Try again.";
+  @override
+  String notFound(String participant) =>
+      'This ${participant.toLowerCase()} no longer exists.';
+  @override
+  String get readOnly => 'You can see this person, but not change them.';
+  @override
+  String groupSearchHint(String groups) =>
+      'Search ${groups.toLowerCase()} by name';
+  @override
+  String noGroupsFound(String groups) => 'No ${groups.toLowerCase()} found';
+  @override
+  String groupNameLabel(String group) => '$group name';
+  @override
+  String get rename => 'Save name';
+  @override
+  String get adultsHeading => 'Linked adults';
+  @override
+  String adultsHelp(String group) =>
+      'Members who look after this ${group.toLowerCase()}. They can see it '
+      'and add or change its people, including children.';
+  @override
+  String get noMembers => 'No members to link yet.';
+  @override
+  String deleteGroupTitle(String name) => 'Delete $name?';
+  @override
+  String deleteGroupBody(String group) =>
+      'Only an empty ${group.toLowerCase()} can be deleted. Its linked adults '
+      'are unlinked.';
+  @override
+  String get groupSaved => 'Saved';
+  @override
+  String get groupDeleted => 'Deleted';
+  @override
+  String get groupSaveFailed => "Couldn't save. Try again.";
+}
+
 /// The Expense access screen and its Event settings entry (Req 38).
 abstract class ExpenseAccessStrings {
   const ExpenseAccessStrings();

@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import 'package:crewpoint_app/app/core/format/event_time.dart';
 import 'package:crewpoint_app/app/core/labels/label_resolver.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
+import 'package:crewpoint_app/app/features/participants/application/roster_controller.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
@@ -508,8 +509,11 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
                       labelText: strings.settingsCapacity,
+                      // Capacity counts everyone attending, with or without
+                      // an account (Req 18b).
                       helperText: strings.settingsCapacityCount(
-                        event.memberIds.length,
+                        ref.watch(participantCountProvider(event.id)).value ??
+                            event.memberIds.length,
                         event.capacity,
                       ),
                       border: const OutlineInputBorder(),

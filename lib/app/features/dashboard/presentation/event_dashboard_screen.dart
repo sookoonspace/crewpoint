@@ -267,6 +267,16 @@ class _ModuleHub extends ConsumerWidget {
           strings.moduleBudgetSubtitle,
           AppColors.terracotta,
         ),
+      // The roster needs participants.read; a linked adult sees their own
+      // group (Req 43).
+      if (event.can(me, 'participants.read') || event.can(me, 'group.editOwn'))
+        entry(
+          'people',
+          AppIcons.members,
+          event.words.other('participant'),
+          context.strings.people.hubSubtitle,
+          Theme.of(context).colorScheme.primary,
+        ),
       if (event.isModuleOn('tasks'))
         entry(
           'tasks',

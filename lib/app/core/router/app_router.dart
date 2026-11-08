@@ -26,6 +26,8 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/edit_event_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_settings_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/expense_access_screen.dart';
+import 'package:crewpoint_app/app/features/participants/presentation/participant_screen.dart';
+import 'package:crewpoint_app/app/features/participants/presentation/roster_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/member_management_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/crews_screen.dart';
@@ -224,6 +226,28 @@ GoRouter createRouter({
                               child: (event) => MemberDetailScreen(
                                 event: event,
                                 uid: state.pathParameters['uid'] ?? '',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      GoRoute(
+                        path: 'people',
+                        builder: (_, state) => EventGuard(
+                          eventId: _resolveEventId(state),
+                          child: (event) => RosterScreen(event: event),
+                        ),
+                        routes: [
+                          GoRoute(
+                            path: ':participantId',
+                            builder: (_, state) => EventGuard(
+                              eventId: _resolveEventId(state),
+                              child: (event) => ParticipantScreen(
+                                event: event,
+                                participantId:
+                                    state.pathParameters['participantId']!,
+                                initialGroupId:
+                                    state.uri.queryParameters['group'],
                               ),
                             ),
                           ),

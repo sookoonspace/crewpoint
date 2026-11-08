@@ -1036,21 +1036,21 @@ Add participants who may have no account, including children, groups, and a page
 - Since #59, the settings screen shows `capacity` against `memberIds.length`, the only count that exists so far. Once participants exist, count them instead, because capacity includes people without accounts (Req 18b).
 
 ### Acceptance criteria
-- [ ] `participants`, `groups` and per-participant `private` documents exist, with rules.
-- [ ] Participants may have no account.
-- [ ] Children are created only by someone with `participants.edit` or by a linked adult in their group.
-- [ ] Participants can be put into groups, so a family, team or foursome is handled together. The word used comes from the label resolver.
-- [ ] Roster screens page, search and filter by group, category and field, and stay usable at 5,000 people. #76 adds category and field filters.
-- [ ] Non-permitted members cannot browse the roster.
-- [ ] The `people` and `people/:participantId` routes exist.
-- [ ] Roster screens explain they need a connection.
-- [ ] Member documents carry the person's group IDs, and own-group checks use those IDs.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
-- [ ] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
-- [ ] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
-- [ ] Tests for scenarios PA-05, Z-01 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] `participants`, `groups` and per-participant `private` documents exist, with rules.
+- [x] Participants may have no account.
+- [x] Children are created only by someone with `participants.edit` or by a linked adult in their group.
+- [x] Participants can be put into groups, so a family, team or foursome is handled together. The word used comes from the label resolver.
+- [x] Roster screens page, search and filter by group, category and field, and stay usable at 5,000 people. #76 adds category and field filters.
+- [x] Non-permitted members cannot browse the roster.
+- [x] The `people` and `people/:participantId` routes exist.
+- [x] Roster screens explain they need a connection.
+- [x] Member documents carry the person's group IDs, and own-group checks use those IDs.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
+- [x] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
+- [x] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
+- [x] Tests for scenarios PA-05, Z-01 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 14-15
