@@ -88,9 +88,7 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
     final offeredToMe = offer?.to == me;
     final canSee = isOwner || offeredToMe || event.can(me, 'roles.manage');
 
-    final users =
-        ref.watch(usersByIdProvider(usersByIds(event.memberIds))).value ??
-        const {};
+    final users = ref.watch(usersByIdProvider(event.id)).value ?? const {};
     String nameOf(String uid) {
       if (uid == me) return strings.you;
       final user = users[uid];

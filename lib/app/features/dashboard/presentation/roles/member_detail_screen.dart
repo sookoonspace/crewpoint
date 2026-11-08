@@ -119,7 +119,7 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
     final canManage =
         event.can(me, 'members.manage') || event.can(me, 'roles.manage');
 
-    final user = ref.watch(usersByIdProvider(usersByIds([uid]))).value?[uid];
+    final user = ref.watch(usersByIdProvider(event.id)).value?[uid];
     final name = uid == me
         ? strings.you
         : (user?.displayName?.isNotEmpty ?? false)

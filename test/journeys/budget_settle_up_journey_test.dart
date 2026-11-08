@@ -30,6 +30,11 @@ class _FakeUserRepo implements IUserRepository {
   @override
   Future<AppUser?> getUser(String uid) async => _user;
 
+  /// The counterparty comes from the event's profiles (Req 37).
+  @override
+  Stream<Map<String, AppUser>> watchEventProfiles(String eventId) =>
+      Stream.value({_user.uid: _user});
+
   @override
   Future<void> saveProfile({
     required String uid,

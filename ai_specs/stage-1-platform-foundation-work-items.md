@@ -906,16 +906,16 @@ Move `budgetEstimate` to a permission-gated document, and limit payment handles 
 - `lib/app/features/profile/data/firestore_user_repository.dart`, `lib/app/core/providers.dart` (`usersByIdProvider`), `lib/app/features/budget/presentation/widgets/settle_sheet.dart`, and the users block in `firestore.rules`.
 
 ### Acceptance criteria
-- [ ] `budgetEstimate` moves off tasks to a document that needs `budget.read`.
-- [ ] Existing values are migrated by the script from #65, which stays idempotent.
-- [ ] Tasks show it only to those with permission.
-- [ ] Payment handles move out of the public profile, and are visible only to people who share an event with that person, through a callable or a per-event projection.
-- [ ] Removing the broad read on `users/{uid}` does not break names in chat, tasks and budget.
-- [ ] Pay links still work for people who share an event.
-- [ ] The role matrix covers the new paths.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] Tests for scenario H-05 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] `budgetEstimate` moves off tasks to a document that needs `budget.read`.
+- [x] Existing values are migrated by the script from #65, which stays idempotent.
+- [x] Tasks show it only to those with permission.
+- [x] Payment handles move out of the public profile, and are visible only to people who share an event with that person, through a callable or a per-event projection.
+- [x] Removing the broad read on `users/{uid}` does not break names in chat, tasks and budget.
+- [x] Pay links still work for people who share an event.
+- [x] The role matrix covers the new paths.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] Tests for scenario H-05 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - Requirements: 36-37

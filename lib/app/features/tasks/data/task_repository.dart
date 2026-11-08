@@ -374,7 +374,10 @@ class TaskRepository implements ITaskRepository {
   @override
   Future<bool> createTask(TaskModel task) async {
     try {
-      await _tasksRef(task.eventId).doc(task.id).set(_toFirestore(task));
+      final batch = _firestore.batch();
+      batch.set(_tasksRef(task.eventId).doc(task.id), _toFirestore(task));
+      _writeBudget(batch, task, editedBy: task.createdBy);
+      await batch.commit();
       await _upsertDrift(task);
       return true;
     } catch (e, st) {
@@ -394,6 +397,7 @@ class TaskRepository implements ITaskRepository {
     try {
       final batch = _firestore.batch();
       batch.set(_tasksRef(task.eventId).doc(task.id), _toFirestore(task));
+      _writeBudget(batch, task, editedBy: task.createdBy);
       for (final item in items) {
         batch.set(_checklistRef(task.eventId, task.id).doc(item.id), {
           'text': item.text,
@@ -430,7 +434,7 @@ class TaskRepository implements ITaskRepository {
   }
 
   @override
-  Future<bool> updateTask(TaskModel task) async {
+  Future<bool> updateTask(TaskModel task, {String? budgetEditedBy}) async {
     try {
       // Status changes go through [updateStatus]. Rules deny writing completion
       // fields, and re-sending a server timestamp could not match it exactly.
@@ -438,7 +442,12 @@ class TaskRepository implements ITaskRepository {
         ..remove('status')
         ..remove('completedAt')
         ..remove('completedBy');
-      await _tasksRef(task.eventId).doc(task.id).update(fields);
+      final batch = _firestore.batch();
+      batch.update(_tasksRef(task.eventId).doc(task.id), fields);
+      if (budgetEditedBy != null) {
+        _writeBudget(batch, task, editedBy: budgetEditedBy, clear: true);
+      }
+      await batch.commit();
       await _upsertDrift(task);
       return true;
     } catch (e, st) {
@@ -488,6 +497,43 @@ class TaskRepository implements ITaskRepository {
     }
   }
 
+  CollectionReference<Map<String, dynamic>> _budgetsRef(String eventId) =>
+      _firestore.collection('events').doc(eventId).collection('taskBudgets');
+
+  /// A task's budget figure lives in `taskBudgets/{taskId}`, which needs
+  /// `budget.read` to read and `budget.edit` to write (Req 36). An empty
+  /// figure writes nothing, or with [clear] removes the one there.
+  void _writeBudget(
+    WriteBatch batch,
+    TaskModel task, {
+    required String? editedBy,
+    bool clear = false,
+  }) {
+    final ref = _budgetsRef(task.eventId).doc(task.id);
+    final estimate = task.budgetEstimate;
+    if (estimate == null) {
+      if (clear) batch.delete(ref);
+      return;
+    }
+    batch.set(ref, {
+      'estimate': estimate,
+      'updatedBy': editedBy,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Budget figures by task ID, read straight from Firestore so they never
+  /// sit in the local mirror. Only for people holding `budget.read`.
+  @override
+  Stream<Map<String, double>> watchBudgets(String eventId) =>
+      _budgetsRef(eventId).snapshots().map(
+        (snapshot) => {
+          for (final doc in snapshot.docs)
+            if (doc.data()['estimate'] is num)
+              doc.id: (doc.data()['estimate'] as num).toDouble(),
+        },
+      );
+
   Future<void> _upsertDrift(TaskModel task) async {
     await _tasksDao.insertOrReplace(
       TasksCompanion(
@@ -502,7 +548,8 @@ class TaskRepository implements ITaskRepository {
         dueDate: Value(task.dueDate),
         completedAt: Value(task.completedAt),
         completedBy: Value(task.completedBy),
-        budgetEstimate: Value(task.budgetEstimate),
+        // Budget figures stay out of the local mirror (Req 36).
+        budgetEstimate: const Value(null),
         crewId: Value(task.crewId),
         updatedAt: Value(DateTime.now()),
       ),
@@ -521,7 +568,6 @@ class TaskRepository implements ITaskRepository {
     // Only markTaskComplete sets these, so a client write leaves them empty.
     'completedAt': null,
     'completedBy': null,
-    'budgetEstimate': task.budgetEstimate,
     'crewId': task.crewId,
     'updatedAt': FieldValue.serverTimestamp(),
   };
@@ -542,7 +588,6 @@ class TaskRepository implements ITaskRepository {
     dueDate: (data['dueDate'] as Timestamp?)?.toDate(),
     completedAt: (data['completedAt'] as Timestamp?)?.toDate(),
     completedBy: data['completedBy'] as String?,
-    budgetEstimate: (data['budgetEstimate'] as num?)?.toDouble(),
     crewId: data['crewId'] as String?,
   );
 
@@ -559,7 +604,6 @@ class TaskRepository implements ITaskRepository {
         dueDate: row.dueDate,
         completedAt: row.completedAt,
         completedBy: row.completedBy,
-        budgetEstimate: row.budgetEstimate,
         crewId: row.crewId,
         checklistItems: items.map(_checklistRowToDomain).toList(),
       );

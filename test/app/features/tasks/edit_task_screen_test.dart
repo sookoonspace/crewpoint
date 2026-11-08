@@ -29,7 +29,11 @@ void main() {
   ) async {
     await tester.pumpWidget(
       MaterialApp(
-        home: EditTaskScreen(event: event, initial: initial),
+        home: EditTaskScreen(
+          event: event,
+          currentUserId: 'owner-1',
+          initial: initial,
+        ),
       ),
     );
 
@@ -77,6 +81,7 @@ void main() {
       MaterialApp(
         home: EditTaskScreen(
           event: event,
+          currentUserId: 'owner-1',
           initial: initial,
           onSubmit: (task) => submitted = task,
         ),
@@ -114,6 +119,7 @@ void main() {
       MaterialApp(
         home: EditTaskScreen(
           event: event,
+          currentUserId: 'owner-1',
           initial: initial.copyWith(dueDate: DateTime(2010, 1, 1)),
         ),
       ),
@@ -146,6 +152,7 @@ void main() {
         MaterialApp(
           home: EditTaskScreen(
             event: orphanEvent,
+            currentUserId: 'owner-1',
             initial: initial,
             displayNames: const {'user-2': 'Casey'},
           ),
@@ -156,6 +163,33 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Casey (no longer in event)'), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'without budget.edit there is no budget field, and saving keeps the figure',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      TaskModel? submitted;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: EditTaskScreen(
+            event: event,
+            // A plain member, who holds no budget permission (Req 36).
+            currentUserId: 'user-2',
+            initial: initial,
+            onSubmit: (task) => submitted = task,
+          ),
+        ),
+      );
+      expect(find.byKey(const Key('tasks.edit.budget')), findsNothing);
+      await tester.tap(find.byKey(const Key('tasks.edit.save')));
+      await tester.pumpAndSettle();
+      expect(submitted!.budgetEstimate, 25.0);
     },
   );
 }

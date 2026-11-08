@@ -70,9 +70,7 @@ class _MemberManagementScreenState
         members[uid]?.permissions.contains(permission) ??
         event.can(uid, permission);
 
-    final asyncUsers = ref.watch(
-      usersByIdProvider(usersByIds(event.memberIds)),
-    );
+    final asyncUsers = ref.watch(usersByIdProvider(event.id));
     // displayName when set, email as second fallback. Empty string
     // signals "no resolved label" so downstream renders "Unknown
     // member" or similar.

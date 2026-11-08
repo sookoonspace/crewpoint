@@ -36,7 +36,12 @@ class EventTaskDetailPage extends ConsumerWidget {
       return const Scaffold(body: Center(child: Text('Sign in required')));
     }
 
-    final asyncTasks = ref.watch(taskListProvider(event.id));
+    final budgets =
+        ref.watch(taskBudgetsProvider(event.id)).value ??
+        const <String, double>{};
+    final asyncTasks = ref
+        .watch(taskListProvider(event.id))
+        .whenData((tasks) => withBudgets(tasks, budgets));
     final asyncChecklist = ref.watch(
       taskChecklistProvider((eventId: event.id, taskId: taskId)),
     );
@@ -66,24 +71,9 @@ class EventTaskDetailPage extends ConsumerWidget {
           currentUserId: uid,
         );
 
-        // Resolve assignee display name via usersByIdProvider. Include the
-        // orphan assignee UID (one who left the event) so its name still
-        // hydrates for the "no longer in event" affordance. Also includes
-        // `completedBy` so the "Completed by …" row renders a real name.
-        final uidsToResolve = <String>[
-          ...event.memberIds,
-          if (task.assigneeId != null &&
-              !event.memberIds.contains(task.assigneeId))
-            task.assigneeId!,
-          if (task.completedBy != null &&
-              !event.memberIds.contains(task.completedBy))
-            task.completedBy!,
-        ];
-        // usersByIds() converts the fresh List into a stable comma-joined
-        // key so Riverpod cache-hits across rebuilds. See provider docs.
-        final asyncUsers = ref.watch(
-          usersByIdProvider(usersByIds(uidsToResolve)),
-        );
+        // Names of everyone with a profile in the event, including an
+        // assignee or completer who has since left (Req 37).
+        final asyncUsers = ref.watch(usersByIdProvider(event.id));
         // displayName when set, email as second fallback. TaskDetailScreen
         // shows "Unknown member" if even this is null/empty (offline or
         // user doc not yet hydrated).
@@ -128,6 +118,7 @@ class EventTaskDetailPage extends ConsumerWidget {
                       MaterialPageRoute(
                         builder: (_) => EditTaskScreen(
                           event: event,
+                          currentUserId: uid,
                           initial: task,
                           displayNames: displayNamesMap,
                           crews: crews,
@@ -136,7 +127,15 @@ class EventTaskDetailPage extends ConsumerWidget {
                       ),
                     );
                     if (updated == null || !context.mounted) return;
-                    final ok = await repo.updateTask(updated);
+                    // The figure is saved only when someone allowed to
+                    // set it changed it (Req 36).
+                    final budgetChanged =
+                        event.can(uid, 'budget.edit') &&
+                        updated.budgetEstimate != task.budgetEstimate;
+                    final ok = await repo.updateTask(
+                      updated,
+                      budgetEditedBy: budgetChanged ? uid : null,
+                    );
                     if (!ok && context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(

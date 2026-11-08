@@ -173,3 +173,15 @@ class ChecklistItem {
         sortOrder: sortOrder ?? this.sortOrder,
       );
 }
+
+/// [tasks] with the budget figures the viewer may read (Req 36). The figure
+/// is not stored on the task, so a task missing from [budgets] has none.
+List<TaskModel> withBudgets(
+  List<TaskModel> tasks,
+  Map<String, double> budgets,
+) => [
+  for (final task in tasks)
+    budgets.containsKey(task.id)
+        ? task.copyWith(budgetEstimate: budgets[task.id])
+        : task.copyWith(clearBudgetEstimate: true),
+];

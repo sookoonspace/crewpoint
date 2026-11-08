@@ -86,6 +86,10 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
     super.dispose();
   }
 
+  /// Setting a task's budget figure needs `budget.edit` (Req 36).
+  bool get _editsBudget =>
+      widget.event.can(widget.currentUserId, 'budget.edit');
+
   void _submit() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
@@ -108,7 +112,8 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
       createdBy: widget.currentUserId,
       priority: _priority,
       dueDate: _dueDate == null ? null : widget.event.startOfDay(_dueDate!),
-      budgetEstimate: budget,
+      // A copied figure is dropped for someone who cannot set one (Req 36).
+      budgetEstimate: _editsBudget ? budget : null,
       crewId: _crewId,
       checklistItems: widget.initial?.checklistItems ?? const [],
     );
@@ -232,11 +237,13 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                           value: _dueDate,
                           onChanged: (v) => setState(() => _dueDate = v),
                         ),
-                        AppCurrencyField(
-                          controller: _budgetController,
-                          currencyCode: widget.event.currency,
-                          labelText: s.budgetEstimateLabel,
-                        ),
+                        if (_editsBudget)
+                          AppCurrencyField(
+                            key: const Key('tasks.create.budget'),
+                            controller: _budgetController,
+                            currencyCode: widget.event.currency,
+                            labelText: s.budgetEstimateLabel,
+                          ),
                       ],
                     ),
                   ),

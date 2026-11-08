@@ -120,7 +120,12 @@ class _EventTasksPageState extends ConsumerState<EventTasksPage> {
       return const Scaffold(body: Center(child: Text('Sign in required')));
     }
 
-    final asyncTasks = ref.watch(taskListProvider(widget.event.id));
+    final budgets =
+        ref.watch(taskBudgetsProvider(widget.event.id)).value ??
+        const <String, double>{};
+    final asyncTasks = ref
+        .watch(taskListProvider(widget.event.id))
+        .whenData((tasks) => withBudgets(tasks, budgets));
     final crews =
         ref.watch(eventCrewsProvider(widget.event.id)).value ??
         const <CrewModel>[];
@@ -129,9 +134,7 @@ class _EventTasksPageState extends ConsumerState<EventTasksPage> {
         _filter.crewId != null && !crews.any((c) => c.id == _filter.crewId)
         ? _filter.copyWith(clearCrewId: true)
         : _filter;
-    final asyncUsers = ref.watch(
-      usersByIdProvider(usersByIds(widget.event.memberIds)),
-    );
+    final asyncUsers = ref.watch(usersByIdProvider(widget.event.id));
 
     return asyncTasks.when(
       data: (tasks) {

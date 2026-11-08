@@ -48,8 +48,8 @@ Future<void> _openLeave(
         eventMembersProvider.overrideWith((ref, _) => Stream.value(members)),
         ownershipOfferProvider.overrideWith((ref, _) => Stream.value(offer)),
         usersByIdProvider.overrideWith(
-          (ref, key) async => {
-            for (final uid in key.split(','))
+          (ref, eventId) async => {
+            for (final uid in _names.keys)
               if (_names[uid] != null)
                 uid: AppUser(
                   uid: uid,

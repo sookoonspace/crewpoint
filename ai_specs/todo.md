@@ -25,6 +25,7 @@ Triaged against the code on 2026-11-03 (#47):
 - ~~Due-date reminders + push notifications~~ — **Built**: `functions/src/events/onTaskDueScheduled.ts`
 - `[Stage 4]` Recurring tasks
 - `[Stage 4]` Task templates per event type
+- Deleting a task leaves its `taskBudgets/{taskId}` figure behind (#71), because the person deleting may not hold `budget.edit`. The app ignores figures without a task, but a trigger on task delete should remove it before budget totals land.
 
 ## Budget
 - `[Stage 8]` Multi-currency display with FX conversion

@@ -4,8 +4,14 @@ import 'package:crewpoint_app/app/features/profile/domain/models/notification_pr
 /// Abstract user profile repository.
 /// Concrete implementations can use Firestore, mock, or any backend.
 abstract class IUserRepository {
-  /// Fetches user profile by UID.
+  /// Fetches user profile by UID. Only works for the signed-in person:
+  /// `users/{uid}` is readable only by its owner (Req 37).
   Future<AppUser?> getUser(String uid);
+
+  /// Everyone with a profile in [eventId], by uid: names, photos and payment
+  /// handles from `events/{eventId}/profiles`, which only people in the event
+  /// can read (Req 37). Someone who left has only a name. `email` is empty.
+  Stream<Map<String, AppUser>> watchEventProfiles(String eventId);
 
   /// Saves/updates profile fields. Uses merge semantics.
   Future<void> saveProfile({

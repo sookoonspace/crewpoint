@@ -62,19 +62,20 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
     _ => '\$',
   };
 
+  /// The payee's handles, from the event's profiles: only people who share
+  /// an event can see them (Req 37).
   Future<({String? venmoHandle, String? cashappHandle, String? displayName})>
   _fetchPayeeProfile(String uid) async {
     try {
-      final doc = await ref
-          .read(firestoreProvider)
-          .collection('users')
-          .doc(uid)
-          .get();
-      final data = doc.data();
+      final people = await ref
+          .read(userRepositoryProvider)
+          .watchEventProfiles(widget.event.id)
+          .first;
+      final payee = people[uid];
       return (
-        venmoHandle: data?['venmoHandle'] as String?,
-        cashappHandle: data?['cashappHandle'] as String?,
-        displayName: data?['displayName'] as String?,
+        venmoHandle: payee?.venmoHandle,
+        cashappHandle: payee?.cashappHandle,
+        displayName: payee?.displayName,
       );
     } catch (_) {
       return (venmoHandle: null, cashappHandle: null, displayName: null);
@@ -192,9 +193,7 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
   }
 
   Future<({String from, String to})> _namesFor(Settlement settlement) async {
-    final users = await ref.read(
-      usersByIdProvider(usersByIds(widget.event.memberIds)).future,
-    );
+    final users = await ref.read(usersByIdProvider(widget.event.id).future);
     String nameOf(String uid) => resolveMemberName(
       uid: uid,
       memberNames: {
@@ -388,9 +387,7 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
     }
 
     final asyncExpenses = ref.watch(expenseListProvider(widget.event.id));
-    final asyncUsers = ref.watch(
-      usersByIdProvider(usersByIds(widget.event.memberIds)),
-    );
+    final asyncUsers = ref.watch(usersByIdProvider(widget.event.id));
     final repo = ref.watch(expenseRepositoryProvider);
     final imageService = ref.watch(imageServiceProvider);
     final symbol = _currencySymbol(widget.event.currency);

@@ -81,6 +81,7 @@ class TaskListScreen extends StatelessWidget {
                 one: event.words.one('crew'),
                 other: event.words.other('crew'),
               ),
+              readsBudgets: event.can(currentUserId, 'budget.read'),
             ),
             const SizedBox(height: AppSpacing.sm),
             Expanded(

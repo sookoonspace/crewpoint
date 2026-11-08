@@ -9,20 +9,18 @@ import 'package:crewpoint_app/app/features/profile/domain/repositories/i_user_re
 ///
 /// **Schema layout (post Fix 1.B Option A — projection-split):**
 ///
-///   `users/{uid}` (publicly readable to every authenticated user):
+///   `users/{uid}` (readable only by its owner, Req 37):
 ///     displayName, photoUrl, paymentMethod, paymentHandle,
 ///     venmoHandle, cashappHandle, currency
 ///
 ///   `users/{uid}/private/profile` (self-only):
 ///     email, providerIds, fcmTokens, preferences, createdAt, updatedAt
 ///
-/// `getUser()` reads the public doc unconditionally and *attempts* to
-/// read the private subdoc. For self-reads the private read succeeds
-/// and the returned [AppUser] carries `email`, `fcmTokens`, etc. For
-/// non-self reads the private read is denied by the rules; the catch
-/// silently returns the public-only [AppUser]. This keeps the existing
-/// `usersByIdProvider` co-member-display path working unchanged while
-/// the rules enforce that PII never leaks.
+///   `events/{eventId}/profiles/{uid}` (people in that event; server-written):
+///     displayName, photoUrl and the payment fields, copied from `users/{uid}`
+///
+/// `getUser()` is for the signed-in person. Everyone else is read through
+/// [watchEventProfiles], which is what `usersByIdProvider` uses.
 class FirestoreUserRepository implements IUserRepository {
   FirestoreUserRepository({FirebaseFirestore? firestore})
     : _firestore = firestore ?? FirebaseFirestore.instance;
@@ -94,6 +92,28 @@ class FirestoreUserRepository implements IUserRepository {
       return null;
     }
   }
+
+  @override
+  Stream<Map<String, AppUser>> watchEventProfiles(String eventId) => _firestore
+      .collection('events')
+      .doc(eventId)
+      .collection('profiles')
+      .snapshots()
+      .map(
+        (snapshot) => {
+          for (final doc in snapshot.docs)
+            doc.id: AppUser(
+              uid: doc.id,
+              email: '',
+              displayName: doc.data()['displayName'] as String?,
+              photoUrl: doc.data()['photoUrl'] as String?,
+              paymentMethod: doc.data()['paymentMethod'] as String?,
+              paymentHandle: doc.data()['paymentHandle'] as String?,
+              venmoHandle: doc.data()['venmoHandle'] as String?,
+              cashappHandle: doc.data()['cashappHandle'] as String?,
+            ),
+        },
+      );
 
   @override
   Future<void> saveProfile({
