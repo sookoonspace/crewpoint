@@ -14,6 +14,7 @@ import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/member.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/roles/crews_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/roles_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
 import 'package:go_router/go_router.dart';
@@ -93,6 +94,14 @@ class _MemberManagementScreenState
         title: Text('Members (${event.memberIds.length})'),
         elevation: 0,
         actions: [
+          if (canViewCrews(event, currentUserId))
+            IconButton(
+              key: const Key('members.crews'),
+              tooltip: event.words.other('crew'),
+              onPressed: () =>
+                  context.push('/dashboard/event/${event.id}/crews'),
+              icon: const Icon(AppIcons.members),
+            ),
           if (canViewRoles(event, currentUserId))
             TextButton.icon(
               key: const Key('members.roles'),

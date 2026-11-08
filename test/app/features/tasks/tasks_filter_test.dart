@@ -434,4 +434,82 @@ void main() {
       expect(groups.map((g) => g.key), ['overdue', 'noDueDate']);
     });
   });
+
+  // #68 (Req 72, H-02): tasks belong to an optional crew, filterable and
+  // groupable when crews are in use.
+  group('crews', () {
+    final now = DateTime(2026, 6, 15, 12);
+    final tasks = [
+      const TaskModel(id: 'a', eventId: 'e', title: 'Caterer', crewId: 'food'),
+      const TaskModel(id: 'b', eventId: 'e', title: 'DJ', crewId: 'program'),
+      const TaskModel(id: 'c', eventId: 'e', title: 'Badges'),
+    ];
+
+    test('filtering by a crew keeps only its tasks', () {
+      final kept = applyTasksFilter(
+        tasks,
+        const TasksFilter(crewId: 'food'),
+        currentUserId: 'u',
+        now: now,
+      );
+      expect(kept.map((t) => t.id), ['a']);
+    });
+
+    test('a crew filter counts as an active filter', () {
+      expect(const TasksFilter(crewId: 'food').hasActiveFilters, isTrue);
+      expect(const TasksFilter(crewId: 'food'), isNot(const TasksFilter()));
+    });
+
+    test('clearing the crew filter keeps the rest', () {
+      const filter = TasksFilter(crewId: 'food', onlyMine: true);
+      final cleared = filter.copyWith(clearCrewId: true);
+      expect(cleared.crewId, isNull);
+      expect(cleared.onlyMine, isTrue);
+    });
+
+    test('a crew combines with the overdue filter', () {
+      final dated = [
+        TaskModel(id: 'a', eventId: 'e', title: 'x', crewId: 'food', dueDate: DateTime(2026, 6, 1)),
+        TaskModel(id: 'b', eventId: 'e', title: 'y', crewId: 'program', dueDate: DateTime(2026, 6, 1)),
+        TaskModel(id: 'c', eventId: 'e', title: 'z', crewId: 'food', dueDate: DateTime(2026, 7, 1)),
+      ];
+      final kept = applyTasksFilter(
+        dated,
+        const TasksFilter(crewId: 'food', onlyOverdue: true),
+        currentUserId: 'u',
+        now: now,
+      );
+      expect(kept.map((t) => t.id), ['a']);
+    });
+
+    test('grouping by crew uses crew names, then tasks with no crew', () {
+      final groups = groupTasks(
+        tasks,
+        TasksGroupBy.crew,
+        now: now,
+        assigneeNames: const {},
+        crewNames: const {'food': 'Food', 'program': 'Program'},
+      );
+      expect(groups.map((g) => g.key), ['food', 'program', 'noCrew']);
+      expect(groups.map((g) => g.label), ['Food', 'Program', 'No crew']);
+    });
+
+    test('a task whose crew is gone counts as having no crew', () {
+      final groups = groupTasks(
+        tasks,
+        TasksGroupBy.crew,
+        now: now,
+        assigneeNames: const {},
+        crewNames: const {'food': 'Food'},
+      );
+      expect(groups.map((g) => g.key), ['food', 'noCrew']);
+      expect(groups.last.tasks.map((t) => t.id), ['b', 'c']);
+    });
+
+    test('a duplicated task keeps its crew', () {
+      final copy = tasks.first.duplicate(currentUserId: 'u', checklist: const []);
+      expect(copy.crewId, 'food');
+      expect(tasks.first.copyWith(clearCrewId: true).crewId, isNull);
+    });
+  });
 }

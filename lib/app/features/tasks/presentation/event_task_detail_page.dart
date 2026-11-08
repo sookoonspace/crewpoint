@@ -41,6 +41,7 @@ class EventTaskDetailPage extends ConsumerWidget {
       taskChecklistProvider((eventId: event.id, taskId: taskId)),
     );
     final repo = ref.watch(taskRepositoryProvider);
+    final crews = ref.watch(eventCrewsProvider(event.id)).value ?? const [];
     final managesTasks = event.can(uid, 'tasks.manage');
 
     return asyncTasks.when(
@@ -129,6 +130,7 @@ class EventTaskDetailPage extends ConsumerWidget {
                           event: event,
                           initial: task,
                           displayNames: displayNamesMap,
+                          crews: crews,
                           onSubmit: (t) => Navigator.of(context).pop(t),
                         ),
                       ),
@@ -161,6 +163,7 @@ class EventTaskDetailPage extends ConsumerWidget {
                     currentUserId: uid,
                     initial: duplicate,
                     displayNames: displayNamesMap,
+                    crews: crews,
                     onSubmit: (t) => Navigator.of(context).pop(t),
                   ),
                 ),

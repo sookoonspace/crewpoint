@@ -14,6 +14,8 @@ import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/widgets/assignee_picker.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/crew.dart';
+import 'package:crewpoint_app/app/features/tasks/presentation/widgets/crew_picker.dart';
 
 /// Edit screen for an existing task. Mirrors `CreateTaskScreen`: three
 /// `AppFormSection`s (Details / Assignment / Timing & Budget), pure
@@ -26,12 +28,17 @@ class EditTaskScreen extends StatefulWidget {
     required this.event,
     required this.initial,
     this.displayNames = const {},
+    this.crews = const [],
     this.onSubmit,
   });
 
   final EventModel event;
   final TaskModel initial;
   final Map<String, String> displayNames;
+
+  /// The event's crews (Req 72). The crew field shows only when there are
+  /// some, or the task already has one.
+  final List<CrewModel> crews;
   final ValueChanged<TaskModel>? onSubmit;
 
   @override
@@ -46,6 +53,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
   late String? _assigneeId;
   late DateTime? _dueDate;
   late int _priority;
+  late String? _crewId;
 
   @override
   void initState() {
@@ -62,6 +70,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
         ? null
         : widget.event.calendarDay(widget.initial.dueDate!);
     _priority = widget.initial.priority;
+    _crewId = widget.initial.crewId;
   }
 
   @override
@@ -91,6 +100,8 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
       dueDate: _dueDate == null ? null : widget.event.startOfDay(_dueDate!),
       budgetEstimate: budget,
       clearBudgetEstimate: budget == null,
+      crewId: _crewId,
+      clearCrewId: _crewId == null,
     );
     widget.onSubmit?.call(updated);
   }
@@ -174,6 +185,16 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                           onChanged: (value) =>
                               setState(() => _assigneeId = value),
                         ),
+                        if (widget.crews.isNotEmpty || _crewId != null)
+                          CrewPicker(
+                            crews: widget.crews,
+                            crewWord: widget.event.words.one('crew'),
+                            selected: _crewId,
+                            // Only a pick changes the crew, so one that has
+                            // not loaded yet is never cleared by mistake.
+                            onChanged: (value) =>
+                                setState(() => _crewId = value),
+                          ),
                         AppRadioGroup<int>(
                           key: const Key('tasks.edit.priority'),
                           labelText: s.fieldPriority,

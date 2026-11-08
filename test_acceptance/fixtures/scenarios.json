@@ -443,8 +443,8 @@
  {
   "id": "H-02",
   "title": "Tasks with owner, due date, status, sub-team; overdue highlighted.",
-  "status": "PARTIAL",
-  "gap": "Owner, due date, status and overdue filter work. No sub-team on tasks.",
+  "status": "PASS",
+  "gap": "Built in #68: tasks keep owner, due date, status and the overdue filter, and gain an optional crew, shown, filterable and groupable.",
   "tested": true
  },
  {

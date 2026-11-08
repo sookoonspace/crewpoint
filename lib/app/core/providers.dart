@@ -56,6 +56,7 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event_mute.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/member.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/crew.dart';
 import 'package:crewpoint_app/app/features/dashboard/data/member_calls.dart';
 import 'package:crewpoint_app/app/core/database/daos/events_dao.dart';
 import 'package:crewpoint_app/app/features/tasks/data/task_repository.dart';
@@ -317,6 +318,29 @@ final eventRolesProvider =
             }),
           );
     });
+
+/// An event's crews (Req 33), by name. Read straight from Firestore, whose
+/// cache keeps it offline.
+final eventCrewsProvider = StreamProvider.family<List<CrewModel>, String>((
+  ref,
+  eventId,
+) {
+  return ref
+      .watch(firestoreProvider)
+      .collection('events')
+      .doc(eventId)
+      .collection('crews')
+      .snapshots()
+      .map(
+        (snap) =>
+            [
+              for (final doc in snap.docs)
+                CrewModel.fromFirestore(doc.id, doc.data()),
+            ]..sort(
+              (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+            ),
+      );
+});
 
 /// Looks up a single event by id from the user's dashboard event list.
 /// Returns null when the event isn't in the list (loading, deleted, or the

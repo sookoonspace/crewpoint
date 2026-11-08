@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/crew.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -277,6 +278,130 @@ void main() {
       await robot.tap(const Key('members.detail.remove'));
       await robot.tap(const Key('members.detail.removeConfirm'));
       expect(harness.calls.calls, ['removeMember:sam']);
+      await robot.finish();
+    });
+  });
+
+  group('Crews', () {
+    const withLead = {
+      'owner': ['owner'],
+      'ana': ['crewLead'],
+      'sam': ['participant'],
+    };
+
+    Future<void> addCrew(RolesHarness harness, String id, String name) =>
+        harness.firestore.doc('events/evt/crews/$id').set({'name': name});
+
+    testWidgets('a Participant is told they cannot open it', (tester) async {
+      final (_, robot) = await open(tester, 'crews', signedInAs: 'sam');
+      robot.expectVisible(const Key('roles.noAccess'));
+      robot.expectHidden(const Key('crews.new'));
+      await robot.finish();
+    });
+
+    testWidgets('a Crew lead sees crews but cannot change them', (
+      tester,
+    ) async {
+      final (harness, robot) = await open(
+        tester,
+        'crews',
+        signedInAs: 'ana',
+        roles: withLead,
+      );
+      await addCrew(harness, 'food', 'Food');
+      await robot.settle();
+      robot.expectVisible(const Key('crews.readOnly'));
+      robot.expectVisible(const Key('crews.tile.food'));
+      robot.expectHidden(const Key('crews.tile.food.menu'));
+      robot.expectHidden(const Key('crews.new'));
+      await robot.finish();
+    });
+
+    testWidgets('shows a spinner, then a retry when loading fails', (
+      tester,
+    ) async {
+      final pending = StreamController<List<CrewModel>>();
+      addTearDown(pending.close);
+      final (_, loading) = await open(
+        tester,
+        'crews',
+        overrides: [eventCrewsProvider.overrideWith((ref, _) => pending.stream)],
+      );
+      loading.expectVisible(const Key('crews.loading'));
+      await loading.finish();
+    });
+
+    testWidgets('a failed load offers a retry', (tester) async {
+      var attempts = 0;
+      final (_, robot) = await open(
+        tester,
+        'crews',
+        overrides: [
+          eventCrewsProvider.overrideWith((ref, _) {
+            attempts++;
+            return Stream.error(StateError('offline'));
+          }),
+        ],
+      );
+      robot.expectVisible(const Key('roles.loadFailed'));
+      await robot.tap(const Key('roles.retry'));
+      expect(attempts, 2);
+      await robot.finish();
+    });
+
+    testWidgets('a failed save keeps the name, and retry saves the same crew', (
+      tester,
+    ) async {
+      final (harness, robot) = await open(tester, 'crews');
+      await robot.tap(const Key('crews.new'));
+      await tester.enterText(find.byKey(const Key('crews.name')), 'Hotel');
+      harness.calls.failNext = FirebaseFunctionsException(
+        code: 'unavailable',
+        message: 'offline',
+      );
+      await robot.tap(const Key('crews.nameSave'));
+      robot.expectVisible(const Key('crews.nameError'));
+      robot.expectText('Hotel');
+      await robot.tap(const Key('crews.nameSave'));
+      final ids = harness.calls.calls.map((c) => c.split(':')[1]).toSet();
+      expect(ids, hasLength(1));
+      await robot.finish();
+    });
+
+    testWidgets('a crew needs a name', (tester) async {
+      final (harness, robot) = await open(tester, 'crews');
+      await robot.tap(const Key('crews.new'));
+      await robot.tap(const Key('crews.nameSave'));
+      robot.expectText('Give it a name.');
+      expect(harness.calls.calls, isEmpty);
+      await robot.finish();
+    });
+
+    testWidgets('deleting asks first', (tester) async {
+      final (harness, robot) = await open(tester, 'crews');
+      await addCrew(harness, 'food', 'Food');
+      await robot.settle();
+      await robot.tap(const Key('crews.tile.food.menu'));
+      await robot.tap(const Key('crews.tile.food.delete'));
+      expect(harness.calls.calls, isEmpty);
+      await robot.tap(const Key('crews.deleteConfirm'));
+      expect(harness.calls.calls, ['deleteCrew:food']);
+      robot.expectVisible(const Key('crews.empty'));
+      await robot.finish();
+    });
+
+    testWidgets('closing the members list with changes asks first', (
+      tester,
+    ) async {
+      final (harness, robot) = await open(tester, 'crews');
+      await addCrew(harness, 'food', 'Food');
+      await robot.settle();
+      await robot.tap(const Key('crews.tile.food'));
+      await robot.tap(const Key('crews.members.sam'));
+      await robot.tap(const Key('crews.members.cancel'));
+      robot.expectVisible(const Key('roles.discard.keep'));
+      await robot.tap(const Key('roles.discard.keep'));
+      robot.expectVisible(const Key('crews.members.save'));
       await robot.finish();
     });
   });

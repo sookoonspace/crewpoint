@@ -37,6 +37,7 @@ abstract class AppStrings {
   NavStrings get nav;
   UpdateStrings get update;
   RoleStrings get roles;
+  CrewStrings get crews;
 
   /// Static English fallback. Used by service-layer code that has no
   /// `BuildContext` in scope (e.g. `firebaseAuthErrorMessage`). UI code
@@ -487,6 +488,9 @@ class _EnglishStrings extends AppStrings {
 
   @override
   RoleStrings get roles => const _EnglishRoleStrings();
+
+  @override
+  CrewStrings get crews => const _EnglishCrewStrings();
 }
 
 class _EnglishChatStrings extends ChatStrings {
@@ -1572,4 +1576,94 @@ class _EnglishRoleStrings extends RoleStrings {
       'After you leave, only ${name ?? 'one other person'} can invite and '
       'remove people. Give someone else that permission first, so there is '
       'always a backup.';
+}
+
+/// The Crews screen and task crews (#68). [crew] and [crews] are the event's
+/// own words for the concept, from `event.words`.
+abstract class CrewStrings {
+  const CrewStrings();
+
+  String emptyTitle(String crews);
+  String get emptyHint;
+  String newCrew(String crew);
+  String get nameLabel;
+  String get nameRequired;
+  String nameTooLong(int max);
+  String get create;
+  String get rename;
+  String get save;
+  String get cancel;
+  String get delete;
+  String deleteTitle(String name);
+  String deleteBody(String crew);
+  String get saved;
+  String get deleted;
+  String get saveFailed;
+  String get deleteFailed;
+  String membersTitle(String name);
+  String get membersSaved;
+  String get noMembers;
+  String get readOnly;
+  String get crewOptions;
+
+  /// The task field's label and its empty choice.
+  String noCrew(String crew);
+  String allCrews(String crews);
+}
+
+class _EnglishCrewStrings extends CrewStrings {
+  const _EnglishCrewStrings();
+
+  @override
+  String emptyTitle(String crews) => 'No ${crews.toLowerCase()} yet';
+  @override
+  String get emptyHint =>
+      'Make one for each team, such as food or registration, then put people '
+      'in it and give it tasks.';
+  @override
+  String newCrew(String crew) => 'New ${crew.toLowerCase()}';
+  @override
+  String get nameLabel => 'Name';
+  @override
+  String get nameRequired => 'Give it a name.';
+  @override
+  String nameTooLong(int max) => 'Use $max characters or fewer.';
+  @override
+  String get create => 'Create';
+  @override
+  String get rename => 'Rename';
+  @override
+  String get save => 'Save';
+  @override
+  String get cancel => 'Cancel';
+  @override
+  String get delete => 'Delete';
+  @override
+  String deleteTitle(String name) => 'Delete $name?';
+  @override
+  String deleteBody(String crew) =>
+      'Everyone stays in the event, and its tasks stay with no '
+      '${crew.toLowerCase()}.';
+  @override
+  String get saved => 'Saved';
+  @override
+  String get deleted => 'Deleted';
+  @override
+  String get saveFailed => "Couldn't save. Your changes are still here, so try again.";
+  @override
+  String get deleteFailed => "Couldn't delete. Try again.";
+  @override
+  String membersTitle(String name) => 'Who is in $name';
+  @override
+  String get membersSaved => 'Saved';
+  @override
+  String get noMembers => 'Nobody yet';
+  @override
+  String get readOnly => 'Only people who manage members can change these.';
+  @override
+  String get crewOptions => 'More options';
+  @override
+  String noCrew(String crew) => 'No ${crew.toLowerCase()}';
+  @override
+  String allCrews(String crews) => 'All ${crews.toLowerCase()}';
 }

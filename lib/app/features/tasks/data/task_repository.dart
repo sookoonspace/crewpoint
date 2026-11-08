@@ -469,6 +469,7 @@ class TaskRepository implements ITaskRepository {
         completedAt: Value(task.completedAt),
         completedBy: Value(task.completedBy),
         budgetEstimate: Value(task.budgetEstimate),
+        crewId: Value(task.crewId),
         updatedAt: Value(DateTime.now()),
       ),
     );
@@ -487,6 +488,7 @@ class TaskRepository implements ITaskRepository {
     'completedAt': null,
     'completedBy': null,
     'budgetEstimate': task.budgetEstimate,
+    'crewId': task.crewId,
     'updatedAt': FieldValue.serverTimestamp(),
   };
 
@@ -507,6 +509,7 @@ class TaskRepository implements ITaskRepository {
     completedAt: (data['completedAt'] as Timestamp?)?.toDate(),
     completedBy: data['completedBy'] as String?,
     budgetEstimate: (data['budgetEstimate'] as num?)?.toDouble(),
+    crewId: data['crewId'] as String?,
   );
 
   TaskModel _toDomain(Task row, [List<TaskChecklistItem> items = const []]) =>
@@ -523,6 +526,7 @@ class TaskRepository implements ITaskRepository {
         completedAt: row.completedAt,
         completedBy: row.completedBy,
         budgetEstimate: row.budgetEstimate,
+        crewId: row.crewId,
         checklistItems: items.map(_checklistRowToDomain).toList(),
       );
 

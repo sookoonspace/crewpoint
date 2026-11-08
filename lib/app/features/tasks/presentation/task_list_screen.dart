@@ -6,6 +6,7 @@ import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/core/widgets/empty_state_placeholder.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/crew.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/application/tasks_filter.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
@@ -25,6 +26,7 @@ class TaskListScreen extends StatelessWidget {
     required this.currentUserId,
     required this.filter,
     required this.onFilterChanged,
+    this.crews = const [],
     this.onTaskTap,
     this.onStatusChanged,
     this.onCreateTask,
@@ -37,6 +39,9 @@ class TaskListScreen extends StatelessWidget {
   final String currentUserId;
   final TasksFilter filter;
   final ValueChanged<TasksFilter> onFilterChanged;
+
+  /// The event's crews (Req 72). With none, nothing about crews shows.
+  final List<CrewModel> crews;
   final ValueChanged<TaskModel>? onTaskTap;
   final void Function(TaskModel task, TaskStatus newStatus)? onStatusChanged;
   final VoidCallback? onCreateTask;
@@ -46,6 +51,7 @@ class TaskListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final managesTasks = event.can(currentUserId, 'tasks.manage');
+    final crewNames = {for (final c in crews) c.id: c.name};
     final isEmpty = groups.isEmpty;
     final s = context.strings.tasks;
 
@@ -67,7 +73,15 @@ class TaskListScreen extends StatelessWidget {
         maxWidth: 720,
         child: Column(
           children: [
-            TasksFilterBar(filter: filter, onFilterChanged: onFilterChanged),
+            TasksFilterBar(
+              filter: filter,
+              onFilterChanged: onFilterChanged,
+              crews: crews,
+              crewWords: (
+                one: event.words.one('crew'),
+                other: event.words.other('crew'),
+              ),
+            ),
             const SizedBox(height: AppSpacing.sm),
             Expanded(
               child: isEmpty
@@ -116,6 +130,7 @@ class TaskListScreen extends StatelessWidget {
                                 currentUserId: currentUserId,
                               ),
                               currencyCode: event.currency,
+                              crewName: crewNames[task.crewId],
                               onTap: () => onTaskTap?.call(task),
                               onStatusChanged: (status) =>
                                   onStatusChanged?.call(task, status),

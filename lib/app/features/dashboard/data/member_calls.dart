@@ -37,6 +37,23 @@ abstract interface class MemberCalls {
 
   /// Removes [uid] from the event, or leaves it when [uid] is the caller.
   Future<void> removeMember({required String eventId, required String uid});
+
+  /// Creates a crew, or renames one. Needs `members.manage`.
+  Future<void> saveCrew({
+    required String eventId,
+    required String crewId,
+    required String name,
+  });
+
+  /// Sets exactly who is in a crew.
+  Future<void> setCrewMembers({
+    required String eventId,
+    required String crewId,
+    required List<String> uids,
+  });
+
+  /// Deletes a crew, taking it off people and tasks.
+  Future<void> deleteCrew({required String eventId, required String crewId});
 }
 
 class FirebaseMemberCalls implements MemberCalls {
@@ -106,4 +123,26 @@ class FirebaseMemberCalls implements MemberCalls {
   @override
   Future<void> removeMember({required String eventId, required String uid}) =>
       _call('removeEventMember', {'eventId': eventId, 'targetUserId': uid});
+
+  @override
+  Future<void> saveCrew({
+    required String eventId,
+    required String crewId,
+    required String name,
+  }) => _call('saveCrew', {'eventId': eventId, 'crewId': crewId, 'name': name});
+
+  @override
+  Future<void> setCrewMembers({
+    required String eventId,
+    required String crewId,
+    required List<String> uids,
+  }) => _call('setCrewMembers', {
+    'eventId': eventId,
+    'crewId': crewId,
+    'uids': uids,
+  });
+
+  @override
+  Future<void> deleteCrew({required String eventId, required String crewId}) =>
+      _call('deleteCrew', {'eventId': eventId, 'crewId': crewId});
 }

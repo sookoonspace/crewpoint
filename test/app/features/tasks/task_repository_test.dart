@@ -142,6 +142,29 @@ void main() {
     });
   });
 
+  group('crew round-trip through Firestore + Drift (#68)', () {
+    test('persists a crew, and no crew', () async {
+      for (final crewId in <String?>[null, 'food']) {
+        final task = TaskModel(
+          id: 'crew-${crewId ?? 'none'}',
+          eventId: 'event-1',
+          title: 'Crew round-trip',
+          createdBy: 'user-1',
+          crewId: crewId,
+        );
+        expect(await repository.createTask(task), isTrue);
+        final fsDoc = await firestore
+            .doc('events/event-1/tasks/${task.id}')
+            .get();
+        expect(fsDoc.data()!['crewId'], crewId);
+        final hydrated = (await repository.getTasksByEventId(
+          'event-1',
+        )).firstWhere((t) => t.id == task.id);
+        expect(hydrated.crewId, crewId);
+      }
+    });
+  });
+
   group('createTaskWithChecklist', () {
     test('writes parent task + N checklist children atomically', () async {
       const task = TaskModel(
