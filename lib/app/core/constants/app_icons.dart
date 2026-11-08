@@ -63,6 +63,7 @@ abstract final class AppIcons {
   static const IconData actionRetry = Icons.refresh;
   static const IconData appUpdate = Icons.system_update_outlined;
   static const IconData actionSearch = Icons.search;
+  static const IconData filter = Icons.filter_list;
   static const IconData actionLogout = Icons.logout;
   static final IconData actionShare =
       Icons.adaptive.share; // Automatically adapts to iOS vs Android

@@ -65,6 +65,24 @@ abstract interface class MemberCalls {
   /// The Owner withdraws the offer, or the person offered declines it.
   Future<void> cancelOwnershipOffer({required String eventId});
 
+  /// Creates a group of participants, or renames one. Needs
+  /// `participants.edit` (Req 40).
+  Future<void> saveGroup({
+    required String eventId,
+    required String groupId,
+    required String name,
+  });
+
+  /// Sets exactly which members are a group's linked adults (Req 26b).
+  Future<void> setGroupAdults({
+    required String eventId,
+    required String groupId,
+    required List<String> uids,
+  });
+
+  /// Deletes an empty group.
+  Future<void> deleteGroup({required String eventId, required String groupId});
+
   /// Chooses who reads every expense (Req 38). Needs `event.manage`.
   Future<void> setExpenseAccess({
     required String eventId,
@@ -175,6 +193,34 @@ class FirebaseMemberCalls implements MemberCalls {
   @override
   Future<void> cancelOwnershipOffer({required String eventId}) =>
       _call('cancelOwnershipOffer', {'eventId': eventId});
+
+  @override
+  Future<void> saveGroup({
+    required String eventId,
+    required String groupId,
+    required String name,
+  }) => _call('saveGroup', {
+    'eventId': eventId,
+    'groupId': groupId,
+    'name': name,
+  });
+
+  @override
+  Future<void> setGroupAdults({
+    required String eventId,
+    required String groupId,
+    required List<String> uids,
+  }) => _call('setGroupAdults', {
+    'eventId': eventId,
+    'groupId': groupId,
+    'uids': uids,
+  });
+
+  @override
+  Future<void> deleteGroup({
+    required String eventId,
+    required String groupId,
+  }) => _call('deleteGroup', {'eventId': eventId, 'groupId': groupId});
 
   @override
   Future<void> setExpenseAccess({
