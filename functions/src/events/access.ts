@@ -35,12 +35,26 @@ export function readsExpense(
   expense: FirebaseFirestore.DocumentData
 ): boolean {
   return (
-    member.permissions.includes("money.read") ||
-    member.permissions.includes("expenses.readAll") ||
+    readsAllExpenses(member) ||
     expense.payerId === member.uid ||
     (Array.isArray(expense.involvedUids) &&
       expense.involvedUids.includes(member.uid))
   );
+}
+
+/** Whether [member] reads every expense in the event (Req 38). */
+export function readsAllExpenses(member: MemberAccess): boolean {
+  return member.permissions.includes("money.read") ||
+    member.permissions.includes("expenses.readAll");
+}
+
+/**
+ * Whether a chat notice may show a money amount (Req 38f): only when
+ * everyone who can read chat can read every expense. Under Everyone that
+ * holds unless an Observer or Vendor was given chat.
+ */
+export function chatShowsAmounts(members: readonly MemberAccess[]): boolean {
+  return members.filter(readsChat).every(readsAllExpenses);
 }
 
 /**

@@ -1,3 +1,4 @@
+import {chatShowsAmounts, readAllAccess} from "./access";
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
@@ -157,9 +158,14 @@ export const recordSettlement = onCall(
           const party = payerId !== uid ?
             "on behalf of a former member" :
             departed.length > 0 ? "with a former member" : "with a member";
+          // Chat shows the amount only to an audience that may read every
+          // expense (Req 38f).
+          const shown = chatShowsAmounts(await readAllAccess(eventRef, event)) ?
+            `${symbol}${amount.toFixed(2)}` :
+            "up";
           tx.set(noticeRef, {
             senderId: uid,
-            text: `Settled ${symbol}${amount.toFixed(2)} ${party}`,
+            text: `Settled ${shown} ${party}`,
             isHighPriority: false,
             kind: "settlement",
             timestamp,

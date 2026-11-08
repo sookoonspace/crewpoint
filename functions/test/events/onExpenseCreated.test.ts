@@ -69,3 +69,52 @@ test('an event not yet migrated still reaches everyone but the payer', async () 
   });
   expect(pushedTo()).toEqual(['tok-books', 'tok-observer', 'tok-plain', 'tok-vendor']);
 });
+
+/**
+ * Req 38f (H-05): pushes follow the event's expense access, and only people
+ * who may read the expense hear about it, amount included.
+ */
+describe('the push follows expense access', () => {
+  async function useAccess(access: object) {
+    const resolved = expenseAccessOf({settings: {expenseAccess: access}});
+    await getAdminDb().doc(`events/${E}`).update({'settings.expenseAccess': access});
+    for (const [uid, roleIds] of people) {
+      await getAdminDb().doc(`events/${E}/members/${uid}`).update({
+        permissions: computePermissions(roleIds, {}, {
+          readsAllExpenses: readsAllExpensesUnder(resolved, uid, roleIds),
+        }),
+      });
+    }
+  }
+  const bodies = () =>
+    (mockSendEach.mock.calls[0]?.[0] ?? []).map((m: {notification?: {body?: string}}) => m.notification?.body);
+
+  test('Only people involved: only the people in the split, and money.read', async () => {
+    await useAccess({mode: 'involved'});
+    await handleExpenseCreated({
+      eventId: E, expenseId: 'a',
+      data: {payerId: 'owner', amount: 10, description: 'Stage', involvedUids: ['owner', 'vendor']},
+    });
+    // Finance (books) holds money.read; Plain is not in the split.
+    expect(pushedTo()).toEqual(['tok-books', 'tok-vendor']);
+  });
+
+  test('Selected roles and people: the chosen ones, and the people in the split', async () => {
+    await useAccess({mode: 'selected', uids: ['observer']});
+    await handleExpenseCreated({
+      eventId: E, expenseId: 'b',
+      data: {payerId: 'owner', amount: 10, description: 'Stage', involvedUids: ['owner', 'vendor']},
+    });
+    expect(pushedTo()).toEqual(['tok-books', 'tok-observer', 'tok-vendor']);
+  });
+
+  test('nobody who cannot read the expense is told its amount', async () => {
+    await useAccess({mode: 'involved'});
+    await handleExpenseCreated({
+      eventId: E, expenseId: 'c',
+      data: {payerId: 'owner', amount: 12.5, description: 'Rope', involvedUids: ['owner']},
+    });
+    expect(pushedTo()).toEqual(['tok-books']);
+    for (const body of bodies()) expect(body).toContain('12.50');
+  });
+});
