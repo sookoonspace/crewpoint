@@ -276,6 +276,7 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
     required List<ExpenseModel> expenses,
     required Map<String, String> memberNames,
     required ExpenseExportKind kind,
+    BalanceLedger? ledger,
   }) async {
     try {
       await runExpenseExport(
@@ -284,6 +285,7 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
         memberNames: memberNames,
         exporter: ref.read(fileExporterProvider),
         kind: kind,
+        ledger: ledger,
       );
     } catch (_) {
       if (!mounted) return;
@@ -463,20 +465,21 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
         final serverBalance = limited
             ? ref.watch(myBalanceProvider(widget.event.id)).value
             : null;
+        final ledger = limited
+            ? (serverBalance?.toLedger(uid, expenses) ??
+                  // Until the server answers: the total they can read,
+                  // and no balances.
+                  BalanceLedger(
+                    netBalances: const {},
+                    settlements: const [],
+                    totalExpenses: BalanceLedger.calculate(
+                      expenses: expenses,
+                      memberIds: const [],
+                    ).totalExpenses,
+                  ))
+            : null;
         return BudgetScreen(
-          ledger: limited
-              ? (serverBalance?.toLedger(uid, expenses) ??
-                    // Until the server answers: the total they can read,
-                    // and no balances.
-                    BalanceLedger(
-                      netBalances: const {},
-                      settlements: const [],
-                      totalExpenses: BalanceLedger.calculate(
-                        expenses: expenses,
-                        memberIds: const [],
-                      ).totalExpenses,
-                    ))
-              : null,
+          ledger: ledger,
           expenses: expenses,
           memberIds: widget.event.memberIds,
           currency: widget.event.currency,
@@ -494,6 +497,7 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
             expenses: expenses,
             memberNames: memberNames,
             kind: ExpenseExportKind.pdf,
+            ledger: ledger,
           ),
           onExportCsv: () => _runExport(
             expenses: expenses,
