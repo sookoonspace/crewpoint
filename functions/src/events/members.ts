@@ -25,6 +25,11 @@ export interface MemberFields {
   participantId?: string | null;
   joinedAt?: FirebaseFirestore.Timestamp | FieldValue;
   editsOwnGroup?: boolean;
+  /**
+   * Groups this person is a linked adult of (Req 26b). Rules check own-group
+   * access against these, and being in any grants `group.editOwn`.
+   */
+  groupIds?: string[];
 }
 
 export function memberRef(
@@ -49,7 +54,8 @@ export function memberDoc(
     roleIds: fields.roleIds,
     crewIds: fields.crewIds ?? [],
     permissions: computePermissions(fields.roleIds, eventRoles, {
-      editsOwnGroup: fields.editsOwnGroup,
+      editsOwnGroup:
+        fields.editsOwnGroup === true || (fields.groupIds ?? []).length > 0,
       readsAllExpenses: readsAllExpensesUnder(access, uid, fields.roleIds),
     }),
     participantId: fields.participantId ?? null,
@@ -59,6 +65,7 @@ export function memberDoc(
   if (fields.editsOwnGroup !== undefined) {
     doc.editsOwnGroup = fields.editsOwnGroup;
   }
+  if (fields.groupIds !== undefined) doc.groupIds = fields.groupIds;
   return doc;
 }
 
@@ -125,6 +132,7 @@ export function rebuildMember(
       participantId: current.participantId,
       joinedAt: current.joinedAt,
       editsOwnGroup: current.editsOwnGroup,
+      groupIds: Array.isArray(current.groupIds) ? current.groupIds : undefined,
     },
     roles,
     access

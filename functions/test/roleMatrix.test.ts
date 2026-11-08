@@ -84,6 +84,11 @@ async function seed(
     });
     await setDoc(doc(db, `${E}/messages/m`), {senderId: 'owner', text: 'Hi'});
     await setDoc(doc(db, `${E}/taskBudgets/open`), {estimate: 500, updatedBy: 'owner'});
+    await setDoc(doc(db, `${E}/groups/g1`), {name: 'Shahs', sortName: 'shahs', adultUids: []});
+    await setDoc(doc(db, `${E}/participants/kid`), {
+      name: 'Ana', sortName: 'ana', groupId: 'g1', isChild: true, createdBy: 'owner', status: 'active',
+    });
+    await setDoc(doc(db, `${E}/participants/kid/private/details`), {birthDate: '2020-05-01'});
     await setDoc(doc(db, `${E}/profiles/owner`), {uid: 'owner', displayName: 'Olu', venmoHandle: 'olu'});
     await setDoc(doc(db, 'users/owner'), {displayName: 'Olu', venmoHandle: 'olu'});
     for (const role of roles ? Object.keys(roles) : []) {
@@ -163,6 +168,17 @@ describe.each(ROLES)('%s', (role) => {
   test('names and handles: read in the event, never from users/{uid} (Req 37)', async () => {
     await assertSucceeds(getDoc(doc(as(role), `${E}/profiles/owner`)));
     await expectAccess(role === 'owner', getDoc(doc(as(role), 'users/owner')));
+  });
+
+  test('participants: the roster, adding people and private details (Req 40, 43)', async () => {
+    await expectAccess(holds(role, 'participants.read'), getDocs(collection(as(role), `${E}/participants`)));
+    await expectAccess(holds(role, 'participants.read'), getDoc(doc(as(role), `${E}/groups/g1`)));
+    await expectAccess(holds(role, 'participants.edit'), setDoc(doc(as(role), `${E}/participants/new`), {
+      name: 'Ravi', sortName: 'ravi', groupId: 'g1', isChild: true, createdBy: role, status: 'active',
+    }));
+    await expectAccess(holds(role, 'participants.readPrivate'),
+      getDoc(doc(as(role), `${E}/participants/kid/private/details`)));
+    await assertFails(setDoc(doc(as(role), `${E}/groups/g2`), {name: 'X', sortName: 'x', adultUids: []}));
   });
 
   test('settings need event.manage, and roles, crews and members only the server', async () => {

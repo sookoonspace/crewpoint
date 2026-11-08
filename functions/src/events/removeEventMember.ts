@@ -48,6 +48,10 @@ export const removeEventMember = onCall(
           .collection("event_invites")
           .where("eventId", "==", eventId)
           .get();
+        const groups = await eventRef
+          .collection("groups")
+          .where("adultUids", "array-contains", targetUserId)
+          .get();
 
         await db.runTransaction(async (tx) => {
           const eventDoc = await tx.get(eventRef);
@@ -92,6 +96,10 @@ export const removeEventMember = onCall(
           }
 
           tx.delete(memberRef(eventRef, targetUserId));
+          // They no longer look after any group here (Req 26b).
+          groups.docs.forEach((g) =>
+            tx.update(g.ref, {adultUids: FieldValue.arrayRemove(targetUserId)})
+          );
           tx.update(eventRef, {
             memberIds: FieldValue.arrayRemove(targetUserId),
             adminIds: FieldValue.arrayRemove(targetUserId),
