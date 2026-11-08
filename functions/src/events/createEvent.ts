@@ -1,4 +1,5 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
+import {expenseAccessOf} from "./expenseAccess";
 import {FieldValue, getFirestore, Timestamp} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 import {preparePersonalOrganizer} from "./organizers";
@@ -103,8 +104,12 @@ export const createEvent = onCall({timeoutSeconds: 30}, async (request) => {
           createdAt: now,
           updatedAt: now,
         });
-        // A new event has no role documents yet, so presets apply.
-        tx.set(memberRef(eventRef, uid), memberDoc(uid, {roleIds: ["owner"]}, {}));
+        // A new event has no role documents or expense setting yet, so
+        // presets and Everyone apply.
+        tx.set(
+          memberRef(eventRef, uid),
+          memberDoc(uid, {roleIds: ["owner"]}, {}, expenseAccessOf({}))
+        );
       });
       return {success: true};
     }

@@ -20,9 +20,10 @@ import {
   Timestamp,
 } from "firebase-admin/firestore";
 import {commitInChunks, BatchOperation} from "../src/utils/batch";
-import {memberDoc} from "../src/events/members";
+import {memberDoc, rebuildMember} from "../src/events/members";
+import {expenseAccessOf} from "../src/events/expenseAccess";
 import {profileFrom} from "../src/events/profileFields";
-import {legacyRoleIds} from "../src/events/permissions";
+import {EventRoles, legacyRoleIds} from "../src/events/permissions";
 import {mapLegacyStatus} from "../src/events/eventStatus";
 
 export interface MigrationResult {
@@ -35,6 +36,7 @@ export interface MigrationResult {
   unknownZones: number;
   taskBudgets: number;
   profiles: number;
+  permissions: number;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -54,6 +56,7 @@ export async function migrateToMembers(
     unknownZones: 0,
     taskBudgets: 0,
     profiles: 0,
+    permissions: 0,
   };
   const ops: BatchOperation[] = [];
   for (const doc of events.docs) {
@@ -281,13 +284,27 @@ async function memberOps(
 ): Promise<BatchOperation[]> {
   const existing = await eventRef.collection("members").get();
   const have = new Set(existing.docs.map((d) => d.id));
+  const roleDocs = await eventRef.collection("roles").get();
+  const roles: EventRoles = {};
+  roleDocs.docs.forEach((d) => (roles[d.id] = d.data()));
+  const access = expenseAccessOf(event);
   const ops: BatchOperation[] = [];
+  // Existing documents are recalculated from their roles, so they carry what
+  // the expense access setting adds (Req 38).
+  for (const doc of existing.docs) {
+    const rebuilt = rebuildMember(doc.id, doc.data(), roles, access);
+    const before = JSON.stringify(doc.data().permissions ?? []);
+    if (JSON.stringify(rebuilt.permissions) === before) continue;
+    ops.push({type: "update", ref: doc.ref, data: {permissions: rebuilt.permissions}});
+    result.permissions++;
+  }
   for (const uid of (event.memberIds ?? []) as string[]) {
     if (have.has(uid)) continue;
     const data = memberDoc(
       uid,
       {roleIds: legacyRoleIds(event, uid), joinedAt: event.createdAt},
-      {}
+      roles,
+      access
     );
     ops.push({type: "set", ref: eventRef.collection("members").doc(uid), data});
     result.memberDocs++;

@@ -29,6 +29,9 @@ beforeEach(async () => {
     creatorId: 'owner',
     adminIds: ['owner'],
     memberIds: ['owner', 'treasurer', 'lead', 'sponsor', 'vendor'],
+    // The Convention default (Req 38a): only money.read holders see every
+    // expense, so roles carry no money unless they grant it.
+    settings: {expenseAccess: {mode: 'selected'}},
   });
   await getAdminDb().doc(`events/${E}/members/owner`).set({
     uid: 'owner', roleIds: ['owner'], permissions: computePermissions(['owner'], {}),
@@ -127,7 +130,6 @@ describe('H-06 dual roles', () => {
     expect((await member('lead')).permissions).toEqual(expect.arrayContaining(['group.readOwn', 'group.editOwn']));
   });
 
-  // Planned gap until #72 limits expense reads to the people involved.
   test('H-06 sees no expense they are not part of', async () => {
     const env: RulesTestEnvironment = await getTestEnv();
     try {
@@ -136,6 +138,8 @@ describe('H-06 dual roles', () => {
         await setDoc(doc(db, 'events/h06'), {
           title: 'Convention', status: 'published', creatorId: 'owner',
           adminIds: ['owner'], memberIds: ['owner', 'amit', 'other'],
+          // The Convention default (Req 38a).
+          settings: {expenseAccess: {mode: 'selected'}},
         });
         await setDoc(doc(db, 'events/h06/expenses/fee'), {
           payerId: 'other', amount: 50, splits: [{userId: 'other', amount: 50}], involvedUids: ['other'],

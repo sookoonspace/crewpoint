@@ -17,6 +17,10 @@ import {
   computePermissions,
   isAdminLevel,
 } from "../src/events/permissions";
+import {
+  expenseAccessOf,
+  readsAllExpensesUnder,
+} from "../src/events/expenseAccess";
 
 export interface VerifyResult {
   events: number;
@@ -43,6 +47,7 @@ async function checkEvent(
   ]);
   const roles: EventRoles = {};
   roleDocs.docs.forEach((d) => (roles[d.id] = d.data()));
+  const access = expenseAccessOf(event);
   const memberIds: string[] = event.memberIds ?? [];
   const adminIds: string[] = event.adminIds ?? [];
   const docs = new Map(members.docs.map((d) => [d.id, d.data()]));
@@ -71,6 +76,7 @@ async function checkEvent(
     }
     const expected = computePermissions(roleIds, roles, {
       editsOwnGroup: member.editsOwnGroup,
+      readsAllExpenses: readsAllExpensesUnder(access, uid, roleIds),
     });
     if (JSON.stringify(member.permissions) !== JSON.stringify(expected)) {
       problems.push(`${uid} has stale permissions`);

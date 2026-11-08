@@ -1,4 +1,5 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
+import {expenseAccessOf} from "./expenseAccess";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 import {assertOpenToJoin} from "./eventStatus";
@@ -101,7 +102,7 @@ export const joinEvent = onCall(
               "participant";
           tx.set(
             memberRef(eventRef, uid),
-            memberDoc(uid, {roleIds: [roleId]}, roles)
+            memberDoc(uid, {roleIds: [roleId]}, roles, expenseAccessOf(eventData))
           );
           tx.update(eventRef, {
             memberIds: FieldValue.arrayUnion(uid),

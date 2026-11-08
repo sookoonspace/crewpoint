@@ -244,6 +244,9 @@ describe('permissions', () => {
         adminIds: ['admin'],
         memberIds: ['admin', 'committee', 'volunteer', 'familyA', 'familyB'],
         title: 'Derod',
+        // The Convention default (Req 38a, applied at creation by #89): only
+        // people holding money.read see every expense.
+        settings: {expenseAccess: {mode: 'selected'}},
       });
       await setDoc(doc(db, `${E}/expenses/caterer`), {eventId: 'derod', payerId: 'admin', amount: 27400, splits: []});
       await setDoc(doc(db, `${E}/expenses/removedOwn`), {eventId: 'derod', payerId: 'gone', amount: 10, splits: []});
@@ -295,6 +298,17 @@ describe('permissions', () => {
   test('H-05 family cannot read another family profile or handles', async () => {
     await expect(getDoc(doc(as('familyA'), 'users/familyB'))).rejects.toBeTruthy();
     await expect(getDoc(doc(as('stranger'), `${E}/profiles/familyB`))).rejects.toBeTruthy();
+  });
+
+  test('H-05 a member still reads an expense they share in', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `${E}/expenses/hall`), {
+        eventId: 'derod', payerId: 'admin', amount: 40, involvedUids: ['admin', 'familyA'],
+        splits: [{userId: 'familyA', amount: 40}],
+      });
+    });
+    const hall = await getDoc(doc(as('familyA'), `${E}/expenses/hall`));
+    expect(hall.data()?.amount).toBe(40);
   });
 
   test('H-05 people in the same event see a name and pay handle to settle up', async () => {

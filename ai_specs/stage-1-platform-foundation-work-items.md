@@ -937,7 +937,7 @@ Let `event.manage` holders choose who can read expenses, enforced on the server,
 - `lib/app/features/budget/data/expense_repository.dart`, `lib/app/features/budget/domain/models/balance_ledger.dart`, and `lib/app/features/budget/application/global_balance_ledger_provider.dart`.
 - Mirrored streams keep the `kIsWeb` fork, with teardown through `ref.onDispose`.
 - Template defaults (Req 38a) arrive in #89.
-- Decided 2026-11-07: **Everyone in the event** includes Observers and Vendors, and the Observer and Vendor roles can be picked under **Selected roles and people**. An organizer shares final financials with everyone this way when they choose. #70's rules already open expenses to `expenses.readAll`.
+- Decided 2026-11-08: **Everyone in the event** leaves out Observers and Vendors, unless the admin turns on a switch, **Also show Observers and Vendors**, which is off by default. The Observer and Vendor roles can also be picked under **Selected roles and people**. An organizer shares final financials with everyone this way when they choose. #70's rules already open expenses to `expenses.readAll`.
 
 ### Acceptance criteria
 - [ ] Anyone with `event.manage` chooses in Event settings: **Everyone in the event** (all members read all expenses), **Only people involved** (members read only expenses they paid for or are part of), or **Selected roles and people** (the admin picks any roles and individual members, who can read all expenses).

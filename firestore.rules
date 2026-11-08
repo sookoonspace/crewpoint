@@ -113,6 +113,10 @@ service cloud.firestore {
         && fieldUnchanged('eventType')
         // Joining relies on this count, so only the server keeps it.
         && fieldUnchanged('memberCount')
+        // Expense access is copied onto member documents, so only the
+        // setExpenseAccess callable changes it (Req 38).
+        && request.resource.data.get('settings', {}).get('expenseAccess', null)
+            == resource.data.get('settings', {}).get('expenseAccess', null)
         // Archived events only allow a restore, by changing status.
         && (resource.data.get('status', 'active') != 'archived'
             || request.resource.data.diff(resource.data).affectedKeys()
@@ -149,6 +153,13 @@ service cloud.firestore {
 
       // A pending ownership offer (Req 30). The person offered reads it to
       // accept; only the ownership callables write it.
+      // Changes to event settings, with who made them and when (Req 38b).
+      // Only the server writes it.
+      match /settingsLog/{entryId} {
+        allow read: if request.auth != null && can(eventId, 'event.manage');
+        allow write: if false;
+      }
+
       match /ownership/{docId} {
         allow read: if request.auth != null && isEventMember(eventId);
         allow write: if false;
@@ -321,13 +332,14 @@ service cloud.firestore {
       // Expenses subcollection
       match /expenses/{expenseId} {
 
-        // Vendors and Observers read only expenses they paid or share in,
-        // unless their role is given `money.read` or `expenses.readAll`
-        // (Req 32). A list query must use `involvedUids array-contains` for
-        // them. #72 adds the event's expense access setting.
+        // Everyone reads expenses they paid or share in. Reading all of them
+        // needs `money.read`, or `expenses.readAll`, which the event's expense
+        // access setting puts on member documents (Req 38, Technical
+        // Decision 4a). Anyone else must list with `involvedUids
+        // array-contains`, because rules refuse a query that could return
+        // something they cannot read (Req 38e).
         allow read: if request.auth != null
-          && (contributes(eventId)
-              || can(eventId, 'money.read')
+          && (can(eventId, 'money.read')
               || can(eventId, 'expenses.readAll')
               || resource.data.get('payerId', null) == request.auth.uid
               || request.auth.uid in resource.data.get('involvedUids', []));
