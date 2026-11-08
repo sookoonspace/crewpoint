@@ -24,7 +24,13 @@ class BudgetScreen extends StatelessWidget {
     this.onRecordPayment,
     this.onExportPdf,
     this.onExportCsv,
+    this.ledger,
   });
+
+  /// Balances to show instead of working them out from [expenses], for
+  /// someone who may not read every expense: their own balance and
+  /// transfers from the server (Req 38c).
+  final BalanceLedger? ledger;
 
   final List<ExpenseModel> expenses;
   final List<String> memberIds;
@@ -61,10 +67,9 @@ class BudgetScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ledger = BalanceLedger.calculate(
-      expenses: expenses,
-      memberIds: memberIds,
-    );
+    final ledger =
+        this.ledger ??
+        BalanceLedger.calculate(expenses: expenses, memberIds: memberIds);
     final regularExpenses = expenses.where((e) => !e.isPayment).toList();
     final symbol = _currencySymbol(currency);
 
@@ -129,7 +134,7 @@ class BudgetScreen extends StatelessWidget {
           const SizedBox(height: AppSpacing.xl),
 
           // Balances
-          if (memberIds.length > 1) ...[
+          if (memberIds.length > 1 && ledger.netBalances.isNotEmpty) ...[
             const _SectionLabel(label: 'BALANCES'),
             const SizedBox(height: AppSpacing.sm),
             _BalancesCard(
@@ -309,6 +314,7 @@ class _BalancesCard extends StatelessWidget {
           for (var i = 0; i < entries.length; i++) ...[
             if (i > 0) const Divider(height: 1, indent: 16, endIndent: 16),
             _BalanceRow(
+              key: Key('budget.balance.${entries[i].key}'),
               name: _nameOf(entries[i].key, memberNames, memberIds),
               balance: entries[i].value,
               symbol: symbol,
@@ -322,6 +328,7 @@ class _BalancesCard extends StatelessWidget {
 
 class _BalanceRow extends StatelessWidget {
   const _BalanceRow({
+    super.key,
     required this.name,
     required this.balance,
     required this.symbol,

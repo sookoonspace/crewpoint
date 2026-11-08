@@ -1,3 +1,4 @@
+import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_access.dart';
 import 'package:flutter/widgets.dart';
 
 /// User-facing string surface for CrewPoint.
@@ -39,6 +40,7 @@ abstract class AppStrings {
   RoleStrings get roles;
   CrewStrings get crews;
   TransferStrings get transfer;
+  ExpenseAccessStrings get expenseAccess;
 
   /// Static English fallback. Used by service-layer code that has no
   /// `BuildContext` in scope (e.g. `firebaseAuthErrorMessage`). UI code
@@ -495,6 +497,10 @@ class _EnglishStrings extends AppStrings {
 
   @override
   TransferStrings get transfer => const _EnglishTransferStrings();
+
+  @override
+  ExpenseAccessStrings get expenseAccess =>
+      const _EnglishExpenseAccessStrings();
 }
 
 class _EnglishChatStrings extends ChatStrings {
@@ -1584,6 +1590,99 @@ class _EnglishRoleStrings extends RoleStrings {
 
 /// The Crews screen and task crews (#68). [crew] and [crews] are the event's
 /// own words for the concept, from `event.words`.
+/// The Expense access screen and its Event settings entry (Req 38).
+abstract class ExpenseAccessStrings {
+  const ExpenseAccessStrings();
+
+  String get title;
+  String get intro;
+  String get everyone;
+  String get everyoneHelp;
+  String includeNonContributors(String observers, String vendors);
+  String get involved;
+  String get involvedHelp;
+  String get selected;
+  String get selectedHelp;
+  String get rolesHeading;
+  String get peopleHeading;
+  String get nobodyNote;
+  String get nothingToPick;
+  String get save;
+  String get saved;
+  String get saveFailed;
+  String get narrowTitle;
+  String narrowBody(int people);
+  String get narrowConfirm;
+
+  /// The Event settings entry's summary of the current option.
+  String summary(ExpenseAccessMode mode, {required bool includesEveryone});
+}
+
+class _EnglishExpenseAccessStrings extends ExpenseAccessStrings {
+  const _EnglishExpenseAccessStrings();
+
+  @override
+  String get title => 'Who can see expenses';
+  @override
+  String get intro =>
+      'People always see expenses they paid for or share in, and people '
+      'whose role can read money see every expense.';
+  @override
+  String get everyone => 'Everyone in the event';
+  @override
+  String get everyoneHelp => 'Every member sees every expense.';
+  @override
+  String includeNonContributors(String observers, String vendors) =>
+      'Also show $observers and $vendors';
+  @override
+  String get involved => 'Only people involved';
+  @override
+  String get involvedHelp =>
+      'Members see only expenses they paid for or are part of. Everyone '
+      'still sees their own balance and who to pay.';
+  @override
+  String get selected => 'Selected roles and people';
+  @override
+  String get selectedHelp =>
+      'Only the roles and people you pick see every '
+      'expense.';
+  @override
+  String get rolesHeading => 'Roles';
+  @override
+  String get peopleHeading => 'People';
+  @override
+  String get nobodyNote =>
+      'Nobody picked. People whose role can read money still see every '
+      'expense.';
+  @override
+  String get nothingToPick => 'Everyone here already sees every expense.';
+  @override
+  String get save => 'Save';
+  @override
+  String get saved => 'Saved';
+  @override
+  String get saveFailed =>
+      'Could not save. Check your connection and try again.';
+  @override
+  String get narrowTitle => 'Fewer people will see expenses';
+  @override
+  String narrowBody(int people) =>
+      '${people == 1 ? '1 person' : '$people people'} will no longer see '
+      'every expense. They will still see the ones they paid for or share in.';
+  @override
+  String get narrowConfirm => 'Save anyway';
+  @override
+  String summary(ExpenseAccessMode mode, {required bool includesEveryone}) =>
+      switch (mode) {
+        ExpenseAccessMode.everyone =>
+          includesEveryone
+              ? 'Everyone, including Observers and Vendors'
+              : everyone,
+        ExpenseAccessMode.involved => involved,
+        ExpenseAccessMode.selected => selected,
+      };
+}
+
 abstract class CrewStrings {
   const CrewStrings();
 
@@ -1653,7 +1752,8 @@ class _EnglishCrewStrings extends CrewStrings {
   @override
   String get deleted => 'Deleted';
   @override
-  String get saveFailed => "Couldn't save. Your changes are still here, so try again.";
+  String get saveFailed =>
+      "Couldn't save. Your changes are still here, so try again.";
   @override
   String get deleteFailed => "Couldn't delete. Try again.";
   @override

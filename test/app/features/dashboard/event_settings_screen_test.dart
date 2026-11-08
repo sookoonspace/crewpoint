@@ -88,6 +88,10 @@ void main() {
           routerConfig: GoRouter(
             routes: [
               GoRoute(
+                path: '/dashboard/event/:eventId/settings/expenses',
+                builder: (_, _) => const Text('expense access screen'),
+              ),
+              GoRoute(
                 path: '/',
                 builder: (context, _) => Scaffold(
                   body: TextButton(
@@ -138,6 +142,35 @@ void main() {
     testWidgets('an admin sees the form', (tester) async {
       await pump(tester, uid: 'admin');
       expect(find.byKey(_key('save')), findsOneWidget);
+    });
+  });
+
+  group('who can see expenses (Req 38)', () {
+    testWidgets('shows the current option and opens its screen', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        event: const EventModel(
+          id: 'evt',
+          title: 'Convention',
+          creatorId: 'owner',
+          adminIds: ['owner', 'admin'],
+          memberIds: ['owner', 'admin', 'member'],
+          settings: {
+            'expenseAccess': {'mode': 'involved'},
+          },
+        ),
+      );
+      final entry = find.byKey(_key('expenseAccess'));
+      await tester.ensureVisible(entry);
+      expect(
+        find.descendant(of: entry, matching: find.text('Only people involved')),
+        findsOneWidget,
+      );
+      await tester.tap(entry);
+      await tester.pumpAndSettle();
+      expect(find.text('expense access screen'), findsOneWidget);
     });
   });
 

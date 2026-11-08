@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:crewpoint_app/app/features/dashboard/data/member_calls.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_access.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
 
 /// Stands in for the member and role callables. With a [firestore], it writes
@@ -48,10 +49,18 @@ class FakeMemberCalls implements MemberCalls {
     List<String> roleIds,
   ) async {
     final roles = await _roles(eventId);
+    final event = await _event(eventId).get();
+    final access = ExpenseAccess.fromMap(
+      (event.data()?['settings'] as Map?)?['expenseAccess'],
+    );
     await _event(eventId).collection('members').doc(uid).set({
       'uid': uid,
       'roleIds': roleIds,
-      'permissions': computePermissions(roleIds, roles),
+      'permissions': computePermissions(
+        roleIds,
+        roles,
+        readsAllExpenses: access.readsAll(uid, roleIds),
+      ),
     }, SetOptions(merge: true));
     final adminLevel = roleIds.any(
       (r) => r == 'owner' || r == 'coOwner' || r == 'admin',
@@ -62,6 +71,26 @@ class FakeMemberCalls implements MemberCalls {
           : FieldValue.arrayRemove([uid]),
       'updatedAt': DateTime.now(),
     });
+  }
+
+  /// Saves the setting, logs the change, and recalculates every member, as
+  /// `setExpenseAccess` does.
+  @override
+  Future<void> setExpenseAccess({
+    required String eventId,
+    required ExpenseAccess access,
+  }) async {
+    calls.add('setExpenseAccess:${access.mode.name}');
+    _maybeFail();
+    if (firestore == null) return;
+    await _event(eventId).set({
+      'settings': {'expenseAccess': access.toMap()},
+    }, SetOptions(merge: true));
+    final members = await _event(eventId).collection('members').get();
+    for (final doc in members.docs) {
+      final roleIds = (doc.data()['roleIds'] as List).cast<String>();
+      await _writeMember(eventId, doc.id, roleIds);
+    }
   }
 
   @override
@@ -242,9 +271,10 @@ class FakeMemberCalls implements MemberCalls {
     final from = offer['from'] as String;
     final to = offer['to'] as String;
     Future<List<String>> rolesOf(String uid) async =>
-        (((await _event(eventId).collection('members').doc(uid).get())
-                    .data()?['roleIds']
-                as List?) ??
+        (((await _event(
+                      eventId,
+                    ).collection('members').doc(uid).get()).data()?['roleIds']
+                    as List?) ??
                 const [])
             .cast<String>();
     final toRoles = await rolesOf(to);
