@@ -214,4 +214,60 @@ class FakeMemberCalls implements MemberCalls {
       await doc.reference.update({'crewId': null});
     }
   }
+
+  DocumentReference<Map<String, dynamic>> _offer(String eventId) =>
+      _event(eventId).collection('ownership').doc('offer');
+
+  /// The signed-in person, for ownership calls. Tests set it to act as
+  /// someone else on another device.
+  String actingAs = 'owner';
+
+  @override
+  Future<void> offerOwnership({
+    required String eventId,
+    required String toUid,
+  }) async {
+    calls.add('offerOwnership:$toUid');
+    _maybeFail();
+    if (firestore == null) return;
+    await _offer(eventId).set({'from': actingAs, 'to': toUid});
+  }
+
+  @override
+  Future<void> acceptOwnership({required String eventId}) async {
+    calls.add('acceptOwnership');
+    _maybeFail();
+    if (firestore == null) return;
+    final offer = (await _offer(eventId).get()).data()!;
+    final from = offer['from'] as String;
+    final to = offer['to'] as String;
+    Future<List<String>> rolesOf(String uid) async =>
+        (((await _event(eventId).collection('members').doc(uid).get())
+                    .data()?['roleIds']
+                as List?) ??
+                const [])
+            .cast<String>();
+    final toRoles = await rolesOf(to);
+    final fromRoles = await rolesOf(from);
+    await _offer(eventId).delete();
+    await _event(eventId).update({'creatorId': to});
+    await _writeMember(eventId, from, [
+      for (final r in fromRoles)
+        if (r != 'owner' && r != 'coOwner') r,
+      'coOwner',
+    ]);
+    await _writeMember(eventId, to, [
+      for (final r in toRoles)
+        if (!const {'owner', 'coOwner', 'admin', 'participant'}.contains(r)) r,
+      'owner',
+    ]);
+  }
+
+  @override
+  Future<void> cancelOwnershipOffer({required String eventId}) async {
+    calls.add('cancelOwnershipOffer');
+    _maybeFail();
+    if (firestore == null) return;
+    await _offer(eventId).delete();
+  }
 }

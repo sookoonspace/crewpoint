@@ -38,6 +38,7 @@ abstract class AppStrings {
   UpdateStrings get update;
   RoleStrings get roles;
   CrewStrings get crews;
+  TransferStrings get transfer;
 
   /// Static English fallback. Used by service-layer code that has no
   /// `BuildContext` in scope (e.g. `firebaseAuthErrorMessage`). UI code
@@ -491,6 +492,9 @@ class _EnglishStrings extends AppStrings {
 
   @override
   CrewStrings get crews => const _EnglishCrewStrings();
+
+  @override
+  TransferStrings get transfer => const _EnglishTransferStrings();
 }
 
 class _EnglishChatStrings extends ChatStrings {
@@ -1666,4 +1670,93 @@ class _EnglishCrewStrings extends CrewStrings {
   String noCrew(String crew) => 'No ${crew.toLowerCase()}';
   @override
   String allCrews(String crews) => 'All ${crews.toLowerCase()}';
+}
+
+/// The Transfer ownership screen and offer banner (#69).
+abstract class TransferStrings {
+  const TransferStrings();
+
+  String get title;
+  String currentOwner(String name);
+  String get pickHeading;
+  String get pickHint;
+  String get offer;
+  String offerTitle(String name);
+  String get offerBody;
+  String get offered;
+  String waiting(String name);
+  String get withdraw;
+  String get withdrawn;
+  String offerToYou(String from);
+  String offerToYouBody(String from);
+  String get accept;
+  String get decline;
+  String get accepted;
+  String get declined;
+  String get failed;
+  String get noOneElse;
+  String get noAccessBody;
+  String get open;
+  String get you;
+  String get bannerBody;
+}
+
+class _EnglishTransferStrings extends TransferStrings {
+  const _EnglishTransferStrings();
+
+  @override
+  String get title => 'Transfer ownership';
+  @override
+  String currentOwner(String name) => 'Owner: $name';
+  @override
+  String get pickHeading => 'Who should be the new Owner?';
+  @override
+  String get pickHint =>
+      'They must accept it. Until then nothing changes, and you can withdraw '
+      'the offer.';
+  @override
+  String get offer => 'Offer ownership';
+  @override
+  String offerTitle(String name) => 'Offer ownership to $name?';
+  @override
+  String get offerBody =>
+      'Once they accept, they become the Owner and you become a Co-owner. '
+      'They can give it back the same way.';
+  @override
+  String get offered => 'Offer sent';
+  @override
+  String waiting(String name) => 'Waiting for $name to accept.';
+  @override
+  String get withdraw => 'Withdraw offer';
+  @override
+  String get withdrawn => 'Offer withdrawn';
+  @override
+  String offerToYou(String from) => '$from wants to make you the Owner';
+  @override
+  String offerToYouBody(String from) =>
+      'As Owner you can do everything, including handing ownership on. '
+      '$from becomes a Co-owner.';
+  @override
+  String get accept => 'Accept';
+  @override
+  String get decline => 'Decline';
+  @override
+  String get accepted => "You're now the Owner";
+  @override
+  String get declined => 'Offer declined';
+  @override
+  String get failed => "Couldn't do that. Check your connection and try again.";
+  @override
+  String get noOneElse =>
+      'There is nobody else in this event yet. Invite someone first.';
+  @override
+  String get noAccessBody =>
+      'Only the Owner, Co-owners and the person offered ownership can see '
+      'this page.';
+  @override
+  String get open => 'View';
+  @override
+  String get you => 'You';
+  @override
+  String get bannerBody => "You've been offered ownership of this event.";
 }

@@ -4,6 +4,7 @@ import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/member.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/ownership_offer.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,6 +33,8 @@ Future<void> _openLeave(
   WidgetTester tester,
   Stream<List<ExpenseModel>> expenses, {
   List<MemberModel> members = const [],
+  OwnershipOffer? offer,
+  bool tapLeave = true,
 }) async {
   tester.view.physicalSize = const Size(1200, 3000);
   tester.view.devicePixelRatio = 1.0;
@@ -43,6 +46,7 @@ Future<void> _openLeave(
         currentUserIdProvider.overrideWithValue('me'),
         expenseListProvider.overrideWith((ref, _) => expenses),
         eventMembersProvider.overrideWith((ref, _) => Stream.value(members)),
+        ownershipOfferProvider.overrideWith((ref, _) => Stream.value(offer)),
         usersByIdProvider.overrideWith(
           (ref, key) async => {
             for (final uid in key.split(','))
@@ -59,6 +63,7 @@ Future<void> _openLeave(
     ),
   );
   await tester.pump(const Duration(milliseconds: 100));
+  if (!tapLeave) return;
   await tester.tap(find.byKey(const Key('event.action.leave')));
   await tester.pump(const Duration(milliseconds: 100));
   await tester.pump(const Duration(milliseconds: 400));
@@ -171,5 +176,29 @@ void main() {
       members: [_member('me'), _member('owner', manages: true)],
     );
     expect(find.byKey(_lastManager), findsNothing);
+  });
+
+  testWidgets('the person offered ownership sees it on the event', (
+    tester,
+  ) async {
+    await _openLeave(
+      tester,
+      Stream.value(const []),
+      offer: const OwnershipOffer(from: 'owner', to: 'me'),
+      tapLeave: false,
+    );
+    expect(find.byKey(const Key('event.ownershipOffer')), findsOneWidget);
+  });
+
+  testWidgets('nobody else sees an offer that is not for them', (
+    tester,
+  ) async {
+    await _openLeave(
+      tester,
+      Stream.value(const []),
+      offer: const OwnershipOffer(from: 'owner', to: 'sam'),
+      tapLeave: false,
+    );
+    expect(find.byKey(const Key('event.ownershipOffer')), findsNothing);
   });
 }

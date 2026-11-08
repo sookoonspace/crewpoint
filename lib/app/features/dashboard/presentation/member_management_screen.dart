@@ -94,6 +94,14 @@ class _MemberManagementScreenState
         title: Text('Members (${event.memberIds.length})'),
         elevation: 0,
         actions: [
+          if (event.isOwner(currentUserId))
+            IconButton(
+              key: const Key('members.transfer'),
+              tooltip: context.strings.transfer.title,
+              onPressed: () =>
+                  context.push('/dashboard/event/${event.id}/transfer'),
+              icon: const Icon(AppIcons.actionSwap),
+            ),
           if (canViewCrews(event, currentUserId))
             IconButton(
               key: const Key('members.crews'),

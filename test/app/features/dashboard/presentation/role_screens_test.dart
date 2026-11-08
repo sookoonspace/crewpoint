@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/crew.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/ownership_offer.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -402,6 +403,133 @@ void main() {
       robot.expectVisible(const Key('roles.discard.keep'));
       await robot.tap(const Key('roles.discard.keep'));
       robot.expectVisible(const Key('crews.members.save'));
+      await robot.finish();
+    });
+  });
+
+  group('Transfer ownership', () {
+    testWidgets('an Admin or Participant is told they cannot open it', (
+      tester,
+    ) async {
+      for (final uid in ['ana', 'sam']) {
+        final (_, robot) = await open(
+          tester,
+          'transfer',
+          signedInAs: uid,
+          roles: withAdmin,
+        );
+        robot.expectVisible(const Key('roles.noAccess'));
+        await robot.finish();
+      }
+    });
+
+    testWidgets('a Co-owner sees who owns it, without the offer controls', (
+      tester,
+    ) async {
+      final (_, robot) = await open(
+        tester,
+        'transfer',
+        signedInAs: 'ana',
+        roles: const {
+          'owner': ['owner'],
+          'ana': ['coOwner'],
+          'sam': ['participant'],
+        },
+      );
+      robot.expectText('Owner: Olivia');
+      robot.expectHidden(const Key('transfer.offer'));
+      await robot.finish();
+    });
+
+    testWidgets('shows a spinner, then a retry when loading fails', (
+      tester,
+    ) async {
+      final pending = StreamController<OwnershipOffer?>();
+      addTearDown(pending.close);
+      final (_, loading) = await open(
+        tester,
+        'transfer',
+        overrides: [
+          ownershipOfferProvider.overrideWith((ref, _) => pending.stream),
+        ],
+      );
+      loading.expectVisible(const Key('transfer.loading'));
+      await loading.finish();
+    });
+
+    testWidgets('a failed load offers a retry', (tester) async {
+      var attempts = 0;
+      final (_, robot) = await open(
+        tester,
+        'transfer',
+        overrides: [
+          ownershipOfferProvider.overrideWith((ref, _) {
+            attempts++;
+            return Stream.error(StateError('offline'));
+          }),
+        ],
+      );
+      robot.expectVisible(const Key('roles.loadFailed'));
+      await robot.tap(const Key('roles.retry'));
+      expect(attempts, 2);
+      await robot.finish();
+    });
+
+    testWidgets('with nobody else in the event, says so', (tester) async {
+      final (_, robot) = await open(
+        tester,
+        'transfer',
+        roles: const {
+          'owner': ['owner'],
+        },
+      );
+      robot.expectVisible(const Key('transfer.empty'));
+      await robot.finish();
+    });
+
+    testWidgets('a failed offer keeps the choice', (tester) async {
+      final (harness, robot) = await open(tester, 'transfer');
+      await robot.tap(const Key('transfer.pick.sam'));
+      harness.calls.failNext = FirebaseFunctionsException(
+        code: 'unavailable',
+        message: 'offline',
+      );
+      await robot.tap(const Key('transfer.offer'));
+      await robot.tap(const Key('transfer.offerConfirm'));
+      robot.expectText("Couldn't do that. Check your connection and try again.");
+      expect(
+        tester
+            .widget<FilledButton>(find.byKey(const Key('transfer.offer')))
+            .onPressed,
+        isNotNull,
+      );
+      await robot.finish();
+    });
+
+    testWidgets('the Owner can withdraw an offer', (tester) async {
+      final (harness, robot) = await open(tester, 'transfer');
+      await harness.firestore.doc('events/evt/ownership/offer').set({
+        'from': 'owner',
+        'to': 'sam',
+      });
+      await robot.settle();
+      await robot.tap(const Key('transfer.withdraw'));
+      expect(harness.calls.calls, ['cancelOwnershipOffer']);
+      robot.expectVisible(const Key('transfer.offer'));
+      await robot.finish();
+    });
+
+    testWidgets('the person offered can decline', (tester) async {
+      final (harness, robot) = await open(tester, 'transfer', signedInAs: 'sam');
+      await harness.firestore.doc('events/evt/ownership/offer').set({
+        'from': 'owner',
+        'to': 'sam',
+      });
+      await robot.settle();
+      robot.expectText('Olivia wants to make you the Owner');
+      await robot.tap(const Key('transfer.decline'));
+      expect(harness.calls.calls, ['cancelOwnershipOffer']);
+      robot.expectVisible(const Key('roles.noAccess'));
       await robot.finish();
     });
   });

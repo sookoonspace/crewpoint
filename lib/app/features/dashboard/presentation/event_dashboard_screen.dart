@@ -62,6 +62,43 @@ class EventDashboardScreen extends StatelessWidget {
                     const SizedBox(height: AppSpacing.xl),
                   ],
 
+                  // Shown to the person offered ownership (Req 30).
+                  Consumer(
+                    builder: (_, ref, _) {
+                      final uid = ref.watch(currentUserIdProvider);
+                      final offer = ref
+                          .watch(ownershipOfferProvider(event.id))
+                          .value;
+                      if (uid == null || offer == null || offer.to != uid) {
+                        return const SizedBox.shrink();
+                      }
+                      final strings = context.strings.transfer;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                        child: Card(
+                          key: const Key('event.ownershipOffer'),
+                          elevation: 0,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.secondaryContainer,
+                          child: ListTile(
+                            minTileHeight: 56,
+                            leading: const Icon(AppIcons.actionSwap),
+                            title: Text(strings.title),
+                            subtitle: Text(strings.bannerBody),
+                            trailing: TextButton(
+                              key: const Key('event.ownershipOffer.open'),
+                              onPressed: () => context.push(
+                                '/dashboard/event/${event.id}/transfer',
+                              ),
+                              child: Text(strings.open),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+
                   // Member avatars row
                   _MembersPreview(
                     label: event.words.count('member', event.memberIds.length),
