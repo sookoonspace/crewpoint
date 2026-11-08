@@ -225,14 +225,15 @@ class EventDashboardScreen extends StatelessWidget {
 /// One entry per enabled module, in a list that becomes a grid from 840 px. No
 /// `extra:` payload, because child routes resolve the event by id via
 /// EventGuard.
-class _ModuleHub extends StatelessWidget {
+class _ModuleHub extends ConsumerWidget {
   const _ModuleHub({required this.event});
 
   final EventModel event;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final strings = context.strings.dashboard;
+    final me = ref.watch(currentUserIdProvider) ?? '';
     Widget entry(
       String module,
       IconData icon,
@@ -249,7 +250,8 @@ class _ModuleHub extends StatelessWidget {
     );
 
     final entries = [
-      if (event.isModuleOn('chat'))
+      // Reading chat needs `chat.send` (Req 32).
+      if (event.isModuleOn('chat') && event.readsChat(me))
         entry(
           'chat',
           AppIcons.navChatFilled,

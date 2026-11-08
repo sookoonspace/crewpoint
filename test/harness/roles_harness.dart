@@ -4,6 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:go_router/go_router.dart';
+import 'package:crewpoint_app/app/features/budget/presentation/event_budget_page.dart';
+import 'package:crewpoint_app/app/features/chat/presentation/event_chat_page.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboard_screen.dart';
+import 'package:crewpoint_app/app/features/tasks/presentation/event_tasks_page.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/services/device_timezone.dart';
@@ -104,6 +108,35 @@ class RolesHarness {
             path: 'event/:eventId',
             builder: (_, _) => const Scaffold(body: Text('event')),
             routes: [
+              // The event hub and module pages, for the role matrix (#70).
+              GoRoute(
+                path: 'hub',
+                builder: (_, _) => EventGuard(
+                  eventId: eventId,
+                  child: (event) => EventDashboardScreen(event: event),
+                ),
+              ),
+              GoRoute(
+                path: 'tasks',
+                builder: (_, _) => EventGuard(
+                  eventId: eventId,
+                  child: (event) => EventTasksPage(event: event),
+                ),
+              ),
+              GoRoute(
+                path: 'budget',
+                builder: (_, _) => EventGuard(
+                  eventId: eventId,
+                  child: (event) => EventBudgetPage(event: event),
+                ),
+              ),
+              GoRoute(
+                path: 'chat',
+                builder: (_, _) => EventGuard(
+                  eventId: eventId,
+                  child: (event) => EventChatPage(event: event),
+                ),
+              ),
               GoRoute(
                 path: 'members',
                 builder: (_, state) => EventGuard(

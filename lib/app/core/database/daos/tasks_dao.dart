@@ -14,8 +14,17 @@ class TasksDao extends DatabaseAccessor<AppDatabase> with _$TasksDaoMixin {
   Future<List<Task>> tasksByEventId(String eventId) =>
       (select(tasks)..where((t) => t.eventId.equals(eventId))).get();
 
-  Stream<List<Task>> watchTasksByEventId(String eventId) =>
-      (select(tasks)..where((t) => t.eventId.equals(eventId))).watch();
+  /// An event's tasks, or only those assigned to [assigneeId] when set.
+  Stream<List<Task>> watchTasksByEventId(
+    String eventId, {
+    String? assigneeId,
+  }) =>
+      (select(tasks)..where(
+            (t) => assigneeId == null
+                ? t.eventId.equals(eventId)
+                : t.eventId.equals(eventId) & t.assigneeId.equals(assigneeId),
+          ))
+          .watch();
 
   Future<Task?> taskById(String id) =>
       (select(tasks)..where((t) => t.id.equals(id))).getSingleOrNull();
@@ -35,9 +44,10 @@ class TasksDao extends DatabaseAccessor<AppDatabase> with _$TasksDaoMixin {
   /// whenever a task row mutates locally (insert / update / delete).
   /// Used by the Dashboard progress ring.
   Stream<({int todo, int doing, int done})> watchCountsByEventId(
-    String eventId,
-  ) {
-    return watchTasksByEventId(eventId).map((rows) {
+    String eventId, {
+    String? assigneeId,
+  }) {
+    return watchTasksByEventId(eventId, assigneeId: assigneeId).map((rows) {
       var todo = 0;
       var doing = 0;
       var done = 0;

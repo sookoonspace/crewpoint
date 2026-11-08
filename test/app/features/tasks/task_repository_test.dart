@@ -483,4 +483,40 @@ void main() {
       );
     });
   });
+
+  group('a Vendor or Observer lists only tasks assigned to them (Req 32)', () {
+    Future<void> seed() async {
+      for (final (id, assignee) in [('a', 'vendor-1'), ('b', 'user-1')]) {
+        await firestore.doc('events/event-1/tasks/$id').set({
+          'eventId': 'event-1',
+          'title': 'Task $id',
+          'createdBy': 'user-1',
+          'assigneeId': assignee,
+          'status': 'todo',
+        });
+      }
+    }
+
+    test('the scoped stream returns only their tasks', () async {
+      await seed();
+      final tasks = await repository
+          .watchTasksByEventId('event-1', assigneeId: 'vendor-1')
+          .firstWhere((t) => t.isNotEmpty);
+      expect(tasks.map((t) => t.id), ['a']);
+    });
+
+    test('narrowing access drops the rows already mirrored', () async {
+      await seed();
+      await repository
+          .watchTasksByEventId('event-1')
+          .firstWhere((t) => t.length == 2);
+      await repository
+          .watchTasksByEventId('event-1', assigneeId: 'vendor-1')
+          .firstWhere((t) => t.length == 1);
+      await pumpEventQueue();
+      final rows = await TasksDao(db).tasksByEventId('event-1');
+      expect(rows.map((r) => r.id), ['a']);
+      await repository.dispose();
+    });
+  });
 }

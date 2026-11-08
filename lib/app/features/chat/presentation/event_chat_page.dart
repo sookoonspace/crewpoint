@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/core/services/callable_errors.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
@@ -134,6 +135,14 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
     final uid = auth is Authenticated ? auth.user.uid : null;
     if (uid == null) {
       return const Scaffold(body: Center(child: Text('Sign in required')));
+    }
+    // Reading chat needs `chat.send`, so a Vendor or Observer opening the
+    // link sees why (Req 32).
+    if (!widget.event.readsChat(uid)) {
+      return Scaffold(
+        appBar: AppBar(title: Text(widget.event.title), elevation: 0),
+        body: const NoAccessView(),
+      );
     }
 
     final asyncMessages = ref.watch(chatMessagesProvider(widget.event.id));

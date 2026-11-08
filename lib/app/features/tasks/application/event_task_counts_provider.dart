@@ -26,12 +26,16 @@ final eventTaskCountsProvider =
       ref,
       eventId,
     ) {
+      // A Vendor or Observer counts only tasks assigned to them (Req 32).
+      final assigneeId = ref.watch(taskReadScopeProvider(eventId));
       if (kIsWeb) {
         final repo = ref.watch(taskRepositoryProvider);
-        return repo.watchTasksByEventId(eventId).map(_countByStatus);
+        return repo
+            .watchTasksByEventId(eventId, assigneeId: assigneeId)
+            .map(_countByStatus);
       }
       final dao = TasksDao(ref.watch(databaseProvider));
-      return dao.watchCountsByEventId(eventId);
+      return dao.watchCountsByEventId(eventId, assigneeId: assigneeId);
     });
 
 /// Mirrors `TasksDao.watchCountsByEventId`'s tally so both platforms report

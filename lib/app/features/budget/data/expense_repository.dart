@@ -40,39 +40,86 @@ class ExpenseRepository implements IExpenseRepository {
   final Map<String, StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>
   _firestoreSubs = {};
 
+  /// Whom each event's mirror is limited to, or null for all expenses.
+  final Map<String, String?> _mirrorScopes = {};
+
   CollectionReference<Map<String, dynamic>> _expensesRef(String eventId) =>
       _firestore.collection('events').doc(eventId).collection('expenses');
 
+  /// The expenses a reader may list. A Vendor or Observer must query with
+  /// `involvedUids array-contains`, because rules refuse a query that could
+  /// return an expense they cannot read (Req 32).
+  Query<Map<String, dynamic>> _expensesQuery(
+    String eventId,
+    String? involving,
+  ) => involving == null
+      ? _expensesRef(eventId)
+      : _expensesRef(eventId).where('involvedUids', arrayContains: involving);
+
+  static bool _involves(ExpenseModel e, String uid) =>
+      e.payerId == uid || e.splits.any((s) => s.userId == uid);
+
   @override
-  Stream<List<ExpenseModel>> watchExpensesByEventId(String eventId) {
+  Stream<List<ExpenseModel>> watchExpensesByEventId(
+    String eventId, {
+    String? involving,
+  }) {
     // Web has no Drift persistence (Wasm is in-memory) and the empty-table
     // watch on Wasm Drift does not reliably emit its first frame. Match
     // `EventRepository.watchEventsForUser`'s web fork: read straight from
     // Firestore. `_fromFirestore` parses the inline splits array, so no
     // subcollection follow-up is needed.
     if (kIsWeb) {
-      return _expensesRef(eventId).snapshots().map(
+      return _expensesQuery(eventId, involving).snapshots().map(
         (snap) => snap.docs
             .map((doc) => _fromFirestore(doc.id, eventId, doc.data()))
             .toList(),
       );
     }
-    _ensureFirestoreMirror(eventId);
-    return _expensesDao.watchExpensesByEventId(eventId).asyncMap(_hydrateRows);
+    _ensureFirestoreMirror(eventId, involving);
+    final rows = _expensesDao
+        .watchExpensesByEventId(eventId)
+        .asyncMap(_hydrateRows);
+    if (involving == null) return rows;
+    // Rows mirrored before access narrowed stay hidden until the mirror
+    // deletes them.
+    return rows.map(
+      (all) => [
+        for (final e in all)
+          if (_involves(e, involving)) e,
+      ],
+    );
   }
 
-  void _ensureFirestoreMirror(String eventId) {
-    if (_firestoreSubs.containsKey(eventId)) return;
-    _firestoreSubs[eventId] = _expensesRef(eventId).snapshots().listen(
-      (snap) {
-        _mirrorSnapshot(eventId, snap).catchError((Object e, StackTrace st) {
-          log('Mirror failed', error: e, stackTrace: st, name: 'budget');
-        });
-      },
-      onError: (Object e, StackTrace st) {
-        log('Firestore stream error', error: e, stackTrace: st, name: 'budget');
-      },
-    );
+  /// Starts the event's mirror, or restarts it when the reader's access
+  /// changed. A narrower mirror deletes the rows it no longer returns.
+  void _ensureFirestoreMirror(String eventId, String? involving) {
+    if (_firestoreSubs.containsKey(eventId) &&
+        _mirrorScopes[eventId] == involving) {
+      return;
+    }
+    _firestoreSubs.remove(eventId)?.cancel();
+    _mirrorScopes[eventId] = involving;
+    _firestoreSubs[eventId] = _expensesQuery(eventId, involving)
+        .snapshots()
+        .listen(
+          (snap) {
+            _mirrorSnapshot(eventId, snap).catchError((
+              Object e,
+              StackTrace st,
+            ) {
+              log('Mirror failed', error: e, stackTrace: st, name: 'budget');
+            });
+          },
+          onError: (Object e, StackTrace st) {
+            log(
+              'Firestore stream error',
+              error: e,
+              stackTrace: st,
+              name: 'budget',
+            );
+          },
+        );
   }
 
   Future<void> _mirrorSnapshot(
@@ -96,6 +143,7 @@ class ExpenseRepository implements IExpenseRepository {
 
   void disposeMirror(String eventId) {
     _firestoreSubs.remove(eventId)?.cancel();
+    _mirrorScopes.remove(eventId);
   }
 
   Future<void> dispose() async {
