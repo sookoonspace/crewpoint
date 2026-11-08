@@ -6,7 +6,9 @@
  * that event can read, and `users/{uid}` is readable only by its owner.
  */
 import {RulesTestEnvironment, assertFails, assertSucceeds} from '@firebase/rules-unit-testing';
-import {deleteDoc, doc, getDoc, getDocs, collection, setDoc, updateDoc} from 'firebase/firestore';
+import {
+  collection, deleteDoc, doc, getDoc, getDocs, setDoc, updateDoc, writeBatch,
+} from 'firebase/firestore';
 import {getTestEnv} from './setup';
 import {computePermissions} from '../src/events/permissions';
 
@@ -66,6 +68,14 @@ describe('task budget figures (Req 36)', () => {
     await assertSucceeds(write('finance'));
     await assertFails(write('plain'));
     await assertFails(write('owner', 'missing'));
+  });
+
+  test('a new task and its figure can be saved together', async () => {
+    const db = as('finance');
+    const batch = writeBatch(db);
+    batch.set(doc(db, `${E}/tasks/t9`), {eventId: 'fest', title: 'Stage', createdBy: 'finance', status: 'todo'});
+    batch.set(doc(db, `${E}/taskBudgets/t9`), {estimate: 900, updatedBy: 'finance'});
+    await assertSucceeds(batch.commit());
   });
 
   test('a figure is a number of zero or more, written by the person setting it', async () => {

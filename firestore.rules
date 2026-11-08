@@ -298,7 +298,8 @@ service cloud.firestore {
         allow create, update: if request.auth != null
           && can(eventId, 'budget.edit')
           && tasksAreOpen(eventId)
-          && exists(/databases/$(database)/documents/events/$(eventId)/tasks/$(taskId))
+          // After the write, so a new task and its figure save together.
+          && existsAfter(/databases/$(database)/documents/events/$(eventId)/tasks/$(taskId))
           && request.resource.data.keys().hasOnly(['estimate', 'updatedBy', 'updatedAt'])
           && request.resource.data.estimate is number
           && request.resource.data.estimate >= 0
