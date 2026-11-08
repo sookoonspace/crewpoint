@@ -18,7 +18,7 @@ By signing in to CrewPoint, you agree to these Terms of Service and the [Privacy
 
 ## 2. Account requirements
 
-- You must be **13 years of age or older** to use CrewPoint. Counsel may raise this to 16.
+- You must be **13 years of age or older** to create a CrewPoint account, or older where your local law requires it. Children may take part in events without an account, with their details entered by a parent, guardian or permitted organizer, as the Privacy Policy describes. Counsel may raise the age to 16.
 - Provide accurate information at sign-up. You can edit your display name and payment handles at any time.
 - You are responsible for activity on your account. If you suspect unauthorized access, contact **support@sookoon.space**.
 

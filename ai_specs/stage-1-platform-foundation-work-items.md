@@ -1009,11 +1009,11 @@ Update the privacy policy for children and for Canada, regenerate the hosted pag
 - Open Question 3: the owner arranges the lawyer before prod. This does not block development.
 
 ### Acceptance criteria
-- [ ] `assets/legal/privacy-policy.md` is updated for children and for Canada.
-- [ ] Hosted pages are regenerated.
-- [ ] `ai_specs/todo.md` has this TODO: a lawyer must approve this policy before the platform work in this spec moves to prod, including the migration in Req 34.
-- [ ] Development and testing on dev and stg carry on without waiting, and the operations work in 1.10 is not affected.
-- [ ] Tests for scenarios Z-01, Z-04 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `assets/legal/privacy-policy.md` is updated for children and for Canada.
+- [x] Hosted pages are regenerated.
+- [x] `ai_specs/todo.md` has this TODO: a lawyer must approve this policy before the platform work in this spec moves to prod, including the migration in Req 34.
+- [x] Development and testing on dev and stg carry on without waiting, and the operations work in 1.10 is not affected.
+- [x] Tests for scenarios Z-01, Z-04 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
 
 ### Covers
 - Requirements: 39

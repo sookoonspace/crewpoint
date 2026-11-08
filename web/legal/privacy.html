@@ -69,11 +69,11 @@
 
 <h1>CrewPoint Privacy Policy</h1>
 <p><strong>Effective:</strong> TBD  •  <strong>Last updated:</strong> TBD</p>
-<p>This is a V1 counsel-pending draft. The &quot;Minimum Viable Data&quot; ethos is the spine of how we treat your information. Plain language first; legal precision second.</p>
+<p>This is a counsel-pending draft (version 1.1, adding children and Canada). It is not in force until a lawyer has approved it. The &quot;Minimum Viable Data&quot; ethos is the spine of how we treat your information. Plain language first; legal precision second.</p>
 <h2>Who we are</h2>
 <p>CrewPoint is operated by <strong>Sookoon</strong> (the &quot;Company&quot;, &quot;we&quot;, &quot;our&quot;, &quot;us&quot;). For privacy questions or to exercise the rights in this policy, contact <strong><a href="mailto:privacy@sookoon.space">privacy@sookoon.space</a></strong>.</p>
 <h2>What this policy covers</h2>
-<p>Your use of the CrewPoint mobile and web apps. The hosted versions of this document and our Terms of Service live at <code>https://crewpoint.sookoon.space/privacy</code> and <code>/terms</code>.</p>
+<p>Your use of the CrewPoint mobile and web apps, and the information organizers enter about the people attending their events, including people who have no CrewPoint account. The hosted versions of this document and our Terms of Service live at <code>https://crewpoint.sookoon.space/privacy</code> and <code>/terms</code>.</p>
 <h2>Minimum Viable Data — our promise</h2>
 <ul>
 <li><strong>We don't sell your data.</strong> Not to advertisers, not to data brokers, not to &quot;marketing partners&quot;. Ever.</li>
@@ -85,10 +85,17 @@
 <ul>
 <li><strong>Account identity</strong> (Firebase Authentication): user ID, email address, sign-in provider IDs (<code>password</code>, <code>google.com</code>, <code>apple.com</code>), display name, profile photo URL.</li>
 <li><strong>Event-domain content</strong>: events you create or join, messages, tasks (titles, assignees, status), expenses (amount, payer, splits), receipt image uploads.</li>
+<li><strong>Your role in each event</strong>: the roles an organizer gives you (such as Admin, Finance or Volunteer), the crews you are in, and when you joined.</li>
+<li><strong>Payment handles you choose to add</strong> (such as a Venmo or Cash App name), so people you share an event with can pay you back.</li>
 <li><strong>Device tokens</strong>: Firebase Cloud Messaging (FCM) registration tokens used to deliver push notifications. Stored in a self-only subcollection of your user document.</li>
-<li><strong>Preferences</strong>: currency, opt-in flags. Stored in the same self-only subcollection.</li>
+<li><strong>Preferences</strong>: currency, time zone, notification choices and opt-in flags. Stored in the same self-only subcollection.</li>
 </ul>
-<p>We do <strong>not</strong> collect: phone numbers (unless you choose to share one as a payment handle), physical address, birthday, demographics, advertising IDs, contacts, social graph, location, or browsing history.</p>
+<h3>Information organizers enter about attendees</h3>
+<p>An event's organizers can record the people attending, whether or not they have a CrewPoint account: names, the group they belong to (such as a household or team), arrival and departure times, and any extra questions the organizer chooses to ask, such as dietary needs. Organizers decide what they ask for. We ask them to collect only what the event needs, and to tell attendees why. Details an organizer marks as private are stored separately and shown only to people whose role has permission to see them.</p>
+<blockquote>
+<p>Counsel to confirm how the roles of organizer and CrewPoint are described for attendee data (for example, controller and processor under the GDPR).</p>
+</blockquote>
+<p>We do <strong>not</strong> collect, for your own account: phone numbers (unless you choose to share one as a payment handle), physical address, birthday, demographics, advertising IDs, contacts, social graph, location, or browsing history. An organizer may ask attendees for some of these for their event; see <em>Information organizers enter about attendees</em> above.</p>
 <h2>How we use your data</h2>
 <p>Only to operate the CrewPoint service. Specifically:</p>
 <ol>
@@ -96,10 +103,18 @@
 <li>Display the events, messages, tasks, and expenses you and your groups create.</li>
 <li>Deliver push notifications for urgent in-event activity.</li>
 <li>Settle balances within your groups using the payment handles you choose to share.</li>
+<li>Show each person in an event only what their role allows (see <em>Who can see what</em> below).</li>
 </ol>
 <p>We do not use your data to train external AI/ML models. We do not share your data with third parties for their own marketing purposes. The third-party services we depend on to deliver CrewPoint are listed under <em>Third-party services</em> below.</p>
+<h2>Who can see what</h2>
+<ul>
+<li><strong>Your name, photo and payment handles</strong> are visible only to people who share an event with you, and only in that event. If you leave an event, people in it still see your name on things you wrote or paid for, but no longer see your payment handles.</li>
+<li><strong>Event details</strong> such as tasks, expenses and chat are visible according to the roles the event's organizers give people. For example, a Vendor sees only their own tasks and payments.</li>
+<li><strong>Expenses</strong>: an event's organizers choose who can see every expense: everyone in the event, only the people involved in each expense, or selected roles and people. Whatever they choose, you always see the expenses you paid for or share in, and your own balance.</li>
+<li><strong>Task budgets</strong> are visible only to roles that can read the event's budget.</li>
+</ul>
 <h2>Your rights</h2>
-<h3>Under the GDPR (EU/EEA/UK)</h3>
+<h3>Under the GDPR (EU/EEA) and the UK GDPR</h3>
 <ul>
 <li><strong>Right to access</strong> (Art. 15) — request a copy of your data.</li>
 <li><strong>Right to rectification</strong> (Art. 16) — correct inaccurate data.</li>
@@ -108,7 +123,21 @@
 <li><strong>Right to restriction</strong> (Art. 18) and <strong>objection</strong> (Art. 21) — limit or stop specific processing activities.</li>
 <li><strong>Automated decision-making opt-out</strong> (Art. 22) — we don't currently make automated decisions that produce legal effects, but you may opt out of any future ones.</li>
 </ul>
-<p>To exercise any of these, email <strong><a href="mailto:privacy@sookoon.space">privacy@sookoon.space</a></strong> from the email address attached to your account.</p>
+<p>To exercise any of these, email <strong><a href="mailto:privacy@sookoon.space">privacy@sookoon.space</a></strong> from the email address attached to your account. UK users may also complain to the Information Commissioner's Office (ico.org.uk).</p>
+<h3>Under Canadian privacy law</h3>
+<p>If you are in Canada, the Personal Information Protection and Electronic Documents Act (PIPEDA) and, where they apply, provincial laws such as Quebec's Law 25 and the private-sector privacy laws of Alberta and British Columbia give you these rights:</p>
+<ul>
+<li><strong>Access</strong> — ask what personal information we hold about you and how it has been used and shared.</li>
+<li><strong>Correction</strong> — ask us to correct information that is inaccurate or incomplete.</li>
+<li><strong>Withdraw consent</strong> — withdraw your consent to our use of your information at any time, subject to legal or contractual limits. Withdrawing may mean we can no longer provide parts of CrewPoint, and we will tell you what that means for you.</li>
+<li><strong>Deletion</strong> — delete your account; see <em>Account deletion</em> below.</li>
+<li><strong>In Quebec</strong>, you may also ask for your information in a structured, commonly used technological format, and to be informed of and object to decisions made only by automated processing. We do not make such decisions.</li>
+</ul>
+<p><strong>Cross-border storage.</strong> CrewPoint stores data in the United States (see <em>Data residency</em>). While it is there, it is subject to the laws of the United States, and may be accessible to courts, law enforcement and national security authorities there.</p>
+<p>Our privacy contact is <strong><a href="mailto:privacy@sookoon.space">privacy@sookoon.space</a></strong>. We answer requests within 30 days. If you are not satisfied with our response, you may complain to the Office of the Privacy Commissioner of Canada (priv.gc.ca), or to your provincial commissioner, such as the Commission d'accès à l'information du Québec.</p>
+<blockquote>
+<p>Counsel to confirm the person in charge of the protection of personal information that Quebec's Law 25 requires us to name, and whether a privacy impact assessment is needed for storing Quebec residents' data outside Quebec.</p>
+</blockquote>
 <h3>Under the CCPA (California)</h3>
 <ul>
 <li><strong>Right to know</strong> what personal information we collect, use, and disclose.</li>
@@ -120,8 +149,10 @@
 <p>When you delete your CrewPoint account from <strong>Profile → Delete Account</strong>, we run a server-side process that:</p>
 <ol>
 <li><strong>Solo events</strong> (events where you are the only member) are permanently deleted, including all messages, tasks, expenses, and receipts.</li>
-<li><strong>Shared events</strong> (events with other members) survive. Your name and account ID are replaced with <code>deleted_user</code> in messages, expenses, and task assignments. Ownership is transferred to the first remaining admin (or, if none, the first remaining member).</li>
-<li>Your profile data (public projection) and your private subdocument (email, FCM tokens, preferences) are deleted.</li>
+<li><strong>Shared events</strong> (events with other members) survive. In each one, your account ID is replaced with an anonymous ID in messages, expenses, splits and tasks, so the group's balances still add up. A different anonymous ID is used in each event, and two people who delete their accounts are never merged. Tasks assigned to you become unassigned.</li>
+<li>If you <strong>own</strong> a shared event, ownership passes automatically to a Co-owner, or else to the longest-standing Admin, or else to the longest-standing member.</li>
+<li>Your membership, roles, and your name, photo and payment handles in every event are deleted, as are your profile, your private subdocument (email, FCM tokens, preferences), and your chat read and notification settings.</li>
+<li><strong>Children you entered</strong> into an event are deleted with your account, unless another linked adult remains in their group.</li>
 <li>Files in your storage folder (profile photo, etc.) are deleted.</li>
 <li>Your Firebase Authentication account is deleted last.</li>
 </ol>
@@ -135,9 +166,20 @@
 <li><strong>Profile photos and storage files</strong>: deleted on account deletion.</li>
 </ul>
 <h2>Children</h2>
-<p>CrewPoint is intended for users 13 years of age or older. We do not knowingly collect data from children under 13. If you believe a child under 13 has created a CrewPoint account, contact <strong><a href="mailto:privacy@sookoon.space">privacy@sookoon.space</a></strong> and we will delete the account.</p>
+<p><strong>Accounts.</strong> You must be 13 or older to create a CrewPoint account, or older where the law where you live requires it (for example, 14 in Quebec, and up to 16 in some EU countries). We do not knowingly let a child below that age create an account. If you believe one has, contact <strong><a href="mailto:privacy@sookoon.space">privacy@sookoon.space</a></strong> and we will delete it.</p>
 <blockquote>
-<p>Counsel may move this floor to 16 to align with the GDPR's strictest interpretation. To be confirmed at counsel review.</p>
+<p>Counsel to confirm these ages for each country we serve, and whether to raise the floor to 16 everywhere.</p>
+</blockquote>
+<p><strong>Children at events.</strong> Many events include children, such as a convention registering a household with young children. Children do not have CrewPoint accounts. Their details can be entered only by:</p>
+<ul>
+<li>a <strong>parent or guardian</strong> linked to the child's group in the event, or</li>
+<li>an <strong>organizer</strong> whose role has permission to manage the event's attendees.</li>
+</ul>
+<p>The person entering a child's details is responsible for having the right to do so. Organizers should collect only what the event needs, such as a name, an age or age group, and dietary or medical needs that keep the child safe.</p>
+<p><strong>Who sees a child's details.</strong> A child's birth date, and any detail the organizer marks as private, are shown only to people whose role has permission to read private attendee details. Event reports and counts show age bands, such as &quot;child&quot; or &quot;adult&quot;, rather than birth dates. Volunteers and committee members see only what their role allows.</p>
+<p><strong>Parents' choices.</strong> A parent or guardian can ask the event's organizers, or us at <strong><a href="mailto:privacy@sookoon.space">privacy@sookoon.space</a></strong>, to see, correct or delete their child's details. When a parent or guardian deletes their account, the children they entered are deleted too, unless another linked adult remains in the child's group. We never use children's details for advertising, profiling or anything other than running the event.</p>
+<blockquote>
+<p>Counsel to review this section against COPPA (where it applies), the GDPR and UK Age Appropriate Design Code, and Canadian guidance on minors' information, including whether a parent's consent must be recorded when a child's details are entered.</p>
 </blockquote>
 <h2>Data residency</h2>
 <p>CrewPoint runs on Google Firebase. Default region is <code>us-central1</code> (Iowa, USA). If we add additional regions or migrate to a new default, this policy will be updated and you will be notified in-app at least 30 days before the move.</p>
@@ -145,7 +187,7 @@
 <ul>
 <li>Firebase Authentication for sign-in. We never see or store your password — Google does, hashed and salted.</li>
 <li>TLS 1.2+ in transit. Encryption at rest is provided by Google Cloud Platform.</li>
-<li>Per-document Firestore security rules gate every read and write. PII (email, FCM tokens, preferences) lives in a self-only subcollection that no other CrewPoint user can read.</li>
+<li>Per-document Firestore security rules gate every read and write, following each person's role in each event. PII (email, FCM tokens, preferences) lives in a self-only subcollection that no other CrewPoint user can read. Money figures and attendees' private details are kept in separate records that only permitted roles can read.</li>
 <li>Cloud Functions use the Firebase Admin SDK and run in an isolated environment.</li>
 </ul>
 <p>We do <strong>not</strong> offer end-to-end encryption for chat messages in V1. Server-side admins have technical access to message contents. E2EE is on the roadmap but not part of V1; we'll update this policy before it ships.</p>
@@ -161,7 +203,7 @@
 <p>We will publish material changes both in-app (via a notice the next time you open the app) and via email to the address attached to your account, at least 30 days before the change takes effect. Minor wording or formatting changes will be reflected in the <code>last_updated</code> field above without separate notice.</p>
 <h2>Contact</h2>
 <p>Questions? Concerns? Rights requests? <strong><a href="mailto:privacy@sookoon.space">privacy@sookoon.space</a></strong>.</p>
-<p>If you are an EU/EEA/UK user and feel your concern was not adequately addressed, you may contact your local data protection authority.</p>
+<p>If you feel your concern was not adequately addressed, you may contact your local data protection authority: in the EU/EEA, your national authority; in the UK, the Information Commissioner's Office; in Canada, the Office of the Privacy Commissioner of Canada or your provincial commissioner.</p>
 
 <p class="footer">
 &copy; Sookoon. CrewPoint Privacy Policy + Terms of Service are also bundled inside the app under <em>Profile → Privacy Dashboard → Legal Documents</em>.

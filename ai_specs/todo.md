@@ -9,7 +9,7 @@ Triaged against the code on 2026-11-03 (#47):
 - ~~Struck through~~: built, with where to find it.
 
 ## Required before moving to prod
-- **Lawyer approval of the privacy policy** (`assets/legal/privacy-policy.md`). The updated policy must cover children, since events can register young participants, and Canada. Today it says CrewPoint is for ages 13 and up. Do not move the platform work in #44 to prod until this is approved. Owner: to be arranged by the product owner. Added 2026-11-03.
+- **Lawyer approval of the privacy policy** (`docs/legal/privacy-policy.md`, built into `assets/legal/` and `web/legal/` by `scripts/build_legal_html.dart`). TODO before prod: a lawyer must approve this policy before the platform work in this spec (#44) moves to prod, including the migration in Req 34. Version 1.1 (#74) covers children, who have no accounts and are entered only by a parent, guardian or permitted organizer, and Canada (PIPEDA, Quebec's Law 25, cross-border storage). The `> Counsel to confirm…` notes in the policy list what the lawyer needs to decide, including the minimum account age. Development and testing on dev and stg carry on without waiting, and the operations work in 1.10 is not affected. Owner: to be arranged by the product owner. Added 2026-11-03, updated 2026-11-08.
 
 ## Permissions cutover follow-up
 - `[Stage 1]` **Remove the `memberIds` and `adminIds` arrays**, after a stable period on member documents (Req 34, step 6), and on prod once the lawyer approves. Before removing them:
