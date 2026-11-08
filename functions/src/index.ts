@@ -19,6 +19,7 @@ export {saveExpense} from "./events/saveExpense";
 export {recordSettlement} from "./events/recordSettlement";
 export {changeEventCurrency} from "./events/changeEventCurrency";
 export {setMemberRoles, saveEventRole, deleteEventRole} from "./events/roles";
+export {saveCrew, setCrewMembers, deleteCrew} from "./events/crews";
 export {disputeSettlement} from "./events/disputeSettlement";
 export {onUrgentMessageCreated} from "./events/onUrgentMessageCreated";
 export {onTaskAssigned} from "./events/onTaskAssigned";

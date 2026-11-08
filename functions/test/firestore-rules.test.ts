@@ -477,6 +477,48 @@ describe('members and roles — read by members, written only by the server', ()
   });
 });
 
+describe('crews — read by members, written only by the server, and task crews (Req 33, 72)', () => {
+  const E = 'events/evtCR';
+  const as = (uid: string) => env.authenticatedContext(uid).firestore();
+  const task = (over: object = {}) => ({
+    eventId: 'evtCR', createdBy: 'm', title: 'Caterer', status: 'todo', ...over,
+  });
+
+  const seed = () =>
+    env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, E), {
+        creatorId: 'owner', adminIds: ['owner'], memberIds: ['owner', 'm'], status: 'published',
+      });
+      await setDoc(doc(db, `${E}/crews/food`), {name: 'Food'});
+      await setDoc(doc(db, `${E}/tasks/t1`), task({crewId: 'gone'}));
+    });
+
+  test('members read crews, outsiders cannot, and nobody writes them directly', async () => {
+    await seed();
+    await assertSucceeds(getDoc(doc(as('m'), `${E}/crews/food`)));
+    await assertFails(getDoc(doc(as('x'), `${E}/crews/food`)));
+    await assertFails(setDoc(doc(as('owner'), `${E}/crews/new`), {name: 'New'}));
+    await assertFails(updateDoc(doc(as('owner'), `${E}/crews/food`), {name: 'X'}));
+  });
+
+  test('a task may name a crew that exists, or none', async () => {
+    await seed();
+    await assertSucceeds(setDoc(doc(as('m'), `${E}/tasks/a`), task({crewId: 'food'})));
+    await assertSucceeds(setDoc(doc(as('m'), `${E}/tasks/b`), task({crewId: null})));
+    await assertSucceeds(setDoc(doc(as('m'), `${E}/tasks/c`), task()));
+    await assertFails(setDoc(doc(as('m'), `${E}/tasks/d`), task({crewId: 'nope'})));
+    await assertFails(setDoc(doc(as('m'), `${E}/tasks/e`), task({crewId: 7})));
+  });
+
+  test('a task keeps a crew it already had while that crew is being deleted', async () => {
+    await seed();
+    await assertSucceeds(updateDoc(doc(as('m'), `${E}/tasks/t1`), {title: 'Edited'}));
+    await assertFails(updateDoc(doc(as('m'), `${E}/tasks/t1`), {crewId: 'other'}));
+    await assertSucceeds(updateDoc(doc(as('m'), `${E}/tasks/t1`), {crewId: 'food'}));
+  });
+});
+
 describe('config/app — public read, no client write', () => {
   const C = 'config/app';
   const seed = () =>
