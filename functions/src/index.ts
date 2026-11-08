@@ -28,6 +28,7 @@ export {onExpenseCreated} from "./events/onExpenseCreated";
 export {onSettlementDisputed} from "./events/onSettlementDisputed";
 export {onMemberJoined} from "./events/onMemberJoined";
 export {onMemberProfileSync, onUserProfileSync} from "./events/profiles";
+export {saveGroup, setGroupAdults, deleteGroup} from "./events/groups";
 export {onTaskDueScheduled} from "./events/onTaskDueScheduled";
 export {onEventStatusScheduled} from "./events/onEventStatusScheduled";
 export {onDigestSummary} from "./events/onDigestSummary";

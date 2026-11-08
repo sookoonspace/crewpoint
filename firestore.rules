@@ -37,6 +37,21 @@ service cloud.firestore {
         || task.get('assigneeId', null) == request.auth.uid;
     }
 
+    // Whether the caller is a linked adult of [groupId] (Req 26b), from the
+    // group IDs on their member document.
+    function inMyGroup(eventId, groupId) {
+      return groupId != null
+        && isEventMember(eventId)
+        && groupId in get(memberPath(eventId)).data.get('groupIds', []);
+    }
+
+    // Adding or editing a participant, children included: `participants.edit`,
+    // or a linked adult for their own group (Req 40).
+    function editsParticipant(eventId, groupId) {
+      return can(eventId, 'participants.edit')
+        || (can(eventId, 'group.editOwn') && inMyGroup(eventId, groupId));
+    }
+
     function eventData(eventId) {
       return get(/databases/$(database)/documents/events/$(eventId)).data;
     }
@@ -319,6 +334,86 @@ service cloud.firestore {
         allow delete: if request.auth != null
           && can(eventId, 'budget.edit')
           && tasksAreOpen(eventId);
+      }
+
+      // Groups of participants (Req 40). The roster needs
+      // `participants.read`, and a linked adult reads their own group. The
+      // saveGroup, setGroupAdults and deleteGroup callables write them.
+      match /groups/{groupId} {
+        allow read: if request.auth != null
+          && (can(eventId, 'participants.read') || inMyGroup(eventId, groupId));
+        allow write: if false;
+      }
+
+      // People attending, with or without an account, children included (Req
+      // 40, 43). Rosters are online and paged. Someone who may only see their
+      // own group must list with `groupId in` their group IDs. `uid` (a
+      // linked account) and `externalId` (an import's ID) are set by the
+      // server only.
+      match /participants/{participantId} {
+        allow read: if request.auth != null
+          && (can(eventId, 'participants.read')
+              || inMyGroup(eventId, resource.data.get('groupId', null)));
+
+        function validParticipant() {
+          let d = request.resource.data;
+          let groupId = d.get('groupId', null);
+          return d.keys().hasOnly(['name', 'sortName', 'groupId', 'isChild', 'status',
+                                   'createdBy', 'createdAt', 'updatedAt', 'uid', 'externalId'])
+            && d.name is string && d.name.size() > 0 && d.name.size() <= 120
+            && d.sortName == d.name.lower()
+            && d.isChild is bool
+            && d.get('status', 'active') in ['active', 'cancelled']
+            && (groupId == null
+                || (groupId is string
+                    && exists(/databases/$(database)/documents/events/$(eventId)/groups/$(groupId))));
+        }
+
+        allow create: if request.auth != null
+          && isNotArchived(eventId)
+          && editsParticipant(eventId, request.resource.data.get('groupId', null))
+          && validParticipant()
+          && request.resource.data.createdBy == request.auth.uid
+          && !('uid' in request.resource.data)
+          && !('externalId' in request.resource.data);
+
+        // Both the group it was in and the one it goes to must be editable,
+        // so a linked adult cannot move someone out of their group.
+        allow update: if request.auth != null
+          && isNotArchived(eventId)
+          && editsParticipant(eventId, resource.data.get('groupId', null))
+          && editsParticipant(eventId, request.resource.data.get('groupId', null))
+          && validParticipant()
+          && fieldUnchanged('createdBy')
+          && fieldUnchanged('uid')
+          && fieldUnchanged('externalId');
+
+        allow delete: if request.auth != null
+          && isNotArchived(eventId)
+          && editsParticipant(eventId, resource.data.get('groupId', null));
+
+        // Private details, such as a birth date (Z-01): read with
+        // `participants.readPrivate` or by the group's linked adults, and
+        // written by whoever may edit the person. #76 adds private fields.
+        match /private/{docId} {
+          function personGroup() {
+            return get(/databases/$(database)/documents/events/$(eventId)/participants/$(participantId))
+              .data.get('groupId', null);
+          }
+
+          allow read: if request.auth != null
+            && (can(eventId, 'participants.readPrivate')
+                || inMyGroup(eventId, personGroup()));
+
+          allow write: if request.auth != null
+            && isNotArchived(eventId)
+            && editsParticipant(eventId, personGroup())
+            && (request.resource == null
+                || (request.resource.data.keys().hasOnly(['birthDate', 'updatedAt'])
+                    && (request.resource.data.get('birthDate', null) == null
+                        || (request.resource.data.birthDate is string
+                            && request.resource.data.birthDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')))));
+        }
       }
 
       // Names and payment handles of people in the event (Req 37), copied
