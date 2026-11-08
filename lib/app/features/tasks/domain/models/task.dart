@@ -16,6 +16,7 @@ class TaskModel {
     this.completedAt,
     this.completedBy,
     this.budgetEstimate,
+    this.crewId,
     this.checklistItems = const [],
   });
 
@@ -35,6 +36,9 @@ class TaskModel {
   /// `null` = unspecified; `0` = explicitly zero ("TBD / free"). Non-negative
   /// when set.
   final double? budgetEstimate;
+
+  /// The crew this task belongs to (Req 72), or null.
+  final String? crewId;
   final List<ChecklistItem> checklistItems;
 
   TaskModel copyWith({
@@ -49,6 +53,8 @@ class TaskModel {
     String? completedBy,
     double? budgetEstimate,
     bool clearBudgetEstimate = false,
+    String? crewId,
+    bool clearCrewId = false,
     List<ChecklistItem>? checklistItems,
   }) {
     return TaskModel(
@@ -66,6 +72,7 @@ class TaskModel {
       budgetEstimate: clearBudgetEstimate
           ? null
           : (budgetEstimate ?? this.budgetEstimate),
+      crewId: clearCrewId ? null : (crewId ?? this.crewId),
       checklistItems: checklistItems ?? this.checklistItems,
     );
   }
@@ -97,7 +104,7 @@ class TaskModel {
   ///   grapheme-aware `characters.take(113)` so emoji aren't split and
   ///   the final string stays ≤ 120 chars.
   /// - `description`, `assigneeId`, `dueDate`, `priority`, `budgetEstimate`
-  ///   preserved.
+  ///   and `crewId` preserved.
   /// - `createdBy` becomes `currentUserId` (the user spawning the copy).
   /// - Status resets to `todo`; `completedAt` / `completedBy` cleared.
   /// - Each checklist item gets a fresh UUID; text + completion +
@@ -119,6 +126,7 @@ class TaskModel {
       priority: priority,
       dueDate: dueDate,
       budgetEstimate: budgetEstimate,
+      crewId: crewId,
       checklistItems: [
         for (final item in checklist)
           ChecklistItem(

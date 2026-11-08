@@ -41,6 +41,13 @@ class RolesRobot {
     await settle();
   }
 
+  /// Lets a page transition, and any hero flight in it, finish before the
+  /// next tap lands.
+  Future<void> finishTransition() async {
+    await tester.pump(const Duration(milliseconds: 600));
+    await settle();
+  }
+
   /// Unmounts the app, so no stream or snackbar timer outlives the test.
   Future<void> finish() async {
     await tester.pumpWidget(const SizedBox.shrink());

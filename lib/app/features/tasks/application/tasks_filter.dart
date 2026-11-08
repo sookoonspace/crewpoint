@@ -18,9 +18,9 @@ DateTime startOfDay(DateTime d) => DateTime(d.year, d.month, d.day);
 /// `created` descending (newest first), `title` ascending.
 enum TasksSortKey { dueDate, priority, created, title }
 
-/// Grouping presentation: status (default), assignee, or due-window
-/// (Overdue / Today / This week / Later / No due date).
-enum TasksGroupBy { status, assignee, dueWindow }
+/// Grouping presentation: status (default), assignee, due-window
+/// (Overdue / Today / This week / Later / No due date), or crew.
+enum TasksGroupBy { status, assignee, dueWindow, crew }
 
 /// User-driven Tasks-screen state. Session-only (not persisted in V1).
 class TasksFilter {
@@ -29,6 +29,7 @@ class TasksFilter {
     this.onlyMine = false,
     this.onlyOverdue = false,
     this.onlyWithBudget = false,
+    this.crewId,
     this.query = '',
     this.sortKey = TasksSortKey.dueDate,
     this.groupBy = TasksGroupBy.status,
@@ -38,6 +39,9 @@ class TasksFilter {
   final bool onlyMine;
   final bool onlyOverdue;
   final bool onlyWithBudget;
+
+  /// Only this crew's tasks (Req 72), or null for every crew.
+  final String? crewId;
   final String query;
   final TasksSortKey sortKey;
   final TasksGroupBy groupBy;
@@ -50,6 +54,7 @@ class TasksFilter {
       onlyMine ||
       onlyOverdue ||
       onlyWithBudget ||
+      crewId != null ||
       query.isNotEmpty;
 
   TasksFilter copyWith({
@@ -57,6 +62,8 @@ class TasksFilter {
     bool? onlyMine,
     bool? onlyOverdue,
     bool? onlyWithBudget,
+    String? crewId,
+    bool clearCrewId = false,
     String? query,
     TasksSortKey? sortKey,
     TasksGroupBy? groupBy,
@@ -66,6 +73,7 @@ class TasksFilter {
       onlyMine: onlyMine ?? this.onlyMine,
       onlyOverdue: onlyOverdue ?? this.onlyOverdue,
       onlyWithBudget: onlyWithBudget ?? this.onlyWithBudget,
+      crewId: clearCrewId ? null : (crewId ?? this.crewId),
       query: query ?? this.query,
       sortKey: sortKey ?? this.sortKey,
       groupBy: groupBy ?? this.groupBy,
@@ -80,6 +88,7 @@ class TasksFilter {
         other.onlyMine == onlyMine &&
         other.onlyOverdue == onlyOverdue &&
         other.onlyWithBudget == onlyWithBudget &&
+        other.crewId == crewId &&
         other.query == query &&
         other.sortKey == sortKey &&
         other.groupBy == groupBy;
@@ -91,6 +100,7 @@ class TasksFilter {
     onlyMine,
     onlyOverdue,
     onlyWithBudget,
+    crewId,
     query,
     sortKey,
     groupBy,
@@ -129,6 +139,7 @@ List<TaskModel> applyTasksFilter(
       if (t.status == TaskStatus.done) return false;
     }
     if (filter.onlyWithBudget && t.budgetEstimate == null) return false;
+    if (filter.crewId != null && t.crewId != filter.crewId) return false;
     if (trimmedQuery.isNotEmpty) {
       final inTitle = t.title.toLowerCase().contains(trimmedQuery);
       final inDesc = (t.description ?? '').toLowerCase().contains(trimmedQuery);
@@ -170,6 +181,8 @@ List<TasksGroup> groupTasks(
   TasksGroupBy groupBy, {
   required DateTime now,
   required Map<String, String> assigneeNames,
+  Map<String, String> crewNames = const {},
+  String noCrewLabel = 'No crew',
 }) {
   switch (groupBy) {
     case TasksGroupBy.status:
@@ -178,7 +191,32 @@ List<TasksGroup> groupTasks(
       return _groupByAssignee(tasks, assigneeNames);
     case TasksGroupBy.dueWindow:
       return _groupByDueWindow(tasks, now);
+    case TasksGroupBy.crew:
+      return _groupByCrew(tasks, crewNames, noCrewLabel);
   }
+}
+
+/// One group per crew, in [crewNames] order, then tasks with no crew. A task
+/// whose crew is gone counts as having none.
+List<TasksGroup> _groupByCrew(
+  List<TaskModel> tasks,
+  Map<String, String> crewNames,
+  String noCrewLabel,
+) {
+  final groups = <TasksGroup>[];
+  for (final entry in crewNames.entries) {
+    final bucket = tasks.where((t) => t.crewId == entry.key).toList();
+    if (bucket.isNotEmpty) {
+      groups.add(TasksGroup(key: entry.key, label: entry.value, tasks: bucket));
+    }
+  }
+  final none = tasks
+      .where((t) => t.crewId == null || !crewNames.containsKey(t.crewId))
+      .toList();
+  if (none.isNotEmpty) {
+    groups.add(TasksGroup(key: 'noCrew', label: noCrewLabel, tasks: none));
+  }
+  return groups;
 }
 
 List<TasksGroup> _groupByStatus(List<TaskModel> tasks) {

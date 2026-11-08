@@ -18,6 +18,7 @@ class TaskTile extends StatelessWidget {
     this.onTap,
     this.onStatusChanged,
     this.onUnauthorizedTap,
+    this.crewName,
   });
 
   final TaskModel task;
@@ -26,6 +27,9 @@ class TaskTile extends StatelessWidget {
   final VoidCallback? onTap;
   final ValueChanged<TaskStatus>? onStatusChanged;
   final VoidCallback? onUnauthorizedTap;
+
+  /// The task's crew name (Req 72), when crews are in use.
+  final String? crewName;
 
   Color _stripeColor() => switch (task.status) {
     TaskStatus.todo => AppColors.lightGrey,
@@ -116,7 +120,9 @@ class TaskTile extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                          if (_isOverdue || task.priority > 0) ...[
+                          if (_isOverdue ||
+                              task.priority > 0 ||
+                              crewName != null) ...[
                             const SizedBox(height: AppSpacing.xs),
                             Wrap(
                               spacing: AppSpacing.xs,
@@ -130,6 +136,17 @@ class TaskTile extends StatelessWidget {
                                     label: context.strings.tasks.overdueBadge,
                                     bg: AppColors.terracotta,
                                     fg: AppColors.white,
+                                  ),
+                                if (crewName != null)
+                                  _Pill(
+                                    key: Key('tasks.tile.${task.id}.crew'),
+                                    label: crewName!,
+                                    bg: Theme.of(
+                                      context,
+                                    ).colorScheme.secondaryContainer,
+                                    fg: Theme.of(
+                                      context,
+                                    ).colorScheme.onSecondaryContainer,
                                   ),
                                 if (task.priority > 0)
                                   _PriorityPill(

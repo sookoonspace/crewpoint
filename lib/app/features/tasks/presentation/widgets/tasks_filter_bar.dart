@@ -21,6 +21,7 @@ import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/widgets/reserved_checkmark_chip.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/crew.dart';
 import 'package:crewpoint_app/app/features/tasks/application/tasks_filter.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 
@@ -29,10 +30,19 @@ class TasksFilterBar extends StatefulWidget {
     super.key,
     required this.filter,
     required this.onFilterChanged,
+    this.crews = const [],
+    this.crewWords = (one: 'Crew', other: 'Crews'),
   });
 
   final TasksFilter filter;
   final ValueChanged<TasksFilter> onFilterChanged;
+
+  /// The event's crews (Req 72). With none, the crew filter and grouping
+  /// are hidden.
+  final List<CrewModel> crews;
+
+  /// The event's words for a crew.
+  final ({String one, String other}) crewWords;
 
   @override
   State<TasksFilterBar> createState() => _TasksFilterBarState();
@@ -157,6 +167,7 @@ class _TasksFilterBarState extends State<TasksFilterBar> {
                 onChanged: (_) => _toggleStatus(TaskStatus.done),
                 selectedColor: AppColors.sage.withValues(alpha: 0.25),
               ),
+              if (widget.crews.isNotEmpty) _crewFilter(context),
             ],
           ),
         ),
@@ -248,8 +259,21 @@ class _TasksFilterBarState extends State<TasksFilterBar> {
                       key: const Key('tasks.list.groupToggle.dueWindow'),
                     ),
                   ),
+                  if (widget.crews.isNotEmpty)
+                    ButtonSegment(
+                      value: TasksGroupBy.crew,
+                      label: Text(
+                        widget.crewWords.one,
+                        key: const Key('tasks.list.groupToggle.crew'),
+                      ),
+                    ),
                 ],
-                selected: {f.groupBy},
+                selected: {
+                  // With no crews, grouping by crew shows as status.
+                  widget.crews.isEmpty && f.groupBy == TasksGroupBy.crew
+                      ? TasksGroupBy.status
+                      : f.groupBy,
+                },
                 onSelectionChanged: (set) =>
                     _emit(f.copyWith(groupBy: set.first)),
                 style: const ButtonStyle(visualDensity: VisualDensity.compact),
@@ -258,6 +282,43 @@ class _TasksFilterBarState extends State<TasksFilterBar> {
           ),
         ),
       ],
+    );
+  }
+
+  /// Filters to one crew's tasks, or all of them.
+  Widget _crewFilter(BuildContext context) {
+    final strings = context.strings.crews;
+    final f = widget.filter;
+    final selected = widget.crews.where((c) => c.id == f.crewId).firstOrNull;
+    return PopupMenuButton<String>(
+      key: const Key('tasks.list.crewFilter'),
+      tooltip: widget.crewWords.one,
+      initialValue: f.crewId ?? '',
+      onSelected: (crewId) => _emit(
+        crewId.isEmpty
+            ? f.copyWith(clearCrewId: true)
+            : f.copyWith(crewId: crewId),
+      ),
+      itemBuilder: (_) => [
+        PopupMenuItem(
+          key: const Key('tasks.list.crewFilter.all'),
+          value: '',
+          child: Text(strings.allCrews(widget.crewWords.other)),
+        ),
+        for (final crew in widget.crews)
+          PopupMenuItem(
+            key: Key('tasks.list.crewFilter.${crew.id}'),
+            value: crew.id,
+            child: Text(crew.name),
+          ),
+      ],
+      child: Chip(
+        avatar: const Icon(AppIcons.members, size: 18),
+        label: Text(selected?.name ?? strings.allCrews(widget.crewWords.other)),
+        backgroundColor: selected == null
+            ? null
+            : AppColors.sage.withValues(alpha: 0.25),
+      ),
     );
   }
 

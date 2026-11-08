@@ -8,6 +8,7 @@ import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/crew.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/application/tasks_filter.dart';
 import 'package:crewpoint_app/app/features/tasks/data/task_export_pipeline.dart';
@@ -34,7 +35,10 @@ class _EventTasksPageState extends ConsumerState<EventTasksPage> {
     return auth is Authenticated ? auth.user.uid : null;
   }
 
-  Future<void> _onCreate(Map<String, String> displayNames) async {
+  Future<void> _onCreate(
+    Map<String, String> displayNames,
+    List<CrewModel> crews,
+  ) async {
     final uid = _currentUserId();
     if (uid == null) return;
     final created = await Navigator.of(context).push<TaskModel>(
@@ -43,6 +47,7 @@ class _EventTasksPageState extends ConsumerState<EventTasksPage> {
           event: widget.event,
           currentUserId: uid,
           displayNames: displayNames,
+          crews: crews,
           onSubmit: (task) => Navigator.of(context).pop(task),
         ),
       ),
@@ -116,6 +121,14 @@ class _EventTasksPageState extends ConsumerState<EventTasksPage> {
     }
 
     final asyncTasks = ref.watch(taskListProvider(widget.event.id));
+    final crews =
+        ref.watch(eventCrewsProvider(widget.event.id)).value ??
+        const <CrewModel>[];
+    // A crew deleted while it is the filter stops filtering.
+    final filter =
+        _filter.crewId != null && !crews.any((c) => c.id == _filter.crewId)
+        ? _filter.copyWith(clearCrewId: true)
+        : _filter;
     final asyncUsers = ref.watch(
       usersByIdProvider(usersByIds(widget.event.memberIds)),
     );
@@ -140,24 +153,31 @@ class _EventTasksPageState extends ConsumerState<EventTasksPage> {
         // robot journey tests.
         final filtered = applyTasksFilter(
           tasks,
-          _filter,
+          filter,
           currentUserId: uid,
           now: clock.now(),
         );
+        final crewWord = widget.event.words.one('crew');
         final groups = groupTasks(
           filtered,
-          _filter.groupBy,
+          // With no crews, grouping by crew falls back to status.
+          crews.isEmpty && filter.groupBy == TasksGroupBy.crew
+              ? TasksGroupBy.status
+              : filter.groupBy,
           now: clock.now(),
           assigneeNames: memberNames,
+          crewNames: {for (final c in crews) c.id: c.name},
+          noCrewLabel: context.strings.crews.noCrew(crewWord),
         );
 
         return TaskListScreen(
           groups: groups,
           event: widget.event,
           currentUserId: uid,
-          filter: _filter,
+          filter: filter,
+          crews: crews,
           onFilterChanged: (next) => setState(() => _filter = next),
-          onCreateTask: () => _onCreate(memberNames),
+          onCreateTask: () => _onCreate(memberNames, crews),
           onStatusChanged: _onStatusChanged,
           onUnauthorizedStatusTap: _onUnauthorizedTap,
           onExportPdf: () => _exportPdf(tasks, memberNames),

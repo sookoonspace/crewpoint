@@ -36,7 +36,10 @@ void main() {
     expect(row.data['viewer_id'], isNull);
     expect(row.data['my_role_ids'], isNull);
     expect(row.data['my_permissions'], isNull);
-    expect(raw.select('PRAGMA user_version').first.values.first, 11);
+    expect(
+      raw.select('PRAGMA user_version').first.values.first,
+      greaterThanOrEqualTo(11),
+    );
     await db.close();
   });
 
@@ -45,11 +48,5 @@ void main() {
     final db = AppDatabase(NativeDatabase.opened(raw));
     expect(await db.customSelect('SELECT id FROM events').get(), hasLength(1));
     await db.close();
-  });
-
-  test('schemaVersion is 11', () {
-    final db = AppDatabase(NativeDatabase.memory());
-    expect(db.schemaVersion, 11);
-    db.close();
   });
 }

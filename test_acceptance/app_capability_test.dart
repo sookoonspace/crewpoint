@@ -185,6 +185,28 @@ void main() {
       expect(overdue.map((t) => t.id), ['t1']);
       expect(overdue.single.assigneeId, 'food');
     });
+
+    test('H-02 tasks belong to a crew, filterable with overdue, and grouped', () {
+      final crewTasks = [
+        for (final t in tasks)
+          t.copyWith(crewId: t.assigneeId == 'food' ? 'catering' : 'stage'),
+      ];
+      final cateringOverdue = applyTasksFilter(
+        crewTasks,
+        const TasksFilter(crewId: 'catering', onlyOverdue: true),
+        currentUserId: 'food',
+        now: now,
+      );
+      expect(cateringOverdue.map((t) => t.id), ['t1']);
+      final groups = groupTasks(
+        crewTasks,
+        TasksGroupBy.crew,
+        now: now,
+        assigneeNames: const {},
+        crewNames: const {'catering': 'Catering', 'stage': 'Stage'},
+      );
+      expect(groups.map((g) => g.label), ['Catering', 'Stage']);
+    });
   });
 
   group('K-03 export', () {

@@ -27,6 +27,7 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/edit_event_scr
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_settings_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/member_management_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/roles/crews_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/member_detail_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_editor_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/roles_screen.dart';
@@ -215,6 +216,13 @@ GoRouter createRouter({
                             ),
                           ),
                         ],
+                      ),
+                      GoRoute(
+                        path: 'crews',
+                        builder: (_, state) => EventGuard(
+                          eventId: _resolveEventId(state),
+                          child: (event) => CrewsScreen(event: event),
+                        ),
                       ),
                       GoRoute(
                         path: 'roles',

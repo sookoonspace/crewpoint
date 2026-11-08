@@ -76,6 +76,9 @@ class Tasks extends Table {
   DateTimeColumn get completedAt => dateTime().nullable()();
   TextColumn get completedBy => text().nullable().references(Users, #id)();
   RealColumn get budgetEstimate => real().nullable()();
+
+  /// The task's crew (Req 72), or null.
+  TextColumn get crewId => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 
@@ -168,7 +171,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -268,6 +271,14 @@ class AppDatabase extends _$AppDatabase {
           if (existing.isNotEmpty && !names.contains(entry.key)) {
             await m.addColumn(events, entry.value);
           }
+        }
+      }
+      if (from < 12) {
+        // A task's crew (#68). Safe to re-run, like the steps above.
+        final existing = await customSelect('PRAGMA table_info(tasks)').get();
+        final hasColumn = existing.any((c) => c.data['name'] == 'crew_id');
+        if (existing.isNotEmpty && !hasColumn) {
+          await m.addColumn(tasks, tasks.crewId);
         }
       }
     },

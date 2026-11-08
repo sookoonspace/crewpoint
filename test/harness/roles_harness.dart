@@ -14,6 +14,7 @@ import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/member_management_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/roles/crews_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/member_detail_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_editor_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/roles_screen.dart';
@@ -123,6 +124,13 @@ class RolesHarness {
                     ),
                   ),
                 ],
+              ),
+              GoRoute(
+                path: 'crews',
+                builder: (_, _) => EventGuard(
+                  eventId: eventId,
+                  child: (event) => CrewsScreen(event: event),
+                ),
               ),
               GoRoute(
                 path: 'roles',

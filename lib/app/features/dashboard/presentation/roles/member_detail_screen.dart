@@ -181,6 +181,11 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
     final isOwner = saved.contains('owner');
     final canEditRoles = event.can(me, 'roles.manage') && !_busy;
     final grants = computePermissions(current, allRoles);
+    final crews = ref.watch(eventCrewsProvider(event.id)).value ?? const [];
+    final crewNames = [
+      for (final crew in crews)
+        if (member?.crewIds.contains(crew.id) ?? false) crew.name,
+    ];
     final canRemove = event.canRemoveMember(
       actor: me,
       target: uid,
@@ -255,6 +260,25 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
                   minimumSize: const Size.fromHeight(48),
                 ),
                 child: Text(strings.saveRoles),
+              ),
+            ],
+            if (crewNames.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.xl),
+              Text(
+                event.words.other('crew'),
+                style: theme.textTheme.titleMedium,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
+                children: [
+                  for (final name in crewNames)
+                    Chip(
+                      key: Key('members.detail.crew.$name'),
+                      label: Text(name),
+                    ),
+                ],
               ),
             ],
             const SizedBox(height: AppSpacing.xl),

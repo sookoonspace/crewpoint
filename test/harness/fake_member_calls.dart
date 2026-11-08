@@ -158,4 +158,60 @@ class FakeMemberCalls implements MemberCalls {
       'adminIds': FieldValue.arrayRemove([uid]),
     });
   }
+
+  @override
+  Future<void> saveCrew({
+    required String eventId,
+    required String crewId,
+    required String name,
+  }) async {
+    calls.add('saveCrew:$crewId:$name');
+    _maybeFail();
+    if (firestore == null) return;
+    await _event(eventId).collection('crews').doc(crewId).set({
+      'name': name.trim(),
+    }, SetOptions(merge: true));
+  }
+
+  @override
+  Future<void> setCrewMembers({
+    required String eventId,
+    required String crewId,
+    required List<String> uids,
+  }) async {
+    calls.add('setCrewMembers:$crewId:${uids.join(',')}');
+    _maybeFail();
+    if (firestore == null) return;
+    final members = await _event(eventId).collection('members').get();
+    for (final doc in members.docs) {
+      final crews = ((doc.data()['crewIds'] as List?) ?? const [])
+          .cast<String>()
+          .toSet();
+      final next = uids.contains(doc.id)
+          ? ({...crews, crewId})
+          : ({...crews}..remove(crewId));
+      if (next.length != crews.length) {
+        await doc.reference.update({'crewIds': next.toList()});
+      }
+    }
+  }
+
+  @override
+  Future<void> deleteCrew({
+    required String eventId,
+    required String crewId,
+  }) async {
+    calls.add('deleteCrew:$crewId');
+    _maybeFail();
+    if (firestore == null) return;
+    await _event(eventId).collection('crews').doc(crewId).delete();
+    await setCrewMembers(eventId: eventId, crewId: crewId, uids: const []);
+    calls.removeLast();
+    final tasks = await _event(
+      eventId,
+    ).collection('tasks').where('crewId', isEqualTo: crewId).get();
+    for (final doc in tasks.docs) {
+      await doc.reference.update({'crewId': null});
+    }
+  }
 }
