@@ -126,7 +126,7 @@ Each fix keeps working for current members, and has a regression test written fi
 29. Permissions combine across roles and are scoped. Holding several roles grants the union, and own-group access applies regardless of role. (H-06)
 30. Co-owners and transfer: an event has one Owner and any number of Co-owners. Ownership can be transferred, needs confirmation by the new owner, and can be returned the same way. An event always has an Owner. (WE-07, WE-10, GAP-WED-32, GAP-ANY-31)
 31. An event has one active invite, which carries a role applied on join. Removing someone with permission revokes write access on all paths, and existing behaviour from PR #40 is retained, including rotating the code. Leaving warns when it would leave at most one person holding `members.manage`, naming them, so there is always a backup; it never blocks leaving. (GAP-ANY-33, H-07) [L19]
-32. Vendors see only tasks assigned to them, and their own payments or documents. (WE-08)
+32. Vendors see only tasks assigned to them, and their own payments or documents. (WE-08) Observers see only the event and its published schedule: no tasks, money or chat. Reading chat needs `chat.send`, so neither has chat unless the Owner adds it to their role. Expenses open to them only through `money.read` or the access setting in Req 38, where "Everyone in the event" includes Observers and Vendors, so an organizer can share final financials when they choose. [Decided 2026-11-07]
 33. Screens: Roles, Role editor, Member detail, Crews, and Transfer ownership, each with loading, empty, error and permission-denied states.
 34. **Migration.** An idempotent admin script with a dry-run mode converts each event, preserving everyone's access and old data, including status, `involvedUids`, and `budgetEstimate`. Order on each project:
     1. Confirm a fresh backup.
@@ -292,7 +292,7 @@ Each has a default the work can start from.
 2. Is 30 days the right default dispute window, and 5 urgent messages per hour the right rate limit? Both are settings.
 3. Who is the lawyer reviewing the privacy policy? The owner will arrange this before prod, so it does not block development. [L10] [L16]
 4. Which crash reporter? Sentry covers web as well as mobile, and Crashlytics does not cover web. Default: Sentry, decided in the work item.
-5. Should a Vendor's view also cover crew chat? Default: no, unless added to their role. The Req 26a table is a starting point, and the owner can change it per preset.
+5. ~~Should a Vendor's view also cover crew chat?~~ **Decided 2026-11-07:** no, unless the Owner adds `chat.send` to their role. Observers likewise. See Req 32.
 6. Are the baselines in requirement 60 acceptable at 2,000 people on a real device? Revisit after measurement.
 
 ## Follow-Ups

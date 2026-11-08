@@ -13,6 +13,8 @@ jest.mock('firebase-admin/messaging', () => ({
 getAdminApp();
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const {handleUrgentMessage} = require('../../src/events/onUrgentMessageCreated');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const {computePermissions} = require('../../src/events/permissions');
 
 const E = 'evt';
 const HOUR = 60 * 60 * 1000;
@@ -158,5 +160,21 @@ describe('urgent push rate limit', () => {
     const ref = await urgent('admin', START, E, {isHighPriority: false});
     expect(mockSendEach).not.toHaveBeenCalled();
     expect((await ref.get()).data()!.urgentPushSkipped).toBeUndefined();
+  });
+});
+
+describe('who hears it (Req 32)', () => {
+  test('only people who can read chat get the push', async () => {
+    const people: [string, string[]][] = [
+      ['owner', ['owner']], ['admin', ['admin']], ['member', ['vendor']],
+    ];
+    for (const [uid, roleIds] of people) {
+      await getAdminDb().doc(`events/${E}/members/${uid}`).set({
+        uid, roleIds, permissions: computePermissions(roleIds, {}),
+      });
+    }
+    await urgent('admin', START);
+    const tokens = mockSendEach.mock.calls[0][0].map((m: {token: string}) => m.token);
+    expect(tokens).toEqual(['tok-owner']);
   });
 });

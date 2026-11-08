@@ -1,5 +1,6 @@
 import {FieldValue} from "firebase-admin/firestore";
 import {HttpsError} from "firebase-functions/v2/https";
+import {contributesWith} from "./access";
 import {
   EventRoles,
   Permission,
@@ -155,8 +156,7 @@ export async function contributes(
   eventData: FirebaseFirestore.DocumentData,
   uid: string
 ): Promise<boolean> {
-  const roleIds = await readRoleIds(tx, eventRef, eventData, uid);
-  return roleIds.some((r) => r !== "observer" && r !== "vendor");
+  return contributesWith(await readRoleIds(tx, eventRef, eventData, uid));
 }
 
 /** Everyone in the event holding [permission]. */
