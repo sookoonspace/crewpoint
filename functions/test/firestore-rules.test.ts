@@ -467,6 +467,18 @@ describe('members and roles — read by members, written only by the server', ()
     await assertFails(getDoc(doc(outsider, 'events/e/roles/custom')));
   });
 
+  test('members read an ownership offer, and nobody writes one directly', async () => {
+    await seed();
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'events/e/ownership/offer'), {from: 'owner', to: 'm'});
+    });
+    const owner = env.authenticatedContext('owner').firestore();
+    await assertSucceeds(getDoc(doc(env.authenticatedContext('m').firestore(), 'events/e/ownership/offer')));
+    await assertFails(getDoc(doc(env.authenticatedContext('x').firestore(), 'events/e/ownership/offer')));
+    await assertFails(setDoc(doc(owner, 'events/e/ownership/offer'), {from: 'owner', to: 'x'}));
+    await assertFails(updateDoc(doc(owner, 'events/e'), {creatorId: 'm'}));
+  });
+
   test('nobody can write permissions or roles directly, not even the owner', async () => {
     await seed();
     const owner = env.authenticatedContext('owner').firestore();

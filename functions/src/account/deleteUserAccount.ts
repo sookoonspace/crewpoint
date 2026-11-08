@@ -1,8 +1,6 @@
-import {
-  holdersOf,
-  memberRef,
-  prepareRoleChange,
-} from "../events/members";
+import {memberRef, prepareRoleChange} from "../events/members";
+import {legacyRoleIds} from "../events/permissions";
+import {offerRef} from "../events/ownership";
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions/v2";
 import {createHmac, randomBytes} from "crypto";
@@ -205,11 +203,7 @@ export async function anonymizeUserInEvent(
   };
   let nextOwner: string | null = null;
   if (remainingMembers.length > 0) {
-    // Prefer someone who manages the event, or else the first remaining member.
-    const managers = (await holdersOf(eventRef, "event.manage")).filter(
-      (m) => m !== uid && remainingMembers.includes(m)
-    );
-    const successor = managers[0] ?? remainingMembers[0];
+    const successor = await pickSuccessor(eventRef, eventData, remainingMembers);
     if (eventData.creatorId === uid) {
       updateData.creatorId = successor;
       nextOwner = successor;
@@ -220,17 +214,51 @@ export async function anonymizeUserInEvent(
     }
   }
   await db.runTransaction(async (tx) => {
-    // The next owner takes the Owner role in place of Admin or Participant.
+    // The next owner takes the Owner role in place of Co-owner, Admin or
+    // Participant.
     const writeOwner = nextOwner ?
       await prepareRoleChange(tx, eventRef, eventData, nextOwner, (ids) => [
-        ...ids.filter((r) => !["owner", "admin", "participant"].includes(r)),
+        ...ids.filter(
+          (r) => !["owner", "coOwner", "admin", "participant"].includes(r)
+        ),
         "owner",
       ]) :
       () => undefined;
+    // An ownership offer from or to the person leaving can no longer happen.
+    const offer = await tx.get(offerRef(eventRef));
     writeOwner();
+    if (offer.exists && [offer.data()!.from, offer.data()!.to].includes(uid)) {
+      tx.delete(offer.ref);
+    }
     tx.delete(memberRef(eventRef, uid));
     tx.update(eventRef, updateData);
   });
+}
+
+/**
+ * Who becomes Owner when the Owner deletes their account (Req 14b): a
+ * Co-owner, or else the longest-standing Admin, or else the longest-standing
+ * member. Within each, the earliest `joinedAt` wins, then the order of
+ * `memberIds`, which also covers people with no member document yet.
+ */
+async function pickSuccessor(
+  eventRef: FirebaseFirestore.DocumentReference,
+  eventData: FirebaseFirestore.DocumentData,
+  remaining: string[]
+): Promise<string> {
+  const docs = await eventRef.collection("members").get();
+  const byUid = new Map(docs.docs.map((d) => [d.id, d.data()]));
+  const ranked = remaining.map((uid, index) => {
+    const data = byUid.get(uid);
+    const roleIds: string[] = Array.isArray(data?.roleIds) ?
+      data!.roleIds :
+      legacyRoleIds(eventData, uid);
+    const rank = roleIds.includes("coOwner") ? 0 : roleIds.includes("admin") ? 1 : 2;
+    const joined = data?.joinedAt?.toMillis?.() ?? Number.MAX_SAFE_INTEGER;
+    return {uid, rank, joined, index};
+  });
+  ranked.sort((a, b) => a.rank - b.rank || a.joined - b.joined || a.index - b.index);
+  return ranked[0].uid;
 }
 
 /**

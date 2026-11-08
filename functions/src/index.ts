@@ -20,6 +20,7 @@ export {recordSettlement} from "./events/recordSettlement";
 export {changeEventCurrency} from "./events/changeEventCurrency";
 export {setMemberRoles, saveEventRole, deleteEventRole} from "./events/roles";
 export {saveCrew, setCrewMembers, deleteCrew} from "./events/crews";
+export {offerOwnership, acceptOwnership, cancelOwnershipOffer} from "./events/ownership";
 export {disputeSettlement} from "./events/disputeSettlement";
 export {onUrgentMessageCreated} from "./events/onUrgentMessageCreated";
 export {onTaskAssigned} from "./events/onTaskAssigned";
