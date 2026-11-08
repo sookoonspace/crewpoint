@@ -1,3 +1,4 @@
+import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_access.dart';
 import 'package:crewpoint_app/app/core/format/event_time.dart';
 import 'package:crewpoint_app/app/core/labels/label_resolver.dart';
 
@@ -173,9 +174,20 @@ class EventModel {
   Set<String> _legacyPermissions(String uid) {
     if (creatorId == uid) return _everything;
     if (adminIds.contains(uid)) return _adminPermissions;
-    if (memberIds.contains(uid)) return const {'group.readOwn', 'chat.send'};
+    if (memberIds.contains(uid)) {
+      return {
+        'group.readOwn',
+        'chat.send',
+        if (expenseAccess.readsAll(uid, const ['participant']))
+          'expenses.readAll',
+      };
+    }
     return const {};
   }
+
+  /// Who reads every expense (Req 38), from `settings.expenseAccess`.
+  ExpenseAccess get expenseAccess =>
+      ExpenseAccess.fromMap(settings['expenseAccess']);
 
   /// [uid]'s roles, from their member document or the old arrays.
   List<String> rolesOf(String uid) {
@@ -198,13 +210,11 @@ class EventModel {
   bool readsAllTasks(String uid) =>
       contributes(uid) || can(uid, 'tasks.manage');
 
-  /// Whether [uid] reads every expense, or only those they paid or share in,
-  /// as a Vendor or Observer does unless their role holds `money.read` or
-  /// `expenses.readAll` (Req 32).
+  /// Whether [uid] reads every expense, or only those they paid or share in
+  /// (Req 38). The server puts `expenses.readAll` on member documents from the
+  /// event's expense access setting; `money.read` always reads them all.
   bool readsAllExpenses(String uid) =>
-      contributes(uid) ||
-      can(uid, 'money.read') ||
-      can(uid, 'expenses.readAll');
+      can(uid, 'money.read') || can(uid, 'expenses.readAll');
 
   /// Reading chat needs `chat.send` (Req 32).
   bool readsChat(String uid) => can(uid, 'chat.send');

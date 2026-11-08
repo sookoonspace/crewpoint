@@ -16,7 +16,9 @@ import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/auth/data/auth_repository.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_access.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/expense_access_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/member_management_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/crews_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/member_detail_screen.dart';
@@ -65,18 +67,26 @@ class RolesHarness {
   late final FakeMemberCalls calls;
 
   /// Seeds the event and a member document for each person, with these roles.
+  /// [expenseAccess] is stored on the event and applied to permissions, as
+  /// the server does (Req 38).
   Future<void> seed({
     Map<String, List<String>> roles = const {
       'owner': ['owner'],
       'sam': ['participant'],
     },
+    ExpenseAccess? expenseAccess,
   }) async {
     final presets = resolveRoles(RoleCatalogue.current, const {});
+    final access = expenseAccess ?? const ExpenseAccess.everyone();
     for (final entry in roles.entries) {
       await firestore.doc('events/$eventId/members/${entry.key}').set({
         'uid': entry.key,
         'roleIds': entry.value,
-        'permissions': computePermissions(entry.value, presets),
+        'permissions': computePermissions(
+          entry.value,
+          presets,
+          readsAllExpenses: access.readsAll(entry.key, entry.value),
+        ),
       });
     }
     await firestore.doc('events/$eventId').set({
@@ -94,6 +104,8 @@ class RolesHarness {
       'memberCount': roles.length,
       'status': 'published',
       'currency': 'USD',
+      if (expenseAccess != null)
+        'settings': {'expenseAccess': expenseAccess.toMap()},
     });
   }
 
@@ -158,6 +170,13 @@ class RolesHarness {
                     ),
                   ),
                 ],
+              ),
+              GoRoute(
+                path: 'settings/expenses',
+                builder: (_, _) => EventGuard(
+                  eventId: eventId,
+                  child: (event) => ExpenseAccessScreen(event: event),
+                ),
               ),
               GoRoute(
                 path: 'transfer',

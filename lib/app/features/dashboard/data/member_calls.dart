@@ -1,3 +1,4 @@
+import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_access.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
 /// The event's one active invite (Req 31).
@@ -63,6 +64,12 @@ abstract interface class MemberCalls {
 
   /// The Owner withdraws the offer, or the person offered declines it.
   Future<void> cancelOwnershipOffer({required String eventId});
+
+  /// Chooses who reads every expense (Req 38). Needs `event.manage`.
+  Future<void> setExpenseAccess({
+    required String eventId,
+    required ExpenseAccess access,
+  });
 }
 
 class FirebaseMemberCalls implements MemberCalls {
@@ -168,4 +175,11 @@ class FirebaseMemberCalls implements MemberCalls {
   @override
   Future<void> cancelOwnershipOffer({required String eventId}) =>
       _call('cancelOwnershipOffer', {'eventId': eventId});
+
+  @override
+  Future<void> setExpenseAccess({
+    required String eventId,
+    required ExpenseAccess access,
+  }) =>
+      _call('setExpenseAccess', {'eventId': eventId, 'access': access.toMap()});
 }

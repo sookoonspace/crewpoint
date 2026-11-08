@@ -2,6 +2,7 @@ import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
+import 'package:crewpoint_app/app/features/budget/domain/models/my_balance.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/member.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/ownership_offer.dart';
@@ -35,6 +36,8 @@ Future<void> _openLeave(
   List<MemberModel> members = const [],
   OwnershipOffer? offer,
   bool tapLeave = true,
+  EventModel event = _event,
+  MyBalanceCall? myBalance,
 }) async {
   tester.view.physicalSize = const Size(1200, 3000);
   tester.view.devicePixelRatio = 1.0;
@@ -47,6 +50,8 @@ Future<void> _openLeave(
         expenseListProvider.overrideWith((ref, _) => expenses),
         eventMembersProvider.overrideWith((ref, _) => Stream.value(members)),
         ownershipOfferProvider.overrideWith((ref, _) => Stream.value(offer)),
+        if (myBalance != null)
+          myBalanceCallProvider.overrideWithValue(myBalance),
         usersByIdProvider.overrideWith(
           (ref, eventId) async => {
             for (final uid in _names.keys)
@@ -59,7 +64,7 @@ Future<void> _openLeave(
           },
         ),
       ],
-      child: const MaterialApp(home: EventDashboardScreen(event: _event)),
+      child: MaterialApp(home: EventDashboardScreen(event: event)),
     ),
   );
   await tester.pump(const Duration(milliseconds: 100));
@@ -94,6 +99,30 @@ void main() {
     await _openLeave(tester, Stream.value([_expense('me', 'owner')]));
     expect(find.byKey(_warning), findsOneWidget);
   });
+
+  testWidgets(
+    'someone who cannot read every expense is warned from the server balance',
+    (tester) async {
+      // Under Only people involved, Me sees no expense, but owes on one.
+      const limited = EventModel(
+        id: 'evt',
+        title: 'Trip',
+        creatorId: 'owner',
+        memberIds: ['owner', 'me'],
+        currency: 'USD',
+        settings: {
+          'expenseAccess': {'mode': 'involved'},
+        },
+      );
+      await _openLeave(
+        tester,
+        Stream.value(const []),
+        event: limited,
+        myBalance: (_) async => const MyBalance(net: -12, currency: 'USD'),
+      );
+      expect(find.byKey(_warning), findsOneWidget);
+    },
+  );
 
   testWidgets('no warning with a settled balance', (tester) async {
     await _openLeave(tester, Stream.value(const []));
@@ -190,9 +219,7 @@ void main() {
     expect(find.byKey(const Key('event.ownershipOffer')), findsOneWidget);
   });
 
-  testWidgets('nobody else sees an offer that is not for them', (
-    tester,
-  ) async {
+  testWidgets('nobody else sees an offer that is not for them', (tester) async {
     await _openLeave(
       tester,
       Stream.value(const []),

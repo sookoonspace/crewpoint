@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 import 'package:crewpoint_app/app/core/format/event_time.dart';
 import 'package:crewpoint_app/app/core/labels/label_resolver.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
@@ -557,6 +558,23 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
                                 }),
                         ),
                     ],
+                  ),
+                  ListTile(
+                    key: const Key('events.settings.expenseAccess'),
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(AppIcons.lock),
+                    title: Text(context.strings.expenseAccess.title),
+                    subtitle: Text(
+                      context.strings.expenseAccess.summary(
+                        widget.event.expenseAccess.mode,
+                        includesEveryone:
+                            widget.event.expenseAccess.includeNonContributors,
+                      ),
+                    ),
+                    trailing: const Icon(AppIcons.chevronRight),
+                    onTap: () => context.push(
+                      '/dashboard/event/${widget.event.id}/settings/expenses',
+                    ),
                   ),
                   ExpansionTile(
                     key: const Key('events.settings.labels'),

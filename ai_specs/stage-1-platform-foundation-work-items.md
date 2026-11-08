@@ -940,23 +940,23 @@ Let `event.manage` holders choose who can read expenses, enforced on the server,
 - Decided 2026-11-08: **Everyone in the event** leaves out Observers and Vendors, unless the admin turns on a switch, **Also show Observers and Vendors**, which is off by default. The Observer and Vendor roles can also be picked under **Selected roles and people**. An organizer shares final financials with everyone this way when they choose. #70's rules already open expenses to `expenses.readAll`.
 
 ### Acceptance criteria
-- [ ] Anyone with `event.manage` chooses in Event settings: **Everyone in the event** (all members read all expenses), **Only people involved** (members read only expenses they paid for or are part of), or **Selected roles and people** (the admin picks any roles and individual members, who can read all expenses).
-- [ ] In every option, the payer and people in a split can read that expense, and holders of `money.read` can read all expenses.
-- [ ] The setting is enforced on the server, takes effect immediately for open screens, and each change is recorded with who made it and when.
-- [ ] Only reading is affected. This does not grant adding, editing or deleting.
-- [ ] The access setting is copied onto member documents as `expenses.readAll` by the callable that recalculates `permissions`, including when a role or the setting changes.
-- [ ] Someone with limited access still sees their own balance and who to pay, without seeing other people's expenses. A callable returns that person's balance, calculated from all of the event's expenses on the server.
-- [ ] Totals and exports show only what that person may read.
-- [ ] A member with `expenses.readAll` reads the whole collection. Anyone else reads with `involvedUids array-contains uid`. Both the mirror and the web stream choose the query by access, and reset when access changes.
-- [ ] The migration backfills `involvedUids`, and existing events work on the new queries.
-- [ ] The setting screen has loading, error and saved states. The selected list shows roles and people by name, and warns before narrowing access, naming how many people will lose it. Choosing nobody is allowed, since permission holders keep access.
-- [ ] Emulator tests cover every access option against every role, plus balances for limited members.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
-- [ ] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
-- [ ] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
-- [ ] Tests for scenario H-05 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] Anyone with `event.manage` chooses in Event settings: **Everyone in the event** (all members read all expenses), **Only people involved** (members read only expenses they paid for or are part of), or **Selected roles and people** (the admin picks any roles and individual members, who can read all expenses).
+- [x] In every option, the payer and people in a split can read that expense, and holders of `money.read` can read all expenses.
+- [x] The setting is enforced on the server, takes effect immediately for open screens, and each change is recorded with who made it and when.
+- [x] Only reading is affected. This does not grant adding, editing or deleting.
+- [x] The access setting is copied onto member documents as `expenses.readAll` by the callable that recalculates `permissions`, including when a role or the setting changes.
+- [x] Someone with limited access still sees their own balance and who to pay, without seeing other people's expenses. A callable returns that person's balance, calculated from all of the event's expenses on the server.
+- [x] Totals and exports show only what that person may read.
+- [x] A member with `expenses.readAll` reads the whole collection. Anyone else reads with `involvedUids array-contains uid`. Both the mirror and the web stream choose the query by access, and reset when access changes.
+- [x] The migration backfills `involvedUids`, and existing events work on the new queries.
+- [x] The setting screen has loading, error and saved states. The selected list shows roles and people by name, and warns before narrowing access, naming how many people will lose it. Choosing nobody is allowed, since permission holders keep access.
+- [x] Emulator tests cover every access option against every role, plus balances for limited members.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
+- [x] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
+- [x] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
+- [x] Tests for scenario H-05 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - Requirements: 38, 38b, 38c, 38d, 38e

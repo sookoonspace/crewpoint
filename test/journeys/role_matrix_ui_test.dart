@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:crewpoint_app/app/core/providers.dart';
+import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
+import 'package:crewpoint_app/app/features/budget/domain/models/my_balance.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_access.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
 
 import '../harness/roles_harness.dart';
@@ -16,7 +21,12 @@ void main() {
 
   late RolesHarness harness;
 
-  Future<RolesRobot> open(WidgetTester tester, String role) async {
+  Future<RolesRobot> open(
+    WidgetTester tester,
+    String role, {
+    ExpenseAccess? access,
+    List<Override> overrides = const [],
+  }) async {
     tester.view.physicalSize = const Size(375, 1200);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -31,6 +41,7 @@ void main() {
         'owner': const ['owner'],
         'me': [role],
       },
+      expenseAccess: access,
     );
     final db = harness.firestore;
     const e = 'events/${RolesHarness.eventId}';
@@ -60,7 +71,7 @@ void main() {
         });
     await expense('mine', 'Banner deposit', ['owner', 'me']);
     await expense('theirs', 'Venue hire', ['owner']);
-    await tester.pumpWidget(harness.buildApp());
+    await tester.pumpWidget(harness.buildApp(overrides: overrides));
     final robot = RolesRobot(tester);
     await robot.settle();
     return robot;
@@ -138,6 +149,72 @@ void main() {
     );
     await robot.settle();
     expect(find.byKey(const Key('events.hub.chat')), findsOneWidget);
+    await robot.finish();
+  });
+
+  testWidgets(
+    'H-05 under Only people involved, a participant sees their own expenses '
+    'and the balance worked out on the server',
+    (tester) async {
+      final asked = <String>[];
+      final robot = await open(
+        tester,
+        'participant',
+        access: const ExpenseAccess(mode: ExpenseAccessMode.involved),
+        overrides: [
+          // The server counts every expense, including ones Me cannot read.
+          myBalanceCallProvider.overrideWithValue((eventId) async {
+            asked.add(eventId);
+            return const MyBalance(
+              net: -35,
+              currency: 'USD',
+              transfers: [
+                Settlement(fromUserId: 'me', toUserId: 'owner', amount: 35),
+              ],
+            );
+          }),
+        ],
+      );
+      harness.router.go('/dashboard/event/${RolesHarness.eventId}/budget');
+      await robot.finishTransition();
+      expect(find.text('Banner deposit'), findsOneWidget);
+      expect(find.text('Venue hire'), findsNothing);
+      expect(asked, contains(RolesHarness.eventId));
+      final settle = find.byKey(const Key('budget.settle.owner'));
+      expect(settle, findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.ancestor(of: settle, matching: find.byType(Row)).first,
+          matching: find.textContaining('35'),
+        ),
+        findsWidgets,
+      );
+      // Only their own balance is shown, not the Owner's.
+      expect(find.byKey(const Key('budget.balance.owner')), findsNothing);
+      expect(find.byKey(const Key('budget.balance.me')), findsOneWidget);
+      await robot.finish();
+    },
+  );
+
+  testWidgets('everyone who reads every expense works balances out locally', (
+    tester,
+  ) async {
+    final asked = <String>[];
+    final robot = await open(
+      tester,
+      'participant',
+      overrides: [
+        myBalanceCallProvider.overrideWithValue((eventId) async {
+          asked.add(eventId);
+          throw StateError('not used');
+        }),
+      ],
+    );
+    harness.router.go('/dashboard/event/${RolesHarness.eventId}/budget');
+    await robot.finishTransition();
+    expect(find.text('Venue hire'), findsOneWidget);
+    expect(find.byKey(const Key('budget.balance.owner')), findsOneWidget);
+    expect(asked, isEmpty);
     await robot.finish();
   });
 }

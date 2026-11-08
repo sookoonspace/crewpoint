@@ -600,6 +600,17 @@ class _EventActionsState extends ConsumerState<_EventActions> {
   /// worked out. Leaving is never blocked, so a failure here just skips the
   /// warning.
   Future<double?> _outstandingBalance() async {
+    // Someone who cannot read every expense asks the server (Req 38c).
+    if (!widget.event.readsAllExpenses(widget.currentUserId)) {
+      try {
+        final mine = await ref
+            .read(myBalanceCallProvider)(widget.event.id)
+            .timeout(const Duration(seconds: 3));
+        return mine.net.abs() > 0.01 ? mine.net : null;
+      } catch (_) {
+        return null;
+      }
+    }
     // Keeps the stream listened to while this waits. A read with no listener
     // can leave the provider paused, and the wait would never finish.
     final subscription = ref.listenManual(

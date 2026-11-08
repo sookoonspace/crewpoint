@@ -457,7 +457,26 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
           }
         }
 
+        // Someone who may not read every expense sees their own balance from
+        // the server, worked out from all of them (Req 38c).
+        final limited = !widget.event.readsAllExpenses(uid);
+        final serverBalance = limited
+            ? ref.watch(myBalanceProvider(widget.event.id)).value
+            : null;
         return BudgetScreen(
+          ledger: limited
+              ? (serverBalance?.toLedger(uid, expenses) ??
+                    // Until the server answers: the total they can read,
+                    // and no balances.
+                    BalanceLedger(
+                      netBalances: const {},
+                      settlements: const [],
+                      totalExpenses: BalanceLedger.calculate(
+                        expenses: expenses,
+                        memberIds: const [],
+                      ).totalExpenses,
+                    ))
+              : null,
           expenses: expenses,
           memberIds: widget.event.memberIds,
           currency: widget.event.currency,

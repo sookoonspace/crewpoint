@@ -1,3 +1,4 @@
+import 'package:crewpoint_app/app/features/budget/domain/models/my_balance.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -407,6 +408,29 @@ final taskBudgetsProvider = StreamProvider.family<Map<String, double>, String>((
   );
   if (!reads) return Stream.value(const {});
   return ref.watch(taskRepositoryProvider).watchBudgets(eventId);
+});
+
+/// Calls `getMyBalance`. Tests override this.
+typedef MyBalanceCall = Future<MyBalance> Function(String eventId);
+
+final myBalanceCallProvider = Provider<MyBalanceCall>(
+  (_) => (eventId) async {
+    final result = await FirebaseFunctions.instance
+        .httpsCallable('getMyBalance')
+        .call<Map<String, dynamic>>({'eventId': eventId});
+    return MyBalance.fromMap(result.data);
+  },
+);
+
+/// The signed-in person's balance from the server (Req 38c), for when they
+/// may not read every expense. Asks again whenever the expenses they can see
+/// change.
+final myBalanceProvider = FutureProvider.family<MyBalance, String>((
+  ref,
+  eventId,
+) {
+  ref.watch(expenseListProvider(eventId));
+  return ref.watch(myBalanceCallProvider)(eventId);
 });
 
 /// Whose tasks the signed-in person lists in an event: null for every task,

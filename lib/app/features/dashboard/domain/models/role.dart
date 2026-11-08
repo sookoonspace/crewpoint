@@ -29,7 +29,8 @@ class RoleCatalogue {
   RoleCatalogue.fromJson(Map<String, dynamic> json)
     : permissions = (json['permissions'] as List).cast<String>(),
       presets = [
-        for (final preset in (json['presets'] as List).cast<Map<String, dynamic>>())
+        for (final preset
+            in (json['presets'] as List).cast<Map<String, dynamic>>())
           RoleDefinition(
             id: preset['id'] as String,
             name: preset['name'] as String,
@@ -93,13 +94,18 @@ List<RoleDefinition> resolveRoles(
 }
 
 /// What [roleIds] grant together: the union, in catalogue order, matching
-/// `computePermissions` on the server.
+/// `computePermissions` on the server. [readsAllExpenses] adds what the
+/// event's expense access setting gives (Req 38).
 List<String> computePermissions(
   Iterable<String> roleIds,
-  List<RoleDefinition> roles,
-) {
+  List<RoleDefinition> roles, {
+  bool readsAllExpenses = false,
+}) {
   final byId = {for (final r in roles) r.id: r};
-  final granted = {for (final id in roleIds) ...?byId[id]?.permissions};
+  final granted = {
+    for (final id in roleIds) ...?byId[id]?.permissions,
+    if (readsAllExpenses) 'expenses.readAll',
+  };
   return [
     for (final p in RoleCatalogue.current.permissions)
       if (granted.contains(p)) p,

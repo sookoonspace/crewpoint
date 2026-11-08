@@ -25,6 +25,7 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/dashboard_scre
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/edit_event_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_settings_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/expense_access_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/member_management_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/crews_screen.dart';
@@ -192,6 +193,16 @@ GoRouter createRouter({
                           eventId: _resolveEventId(state),
                           child: (event) => EventSettingsScreen(event: event),
                         ),
+                        routes: [
+                          GoRoute(
+                            path: 'expenses',
+                            builder: (_, state) => EventGuard(
+                              eventId: _resolveEventId(state),
+                              child: (event) =>
+                                  ExpenseAccessScreen(event: event),
+                            ),
+                          ),
+                        ],
                       ),
                       GoRoute(
                         path: 'members',
