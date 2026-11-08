@@ -138,6 +138,13 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      // A pending ownership offer (Req 30). The person offered reads it to
+      // accept; only the ownership callables write it.
+      match /ownership/{docId} {
+        allow read: if request.auth != null && isEventMember(eventId);
+        allow write: if false;
+      }
+
       // Crews (Req 33). The saveCrew, setCrewMembers and deleteCrew callables
       // write them, keeping crewIds on member documents in step.
       match /crews/{crewId} {

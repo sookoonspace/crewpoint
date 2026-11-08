@@ -13,6 +13,7 @@ getAdminApp();
 const {setMemberRoles, saveEventRole} = require('../src/events/roles');
 const {generateInviteCode} = require('../src/events/generateInviteCode');
 const {joinEvent} = require('../src/events/joinEvent');
+const {offerOwnership, acceptOwnership} = require('../src/events/ownership');
 
 const E = 'roles';
 const member = async (uid: string) =>
@@ -71,6 +72,44 @@ describe('invites carry a role', () => {
     await ftest.wrap(joinEvent)({auth: {uid: 'speaker'}, data: {joinCode: code}});
     expect((await member('speaker')).roleIds).toEqual(['crewMember']);
     expect((await member('speaker')).permissions).toContain('incidents.report');
+  });
+});
+
+describe('co-owners and ownership transfer', () => {
+  const offer = (from: string, to: string) =>
+    ftest.wrap(offerOwnership)({auth: {uid: from}, data: {eventId: E, toUid: to}});
+  const accept = (uid: string) => ftest.wrap(acceptOwnership)({auth: {uid}, data: {eventId: E}});
+
+  test('WE-07 two people co-own one event', async () => {
+    await assign('treasurer', ['coOwner']);
+    const coOwner = (await member('treasurer')).permissions;
+    expect(coOwner).toEqual(expect.arrayContaining(['event.manage', 'roles.manage', 'members.manage']));
+    expect(coOwner).not.toContain('event.transfer');
+  });
+
+  test('GAP-WED-32 an event can have an Owner and several Co-owners', async () => {
+    await assign('treasurer', ['coOwner']);
+    await assign('lead', ['coOwner']);
+    expect((await member('owner')).roleIds).toEqual(['owner']);
+    expect((await member('treasurer')).roleIds).toEqual(['coOwner']);
+    expect((await member('lead')).roleIds).toEqual(['coOwner']);
+  });
+
+  test('GAP-ANY-31 the Owner hands ownership to someone, who accepts it', async () => {
+    await offer('owner', 'lead');
+    expect((await member('owner')).roleIds).toEqual(['owner']);
+    await accept('lead');
+    expect((await member('lead')).roleIds).toEqual(['owner']);
+    expect((await member('owner')).roleIds).toEqual(['coOwner']);
+  });
+
+  test('WE-10 ownership transfers and can be returned', async () => {
+    await offer('owner', 'lead');
+    await accept('lead');
+    await offer('lead', 'owner');
+    await accept('owner');
+    expect((await member('owner')).roleIds).toEqual(['owner']);
+    expect((await member('lead')).roleIds).toEqual(['coOwner']);
   });
 });
 

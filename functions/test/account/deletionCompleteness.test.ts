@@ -119,6 +119,47 @@ describe('organizers on deletion (Req 18a)', () => {
   });
 });
 
+describe('who becomes Owner when the Owner deletes their account (Req 14b)', () => {
+  const {Timestamp} = require('firebase-admin/firestore');
+  const at = (day: number) => Timestamp.fromDate(new Date(2026, 0, day));
+  async function members(list: [string, string[], number][]) {
+    await db().doc(E).update({memberIds: list.map(([uid]) => uid)});
+    for (const [uid, roleIds, day] of list) {
+      await db().doc(`${E}/members/${uid}`).set({uid, roleIds, permissions: [], joinedAt: at(day)});
+    }
+  }
+
+  test('a Co-owner first, even over an Admin who joined earlier', async () => {
+    await user('owner');
+    await members([['owner', ['owner'], 1], ['ann', ['admin'], 2], ['bob', ['coOwner'], 5]]);
+    await remove('owner');
+    expect((await read(E)).creatorId).toBe('bob');
+    expect((await read(`${E}/members/bob`)).roleIds).toEqual(['owner']);
+  });
+
+  test('else the longest-standing Admin', async () => {
+    await user('owner');
+    await members([['owner', ['owner'], 1], ['bob', ['admin'], 9], ['ann', ['admin'], 3]]);
+    await remove('owner');
+    expect((await read(E)).creatorId).toBe('ann');
+  });
+
+  test('else the longest-standing member', async () => {
+    await user('owner');
+    await members([['owner', ['owner'], 1], ['ann', ['participant'], 7], ['bob', ['volunteer'], 4]]);
+    await remove('owner');
+    expect((await read(E)).creatorId).toBe('bob');
+    expect((await read(`${E}/members/bob`)).roleIds).toEqual(['volunteer', 'owner']);
+  });
+
+  test('a pending ownership offer is cleared', async () => {
+    await user('owner');
+    await db().doc(`${E}/ownership/offer`).set({from: 'owner', to: 'ann'});
+    await remove('owner');
+    expect(await exists(`${E}/ownership/offer`)).toBe(false);
+  });
+});
+
 describe('deleting an account', () => {
   test('removes every personal document', async () => {
     await remove('ann');
