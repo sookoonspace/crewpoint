@@ -770,19 +770,19 @@ Add the Roles, Role editor and Member detail screens, custom roles, and a role a
 - The link and QR arrive in #79.
 
 ### Acceptance criteria
-- [ ] Screens exist at the `roles` and `roles/:roleId` routes, plus Member detail, each with loading, empty, error and permission-denied states.
-- [ ] Owners assign built-in roles, edit presets per event, and create custom roles.
-- [ ] An event has one active invite, which carries a role applied on join.
-- [ ] An owner can invite someone directly into a role, with no promotion needed after joining.
-- [ ] Removing someone with permission revokes write access on all paths, and existing behaviour from PR #40 is retained, including rotating the code.
-- [ ] Leaving warns when it would leave at most one person holding `members.manage`, naming them, so there is always a backup. It never blocks leaving.
-- [ ] A robot journey shows role assignment changing access live.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
-- [ ] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
-- [ ] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
-- [ ] Tests for scenarios H-01, H-07, GE-03, GAP-ANY-33, GAP-CRK-29, GAP-CON-30 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] Screens exist at the `roles` and `roles/:roleId` routes, plus Member detail, each with loading, empty, error and permission-denied states.
+- [x] Owners assign built-in roles, edit presets per event, and create custom roles.
+- [x] An event has one active invite, which carries a role applied on join.
+- [x] An owner can invite someone directly into a role, with no promotion needed after joining.
+- [x] Removing someone with permission revokes write access on all paths, and existing behaviour from PR #40 is retained, including rotating the code.
+- [x] Leaving warns when it would leave at most one person holding `members.manage`, naming them, so there is always a backup. It never blocks leaving.
+- [x] A robot journey shows role assignment changing access live.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
+- [x] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
+- [x] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
+- [x] Tests for scenarios H-01, H-07, GE-03, GAP-ANY-33, GAP-CRK-29, GAP-CON-30 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 8, 10
@@ -839,7 +839,7 @@ Add co-owners, confirmed transfer and return of ownership, and automatic success
 
 ### Acceptance criteria
 - [ ] An event has one Owner and any number of Co-owners.
-- [ ] Ownership can be transferred, needs confirmation by the new owner, and can be returned the same way.
+- [ ] Ownership can be transferred to anyone in the event, whatever their role, needs confirmation by the new owner, and can be returned the same way. The old owner becomes a Co-owner.
 - [ ] An event always has an Owner.
 - [ ] A Transfer ownership screen at the `transfer` route has loading, empty, error and permission-denied states.
 - [ ] When an owner deletes their account, ownership passes automatically to a Co-owner, or else the longest-standing Admin, or else the longest-standing member. This is the one exception to the confirmation.
