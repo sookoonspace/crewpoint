@@ -138,6 +138,13 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      // Crews (Req 33). The saveCrew, setCrewMembers and deleteCrew callables
+      // write them, keeping crewIds on member documents in step.
+      match /crews/{crewId} {
+        allow read: if request.auth != null && isEventMember(eventId);
+        allow write: if false;
+      }
+
       // Messages subcollection
       match /messages/{messageId} {
         allow read: if request.auth != null && isEventMember(eventId);
@@ -193,6 +200,17 @@ service cloud.firestore {
 
         allow read: if request.auth != null && isEventMember(eventId);
 
+        // A task's crew (Req 72) is optional, and must be a crew that exists.
+        // An unchanged crew is allowed, so a task whose crew deleteCrew has
+        // not cleared yet can still be edited.
+        function crewIsValid(before) {
+          let crewId = request.resource.data.get('crewId', null);
+          return crewId == null
+            || crewId == before
+            || (crewId is string
+                && exists(/databases/$(database)/documents/events/$(eventId)/crews/$(crewId)));
+        }
+
         // Create: any member but Observer and Vendor; must set themselves as
         // createdBy, and a new task cannot start finished.
         allow create: if request.auth != null
@@ -202,7 +220,8 @@ service cloud.firestore {
           && request.resource.data.eventId == eventId
           && request.resource.data.get('status', null) != 'done'
           && request.resource.data.get('completedAt', null) == null
-          && request.resource.data.get('completedBy', null) == null;
+          && request.resource.data.get('completedBy', null) == null
+          && crewIsValid(null);
 
         // Update: an assignee may change only status. Fix 1.C — clients must
         // NOT mutate eventId or createdBy: eventId pinpoints the parent event,
@@ -215,6 +234,7 @@ service cloud.firestore {
                   && request.resource.data.diff(resource.data).affectedKeys()
                       .hasOnly(['status', 'completedAt', 'completedBy', 'updatedAt'])))
           && completionIsUntouched()
+          && crewIsValid(resource.data.get('crewId', null))
           && request.resource.data.eventId == resource.data.eventId
           && request.resource.data.createdBy == resource.data.createdBy;
 
