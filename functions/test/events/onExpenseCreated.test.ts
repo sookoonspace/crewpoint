@@ -5,6 +5,7 @@
  */
 import {clearFirestoreEmulator, getAdminApp, getAdminDb} from '../setup';
 import {computePermissions} from '../../src/events/permissions';
+import {expenseAccessOf, readsAllExpensesUnder} from '../../src/events/expenseAccess';
 
 const mockSendEach = jest.fn();
 jest.mock('firebase-admin/messaging', () => ({
@@ -32,7 +33,10 @@ beforeEach(async () => {
   });
   for (const [uid, roleIds] of people) {
     await getAdminDb().doc(`events/${E}/members/${uid}`).set({
-      uid, roleIds, permissions: computePermissions(roleIds, {}),
+      // As the server writes them under Everyone, the default.
+      uid, roleIds, permissions: computePermissions(roleIds, {}, {
+        readsAllExpenses: readsAllExpensesUnder(expenseAccessOf({}), uid, roleIds),
+      }),
     });
     await getAdminDb().doc(`users/${uid}/private/profile`).set({fcmTokens: [`tok-${uid}`]});
   }

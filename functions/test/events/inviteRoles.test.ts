@@ -62,7 +62,7 @@ describe('an invite carries a role', () => {
     await join('speaker', code);
     const saved = await member('speaker');
     expect(saved?.roleIds).toEqual(['crewLead']);
-    expect(saved?.permissions).toEqual(computePermissions(['crewLead'], {}));
+    expect(saved?.permissions).toEqual(computePermissions(['crewLead'], {}, {readsAllExpenses: true}));
     expect((await event()).adminIds).toEqual(['owner', 'admin']);
   });
 
@@ -80,7 +80,7 @@ describe('an invite carries a role', () => {
     });
     const {code} = await invite('owner', {roleId: 'hospitality'});
     await join('host', code);
-    expect((await member('host'))?.permissions).toEqual(['participants.read']);
+    expect((await member('host'))?.permissions).toEqual(['participants.read', 'expenses.readAll']);
   });
 
   test('a role removed since the invite was made falls back to Participant', async () => {

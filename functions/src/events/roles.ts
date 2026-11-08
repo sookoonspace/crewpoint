@@ -1,4 +1,5 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
+import {expenseAccessOf} from "./expenseAccess";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 import {
@@ -185,7 +186,10 @@ export const saveEventRole = onCall({timeoutSeconds: 60}, async (request) => {
         const next = {...roles, [roleId]: saved};
         tx.set(eventRef.collection("roles").doc(roleId), saved);
         holders.docs.forEach((doc) =>
-          tx.set(doc.ref, rebuildMember(doc.id, doc.data(), next))
+          tx.set(
+            doc.ref,
+            rebuildMember(doc.id, doc.data(), next, expenseAccessOf(eventData))
+          )
         );
       });
       return {success: true};
@@ -244,7 +248,10 @@ export const deleteEventRole = onCall({timeoutSeconds: 60}, async (request) => {
         delete next[roleId];
         tx.delete(eventRef.collection("roles").doc(roleId));
         holders.docs.forEach((doc) =>
-          tx.set(doc.ref, rebuildMember(doc.id, doc.data(), next))
+          tx.set(
+            doc.ref,
+            rebuildMember(doc.id, doc.data(), next, expenseAccessOf(eventData))
+          )
         );
       });
       return {success: true};

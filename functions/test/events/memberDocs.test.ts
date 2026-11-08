@@ -64,7 +64,8 @@ describe('joinEvent', () => {
     expect(await member('new')).toEqual(expect.objectContaining({
       uid: 'new',
       roleIds: ['participant'],
-      permissions: ['group.readOwn', 'chat.send'],
+      // Under Everyone, the default, a Participant reads every expense.
+      permissions: ['group.readOwn', 'expenses.readAll', 'chat.send'],
     }));
   });
 });
@@ -123,7 +124,8 @@ describe('promoteToAdmin and demoteAdmin', () => {
     await demote('admin');
     expect(await member('admin')).toEqual(expect.objectContaining({
       roleIds: ['participant'],
-      permissions: ['group.readOwn', 'chat.send'],
+      // Under Everyone, the default, a Participant reads every expense.
+      permissions: ['group.readOwn', 'expenses.readAll', 'chat.send'],
     }));
   });
 

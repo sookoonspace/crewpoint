@@ -146,6 +146,41 @@ describe('migrateToMembers', () => {
     });
   });
 
+  describe('expense access (Req 38)', () => {
+    test('new member documents follow the setting', async () => {
+      await seedOld('e1', {settings: {expenseAccess: {mode: 'involved'}}});
+      await run();
+      expect((await member('e1', 'm'))?.permissions).not.toContain('expenses.readAll');
+      // The Owner role holds it, whatever the setting.
+      expect((await member('e1', 'c'))?.permissions).toContain('expenses.readAll');
+    });
+
+    test('existing member documents get expenses.readAll, keeping their roles', async () => {
+      await seedOld('e1');
+      await db().doc('events/e1/members/m').set({
+        uid: 'm', roleIds: ['crewLead'], crewIds: ['food'],
+        permissions: computePermissions(['crewLead'], {}), participantId: null,
+      });
+      const result = await run();
+      const m = await member('e1', 'm');
+      expect(m?.roleIds).toEqual(['crewLead']);
+      expect(m?.crewIds).toEqual(['food']);
+      expect(m?.permissions).toEqual(
+        computePermissions(['crewLead'], {}, {readsAllExpenses: true}));
+      expect(result.permissions).toBe(1);
+    });
+
+    test('an edited role is kept when recalculating', async () => {
+      await seedOld('e1', {settings: {expenseAccess: {mode: 'involved'}}});
+      await db().doc('events/e1/roles/participant').set({permissions: ['chat.send', 'money.read']});
+      await db().doc('events/e1/members/m').set({
+        uid: 'm', roleIds: ['participant'], crewIds: [], permissions: ['chat.send'], participantId: null,
+      });
+      await run();
+      expect((await member('e1', 'm'))?.permissions).toEqual(['money.read', 'chat.send']);
+    });
+  });
+
   describe('task budget figures (Req 36)', () => {
     test('move to taskBudgets, and leave the task', async () => {
       await seedOld('e1');
@@ -222,11 +257,15 @@ describe('migrateToMembers', () => {
     await seedOld('e1', {startDate: Timestamp.fromDate(new Date('2026-07-01T23:00:00Z'))});
     await db().doc('events/e1/expenses/x').set({payerId: 'a', splits: [{userId: 'm', amount: 1}]});
     await run();
-    await db().doc('events/e1/members/m').update({roleIds: ['finance']});
+    await db().doc('events/e1/members/m').update({
+      roleIds: ['finance'],
+      permissions: computePermissions(['finance'], {}, {readsAllExpenses: true}),
+    });
     const again = await run();
     expect(again).toEqual({
       events: 1, memberDocs: 0, statuses: 0, memberCounts: 0,
       involvedUids: 0, dates: 0, unknownZones: 0, taskBudgets: 0, profiles: 0,
+      permissions: 0,
     });
     expect((await member('e1', 'm'))?.roleIds).toEqual(['finance']);
   });

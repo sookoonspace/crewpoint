@@ -126,7 +126,7 @@ Each fix keeps working for current members, and has a regression test written fi
 29. Permissions combine across roles and are scoped. Holding several roles grants the union, and own-group access applies regardless of role. (H-06)
 30. Co-owners and transfer: an event has one Owner and any number of Co-owners. Ownership can be transferred, needs confirmation by the new owner, and can be returned the same way. An event always has an Owner. (WE-07, WE-10, GAP-WED-32, GAP-ANY-31)
 31. An event has one active invite, which carries a role applied on join. Removing someone with permission revokes write access on all paths, and existing behaviour from PR #40 is retained, including rotating the code. Leaving warns when it would leave at most one person holding `members.manage`, naming them, so there is always a backup; it never blocks leaving. (GAP-ANY-33, H-07) [L19]
-32. Vendors see only tasks assigned to them, and their own payments or documents. (WE-08) Observers see only the event and its published schedule: no tasks, money or chat. Reading chat needs `chat.send`, so neither has chat unless the Owner adds it to their role. Expenses open to them only through `money.read` or the access setting in Req 38, where "Everyone in the event" includes Observers and Vendors, so an organizer can share final financials when they choose. [Decided 2026-11-07]
+32. Vendors see only tasks assigned to them, and their own payments or documents. (WE-08) Observers see only the event and its published schedule: no tasks, money or chat. Reading chat needs `chat.send`, so neither has chat unless the Owner adds it to their role. Expenses open to them only through `money.read` or the access setting in Req 38: "Everyone in the event" leaves them out unless the admin turns on "Also show Observers and Vendors", and they can be picked under "Selected roles and people", so an organizer can share final financials when they choose. [Decided 2026-11-08]
 33. Screens: Roles, Role editor, Member detail, Crews, and Transfer ownership, each with loading, empty, error and permission-denied states.
 34. **Migration.** An idempotent admin script with a dry-run mode converts each event, preserving everyone's access and old data, including status, `involvedUids`, and `budgetEstimate`. Order on each project:
     1. Confirm a fresh backup.
@@ -145,7 +145,7 @@ Each fix keeps working for current members, and has a regression test written fi
 36. `budgetEstimate` moves off tasks to a document that needs `budget.read`. Existing values are migrated. Tasks show it only to those with permission.
 37. Payment handles move out of the public profile. They are visible only to people who share an event with that person, through a callable or a per-event projection. Removing the broad read on `users/{uid}` must not break names in chat, tasks and budget. (H-05)
 38. **Expense access is an event setting that event admins control.** [L15] Anyone with `event.manage` (Owner, Co-owner and Admin by default) chooses one of these in Event settings:
-    - **Everyone in the event:** all members can read all expenses.
+    - **Everyone in the event:** all members except Observers and Vendors can read all expenses. A switch, "Also show Observers and Vendors", off by default, includes them too. [Decided 2026-11-08]
     - **Only people involved:** members read only expenses they paid for or are part of.
     - **Selected roles and people:** the admin picks any roles and individual members, who can read all expenses.
 

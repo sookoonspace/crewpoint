@@ -2,6 +2,11 @@ import {FieldValue} from "firebase-admin/firestore";
 import {HttpsError} from "firebase-functions/v2/https";
 import {contributesWith} from "./access";
 import {
+  ExpenseAccess,
+  expenseAccessOf,
+  readsAllExpensesUnder,
+} from "./expenseAccess";
+import {
   EventRoles,
   Permission,
   computePermissions,
@@ -29,10 +34,15 @@ export function memberRef(
   return eventRef.collection("members").doc(uid);
 }
 
+/**
+ * A member document. [access] is the event's expense access setting
+ * (`expenseAccessOf(eventData)`), which decides `expenses.readAll`.
+ */
 export function memberDoc(
   uid: string,
   fields: MemberFields,
-  eventRoles: EventRoles
+  eventRoles: EventRoles,
+  access: ExpenseAccess
 ): FirebaseFirestore.DocumentData {
   const doc: FirebaseFirestore.DocumentData = {
     uid,
@@ -40,6 +50,7 @@ export function memberDoc(
     crewIds: fields.crewIds ?? [],
     permissions: computePermissions(fields.roleIds, eventRoles, {
       editsOwnGroup: fields.editsOwnGroup,
+      readsAllExpenses: readsAllExpensesUnder(access, uid, fields.roleIds),
     }),
     participantId: fields.participantId ?? null,
     joinedAt: fields.joinedAt ?? FieldValue.serverTimestamp(),
@@ -87,7 +98,12 @@ export async function prepareRoleChange(
       legacyRoleIds(eventData, uid),
     roles
   );
-  const doc = rebuildMember(uid, {...current, roleIds}, roles);
+  const doc = rebuildMember(
+    uid,
+    {...current, roleIds},
+    roles,
+    expenseAccessOf(eventData)
+  );
   return () => tx.set(ref, doc);
 }
 
@@ -98,7 +114,8 @@ export async function prepareRoleChange(
 export function rebuildMember(
   uid: string,
   current: FirebaseFirestore.DocumentData,
-  roles: EventRoles
+  roles: EventRoles,
+  access: ExpenseAccess
 ): FirebaseFirestore.DocumentData {
   return memberDoc(
     uid,
@@ -109,7 +126,8 @@ export function rebuildMember(
       joinedAt: current.joinedAt,
       editsOwnGroup: current.editsOwnGroup,
     },
-    roles
+    roles,
+    access
   );
 }
 
@@ -127,7 +145,25 @@ export async function readPermissions(
   const ref = memberRef(eventRef, uid);
   const doc = tx ? await tx.get(ref) : await ref.get();
   if (doc.exists) return doc.data()!.permissions ?? [];
-  return computePermissions(legacyRoleIds(eventData, uid), {});
+  return legacyPermissions(eventData, uid);
+}
+
+/**
+ * What the old arrays map to on an event not yet migrated, including what
+ * the expense access setting adds.
+ */
+export function legacyPermissions(
+  eventData: FirebaseFirestore.DocumentData,
+  uid: string
+): Permission[] {
+  const roleIds = legacyRoleIds(eventData, uid);
+  return computePermissions(roleIds, {}, {
+    readsAllExpenses: readsAllExpensesUnder(
+      expenseAccessOf(eventData),
+      uid,
+      roleIds
+    ),
+  });
 }
 
 /** Refuses unless [uid] holds [permission] in the event. */

@@ -77,6 +77,7 @@ type ClientFirestore = import('firebase/firestore').Firestore;
 async function syncMemberDocs(db: ClientFirestore): Promise<void> {
   const {collection, doc, getDocs, setDoc, deleteDoc} = await import('firebase/firestore');
   const {computePermissions, legacyRoleIds} = await import('../src/events/permissions');
+  const {expenseAccessOf, readsAllExpensesUnder} = await import('../src/events/expenseAccess');
   const events = await getDocs(collection(db, 'events'));
   for (const event of events.docs) {
     const data = event.data();
@@ -93,7 +94,9 @@ async function syncMemberDocs(db: ClientFirestore): Promise<void> {
         uid,
         roleIds,
         crewIds: [],
-        permissions: computePermissions(roleIds, {}),
+        permissions: computePermissions(roleIds, {}, {
+          readsAllExpenses: readsAllExpensesUnder(expenseAccessOf(data), uid, roleIds),
+        }),
         participantId: null,
         seededFromArrays: true,
       });

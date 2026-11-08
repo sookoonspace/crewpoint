@@ -128,3 +128,25 @@ describe('names and payment handles (Req 37)', () => {
     await assertFails(getDoc(doc(as('outsider'), 'users/plain')));
   });
 });
+
+describe('expense access setting (Req 38b)', () => {
+  test('only setExpenseAccess changes it, so member documents stay in step', async () => {
+    await assertFails(updateDoc(doc(as('owner'), E), {'settings.expenseAccess': {mode: 'involved'}}));
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await updateDoc(doc(ctx.firestore(), E), {'settings.expenseAccess': {mode: 'involved'}});
+    });
+    // Removing a stored setting would widen access the same way.
+    await assertFails(updateDoc(doc(as('owner'), E), {settings: {}}));
+    // Other settings still save.
+    await assertSucceeds(updateDoc(doc(as('owner'), E), {'settings.other': true}));
+  });
+
+  test('the change log is read by event.manage and written only by the server', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `${E}/settingsLog/1`), {setting: 'expenseAccess', changedBy: 'owner'});
+    });
+    await assertSucceeds(getDoc(doc(as('owner'), `${E}/settingsLog/1`)));
+    await assertFails(getDoc(doc(as('finance'), `${E}/settingsLog/1`)));
+    await assertFails(setDoc(doc(as('owner'), `${E}/settingsLog/2`), {setting: 'x'}));
+  });
+});

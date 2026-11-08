@@ -1,4 +1,5 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
+import {expenseAccessOf} from "./expenseAccess";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 import {commitInChunks} from "../utils/batch";
@@ -155,7 +156,8 @@ export const setCrewMembers = onCall({timeoutSeconds: 60}, async (request) => {
               memberDoc(
                 target,
                 {roleIds: legacyRoleIds(eventData, target), crewIds: [crewId]},
-                roles
+                roles,
+                expenseAccessOf(eventData)
               )
             );
           }

@@ -22,6 +22,9 @@ import {
 } from 'firebase/firestore';
 import {getTestEnv} from './setup';
 import {PRESET_ROLES, computePermissions, type Permission} from '../src/events/permissions';
+import {
+  expenseAccessOf, readsAllExpensesUnder, type ExpenseAccess,
+} from '../src/events/expenseAccess';
 
 let env: RulesTestEnvironment;
 beforeAll(async () => {
@@ -37,7 +40,11 @@ const holds = (role: string, p: Permission) => PRESET_ROLES[role].permissions.in
 /** Everyone except those holding only Observer or Vendor (Req 34). */
 const contributes = (role: string) => role !== 'observer' && role !== 'vendor';
 
-async function seed(roles: Record<string, {permissions: string[]}> = {}) {
+async function seed(
+  roles: Record<string, {permissions: string[]}> = {},
+  access: Partial<ExpenseAccess> | undefined = undefined,
+) {
+  const expenseAccess = expenseAccessOf({settings: {expenseAccess: access}});
   await env.withSecurityRulesDisabled(async (ctx) => {
     const db = ctx.firestore();
     await setDoc(doc(db, E), {
@@ -47,10 +54,14 @@ async function seed(roles: Record<string, {permissions: string[]}> = {}) {
       adminIds: ['owner', 'coOwner', 'admin'],
       memberIds: ROLES,
       skipMemberSync: true,
+      ...(access ? {settings: {expenseAccess: access}} : {}),
     });
     for (const role of ROLES) {
       await setDoc(doc(db, `${E}/members/${role}`), {
-        uid: role, roleIds: [role], crewIds: [], permissions: computePermissions([role], roles),
+        uid: role, roleIds: [role], crewIds: [],
+        permissions: computePermissions([role], roles, {
+          readsAllExpenses: readsAllExpensesUnder(expenseAccess, role, [role]),
+        }),
       });
       // One task assigned to each person, and one expense each shares in.
       await setDoc(doc(db, `${E}/tasks/a-${role}`), {
@@ -110,7 +121,7 @@ describe.each(ROLES)('%s', (role) => {
     }));
   });
 
-  test('expenses: all of them only when contributing or holding money.read', async () => {
+  test('expenses: all of them under Everyone, unless Observer or Vendor', async () => {
     const all = contributes(role) || holds(role, 'money.read') || holds(role, 'expenses.readAll');
     await expectAccess(all, getDoc(doc(as(role), `${E}/expenses/other`)));
     await expectAccess(all, getDocs(collection(as(role), `${E}/expenses`)));
@@ -159,6 +170,39 @@ describe.each(ROLES)('%s', (role) => {
     await assertFails(setDoc(doc(as(role), `${E}/roles/x`), {permissions: []}));
     await assertFails(setDoc(doc(as(role), `${E}/crews/x`), {name: 'X'}));
     await assertFails(updateDoc(doc(as(role), `${E}/members/${role}`), {permissions: ['event.manage']}));
+  });
+});
+
+/**
+ * Req 38: every expense access option against every role. Whatever the
+ * option, the payer and people in a split read that expense, and roles
+ * holding money.read or expenses.readAll read all of them. Only reading
+ * changes: writes stay as they were.
+ */
+const OPTIONS: [string, Partial<ExpenseAccess>, (role: string) => boolean][] = [
+  ['Everyone', {mode: 'everyone'}, (r) => contributes(r)],
+  ['Everyone, with Observers and Vendors', {mode: 'everyone', includeNonContributors: true}, () => true],
+  ['Only people involved', {mode: 'involved'}, () => false],
+  ['Selected: Crew lead, Observer and the Scorer', {mode: 'selected', roleIds: ['crewLead', 'observer'], uids: ['scorer']},
+    (r) => ['crewLead', 'observer', 'scorer'].includes(r)],
+  ['Selected: nobody', {mode: 'selected'}, () => false],
+];
+
+describe.each(OPTIONS)('expense access: %s', (_name, access, chosen) => {
+  beforeEach(() => seed({}, access));
+
+  test.each(ROLES)('%s', async (role) => {
+    const all = chosen(role) || holds(role, 'money.read') || holds(role, 'expenses.readAll');
+    await expectAccess(all, getDoc(doc(as(role), `${E}/expenses/other`)));
+    await expectAccess(all, getDocs(collection(as(role), `${E}/expenses`)));
+    // Their own, always, by document and by the involvedUids query.
+    await assertSucceeds(getDoc(doc(as(role), `${E}/expenses/e-${role}`)));
+    await assertSucceeds(getDoc(doc(as(role), `${E}/expenses/p-${role}`)));
+    await assertSucceeds(getDocs(query(
+      collection(as(role), `${E}/expenses`), where('involvedUids', 'array-contains', role))));
+    // Reading all of them grants no writes.
+    await assertFails(setDoc(doc(as(role), `${E}/expenses/new`), {payerId: role, amount: 1}));
+    await expectAccess(holds(role, 'money.record'), deleteDoc(doc(as(role), `${E}/expenses/other`)));
   });
 });
 

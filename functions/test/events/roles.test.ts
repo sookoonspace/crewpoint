@@ -128,7 +128,7 @@ describe('saveEventRole', () => {
     expect(await role('participant')).toEqual(expect.objectContaining({
       name: 'Guest', permissions: ['chat.send', 'counts.read'], preset: true,
     }));
-    expect((await member('m'))?.permissions).toEqual(['chat.send', 'counts.read']);
+    expect((await member('m'))?.permissions).toEqual(['expenses.readAll', 'chat.send', 'counts.read']);
     expect((await member('admin'))?.permissions).toEqual(computePermissions(['admin'], {}));
   });
 });
@@ -139,7 +139,7 @@ describe('saveEventRole guards', () => {
     await saveRole('owner', {roleId: 'hospitality', name: 'Hospitality', permissions: ['participants.read']});
     expect((await role('hospitality'))?.preset).toBe(false);
     await assign('owner', 'm', ['hospitality']);
-    expect((await member('m'))?.permissions).toEqual(['participants.read']);
+    expect((await member('m'))?.permissions).toEqual(['participants.read', 'expenses.readAll']);
   });
 
   test('needs roles.manage', async () => {
@@ -189,7 +189,7 @@ describe('deleteEventRole', () => {
     await saveRole('owner', {roleId: 'participant', name: 'Guest', permissions: ['counts.read']});
     await deleteRole('owner', 'participant');
     expect(await role('participant')).toBeUndefined();
-    expect((await member('m'))?.permissions).toEqual(computePermissions(['participant'], {}));
+    expect((await member('m'))?.permissions).toEqual(computePermissions(['participant'], {}, {readsAllExpenses: true}));
   });
 
   test('a custom role nobody holds is deleted', async () => {

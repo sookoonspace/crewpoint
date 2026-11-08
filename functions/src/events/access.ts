@@ -1,4 +1,5 @@
 import {computePermissions, legacyRoleIds} from "./permissions";
+import {expenseAccessOf, readsAllExpensesUnder} from "./expenseAccess";
 
 /**
  * What the server needs to know about one member to decide what they may
@@ -25,15 +26,15 @@ export function readsChat(member: MemberAccess): boolean {
 }
 
 /**
- * Vendors and Observers read only expenses they paid or share in, unless
- * their role holds `money.read` or `expenses.readAll` (Req 32).
+ * Whether [member] may read [expense] (Req 38): with `money.read`, or
+ * `expenses.readAll`, which the event's expense access setting puts on member
+ * documents, or as its payer or someone in its split.
  */
 export function readsExpense(
   member: MemberAccess,
   expense: FirebaseFirestore.DocumentData
 ): boolean {
   return (
-    contributesWith(member.roleIds) ||
     member.permissions.includes("money.read") ||
     member.permissions.includes("expenses.readAll") ||
     expense.payerId === member.uid ||
@@ -61,8 +62,12 @@ export async function readAllAccess(
       };
     });
   }
+  const access = expenseAccessOf(eventData);
   return ((eventData.memberIds ?? []) as string[]).map((uid) => {
     const roleIds = legacyRoleIds(eventData, uid);
-    return {uid, roleIds, permissions: computePermissions(roleIds, {})};
+    const permissions = computePermissions(roleIds, {}, {
+      readsAllExpenses: readsAllExpensesUnder(access, uid, roleIds),
+    });
+    return {uid, roleIds, permissions};
   });
 }

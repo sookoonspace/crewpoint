@@ -133,15 +133,20 @@ export function rolePermissions(
 /**
  * A member's permissions: the union of their roles, in catalogue order.
  * Names outside the catalogue are dropped. A group's contact and its linked
- * adults also get `group.editOwn`, whatever their role (Req 26b).
+ * adults also get `group.editOwn`, whatever their role (Req 26b), and the
+ * event's expense access setting can add `expenses.readAll` (Req 38).
  */
 export function computePermissions(
   roleIds: readonly string[],
   eventRoles: EventRoles,
-  {editsOwnGroup = false}: {editsOwnGroup?: boolean} = {}
+  {
+    editsOwnGroup = false,
+    readsAllExpenses = false,
+  }: {editsOwnGroup?: boolean; readsAllExpenses?: boolean} = {}
 ): Permission[] {
   const granted = new Set<unknown>();
   if (editsOwnGroup) granted.add("group.editOwn");
+  if (readsAllExpenses) granted.add("expenses.readAll");
   for (const id of roleIds) {
     rolePermissions(id, eventRoles).forEach((p) => granted.add(p));
   }

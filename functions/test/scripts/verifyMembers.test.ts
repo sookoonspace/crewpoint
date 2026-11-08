@@ -36,7 +36,10 @@ describe('verifyMembers', () => {
     await members.doc('m').delete();
     await members.doc('ghost').set({uid: 'ghost', roleIds: ['participant'], permissions: ['group.readOwn', 'chat.send']});
     await members.doc('c').update({roleIds: ['admin']});
-    await members.doc('a').update({roleIds: ['participant'], permissions: ['group.readOwn', 'chat.send']});
+    // Under Everyone, the default, a Participant reads every expense.
+    await members.doc('a').update({
+      roleIds: ['participant'], permissions: ['group.readOwn', 'expenses.readAll', 'chat.send'],
+    });
     await db().doc('events/e1').update({memberCount: 9});
     const {problems} = await verifyMembers(db());
     expect(problems.sort()).toEqual([
