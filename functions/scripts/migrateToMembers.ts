@@ -13,12 +13,15 @@ import {applicationDefault, initializeApp} from "firebase-admin/app";
 import {
   DocumentData,
   DocumentReference,
+  FieldValue,
   Firestore,
   getFirestore,
+  QuerySnapshot,
   Timestamp,
 } from "firebase-admin/firestore";
 import {commitInChunks, BatchOperation} from "../src/utils/batch";
 import {memberDoc} from "../src/events/members";
+import {profileFrom} from "../src/events/profileFields";
 import {legacyRoleIds} from "../src/events/permissions";
 import {mapLegacyStatus} from "../src/events/eventStatus";
 
@@ -30,6 +33,8 @@ export interface MigrationResult {
   involvedUids: number;
   dates: number;
   unknownZones: number;
+  taskBudgets: number;
+  profiles: number;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -47,12 +52,20 @@ export async function migrateToMembers(
     involvedUids: 0,
     dates: 0,
     unknownZones: 0,
+    taskBudgets: 0,
+    profiles: 0,
   };
   const ops: BatchOperation[] = [];
   for (const doc of events.docs) {
     const event = doc.data();
     ops.push(...(await memberOps(doc.ref, event, result)));
-    ops.push(...(await expenseOps(doc.ref, result)));
+    const expenses = await doc.ref.collection("expenses").get();
+    const tasks = await doc.ref.collection("tasks").get();
+    ops.push(...expenseOps(expenses, result));
+    ops.push(...budgetOps(doc.ref, tasks, result));
+    ops.push(
+      ...(await profileOps(db, doc.ref, event, {expenses, tasks}, result))
+    );
     const fields = {
       ...eventFields(event, now, result),
       ...(await dateFields(db, event, result)),
@@ -156,11 +169,10 @@ async function dateFields(
  * (Technical Decision 4a). It is the payer and everyone in the splits, as
  * `saveExpense` and `recordSettlement` write it.
  */
-async function expenseOps(
-  eventRef: DocumentReference,
+function expenseOps(
+  expenses: QuerySnapshot,
   result: MigrationResult
-): Promise<BatchOperation[]> {
-  const expenses = await eventRef.collection("expenses").get();
+): BatchOperation[] {
   const ops: BatchOperation[] = [];
   for (const doc of expenses.docs) {
     const expense = doc.data();
@@ -175,6 +187,89 @@ async function expenseOps(
       data: {involvedUids: [...new Set(involved)]},
     });
     result.involvedUids++;
+  }
+  return ops;
+}
+
+/**
+ * A task's budget figure moves to `taskBudgets/{taskId}`, which needs
+ * `budget.read` (Req 36), and leaves the task.
+ */
+function budgetOps(
+  eventRef: DocumentReference,
+  tasks: QuerySnapshot,
+  result: MigrationResult
+): BatchOperation[] {
+  const ops: BatchOperation[] = [];
+  for (const doc of tasks.docs) {
+    const task = doc.data();
+    if (!("budgetEstimate" in task)) continue;
+    if (typeof task.budgetEstimate === "number") {
+      ops.push({
+        type: "set",
+        ref: eventRef.collection("taskBudgets").doc(doc.id),
+        data: {estimate: task.budgetEstimate},
+      });
+      result.taskBudgets++;
+    }
+    ops.push({
+      type: "update",
+      ref: doc.ref,
+      data: {budgetEstimate: FieldValue.delete()},
+    });
+  }
+  return ops;
+}
+
+const sameData = (a: DocumentData | undefined, b: DocumentData) =>
+  a !== undefined &&
+  Object.keys(a).length === Object.keys(b).length &&
+  Object.entries(b).every(([k, v]) => a[k] === v);
+
+/**
+ * Names and handles move from the public `users/{uid}` into the event
+ * (Req 37). Members get both. People who left but still appear on messages,
+ * expenses or tasks get only their name, so those records still show it.
+ */
+async function profileOps(
+  db: Firestore,
+  eventRef: DocumentReference,
+  event: DocumentData,
+  {expenses, tasks}: {expenses: QuerySnapshot; tasks: QuerySnapshot},
+  result: MigrationResult
+): Promise<BatchOperation[]> {
+  const memberDocs = await eventRef.collection("members").get();
+  const members = new Set<string>([
+    ...((event.memberIds ?? []) as string[]),
+    ...memberDocs.docs.map((d) => d.id),
+  ]);
+  const others = new Set<string>();
+  const add = (uid: unknown) => {
+    if (typeof uid === "string" && uid && !members.has(uid)) others.add(uid);
+  };
+  const messages = await eventRef.collection("messages").select("senderId").get();
+  messages.docs.forEach((m) => add(m.data().senderId));
+  for (const e of expenses.docs) {
+    const expense = e.data();
+    add(expense.payerId);
+    ((expense.splits ?? []) as {userId?: unknown}[]).forEach((s) => add(s.userId));
+  }
+  for (const t of tasks.docs) {
+    const task = t.data();
+    [task.createdBy, task.assigneeId, task.completedBy].forEach(add);
+  }
+  const existing = await eventRef.collection("profiles").get();
+  const have = new Map(existing.docs.map((d) => [d.id, d.data()]));
+  const ops: BatchOperation[] = [];
+  for (const uid of [...members, ...others]) {
+    const user = (await db.collection("users").doc(uid).get()).data();
+    const full = profileFrom(uid, user);
+    const data = members.has(uid) ?
+      full :
+      {uid, displayName: full.displayName, photoUrl: full.photoUrl};
+    if (sameData(have.get(uid), data)) continue;
+    ops.push({type: "set", ref: eventRef.collection("profiles").doc(uid), data});
+    result.profiles++;
   }
   return ops;
 }

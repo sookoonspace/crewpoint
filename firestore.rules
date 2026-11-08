@@ -227,6 +227,12 @@ service cloud.firestore {
                 && exists(/databases/$(database)/documents/events/$(eventId)/crews/$(crewId)));
         }
 
+        // A task's budget figure lives in `taskBudgets` (Req 36). Older apps
+        // still send an empty one, which is allowed so they can save tasks.
+        function budgetIsNotOnTask() {
+          return request.resource.data.get('budgetEstimate', null) == null;
+        }
+
         // Create: any member but Observer and Vendor; must set themselves as
         // createdBy, and a new task cannot start finished.
         allow create: if request.auth != null
@@ -237,6 +243,7 @@ service cloud.firestore {
           && request.resource.data.get('status', null) != 'done'
           && request.resource.data.get('completedAt', null) == null
           && request.resource.data.get('completedBy', null) == null
+          && budgetIsNotOnTask()
           && crewIsValid(null);
 
         // Update: an assignee may change only status. Fix 1.C — clients must
@@ -250,6 +257,7 @@ service cloud.firestore {
                   && request.resource.data.diff(resource.data).affectedKeys()
                       .hasOnly(['status', 'completedAt', 'completedBy', 'updatedAt'])))
           && completionIsUntouched()
+          && budgetIsNotOnTask()
           && crewIsValid(resource.data.get('crewId', null))
           && request.resource.data.eventId == resource.data.eventId
           && request.resource.data.createdBy == resource.data.createdBy;
@@ -279,6 +287,34 @@ service cloud.firestore {
                     && request.resource.data.diff(resource.data).affectedKeys()
                         .hasOnly(['isCompleted', 'updatedAt'])));
         }
+      }
+
+      // A task's budget figure (Req 36), apart from the task because rules
+      // cannot hide one field (Technical Decision 4). Reading needs
+      // `budget.read`, and setting or clearing it `budget.edit`.
+      match /taskBudgets/{taskId} {
+        allow read: if request.auth != null && can(eventId, 'budget.read');
+
+        allow create, update: if request.auth != null
+          && can(eventId, 'budget.edit')
+          && tasksAreOpen(eventId)
+          && exists(/databases/$(database)/documents/events/$(eventId)/tasks/$(taskId))
+          && request.resource.data.keys().hasOnly(['estimate', 'updatedBy', 'updatedAt'])
+          && request.resource.data.estimate is number
+          && request.resource.data.estimate >= 0
+          && request.resource.data.updatedBy == request.auth.uid;
+
+        allow delete: if request.auth != null
+          && can(eventId, 'budget.edit')
+          && tasksAreOpen(eventId);
+      }
+
+      // Names and payment handles of people in the event (Req 37), copied
+      // from `users/{uid}` by the server. Someone who leaves keeps their name
+      // here, without handles, so older messages still show who wrote them.
+      match /profiles/{uid} {
+        allow read: if request.auth != null && isEventMember(eventId);
+        allow write: if false;
       }
 
       // Expenses subcollection
@@ -337,15 +373,13 @@ service cloud.firestore {
 
     // Users collection
     //
-    // Fix 1.B Option A — projection-split. The public users/{uid} doc keeps
-    // only display fields visible to every CrewPoint user (displayName,
-    // photoUrl, payment* handles, currency). PII fields (email, providerIds,
-    // fcmTokens, preferences, createdAt, updatedAt) live in the
-    // users/{uid}/private/profile subdoc with self-only access. This
-    // eliminates the broad read on PII without touching the
-    // co-member-display read path that chat / tasks / budget rely on.
+    // Only the owner reads `users/{uid}` (Req 37). Other people see a name and
+    // payment handles only through `events/{eventId}/profiles/{uid}` in an
+    // event they share, which the server keeps in step. PII fields (email,
+    // providerIds, fcmTokens, preferences, createdAt, updatedAt) live in the
+    // users/{uid}/private/profile subdoc.
     match /users/{userId} {
-      allow read: if request.auth != null;
+      allow read: if request.auth != null && request.auth.uid == userId;
       allow write: if request.auth.uid == userId;
 
       match /private/{docId} {

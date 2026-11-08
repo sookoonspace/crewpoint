@@ -146,7 +146,78 @@ describe('migrateToMembers', () => {
     });
   });
 
+  describe('task budget figures (Req 36)', () => {
+    test('move to taskBudgets, and leave the task', async () => {
+      await seedOld('e1');
+      await db().doc('events/e1/tasks/t1').set({title: 'Food', budgetEstimate: 280});
+      await db().doc('events/e1/tasks/t2').set({title: 'Zero', budgetEstimate: 0});
+      await db().doc('events/e1/tasks/t3').set({title: 'Empty', budgetEstimate: null});
+      await db().doc('events/e1/tasks/t4').set({title: 'None'});
+      const result = await run();
+      expect((await db().doc('events/e1/taskBudgets/t1').get()).data()).toEqual({estimate: 280});
+      expect((await db().doc('events/e1/taskBudgets/t2').get()).data()).toEqual({estimate: 0});
+      expect((await db().doc('events/e1/taskBudgets/t3').get()).exists).toBe(false);
+      for (const t of ['t1', 't2', 't3', 't4']) {
+        const task = (await db().doc(`events/e1/tasks/${t}`).get()).data()!;
+        expect(task).not.toHaveProperty('budgetEstimate');
+        expect(task.title).toBeDefined();
+      }
+      expect(result.taskBudgets).toBe(2);
+    });
+
+    test('a dry run leaves them on the task', async () => {
+      await seedOld('e1');
+      await db().doc('events/e1/tasks/t1').set({title: 'Food', budgetEstimate: 280});
+      expect((await run(true)).taskBudgets).toBe(1);
+      expect((await db().doc('events/e1/tasks/t1').get()).data()?.budgetEstimate).toBe(280);
+      expect((await db().doc('events/e1/taskBudgets/t1').get()).exists).toBe(false);
+    });
+  });
+
+  describe('names and payment handles (Req 37)', () => {
+    const profile = async (uid: string) =>
+      (await db().doc(`events/e1/profiles/${uid}`).get()).data();
+
+    test('every member gets a profile in the event', async () => {
+      await seedOld('e1');
+      await db().doc('users/m').set({displayName: 'Mo', venmoHandle: 'mo', currency: 'USD'});
+      const result = await run();
+      expect(await profile('m')).toEqual({
+        uid: 'm', displayName: 'Mo', photoUrl: null, paymentMethod: null,
+        paymentHandle: null, venmoHandle: 'mo', cashappHandle: null,
+      });
+      expect((await profile('c'))?.displayName).toBeNull();
+      expect(result.profiles).toBe(3);
+    });
+
+    test('people who left keep their name on old records, without handles', async () => {
+      await seedOld('e1');
+      await db().doc('users/gone').set({displayName: 'Gil', venmoHandle: 'gil', photoUrl: 'g.jpg'});
+      await db().doc('users/paid').set({displayName: 'Pia', venmoHandle: 'pia'});
+      await db().doc('users/did').set({displayName: 'Dee'});
+      await db().doc('events/e1/messages/x').set({senderId: 'gone', text: 'Hi'});
+      await db().doc('events/e1/expenses/x').set({payerId: 'paid', splits: [{userId: 'm', amount: 1}]});
+      await db().doc('events/e1/tasks/x').set({title: 'T', createdBy: 'did', assigneeId: 'm'});
+      await run();
+      expect(await profile('gone')).toEqual({uid: 'gone', displayName: 'Gil', photoUrl: 'g.jpg'});
+      expect(await profile('paid')).toEqual({uid: 'paid', displayName: 'Pia', photoUrl: null});
+      expect(await profile('did')).toEqual({uid: 'did', displayName: 'Dee', photoUrl: null});
+    });
+
+    test('a profile that is already right is left alone', async () => {
+      await seedOld('e1');
+      await db().doc('users/m').set({displayName: 'Mo'});
+      await run();
+      await db().doc('users/m').set({displayName: 'Maureen'});
+      const again = await run();
+      expect(again.profiles).toBe(1);
+      expect((await profile('m'))?.displayName).toBe('Maureen');
+    });
+  });
+
   test('running it again changes nothing, and keeps later role changes', async () => {
+    await db().doc('events/e1/tasks/t1').set({title: 'Food', budgetEstimate: 280});
+    await db().doc('events/e1/messages/x').set({senderId: 'gone', text: 'Hi'});
     await db().doc('users/c/private/profile').set({notificationPrefs: {timezone: 'Europe/London'}});
     await seedOld('e1', {startDate: Timestamp.fromDate(new Date('2026-07-01T23:00:00Z'))});
     await db().doc('events/e1/expenses/x').set({payerId: 'a', splits: [{userId: 'm', amount: 1}]});
@@ -155,7 +226,7 @@ describe('migrateToMembers', () => {
     const again = await run();
     expect(again).toEqual({
       events: 1, memberDocs: 0, statuses: 0, memberCounts: 0,
-      involvedUids: 0, dates: 0, unknownZones: 0,
+      involvedUids: 0, dates: 0, unknownZones: 0, taskBudgets: 0, profiles: 0,
     });
     expect((await member('e1', 'm'))?.roleIds).toEqual(['finance']);
   });

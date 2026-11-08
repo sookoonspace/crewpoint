@@ -338,6 +338,16 @@ export const deleteUserAccount = onCall(
             }
           }
 
+          // Their name and handles in every event, including ones they left
+          // (Req 37).
+          const profiles = await db
+            .collectionGroup("profiles")
+            .where("uid", "==", uid)
+            .get();
+          await commitInChunks(
+            profiles.docs.map((p) => ({type: "delete", ref: p.ref}))
+          );
+
           // Firestore does NOT cascade-delete subcollections, so personal
           // documents go before the parent user doc. Idempotent on retry.
           const userRef = db.collection("users").doc(uid);

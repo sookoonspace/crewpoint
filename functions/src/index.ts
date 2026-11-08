@@ -27,6 +27,7 @@ export {onTaskAssigned} from "./events/onTaskAssigned";
 export {onExpenseCreated} from "./events/onExpenseCreated";
 export {onSettlementDisputed} from "./events/onSettlementDisputed";
 export {onMemberJoined} from "./events/onMemberJoined";
+export {onMemberProfileSync, onUserProfileSync} from "./events/profiles";
 export {onTaskDueScheduled} from "./events/onTaskDueScheduled";
 export {onEventStatusScheduled} from "./events/onEventStatusScheduled";
 export {onDigestSummary} from "./events/onDigestSummary";

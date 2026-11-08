@@ -46,6 +46,10 @@ The report gives counts for each change:
 | `involvedUids` | Older expenses given `involvedUids` |
 | `dates` | Event dates converted to date-only |
 | `unknownZones` | Events whose dates were left alone because no zone was known |
+| `taskBudgets` | Task budget figures moved to `taskBudgets` (#71) |
+| `profiles` | Names and payment handles copied into each event's `profiles`, with names only for people who left (#71) |
+
+A project migrated before #71 needs the script run again before the #71 rules go out. Until then, budget figures stay on tasks, and the rules that close `users/{uid}` would leave names blank.
 
 Check each `unknownZones` event's dates by hand.
 
