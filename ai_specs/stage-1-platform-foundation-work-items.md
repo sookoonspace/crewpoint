@@ -980,13 +980,13 @@ Make every other path that carries money follow expense access.
 - `functions/src/events/onExpenseCreated.ts`, `functions/src/events/onSettlementDisputed.ts`, `functions/src/notifications/templates.ts`, the settlement notice from #50, `lib/app/features/budget/data/expense_export_pipeline.dart`, and `lib/app/features/budget/data/expense_pdf_builder.dart`.
 
 ### Acceptance criteria
-- [ ] Expense pushes go only to people who may read that expense, and leave out the amount otherwise.
-- [ ] Settlement notices in chat leave out the amount unless the access option is Everyone.
-- [ ] The global Budget tab, reports and exports all follow the same access.
-- [ ] A test covers each of these paths.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] Tests for scenario H-05 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] Expense pushes go only to people who may read that expense, and leave out the amount otherwise.
+- [x] Settlement notices in chat leave out the amount unless the access option is Everyone.
+- [x] The global Budget tab, reports and exports all follow the same access.
+- [x] A test covers each of these paths.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] Tests for scenario H-05 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - Requirements: 38f

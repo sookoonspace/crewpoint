@@ -6,7 +6,9 @@ import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/budget/application/global_balance_ledger_provider.dart';
 import 'package:crewpoint_app/app/features/budget/data/member_name_resolver.dart';
+import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
+import 'package:crewpoint_app/app/features/budget/domain/models/my_balance.dart';
 import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
@@ -595,4 +597,61 @@ void main() {
       expect(ledger.recentExpenses, isEmpty);
     },
   );
+
+  group('limited expense access (Req 38f)', () {
+    // Under Only people involved, Me reads no expense in this event.
+    const limited = EventModel(
+      id: 'evt-l',
+      title: 'Convention',
+      creatorId: 'owner',
+      memberIds: ['owner', 'me'],
+      currency: 'CAD',
+      settings: {
+        'expenseAccess': {'mode': 'involved'},
+      },
+    );
+
+    ProviderContainer build(MyBalanceCall call) {
+      final container = ProviderContainer(
+        overrides: [
+          dashboardEventsProvider.overrideWith(
+            (ref) => Stream.value(const [limited, eventA]),
+          ),
+          expenseListProvider.overrideWith(
+            (ref, eventId) => Stream.value(const <ExpenseModel>[]),
+          ),
+          _emptyRosterOverride,
+          myBalanceCallProvider.overrideWithValue(call),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test('debts come from the server, even with no expense in view', () async {
+      final asked = <String>[];
+      final container = build((eventId) async {
+        asked.add(eventId);
+        return const MyBalance(
+          net: -30,
+          currency: 'CAD',
+          transfers: [
+            Settlement(fromUserId: 'me', toUserId: 'owner', amount: 30),
+          ],
+        );
+      });
+      final ledger = (await _readAfterPump(container, 'me')).requireValue;
+      expect(asked, ['evt-l']);
+      expect(ledger.totalsByCurrency['CAD']?.youOwe, 30);
+      expect(ledger.debts.single.counterpartyUid, 'owner');
+      expect(ledger.debts.single.event.id, 'evt-l');
+    });
+
+    test('if the server cannot be reached, other events still show', () async {
+      final container = build((eventId) async => throw StateError('offline'));
+      final result = await _readAfterPump(container, 'me');
+      expect(result, isA<AsyncData<LedgerSummary>>());
+      expect(result.requireValue.debts, isEmpty);
+    });
+  });
 }

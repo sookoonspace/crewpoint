@@ -1,4 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
+import 'package:crewpoint_app/app/features/budget/domain/models/my_balance.dart';
 import 'package:crewpoint_app/app/features/budget/data/expense_export_pipeline.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
@@ -16,6 +20,61 @@ const _event = EventModel(
 );
 
 void main() {
+  group('Budget export follows expense access (Req 38f)', () {
+    const visible = [
+      ExpenseModel(
+        id: 'e1',
+        eventId: 'evt-1',
+        payerId: 'u1',
+        amount: 30,
+        splits: [ExpenseSplit(userId: 'u2', amount: 30)],
+      ),
+    ];
+
+    Future<BalanceLedger> exportedLedger({BalanceLedger? ledger}) async {
+      BalanceLedger? used;
+      await runExpenseExport(
+        event: _event,
+        expenses: visible,
+        memberNames: const {},
+        exporter: RecordingFileExporter(),
+        kind: ExpenseExportKind.pdf,
+        ledger: ledger,
+        buildReport:
+            ({
+              required event,
+              required expenses,
+              required memberNames,
+              required ledger,
+            }) async {
+              used = ledger;
+              return Uint8List.fromList(const [37, 80, 68, 70]);
+            },
+      );
+      return used!;
+    }
+
+    test('with full access, balances come from the expenses', () async {
+      final used = await exportedLedger();
+      expect(used.netBalances, {'u1': 30, 'u2': -30});
+    });
+
+    test(
+      'with limited access, the report shows only your own balance',
+      () async {
+        const mine = MyBalance(
+          net: -45,
+          currency: 'USD',
+          transfers: [Settlement(fromUserId: 'u2', toUserId: 'u1', amount: 45)],
+        );
+        final used = await exportedLedger(ledger: mine.toLedger('u2', visible));
+        expect(used.netBalances, {'u2': -45});
+        expect(used.settlements.single.amount, 45);
+        expect(used.totalExpenses, 30);
+      },
+    );
+  });
+
   group('Budget export pipeline (PDF)', () {
     test('exports the expense PDF through IFileExporter with the canonical '
         'filename + mime', () async {

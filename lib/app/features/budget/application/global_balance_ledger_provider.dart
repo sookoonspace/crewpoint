@@ -160,13 +160,23 @@ final globalBalanceLedgerProvider =
           );
         }
 
-        if (expenses.isEmpty) continue;
-
-        final ledger = BalanceLedger.calculate(
-          expenses: expenses,
-          memberIds: event.memberIds,
-        );
-        for (final settlement in ledger.settlements) {
+        // Someone who may not read every expense gets their transfers from
+        // the server, worked out from all of them (Req 38c, 38f). Debts can
+        // exist even when none of the expenses are in view.
+        final List<Settlement> settlements;
+        if (event.readsAllExpenses(uid)) {
+          if (expenses.isEmpty) continue;
+          settlements = BalanceLedger.calculate(
+            expenses: expenses,
+            memberIds: event.memberIds,
+          ).settlements;
+        } else {
+          final mine = ref.watch(myBalanceProvider(event.id));
+          if (mine.isLoading && !mine.hasValue) return const AsyncLoading();
+          // Offline or refused: leave this event out rather than the tab.
+          settlements = mine.value?.transfers ?? const [];
+        }
+        for (final settlement in settlements) {
           // Drop near-zero rows (round to cents, $0.00 means nothing
           // owed once display formatting kicks in).
           if (settlement.amount.toStringAsFixed(2) == '0.00') continue;
