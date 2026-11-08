@@ -28,6 +28,15 @@ service cloud.firestore {
         && !get(memberPath(eventId)).data.roleIds.hasOnly(['observer', 'vendor']);
     }
 
+    // Vendors and Observers read only tasks assigned to them, unless their
+    // role is given `tasks.manage` (Req 32). A list query must filter on
+    // `assigneeId` for them.
+    function readsTask(eventId, task) {
+      return contributes(eventId)
+        || can(eventId, 'tasks.manage')
+        || task.get('assigneeId', null) == request.auth.uid;
+    }
+
     function eventData(eventId) {
       return get(/databases/$(database)/documents/events/$(eventId)).data;
     }
@@ -154,7 +163,9 @@ service cloud.firestore {
 
       // Messages subcollection
       match /messages/{messageId} {
-        allow read: if request.auth != null && isEventMember(eventId);
+        // Reading chat needs `chat.send`, so a Vendor or Observer has no chat
+        // unless the Owner adds it to their role (Req 32).
+        allow read: if request.auth != null && can(eventId, 'chat.send');
 
         allow create: if request.auth != null
           && can(eventId, 'chat.send')
@@ -184,7 +195,7 @@ service cloud.firestore {
       // Tasks subcollection
       match /tasks/{taskId} {
 
-        allow read: if request.auth != null && isEventMember(eventId);
+        allow read: if request.auth != null && readsTask(eventId, resource.data);
 
         // `tasks.manage` and a task's creator may edit it.
         function canEditTask(task) {
@@ -204,8 +215,6 @@ service cloud.firestore {
             && (reopening
                 || !next.diff(resource.data).affectedKeys().hasAny(['completedAt', 'completedBy']));
         }
-
-        allow read: if request.auth != null && isEventMember(eventId);
 
         // A task's crew (Req 72) is optional, and must be a crew that exists.
         // An unchanged crew is allowed, so a task whose crew deleteCrew has
@@ -253,7 +262,8 @@ service cloud.firestore {
 
         // Checklist items subcollection
         match /checklist/{itemId} {
-          allow read: if request.auth != null && isEventMember(eventId);
+          allow read: if request.auth != null
+            && readsTask(eventId, get(/databases/$(database)/documents/events/$(eventId)/tasks/$(taskId)).data);
 
           allow create, delete: if request.auth != null
             && isEventMember(eventId)
@@ -274,7 +284,16 @@ service cloud.firestore {
       // Expenses subcollection
       match /expenses/{expenseId} {
 
-        allow read: if request.auth != null && isEventMember(eventId);
+        // Vendors and Observers read only expenses they paid or share in,
+        // unless their role is given `money.read` or `expenses.readAll`
+        // (Req 32). A list query must use `involvedUids array-contains` for
+        // them. #72 adds the event's expense access setting.
+        allow read: if request.auth != null
+          && (contributes(eventId)
+              || can(eventId, 'money.read')
+              || can(eventId, 'expenses.readAll')
+              || resource.data.get('payerId', null) == request.auth.uid
+              || request.auth.uid in resource.data.get('involvedUids', []));
 
         // Expenses are written by the saveExpense and recordSettlement
         // callables, because rules cannot loop over splits to check they add up.

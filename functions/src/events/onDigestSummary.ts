@@ -225,7 +225,7 @@ export const onDigestSummary = onSchedule(
  * trade favours readability. If digest opt-in adoption grows past
  * thousands the per-user cost should be revisited.
  */
-async function computeUserCounters(
+export async function computeUserCounters(
   db: Firestore,
   uid: string
 ): Promise<{unread: number; pending: number; openSettlements: number}> {
@@ -239,6 +239,22 @@ async function computeUserCounters(
   let unread = 0;
   for (const readDoc of chatReadsSnap.docs) {
     const eventId = readDoc.id;
+    // Someone who cannot read an event's chat is not nudged about it
+    // (Req 32). An event not yet migrated has no member documents.
+    const member = await db
+      .collection("events")
+      .doc(eventId)
+      .collection("members")
+      .doc(uid)
+      .get();
+    const permissions = member.data()?.permissions;
+    if (
+      member.exists &&
+      Array.isArray(permissions) &&
+      !permissions.includes("chat.send")
+    ) {
+      continue;
+    }
     const lastReadAt =
       (readDoc.data().lastReadAt as Timestamp | undefined) ??
       null;

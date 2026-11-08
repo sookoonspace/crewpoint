@@ -8,6 +8,7 @@ import {
 import {sendCategorizedPush} from "../notifications/sendPush";
 import {isOrganizerVerified} from "./organizers";
 import {readPermissions} from "./members";
+import {readAllAccess, readsChat} from "./access";
 
 const db = getFirestore();
 
@@ -86,7 +87,6 @@ export async function handleUrgentMessage({
     return;
   }
   const eventData = eventDoc.data()!;
-  const memberIds: string[] = eventData.memberIds || [];
   const eventTitle = (eventData.title as string | undefined) ?? "Event";
 
   // Rules already require `chat.urgent`, and this checks it again.
@@ -116,8 +116,12 @@ export async function handleUrgentMessage({
 
   const truncatedBody = text.length > 80 ? text.substring(0, 80) + "…" : text;
 
+  // Only people who can read chat hear about it (Req 32).
+  const recipientUids = (await readAllAccess(eventDoc.ref, eventData))
+    .filter(readsChat)
+    .map((m) => m.uid);
   const result = await sendCategorizedPush({
-    recipientUids: memberIds,
+    recipientUids,
     senderId,
     category: "chat_urgent",
     eventId,

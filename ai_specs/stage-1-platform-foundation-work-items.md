@@ -838,20 +838,20 @@ Add co-owners, confirmed transfer and return of ownership, and automatic success
 - Since #59, `organizerId` follows ownership when an account is deleted (`anonymizeUserInEvent`, using `ensurePersonalOrganizer`). Ownership transfer must move it the same way, and #66 must stop permission checks using `creatorId`.
 
 ### Acceptance criteria
-- [ ] An event has one Owner and any number of Co-owners.
-- [ ] Ownership can be transferred to anyone in the event, whatever their role, needs confirmation by the new owner, and can be returned the same way. The old owner becomes a Co-owner.
-- [ ] An event always has an Owner.
-- [ ] A Transfer ownership screen at the `transfer` route has loading, empty, error and permission-denied states.
-- [ ] When an owner deletes their account, ownership passes automatically to a Co-owner, or else the longest-standing Admin, or else the longest-standing member. This is the one exception to the confirmation.
-- [ ] An event with no other members is deleted.
-- [ ] Owners can leave once they have transferred ownership, per Req 17.
-- [ ] A robot journey transfers ownership and returns it.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
-- [ ] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
-- [ ] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
-- [ ] Tests for scenarios WE-07, WE-10, GAP-WED-32, GAP-ANY-31 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] An event has one Owner and any number of Co-owners.
+- [x] Ownership can be transferred to anyone in the event, whatever their role, needs confirmation by the new owner, and can be returned the same way. The old owner becomes a Co-owner.
+- [x] An event always has an Owner.
+- [x] A Transfer ownership screen at the `transfer` route has loading, empty, error and permission-denied states.
+- [x] When an owner deletes their account, ownership passes automatically to a Co-owner, or else the longest-standing Admin, or else the longest-standing member. This is the one exception to the confirmation.
+- [x] An event with no other members is deleted.
+- [x] Owners can leave once they have transferred ownership, per Req 17.
+- [x] A robot journey transfers ownership and returns it.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
+- [x] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
+- [x] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
+- [x] Tests for scenarios WE-07, WE-10, GAP-WED-32, GAP-ANY-31 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 9
@@ -872,13 +872,14 @@ Limit Vendors to their own tasks and payments, and prove every role against ever
 ### Required context
 - Approved with the Work Item proposal (2026-11-03): migration maps creator to Owner, admins to Admin, and everyone else to Participant. Adding your own expense and creating tasks stay open to every member except Observer and Vendor, because no catalogue permission covers them and Req 34 preserves access.
 - Open Question 5: a Vendor's view does not cover crew chat unless it is added to their role.
+- Decided 2026-11-07: reading chat needs `chat.send`, so Vendors and Observers have no chat unless the Owner adds it to their role. Observers see only the event and its schedule: tasks assigned to them, and expenses they paid or share in, which is normally nothing. Organizers open expenses to them through #72.
 - #71, #72 and later items add restricted paths, and extend this matrix as they land.
 
 ### Acceptance criteria
 - [ ] Vendors see only tasks assigned to them, and their own payments or documents.
 - [ ] A sponsor, vendor or observer sees only what their role allows.
 - [ ] A role matrix test proves every role against every restricted path, on the server and in the UI, using the Req 26a table.
-- [ ] Committee-style roles cannot read any money field through the API.
+- [ ] Committee-style roles cannot read any money field through the API. The money fields arrive in #71 (`budgetEstimate`, payment handles) and #72 (expense access), which add these rows to this matrix; until then every contributing member reads expenses, as today.
 - [ ] The matrix shows Observer and Vendor cannot create tasks or expenses, and other roles can.
 - [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
 - [ ] Tests for scenarios H-05, WE-08 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
@@ -936,6 +937,7 @@ Let `event.manage` holders choose who can read expenses, enforced on the server,
 - `lib/app/features/budget/data/expense_repository.dart`, `lib/app/features/budget/domain/models/balance_ledger.dart`, and `lib/app/features/budget/application/global_balance_ledger_provider.dart`.
 - Mirrored streams keep the `kIsWeb` fork, with teardown through `ref.onDispose`.
 - Template defaults (Req 38a) arrive in #89.
+- Decided 2026-11-07: **Everyone in the event** includes Observers and Vendors, and the Observer and Vendor roles can be picked under **Selected roles and people**. An organizer shares final financials with everyone this way when they choose. #70's rules already open expenses to `expenses.readAll`.
 
 ### Acceptance criteria
 - [ ] Anyone with `event.manage` chooses in Event settings: **Everyone in the event** (all members read all expenses), **Only people involved** (members read only expenses they paid for or are part of), or **Selected roles and people** (the admin picks any roles and individual members, who can read all expenses).

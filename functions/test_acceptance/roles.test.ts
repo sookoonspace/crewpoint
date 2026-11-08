@@ -2,8 +2,8 @@
 // Acceptance tests for the data parts of roles (#65). Test names start with the
 // scenario ID. These scenarios finish with the role screens in #67, so they are
 // not yet on the finished list. Runs on the emulators only.
-import {assertFails, RulesTestEnvironment} from '@firebase/rules-unit-testing';
-import {doc, getDoc, setDoc} from 'firebase/firestore';
+import {assertFails, assertSucceeds, RulesTestEnvironment} from '@firebase/rules-unit-testing';
+import {collection, doc, getDoc, getDocs, query, setDoc, where} from 'firebase/firestore';
 import {clearFirestoreEmulator, getAdminApp, getAdminDb, getTestEnv} from '../test/setup';
 import {PRESET_ROLES, computePermissions} from '../src/events/permissions';
 
@@ -142,6 +142,40 @@ describe('H-06 dual roles', () => {
         });
       });
       await assertFails(getDoc(doc(env.authenticatedContext('amit').firestore(), 'events/h06/expenses/fee')));
+    } finally {
+      await env.clearFirestore();
+      await env.cleanup();
+    }
+  });
+});
+
+describe('vendor scope', () => {
+  test('WE-08 a vendor sees only their own tasks and payments, and no chat', async () => {
+    const env: RulesTestEnvironment = await getTestEnv();
+    try {
+      await env.withSecurityRulesDisabled(async (ctx) => {
+        const db = ctx.firestore();
+        await setDoc(doc(db, 'events/we08'), {
+          title: 'Wedding', status: 'published', creatorId: 'owner',
+          adminIds: ['owner'], memberIds: ['owner', 'florist'], skipMemberSync: true,
+        });
+        for (const [uid, roleIds] of [['owner', ['owner']], ['florist', ['vendor']]] as const) {
+          await setDoc(doc(db, `events/we08/members/${uid}`), {
+            uid, roleIds, crewIds: [], permissions: computePermissions([...roleIds], {}),
+          });
+        }
+        await setDoc(doc(db, 'events/we08/tasks/flowers'), {eventId: 'we08', title: 'Flowers', createdBy: 'owner', assigneeId: 'florist', status: 'todo'});
+        await setDoc(doc(db, 'events/we08/tasks/cake'), {eventId: 'we08', title: 'Cake', createdBy: 'owner', status: 'todo'});
+        await setDoc(doc(db, 'events/we08/expenses/deposit'), {payerId: 'owner', amount: 300, involvedUids: ['owner', 'florist']});
+        await setDoc(doc(db, 'events/we08/expenses/venue'), {payerId: 'owner', amount: 5000, involvedUids: ['owner']});
+        await setDoc(doc(db, 'events/we08/messages/m'), {senderId: 'owner', text: 'Hi'});
+      });
+      const florist = env.authenticatedContext('florist').firestore();
+      await assertSucceeds(getDocs(query(collection(florist, 'events/we08/tasks'), where('assigneeId', '==', 'florist'))));
+      await assertFails(getDoc(doc(florist, 'events/we08/tasks/cake')));
+      await assertSucceeds(getDocs(query(collection(florist, 'events/we08/expenses'), where('involvedUids', 'array-contains', 'florist'))));
+      await assertFails(getDoc(doc(florist, 'events/we08/expenses/venue')));
+      await assertFails(getDocs(collection(florist, 'events/we08/messages')));
     } finally {
       await env.clearFirestore();
       await env.cleanup();

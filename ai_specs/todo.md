@@ -33,6 +33,8 @@ Triaged against the code on 2026-11-03 (#47):
 - `[Stage 6]` Expense categories + reporting
 - ~~CSV / PDF export~~ — **Built**: `expense_csv_builder.dart`, `expense_pdf_builder.dart`
 - `[Stage 8]` Receipt OCR
+- `[Stage 6]` **Published financial summary.** The owner asked (2026-11-07) for organizers to share final financials with every member, Observers included, once they choose to: fees collected, donations, sponsors and the cost of everything, to keep finances transparent. Stage 1 covers sharing the expenses themselves through the Req 38 access setting (#72). A summary page with those totals waits for registrations, contributions and reports.
+- The daily digest's open-settlements count (`onDigestSummary`) counts every expense in every event that the person did not pay, not their own debts. Replace it with the balance callable from #72.
 
 ## Chat
 - `[Stage 8]` Message reactions
