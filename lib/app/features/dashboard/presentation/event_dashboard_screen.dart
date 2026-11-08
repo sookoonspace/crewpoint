@@ -16,6 +16,7 @@ import 'package:crewpoint_app/app/core/widgets/loading_animation.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
 import 'package:crewpoint_app/app/features/dashboard/data/event_repository.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
+import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/member.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/event_status_label.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
@@ -582,23 +583,42 @@ class _EventActionsState extends ConsumerState<_EventActions> {
     }
   }
 
-  /// Whether the person leaving is the only one who can manage members
-  /// (Req 31, H-07). Member documents are read live; until they load, or on an
-  /// event without them, no warning is shown and leaving is never blocked.
-  bool _isLastMemberManager() {
+  /// A warning when leaving would leave at most one person who can invite
+  /// and remove people (Req 31, H-07: there should always be a backup).
+  /// Null when the person leaving cannot do it, or two or more others can.
+  /// Member documents are read live; until they load, or on an event without
+  /// them, no warning is shown. Leaving is never blocked.
+  Future<String?> _managerWarning() async {
     final me = widget.currentUserId;
     final members = ref.read(eventMembersProvider(widget.event.id)).value;
     final holders = [
       for (final m in members ?? const <MemberModel>[])
         if (m.permissions.contains('members.manage')) m.uid,
     ];
-    return holders.length == 1 && holders.single == me;
+    if (!holders.contains(me)) return null;
+    final others = holders.where((uid) => uid != me).toList();
+    final strings = context.strings.roles;
+    if (others.isEmpty) return strings.leaveOnlyManagerWarning;
+    if (others.length > 1) return null;
+    String? name;
+    try {
+      final user = (await ref
+          .read(usersByIdProvider(usersByIds(others)).future)
+          .timeout(const Duration(seconds: 2)))[others.single];
+      name = (user?.displayName?.isNotEmpty ?? false)
+          ? user!.displayName
+          : null;
+    } catch (_) {
+      // The warning still shows, without the name.
+    }
+    return strings.leaveOneManagerLeftWarning(name);
   }
 
   Future<void> _leaveEvent() async {
     final balance = await _outstandingBalance();
     if (!mounted) return;
-    final lastManager = _isLastMemberManager();
+    final managerWarning = await _managerWarning();
+    if (!mounted) return;
     final warning = balance == null
         ? null
         : context.strings.dashboard.leaveEventBalanceWarning(
@@ -623,9 +643,9 @@ class _EventActionsState extends ConsumerState<_EventActions> {
                 key: const Key('event.leave.balanceWarning'),
                 style: TextStyle(color: Theme.of(ctx).colorScheme.error),
               ),
-            if (lastManager)
+            if (managerWarning != null)
               Text(
-                context.strings.roles.leaveLastManagerWarning,
+                managerWarning,
                 key: const Key('event.leave.lastManagerWarning'),
                 style: TextStyle(color: Theme.of(ctx).colorScheme.error),
               ),

@@ -1375,7 +1375,11 @@ abstract class RoleStrings {
   String get inviteRoleLabel;
   String get inviteRoleHint;
   String get inviteRoleFailed;
-  String get leaveLastManagerWarning;
+  String get leaveOnlyManagerWarning;
+
+  /// [name] is the one person left who can invite and remove people, or null
+  /// when unknown.
+  String leaveOneManagerLeftWarning(String? name);
 }
 
 class _EnglishRoleStrings extends RoleStrings {
@@ -1560,7 +1564,12 @@ class _EnglishRoleStrings extends RoleStrings {
   @override
   String get inviteRoleFailed => "Couldn't change the role. Try again.";
   @override
-  String get leaveLastManagerWarning =>
+  String get leaveOnlyManagerWarning =>
       "You're the only one who can invite and remove people. Give someone "
       'else that permission first, or nobody will be able to.';
+  @override
+  String leaveOneManagerLeftWarning(String? name) =>
+      'After you leave, only ${name ?? 'one other person'} can invite and '
+      'remove people. Give someone else that permission first, so there is '
+      'always a backup.';
 }
