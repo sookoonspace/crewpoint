@@ -162,6 +162,9 @@ describe('who becomes Owner when the Owner deletes their account (Req 14b)', () 
 
 describe('deleting an account', () => {
   test('removes every personal document', async () => {
+    // Req 37: their name and handles in this event, and in one they left.
+    await db().doc(`${E}/profiles/ann`).set({uid: 'ann', displayName: 'ann', venmoHandle: 'ann'});
+    await db().doc('events/left/profiles/ann').set({uid: 'ann', displayName: 'ann'});
     await remove('ann');
     for (const path of [
       'users/ann',
@@ -170,6 +173,8 @@ describe('deleting an account', () => {
       'users/ann/chatReads/shared',
       'users/ann/eventMutes/shared',
       `${E}/urgentRates/ann`,
+      `${E}/profiles/ann`,
+      'events/left/profiles/ann',
     ]) {
       expect(await exists(path)).toBe(false);
     }

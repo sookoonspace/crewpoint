@@ -247,8 +247,10 @@ describe('permissions', () => {
       });
       await setDoc(doc(db, `${E}/expenses/caterer`), {eventId: 'derod', payerId: 'admin', amount: 27400, splits: []});
       await setDoc(doc(db, `${E}/expenses/removedOwn`), {eventId: 'derod', payerId: 'gone', amount: 10, splits: []});
-      await setDoc(doc(db, `${E}/tasks/t1`), {eventId: 'derod', createdBy: 'admin', assigneeId: 'gone', title: 'x', budgetEstimate: 28000});
+      await setDoc(doc(db, `${E}/tasks/t1`), {eventId: 'derod', createdBy: 'admin', assigneeId: 'gone', title: 'x'});
+      await setDoc(doc(db, `${E}/taskBudgets/t1`), {estimate: 28000});
       await setDoc(doc(db, 'users/familyB'), {displayName: 'B', venmoHandle: 'b-handle'});
+      await setDoc(doc(db, `${E}/profiles/familyB`), {uid: 'familyB', displayName: 'B', venmoHandle: 'b-handle'});
       await setDoc(doc(db, 'users/familyB/private/profile'), {email: 'b@example.com'});
     });
   });
@@ -275,7 +277,15 @@ describe('permissions', () => {
   });
 
   test('H-05 committee member cannot read a task budget figure', async () => {
-    await expect(getDoc(doc(as('committee'), `${E}/tasks/t1`))).rejects.toBeTruthy();
+    await expect(getDoc(doc(as('committee'), `${E}/taskBudgets/t1`))).rejects.toBeTruthy();
+    // The task itself no longer carries the figure.
+    const task = await getDoc(doc(as('committee'), `${E}/tasks/t1`));
+    expect(task.data()).not.toHaveProperty('budgetEstimate');
+  });
+
+  test('H-05 the organizer reads the task budget figure', async () => {
+    const budget = await getDoc(doc(as('admin'), `${E}/taskBudgets/t1`));
+    expect(budget.data()?.estimate).toBe(28000);
   });
 
   test('H-05 volunteer cannot read money', async () => {
@@ -284,6 +294,12 @@ describe('permissions', () => {
 
   test('H-05 family cannot read another family profile or handles', async () => {
     await expect(getDoc(doc(as('familyA'), 'users/familyB'))).rejects.toBeTruthy();
+    await expect(getDoc(doc(as('stranger'), `${E}/profiles/familyB`))).rejects.toBeTruthy();
+  });
+
+  test('H-05 people in the same event see a name and pay handle to settle up', async () => {
+    const profile = await getDoc(doc(as('familyA'), `${E}/profiles/familyB`));
+    expect(profile.data()).toEqual(expect.objectContaining({displayName: 'B', venmoHandle: 'b-handle'}));
   });
 
   test('H-07 removed member cannot edit their old expense', async () => {

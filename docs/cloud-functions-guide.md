@@ -149,6 +149,8 @@ All deployed Cloud Functions, kept up-to-date as features are added.
 | `saveExpense` | HTTPS Callable | `events/` | A member other than Observer or Vendor adds an expense as its payer, or the payer or `money.record` edits it. Validates amounts, splits and members, and writes `involvedUids`. The only way to write a non-payment expense. | 30s | 2026-11-03 |
 | `recordSettlement` | HTTPS Callable | `events/` | Payer records a payment. Writes the `isPayment` expense and its `settlement` chat notice together, with server-written text. Safe to retry. | 30s | 2026-11-03 |
 | `onUrgentMessageCreated` | Firestore-trigger v2 (`onDocumentCreated` on `events/{eid}/messages/{mid}`) | `events/` | Fans out an FCM push when an urgent (high-priority) chat message is created. Sends to members holding `chat.send` (Req 32), skips the sender, chunks tokens at 500 with `sendEachForMulticast`, prunes dead tokens via batched arrayRemove. `retry: false`. | 30s | 2026-04-28 |
+| `onMemberProfileSync` | Firestore-trigger v2 (`onDocumentWritten` on `events/{eid}/members/{uid}`) | `events/` | Someone joining gets `events/{eid}/profiles/{uid}`, a copy of their name, photo and payment handles from `users/{uid}`, which only people in the event can read (Req 37). Someone leaving keeps the name there, so older records still show it, and loses the handles. | 30s | 2026-11-08 |
+| `onUserProfileSync` | Firestore-trigger v2 (`onDocumentWritten` on `users/{uid}`) | `events/` | A change to someone's name, photo or payment handles reaches their profile in every event they are in, and none they have left. Other changes write nothing. | 60s | 2026-11-08 |
 
 Every callable and trigger checks the named permission through `requirePermission` / `readPermissions` in `functions/src/events/members.ts` (#66), falling back to the arrays only for an event with no member documents. Membership callables (`createEvent`, `joinEvent`, `removeEventMember`, `promoteToAdmin`, `demoteAdmin`, `setMemberRoles`, `deleteUserAccount`) write both the old arrays and `events/{id}/members/{uid}` until the arrays are removed, so rollback and verification stay accurate. The rollout is in `docs/ops/permissions-cutover.md`. Admin scripts for that cutover are `functions/scripts/migrateToMembers.ts` (dry run unless `--write`) and `functions/scripts/verifyMembers.ts`.
 
@@ -167,7 +169,8 @@ one currently in the codebase, and the index that serves it:
 | `collectionGroup('private').where('notificationPrefs.dailyDigest', '==', true)` | `onDigestSummary` | `fieldOverrides` → `private.notificationPrefs.dailyDigest`, `COLLECTION_GROUP` ASC |
 | `collectionGroup('tasks').where('assigneeId','==').where('status','!=')` | `onDigestSummary` | composite → `tasks` (`assigneeId` ASC, `status` ASC), `COLLECTION_GROUP` |
 | `collectionGroup('expenses').where('payerId','!=')` | `onDigestSummary` | `fieldOverrides` → `expenses.payerId`, `COLLECTION_GROUP` ASC |
-| `collectionGroup('members').where('uid','==')` | the app's "My events" (#66) | `fieldOverrides` → `members.uid`, `COLLECTION_GROUP` ASC |
+| `collectionGroup('members').where('uid','==')` | the app's "My events" (#66), `onUserProfileSync` | `fieldOverrides` → `members.uid`, `COLLECTION_GROUP` ASC |
+| `collectionGroup('profiles').where('uid','==')` | `deleteUserAccount` (Req 37) | `fieldOverrides` → `profiles.uid`, `COLLECTION_GROUP` ASC |
 
 The last three all sit inside `onDigestSummary`. The `private` query runs first, so while
 it was failing the other two had never executed — fixing only the reported index would

@@ -915,7 +915,9 @@ describe('users — Fix 1.B Option A: PII isolated in users/{uid}/private/profil
     );
   });
 
-  test('non-self can still read users/{otherUid} public projection (display fields)', async () => {
+  // Req 37: names and handles reach other people only through the event's
+  // profiles, so the broad read is gone.
+  test('non-self cannot read users/{otherUid}', async () => {
     const ownerUid = 'ownerB3';
     const otherUid = 'otherB3';
 
@@ -929,7 +931,7 @@ describe('users — Fix 1.B Option A: PII isolated in users/{uid}/private/profil
     });
 
     const otherCtx = env.authenticatedContext(otherUid);
-    await assertSucceeds(
+    await assertFails(
       getDoc(doc(otherCtx.firestore(), `users/${ownerUid}`))
     );
   });

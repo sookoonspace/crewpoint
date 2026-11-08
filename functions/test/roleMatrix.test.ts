@@ -1,7 +1,7 @@
 /**
  * Req 32, 35 (WE-08, H-05): the role matrix. Every preset from the Req 26a
- * table, against every restricted path the rules hold today. #71, #72 and
- * later items add rows as their paths land.
+ * table, against every restricted path the rules hold today. #72 and later
+ * items add rows as their paths land.
  *
  * Vendors and Observers do not contribute (Req 34): they see only tasks
  * assigned to them and expenses they paid or share in (Req 32), and chat
@@ -72,6 +72,9 @@ async function seed(roles: Record<string, {permissions: string[]}> = {}) {
       payerId: 'stranger', amount: 99, involvedUids: ['stranger'], splits: [],
     });
     await setDoc(doc(db, `${E}/messages/m`), {senderId: 'owner', text: 'Hi'});
+    await setDoc(doc(db, `${E}/taskBudgets/open`), {estimate: 500, updatedBy: 'owner'});
+    await setDoc(doc(db, `${E}/profiles/owner`), {uid: 'owner', displayName: 'Olu', venmoHandle: 'olu'});
+    await setDoc(doc(db, 'users/owner'), {displayName: 'Olu', venmoHandle: 'olu'});
     for (const role of roles ? Object.keys(roles) : []) {
       await setDoc(doc(db, `${E}/roles/${role}`), roles[role]);
     }
@@ -134,6 +137,21 @@ describe.each(ROLES)('%s', (role) => {
     await expectAccess(holds(role, 'chat.urgent'), setDoc(doc(as(role), `${E}/messages/u`), {
       senderId: role, text: 'Fire', isHighPriority: true,
     }));
+  });
+
+  test('task budget figures: reading needs budget.read, and setting budget.edit (Req 36)', async () => {
+    await expectAccess(holds(role, 'budget.read'), getDoc(doc(as(role), `${E}/taskBudgets/open`)));
+    await expectAccess(holds(role, 'budget.read'), getDocs(collection(as(role), `${E}/taskBudgets`)));
+    await expectAccess(holds(role, 'budget.edit'), setDoc(doc(as(role), `${E}/taskBudgets/open`), {
+      estimate: 1, updatedBy: role,
+    }));
+    // Nobody can put the figure back on a task.
+    await assertFails(updateDoc(doc(as(role), `${E}/tasks/a-${role}`), {budgetEstimate: 5}));
+  });
+
+  test('names and handles: read in the event, never from users/{uid} (Req 37)', async () => {
+    await assertSucceeds(getDoc(doc(as(role), `${E}/profiles/owner`)));
+    await expectAccess(role === 'owner', getDoc(doc(as(role), 'users/owner')));
   });
 
   test('settings need event.manage, and roles, crews and members only the server', async () => {
