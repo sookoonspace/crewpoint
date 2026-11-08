@@ -183,4 +183,23 @@ void main() {
     expect(find.byKey(const Key('roles.noAccess')), findsOneWidget);
     await robot.finish();
   });
+
+  testWidgets('fits a 375 px phone at 200% text, in dark mode', (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    addTearDown(tester.platformDispatcher.clearAllTestValues);
+    final robot = await open(tester);
+    await robot.tap(const Key('expenses.access.option.selected'));
+    // Overflow would have thrown. Every choice is a full-width tile of at
+    // least 48 px.
+    for (final key in const [
+      'expenses.access.option.everyone',
+      'expenses.access.role.crewLead',
+      'expenses.access.person.pat',
+    ]) {
+      expect(tester.getSize(find.byKey(Key(key))).height, greaterThan(47));
+    }
+    expect(tester.takeException(), isNull);
+    await robot.finish();
+  });
 }
