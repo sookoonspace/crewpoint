@@ -154,3 +154,62 @@ describe('recordSettlement', () => {
     expect((await notice()).exists).toBe(false);
   });
 });
+
+/**
+ * Req 38f (H-05): the notice shows the amount only when everyone who can
+ * read chat can read every expense, which is the case under Everyone.
+ */
+describe('the notice follows expense access', () => {
+  async function seedMembers(access: object | undefined, extra: [string, string[]][] = []) {
+    const {computePermissions} = await import('../../src/events/permissions');
+    const {expenseAccessOf, readsAllExpensesUnder} = await import('../../src/events/expenseAccess');
+    const people: [string, string[]][] = [
+      ['owner', ['owner']], ['payer', ['participant']], ['payee', ['participant']], ...extra,
+    ];
+    await seedEvent({
+      memberIds: people.map(([u]) => u),
+      ...(access ? {settings: {expenseAccess: access}} : {}),
+    });
+    const resolved = expenseAccessOf(access ? {settings: {expenseAccess: access}} : {});
+    for (const [uid, roleIds] of people) {
+      await getAdminDb().doc(`events/${E}/members/${uid}`).set({
+        uid, roleIds,
+        permissions: computePermissions(roleIds, {}, {
+          readsAllExpenses: readsAllExpensesUnder(resolved, uid, roleIds),
+        }),
+      });
+    }
+  }
+  const text = async () => (await notice()).data()!.text as string;
+
+  test('Everyone: the amount shows', async () => {
+    await seedMembers(undefined);
+    await call('payer', input());
+    expect(await text()).toBe('Settled $25.00 with a member');
+  });
+
+  test('Only people involved: no amount', async () => {
+    await seedMembers({mode: 'involved'});
+    await call('payer', input());
+    expect(await text()).toBe('Settled up with a member');
+  });
+
+  test('Selected roles and people: no amount', async () => {
+    await seedMembers({mode: 'selected', roleIds: ['finance']});
+    await call('payer', input());
+    expect(await text()).not.toContain('25');
+  });
+
+  test('Everyone, but an Observer was given chat: no amount', async () => {
+    await seedMembers(undefined, [['obs', ['observer']]]);
+    await getAdminDb().doc(`events/${E}/members/obs`).update({permissions: ['group.readOwn', 'chat.send']});
+    await call('payer', input());
+    expect(await text()).not.toContain('25');
+  });
+
+  test('the payment itself always keeps its amount', async () => {
+    await seedMembers({mode: 'involved'});
+    await call('payer', input());
+    expect((await expense()).data()!.amount).toBe(25);
+  });
+});
