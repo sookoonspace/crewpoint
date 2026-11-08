@@ -32,6 +32,7 @@ class TasksFilterBar extends StatefulWidget {
     required this.onFilterChanged,
     this.crews = const [],
     this.crewWords = (one: 'Crew', other: 'Crews'),
+    this.readsBudgets = true,
   });
 
   final TasksFilter filter;
@@ -43,6 +44,10 @@ class TasksFilterBar extends StatefulWidget {
 
   /// The event's words for a crew.
   final ({String one, String other}) crewWords;
+
+  /// Whether the viewer may read budget figures (`budget.read`, Req 36).
+  /// Without it the "Has budget" chip is hidden.
+  final bool readsBudgets;
 
   @override
   State<TasksFilterBar> createState() => _TasksFilterBarState();
@@ -139,13 +144,14 @@ class _TasksFilterBarState extends State<TasksFilterBar> {
                 onChanged: (sel) => _emit(f.copyWith(onlyOverdue: sel)),
                 selectedColor: AppColors.terracotta.withValues(alpha: 0.25),
               ),
-              ReservedCheckmarkChip(
-                key: const Key('tasks.list.filterChip.hasBudget'),
-                label: s.filterChipHasBudget,
-                selected: f.onlyWithBudget,
-                onChanged: (sel) => _emit(f.copyWith(onlyWithBudget: sel)),
-                selectedColor: AppColors.sage.withValues(alpha: 0.25),
-              ),
+              if (widget.readsBudgets)
+                ReservedCheckmarkChip(
+                  key: const Key('tasks.list.filterChip.hasBudget'),
+                  label: s.filterChipHasBudget,
+                  selected: f.onlyWithBudget,
+                  onChanged: (sel) => _emit(f.copyWith(onlyWithBudget: sel)),
+                  selectedColor: AppColors.sage.withValues(alpha: 0.25),
+                ),
               ReservedCheckmarkChip(
                 key: const Key('tasks.list.filterChip.todo'),
                 label: s.statusTodo,

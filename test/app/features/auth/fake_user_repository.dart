@@ -41,6 +41,10 @@ class FakeUserRepository implements IUserRepository {
   Future<AppUser?> getUser(String uid) async => null;
 
   @override
+  Stream<Map<String, AppUser>> watchEventProfiles(String eventId) =>
+      Stream.value(const {});
+
+  @override
   Future<void> saveProfile({
     required String uid,
     required String displayName,

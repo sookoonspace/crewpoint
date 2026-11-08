@@ -86,9 +86,7 @@ final globalInboxProvider = Provider.family<AsyncValue<List<InboxRow>>, String>(
 
       // Fetch the user roster for this event so the inbox preview can
       // show the latest sender's display name instead of a raw UID.
-      final rosterAsync = ref.watch(
-        usersByIdProvider(usersByIds(event.memberIds)),
-      );
+      final rosterAsync = ref.watch(usersByIdProvider(event.id));
       final roster = rosterAsync.value;
       if (roster == null) {
         return switch (rosterAsync) {

@@ -113,7 +113,7 @@ final imageServiceProvider = Provider<IImageService>(
 
 /// User profile repository (Firestore).
 final userRepositoryProvider = Provider<IUserRepository>(
-  (_) => FirestoreUserRepository(),
+  (ref) => FirestoreUserRepository(firestore: ref.watch(firestoreProvider)),
 );
 
 /// `firebase_messaging` test seam.
@@ -390,6 +390,23 @@ final taskListProvider = StreamProvider.family<List<TaskModel>, String>((
   final assigneeId = ref.watch(taskReadScopeProvider(eventId));
   ref.onDispose(() => repo.disposeMirror(eventId));
   return repo.watchTasksByEventId(eventId, assigneeId: assigneeId);
+});
+
+/// Task budget figures by task ID (Req 36), only for people holding
+/// `budget.read`. Everyone else gets none, without a query the rules would
+/// refuse. Follows role changes live.
+final taskBudgetsProvider = StreamProvider.family<Map<String, double>, String>((
+  ref,
+  eventId,
+) {
+  final me = ref.watch(currentUserIdProvider);
+  final reads = ref.watch(
+    eventByIdProvider(
+      eventId,
+    ).select((e) => me != null && (e?.can(me, 'budget.read') ?? false)),
+  );
+  if (!reads) return Stream.value(const {});
+  return ref.watch(taskRepositoryProvider).watchBudgets(eventId);
 });
 
 /// Whose tasks the signed-in person lists in an event: null for every task,

@@ -9,7 +9,7 @@ import '../robots/roles_robot.dart';
 /// preset in the Req 26a table, signed in as `me`, against the event hub,
 /// tasks, budget and chat. Vendors and Observers see only tasks assigned to
 /// them and expenses they share in, and add neither, and chat needs
-/// `chat.send`. The rules half is `functions/test/roleMatrix.test.ts`.
+/// `chat.send`. Task budget figures need `budget.read` (#71). The rules half is `functions/test/roleMatrix.test.ts`.
 void main() {
   final presets = resolveRoles(RoleCatalogue.current, const {});
   final roleIds = [for (final role in presets) role.id];
@@ -44,6 +44,7 @@ void main() {
         });
     await task('mine', 'Hang banners', 'me');
     await task('theirs', 'Book caterer', 'owner');
+    await db.doc('$e/taskBudgets/mine').set({'estimate': 25});
     Future<void> expense(String id, String what, List<String> people) =>
         db.doc('$e/expenses/$id').set({
           'eventId': RolesHarness.eventId,
@@ -74,6 +75,7 @@ void main() {
         permissions.contains('money.read') ||
         permissions.contains('expenses.readAll');
     final chat = permissions.contains('chat.send');
+    final budgets = permissions.contains('budget.read');
 
     testWidgets('$role sees what the role allows', (tester) async {
       final robot = await open(tester, role);
@@ -90,6 +92,15 @@ void main() {
       expect(
         find.byKey(const Key('tasks.list.create')),
         contributes ? findsOneWidget : findsNothing,
+      );
+      // Req 36: a task's budget figure needs budget.read.
+      expect(
+        find.byKey(const Key('tasks.tile.mine.budget')),
+        budgets ? findsOneWidget : findsNothing,
+      );
+      expect(
+        find.byKey(const Key('tasks.list.filterChip.hasBudget')),
+        budgets ? findsOneWidget : findsNothing,
       );
 
       harness.router.go('/dashboard/event/${RolesHarness.eventId}/budget');

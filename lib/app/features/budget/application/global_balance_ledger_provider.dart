@@ -120,13 +120,9 @@ final globalBalanceLedgerProvider =
           };
         }
 
-        // Fetch the user roster for this event so debt + recent-expense
-        // rows can render display names instead of raw UIDs. The same
-        // family-key contract `event_chat_page.dart` uses applies here:
-        // `usersByIds(...)` produces a stable, value-equal key.
-        final rosterAsync = ref.watch(
-          usersByIdProvider(usersByIds(event.memberIds)),
-        );
+        // Fetch the people in this event so debt + recent-expense rows can
+        // render display names instead of raw UIDs.
+        final rosterAsync = ref.watch(usersByIdProvider(event.id));
         final roster = rosterAsync.value;
         if (roster == null) {
           return switch (rosterAsync) {

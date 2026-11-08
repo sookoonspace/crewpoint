@@ -37,7 +37,12 @@ class SettleUpController {
   Future<void> handleSettleUp(BuildContext context, DebtRow row) async {
     AppUser? counterparty;
     try {
-      counterparty = await _userRepository.getUser(row.counterpartyUid);
+      // Handles come from the event's profiles: only people who share an
+      // event can see them (Req 37).
+      final people = await _userRepository
+          .watchEventProfiles(row.event.id)
+          .first;
+      counterparty = people[row.counterpartyUid];
     } catch (e, st) {
       developer.log(
         'Failed to load counterparty for settle-up',

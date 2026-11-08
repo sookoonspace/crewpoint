@@ -33,8 +33,11 @@ void main() {
             'createdBy': 'owner-1',
             'status': 'todo',
             'priority': 0,
-            'budgetEstimate': 25.0,
           });
+      // The figure lives apart from the task (Req 36).
+      await harness.firestore.doc('events/evt-1/taskBudgets/task-1').set({
+        'estimate': 25.0,
+      });
 
       await tester.pumpWidget(harness.buildDetailPage(taskId: 'task-1'));
       // Drive enough frames for the Firestore mirror to populate Drift +
@@ -54,11 +57,16 @@ void main() {
       await robot.enterEditBudget('75.50');
       await robot.tapEditSave();
 
-      // Firestore should reflect the new budget.
-      final updated = await harness.firestore
+      // Firestore should reflect the new budget, off the task.
+      final budget = await harness.firestore
+          .doc('events/evt-1/taskBudgets/task-1')
+          .get();
+      expect(budget.data()!['estimate'], 75.5);
+      expect(budget.data()!['updatedBy'], 'owner-1');
+      final task = await harness.firestore
           .doc('events/evt-1/tasks/task-1')
           .get();
-      expect(updated.data()!['budgetEstimate'], 75.5);
+      expect(task.data(), isNot(contains('budgetEstimate')));
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpAndSettle();

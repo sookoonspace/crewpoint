@@ -290,4 +290,39 @@ void main() {
       expect(user.photoUrl, equals('https://example.com/frank.jpg'));
     });
   });
+
+  group('people in an event come from its profiles (Req 37)', () {
+    test('names, photos and payment handles, by uid', () async {
+      final profiles = firestore
+          .collection('events')
+          .doc('e1')
+          .collection('profiles');
+      await profiles.doc('pat').set({
+        'uid': 'pat',
+        'displayName': 'Pat',
+        'photoUrl': 'p.jpg',
+        'paymentMethod': 'venmo',
+        'paymentHandle': '@pat',
+        'venmoHandle': 'pat',
+        'cashappHandle': null,
+      });
+      // Someone who left keeps only their name.
+      await profiles.doc('gil').set({'uid': 'gil', 'displayName': 'Gil'});
+      // Their public document is no longer read.
+      await firestore.collection('users').doc('pat').set({
+        'displayName': 'Wrong',
+      });
+
+      final people = await repo.watchEventProfiles('e1').first;
+      expect(people.keys, unorderedEquals(['pat', 'gil']));
+      final pat = people['pat']!;
+      expect(pat.displayName, 'Pat');
+      expect(pat.photoUrl, 'p.jpg');
+      expect(pat.paymentMethod, 'venmo');
+      expect(pat.paymentHandle, '@pat');
+      expect(pat.venmoHandle, 'pat');
+      expect(pat.cashappHandle, isNull);
+      expect(people['gil']!.venmoHandle, isNull);
+    });
+  });
 }

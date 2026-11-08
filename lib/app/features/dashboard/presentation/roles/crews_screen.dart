@@ -488,7 +488,7 @@ class _CrewMembersSheetState extends ConsumerState<_CrewMembersSheet> {
     final strings = context.strings.crews;
     final memberIds = widget.event.memberIds;
     final users =
-        ref.watch(usersByIdProvider(usersByIds(memberIds))).value ?? const {};
+        ref.watch(usersByIdProvider(widget.event.id)).value ?? const {};
     String nameOf(String uid) {
       final user = users[uid];
       if (user?.displayName?.isNotEmpty ?? false) return user!.displayName!;

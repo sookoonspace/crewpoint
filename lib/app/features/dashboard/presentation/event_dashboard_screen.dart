@@ -642,7 +642,7 @@ class _EventActionsState extends ConsumerState<_EventActions> {
     String? name;
     try {
       final user = (await ref
-          .read(usersByIdProvider(usersByIds(others)).future)
+          .read(usersByIdProvider(widget.event.id).future)
           .timeout(const Duration(seconds: 2)))[others.single];
       name = (user?.displayName?.isNotEmpty ?? false)
           ? user!.displayName

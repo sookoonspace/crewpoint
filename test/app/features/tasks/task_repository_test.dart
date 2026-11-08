@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
@@ -114,31 +115,76 @@ void main() {
     });
   });
 
-  group('budget round-trip through Firestore + Drift', () {
-    test('persists null, zero, and positive budgetEstimate', () async {
+  group('budget figures live apart from the task (Req 36)', () {
+    DocumentReference<Map<String, dynamic>> taskDoc(String id) => firestore
+        .collection('events')
+        .doc('event-1')
+        .collection('tasks')
+        .doc(id);
+    DocumentReference<Map<String, dynamic>> budgetDoc(String id) => firestore
+        .collection('events')
+        .doc('event-1')
+        .collection('taskBudgets')
+        .doc(id);
+    TaskModel task(String id, double? budget) => TaskModel(
+      id: id,
+      eventId: 'event-1',
+      title: 'Caterer',
+      createdBy: 'user-1',
+      budgetEstimate: budget,
+    );
+
+    test('creating a task with a figure writes it to taskBudgets', () async {
       for (final budget in <double?>[null, 0, 75.25]) {
-        final task = TaskModel(
-          id: 'budget-${budget ?? 'null'}',
-          eventId: 'event-1',
-          title: 'Budget round-trip',
-          createdBy: 'user-1',
-          budgetEstimate: budget,
+        final id = 'budget-${budget ?? 'null'}';
+        expect(await repository.createTask(task(id, budget)), isTrue);
+        expect(
+          (await taskDoc(id).get()).data(),
+          isNot(contains('budgetEstimate')),
         );
-        final ok = await repository.createTask(task);
-        expect(ok, isTrue);
-
-        final fsDoc = await firestore
-            .collection('events')
-            .doc('event-1')
-            .collection('tasks')
-            .doc(task.id)
-            .get();
-        expect(fsDoc.data()!['budgetEstimate'], budget);
-
-        final fromDrift = await repository.getTasksByEventId('event-1');
-        final hydrated = fromDrift.firstWhere((t) => t.id == task.id);
-        expect(hydrated.budgetEstimate, budget);
+        final saved = await budgetDoc(id).get();
+        expect(saved.exists, budget != null);
+        if (budget != null) {
+          expect(saved.data()!['estimate'], budget);
+          expect(saved.data()!['updatedBy'], 'user-1');
+        }
       }
+    });
+
+    test('the figure never reaches the local mirror', () async {
+      await repository.createTask(task('t1', 40));
+      final local = await repository.getTasksByEventId('event-1');
+      expect(local.single.budgetEstimate, isNull);
+    });
+
+    test('a duplicate with a checklist carries its figure', () async {
+      await repository.createTaskWithChecklist(task('dup', 12), const []);
+      expect((await budgetDoc('dup').get()).data()!['estimate'], 12);
+    });
+
+    test('editing sets, changes or clears the figure only when someone edited it', () async {
+      await repository.createTask(task('t1', 40));
+      await repository.updateTask(task('t1', 99));
+      expect((await budgetDoc('t1').get()).data()!['estimate'], 40);
+
+      await repository.updateTask(task('t1', 99), budgetEditedBy: 'user-1');
+      expect((await budgetDoc('t1').get()).data()!['estimate'], 99);
+
+      await repository.updateTask(task('t1', null), budgetEditedBy: 'user-1');
+      expect((await budgetDoc('t1').get()).exists, isFalse);
+      expect(
+        (await taskDoc('t1').get()).data(),
+        isNot(contains('budgetEstimate')),
+      );
+    });
+
+    test('watches figures by task', () async {
+      await budgetDoc('a').set({'estimate': 10});
+      await budgetDoc('b').set({'estimate': 2.5});
+      expect(await repository.watchBudgets('event-1').first, {
+        'a': 10.0,
+        'b': 2.5,
+      });
     });
   });
 

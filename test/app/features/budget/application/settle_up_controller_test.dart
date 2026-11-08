@@ -26,10 +26,16 @@ class _FakeUserRepo implements IUserRepository {
   final Map<String, AppUser> users = {};
   Object? throwOnGet;
 
+  /// Someone else's `users/{uid}` is private (Req 37), so the counterparty
+  /// must come from the event's profiles.
   @override
-  Future<AppUser?> getUser(String uid) async {
-    if (throwOnGet != null) throw throwOnGet!;
-    return users[uid];
+  Future<AppUser?> getUser(String uid) async =>
+      throw UnsupportedError('users/$uid is readable only by its owner');
+
+  @override
+  Stream<Map<String, AppUser>> watchEventProfiles(String eventId) {
+    if (throwOnGet != null) return Stream.error(throwOnGet!);
+    return Stream.value(users);
   }
 
   @override
@@ -329,7 +335,7 @@ void main() {
   });
 
   testWidgets(
-    'userRepository.getUser throws → snackbar + fallback opens without counterparty',
+    'reading the event profiles fails → snackbar + fallback opens without counterparty',
     (tester) async {
       final repo = _FakeUserRepo()..throwOnGet = StateError('contact boom');
       final launcher = _RecordingLauncher();

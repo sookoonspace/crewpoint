@@ -37,9 +37,14 @@ const _dinner = ExpenseModel(
   ],
 );
 
+final _launched = <Uri>[];
+
 class _Launcher implements IUrlLauncher {
   @override
-  Future<bool> launch(Uri uri) async => true;
+  Future<bool> launch(Uri uri) async {
+    _launched.add(uri);
+    return true;
+  }
 }
 
 class _UnusedAuthRepository implements AuthRepository {
@@ -59,8 +64,14 @@ Future<void> _confirmPayment(
   WidgetTester tester, {
   required RecordSettlementCall call,
 }) async {
+  _launched.clear();
   final firestore = FakeFirebaseFirestore();
-  await firestore.doc('users/alex').set({'venmoHandle': 'alex_v'});
+  // Handles come from the event's profiles, never users/{uid} (Req 37).
+  await firestore.doc('users/alex').set({'venmoHandle': 'wrong'});
+  await firestore.doc('events/evt/profiles/alex').set({
+    'displayName': 'Alex',
+    'venmoHandle': 'alex_v',
+  });
   final db = AppDatabase(NativeDatabase.memory());
   addTearDown(db.close);
 
@@ -114,6 +125,7 @@ void main() {
     );
     expect(sent.single, (payer: 'me', payee: 'alex', amount: 20.0));
     expect(find.byKey(const Key('budget.settle.error')), findsNothing);
+    expect(_launched.single.toString(), contains('alex_v'));
   });
 
   testWidgets('with no connection, explains and retries with the same ID', (

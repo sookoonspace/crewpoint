@@ -212,8 +212,8 @@ class RolesHarness {
         memberCallsProvider.overrideWithValue(calls),
         ...overrides,
         usersByIdProvider.overrideWith(
-          (ref, key) async => {
-            for (final uid in key.split(','))
+          (ref, eventId) async => {
+            for (final uid in names.keys)
               if (names[uid] != null)
                 uid: AppUser(
                   uid: uid,

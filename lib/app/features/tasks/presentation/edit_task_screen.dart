@@ -26,6 +26,7 @@ class EditTaskScreen extends StatefulWidget {
   const EditTaskScreen({
     super.key,
     required this.event,
+    required this.currentUserId,
     required this.initial,
     this.displayNames = const {},
     this.crews = const [],
@@ -33,6 +34,7 @@ class EditTaskScreen extends StatefulWidget {
   });
 
   final EventModel event;
+  final String currentUserId;
   final TaskModel initial;
   final Map<String, String> displayNames;
 
@@ -81,6 +83,11 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
     super.dispose();
   }
 
+  /// Setting a task's budget figure needs `budget.edit` (Req 36). Without
+  /// it the field is hidden and the figure is kept as it was.
+  bool get _editsBudget =>
+      widget.event.can(widget.currentUserId, 'budget.edit');
+
   void _submit() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
@@ -98,8 +105,8 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
       assigneeId: _assigneeId,
       priority: _priority,
       dueDate: _dueDate == null ? null : widget.event.startOfDay(_dueDate!),
-      budgetEstimate: budget,
-      clearBudgetEstimate: budget == null,
+      budgetEstimate: _editsBudget ? budget : widget.initial.budgetEstimate,
+      clearBudgetEstimate: _editsBudget && budget == null,
       crewId: _crewId,
       clearCrewId: _crewId == null,
     );
@@ -224,12 +231,13 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                           value: _dueDate,
                           onChanged: (v) => setState(() => _dueDate = v),
                         ),
-                        AppCurrencyField(
-                          key: const Key('tasks.edit.budget'),
-                          controller: _budgetController,
-                          currencyCode: widget.event.currency,
-                          labelText: s.budgetEstimateLabel,
-                        ),
+                        if (_editsBudget)
+                          AppCurrencyField(
+                            key: const Key('tasks.edit.budget'),
+                            controller: _budgetController,
+                            currencyCode: widget.event.currency,
+                            labelText: s.budgetEstimateLabel,
+                          ),
                       ],
                     ),
                   ),
