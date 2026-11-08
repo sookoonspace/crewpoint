@@ -839,7 +839,7 @@ Add co-owners, confirmed transfer and return of ownership, and automatic success
 
 ### Acceptance criteria
 - [ ] An event has one Owner and any number of Co-owners.
-- [ ] Ownership can be transferred to anyone in the event, whatever their role, needs confirmation by the new owner, and can be returned the same way.
+- [ ] Ownership can be transferred to anyone in the event, whatever their role, needs confirmation by the new owner, and can be returned the same way. The old owner becomes a Co-owner.
 - [ ] An event always has an Owner.
 - [ ] A Transfer ownership screen at the `transfer` route has loading, empty, error and permission-denied states.
 - [ ] When an owner deletes their account, ownership passes automatically to a Co-owner, or else the longest-standing Admin, or else the longest-standing member. This is the one exception to the confirmation.
