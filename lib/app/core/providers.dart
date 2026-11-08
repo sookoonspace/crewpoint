@@ -57,6 +57,7 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/event_mute.da
 import 'package:crewpoint_app/app/features/dashboard/domain/models/member.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/crew.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/ownership_offer.dart';
 import 'package:crewpoint_app/app/features/dashboard/data/member_calls.dart';
 import 'package:crewpoint_app/app/core/database/daos/events_dao.dart';
 import 'package:crewpoint_app/app/features/tasks/data/task_repository.dart';
@@ -341,6 +342,16 @@ final eventCrewsProvider = StreamProvider.family<List<CrewModel>, String>((
             ),
       );
 });
+
+/// The pending ownership offer for an event (Req 30), or null when there is
+/// none.
+final ownershipOfferProvider = StreamProvider.family<OwnershipOffer?, String>(
+  (ref, eventId) => ref
+      .watch(firestoreProvider)
+      .doc('events/$eventId/ownership/offer')
+      .snapshots()
+      .map((snap) => OwnershipOffer.fromFirestore(snap.data())),
+);
 
 /// Looks up a single event by id from the user's dashboard event list.
 /// Returns null when the event isn't in the list (loading, deleted, or the

@@ -54,6 +54,15 @@ abstract interface class MemberCalls {
 
   /// Deletes a crew, taking it off people and tasks.
   Future<void> deleteCrew({required String eventId, required String crewId});
+
+  /// The Owner offers ownership to [toUid] (Req 30).
+  Future<void> offerOwnership({required String eventId, required String toUid});
+
+  /// The person offered becomes Owner, and the old owner a Co-owner.
+  Future<void> acceptOwnership({required String eventId});
+
+  /// The Owner withdraws the offer, or the person offered declines it.
+  Future<void> cancelOwnershipOffer({required String eventId});
 }
 
 class FirebaseMemberCalls implements MemberCalls {
@@ -145,4 +154,18 @@ class FirebaseMemberCalls implements MemberCalls {
   @override
   Future<void> deleteCrew({required String eventId, required String crewId}) =>
       _call('deleteCrew', {'eventId': eventId, 'crewId': crewId});
+
+  @override
+  Future<void> offerOwnership({
+    required String eventId,
+    required String toUid,
+  }) => _call('offerOwnership', {'eventId': eventId, 'toUid': toUid});
+
+  @override
+  Future<void> acceptOwnership({required String eventId}) =>
+      _call('acceptOwnership', {'eventId': eventId});
+
+  @override
+  Future<void> cancelOwnershipOffer({required String eventId}) =>
+      _call('cancelOwnershipOffer', {'eventId': eventId});
 }

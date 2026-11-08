@@ -31,6 +31,7 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/roles/crews_sc
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/member_detail_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_editor_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/roles_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/roles/transfer_screen.dart';
 import 'package:crewpoint_app/app/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/budget_ledger_screen.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/event_budget_page.dart';
@@ -216,6 +217,13 @@ GoRouter createRouter({
                             ),
                           ),
                         ],
+                      ),
+                      GoRoute(
+                        path: 'transfer',
+                        builder: (_, state) => EventGuard(
+                          eventId: _resolveEventId(state),
+                          child: (event) => TransferScreen(event: event),
+                        ),
                       ),
                       GoRoute(
                         path: 'crews',

@@ -18,6 +18,7 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/roles/crews_sc
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/member_detail_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_editor_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/roles_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/roles/transfer_screen.dart';
 
 import 'fake_member_calls.dart';
 import 'member_docs.dart';
@@ -47,7 +48,7 @@ class RolesHarness {
     : currentUser = AppUser(uid: signedInAs, email: '$signedInAs@example.com'),
       firestore = FakeFirebaseFirestore(),
       database = AppDatabase(NativeDatabase.memory()) {
-    calls = FakeMemberCalls(firestore: firestore);
+    calls = FakeMemberCalls(firestore: firestore)..actingAs = signedInAs;
   }
 
   static const eventId = 'evt';
@@ -124,6 +125,13 @@ class RolesHarness {
                     ),
                   ),
                 ],
+              ),
+              GoRoute(
+                path: 'transfer',
+                builder: (_, _) => EventGuard(
+                  eventId: eventId,
+                  child: (event) => TransferScreen(event: event),
+                ),
               ),
               GoRoute(
                 path: 'crews',
