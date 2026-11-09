@@ -1109,24 +1109,24 @@ Add CSV import with column mapping, a dry-run report and safe re-import, run by 
 - Import stays source-agnostic, since it must serve both a bought tool and native registration in Stage 2 (L6).
 
 ### Acceptance criteria
-- [ ] CSV upload offers column mapping, a dry-run validation report, and row-level errors that do not stop good rows.
-- [ ] Re-import matches on a mapped external ID, or else on normalised group plus name, and never duplicates.
-- [ ] Manual edits to unmapped fields are kept.
-- [ ] The file uploads to a new `events/{id}/imports/` Storage path, readable and writable only with `participants.import`.
-- [ ] A function parses and validates it, and tracks progress in an `imports/{id}` job document, so the job can be left and reopened.
-- [ ] The uploaded file is deleted when the job finishes, and after 7 days at the latest.
-- [ ] File picking goes through a new seam.
-- [ ] Rows missing from a re-import are listed for review. Confirming marks those groups as cancelled and removes them from counts, keeping the record.
-- [ ] Long imports show progress, can be left running on the server, and report results when reopened.
-- [ ] Import needs a connection, and explains this rather than failing silently.
-- [ ] The `people/import` route exists.
-- [ ] A robot journey covers import with errors and re-import. Unit tests cover mapping and re-import matching.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
-- [ ] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
-- [ ] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
-- [ ] Tests for scenarios X-01, X-02, X-03, X-06, S-02 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] CSV upload offers column mapping, a dry-run validation report, and row-level errors that do not stop good rows.
+- [x] Re-import matches on a mapped external ID, or else on normalised group plus name, and never duplicates.
+- [x] Manual edits to unmapped fields are kept.
+- [x] The file uploads to a new `events/{id}/imports/` Storage path, readable and writable only with `participants.import`.
+- [x] A function parses and validates it, and tracks progress in an `imports/{id}` job document, so the job can be left and reopened.
+- [x] The uploaded file is deleted when the job finishes, and after 7 days at the latest.
+- [x] File picking goes through a new seam.
+- [x] Rows missing from a re-import are listed for review. Confirming marks those groups as cancelled and removes them from counts, keeping the record.
+- [x] Long imports show progress, can be left running on the server, and report results when reopened.
+- [x] Import needs a connection, and explains this rather than failing silently.
+- [x] The `people/import` route exists.
+- [x] A robot journey covers import with errors and re-import. Unit tests cover mapping and re-import matching.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
+- [x] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
+- [x] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
+- [x] Tests for scenarios X-01, X-02, X-03, X-06, S-02 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 17
