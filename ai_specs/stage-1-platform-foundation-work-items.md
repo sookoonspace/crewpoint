@@ -1073,19 +1073,19 @@ Let organizers add custom fields with visibility levels, and define categories p
 - Keep category and age logic in pure, unit-tested code.
 
 ### Acceptance criteria
-- [ ] Custom fields support at least text, number, date, single choice, multiple choice and yes/no, plus required, per-participant or per-group, and a visibility level.
-- [ ] Private fields are stored in `private`.
-- [ ] Reports show age bands rather than birth dates unless a viewer has `participants.readPrivate`.
-- [ ] Categories are defined per event, and can be derived by a rule such as age on a date.
-- [ ] Convention boundary: age 17 on event start is a child and age 18 an adult.
-- [ ] The `fields` route exists, and the roster filters by category and field.
-- [ ] Unit tests cover category and age rules, and emulator tests cover field visibility.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
-- [ ] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
-- [ ] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
-- [ ] Tests for scenarios GE-04, GAP-WED-14, Z-01 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] Custom fields support at least text, number, date, single choice, multiple choice and yes/no, plus required, per-participant or per-group, and a visibility level.
+- [x] Private fields are stored in `private`.
+- [x] Reports show age bands rather than birth dates unless a viewer has `participants.readPrivate`.
+- [x] Categories are defined per event, and can be derived by a rule such as age on a date.
+- [x] Convention boundary: age 17 on event start is a child and age 18 an adult.
+- [x] The `fields` route exists, and the roster filters by category and field.
+- [x] Unit tests cover category and age rules, and emulator tests cover field visibility.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
+- [x] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
+- [x] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
+- [x] Tests for scenarios GE-04, GAP-WED-14, Z-01 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 16
