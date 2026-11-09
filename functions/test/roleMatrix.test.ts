@@ -181,6 +181,14 @@ describe.each(ROLES)('%s', (role) => {
     await assertFails(setDoc(doc(as(role), `${E}/groups/g2`), {name: 'X', sortName: 'x', adultUids: []}));
   });
 
+  test('custom fields: read by everyone, defined with event.manage (Req 41)', async () => {
+    await assertSucceeds(getDocs(collection(as(role), `${E}/fields`)));
+    await expectAccess(holds(role, 'event.manage'), setDoc(doc(as(role), `${E}/fields/diet`), {
+      label: 'Diet', type: 'singleChoice', options: ['Veg'], required: false,
+      scope: 'participant', visibility: 'standard', order: 0,
+    }));
+  });
+
   test('settings need event.manage, and roles, crews and members only the server', async () => {
     await expectAccess(holds(role, 'event.manage'), updateDoc(doc(as(role), E), {title: 'Renamed'}));
     await assertFails(setDoc(doc(as(role), `${E}/roles/x`), {permissions: []}));

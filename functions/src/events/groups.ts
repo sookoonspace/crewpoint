@@ -238,6 +238,7 @@ export const deleteGroup = onCall({timeoutSeconds: 30}, async (request) => {
         );
         const write = await prepareGroupLinks(tx, eventRef, eventData, changes);
         write();
+        tx.delete(groupRef.collection("private").doc("details"));
         tx.delete(groupRef);
       });
       return {success: true};
