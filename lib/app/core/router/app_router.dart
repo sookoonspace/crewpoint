@@ -26,6 +26,7 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/edit_event_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_settings_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/expense_access_screen.dart';
+import 'package:crewpoint_app/app/features/participants/presentation/fields_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/participant_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/roster_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboard_screen.dart';
@@ -230,6 +231,13 @@ GoRouter createRouter({
                             ),
                           ),
                         ],
+                      ),
+                      GoRoute(
+                        path: 'fields',
+                        builder: (_, state) => EventGuard(
+                          eventId: _resolveEventId(state),
+                          child: (event) => FieldsScreen(event: event),
+                        ),
                       ),
                       GoRoute(
                         path: 'people',

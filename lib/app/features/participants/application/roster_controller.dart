@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/participants/data/participant_repository.dart';
+import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/participant.dart';
 
 /// What the roster shows: the people loaded so far for [query], and the
@@ -150,3 +151,10 @@ final participantCountProvider = FutureProvider.autoDispose
         return null;
       }
     });
+
+/// The event's custom fields, live and in order (Req 41).
+final eventFieldsProvider = StreamProvider.autoDispose
+    .family<List<CustomField>, String>(
+      (ref, eventId) =>
+          ref.watch(participantRepositoryProvider).watchFields(eventId),
+    );

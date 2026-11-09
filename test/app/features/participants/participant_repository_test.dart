@@ -1,6 +1,8 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/features/participants/data/participant_repository.dart';
+import 'package:crewpoint_app/app/features/participants/domain/models/category.dart';
+import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/participant.dart';
 
 /// Req 40, 43 (#75): participants are read online, a page at a time, and are
@@ -164,5 +166,141 @@ void main() {
     final byId = await repo.groupsByIds(e, const ['f3', 'f1']);
     expect(byId['f1']!.adultUids, ['parent']);
     expect(byId['f3']!.name, 'Patels');
+  });
+
+  group('custom fields and categories (Req 41, 42)', () {
+    const diet = CustomField(
+      id: 'diet',
+      label: 'Diet',
+      type: FieldType.singleChoice,
+      options: ['Jain', 'Veg'],
+    );
+    const allergy = CustomField(
+      id: 'allergy',
+      label: 'Allergy',
+      type: FieldType.text,
+      visibility: FieldVisibility.private,
+    );
+
+    test('saves standard answers with filter tags, and private ones apart', () async {
+      await repo.save(
+        const ParticipantModel(
+          id: 'p1',
+          eventId: e,
+          name: 'Ana',
+          createdBy: 'o',
+          categoryId: 'child',
+          fields: {'diet': 'Jain'},
+        ),
+        privateDetails: const ParticipantPrivate(
+          birthDate: '2020-05-01',
+          fields: {'allergy': 'Nuts'},
+        ),
+        definitions: const [diet, allergy],
+      );
+      final saved = (await firestore.doc('events/$e/participants/p1').get())
+          .data()!;
+      expect(saved['fields'], {'diet': 'Jain'});
+      expect(saved['filterTags'], ['diet=Jain']);
+      expect(saved['categoryId'], 'child');
+      expect(saved.toString(), isNot(contains('Nuts')));
+      final private = await repo.readPrivate(e, 'p1');
+      expect(private?.fields, {'allergy': 'Nuts'});
+      final back = await repo.fetchPage(e, const RosterQuery());
+      expect(back.items.single.fields, {'diet': 'Jain'});
+      expect(back.items.single.categoryId, 'child');
+    });
+
+    test('the roster filters by category and by a field answer', () async {
+      for (final (id, cat, d) in [
+        ('a', 'child', 'Jain'),
+        ('b', 'adult', 'Jain'),
+        ('c', 'child', 'Veg'),
+      ]) {
+        await repo.save(
+          ParticipantModel(
+            id: id,
+            eventId: e,
+            name: id,
+            createdBy: 'o',
+            categoryId: cat,
+            fields: {'diet': d},
+          ),
+          definitions: const [diet],
+        );
+      }
+      final children = await repo.fetchPage(
+        e,
+        const RosterQuery(categoryId: 'child'),
+      );
+      expect(children.items.map((p) => p.id), ['a', 'c']);
+      final jain = await repo.fetchPage(e, const RosterQuery(tag: 'diet=Jain'));
+      expect(jain.items.map((p) => p.id), ['a', 'b']);
+      final both = await repo.fetchPage(
+        e,
+        const RosterQuery(categoryId: 'child', tag: 'diet=Jain'),
+      );
+      expect(both.items.map((p) => p.id), ['a']);
+    });
+
+    test('defines, orders and deletes fields', () async {
+      await repo.saveField(e, allergy.copyWith(order: 1));
+      await repo.saveField(e, diet);
+      final fields = await repo.watchFields(e).first;
+      expect(fields.map((f) => f.id), ['diet', 'allergy']);
+      await repo.deleteField(e, 'diet');
+      expect((await repo.watchFields(e).first).map((f) => f.id), ['allergy']);
+    });
+
+    test('saves the event categories into its settings', () async {
+      await firestore.doc('events/$e').set({
+        'title': 'Convention',
+        'settings': {
+          'expenseAccess': {'mode': 'involved'},
+        },
+      });
+      await repo.saveCategories(e, const [
+        EventCategory(id: 'child', name: 'Child', maxAge: 17, isChild: true),
+      ]);
+      final settings =
+          (await firestore.doc('events/$e').get()).data()!['settings'] as Map;
+      expect(categoriesOf(settings.cast()).single.maxAge, 17);
+      // Other settings are kept.
+      expect(settings['expenseAccess'], {'mode': 'involved'});
+    });
+
+    test("saves a group's answers, standard and private", () async {
+      await firestore.doc('events/$e/groups/f1').set({
+        'name': 'Shahs',
+        'sortName': 'shahs',
+        'adultUids': <String>[],
+      });
+      const hotel = CustomField(
+        id: 'hotel',
+        label: 'Hotel',
+        type: FieldType.singleChoice,
+        options: ['Inn'],
+        scope: FieldScope.group,
+      );
+      const phone = CustomField(
+        id: 'phone',
+        label: 'Phone',
+        type: FieldType.text,
+        scope: FieldScope.group,
+        visibility: FieldVisibility.private,
+      );
+      await repo.saveGroupAnswers(
+        e,
+        'f1',
+        standard: {'hotel': 'Inn'},
+        private: {'phone': '555'},
+        definitions: const [hotel, phone],
+      );
+      final group = (await firestore.doc('events/$e/groups/f1').get()).data()!;
+      expect(group['fields'], {'hotel': 'Inn'});
+      expect(group['filterTags'], ['hotel=Inn']);
+      expect(group['name'], 'Shahs');
+      expect(await repo.readGroupPrivate(e, 'f1'), {'phone': '555'});
+    });
   });
 }

@@ -11,7 +11,10 @@ import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart';
 import 'package:crewpoint_app/app/features/participants/application/roster_controller.dart';
+import 'package:crewpoint_app/app/features/participants/domain/models/category.dart';
+import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/participant.dart';
+import 'package:crewpoint_app/app/features/participants/presentation/field_answer_input.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/group_sheets.dart';
 
 /// The route ID that opens the screen on a new participant.
@@ -49,7 +52,16 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
   String? _groupName;
   bool _isChild = false;
   String? _birthDate;
+
+  /// Whether the private part (birth date and private answers) changed.
   bool _birthDateChanged = false;
+  String? _categoryId;
+
+  /// Worked out from the birth date by the event's age rules, when one fits
+  /// (Req 42). It wins over a category picked by hand.
+  EventCategory? _derived;
+  Map<String, Object?> _answers = {};
+  Map<String, Object?> _privateAnswers = {};
 
   /// What was loaded, to tell whether anything changed.
   ParticipantModel? _saved;
@@ -71,16 +83,18 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
     eventId: widget.event.id,
     name: _name.text.trim(),
     groupId: _groupId,
-    isChild: _isChild,
+    isChild: _derived?.isChild ?? _isChild,
     status: _saved?.status ?? 'active',
     uid: _saved?.uid,
     createdBy: _saved?.createdBy ?? ref.read(currentUserIdProvider),
+    categoryId: _derived?.id ?? _categoryId,
+    fields: _answers,
   );
 
   bool get _dirty =>
       _birthDateChanged ||
       (_isNew
-          ? _name.text.trim().isNotEmpty || _isChild
+          ? _name.text.trim().isNotEmpty || _isChild || _answers.isNotEmpty
           : (_saved != null && _current != _saved));
 
   @override
@@ -109,7 +123,20 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
     _name.text = person.name;
     _groupId = person.groupId;
     _isChild = person.isChild;
+    _categoryId = person.categoryId;
+    _answers = {...person.fields};
   }
+
+  void _answer(CustomField field, Object? value) => setState(() {
+    if (field.isPrivate) {
+      _privateAnswers = {..._privateAnswers, field.id: value}
+        ..removeWhere((_, v) => v == null);
+      _birthDateChanged = true;
+    } else {
+      _answers = {..._answers, field.id: value}
+        ..removeWhere((_, v) => v == null);
+    }
+  });
 
   Future<void> _pickGroup({required bool anyGroup, List<String>? own}) async {
     final picked = await GroupPickerSheet.show(
@@ -174,8 +201,14 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
           .save(
             person,
             privateDetails: _birthDateChanged
-                ? ParticipantPrivate(birthDate: _birthDate)
+                ? ParticipantPrivate(
+                    birthDate: _birthDate,
+                    fields: _privateAnswers,
+                  )
                 : null,
+            definitions:
+                ref.read(eventFieldsProvider(widget.event.id)).value ??
+                const [],
           );
       if (!mounted) return;
       setState(() {
@@ -322,9 +355,24 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
       if (private.hasValue || private.hasError) {
         _privateLoaded = true;
         _birthDate = private.value?.birthDate;
+        _privateAnswers = {...?private.value?.fields};
       }
     }
 
+    final categories = categoriesOf(event.settings);
+    // Ages are counted on the event's first calendar day (Req 42).
+    final start = event.displayStart ?? DateTime.now();
+    _derived = categoryFor(_birthDate, start, categories);
+    final fields = <CustomField>[
+      for (final f
+          in ref.watch(eventFieldsProvider(event.id)).value ??
+              const <CustomField>[])
+        if (f.scope == FieldScope.participant) f,
+    ];
+    // Private details are entered only by those who can read them, or for
+    // someone new, so an editor who cannot see them never overwrites them.
+    final editsPrivate = canEdit && (readsPrivate || _isNew);
+    final showsPrivate = readsPrivate || _isNew;
     final groupId = _groupId;
     final groupName = groupId == null
         ? null
@@ -403,12 +451,54 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
                   contentPadding: EdgeInsets.zero,
                   title: Text(strings.childLabel),
                   subtitle: Text(strings.childHelp),
-                  value: _isChild,
-                  onChanged: canEdit && !_busy
+                  value: _derived?.isChild ?? _isChild,
+                  onChanged: canEdit && !_busy && _derived == null
                       ? (on) => setState(() => _isChild = on)
                       : null,
                 ),
-                if (canEdit || _birthDate != null)
+                if (categories.isNotEmpty)
+                  _derived != null
+                      ? ListTile(
+                          key: const Key('people.edit.category'),
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(AppIcons.members),
+                          title: Text(
+                            context.strings.fields.categoryLabel(
+                              words.one('category'),
+                            ),
+                          ),
+                          subtitle: Text(
+                            context.strings.fields.derivedCategory(
+                              _derived!.name,
+                            ),
+                          ),
+                        )
+                      : DropdownButtonFormField<String?>(
+                          key: const Key('people.edit.category'),
+                          isExpanded: true,
+                          initialValue:
+                              categories.any((c) => c.id == _categoryId)
+                              ? _categoryId
+                              : null,
+                          decoration: InputDecoration(
+                            labelText: words.one('category'),
+                            border: const OutlineInputBorder(),
+                          ),
+                          items: [
+                            DropdownMenuItem<String?>(
+                              child: Text(context.strings.fields.noCategory),
+                            ),
+                            for (final c in categories)
+                              DropdownMenuItem<String?>(
+                                value: c.id,
+                                child: Text(c.name),
+                              ),
+                          ],
+                          onChanged: canEdit && !_busy
+                              ? (id) => setState(() => _categoryId = id)
+                              : null,
+                        ),
+                if (editsPrivate || _birthDate != null)
                   ListTile(
                     key: const Key('people.edit.birthDate'),
                     contentPadding: EdgeInsets.zero,
@@ -417,7 +507,7 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
                     subtitle: Text(
                       [?_birthDate, strings.birthDateHelp].join('\n'),
                     ),
-                    trailing: canEdit && _birthDate != null
+                    trailing: editsPrivate && _birthDate != null
                         ? IconButton(
                             key: const Key('people.edit.birthDateClear'),
                             tooltip: strings.clearBirthDate,
@@ -430,8 +520,18 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
                                   }),
                           )
                         : null,
-                    onTap: canEdit && !_busy ? _pickBirthDate : null,
+                    onTap: editsPrivate && !_busy ? _pickBirthDate : null,
                   ),
+                for (final f in fields)
+                  if (!f.isPrivate || showsPrivate)
+                    FieldAnswerInput(
+                      field: f,
+                      value: f.isPrivate
+                          ? _privateAnswers[f.id]
+                          : _answers[f.id],
+                      enabled: !_busy && (f.isPrivate ? editsPrivate : canEdit),
+                      onChanged: (v) => _answer(f, v),
+                    ),
                 if (_error != null)
                   Text(
                     _error!,

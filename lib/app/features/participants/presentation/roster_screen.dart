@@ -13,6 +13,8 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart';
 import 'package:crewpoint_app/app/features/participants/application/roster_controller.dart';
 import 'package:crewpoint_app/app/features/participants/data/participant_repository.dart';
+import 'package:crewpoint_app/app/features/participants/domain/models/category.dart';
+import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/participant.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/group_sheets.dart';
 
@@ -33,6 +35,10 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
   final _search = TextEditingController();
   Timer? _debounce;
   GroupModel? _group;
+  EventCategory? _category;
+
+  /// A field answer to filter by, such as Diet is Jain.
+  ({CustomField field, Object value})? _answer;
   RosterQuery? _started;
 
   @override
@@ -57,6 +63,10 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
   RosterQuery _query(List<String>? ownGroups) => RosterQuery(
     search: _search.text,
     groupId: ownGroups == null ? _group?.id : null,
+    categoryId: ownGroups == null ? _category?.id : null,
+    tag: ownGroups == null && _answer != null
+        ? filterTag(_answer!.field.id, _answer!.value)
+        : null,
     groupIds: ownGroups?.take(30).toList(),
   );
 
@@ -72,6 +82,46 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
       allowCreate: false,
     );
     if (picked != null && mounted) setState(() => _group = picked);
+  }
+
+  /// Picks a standard choice or yes/no field, then one of its answers.
+  Future<void> _pickAnswer(List<CustomField> fields) async {
+    final strings = context.strings.fields;
+    final picked =
+        await showModalBottomSheet<({CustomField field, Object value})>(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          builder: (sheet) => ListView(
+            key: const Key('people.roster.answerPicker'),
+            shrinkWrap: true,
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            children: [
+              for (final f in fields) ...[
+                Text(f.label, style: Theme.of(sheet).textTheme.titleSmall),
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  children: [
+                    for (final Object v
+                        in f.type == FieldType.yesNo
+                            ? const [true, false]
+                            : f.options)
+                      ActionChip(
+                        key: Key('people.roster.answer.${filterTag(f.id, v)}'),
+                        label: Text(
+                          v is bool ? (v ? strings.yes : strings.no) : '$v',
+                        ),
+                        onPressed: () =>
+                            Navigator.of(sheet).pop((field: f, value: v)),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+              ],
+            ],
+          ),
+        );
+    if (picked != null && mounted) setState(() => _answer = picked);
   }
 
   Future<void> _manageGroup(GroupModel group) async {
@@ -128,6 +178,30 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     final query = _query(ownGroups);
     _ensureStarted(query);
     final roster = ref.watch(rosterProvider(event.id));
+    final categories = categoriesOf(event.settings);
+    final categoryNames = {for (final c in categories) c.id: c.name};
+    final filterFields = [
+      for (final f
+          in ref.watch(eventFieldsProvider(event.id)).value ??
+              const <CustomField>[])
+        if (f.filters && f.scope == FieldScope.participant) f,
+    ];
+    final fieldStrings = context.strings.fields;
+    final hasGroupFields =
+        (ref.watch(eventFieldsProvider(event.id)).value ??
+                const <CustomField>[])
+            .any((f) => f.scope == FieldScope.group);
+    final ownGroupNames = ownGroups == null || !hasGroupFields
+        ? const <String, GroupModel>{}
+        : ref
+                  .watch(
+                    groupsByIdProvider((
+                      eventId: event.id,
+                      ids: ownGroups.join(','),
+                    )),
+                  )
+                  .value ??
+              const <String, GroupModel>{};
     final canAdd =
         (edits || ownGroups != null) && event.status != EventStatus.archived;
 
@@ -173,7 +247,61 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
                   child: Text(strings.manageGroup(words.one('group'))),
                 ),
             ],
+            if (categories.isNotEmpty)
+              if (_category == null)
+                PopupMenuButton<EventCategory>(
+                  key: const Key('people.roster.categoryFilter'),
+                  tooltip: fieldStrings.filterByCategory(words.one('category')),
+                  onSelected: (c) => setState(() => _category = c),
+                  itemBuilder: (_) => [
+                    for (final c in categories)
+                      PopupMenuItem(
+                        key: Key('people.roster.category.${c.id}'),
+                        value: c,
+                        child: Text(c.name),
+                      ),
+                  ],
+                  child: Chip(
+                    avatar: const Icon(AppIcons.filter, size: 18),
+                    label: Text(
+                      fieldStrings.filterByCategory(words.one('category')),
+                    ),
+                  ),
+                )
+              else
+                InputChip(
+                  key: const Key('people.roster.categoryChip'),
+                  label: Text(_category!.name),
+                  onDeleted: () => setState(() => _category = null),
+                ),
+            if (filterFields.isNotEmpty)
+              if (_answer == null)
+                ActionChip(
+                  key: const Key('people.roster.fieldFilter'),
+                  avatar: const Icon(AppIcons.filter, size: 18),
+                  label: Text(
+                    fieldStrings.filterByField(words.one('customField')),
+                  ),
+                  onPressed: () => _pickAnswer(filterFields),
+                )
+              else
+                InputChip(
+                  key: const Key('people.roster.fieldChip'),
+                  label: Text(
+                    '${_answer!.field.label}: ${_answer!.value is bool ? ((_answer!.value as bool) ? fieldStrings.yes : fieldStrings.no) : _answer!.value}',
+                  ),
+                  onDeleted: () => setState(() => _answer = null),
+                ),
           ],
+        ),
+      // A linked adult answers their own group's questions (Req 41).
+      for (final g in ownGroupNames.values)
+        OutlinedButton.icon(
+          key: Key('people.roster.ownGroup.${g.id}'),
+          onPressed: () =>
+              GroupSheet.show(context, event: event, group: g, manage: false),
+          icon: const Icon(AppIcons.members),
+          label: Text(g.name),
         ),
       Text(
         strings.onlineNote,
@@ -214,9 +342,11 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
           for (final p in roster.items)
             _PersonTile(
               person: p,
-              groupName: p.groupId == null
-                  ? null
-                  : roster.groups[p.groupId]?.name,
+              groupName: [
+                if (p.groupId != null) ?roster.groups[p.groupId]?.name,
+                // The age band, never a birth date (Z-01).
+                if (p.categoryId != null) ?categoryNames[p.categoryId],
+              ].join(' · '),
               onTap: () => _open(p.id),
             ),
           if (roster.error != null)
@@ -298,7 +428,7 @@ class _PersonTile extends StatelessWidget {
         child: Text(person.name.isEmpty ? '?' : person.name.characters.first),
       ),
       title: Text(person.name),
-      subtitle: groupName == null ? null : Text(groupName!),
+      subtitle: (groupName ?? '').isEmpty ? null : Text(groupName!),
       trailing: person.isChild
           ? Chip(
               key: Key('people.tile.${person.id}.child'),
