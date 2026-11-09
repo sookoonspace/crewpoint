@@ -83,6 +83,14 @@ abstract interface class MemberCalls {
   /// Deletes an empty group.
   Future<void> deleteGroup({required String eventId, required String groupId});
 
+  /// Cancels groups a re-import listed as missing (Req 45). Needs
+  /// `participants.import`.
+  Future<void> cancelImportedGroups({
+    required String eventId,
+    required String jobId,
+    required List<String> groupIds,
+  });
+
   /// Chooses who reads every expense (Req 38). Needs `event.manage`.
   Future<void> setExpenseAccess({
     required String eventId,
@@ -221,6 +229,17 @@ class FirebaseMemberCalls implements MemberCalls {
     required String eventId,
     required String groupId,
   }) => _call('deleteGroup', {'eventId': eventId, 'groupId': groupId});
+
+  @override
+  Future<void> cancelImportedGroups({
+    required String eventId,
+    required String jobId,
+    required List<String> groupIds,
+  }) => _call('cancelImportedGroups', {
+    'eventId': eventId,
+    'jobId': jobId,
+    'groupIds': groupIds,
+  });
 
   @override
   Future<void> setExpenseAccess({

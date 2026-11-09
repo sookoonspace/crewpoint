@@ -156,7 +156,20 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     final edits = event.can(me, 'participants.edit');
 
     Widget scaffold(Widget body, {Widget? fab}) => Scaffold(
-      appBar: AppBar(title: Text(words.other('participant')), elevation: 0),
+      appBar: AppBar(
+        title: Text(words.other('participant')),
+        elevation: 0,
+        actions: [
+          if (event.can(me, 'participants.import'))
+            IconButton(
+              key: const Key('people.roster.import'),
+              tooltip: context.strings.imports.rosterAction,
+              icon: const Icon(AppIcons.importFile),
+              onPressed: () =>
+                  context.push('/dashboard/event/${event.id}/people/import'),
+            ),
+        ],
+      ),
       floatingActionButton: fab,
       body: body,
     );

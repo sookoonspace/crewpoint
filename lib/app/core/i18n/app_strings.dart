@@ -45,6 +45,7 @@ abstract class AppStrings {
   ExpenseAccessStrings get expenseAccess;
   PeopleStrings get people;
   FieldStrings get fields;
+  ImportStrings get imports;
 
   /// Static English fallback. Used by service-layer code that has no
   /// `BuildContext` in scope (e.g. `firebaseAuthErrorMessage`). UI code
@@ -511,6 +512,9 @@ class _EnglishStrings extends AppStrings {
 
   @override
   FieldStrings get fields => const _EnglishFieldStrings();
+
+  @override
+  ImportStrings get imports => const _EnglishImportStrings();
 }
 
 class _EnglishChatStrings extends ChatStrings {
@@ -1777,6 +1781,190 @@ class _EnglishPeopleStrings extends PeopleStrings {
   String get groupDeleted => 'Deleted';
   @override
   String get groupSaveFailed => "Couldn't save. Try again.";
+}
+
+/// The roster import screen (Req 44, 45, 75).
+abstract class ImportStrings {
+  const ImportStrings();
+
+  String title(String participants);
+  String get rosterAction;
+  String get intro;
+  String get needsConnection;
+  String get pick;
+  String get pickAnother;
+  String fileSummary(String name, int rows);
+  String get unreadable;
+  String get mappingHeading;
+  String get mappingHelp;
+  String targetName(String target, String Function(String) fieldLabel);
+  String get nameNotMapped;
+  String requiredNotMapped(String label);
+  String get check;
+  String get uploadFailed;
+  String get retry;
+  String get queued;
+  String progress(int processed, int total);
+  String get checking;
+  String reportSummary(int total, int valid, int errors);
+  String willCreate(int creates, int updates, int newGroups, String groups);
+  String imported(int creates, int updates);
+  String get errorsHeading;
+  String rowError(int row, String column, String problem);
+  String moreErrors(int more);
+  String problemName(String problem);
+  String get apply;
+  String get applyHelp;
+  String get done;
+  String failed(String? reason);
+  String missingHeading(String groups);
+  String missingHelp(String groups);
+  String missingPeople(int people);
+  String get cancelMissing;
+  String cancelled(int groups);
+  String get cancelFailed;
+  String get recentHeading;
+  String statusName(String status);
+  String get startOver;
+}
+
+class _EnglishImportStrings extends ImportStrings {
+  const _EnglishImportStrings();
+
+  @override
+  String title(String participants) => 'Import ${participants.toLowerCase()}';
+  @override
+  String get rosterAction => 'Import from CSV';
+  @override
+  String get intro =>
+      'Bring in a list from a spreadsheet or another tool. You choose what '
+      'each column holds, and see what will change before anything is saved. '
+      'Importing the same list again updates it and adds nobody twice.';
+  @override
+  String get needsConnection =>
+      'Importing needs a connection. It runs on our servers, so once it has '
+      'started you can leave and come back.';
+  @override
+  String get pick => 'Choose a CSV file';
+  @override
+  String get pickAnother => 'Choose another file';
+  @override
+  String fileSummary(String name, int rows) =>
+      '$name · ${rows == 1 ? '1 row' : '$rows rows'}';
+  @override
+  String get unreadable =>
+      "This file can't be read as CSV. Save it from your spreadsheet as CSV "
+      'and try again.';
+  @override
+  String get mappingHeading => 'What each column holds';
+  @override
+  String get mappingHelp => 'Columns left as Not imported are skipped.';
+  @override
+  String targetName(String target, String Function(String) fieldLabel) =>
+      switch (target) {
+        'ignore' => 'Not imported',
+        'name' => 'Name',
+        'group' => 'Group',
+        'externalId' => 'ID from the other tool',
+        'birthDate' => 'Birth date (private)',
+        'age' => 'Age',
+        'isChild' => 'Child (yes or no)',
+        'category' => 'Category',
+        'email' => 'Email (private)',
+        _ when target.startsWith('field:') => fieldLabel(target.substring(6)),
+        _ => target,
+      };
+  @override
+  String get nameNotMapped => 'Choose the column that holds names.';
+  @override
+  String requiredNotMapped(String label) =>
+      '$label is required, but no column holds it, so it stays empty.';
+  @override
+  String get check => 'Check the file';
+  @override
+  String get uploadFailed =>
+      "Couldn't upload the file. Importing needs a connection, so check yours "
+      'and try again.';
+  @override
+  String get retry => 'Try again';
+  @override
+  String get queued => 'Waiting to start…';
+  @override
+  String progress(int processed, int total) => '$processed of $total saved';
+  @override
+  String get checking => 'Checking every row…';
+  @override
+  String reportSummary(int total, int valid, int errors) =>
+      '$valid of $total rows are ready${errors == 0 ? '' : ', $errors need fixing'}.';
+  @override
+  String willCreate(int creates, int updates, int newGroups, String groups) =>
+      'Importing adds $creates, updates $updates and creates $newGroups new '
+      '${groups.toLowerCase()}.';
+  @override
+  String imported(int creates, int updates) =>
+      'Imported: $creates added and $updates updated.';
+  @override
+  String get errorsHeading => 'Rows that will be skipped';
+  @override
+  String rowError(int row, String column, String problem) =>
+      'Row $row, $column: $problem';
+  @override
+  String moreErrors(int more) => 'And $more more.';
+  @override
+  String problemName(String problem) => switch (problem) {
+    'required' => 'missing',
+    'unknownAge' => 'not a date or age we can read',
+    'duplicateEmail' => 'the same email as an earlier row',
+    'badEmail' => 'not an email address',
+    'notAnOption' => 'not one of the choices',
+    'wrongType' => 'not the right kind of answer',
+    'tooLong' => 'too long',
+    'duplicateRow' => 'the same person as an earlier row',
+    'unknownCategory' => 'not a category of this event',
+    _ => problem,
+  };
+  @override
+  String get apply => 'Import the ready rows';
+  @override
+  String get applyHelp =>
+      'Skipped rows are not saved. Fix them in the file and import again.';
+  @override
+  String get done => 'Done';
+  @override
+  String failed(String? reason) => switch (reason) {
+    'unreadable' => unreadable,
+    'tooManyRows' =>
+      'This file has more than 20,000 rows. Split it and try again.',
+    _ => "The import couldn't finish. Try again.",
+  };
+  @override
+  String missingHeading(String groups) => '$groups missing from this file';
+  @override
+  String missingHelp(String groups) =>
+      'They were imported before but are not in this file, which may mean '
+      'they cancelled. Confirm to stop counting them. Their records are kept.';
+  @override
+  String missingPeople(int people) =>
+      people == 1 ? '1 person' : '$people people';
+  @override
+  String get cancelMissing => 'Mark as cancelled';
+  @override
+  String cancelled(int groups) =>
+      groups == 1 ? '1 marked as cancelled' : '$groups marked as cancelled';
+  @override
+  String get cancelFailed => "Couldn't mark them as cancelled. Try again.";
+  @override
+  String get recentHeading => 'Recent imports';
+  @override
+  String statusName(String status) => switch (status) {
+    'queued' || 'running' => 'In progress',
+    'checked' => 'Checked, not imported',
+    'done' => 'Imported',
+    'failed' => 'Failed',
+    _ => status,
+  };
+  @override
+  String get startOver => 'Start a new import';
 }
 
 /// The Fields screen, field and category editors, and answers (Req 41, 42).

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/participants/data/participant_repository.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
+import 'package:crewpoint_app/app/features/participants/domain/models/import_job.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/participant.dart';
 
 /// What the roster shows: the people loaded so far for [query], and the
@@ -157,4 +158,18 @@ final eventFieldsProvider = StreamProvider.autoDispose
     .family<List<CustomField>, String>(
       (ref, eventId) =>
           ref.watch(participantRepositoryProvider).watchFields(eventId),
+    );
+
+/// One import job, live, so it can be left and reopened (Req 75).
+final importJobProvider = StreamProvider.autoDispose
+    .family<ImportJob?, ({String eventId, String jobId})>(
+      (ref, key) =>
+          ref.watch(importRepositoryProvider).watch(key.eventId, key.jobId),
+    );
+
+/// The latest import jobs, newest first.
+final recentImportsProvider = StreamProvider.autoDispose
+    .family<List<ImportJob>, String>(
+      (ref, eventId) =>
+          ref.watch(importRepositoryProvider).watchRecent(eventId),
     );

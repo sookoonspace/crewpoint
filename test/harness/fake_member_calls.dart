@@ -149,6 +149,34 @@ class FakeMemberCalls implements MemberCalls {
     await _event(eventId).collection('groups').doc(groupId).delete();
   }
 
+  /// Marks the listed groups' people cancelled, as `cancelImportedGroups`
+  /// does.
+  @override
+  Future<void> cancelImportedGroups({
+    required String eventId,
+    required String jobId,
+    required List<String> groupIds,
+  }) async {
+    calls.add('cancelImportedGroups:$jobId:${groupIds.join(',')}');
+    _maybeFail();
+    if (firestore == null) return;
+    for (final g in groupIds) {
+      await _event(eventId).collection('groups').doc(g).update({
+        'status': 'cancelled',
+      });
+      final people = await _event(eventId)
+          .collection('participants')
+          .where('groupId', isEqualTo: g)
+          .get();
+      for (final p in people.docs) {
+        await p.reference.update({'status': 'cancelled'});
+      }
+    }
+    await _event(eventId).collection('imports').doc(jobId).update({
+      'cancelledGroupIds': FieldValue.arrayUnion(groupIds),
+    });
+  }
+
   @override
   Future<void> setExpenseAccess({
     required String eventId,

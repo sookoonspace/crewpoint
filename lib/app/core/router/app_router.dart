@@ -27,6 +27,7 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/edit_event_scr
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_settings_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/expense_access_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/fields_screen.dart';
+import 'package:crewpoint_app/app/features/participants/presentation/import_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/participant_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/roster_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboard_screen.dart';
@@ -246,6 +247,17 @@ GoRouter createRouter({
                           child: (event) => RosterScreen(event: event),
                         ),
                         routes: [
+                          // Before :participantId, which would match it.
+                          GoRoute(
+                            path: 'import',
+                            builder: (_, state) => EventGuard(
+                              eventId: _resolveEventId(state),
+                              child: (event) => ImportScreen(
+                                event: event,
+                                jobId: state.uri.queryParameters['job'],
+                              ),
+                            ),
+                          ),
                           GoRoute(
                             path: ':participantId',
                             builder: (_, state) => EventGuard(
