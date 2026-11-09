@@ -1,3 +1,5 @@
+import 'package:crewpoint_app/app/core/services/file_picker_service.dart';
+import 'package:crewpoint_app/app/features/participants/data/import_repository.dart';
 import 'package:crewpoint_app/app/features/participants/data/participant_repository.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/my_balance.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -433,6 +435,24 @@ final myMemberProvider = StreamProvider.family<MemberModel?, String>((
         return data == null ? null : MemberModel.fromFirestore(doc.id, data);
       });
 });
+
+/// File choosing (Req 44a). Tests override this.
+final filePickerProvider = Provider<IFilePicker>(
+  (_) => const FileSelectorPicker(),
+);
+
+/// Import file uploads to Storage. Tests override this.
+final importUploaderProvider = Provider<IImportUploader>(
+  (_) => const FirebaseImportUploader(),
+);
+
+/// Roster import jobs (Req 44a, 75).
+final importRepositoryProvider = Provider<ImportRepository>(
+  (ref) => ImportRepository(
+    firestore: ref.watch(firestoreProvider),
+    uploader: ref.watch(importUploaderProvider),
+  ),
+);
 
 /// Calls `getMyBalance`. Tests override this.
 typedef MyBalanceCall = Future<MyBalance> Function(String eventId);
