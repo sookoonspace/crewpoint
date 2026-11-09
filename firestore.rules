@@ -374,6 +374,32 @@ service cloud.firestore {
         }
       }
 
+      // Roster import jobs (Req 44a, 75). Someone with `participants.import`
+      // queues a check; once it is checked, they queue it again to apply.
+      // The onImportQueued function writes everything else, so a job can be
+      // left and reopened.
+      match /imports/{jobId} {
+        allow read: if request.auth != null && can(eventId, 'participants.import');
+        allow create: if request.auth != null
+          && can(eventId, 'participants.import')
+          && isNotArchived(eventId)
+          && request.resource.data.keys().hasOnly(
+              ['fileName', 'targets', 'header', 'mode', 'status', 'createdBy', 'createdAt'])
+          && request.resource.data.status == 'queued'
+          && request.resource.data.mode in ['dryRun', 'apply']
+          && request.resource.data.targets is list
+          && request.resource.data.createdBy == request.auth.uid;
+        allow update: if request.auth != null
+          && can(eventId, 'participants.import')
+          && isNotArchived(eventId)
+          && resource.data.status == 'checked'
+          && request.resource.data.status == 'queued'
+          && request.resource.data.mode in ['dryRun', 'apply']
+          && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['mode', 'status', 'targets', 'updatedAt']);
+        allow delete: if false;
+      }
+
       // Custom field definitions (Req 41). Everyone in the event reads them
       // to fill them in; `event.manage` defines them.
       match /fields/{fieldId} {
@@ -411,7 +437,7 @@ service cloud.firestore {
           let groupId = d.get('groupId', null);
           return d.keys().hasOnly(['name', 'sortName', 'groupId', 'isChild', 'status',
                                    'createdBy', 'createdAt', 'updatedAt', 'uid', 'externalId',
-                                   'categoryId', 'fields', 'filterTags'])
+                                   'categoryId', 'fields', 'filterTags', 'imported'])
             && (d.get('categoryId', null) == null || d.categoryId is string)
             && answersAreValid(d)
             && d.name is string && d.name.size() > 0 && d.name.size() <= 120
@@ -429,7 +455,8 @@ service cloud.firestore {
           && validParticipant()
           && request.resource.data.createdBy == request.auth.uid
           && !('uid' in request.resource.data)
-          && !('externalId' in request.resource.data);
+          && !('externalId' in request.resource.data)
+          && !('imported' in request.resource.data);
 
         // Both the group it was in and the one it goes to must be editable,
         // so a linked adult cannot move someone out of their group.
@@ -440,7 +467,8 @@ service cloud.firestore {
           && validParticipant()
           && fieldUnchanged('createdBy')
           && fieldUnchanged('uid')
-          && fieldUnchanged('externalId');
+          && fieldUnchanged('externalId')
+          && fieldUnchanged('imported');
 
         allow delete: if request.auth != null
           && isNotArchived(eventId)
@@ -463,7 +491,7 @@ service cloud.firestore {
             && isNotArchived(eventId)
             && editsParticipant(eventId, personGroup())
             && (request.resource == null
-                || (request.resource.data.keys().hasOnly(['birthDate', 'fields', 'updatedAt'])
+                || (request.resource.data.keys().hasOnly(['birthDate', 'email', 'fields', 'updatedAt'])
                     && answersAreValid(request.resource.data)
                     && (request.resource.data.get('birthDate', null) == null
                         || (request.resource.data.birthDate is string
