@@ -564,6 +564,17 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
                     ],
                   ),
                   ListTile(
+                    key: const Key('events.settings.fields'),
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(AppIcons.actionEdit),
+                    title: Text(context.strings.fields.settingsEntry),
+                    subtitle: Text(context.strings.fields.settingsEntryHelp),
+                    trailing: const Icon(AppIcons.chevronRight),
+                    onTap: () => context.push(
+                      '/dashboard/event/${widget.event.id}/fields',
+                    ),
+                  ),
+                  ListTile(
                     key: const Key('events.settings.expenseAccess'),
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(AppIcons.lock),

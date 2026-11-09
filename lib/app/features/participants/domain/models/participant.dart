@@ -13,6 +13,8 @@ class ParticipantModel {
     this.status = 'active',
     this.uid,
     this.createdBy,
+    this.categoryId,
+    this.fields = const {},
   });
 
   factory ParticipantModel.fromFirestore(
@@ -28,6 +30,8 @@ class ParticipantModel {
     status: data['status'] as String? ?? 'active',
     uid: data['uid'] as String?,
     createdBy: data['createdBy'] as String?,
+    categoryId: data['categoryId'] as String?,
+    fields: _answers(data['fields']),
   );
 
   final String id;
@@ -43,6 +47,13 @@ class ParticipantModel {
   final String? uid;
   final String? createdBy;
 
+  /// Their category, such as an age band (Req 42). Shown in reports instead
+  /// of a birth date.
+  final String? categoryId;
+
+  /// Standard custom field answers, by field ID (Req 41).
+  final Map<String, Object?> fields;
+
   /// Lower-case, for searching by the start of a name.
   String get sortName => name.trim().toLowerCase();
 
@@ -51,6 +62,9 @@ class ParticipantModel {
     String? groupId,
     bool clearGroup = false,
     bool? isChild,
+    String? categoryId,
+    bool clearCategory = false,
+    Map<String, Object?>? fields,
   }) => ParticipantModel(
     id: id,
     eventId: eventId,
@@ -60,11 +74,15 @@ class ParticipantModel {
     status: status,
     uid: uid,
     createdBy: createdBy,
+    categoryId: clearCategory ? null : (categoryId ?? this.categoryId),
+    fields: fields ?? this.fields,
   );
 
   @override
   bool operator ==(Object other) =>
       other is ParticipantModel &&
+      other.categoryId == categoryId &&
+      mapEquals(other.fields, fields) &&
       other.id == id &&
       other.eventId == eventId &&
       other.name == name &&
@@ -75,23 +93,53 @@ class ParticipantModel {
       other.createdBy == createdBy;
 
   @override
-  int get hashCode =>
-      Object.hash(id, eventId, name, groupId, isChild, status, uid, createdBy);
+  int get hashCode => Object.hash(
+    id,
+    eventId,
+    name,
+    groupId,
+    isChild,
+    status,
+    uid,
+    createdBy,
+    categoryId,
+  );
 }
+
+Map<String, Object?> _answers(Object? raw) => raw is Map
+    ? {
+        for (final e in raw.entries)
+          if (e.key is String)
+            e.key as String: e.value is List
+                ? List<String>.from((e.value as List).whereType<String>())
+                : e.value,
+      }
+    : const {};
 
 /// A participant's private details (Z-01), in
 /// `participants/{id}/private/details`. Read with `participants.readPrivate`
 /// or by the group's linked adults.
 @immutable
 class ParticipantPrivate {
-  const ParticipantPrivate({this.birthDate});
+  const ParticipantPrivate({this.birthDate, this.fields = const {}});
+
+  factory ParticipantPrivate.fromFirestore(Map<String, dynamic> data) =>
+      ParticipantPrivate(
+        birthDate: data['birthDate'] as String?,
+        fields: _answers(data['fields']),
+      );
 
   /// A calendar date, `YYYY-MM-DD`.
   final String? birthDate;
 
+  /// Private custom field answers, by field ID (Req 41).
+  final Map<String, Object?> fields;
+
   @override
   bool operator ==(Object other) =>
-      other is ParticipantPrivate && other.birthDate == birthDate;
+      other is ParticipantPrivate &&
+      other.birthDate == birthDate &&
+      mapEquals(other.fields, fields);
 
   @override
   int get hashCode => birthDate.hashCode;
@@ -105,6 +153,7 @@ class GroupModel {
     required this.id,
     required this.name,
     this.adultUids = const [],
+    this.fields = const {},
   });
 
   factory GroupModel.fromFirestore(String id, Map<String, dynamic> data) =>
@@ -115,6 +164,7 @@ class GroupModel {
           for (final u in (data['adultUids'] as List?) ?? const [])
             if (u is String) u,
         ],
+        fields: _answers(data['fields']),
       );
 
   final String id;
@@ -122,4 +172,7 @@ class GroupModel {
 
   /// Members with accounts who look after this group (Req 26b).
   final List<String> adultUids;
+
+  /// Standard answers to group fields (Req 41).
+  final Map<String, Object?> fields;
 }

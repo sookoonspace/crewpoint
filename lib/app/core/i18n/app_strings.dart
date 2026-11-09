@@ -1,5 +1,7 @@
 import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_access.dart';
 import 'package:flutter/widgets.dart';
+import 'package:crewpoint_app/app/features/participants/domain/models/category.dart';
+import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
 
 /// User-facing string surface for CrewPoint.
 ///
@@ -42,6 +44,7 @@ abstract class AppStrings {
   TransferStrings get transfer;
   ExpenseAccessStrings get expenseAccess;
   PeopleStrings get people;
+  FieldStrings get fields;
 
   /// Static English fallback. Used by service-layer code that has no
   /// `BuildContext` in scope (e.g. `firebaseAuthErrorMessage`). UI code
@@ -505,6 +508,9 @@ class _EnglishStrings extends AppStrings {
 
   @override
   PeopleStrings get people => const _EnglishPeopleStrings();
+
+  @override
+  FieldStrings get fields => const _EnglishFieldStrings();
 }
 
 class _EnglishChatStrings extends ChatStrings {
@@ -1771,6 +1777,220 @@ class _EnglishPeopleStrings extends PeopleStrings {
   String get groupDeleted => 'Deleted';
   @override
   String get groupSaveFailed => "Couldn't save. Try again.";
+}
+
+/// The Fields screen, field and category editors, and answers (Req 41, 42).
+abstract class FieldStrings {
+  const FieldStrings();
+
+  String title(String fields, String categories);
+  String get settingsEntry;
+  String get settingsEntryHelp;
+  String fieldsHeading(String fields);
+  String fieldsEmpty(String fields);
+  String addField(String field);
+  String newField(String field);
+  String get labelLabel;
+  String get labelRequired;
+  String get typeLabel;
+  String typeName(FieldType type);
+  String get optionsLabel;
+  String get optionsHelp;
+  String get optionsRequired;
+  String get requiredLabel;
+  String scopeLabel(String participant, String group);
+  String scopeName(FieldScope scope, String participant, String group);
+  String get visibilityLabel;
+  String get visibilityStandard;
+  String get visibilityStandardHelp;
+  String get visibilityPrivate;
+  String get visibilityPrivateHelp;
+  String fieldSummary(CustomField field, String participant, String group);
+  String categoriesHeading(String categories);
+  String categoriesHelp(String categories);
+  String categoriesEmpty(String categories);
+  String addCategory(String category);
+  String get childAdultPreset;
+  String get nameLabel;
+  String get minAgeLabel;
+  String get maxAgeLabel;
+  String get agesHelp;
+  String get ageInvalid;
+  String get childLabel;
+  String categorySummary(EventCategory category);
+  String get save;
+  String get saved;
+  String get saveFailed;
+  String get delete;
+  String deleteTitle(String name);
+  String get deleteBody;
+  String get yes;
+  String get no;
+  String get answerRequired;
+  String get answerWrong;
+  String get answerTooLong;
+  String get privateBadge;
+  String categoryLabel(String category);
+  String derivedCategory(String name);
+  String get noCategory;
+  String filterByField(String field);
+  String filterByCategory(String category);
+  String get pickValue;
+  String get chooseDate;
+}
+
+class _EnglishFieldStrings extends FieldStrings {
+  const _EnglishFieldStrings();
+
+  @override
+  String title(String fields, String categories) => '$fields and $categories';
+  @override
+  String get settingsEntry => 'Custom fields and categories';
+  @override
+  String get settingsEntryHelp =>
+      'Questions to ask attendees, such as a diet, and groupings such as '
+      'Child and Adult.';
+  @override
+  String fieldsHeading(String fields) => fields;
+  @override
+  String fieldsEmpty(String fields) =>
+      'No ${fields.toLowerCase()} yet. Add one to ask attendees something, '
+      'such as a diet or a T-shirt size.';
+  @override
+  String addField(String field) => 'Add ${field.toLowerCase()}';
+  @override
+  String newField(String field) => 'New ${field.toLowerCase()}';
+  @override
+  String get labelLabel => 'Question';
+  @override
+  String get labelRequired => 'Enter the question.';
+  @override
+  String get typeLabel => 'Answer type';
+  @override
+  String typeName(FieldType type) => switch (type) {
+    FieldType.text => 'Text',
+    FieldType.number => 'Number',
+    FieldType.date => 'Date',
+    FieldType.singleChoice => 'One choice',
+    FieldType.multiChoice => 'Several choices',
+    FieldType.yesNo => 'Yes or no',
+  };
+  @override
+  String get optionsLabel => 'Choices';
+  @override
+  String get optionsHelp => 'One per line.';
+  @override
+  String get optionsRequired => 'Add at least one choice.';
+  @override
+  String get requiredLabel => 'Required';
+  @override
+  String scopeLabel(String participant, String group) =>
+      'Asked once per ${participant.toLowerCase()} or per ${group.toLowerCase()}';
+  @override
+  String scopeName(FieldScope scope, String participant, String group) =>
+      switch (scope) {
+        FieldScope.participant => 'Each ${participant.toLowerCase()}',
+        FieldScope.group => 'Each ${group.toLowerCase()}',
+      };
+  @override
+  String get visibilityLabel => 'Who sees the answer';
+  @override
+  String get visibilityStandard => 'Standard';
+  @override
+  String get visibilityStandardHelp =>
+      'Anyone who can see the person, and it can filter the list.';
+  @override
+  String get visibilityPrivate => 'Private';
+  @override
+  String get visibilityPrivateHelp =>
+      'Only organizers who can read private details, and the adults linked to '
+      'the group. Never used for filtering.';
+  @override
+  String fieldSummary(CustomField field, String participant, String group) => [
+    typeName(field.type),
+    scopeName(field.scope, participant, group),
+    if (field.required) 'Required',
+    if (field.isPrivate) 'Private',
+  ].join(' · ');
+  @override
+  String categoriesHeading(String categories) => categories;
+  @override
+  String categoriesHelp(String categories) =>
+      '$categories with ages are worked out from a birth date on the first '
+      'day of the event. Others are picked by hand.';
+  @override
+  String categoriesEmpty(String categories) =>
+      'No ${categories.toLowerCase()} yet.';
+  @override
+  String addCategory(String category) => 'Add ${category.toLowerCase()}';
+  @override
+  String get childAdultPreset => 'Add Child (up to 17) and Adult (18 and up)';
+  @override
+  String get nameLabel => 'Name';
+  @override
+  String get minAgeLabel => 'From age (optional)';
+  @override
+  String get maxAgeLabel => 'Up to age (optional)';
+  @override
+  String get agesHelp => 'Ages on the first day of the event, in whole years.';
+  @override
+  String get ageInvalid => 'Use a whole number from 0 to 130.';
+  @override
+  String get childLabel => 'Counts as a child';
+  @override
+  String categorySummary(EventCategory category) {
+    final min = category.minAge;
+    final max = category.maxAge;
+    final ages = switch ((min, max)) {
+      (null, null) => 'Picked by hand',
+      (final a?, null) => '$a and older',
+      (null, final b?) => 'Up to $b',
+      (final a?, final b?) => '$a to $b',
+    };
+    return [ages, if (category.isChild) 'Child'].join(' · ');
+  }
+
+  @override
+  String get save => 'Save';
+  @override
+  String get saved => 'Saved';
+  @override
+  String get saveFailed =>
+      "Couldn't save. Your changes are still here, so try again.";
+  @override
+  String get delete => 'Delete';
+  @override
+  String deleteTitle(String name) => 'Delete $name?';
+  @override
+  String get deleteBody =>
+      'Answers already given stay on people, but are no longer shown.';
+  @override
+  String get yes => 'Yes';
+  @override
+  String get no => 'No';
+  @override
+  String get answerRequired => 'This is required.';
+  @override
+  String get answerWrong => 'That answer does not fit this question.';
+  @override
+  String get answerTooLong => 'Use 500 characters or fewer.';
+  @override
+  String get privateBadge => 'Private';
+  @override
+  String categoryLabel(String category) => category;
+  @override
+  String derivedCategory(String name) => '$name, from the birth date';
+  @override
+  String get noCategory => 'None';
+  @override
+  String filterByField(String field) => 'Filter by ${field.toLowerCase()}';
+  @override
+  String filterByCategory(String category) =>
+      'Filter by ${category.toLowerCase()}';
+  @override
+  String get pickValue => 'Choose an answer';
+  @override
+  String get chooseDate => 'Choose a date';
 }
 
 /// The Expense access screen and its Event settings entry (Req 38).

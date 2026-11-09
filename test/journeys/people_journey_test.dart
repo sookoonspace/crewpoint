@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/participants/data/participant_repository.dart';
+import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/participant.dart';
 
 import '../harness/roles_harness.dart';
@@ -18,9 +19,14 @@ class _FlakyRepository extends ParticipantRepository {
   Future<void> save(
     ParticipantModel person, {
     ParticipantPrivate? privateDetails,
+    List<CustomField> definitions = const [],
   }) {
     if (failSave) throw Exception('offline');
-    return super.save(person, privateDetails: privateDetails);
+    return super.save(
+      person,
+      privateDetails: privateDetails,
+      definitions: definitions,
+    );
   }
 
   @override

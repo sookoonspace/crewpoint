@@ -12,7 +12,10 @@ import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/member.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart';
+import 'package:crewpoint_app/app/features/participants/application/roster_controller.dart';
+import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/participant.dart';
+import 'package:crewpoint_app/app/features/participants/presentation/field_answer_input.dart';
 
 /// A new group's ID, picked once so a retry saves the same group.
 String newGroupId() {
@@ -284,23 +287,31 @@ class GroupSheetResult {
   final bool deleted;
 }
 
-/// Renames a group, sets its linked adults, or deletes it when empty. Needs
-/// `participants.edit`.
+/// A group's custom field answers, and with [manage] (`participants.edit`)
+/// its name, linked adults, and deleting it when empty. A linked adult opens
+/// it without [manage], for their own group's answers only.
 class GroupSheet extends ConsumerStatefulWidget {
-  const GroupSheet({super.key, required this.event, required this.group});
+  const GroupSheet({
+    super.key,
+    required this.event,
+    required this.group,
+    this.manage = true,
+  });
 
   final EventModel event;
   final GroupModel group;
+  final bool manage;
 
   static Future<GroupSheetResult?> show(
     BuildContext context, {
     required EventModel event,
     required GroupModel group,
+    bool manage = true,
   }) => showModalBottomSheet<GroupSheetResult>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    builder: (_) => GroupSheet(event: event, group: group),
+    builder: (_) => GroupSheet(event: event, group: group, manage: manage),
   );
 
   @override
@@ -448,68 +459,74 @@ class _GroupSheetState extends ConsumerState<GroupSheet> {
           key: const Key('people.group'),
           shrinkWrap: true,
           children: [
-            TextField(
-              key: const Key('people.group.name'),
-              controller: _name,
-              enabled: !_busy,
-              decoration: InputDecoration(
-                labelText: strings.groupNameLabel(words.one('group')),
-                border: const OutlineInputBorder(),
-              ),
-            ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                key: const Key('people.group.rename'),
-                onPressed: _busy ? null : _rename,
-                child: Text(strings.rename),
-              ),
-            ),
-            Text(strings.adultsHeading, style: theme.textTheme.titleSmall),
-            Text(
-              strings.adultsHelp(words.one('group')),
-              style: theme.textTheme.bodySmall,
-            ),
-            if (members == null)
-              const Padding(
-                padding: EdgeInsets.all(AppSpacing.lg),
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (uids.isEmpty)
-              Text(strings.noMembers)
-            else
-              for (final uid in uids)
-                CheckboxListTile(
-                  key: Key('people.group.adult.$uid'),
-                  contentPadding: EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  title: Text(nameOf(uid)),
-                  value: _adults.contains(uid),
-                  onChanged: _busy
-                      ? null
-                      : (on) => setState(
-                          () => on! ? _adults.add(uid) : _adults.remove(uid),
-                        ),
+            if (!widget.manage)
+              Text(_group.name, style: theme.textTheme.titleMedium),
+            _GroupAnswers(event: widget.event, groupId: _group.id),
+            if (widget.manage) ...[
+              TextField(
+                key: const Key('people.group.name'),
+                controller: _name,
+                enabled: !_busy,
+                decoration: InputDecoration(
+                  labelText: strings.groupNameLabel(words.one('group')),
+                  border: const OutlineInputBorder(),
                 ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                TextButton.icon(
-                  key: const Key('people.group.delete'),
-                  onPressed: _busy ? null : _delete,
-                  icon: const Icon(AppIcons.actionDelete),
-                  label: Text(context.strings.roles.delete),
-                  style: TextButton.styleFrom(
-                    foregroundColor: theme.colorScheme.error,
+              ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  key: const Key('people.group.rename'),
+                  onPressed: _busy ? null : _rename,
+                  child: Text(strings.rename),
+                ),
+              ),
+              Text(strings.adultsHeading, style: theme.textTheme.titleSmall),
+              Text(
+                strings.adultsHelp(words.one('group')),
+                style: theme.textTheme.bodySmall,
+              ),
+              if (members == null)
+                const Padding(
+                  padding: EdgeInsets.all(AppSpacing.lg),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (uids.isEmpty)
+                Text(strings.noMembers)
+              else
+                for (final uid in uids)
+                  CheckboxListTile(
+                    key: Key('people.group.adult.$uid'),
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    title: Text(nameOf(uid)),
+                    value: _adults.contains(uid),
+                    onChanged: _busy
+                        ? null
+                        : (on) => setState(
+                            () => on! ? _adults.add(uid) : _adults.remove(uid),
+                          ),
                   ),
-                ),
-                FilledButton(
-                  key: const Key('people.group.saveAdults'),
-                  onPressed: _busy ? null : _saveAdults,
-                  child: Text(strings.save),
-                ),
-              ],
-            ),
+              OverflowBar(
+                alignment: MainAxisAlignment.spaceBetween,
+                overflowAlignment: OverflowBarAlignment.end,
+                children: [
+                  TextButton.icon(
+                    key: const Key('people.group.delete'),
+                    onPressed: _busy ? null : _delete,
+                    icon: const Icon(AppIcons.actionDelete),
+                    label: Text(context.strings.roles.delete),
+                    style: TextButton.styleFrom(
+                      foregroundColor: theme.colorScheme.error,
+                    ),
+                  ),
+                  FilledButton(
+                    key: const Key('people.group.saveAdults'),
+                    onPressed: _busy ? null : _saveAdults,
+                    child: Text(strings.save),
+                  ),
+                ],
+              ),
+            ],
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
@@ -524,6 +541,136 @@ class _GroupSheetState extends ConsumerState<GroupSheet> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// A group's custom field answers (Req 41): standard ones on the group, and
+/// private ones in its private document, shown only to those who may read
+/// them.
+class _GroupAnswers extends ConsumerStatefulWidget {
+  const _GroupAnswers({required this.event, required this.groupId});
+
+  final EventModel event;
+  final String groupId;
+
+  @override
+  ConsumerState<_GroupAnswers> createState() => _GroupAnswersState();
+}
+
+class _GroupAnswersState extends ConsumerState<_GroupAnswers> {
+  final _formKey = GlobalKey<FormState>();
+  Map<String, Object?>? _standard;
+  Map<String, Object?>? _private;
+  bool _privateAsked = false;
+  bool _busy = false;
+  String? _error;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = context.strings.fields;
+    final theme = Theme.of(context);
+    final event = widget.event;
+    final me = ref.watch(currentUserIdProvider) ?? '';
+    final own =
+        ref.watch(myMemberProvider(event.id)).value?.groupIds ?? const [];
+    final readsPrivate =
+        event.can(me, 'participants.readPrivate') ||
+        own.contains(widget.groupId);
+    final fields = <CustomField>[
+      for (final f
+          in ref.watch(eventFieldsProvider(event.id)).value ??
+              const <CustomField>[])
+        if (f.scope == FieldScope.group && (!f.isPrivate || readsPrivate)) f,
+    ];
+    if (fields.isEmpty) return const SizedBox.shrink();
+
+    final group = ref.watch(
+      groupsByIdProvider((eventId: event.id, ids: widget.groupId)),
+    );
+    _standard ??= group.value?[widget.groupId]?.fields == null
+        ? null
+        : {...group.value![widget.groupId]!.fields};
+    if (readsPrivate && !_privateAsked) {
+      _privateAsked = true;
+      ref
+          .read(participantRepositoryProvider)
+          .readGroupPrivate(event.id, widget.groupId)
+          .then((v) {
+            if (mounted) setState(() => _private = {...?v});
+          }, onError: (_) {});
+    }
+    if (_standard == null || (readsPrivate && _private == null)) {
+      return const Padding(
+        padding: EdgeInsets.all(AppSpacing.lg),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    Future<void> save() async {
+      if (!_formKey.currentState!.validate()) return;
+      final messenger = ScaffoldMessenger.of(context);
+      setState(() {
+        _busy = true;
+        _error = null;
+      });
+      try {
+        await ref
+            .read(participantRepositoryProvider)
+            .saveGroupAnswers(
+              event.id,
+              widget.groupId,
+              standard: _standard!,
+              private: readsPrivate ? _private : null,
+              definitions: fields,
+            );
+        messenger.showSnackBar(SnackBar(content: Text(strings.saved)));
+      } catch (_) {
+        if (mounted) setState(() => _error = strings.saveFailed);
+      } finally {
+        if (mounted) setState(() => _busy = false);
+      }
+    }
+
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: AppSpacing.md,
+        children: [
+          for (final f in fields)
+            FieldAnswerInput(
+              field: f,
+              value: (f.isPrivate ? _private : _standard)![f.id],
+              enabled: !_busy,
+              onChanged: (v) => setState(() {
+                final target = f.isPrivate ? _private! : _standard!;
+                if (v == null) {
+                  target.remove(f.id);
+                } else {
+                  target[f.id] = v;
+                }
+              }),
+            ),
+          if (_error != null)
+            Text(
+              _error!,
+              key: const Key('people.group.answersError'),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+            ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton(
+              key: const Key('people.group.saveAnswers'),
+              onPressed: _busy ? null : save,
+              child: Text(strings.save),
+            ),
+          ),
+          const Divider(),
+        ],
       ),
     );
   }

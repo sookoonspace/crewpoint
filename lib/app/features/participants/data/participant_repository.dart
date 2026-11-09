@@ -1,13 +1,27 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:crewpoint_app/app/features/participants/domain/models/category.dart';
+import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/participant.dart';
 
 /// What the roster lists: everyone, one group, or (for someone who may see
 /// only their own) the viewer's groups. [search] matches the start of a name.
 class RosterQuery {
-  const RosterQuery({this.search = '', this.groupId, this.groupIds});
+  const RosterQuery({
+    this.search = '',
+    this.groupId,
+    this.groupIds,
+    this.categoryId,
+    this.tag,
+  });
 
   final String search;
   final String? groupId;
+
+  /// Only one category (Req 43).
+  final String? categoryId;
+
+  /// Only people with this answer, a `filterTag` such as `diet=Jain`.
+  final String? tag;
 
   /// The viewer's own groups, for a linked adult without `participants.read`.
   /// Firestore takes at most 30 in one query.
@@ -18,11 +32,18 @@ class RosterQuery {
       other is RosterQuery &&
       other.search == search &&
       other.groupId == groupId &&
+      other.categoryId == categoryId &&
+      other.tag == tag &&
       _sameList(other.groupIds, groupIds);
 
   @override
-  int get hashCode =>
-      Object.hash(search, groupId, Object.hashAll(groupIds ?? const []));
+  int get hashCode => Object.hash(
+    search,
+    groupId,
+    categoryId,
+    tag,
+    Object.hashAll(groupIds ?? const []),
+  );
 
   static bool _sameList(List<String>? a, List<String>? b) {
     if (a == null || b == null) return a == b;
@@ -69,6 +90,10 @@ class ParticipantRepository {
     } else if (q.groupId != null) {
       query = query.where('groupId', isEqualTo: q.groupId);
     }
+    if (q.categoryId != null) {
+      query = query.where('categoryId', isEqualTo: q.categoryId);
+    }
+    if (q.tag != null) query = query.where('filterTags', arrayContains: q.tag);
     final search = q.search.trim().toLowerCase();
     if (search.isNotEmpty) {
       query = query
@@ -117,7 +142,7 @@ class ParticipantRepository {
       final doc = await _private(eventId, id).get();
       final data = doc.data();
       if (data == null) return null;
-      return ParticipantPrivate(birthDate: data['birthDate'] as String?);
+      return ParticipantPrivate.fromFirestore(data);
     } on FirebaseException catch (e) {
       if (e.code == 'permission-denied') return null;
       rethrow;
@@ -125,9 +150,12 @@ class ParticipantRepository {
   }
 
   /// Creates or updates [person], and [privateDetails] when given, together.
+  /// [definitions] are the event's fields, to work out the filter tags from
+  /// standard answers.
   Future<void> save(
     ParticipantModel person, {
     ParticipantPrivate? privateDetails,
+    List<CustomField> definitions = const [],
   }) async {
     final ref = _people(person.eventId).doc(person.id);
     final existing = await ref.get();
@@ -138,6 +166,12 @@ class ParticipantRepository {
       'groupId': person.groupId,
       'isChild': person.isChild,
       'status': person.status,
+      'categoryId': person.categoryId,
+      'fields': person.fields,
+      'filterTags': filterTagsFor([
+        for (final f in definitions)
+          if (f.scope == FieldScope.participant) f,
+      ], person.fields),
       'updatedAt': FieldValue.serverTimestamp(),
     };
     if (existing.exists) {
@@ -152,6 +186,7 @@ class ParticipantRepository {
     if (privateDetails != null) {
       batch.set(_private(person.eventId, person.id), {
         'birthDate': privateDetails.birthDate,
+        'fields': privateDetails.fields,
         'updatedAt': FieldValue.serverTimestamp(),
       });
     }
@@ -172,6 +207,87 @@ class ParticipantRepository {
       eventId,
     ).where('status', isEqualTo: 'active').count().get();
     return snap.count ?? 0;
+  }
+
+  CollectionReference<Map<String, dynamic>> _fields(String eventId) =>
+      _event(eventId).collection('fields');
+
+  /// The event's custom fields, in order (Req 41).
+  Stream<List<CustomField>> watchFields(String eventId) =>
+      _fields(eventId).snapshots().map(
+        (snap) =>
+            [
+              for (final doc in snap.docs)
+                CustomField.fromFirestore(doc.id, doc.data()),
+            ]..sort(
+              (a, b) => a.order != b.order
+                  ? a.order.compareTo(b.order)
+                  : a.label.compareTo(b.label),
+            ),
+      );
+
+  Future<void> saveField(String eventId, CustomField field) => _fields(eventId)
+      .doc(field.id)
+      .set({...field.toMap(), 'updatedAt': FieldValue.serverTimestamp()});
+
+  Future<void> deleteField(String eventId, String fieldId) =>
+      _fields(eventId).doc(fieldId).delete();
+
+  /// The event's categories, in `settings.categories`, keeping other settings.
+  Future<void> saveCategories(String eventId, List<EventCategory> categories) =>
+      _event(eventId).update({
+        'settings.categories': [for (final c in categories) c.toMap()],
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+  /// A group's answers: standard ones with filter tags on the group, and
+  /// private ones in its private document.
+  Future<void> saveGroupAnswers(
+    String eventId,
+    String groupId, {
+    required Map<String, Object?> standard,
+    Map<String, Object?>? private,
+    List<CustomField> definitions = const [],
+  }) async {
+    final ref = _event(eventId).collection('groups').doc(groupId);
+    final batch = _firestore.batch()
+      ..update(ref, {
+        'fields': standard,
+        'filterTags': filterTagsFor([
+          for (final f in definitions)
+            if (f.scope == FieldScope.group) f,
+        ], standard),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    if (private != null) {
+      batch.set(ref.collection('private').doc('details'), {
+        'fields': private,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    }
+    await batch.commit();
+  }
+
+  /// A group's private answers, or null when the viewer may not read them.
+  Future<Map<String, Object?>?> readGroupPrivate(
+    String eventId,
+    String groupId,
+  ) async {
+    try {
+      final doc = await _event(eventId)
+          .collection('groups')
+          .doc(groupId)
+          .collection('private')
+          .doc('details')
+          .get();
+      final data = doc.data();
+      return data == null
+          ? const {}
+          : ParticipantPrivate.fromFirestore(data).fields;
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') return null;
+      rethrow;
+    }
   }
 
   /// Groups whose name starts with [search], for a picker.
