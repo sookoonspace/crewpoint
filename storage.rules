@@ -31,7 +31,20 @@ service firebase.storage {
         && request.resource.contentType.matches('image/(jpeg|png|heic|webp)');
     }
 
-    // Deny everything else
+    // Roster imports (Req 44a): a CSV of at most 5 MB, read and written only
+    // with `participants.import`. The import job deletes it when done, and
+    // cleanupImports after 7 days at the latest.
+    match /events/{eventId}/imports/{fileName} {
+      allow read, write: if request.auth != null
+        && 'participants.import' in firestore.get(
+          /databases/(default)/documents/events/$(eventId)/members/$(request.auth.uid)
+        ).data.permissions
+        && (request.resource == null
+            || (request.resource.size < 5 * 1024 * 1024
+                && fileName.matches('[A-Za-z0-9_-]+[.]csv')));
+    }
+
+        // Deny everything else
     match /{allPaths=**} {
       allow read, write: if false;
     }

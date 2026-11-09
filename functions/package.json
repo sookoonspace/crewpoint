@@ -8,8 +8,8 @@
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
-    "test": "firebase emulators:exec --project demo-crewpoint --only firestore,auth 'jest --runInBand'",
-    "test:watch": "firebase emulators:exec --project demo-crewpoint --only firestore,auth 'jest --runInBand --watch'",
+    "test": "firebase emulators:exec --project demo-crewpoint --only firestore,auth,storage 'jest --runInBand'",
+    "test:watch": "firebase emulators:exec --project demo-crewpoint --only firestore,auth,storage 'jest --runInBand --watch'",
     "test:acceptance": "firebase emulators:exec --project demo-crewpoint --only firestore,auth 'jest --runInBand --config jest.acceptance.config.js'",
     "gen:roles": "tsx scripts/writeRolePresets.ts"
   },
