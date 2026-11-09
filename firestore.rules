@@ -52,6 +52,15 @@ service cloud.firestore {
         || (can(eventId, 'group.editOwn') && inMyGroup(eventId, groupId));
     }
 
+    // Custom field answers (Req 41): a map of at most 100, and the filter
+    // tags the roster queries by, worked out by the app from standard
+    // answers. Private answers are never tagged.
+    function answersAreValid(data) {
+      return (!('fields' in data) || (data.fields is map && data.fields.size() <= 100))
+        && (!('filterTags' in data)
+            || (data.filterTags is list && data.filterTags.size() <= 200));
+    }
+
     function eventData(eventId) {
       return get(/databases/$(database)/documents/events/$(eventId)).data;
     }
@@ -342,7 +351,49 @@ service cloud.firestore {
       match /groups/{groupId} {
         allow read: if request.auth != null
           && (can(eventId, 'participants.read') || inMyGroup(eventId, groupId));
-        allow write: if false;
+        // Only a group's custom field answers are written here (Req 41).
+        // Its name and adults go through the group callables.
+        allow update: if request.auth != null
+          && isNotArchived(eventId)
+          && editsParticipant(eventId, groupId)
+          && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['fields', 'filterTags', 'updatedAt'])
+          && answersAreValid(request.resource.data);
+        allow create, delete: if false;
+
+        // A group's private answers, like a participant's.
+        match /private/{docId} {
+          allow read: if request.auth != null
+            && (can(eventId, 'participants.readPrivate') || inMyGroup(eventId, groupId));
+          allow write: if request.auth != null
+            && isNotArchived(eventId)
+            && editsParticipant(eventId, groupId)
+            && (request.resource == null
+                || (request.resource.data.keys().hasOnly(['fields', 'updatedAt'])
+                    && answersAreValid(request.resource.data)));
+        }
+      }
+
+      // Custom field definitions (Req 41). Everyone in the event reads them
+      // to fill them in; `event.manage` defines them.
+      match /fields/{fieldId} {
+        allow read: if request.auth != null && isEventMember(eventId);
+        allow delete: if request.auth != null && canManageEvent(eventId);
+        allow create, update: if request.auth != null
+          && canManageEvent(eventId)
+          && isNotArchived(eventId)
+          && request.resource.data.keys().hasOnly(
+              ['label', 'type', 'options', 'required', 'scope', 'visibility', 'order', 'updatedAt'])
+          && request.resource.data.label is string
+          && request.resource.data.label.size() > 0
+          && request.resource.data.label.size() <= 80
+          && request.resource.data.type in ['text', 'number', 'date', 'singleChoice', 'multiChoice', 'yesNo']
+          && request.resource.data.options is list
+          && request.resource.data.options.size() <= 50
+          && request.resource.data.required is bool
+          && request.resource.data.scope in ['participant', 'group']
+          && request.resource.data.visibility in ['standard', 'private']
+          && request.resource.data.order is int;
       }
 
       // People attending, with or without an account, children included (Req
@@ -359,7 +410,10 @@ service cloud.firestore {
           let d = request.resource.data;
           let groupId = d.get('groupId', null);
           return d.keys().hasOnly(['name', 'sortName', 'groupId', 'isChild', 'status',
-                                   'createdBy', 'createdAt', 'updatedAt', 'uid', 'externalId'])
+                                   'createdBy', 'createdAt', 'updatedAt', 'uid', 'externalId',
+                                   'categoryId', 'fields', 'filterTags'])
+            && (d.get('categoryId', null) == null || d.categoryId is string)
+            && answersAreValid(d)
             && d.name is string && d.name.size() > 0 && d.name.size() <= 120
             && d.sortName == d.name.lower()
             && d.isChild is bool
@@ -409,7 +463,8 @@ service cloud.firestore {
             && isNotArchived(eventId)
             && editsParticipant(eventId, personGroup())
             && (request.resource == null
-                || (request.resource.data.keys().hasOnly(['birthDate', 'updatedAt'])
+                || (request.resource.data.keys().hasOnly(['birthDate', 'fields', 'updatedAt'])
+                    && answersAreValid(request.resource.data)
                     && (request.resource.data.get('birthDate', null) == null
                         || (request.resource.data.birthDate is string
                             && request.resource.data.birthDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')))));

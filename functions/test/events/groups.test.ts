@@ -128,8 +128,10 @@ describe('deleteGroup', () => {
   });
 
   test('removes the group and unlinks its adults', async () => {
+    await db().doc(`events/${E}/groups/f1/private/details`).set({fields: {phone: '555'}});
     await call(deleteGroup, 'owner', {groupId: 'f1'});
     expect(await group('f1')).toBeUndefined();
+    expect((await db().doc(`events/${E}/groups/f1/private/details`).get()).exists).toBe(false);
     const pat = await member('pat');
     expect(pat.groupIds).toEqual([]);
     expect(pat.permissions).not.toContain('group.editOwn');
