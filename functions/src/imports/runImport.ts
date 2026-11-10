@@ -4,6 +4,7 @@ import {parseCsv} from "./csv";
 import {
   CategoryDef, FieldDef, ExistingPerson, Plan, Target, filterTagsFor, normalise, planImport,
 } from "./plan";
+import {externalIdKeyer} from "../participants/matchKeys";
 
 const db = () => getFirestore();
 
@@ -77,12 +78,16 @@ export async function runImportJob({
       await jobRef.update({status: "failed", error: "tooManyRows"});
       return;
     }
-    const [event, fieldsSnap, peopleSnap, groupsSnap] = await Promise.all([
+    const [event, fieldsSnap, peopleSnap, groupsSnap, keysSnap, keyOf] = await Promise.all([
       eventRef.get(),
       eventRef.collection("fields").get(),
       eventRef.collection("participants").get(),
       eventRef.collection("groups").get(),
+      eventRef.collection("participantKeys").get(),
+      externalIdKeyer(eventId),
     ]);
+    // Unnamed entries a deleted account left (Req 14a).
+    const idKeys = new Map(keysSnap.docs.map((d) => [d.id, d.data().externalIdKey ?? null]));
     const eventData = event.data() ?? {};
     const fields = fieldsSnap.docs.map((d) => ({id: d.id, ...d.data()}) as FieldDef);
     const existingDocs = new Map(peopleSnap.docs.map((d) => [d.id, d.data()]));
@@ -97,7 +102,9 @@ export async function runImportJob({
         externalId: d.data().externalId ?? null,
         imported: d.data().imported === true,
         status: d.data().status ?? "active",
+        externalIdKey: idKeys.get(d.id) ?? null,
       }) as ExistingPerson),
+      externalIdKey: keyOf,
       existingGroups: groupsSnap.docs.map((d) => ({id: d.id, name: d.data().name ?? ""})),
     });
 
@@ -172,6 +179,11 @@ async function apply(
         });
         batch.set(ref, data);
       } else {
+        if (before.anonymised === true) {
+          // Found again by its match key: it is a named record once more.
+          data.anonymised = FieldValue.delete();
+          batch.delete(eventRef.collection("participantKeys").doc(ref.id));
+        }
         batch.update(ref, data);
       }
       const privateData: Record<string, unknown> = {};

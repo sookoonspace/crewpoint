@@ -1152,12 +1152,12 @@ Link a signed-in person to their own participant record safely, and extend accou
 ### Acceptance criteria
 - [ ] Linking happens when a signed-in user's **verified** email matches a participant, with `emailVerified` required.
 - [ ] Linking never happens on name alone.
-- [ ] An ambiguous match goes to an organizer.
+- [ ] Only adult records count: exactly one adult with that email links automatically, while two or more adults, or only children, is ambiguous and goes to an organizer. Children are never linked to an account. (Decided here.)
 - [ ] Linking creates a member with the Participant role, unless they already are one, and grants access only to that person's own group.
 - [ ] A participant sees their own schedule and never another person's.
 - [ ] Deleting an account removes that person's member documents and their own `private` documents.
-- [ ] Their participant record is unlinked and anonymised unless an organizer needs it for a past event's counts, in which case only anonymous counts remain.
-- [ ] Children entered by that person are deleted with them, unless another linked adult remains in the group.
+- [ ] Their participant record is unlinked and anonymised: an unnamed entry keeping only age band, status, group and choice answers. In an event that has not ended it also keeps a server-only scrambled match key of the email and import ID, so a new account with the same verified email links back and a re-import refills it without a duplicate. A past event keeps anonymous counts only. (Decided here.)
+- [ ] Children entered by that person in a group they are a linked adult of are deleted with them, unless another linked adult remains in the group. Imported records and children entered for other groups stay. (Decided here.)
 - [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
 - [ ] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
 - [ ] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.

@@ -73,6 +73,17 @@ void main() {
       expect(deletion, contains('co-owner'));
       expect(deletion, isNot(contains('deleted_user')));
     });
+
+    test('Z-04 deletion explains what is kept of an attendee record (#78)', () {
+      final deletion = section('Account deletion');
+      expect(deletion, contains('unnamed entry'));
+      expect(deletion, contains('scrambled code'));
+      expect(deletion, contains('once the event has ended'));
+      expect(deletion, contains('counsel to confirm'));
+      final linking = section('Linking your account to your registration');
+      expect(linking, contains('verified'));
+      expect(linking, contains('never link on a name alone'));
+    });
   });
 
   test('payment handles are visible only to people who share an event', () {

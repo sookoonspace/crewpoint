@@ -4,6 +4,7 @@
  * progress, keeps unmapped data, and deletes the file. Missing groups are
  * cancelled only when confirmed, keeping the records.
  */
+import {FieldValue} from 'firebase-admin/firestore';
 import {clearFirestoreEmulator, getAdminApp, getAdminDb} from '../setup';
 import {computePermissions} from '../../src/events/permissions';
 
@@ -14,6 +15,7 @@ getAdminApp();
 const {runImportJob} = require('../../src/imports/runImport');
 const {cancelImportedGroups} = require('../../src/imports/cancelImportedGroups');
 const {importFileExpired} = require('../../src/imports/cleanupImports');
+const {externalIdMatchKey} = require('../../src/participants/matchKeys');
 /* eslint-enable @typescript-eslint/no-var-requires */
 
 const E = 'conv';
@@ -156,6 +158,23 @@ describe('re-import (X-02, X-03)', () => {
     expect(updated.filterTags).toEqual(['diet=Veg']);
     // Ila is listed, not removed, until someone confirms.
     expect(all.find((p) => p.name === 'Ila Joshi')!.status).toBe('active');
+  });
+
+  test('an unnamed entry left by a deleted account is refilled, not added again (Req 14a)', async () => {
+    const ravi = (await people()).find((p) => p.name === 'Ravi Patel')!;
+    // What deleting Ravi's linked account leaves behind.
+    await db().doc(`events/${E}/participants/${ravi.id}`).update({
+      name: '', sortName: '\uf8ff', anonymised: true, externalId: FieldValue.delete(),
+    });
+    await db().doc(`events/${E}/participantKeys/${ravi.id}`).set({
+      externalIdKey: await externalIdMatchKey(E, 'P1'),
+    });
+    await queue(first, {id: 'j2', mode: 'apply'});
+    expect((await job('j2')).report).toEqual(expect.objectContaining({creates: 0}));
+    const back = (await people()).find((p) => p.id === ravi.id)!;
+    expect(back).toEqual(expect.objectContaining({name: 'Ravi Patel', externalId: 'P1'}));
+    expect(back.anonymised).toBeUndefined();
+    expect((await db().doc(`events/${E}/participantKeys/${ravi.id}`).get()).exists).toBe(false);
   });
 
   test('X-03 confirming cancels the missing groups and keeps their records', async () => {

@@ -15,6 +15,7 @@ import {
 import {deleteEventCompletely} from "../events/eventDeletion";
 import {ensurePersonalOrganizer} from "../events/organizers";
 import {withStructuredLogs} from "../utils/logging";
+import {removeParticipantData} from "../participants/accountData";
 
 const db = getFirestore();
 const storage = getStorage();
@@ -337,6 +338,10 @@ export const deleteUserAccount = onCall(
               await anonymizeUserInEvent(eventDoc.ref, eventData, uid);
             }
           }
+
+          // Participant records, groups, link requests and any member
+          // documents left (Req 14a).
+          await removeParticipantData(uid);
 
           // Their name and handles in every event, including ones they left
           // (Req 37).
