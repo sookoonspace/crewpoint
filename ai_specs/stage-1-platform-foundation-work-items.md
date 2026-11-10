@@ -1150,20 +1150,20 @@ Link a signed-in person to their own participant record safely, and extend accou
 - Verification is not enforced today. Phone matching and personal links wait for Stage 2.
 
 ### Acceptance criteria
-- [ ] Linking happens when a signed-in user's **verified** email matches a participant, with `emailVerified` required.
-- [ ] Linking never happens on name alone.
-- [ ] Only adult records count: exactly one adult with that email links automatically, while two or more adults, or only children, is ambiguous and goes to an organizer. Children are never linked to an account. (Decided here.)
-- [ ] Linking creates a member with the Participant role, unless they already are one, and grants access only to that person's own group.
-- [ ] A participant sees their own schedule and never another person's.
-- [ ] Deleting an account removes that person's member documents and their own `private` documents.
-- [ ] Their participant record is unlinked and anonymised: an unnamed entry keeping only age band, status, group and choice answers. In an event that has not ended it also keeps a server-only scrambled match key of the email and import ID, so a new account with the same verified email links back and a re-import refills it without a duplicate. A past event keeps anonymous counts only. (Decided here.)
-- [ ] Children entered by that person in a group they are a linked adult of are deleted with them, unless another linked adult remains in the group. Imported records and children entered for other groups stay. (Decided here.)
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
-- [ ] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
-- [ ] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
-- [ ] Tests for scenarios X-05, L-01, L-02, Z-04 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] Linking happens when a signed-in user's **verified** email matches a participant, with `emailVerified` required.
+- [x] Linking never happens on name alone.
+- [x] Only adult records count: exactly one adult with that email links automatically, while two or more adults, or only children, is ambiguous and goes to an organizer. Children are never linked to an account. (Decided here.)
+- [x] Linking creates a member with the Participant role, unless they already are one, and grants access only to that person's own group.
+- [x] A participant sees their own schedule and never another person's. (Rules and screens limit them to their own record and group; schedules arrive with sessions in #81.)
+- [x] Deleting an account removes that person's member documents and their own `private` documents.
+- [x] Their participant record is unlinked and anonymised: an unnamed entry keeping only age band, status, group and choice answers. In an event that has not ended it also keeps a server-only scrambled match key of the email and import ID, so a new account with the same verified email links back and a re-import refills it without a duplicate. A past event keeps anonymous counts only. (Decided here.)
+- [x] Children entered by that person in a group they are a linked adult of are deleted with them, unless another linked adult remains in the group. Imported records and children entered for other groups stay. (Decided here.)
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
+- [x] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
+- [x] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
+- [x] Tests for scenarios X-05, L-01, L-02, Z-04 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 18, 28
