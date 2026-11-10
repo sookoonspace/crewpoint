@@ -106,6 +106,27 @@ describe('checking rows (X-01, X-06)', () => {
   });
 });
 
+describe('shared emails (Req 46, decided in #78)', () => {
+  test('one family may share an email; two families may not', () => {
+    const plan = planImport(csv(
+      ['Patel', 'P1', 'Ravi Patel', '42', 'Jain', '', '', 'home@x.test'],
+      ['Patel', 'P2', 'Asha Patel', '9', 'Jain', '', '', 'HOME@x.test'],
+      ['Shah', 'S1', 'Dev Shah', '30', 'Veg', '', '', 'home@x.test'],
+    ), targets, context());
+    expect(plan.people.map((p) => p.name)).toEqual(['Ravi Patel', 'Asha Patel']);
+    expect(plan.errors).toEqual([{row: 4, column: 'Email', problem: 'duplicateEmail'}]);
+  });
+
+  test('without a group, a repeated email is still a problem', () => {
+    const plan = planImport(
+      [['Name', 'Email', 'Diet'], ['A', 'a@x.test', 'Veg'], ['B', 'a@x.test', 'Veg']],
+      ['name', 'email', 'field:diet'],
+      context(),
+    );
+    expect(plan.errors).toEqual([{row: 3, column: 'Email', problem: 'duplicateEmail'}]);
+  });
+});
+
 describe('re-import (X-02, X-03)', () => {
   const existing = [
     {id: 'a', name: 'Ravi Patel', groupId: 'gP', externalId: 'P1', imported: true, status: 'active'},
@@ -133,6 +154,17 @@ describe('re-import (X-02, X-03)', () => {
     expect(plan.creates).toBe(1);
     expect(plan.updates).toBe(2);
     expect(plan.newGroups).toEqual(['Mehta']);
+  });
+
+  test('an unnamed entry left by a deleted account is found by its import ID key', () => {
+    const plan = planImport(csv(['Patel', 'P9', 'Ravi Patel', '42', 'Jain', '', '', '']), targets, context({
+      existing: [{id: 'anon', name: '', groupId: 'gP', imported: true, status: 'active', externalIdKey: 'key:P9'}],
+      existingGroups: [{id: 'gP', name: 'Patel'}],
+      externalIdKey: (id) => `key:${id}`,
+    }));
+    expect(plan.people[0].match).toBe('anon');
+    expect(plan.updates).toBe(1);
+    expect(plan.missingGroups).toEqual([]);
   });
 
   test('X-03 groups whose imported people are all missing are listed for review', () => {

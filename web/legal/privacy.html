@@ -152,12 +152,18 @@
 <li><strong>Shared events</strong> (events with other members) survive. In each one, your account ID is replaced with an anonymous ID in messages, expenses, splits and tasks, so the group's balances still add up. A different anonymous ID is used in each event, and two people who delete their accounts are never merged. Tasks assigned to you become unassigned.</li>
 <li>If you <strong>own</strong> a shared event, ownership passes automatically to a Co-owner, or else to the longest-standing Admin, or else to the longest-standing member.</li>
 <li>Your membership, roles, and your name, photo and payment handles in every event are deleted, as are your profile, your private subdocument (email, FCM tokens, preferences), and your chat read and notification settings.</li>
-<li><strong>Children you entered</strong> into an event are deleted with your account, unless another linked adult remains in their group.</li>
+<li><strong>Children you entered</strong> into your own group in an event are deleted with your account, unless another linked adult remains in their group. Records an organizer entered or imported stay with the organizer.</li>
+<li><strong>Your attendee record.</strong> If an organizer registered you for an event and your account was linked to that record, deleting your account does not cancel your registration. The record stays as an unnamed entry, keeping only your age band, attendance status, group and multiple-choice answers, so the event's headcounts do not change. Your name, email, birth date, registration ID and other answers are deleted. For an event that has not ended yet, we also keep a one-way scrambled code made from your email and registration ID, which only our servers can read and which cannot be turned back into them. It lets your record be found again if you sign up with the same verified email or the organizer re-imports their registration list, so you are not counted twice. Once the event has ended, the entry keeps anonymous counts only, with no code.</li>
 <li>Files in your storage folder (profile photo, etc.) are deleted.</li>
 <li>Your Firebase Authentication account is deleted last.</li>
 </ol>
 <p>This is irreversible.</p>
+<blockquote>
+<p>Counsel to confirm that keeping the scrambled code for events that have not ended, so a registration is not counted twice, is acceptable as pseudonymised data, and how long it may be kept.</p>
+</blockquote>
 <p>The anonymized record in shared events is retained indefinitely by default to preserve the historical ledger for the rest of the group. To request <strong>per-event erasure</strong> of an anonymized record, contact <strong><a href="mailto:privacy@sookoon.space">privacy@sookoon.space</a></strong> after deletion. We process these requests manually for V1.</p>
+<h2>Linking your account to your registration</h2>
+<p>When an organizer registers you for an event, they may give us your email. If you sign in to CrewPoint with that email and have <strong>verified</strong> it, we link your account to your record, so you see your own group and schedule. We never link on a name alone, never link an account to a child's record, and if more than one adult in the event shares the email, an organizer decides instead.</p>
 <h2>Retention</h2>
 <ul>
 <li><strong>Receipts and financial records</strong> in shared events: anonymized indefinitely.</li>
@@ -177,7 +183,7 @@
 </ul>
 <p>The person entering a child's details is responsible for having the right to do so. Organizers should collect only what the event needs, such as a name, an age or age group, and dietary or medical needs that keep the child safe.</p>
 <p><strong>Who sees a child's details.</strong> A child's birth date, and any detail the organizer marks as private, are shown only to people whose role has permission to read private attendee details. Event reports and counts show age bands, such as &quot;child&quot; or &quot;adult&quot;, rather than birth dates. Volunteers and committee members see only what their role allows.</p>
-<p><strong>Parents' choices.</strong> A parent or guardian can ask the event's organizers, or us at <strong><a href="mailto:privacy@sookoon.space">privacy@sookoon.space</a></strong>, to see, correct or delete their child's details. When a parent or guardian deletes their account, the children they entered are deleted too, unless another linked adult remains in the child's group. We never use children's details for advertising, profiling or anything other than running the event.</p>
+<p><strong>Parents' choices.</strong> A parent or guardian can ask the event's organizers, or us at <strong><a href="mailto:privacy@sookoon.space">privacy@sookoon.space</a></strong>, to see, correct or delete their child's details. When a parent or guardian deletes their account, the children they entered in their own group are deleted too, unless another linked adult remains in the child's group. We never use children's details for advertising, profiling or anything other than running the event.</p>
 <blockquote>
 <p>Counsel to review this section against COPPA (where it applies), the GDPR and UK Age Appropriate Design Code, and Canadian guidance on minors' information, including whether a parent's consent must be recorded when a child's details are entered.</p>
 </blockquote>

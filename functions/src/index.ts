@@ -32,6 +32,7 @@ export {saveGroup, setGroupAdults, deleteGroup} from "./events/groups";
 export {onImportQueued} from "./imports/onImportQueued";
 export {cancelImportedGroups} from "./imports/cancelImportedGroups";
 export {cleanupImports} from "./imports/cleanupImports";
+export {linkMyParticipants, resolveLinkRequest} from "./participants/linkParticipants";
 export {onTaskDueScheduled} from "./events/onTaskDueScheduled";
 export {onEventStatusScheduled} from "./events/onEventStatusScheduled";
 export {onDigestSummary} from "./events/onDigestSummary";

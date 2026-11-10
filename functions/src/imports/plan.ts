@@ -34,6 +34,11 @@ export interface ExistingPerson {
   externalId?: string | null;
   imported?: boolean;
   status?: string;
+  /**
+   * An unnamed entry's scrambled import ID (Req 14a), so a re-import refills
+   * it instead of adding the person again.
+   */
+  externalIdKey?: string | null;
 }
 
 export interface ImportContext {
@@ -43,6 +48,8 @@ export interface ImportContext {
   eventStart: string | null;
   existing: ExistingPerson[];
   existingGroups: {id: string; name: string}[];
+  /** Scrambles an import ID the way unnamed entries keep it. */
+  externalIdKey?: (externalId: string) => string;
 }
 
 export type Problem =
@@ -187,16 +194,20 @@ export function planImport(rows: string[][], targets: Target[], ctx: ImportConte
   const groupName = (id: string | null) =>
     ctx.existingGroups.find((g) => g.id === id)?.name ?? null;
   const byExternalId = new Map<string, ExistingPerson>();
+  const byIdKey = new Map<string, ExistingPerson>();
   const byKey = new Map<string, ExistingPerson>();
   for (const p of ctx.existing) {
     if (p.externalId) byExternalId.set(p.externalId, p);
+    if (p.externalIdKey) byIdKey.set(p.externalIdKey, p);
     byKey.set(personKey(groupName(p.groupId), p.name), p);
   }
 
   const errors: RowError[] = [];
   const people: PlannedPerson[] = [];
   const seenKeys = new Set<string>();
-  const seenEmails = new Set<string>();
+  // A family may share one email (#78), so a repeat is a problem only
+  // outside the group that used it first, or without a group.
+  const seenEmails = new Map<string, string | null>();
   const newGroups = new Set<string>();
 
   data.forEach((cells, index) => {
@@ -265,7 +276,10 @@ export function planImport(rows: string[][], targets: Target[], ctx: ImportConte
       const email = cell(emailColumn).toLowerCase();
       if (email) {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) fail(emailColumn, "badEmail");
-        else if (seenEmails.has(email)) fail(emailColumn, "duplicateEmail");
+        else if (seenEmails.has(email) &&
+          (seenEmails.get(email) === null || seenEmails.get(email) !== normalise(groupText))) {
+          fail(emailColumn, "duplicateEmail");
+        }
         person.email = email;
       } else {
         person.email = null;
@@ -297,8 +311,11 @@ export function planImport(rows: string[][], targets: Target[], ctx: ImportConte
       return;
     }
     seenKeys.add(key);
-    if (person.email) seenEmails.add(person.email);
+    if (person.email && !seenEmails.has(person.email)) {
+      seenEmails.set(person.email, groupText ? normalise(groupText) : null);
+    }
     const existing = (externalId ? byExternalId.get(externalId) : undefined) ??
+      (externalId && ctx.externalIdKey ? byIdKey.get(ctx.externalIdKey(externalId)) : undefined) ??
       byKey.get(personKey(groupText, name));
     person.match = existing?.id ?? null;
     const group = groupText ? groupsByName.get(normalise(groupText)) : undefined;
