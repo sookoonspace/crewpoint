@@ -3,6 +3,7 @@ import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/participants/data/participant_repository.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/import_job.dart';
+import 'package:crewpoint_app/app/features/participants/domain/models/link_request.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/participant.dart';
 
 /// What the roster shows: the people loaded so far for [query], and the
@@ -172,4 +173,23 @@ final recentImportsProvider = StreamProvider.autoDispose
     .family<List<ImportJob>, String>(
       (ref, eventId) =>
           ref.watch(importRepositoryProvider).watchRecent(eventId),
+    );
+
+/// Accounts waiting to be linked by an organizer (Req 46). Empty for anyone
+/// who may not read them, so the roster can show a count without failing.
+final linkRequestsProvider = StreamProvider.autoDispose
+    .family<List<LinkRequest>, String>(
+      (ref, eventId) =>
+          ref.watch(participantRepositoryProvider).watchLinkRequests(eventId),
+    );
+
+/// People by ID, such as the records a link request offers.
+final participantsByIdProvider = FutureProvider.autoDispose
+    .family<Map<String, ParticipantModel>, ({String eventId, String ids})>(
+      (ref, key) => ref
+          .watch(participantRepositoryProvider)
+          .participantsByIds(
+            key.eventId,
+            key.ids.isEmpty ? const [] : key.ids.split(','),
+          ),
     );

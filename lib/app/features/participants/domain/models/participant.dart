@@ -15,6 +15,7 @@ class ParticipantModel {
     this.createdBy,
     this.categoryId,
     this.fields = const {},
+    this.anonymised = false,
   });
 
   factory ParticipantModel.fromFirestore(
@@ -32,6 +33,7 @@ class ParticipantModel {
     createdBy: data['createdBy'] as String?,
     categoryId: data['categoryId'] as String?,
     fields: _answers(data['fields']),
+    anonymised: data['anonymised'] == true,
   );
 
   final String id;
@@ -53,6 +55,10 @@ class ParticipantModel {
 
   /// Standard custom field answers, by field ID (Req 41).
   final Map<String, Object?> fields;
+
+  /// Left by a deleted account (Req 14a): no name, kept only so counts stay
+  /// right. Set only by the server.
+  final bool anonymised;
 
   /// Lower-case, for searching by the start of a name.
   String get sortName => name.trim().toLowerCase();
@@ -76,6 +82,7 @@ class ParticipantModel {
     createdBy: createdBy,
     categoryId: clearCategory ? null : (categoryId ?? this.categoryId),
     fields: fields ?? this.fields,
+    anonymised: anonymised,
   );
 
   @override
@@ -90,7 +97,8 @@ class ParticipantModel {
       other.isChild == isChild &&
       other.status == status &&
       other.uid == uid &&
-      other.createdBy == createdBy;
+      other.createdBy == createdBy &&
+      other.anonymised == anonymised;
 
   @override
   int get hashCode => Object.hash(
@@ -121,16 +129,25 @@ Map<String, Object?> _answers(Object? raw) => raw is Map
 /// or by the group's linked adults.
 @immutable
 class ParticipantPrivate {
-  const ParticipantPrivate({this.birthDate, this.fields = const {}});
+  const ParticipantPrivate({
+    this.birthDate,
+    this.email,
+    this.fields = const {},
+  });
 
   factory ParticipantPrivate.fromFirestore(Map<String, dynamic> data) =>
       ParticipantPrivate(
         birthDate: data['birthDate'] as String?,
+        email: data['email'] as String?,
         fields: _answers(data['fields']),
       );
 
   /// A calendar date, `YYYY-MM-DD`.
   final String? birthDate;
+
+  /// From an import, which linking an account matches on (Req 46). Not
+  /// edited in the app, but kept when the details are saved.
+  final String? email;
 
   /// Private custom field answers, by field ID (Req 41).
   final Map<String, Object?> fields;
@@ -139,6 +156,7 @@ class ParticipantPrivate {
   bool operator ==(Object other) =>
       other is ParticipantPrivate &&
       other.birthDate == birthDate &&
+      other.email == email &&
       mapEquals(other.fields, fields);
 
   @override

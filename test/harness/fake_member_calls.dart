@@ -20,6 +20,13 @@ class FakeMemberCalls implements MemberCalls {
   /// Thrown by the next call, then cleared, to test failures.
   Object? failNext;
 
+  /// What [linkMyParticipants] answers.
+  LinkResult linkResult = (
+    linked: const <String>[],
+    asked: const <String>[],
+    unverified: false,
+  );
+
   String _inviteRole = 'participant';
   int _rotations = 0;
 
@@ -401,5 +408,45 @@ class FakeMemberCalls implements MemberCalls {
     _maybeFail();
     if (firestore == null) return;
     await _offer(eventId).delete();
+  }
+
+  @override
+  Future<LinkResult> linkMyParticipants() async {
+    calls.add('linkMyParticipants');
+    _maybeFail();
+    return linkResult;
+  }
+
+  /// Settles a link request as `resolveLinkRequest` does: links the record
+  /// or the group, or marks it not a match.
+  @override
+  Future<void> resolveLinkRequest({
+    required String eventId,
+    required String uid,
+    String? participantId,
+    String? groupId,
+    bool dismiss = false,
+  }) async {
+    calls.add(
+      'resolveLinkRequest:$uid:${participantId ?? groupId ?? 'dismiss'}',
+    );
+    _maybeFail();
+    if (firestore == null) return;
+    final request = _event(eventId).collection('linkRequests').doc(uid);
+    if (dismiss) {
+      await request.update({'status': 'dismissed'});
+      return;
+    }
+    if (participantId != null) {
+      await _event(
+        eventId,
+      ).collection('participants').doc(participantId).update({'uid': uid});
+    }
+    if (groupId != null) {
+      await _event(eventId).collection('groups').doc(groupId).update({
+        'adultUids': FieldValue.arrayUnion([uid]),
+      });
+    }
+    await request.delete();
   }
 }

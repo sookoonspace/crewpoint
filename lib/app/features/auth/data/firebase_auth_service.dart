@@ -139,6 +139,9 @@ class FirebaseAuthService implements IAuthService {
   @override
   Future<void> reloadCurrentUser() async {
     await _firebaseAuth.currentUser?.reload();
+    // A fresh ID token carries the new `email_verified`, which linking an
+    // account to its registration checks on the server (Req 46).
+    await _firebaseAuth.currentUser?.getIdToken(true);
   }
 
   @override

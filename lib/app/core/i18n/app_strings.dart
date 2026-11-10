@@ -46,6 +46,7 @@ abstract class AppStrings {
   PeopleStrings get people;
   FieldStrings get fields;
   ImportStrings get imports;
+  LinkStrings get links;
 
   /// Static English fallback. Used by service-layer code that has no
   /// `BuildContext` in scope (e.g. `firebaseAuthErrorMessage`). UI code
@@ -515,6 +516,9 @@ class _EnglishStrings extends AppStrings {
 
   @override
   ImportStrings get imports => const _EnglishImportStrings();
+
+  @override
+  LinkStrings get links => const _EnglishLinkStrings();
 }
 
 class _EnglishChatStrings extends ChatStrings {
@@ -2450,4 +2454,99 @@ class _EnglishTransferStrings extends TransferStrings {
   String get you => 'You';
   @override
   String get bannerBody => "You've been offered ownership of this event.";
+}
+
+/// Linking accounts to participant records (Req 46, 14a).
+abstract class LinkStrings {
+  const LinkStrings();
+
+  /// Shown on the roster to organizers.
+  String waiting(int count);
+  String get openWaiting;
+  String get title;
+  String get intro;
+  String get empty;
+  String get loadFailed;
+  String get retry;
+  String get offline;
+  String accountLine(String? name, String email);
+  String get pickRecord;
+  String asAdultOf(String group);
+  String get onlyChildren;
+  String get link;
+  String get notAMatch;
+  String get linkFailed;
+  String get linkedDone;
+  String get dismissedDone;
+  String get childTag;
+
+  /// After sign-in links someone (Req 46).
+  String linkedToast(int events);
+
+  /// A record left by a deleted account (Req 14a).
+  String get unnamed;
+  String get unnamedHint;
+
+  /// The linked person's own record, when they see no group.
+  String get yourRecord;
+}
+
+class _EnglishLinkStrings extends LinkStrings {
+  const _EnglishLinkStrings();
+
+  @override
+  String waiting(int count) => count == 1
+      ? '1 person is waiting to be linked to their record.'
+      : '$count people are waiting to be linked to their records.';
+  @override
+  String get openWaiting => 'Review';
+  @override
+  String get title => 'Link accounts';
+  @override
+  String get intro =>
+      'These people signed in with a verified email that matches more than '
+      'one adult, or only children. Pick who they are, or say it is not a '
+      'match.';
+  @override
+  String get empty => 'Nobody is waiting to be linked.';
+  @override
+  String get loadFailed => "Couldn't load these. Check your connection.";
+  @override
+  String get retry => 'Try again';
+  @override
+  String get offline => 'Linking needs a connection.';
+  @override
+  String accountLine(String? name, String email) =>
+      name == null || name.isEmpty ? email : '$name · $email';
+  @override
+  String get pickRecord => 'Who is this?';
+  @override
+  String asAdultOf(String group) => 'An adult looking after $group';
+  @override
+  String get onlyChildren =>
+      'Only children carry this email, and a child is never linked to an '
+      'account. Link this person as an adult of the group instead.';
+  @override
+  String get link => 'Link';
+  @override
+  String get notAMatch => 'Not a match';
+  @override
+  String get linkFailed => "Couldn't save that. Check your connection and try again.";
+  @override
+  String get linkedDone => 'Linked.';
+  @override
+  String get dismissedDone => 'Marked as not a match.';
+  @override
+  String get childTag => 'Child';
+  @override
+  String linkedToast(int events) => events == 1
+      ? "You've been linked to your registration in 1 event."
+      : "You've been linked to your registration in $events events.";
+  @override
+  String get unnamed => 'Unnamed person';
+  @override
+  String get unnamedHint =>
+      'Their account was deleted. Kept only so counts stay right.';
+  @override
+  String get yourRecord => 'Your record';
 }

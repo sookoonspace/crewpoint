@@ -53,6 +53,9 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
   bool _isChild = false;
   String? _birthDate;
 
+  /// An imported email, kept when the private details are saved (Req 46).
+  String? _privateEmail;
+
   /// Whether the private part (birth date and private answers) changed.
   bool _birthDateChanged = false;
   String? _categoryId;
@@ -203,6 +206,7 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
             privateDetails: _birthDateChanged
                 ? ParticipantPrivate(
                     birthDate: _birthDate,
+                    email: _privateEmail,
                     fields: _privateAnswers,
                   )
                 : null,
@@ -273,6 +277,9 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
     final mine = ref.watch(myMemberProvider(event.id));
     final own = mine.value?.groupIds ?? const <String>[];
     final linkedAdult = event.can(me, 'group.editOwn') && own.isNotEmpty;
+    // Their own record, once linked by verified email (Req 46).
+    final ownRecord =
+        !_isNew && mine.value?.participantId == widget.participantId;
 
     Widget scaffold(Widget body) => PopScope(
       canPop: !_dirty || _busy,
@@ -296,7 +303,11 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
           title: Text(
             _isNew
                 ? strings.newTitle(words.one('participant'))
-                : (_saved?.name ?? words.one('participant')),
+                : switch (_saved?.name) {
+                    null => words.one('participant'),
+                    '' => context.strings.links.unnamed,
+                    final name => name,
+                  },
           ),
           elevation: 0,
         ),
@@ -304,7 +315,7 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
       ),
     );
 
-    if (!manages && !browses && !linkedAdult) {
+    if (!manages && !browses && !linkedAdult && !ownRecord) {
       if (mine.isLoading && !mine.hasValue) {
         return scaffold(const Center(child: CircularProgressIndicator()));
       }
@@ -348,13 +359,15 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
     // else even asks for them.
     final readsPrivate =
         event.can(me, 'participants.readPrivate') ||
-        (linkedAdult && own.contains(_saved?.groupId));
+        (linkedAdult && own.contains(_saved?.groupId)) ||
+        ownRecord;
     if (!_isNew && !_privateLoaded && !readsPrivate) _privateLoaded = true;
     if (!_isNew && !_privateLoaded) {
       final private = ref.watch(participantPrivateProvider(_key));
       if (private.hasValue || private.hasError) {
         _privateLoaded = true;
         _birthDate = private.value?.birthDate;
+        _privateEmail = private.value?.email;
         _privateAnswers = {...?private.value?.fields};
       }
     }
@@ -402,6 +415,14 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
                     strings.readOnly,
                     key: const Key('people.edit.readOnly'),
                     style: theme.textTheme.bodyMedium,
+                  ),
+                if (_saved?.anonymised ?? false)
+                  Text(
+                    context.strings.links.unnamedHint,
+                    key: const Key('people.edit.unnamed'),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 TextFormField(
                   key: const Key('people.edit.name'),

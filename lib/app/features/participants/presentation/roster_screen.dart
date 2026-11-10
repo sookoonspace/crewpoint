@@ -185,8 +185,23 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
         );
       }
       ownGroups = mine.value?.groupIds ?? const [];
-      if (ownGroups.isEmpty) return scaffold(const NoAccessView());
+      final ownRecord = mine.value?.participantId;
+      if (ownGroups.isEmpty) {
+        // Linked without a group (Req 46): their own record, nobody else's.
+        return scaffold(
+          ownRecord == null
+              ? const NoAccessView()
+              : _OwnRecord(
+                  eventId: event.id,
+                  participantId: ownRecord,
+                  onTap: () => _open(ownRecord),
+                ),
+        );
+      }
     }
+    final waiting = edits && event.can(me, 'participants.readPrivate')
+        ? ref.watch(linkRequestsProvider(event.id)).value?.length ?? 0
+        : 0;
 
     final query = _query(ownGroups);
     _ensureStarted(query);
@@ -219,6 +234,29 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
         (edits || ownGroups != null) && event.status != EventStatus.archived;
 
     final header = <Widget>[
+      if (waiting > 0)
+        Card(
+          key: const Key('people.roster.linkRequests'),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(context.strings.links.waiting(waiting)),
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: TextButton(
+                    key: const Key('people.roster.linkRequests.open'),
+                    onPressed: () => context.push(
+                      '/dashboard/event/${event.id}/people/links',
+                    ),
+                    child: Text(context.strings.links.openWaiting),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       TextField(
         key: const Key('people.roster.search'),
         controller: _search,
@@ -440,7 +478,13 @@ class _PersonTile extends StatelessWidget {
         foregroundColor: theme.colorScheme.onSecondaryContainer,
         child: Text(person.name.isEmpty ? '?' : person.name.characters.first),
       ),
-      title: Text(person.name),
+      // Left by a deleted account (Req 14a).
+      title: Text(
+        person.name.isEmpty ? context.strings.links.unnamed : person.name,
+        style: person.name.isEmpty
+            ? TextStyle(color: theme.colorScheme.onSurfaceVariant)
+            : null,
+      ),
       subtitle: (groupName ?? '').isEmpty ? null : Text(groupName!),
       trailing: person.isChild
           ? Chip(
@@ -450,6 +494,58 @@ class _PersonTile extends StatelessWidget {
             )
           : null,
       onTap: onTap,
+    );
+  }
+}
+
+/// A linked person's own record, when they look after no group (Req 46).
+class _OwnRecord extends ConsumerWidget {
+  const _OwnRecord({
+    required this.eventId,
+    required this.participantId,
+    required this.onTap,
+  });
+
+  final String eventId;
+  final String participantId;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final key = (eventId: eventId, id: participantId);
+    final person = ref.watch(participantProvider(key));
+    final padding = Breakpoints.screenHorizontalPadding(context);
+    return ListView(
+      key: const Key('people.roster.own'),
+      padding: EdgeInsets.fromLTRB(
+        padding,
+        AppSpacing.lg,
+        padding,
+        AppSpacing.lg,
+      ),
+      children: [
+        ContentMaxWidth(
+          maxWidth: 720,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: AppSpacing.md,
+            children: [
+              Text(
+                context.strings.links.yourRecord,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              if (person.hasError && !person.hasValue)
+                _Failed(onRetry: () => ref.invalidate(participantProvider(key)))
+              else if (!person.hasValue)
+                const Center(child: CircularProgressIndicator())
+              else if (person.value == null)
+                const NoAccessView()
+              else
+                _PersonTile(person: person.value!, onTap: onTap),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
