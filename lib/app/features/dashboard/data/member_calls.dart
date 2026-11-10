@@ -1,6 +1,11 @@
 import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_access.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
+/// What linking a signed-in account found (Req 46): events it was linked
+/// in, events where an organizer must decide, and whether the email still
+/// needs verifying.
+typedef LinkResult = ({List<String> linked, List<String> asked, bool unverified});
+
 /// The event's one active invite (Req 31).
 typedef InviteCode = ({String code, String roleId});
 
@@ -95,6 +100,21 @@ abstract interface class MemberCalls {
   Future<void> setExpenseAccess({
     required String eventId,
     required ExpenseAccess access,
+  });
+
+  /// Links the signed-in account to its own participant records by verified
+  /// email (Req 46). Safe to repeat.
+  Future<LinkResult> linkMyParticipants();
+
+  /// Settles an ambiguous link (Req 46): one adult record, one group when
+  /// only children matched, or not a match. Needs `participants.edit` and
+  /// `participants.readPrivate`.
+  Future<void> resolveLinkRequest({
+    required String eventId,
+    required String uid,
+    String? participantId,
+    String? groupId,
+    bool dismiss = false,
   });
 }
 
@@ -247,4 +267,31 @@ class FirebaseMemberCalls implements MemberCalls {
     required ExpenseAccess access,
   }) =>
       _call('setExpenseAccess', {'eventId': eventId, 'access': access.toMap()});
+
+  @override
+  Future<LinkResult> linkMyParticipants() async {
+    final data = await _call('linkMyParticipants', const {});
+    List<String> ids(Object? v) =>
+        v is List ? v.whereType<String>().toList() : const [];
+    return (
+      linked: ids(data['linked']),
+      asked: ids(data['asked']),
+      unverified: data['unverified'] == true,
+    );
+  }
+
+  @override
+  Future<void> resolveLinkRequest({
+    required String eventId,
+    required String uid,
+    String? participantId,
+    String? groupId,
+    bool dismiss = false,
+  }) => _call('resolveLinkRequest', {
+    'eventId': eventId,
+    'uid': uid,
+    'participantId': ?participantId,
+    'groupId': ?groupId,
+    if (dismiss) 'dismiss': true,
+  });
 }

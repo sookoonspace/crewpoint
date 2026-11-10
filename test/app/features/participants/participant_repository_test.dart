@@ -124,6 +124,61 @@ void main() {
     },
   );
 
+  test('editing private details keeps an imported email, which linking '
+      'reads (Req 46), and replaces the answers', () async {
+    const person = ParticipantModel(id: 'p1', eventId: e, name: 'Ravi');
+    await firestore.doc('events/$e/participants/p1').set({
+      'name': 'Ravi',
+      'sortName': 'ravi',
+      'isChild': false,
+    });
+    await firestore.doc('events/$e/participants/p1/private/details').set({
+      'email': 'ravi@x.test',
+      'fields': {'allergy': 'Nuts', 'old': 'x'},
+    });
+    // The screen saves what it read, email included.
+    final read = await repo.readPrivate(e, 'p1');
+    await repo.save(
+      person,
+      privateDetails: ParticipantPrivate(
+        birthDate: '1984-02-01',
+        email: read?.email,
+        fields: const {'allergy': 'None'},
+      ),
+    );
+    final details =
+        (await firestore.doc('events/$e/participants/p1/private/details').get())
+            .data()!;
+    expect(details['email'], 'ravi@x.test');
+    expect(details['birthDate'], '1984-02-01');
+    expect(details['fields'], {'allergy': 'None'});
+  });
+
+  test('finds people by ID, and open link requests', () async {
+    await seed(3);
+    final found = await repo.participantsByIds(e, [
+      'Person-0',
+      'Person-2',
+      'gone',
+    ]);
+    expect(found.keys, unorderedEquals(['Person-0', 'Person-2']));
+    await firestore.doc('events/$e/linkRequests/u1').set({
+      'uid': 'u1',
+      'email': 'b@x.test',
+      'participantIds': ['Person-0'],
+      'status': 'open',
+    });
+    await firestore.doc('events/$e/linkRequests/u2').set({
+      'uid': 'u2',
+      'name': 'Ann',
+      'email': 'a@x.test',
+      'status': 'dismissed',
+    });
+    final requests = await repo.watchLinkRequests(e).first;
+    expect(requests.map((r) => r.uid), ['u1']);
+    expect(requests.single.participantIds, ['Person-0']);
+  });
+
   test('deleting removes the private details too', () async {
     await repo.save(
       const ParticipantModel(id: 'p1', eventId: e, name: 'Ana', createdBy: 'o'),
@@ -182,34 +237,37 @@ void main() {
       visibility: FieldVisibility.private,
     );
 
-    test('saves standard answers with filter tags, and private ones apart', () async {
-      await repo.save(
-        const ParticipantModel(
-          id: 'p1',
-          eventId: e,
-          name: 'Ana',
-          createdBy: 'o',
-          categoryId: 'child',
-          fields: {'diet': 'Jain'},
-        ),
-        privateDetails: const ParticipantPrivate(
-          birthDate: '2020-05-01',
-          fields: {'allergy': 'Nuts'},
-        ),
-        definitions: const [diet, allergy],
-      );
-      final saved = (await firestore.doc('events/$e/participants/p1').get())
-          .data()!;
-      expect(saved['fields'], {'diet': 'Jain'});
-      expect(saved['filterTags'], ['diet=Jain']);
-      expect(saved['categoryId'], 'child');
-      expect(saved.toString(), isNot(contains('Nuts')));
-      final private = await repo.readPrivate(e, 'p1');
-      expect(private?.fields, {'allergy': 'Nuts'});
-      final back = await repo.fetchPage(e, const RosterQuery());
-      expect(back.items.single.fields, {'diet': 'Jain'});
-      expect(back.items.single.categoryId, 'child');
-    });
+    test(
+      'saves standard answers with filter tags, and private ones apart',
+      () async {
+        await repo.save(
+          const ParticipantModel(
+            id: 'p1',
+            eventId: e,
+            name: 'Ana',
+            createdBy: 'o',
+            categoryId: 'child',
+            fields: {'diet': 'Jain'},
+          ),
+          privateDetails: const ParticipantPrivate(
+            birthDate: '2020-05-01',
+            fields: {'allergy': 'Nuts'},
+          ),
+          definitions: const [diet, allergy],
+        );
+        final saved = (await firestore.doc('events/$e/participants/p1').get())
+            .data()!;
+        expect(saved['fields'], {'diet': 'Jain'});
+        expect(saved['filterTags'], ['diet=Jain']);
+        expect(saved['categoryId'], 'child');
+        expect(saved.toString(), isNot(contains('Nuts')));
+        final private = await repo.readPrivate(e, 'p1');
+        expect(private?.fields, {'allergy': 'Nuts'});
+        final back = await repo.fetchPage(e, const RosterQuery());
+        expect(back.items.single.fields, {'diet': 'Jain'});
+        expect(back.items.single.categoryId, 'child');
+      },
+    );
 
     test('the roster filters by category and by a field answer', () async {
       for (final (id, cat, d) in [

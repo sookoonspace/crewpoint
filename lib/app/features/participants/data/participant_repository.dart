@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/category.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
+import 'package:crewpoint_app/app/features/participants/domain/models/link_request.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/participant.dart';
 
 /// What the roster lists: everyone, one group, or (for someone who may see
@@ -186,6 +187,9 @@ class ParticipantRepository {
     if (privateDetails != null) {
       batch.set(_private(person.eventId, person.id), {
         'birthDate': privateDetails.birthDate,
+        // Kept from what was read, because linking an account reads it
+        // (Req 46).
+        'email': ?privateDetails.email,
         'fields': privateDetails.fields,
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -328,4 +332,40 @@ class ParticipantRepository {
     }
     return result;
   }
+
+  /// People by ID, in chunks of 30. Missing ones, and ones the viewer may not
+  /// read, are left out.
+  Future<Map<String, ParticipantModel>> participantsByIds(
+    String eventId,
+    List<String> ids,
+  ) async {
+    final unique = ids.toSet().toList();
+    final result = <String, ParticipantModel>{};
+    for (var i = 0; i < unique.length; i += 30) {
+      final chunk = unique.sublist(i, (i + 30).clamp(0, unique.length));
+      final snap = await _people(
+        eventId,
+      ).where(FieldPath.documentId, whereIn: chunk).get();
+      for (final doc in snap.docs) {
+        result[doc.id] = ParticipantModel.fromFirestore(
+          eventId,
+          doc.id,
+          doc.data(),
+        );
+      }
+    }
+    return result;
+  }
+
+  /// Accounts waiting for an organizer to link them (Req 46), oldest first.
+  Stream<List<LinkRequest>> watchLinkRequests(String eventId) => _event(eventId)
+      .collection('linkRequests')
+      .where('status', isEqualTo: 'open')
+      .snapshots()
+      .map(
+        (snap) => [
+          for (final doc in snap.docs)
+            LinkRequest.fromFirestore(doc.id, doc.data()),
+        ]..sort((a, b) => (a.name ?? a.email).compareTo(b.name ?? b.email)),
+      );
 }

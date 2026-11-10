@@ -6,6 +6,7 @@ class MemberModel {
     this.permissions = const {},
     this.crewIds = const [],
     this.groupIds = const [],
+    this.participantId,
   });
 
   factory MemberModel.fromFirestore(String uid, Map<String, dynamic> data) =>
@@ -15,6 +16,7 @@ class MemberModel {
         permissions: _strings(data['permissions']).toSet(),
         crewIds: _strings(data['crewIds']),
         groupIds: _strings(data['groupIds']),
+        participantId: data['participantId'] as String?,
       );
 
   final String uid;
@@ -26,6 +28,9 @@ class MemberModel {
 
   /// The groups this person is a linked adult of (Req 26b).
   final List<String> groupIds;
+
+  /// Their own participant record, once linked by verified email (#78).
+  final String? participantId;
 
   bool get isOwner => roleIds.contains('owner');
 

@@ -21,6 +21,7 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/expense_access_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/fields_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/import_screen.dart';
+import 'package:crewpoint_app/app/features/participants/presentation/link_requests_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/participant_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/roster_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/member_management_screen.dart';
@@ -206,6 +207,13 @@ class RolesHarness {
                         event: event,
                         jobId: state.uri.queryParameters['job'],
                       ),
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'links',
+                    builder: (_, _) => EventGuard(
+                      eventId: eventId,
+                      child: (event) => LinkRequestsScreen(event: event),
                     ),
                   ),
                   GoRoute(

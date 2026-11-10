@@ -27,7 +27,9 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/edit_event_scr
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_settings_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/expense_access_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/fields_screen.dart';
+import 'package:crewpoint_app/app/features/participants/presentation/account_link_listener.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/import_screen.dart';
+import 'package:crewpoint_app/app/features/participants/presentation/link_requests_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/participant_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/roster_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboard_screen.dart';
@@ -156,6 +158,7 @@ GoRouter createRouter({
               budgetBadge: badges.budget,
               body: Column(
                 children: [
+                  const AccountLinkListener(),
                   const EmailUnverifiedBanner(),
                   Expanded(child: navigationShell),
                 ],
@@ -256,6 +259,14 @@ GoRouter createRouter({
                                 event: event,
                                 jobId: state.uri.queryParameters['job'],
                               ),
+                            ),
+                          ),
+                          GoRoute(
+                            path: 'links',
+                            builder: (_, state) => EventGuard(
+                              eventId: _resolveEventId(state),
+                              child: (event) =>
+                                  LinkRequestsScreen(event: event),
                             ),
                           ),
                           GoRoute(
