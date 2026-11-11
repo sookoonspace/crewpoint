@@ -1,5 +1,6 @@
 import 'package:drift/native.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:crewpoint_app/app/features/counts/presentation/counts_screen.dart';
 import 'package:crewpoint_app/app/features/schedule/presentation/agenda_screen.dart';
 import 'package:crewpoint_app/app/features/schedule/presentation/schedule_screen.dart';
 import 'package:crewpoint_app/app/features/schedule/presentation/session_screen.dart';
@@ -259,6 +260,13 @@ class RolesHarness {
                 builder: (_, _) => EventGuard(
                   eventId: eventId,
                   child: (event) => CrewsScreen(event: event),
+                ),
+              ),
+              GoRoute(
+                path: 'counts',
+                builder: (_, _) => EventGuard(
+                  eventId: eventId,
+                  child: (event) => CountsScreen(event: event),
                 ),
               ),
               GoRoute(

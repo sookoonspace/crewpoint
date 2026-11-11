@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/core/widgets/module_guard.dart';
+import 'package:crewpoint_app/app/features/counts/presentation/counts_screen.dart';
 import 'package:crewpoint_app/app/features/schedule/presentation/agenda_screen.dart';
 import 'package:crewpoint_app/app/features/schedule/presentation/schedule_screen.dart';
 import 'package:crewpoint_app/app/features/schedule/presentation/session_screen.dart';
@@ -313,6 +314,13 @@ GoRouter createRouter({
                             ),
                           ),
                         ],
+                      ),
+                      GoRoute(
+                        path: 'counts',
+                        builder: (_, state) => EventGuard(
+                          eventId: _resolveEventId(state),
+                          child: (event) => CountsScreen(event: event),
+                        ),
                       ),
                       GoRoute(
                         path: 'agenda',

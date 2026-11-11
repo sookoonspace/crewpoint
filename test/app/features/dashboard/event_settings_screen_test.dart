@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:crewpoint_app/app/features/counts/domain/event_stats.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart';
 import 'package:crewpoint_app/app/core/database/daos/events_dao.dart';
@@ -57,6 +59,7 @@ void main() {
     ThemeData? theme,
     Size size = const Size(1200, 2400),
     double textScale = 1,
+    List<Override> extra = const [],
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -64,6 +67,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          ...extra,
           currentUserIdProvider.overrideWithValue(uid),
           firestoreProvider.overrideWithValue(firestore),
           expenseListProvider(
@@ -168,6 +172,23 @@ void main() {
       await tester.pumpAndSettle();
       // Three members have accounts; four people are attending.
       expect(find.text('4 of 500 attending'), findsOneWidget);
+    });
+
+    testWidgets('uses the counts when they exist (Req 52)', (tester) async {
+      await pump(
+        tester,
+        extra: [
+          eventStatsProvider.overrideWith(
+            (ref, _) => Stream.value(
+              EventStats.fromFirestore(const {
+                'event': {'total': 26},
+              }),
+            ),
+          ),
+        ],
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('26 of 500 attending'), findsOneWidget);
     });
 
     testWidgets('shows the count alone when no capacity is set', (

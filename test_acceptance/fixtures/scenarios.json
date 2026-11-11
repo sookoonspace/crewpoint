@@ -107,16 +107,16 @@
  {
   "id": "B-04",
   "title": "Headcounts, diet totals, kids activity count, T-shirt report match §4.",
-  "status": "NOT BUILT",
-  "gap": "No attendee data. Needs the roster import plus count logic.",
-  "tested": false
+  "status": "PASS",
+  "gap": "Built in #83: counts on the server give 7 groups, 16 adults, 10 children, 26 people, 18/2/6 by diet, 7 kids activity sign-ups and a T-shirt report summing to 26 after import and cancelling F8.",
+  "tested": true
  },
  {
   "id": "B-05",
   "title": "Per-meal counts match §4 table, by diet.",
-  "status": "NOT BUILT",
-  "gap": "No attendee data. Needs the roster import plus count logic.",
-  "tested": false
+  "status": "PASS",
+  "gap": "Built in #83: per-session counts by diet match the §4 table for M1–M8, from arrivals, departures and opt-outs.",
+  "tested": true
  },
  {
   "id": "B-06",

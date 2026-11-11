@@ -1329,18 +1329,18 @@ Calculate counts per session and per event in a function, stored in a `stats` do
 - The before-merge, walk-in and post-event rows of section 4 belong to Stages 2 and 5.
 
 ### Acceptance criteria
-- [ ] Counts per session and per event, by category and by any custom field, are calculated by a function and stored in a `stats` document with a last-updated time.
-- [ ] Counts are recalculated after changes, using the attendance policy plus stored exceptions.
-- [ ] The screen, at the `counts` route, shows when counts were last updated and needs `counts.read`.
-- [ ] With F1–F7 loaded and F8 cancelled through re-import, and with F10 absent because merging is Stage 2, the fixture produces: 7 groups, 16 adults, 10 children, 26 people; 18, 2 and 6 by diet; 7 kids activity sign-ups; and the full section 4 per-meal table for M1–M8.
-- [ ] `capacity` shows the count against it, using these counts.
-- [ ] Unit tests cover count logic.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
-- [ ] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
-- [ ] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
-- [ ] Tests for scenarios B-04, B-05, GE-04 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] Counts per session and per event, by category and by any custom field, are calculated by a function and stored in a `stats` document with a last-updated time.
+- [x] Counts are recalculated after changes, using the attendance policy plus stored exceptions.
+- [x] The screen, at the `counts` route, shows when counts were last updated and needs `counts.read`.
+- [x] With F1–F7 loaded and F8 cancelled through re-import, and with F10 absent because merging is Stage 2, the fixture produces: 7 groups, 16 adults, 10 children, 26 people; 18, 2 and 6 by diet; 7 kids activity sign-ups; and the full section 4 per-meal table for M1–M8.
+- [x] `capacity` shows the count against it, using these counts.
+- [x] Unit tests cover count logic.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
+- [x] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
+- [x] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
+- [x] Tests for scenarios B-04, B-05, GE-04 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 23

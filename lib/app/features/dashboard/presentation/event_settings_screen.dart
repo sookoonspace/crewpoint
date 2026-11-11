@@ -374,6 +374,11 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     // final say either way.
     final currencyEnabled =
         expenses.hasValue && !hasMoney && !_saving && !_archived;
+    // Only counts.read may read the counts (Req 52).
+    final readsCounts = event.can(
+      ref.watch(currentUserIdProvider) ?? '',
+      'counts.read',
+    );
     final currencies = {
       ...CreateEventScreen.supportedCurrencies,
       event.currency,
@@ -535,8 +540,19 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
                       labelText: strings.settingsCapacity,
                       // Capacity counts everyone attending, with or without
                       // an account (Req 18b).
+                      // From the counts when they exist (Req 52), so the
+                      // number matches the counts screen.
                       helperText: strings.settingsCapacityCount(
-                        ref.watch(participantCountProvider(event.id)).value ??
+                        (readsCounts
+                                ? ref
+                                      .watch(eventStatsProvider(event.id))
+                                      .value
+                                      ?.event
+                                      .total
+                                : null) ??
+                            ref
+                                .watch(participantCountProvider(event.id))
+                                .value ??
                             event.memberCount,
                         event.capacity,
                       ),

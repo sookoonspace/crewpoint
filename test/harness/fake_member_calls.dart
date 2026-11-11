@@ -27,6 +27,10 @@ class FakeMemberCalls implements MemberCalls {
     unverified: false,
   );
 
+  /// What [recalculateCounts] writes to `stats/current`, as the server
+  /// would, with `updatedAt` set to now.
+  Map<String, Object?> counts = const {};
+
   String _inviteRole = 'participant';
   int _rotations = 0;
 
@@ -489,5 +493,15 @@ class FakeMemberCalls implements MemberCalls {
       });
     }
     await request.delete();
+  }
+
+  @override
+  Future<void> recalculateCounts(String eventId) async {
+    calls.add('recalculateCounts:$eventId');
+    _maybeFail();
+    await firestore?.doc('events/$eventId/stats/current').set({
+      ...counts,
+      'updatedAt': Timestamp.now(),
+    });
   }
 }

@@ -140,6 +140,10 @@ abstract interface class MemberCalls {
     String? groupId,
     bool dismiss = false,
   });
+
+  /// Counts the event now (Req 52), into `stats/current`. Needs
+  /// `counts.read`.
+  Future<void> recalculateCounts(String eventId);
 }
 
 class FirebaseMemberCalls implements MemberCalls {
@@ -349,4 +353,8 @@ class FirebaseMemberCalls implements MemberCalls {
     'groupId': ?groupId,
     if (dismiss) 'dismiss': true,
   });
+
+  @override
+  Future<void> recalculateCounts(String eventId) =>
+      _call('recalculateCounts', {'eventId': eventId});
 }
