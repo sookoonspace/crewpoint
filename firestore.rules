@@ -233,6 +233,14 @@ service cloud.firestore {
       }
 
       // Messages subcollection
+      // The chat summary the inbox reads (Req 57a): the latest message, a
+      // count and the last urgent message, kept by onChatMessageWritten.
+      // Read like chat itself.
+      match /chatSummary/{docId} {
+        allow read: if request.auth != null && can(eventId, 'chat.send');
+        allow write: if false;
+      }
+
       match /messages/{messageId} {
         // Reading chat needs `chat.send`, so a Vendor or Observer has no chat
         // unless the Owner adds it to their role (Req 32).
