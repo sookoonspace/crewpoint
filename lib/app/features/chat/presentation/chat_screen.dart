@@ -25,6 +25,7 @@ class ChatScreen extends StatefulWidget {
     this.onSendCriticalAlert,
     this.onTapSettlement,
     this.banner,
+    this.olderHeader,
   });
 
   final List<ChatMessageModel> messages;
@@ -49,6 +50,9 @@ class ChatScreen extends StatefulWidget {
 
   /// Shown above the messages, such as the offline note (Req 74).
   final Widget? banner;
+
+  /// Shown above the oldest message: loading earlier ones (Req 57).
+  final Widget? olderHeader;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -164,8 +168,14 @@ class _ChatScreenState extends State<ChatScreen> {
                         vertical: AppSpacing.lg,
                       ),
                       reverse: true,
-                      itemCount: widget.messages.length,
+                      itemCount:
+                          widget.messages.length +
+                          (widget.olderHeader == null ? 0 : 1),
                       itemBuilder: (_, index) {
+                        // Reversed, so the last item sits above the oldest.
+                        if (index == widget.messages.length) {
+                          return widget.olderHeader!;
+                        }
                         final reversedIndex =
                             widget.messages.length - 1 - index;
                         final message = widget.messages[reversedIndex];

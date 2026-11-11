@@ -314,6 +314,13 @@ abstract class ChatStrings {
 
   String get readOnlyNotice;
 
+  // Older messages (Req 57).
+  String get olderLoad;
+  String get olderFailed;
+  String get olderRetry;
+  String get olderNeedsConnection;
+  String get olderNone;
+
   // Global inbox surface.
   String get inboxAppBarTitle;
   String get inboxEmptyTitle;
@@ -543,6 +550,18 @@ class _EnglishStrings extends AppStrings {
 
 class _EnglishChatStrings extends ChatStrings {
   const _EnglishChatStrings();
+
+  @override
+  String get olderLoad => 'Show earlier messages';
+  @override
+  String get olderFailed => "Couldn't load earlier messages.";
+  @override
+  String get olderRetry => 'Try again';
+  @override
+  String get olderNeedsConnection =>
+      'Earlier messages need a connection. Showing the latest saved on this device.';
+  @override
+  String get olderNone => 'This is the start of the chat.';
 
   @override
   String get readOnlyNotice => 'This event is archived, so chat is read-only.';

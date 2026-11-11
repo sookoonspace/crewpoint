@@ -1,12 +1,25 @@
+import 'package:crewpoint_app/app/features/chat/domain/chat_window.dart';
+
 /// Abstract chat service interface.
 /// Current implementation uses plain Firestore.
 // TODO(phase2): Swap implementation to support E2EE without breaking UI layer.
 abstract class IChatService {
-  Stream<List<ChatMessage>> messagesForEvent(String eventId);
+  /// Changes to the latest [limit] messages (Req 57), from the server's
+  /// `docChanges`, so a new message costs one change rather than the whole
+  /// history. The first change set, and the first from the server, carry
+  /// the whole window.
+  Stream<ChatChanges> latestMessages(
+    String eventId, {
+    int limit = chatPageSize,
+  });
 
-  /// Whether the event's messages are being read from the device's cache,
-  /// because there is no connection (Req 74).
-  Stream<bool> readsFromCache(String eventId);
+  /// Up to [limit] messages sent before [before], newest first. Needs a
+  /// connection.
+  Future<List<ChatMessage>> olderMessages(
+    String eventId, {
+    required DateTime before,
+    int limit = chatPageSize,
+  });
 
   Future<void> sendMessage({
     required String eventId,

@@ -17,6 +17,7 @@ import 'package:crewpoint_app/app/features/budget/data/expense_csv_builder.dart'
 import 'package:crewpoint_app/app/features/budget/data/expense_pdf_builder.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
+import 'package:crewpoint_app/app/features/chat/domain/chat_window.dart';
 import 'package:crewpoint_app/app/features/chat/data/chat_repository.dart';
 import 'package:crewpoint_app/app/features/dashboard/data/event_repository.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
@@ -31,13 +32,15 @@ import '../test/harness/dashboard_harness.dart';
 import '../test/harness/fake_create_event.dart';
 import 'seed.dart';
 
+/// Sends change sets for the latest messages, as Firestore's `docChanges`
+/// does (Req 57).
 class _FakeChat implements IChatService {
+  final ctrl = StreamController<ChatChanges>.broadcast();
   @override
-  Stream<bool> readsFromCache(String eventId) => const Stream.empty();
-
-  final ctrl = StreamController<List<ChatMessage>>.broadcast();
-  @override
-  Stream<List<ChatMessage>> messagesForEvent(String eventId) => ctrl.stream;
+  Stream<ChatChanges> latestMessages(
+    String eventId, {
+    int limit = chatPageSize,
+  }) => ctrl.stream;
   @override
   dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
 }
@@ -189,27 +192,30 @@ void main() {
       expect(overdue.single.assigneeId, 'food');
     });
 
-    test('H-02 tasks belong to a crew, filterable with overdue, and grouped', () {
-      final crewTasks = [
-        for (final t in tasks)
-          t.copyWith(crewId: t.assigneeId == 'food' ? 'catering' : 'stage'),
-      ];
-      final cateringOverdue = applyTasksFilter(
-        crewTasks,
-        const TasksFilter(crewId: 'catering', onlyOverdue: true),
-        currentUserId: 'food',
-        now: now,
-      );
-      expect(cateringOverdue.map((t) => t.id), ['t1']);
-      final groups = groupTasks(
-        crewTasks,
-        TasksGroupBy.crew,
-        now: now,
-        assigneeNames: const {},
-        crewNames: const {'catering': 'Catering', 'stage': 'Stage'},
-      );
-      expect(groups.map((g) => g.label), ['Catering', 'Stage']);
-    });
+    test(
+      'H-02 tasks belong to a crew, filterable with overdue, and grouped',
+      () {
+        final crewTasks = [
+          for (final t in tasks)
+            t.copyWith(crewId: t.assigneeId == 'food' ? 'catering' : 'stage'),
+        ];
+        final cateringOverdue = applyTasksFilter(
+          crewTasks,
+          const TasksFilter(crewId: 'catering', onlyOverdue: true),
+          currentUserId: 'food',
+          now: now,
+        );
+        expect(cateringOverdue.map((t) => t.id), ['t1']);
+        final groups = groupTasks(
+          crewTasks,
+          TasksGroupBy.crew,
+          now: now,
+          assigneeNames: const {},
+          crewNames: const {'catering': 'Catering', 'stage': 'Stage'},
+        );
+        expect(groups.map((g) => g.label), ['Catering', 'Stage']);
+      },
+    );
   });
 
   group('K-03 export', () {
@@ -410,10 +416,23 @@ void main() {
           return settledAt;
         }
 
-        svc.ctrl.add(msgs(5000));
+        // 5,000 messages already on the device, as the old full-history
+        // listener left them; then one new message arrives as one change.
+        final history = msgs(5000);
+        svc.ctrl.add((
+          upserts: history,
+          deleted: const <String>[],
+          window: history,
+          fromCache: false,
+        ));
         await drain();
         emits = 0;
-        svc.ctrl.add(msgs(5001));
+        svc.ctrl.add((
+          upserts: [msgs(5001).last],
+          deleted: const <String>[],
+          window: null,
+          fromCache: false,
+        ));
         final ms = await drain();
         // ignore: avoid_print
         print(

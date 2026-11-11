@@ -1398,16 +1398,16 @@ Page chat history, apply only changed documents in the mirror, and fix settlemen
 - The Drift bump needs a migration step and a migration test.
 
 ### Acceptance criteria
-- [ ] Chat loads the most recent 50 messages, with older pages on demand.
-- [ ] Mirrors apply only changed documents through `docChanges`, and all older messages remain reachable when online.
-- [ ] Offline, the most recent cached messages are shown, with a note that older ones need a connection.
-- [ ] One new message with 5,000 in history settles in under 2 seconds in the same Mac test that measures about 53 seconds today.
-- [ ] A `kind` column is added to Drift chat messages and carried through, so settlement and dispute bubbles work on mobile.
-- [ ] Deleted messages disappear from the mirror.
-- [ ] The `kIsWeb` fork stays in place.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] Tests for scenarios S-07, FND-11 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] Chat loads the most recent 50 messages, with older pages on demand.
+- [x] Mirrors apply only changed documents through `docChanges`, and all older messages remain reachable when online.
+- [x] Offline, the most recent cached messages are shown, with a note that older ones need a connection.
+- [x] One new message with 5,000 in history settles in under 2 seconds in the same Mac test that measures about 53 seconds today.
+- [x] A `kind` column is added to Drift chat messages and carried through, so settlement and dispute bubbles work on mobile.
+- [x] Deleted messages disappear from the mirror.
+- [x] The `kIsWeb` fork stays in place.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] Tests for scenarios S-07, FND-11 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 25

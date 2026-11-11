@@ -4,35 +4,38 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart'
-    show AppDatabase, EventsCompanion, UsersCompanion;
+    show AppDatabase, ChatMessagesCompanion, EventsCompanion, UsersCompanion;
 import 'package:crewpoint_app/app/core/database/daos/chat_messages_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/mirror_syncs_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/events_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/users_dao.dart';
 import 'package:crewpoint_app/app/core/services/i_chat_service.dart';
 import 'package:crewpoint_app/app/features/chat/data/chat_repository.dart';
+import 'package:crewpoint_app/app/features/chat/domain/chat_window.dart';
+import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
 
+/// Emits change sets for the latest messages, as Firestore's `docChanges`
+/// would, and answers older pages.
 class _ControllableChatService implements IChatService {
-  final cache = StreamController<bool>.broadcast();
+  final ctrl = StreamController<ChatChanges>.broadcast();
+  List<ChatMessage> older = const [];
+  DateTime? olderBefore;
 
   @override
-  Stream<bool> readsFromCache(String eventId) => cache.stream;
+  Stream<ChatChanges> latestMessages(
+    String eventId, {
+    int limit = chatPageSize,
+  }) => ctrl.stream;
 
-  final _byEvent = <String, StreamController<List<ChatMessage>>>{};
-
-  StreamController<List<ChatMessage>> _controller(String eventId) =>
-      _byEvent.putIfAbsent(
-        eventId,
-        () => StreamController<List<ChatMessage>>.broadcast(),
-      );
-
-  void emit(String eventId, List<ChatMessage> messages) {
-    _controller(eventId).add(messages);
+  @override
+  Future<List<ChatMessage>> olderMessages(
+    String eventId, {
+    required DateTime before,
+    int limit = chatPageSize,
+  }) async {
+    olderBefore = before;
+    return older;
   }
-
-  @override
-  Stream<List<ChatMessage>> messagesForEvent(String eventId) =>
-      _controller(eventId).stream;
 
   @override
   Future<void> sendMessage({
@@ -47,13 +50,28 @@ class _ControllableChatService implements IChatService {
     required String eventId,
     required String messageId,
   }) async {}
-
-  Future<void> close() async {
-    for (final c in _byEvent.values) {
-      await c.close();
-    }
-  }
 }
+
+ChatMessage _m(String id, int minute, {String? kind, bool urgent = false}) =>
+    ChatMessage(
+      id: id,
+      eventId: 'event-1',
+      senderId: 'sender',
+      text: id,
+      timestamp: DateTime.utc(2026, 4, 1, 12, minute),
+      kind: kind,
+      isHighPriority: urgent,
+      urgentPushSkipped: urgent,
+    );
+
+ChatChanges _window(List<ChatMessage> w, {bool fromCache = false}) =>
+    (upserts: w, deleted: const <String>[], window: w, fromCache: fromCache);
+
+ChatChanges _change({
+  List<ChatMessage> upserts = const [],
+  List<String> deleted = const [],
+  bool fromCache = false,
+}) => (upserts: upserts, deleted: deleted, window: null, fromCache: fromCache);
 
 void main() {
   late AppDatabase db;
@@ -80,118 +98,144 @@ void main() {
       chatService: service,
       chatMessagesDao: dao,
       syncs: MirrorSyncsDao(db),
-      maxCachedRows: 3, // tiny cap for eviction test
+      maxCachedRows: 3,
     );
   });
 
   tearDown(() async {
     await repo.dispose();
-    await service.close();
+    await service.ctrl.close();
     await db.close();
   });
 
-  test('incoming Firestore messages are mirrored into Drift and emitted '
-      'via watchMessages', () async {
+  Future<List<String>> ids() async => [
+    for (final r in await dao.byEventId('event-1')) r.id,
+  ];
+
+  /// Lets the mirror apply what was emitted.
+  Future<void> tick() => Future<void>.delayed(const Duration(milliseconds: 30));
+
+  test('the latest messages are mirrored into Drift and emitted', () async {
     final stream = repo.watchMessages('event-1');
-    final firstNonEmpty = stream.firstWhere((list) => list.isNotEmpty);
-
-    service.emit('event-1', [
-      ChatMessage(
-        id: 'm1',
-        eventId: 'event-1',
-        senderId: 'sender',
-        text: 'Hello',
-        timestamp: DateTime(2026, 4, 1, 12),
-      ),
-    ]);
-
-    final messages = await firstNonEmpty;
-    expect(messages, hasLength(1));
-    expect(messages.first.text, 'Hello');
-
-    // Drift now has the row
-    final localRows = await dao.byEventId('event-1');
-    expect(localRows, hasLength(1));
+    final first = stream.firstWhere((list) => list.isNotEmpty);
+    service.ctrl.add(_window([_m('m1', 1)]));
+    final messages = await first;
+    expect(messages.single.text, 'm1');
+    expect(await ids(), ['m1']);
   });
 
-  test('notes when chat is read from the cache, keeping the last update '
-      '(Req 74)', () async {
+  test(
+    'FND-11 a settlement notice keeps its kind through the mirror',
+    () async {
+      final stream = repo.watchMessages('event-1');
+      final seen = stream.firstWhere((l) => l.isNotEmpty);
+      service.ctrl.add(_window([_m('s1', 1, kind: 'settlement')]));
+      expect((await seen).single.kind, ChatMessageKind.settlement);
+    },
+  );
+
+  test('the urgent limit flag survives the mirror', () async {
+    final stream = repo.watchMessages('event-1');
+    final seen = stream.firstWhere((l) => l.isNotEmpty);
+    service.ctrl.add(_window([_m('u1', 1, urgent: true)]));
+    expect((await seen).single.urgentPushSkipped, isTrue);
+  });
+
+  test('FND-11 a deleted message leaves the mirror', () async {
     repo.watchMessages('event-1');
-    await Future<void>.delayed(Duration.zero);
+    await tick();
+    service.ctrl.add(_window([_m('m1', 1), _m('m2', 2)]));
+    await tick();
+    service.ctrl.add(_change(deleted: ['m1']));
+    await tick();
+    expect(await ids(), ['m2']);
+  });
+
+  test('only the changed messages are applied', () async {
+    repo.watchMessages('event-1');
+    await tick();
+    service.ctrl.add(_window([_m('m1', 1), _m('m2', 2)]));
+    await tick();
+    // A message that left the window is not in the change set, so it stays.
+    service.ctrl.add(_change(upserts: [_m('m3', 3)]));
+    await tick();
+    expect(await ids(), ['m1', 'm2', 'm3']);
+  });
+
+  test('messages deleted while away are cleared by the first window', () async {
+    await dao.insertOrReplace(
+      ChatMessagesCompanion.insert(
+        id: 'gone',
+        eventId: 'event-1',
+        senderId: 'sender',
+        content: 'gone',
+        timestamp: DateTime.utc(2026, 4, 1, 12, 2),
+      ),
+    );
+    repo.watchMessages('event-1');
+    await tick();
+    service.ctrl.add(_window([_m('m1', 1), _m('m3', 3)]));
+    await tick();
+    expect(await ids(), ['m1', 'm3']);
+  });
+
+  test('a cached first window keeps rows it cannot confirm', () async {
+    await dao.insertOrReplace(
+      ChatMessagesCompanion.insert(
+        id: 'kept',
+        eventId: 'event-1',
+        senderId: 'sender',
+        content: 'kept',
+        timestamp: DateTime.utc(2026, 4, 1, 12, 2),
+      ),
+    );
+    repo.watchMessages('event-1');
+    await tick();
+    service.ctrl.add(_window([_m('m1', 1)], fromCache: true));
+    await tick();
+    expect(await ids(), ['m1', 'kept']);
+  });
+
+  test('the device keeps at most maxCachedRows, the newest', () async {
+    for (var i = 0; i < 5; i++) {
+      await dao.insertOrReplace(
+        ChatMessagesCompanion.insert(
+          id: 'c$i',
+          eventId: 'event-1',
+          senderId: 'sender',
+          content: '$i',
+          timestamp: DateTime.utc(2026, 4, 1, 11, i),
+        ),
+      );
+    }
+    repo.watchMessages('event-1');
+    await tick();
+    expect(await ids(), ['c2', 'c3', 'c4']);
+  });
+
+  test('records whether chat is read from the cache (Req 74)', () async {
+    repo.watchMessages('event-1');
+    await tick();
     final syncs = MirrorSyncsDao(db);
     final key = ChatRepository.mirrorKey('event-1');
-    service.cache.add(false);
+    service.ctrl.add(_window([_m('m1', 1)]));
     final online = await syncs.watch(key).firstWhere((s) => s != null);
-    service.cache.add(true);
+    service.ctrl.add(_change(fromCache: true));
     final offline = await syncs
         .watch(key)
         .firstWhere((s) => s?.fromCache ?? false);
     expect(offline!.syncedAt, online!.syncedAt);
   });
 
-  test('the urgent limit flag survives the Drift mirror', () async {
-    final stream = repo.watchMessages('event-1');
-    final seen = stream.firstWhere(
-      (messages) => messages.any((m) => m.urgentPushSkipped),
+  test('older pages come from the server, before the given time', () async {
+    service.older = [_m('o1', 0)];
+    final page = await repo.fetchOlder(
+      'event-1',
+      before: DateTime.utc(2026, 4, 1, 12, 1),
     );
-    service.emit('event-1', [
-      ChatMessage(
-        id: 'm1',
-        eventId: 'event-1',
-        senderId: 'sender',
-        text: 'Fire',
-        timestamp: DateTime(2027),
-        isHighPriority: true,
-        urgentPushSkipped: true,
-      ),
-    ]);
-    expect((await seen).single.urgentPushSkipped, isTrue);
-  });
-
-  test('Drift cache caps at maxCachedRows, evicting oldest first', () async {
-    final stream = repo.watchMessages('event-1');
-    final sub = stream.listen((_) {});
-    addTearDown(() async => sub.cancel());
-
-    service.emit('event-1', [
-      ChatMessage(
-        id: 'old-1',
-        eventId: 'event-1',
-        senderId: 'sender',
-        text: 'oldest',
-        timestamp: DateTime(2026, 4, 1, 12),
-      ),
-      ChatMessage(
-        id: 'mid-1',
-        eventId: 'event-1',
-        senderId: 'sender',
-        text: 'mid',
-        timestamp: DateTime(2026, 4, 1, 13),
-      ),
-      ChatMessage(
-        id: 'new-1',
-        eventId: 'event-1',
-        senderId: 'sender',
-        text: 'new',
-        timestamp: DateTime(2026, 4, 1, 14),
-      ),
-      ChatMessage(
-        id: 'newest-1',
-        eventId: 'event-1',
-        senderId: 'sender',
-        text: 'newest',
-        timestamp: DateTime(2026, 4, 1, 15),
-      ),
-    ]);
-
-    // give the listener a tick to mirror + evict
-    await Future<void>.delayed(const Duration(milliseconds: 50));
-
-    final localRows = await dao.byEventId('event-1');
-    expect(localRows, hasLength(3));
-    expect(
-      localRows.map((r) => r.id).toSet(),
-      equals({'mid-1', 'new-1', 'newest-1'}),
-    );
+    expect(service.olderBefore, DateTime.utc(2026, 4, 1, 12, 1));
+    expect(page.single.id, 'o1');
+    // Older pages are not kept on the device.
+    expect(await ids(), isEmpty);
   });
 }

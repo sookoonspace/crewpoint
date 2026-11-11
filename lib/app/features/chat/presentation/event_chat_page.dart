@@ -2,6 +2,9 @@ import 'package:clock/clock.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:crewpoint_app/app/core/widgets/last_updated_note.dart';
 import 'package:crewpoint_app/app/features/chat/data/chat_repository.dart';
+import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/features/chat/application/older_messages.dart';
+import 'package:crewpoint_app/app/features/chat/domain/chat_window.dart';
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -170,27 +173,32 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
       }
     });
 
+    final older = ref.watch(olderMessagesProvider(widget.event.id));
+    // Read from the device's cache, without a connection (Req 74).
+    final offline =
+        ref
+            .watch(
+              mirrorSyncProvider(ChatRepository.mirrorKey(widget.event.id)),
+            )
+            .value
+            ?.fromCache ??
+        false;
+
     return asyncMessages.when(
-      data: (messages) => ChatScreen(
-        banner: LastUpdatedNote(
-          mirrorKey: ChatRepository.mirrorKey(widget.event.id),
-        ),
-        messages: messages,
-        currentUserId: uid,
-        memberNames: memberNames,
-        appBarTitle: widget.event.title,
-        isSending: _isSending,
-        // Observers and Vendors read chat without `chat.send`.
-        readOnly:
-            !widget.event.allowsChatAndMoney ||
-            !widget.event.can(uid, 'chat.send'),
-        lastSendFailed: _lastSendFailed,
-        onSendMessage: (text) => _send(text),
-        onSendCriticalAlert: widget.event.can(uid, 'chat.urgent')
-            ? (text) => _send(text, isHighPriority: true)
-            : null,
-        onTapSettlement: _onDispute,
-      ),
+      data: (latest) {
+        final latestIds = {for (final m in latest) m.id};
+        final messages = [
+          for (final m in older.messages)
+            if (!latestIds.contains(m.id)) m,
+          ...latest,
+        ];
+        return _chatScreen(
+          messages,
+          uid,
+          memberNames,
+          _olderHeader(messages, latest.length, older, offline),
+        );
+      },
       loading: () => Scaffold(
         appBar: AppBar(
           title: Text(widget.event.title, overflow: TextOverflow.ellipsis),
@@ -215,4 +223,91 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
       ),
     );
   }
+
+  /// Above the oldest message: a way to load earlier ones, while any may
+  /// remain (Req 57).
+  Widget? _olderHeader(
+    List<ChatMessageModel> messages,
+    int latestCount,
+    OlderMessages older,
+    bool offline,
+  ) {
+    final strings = context.strings.chat;
+    // Fewer than a page means the whole chat is already here.
+    if (messages.isEmpty ||
+        (latestCount < chatPageSize && older.messages.isEmpty)) {
+      return null;
+    }
+    final Widget child;
+    if (!older.hasMore) {
+      child = Text(strings.olderNone, key: const Key('chat.older.none'));
+    } else if (older.loading) {
+      child = const SizedBox.square(
+        key: Key('chat.older.loading'),
+        dimension: 24,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    } else if (offline) {
+      child = Text(
+        strings.olderNeedsConnection,
+        key: const Key('chat.older.offline'),
+        textAlign: TextAlign.center,
+      );
+    } else if (older.failed) {
+      child = Column(
+        children: [
+          Text(strings.olderFailed, key: const Key('chat.older.failed')),
+          TextButton(
+            key: const Key('chat.older.retry'),
+            onPressed: () => _loadOlder(messages),
+            child: Text(strings.olderRetry),
+          ),
+        ],
+      );
+    } else {
+      child = TextButton(
+        key: const Key('chat.older.load'),
+        style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+        onPressed: () => _loadOlder(messages),
+        child: Text(strings.olderLoad),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+      child: Center(child: child),
+    );
+  }
+
+  void _loadOlder(List<ChatMessageModel> messages) {
+    final oldest = messages
+        .map((m) => m.timestamp)
+        .reduce((a, b) => a.isBefore(b) ? a : b);
+    ref.read(olderMessagesProvider(widget.event.id).notifier).load(oldest);
+  }
+
+  Widget _chatScreen(
+    List<ChatMessageModel> messages,
+    String uid,
+    Map<String, String> memberNames,
+    Widget? olderHeader,
+  ) => ChatScreen(
+    olderHeader: olderHeader,
+    banner: LastUpdatedNote(
+      mirrorKey: ChatRepository.mirrorKey(widget.event.id),
+    ),
+    messages: messages,
+    currentUserId: uid,
+    memberNames: memberNames,
+    appBarTitle: widget.event.title,
+    isSending: _isSending,
+    // Observers and Vendors read chat without `chat.send`.
+    readOnly:
+        !widget.event.allowsChatAndMoney || !widget.event.can(uid, 'chat.send'),
+    lastSendFailed: _lastSendFailed,
+    onSendMessage: (text) => _send(text),
+    onSendCriticalAlert: widget.event.can(uid, 'chat.urgent')
+        ? (text) => _send(text, isHighPriority: true)
+        : null,
+    onTapSettlement: _onDispute,
+  );
 }

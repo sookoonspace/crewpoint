@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:crewpoint_app/app/features/chat/domain/chat_window.dart';
 import 'package:crewpoint_app/app/core/services/i_chat_service.dart';
 
 // TODO(phase2): Swap this implementation to support E2EE
@@ -18,23 +19,70 @@ class FirestoreChatService implements IChatService {
       _firestore.collection('events').doc(eventId).collection('messages');
 
   @override
-  Stream<List<ChatMessage>> messagesForEvent(String eventId) {
+  Stream<ChatChanges> latestMessages(
+    String eventId, {
+    int limit = chatPageSize,
+  }) {
+    var first = true;
+    var fromServer = false;
     return _messagesRef(eventId)
-        .orderBy('timestamp', descending: false)
-        .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => _fromFirestore(eventId, doc.id, doc.data()))
-              .toList(),
-        );
+        .orderBy('timestamp', descending: true)
+        .limit(limit)
+        .snapshots(includeMetadataChanges: true)
+        .map((snap) {
+          final window = [
+            for (final doc in snap.docs)
+              _fromFirestore(eventId, doc.id, doc.data()),
+          ];
+          final upserts = <ChatMessage>[];
+          final removed = <ChatMessage>[];
+          for (final change in snap.docChanges) {
+            final m = _fromFirestore(
+              eventId,
+              change.doc.id,
+              change.doc.data() ?? const {},
+            );
+            if (change.type == DocumentChangeType.removed) {
+              removed.add(m);
+            } else {
+              upserts.add(m);
+            }
+          }
+          final ChatChanges changes = (
+            upserts: upserts,
+            deleted: deletedFromWindow(
+              removed: removed,
+              window: window,
+              limit: limit,
+            ),
+            // The whole window comes with the first snapshot, and again
+            // with the first from the server.
+            window: first || (!fromServer && !snap.metadata.isFromCache)
+                ? window
+                : null,
+            fromCache: snap.metadata.isFromCache,
+          );
+          first = false;
+          fromServer = fromServer || !snap.metadata.isFromCache;
+          return changes;
+        });
   }
 
   @override
-  Stream<bool> readsFromCache(String eventId) => _messagesRef(eventId)
-      .limit(1)
-      .snapshots(includeMetadataChanges: true)
-      .map((snap) => snap.metadata.isFromCache)
-      .distinct();
+  Future<List<ChatMessage>> olderMessages(
+    String eventId, {
+    required DateTime before,
+    int limit = chatPageSize,
+  }) async {
+    final snap = await _messagesRef(eventId)
+        .orderBy('timestamp', descending: true)
+        .startAfter([Timestamp.fromDate(before)])
+        .limit(limit)
+        .get();
+    return [
+      for (final doc in snap.docs) _fromFirestore(eventId, doc.id, doc.data()),
+    ];
+  }
 
   @override
   Future<void> sendMessage({
