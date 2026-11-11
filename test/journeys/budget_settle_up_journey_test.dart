@@ -32,8 +32,15 @@ class _FakeUserRepo implements IUserRepository {
 
   /// The counterparty comes from the event's profiles (Req 37).
   @override
-  Stream<Map<String, AppUser>> watchEventProfiles(String eventId) =>
-      Stream.value({_user.uid: _user});
+  Stream<AppUser?> watchEventProfile(String eventId, String uid) =>
+      Stream.value(uid == _user.uid ? _user : null);
+
+  @override
+  Future<MemberPage> fetchMemberPage(
+    String eventId, {
+    String search = '',
+    MemberPage? after,
+  }) async => const MemberPage(people: [], hasMore: false);
 
   @override
   Future<void> saveProfile({

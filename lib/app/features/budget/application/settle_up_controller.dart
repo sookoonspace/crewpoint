@@ -39,10 +39,9 @@ class SettleUpController {
     try {
       // Handles come from the event's profiles: only people who share an
       // event can see them (Req 37).
-      final people = await _userRepository
-          .watchEventProfiles(row.event.id)
+      counterparty = await _userRepository
+          .watchEventProfile(row.event.id, row.counterpartyUid)
           .first;
-      counterparty = people[row.counterpartyUid];
     } catch (e, st) {
       developer.log(
         'Failed to load counterparty for settle-up',

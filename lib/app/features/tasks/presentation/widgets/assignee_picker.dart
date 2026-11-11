@@ -1,65 +1,83 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/widgets/forms/app_dropdown.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
+import 'package:crewpoint_app/app/core/labels/label_resolver.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/member_picker_sheet.dart';
 
-/// Picks an assignee from a list of member UIDs.
+/// The task's assignee. Tapping opens the paged, searchable member picker
+/// (Req 43a), so a large event never lists everyone; the clear button
+/// leaves the task unassigned.
 ///
-/// Public API is unchanged — `memberIds`, `displayNames`, `orphanAssigneeId`,
-/// `selected`, `onChanged`, and the canonical `Key('tasks.create.assignee')`
-/// all behave identically. Internals now delegate to `AppDropdown<String?>`
-/// (built on `DropdownButtonFormField`) so this picker rides the form kit's
-/// styling + keyboard navigation + Form integration.
-///
-/// The disabled "(no longer in event)" orphan row is still rendered when
-/// `orphanAssigneeId` is non-null and absent from `memberIds`.
+/// [selectedName] is the name already known for [selected], such as the
+/// current assignee's. An assignee who has left the event shows as
+/// "(no longer in event)" until they are changed or cleared, and cannot be
+/// picked again, because the picker lists only people still in the event.
 class AssigneePicker extends StatelessWidget {
   const AssigneePicker({
     super.key,
-    required this.memberIds,
+    required this.eventId,
+    required this.words,
     required this.selected,
     required this.onChanged,
-    this.displayNames = const {},
-    this.orphanAssigneeId,
+    this.selectedName,
+    this.selectedLeft = false,
   });
 
-  final List<String> memberIds;
+  final String eventId;
+  final LabelResolver words;
   final String? selected;
-  final ValueChanged<String?> onChanged;
-  final Map<String, String> displayNames;
+  final String? selectedName;
+  final bool selectedLeft;
 
-  /// Optional UID of an assignee no longer in `memberIds` (left the event).
-  /// Rendered as a disabled item at the bottom of the dropdown labeled
-  /// `<name> (no longer in event)`. Once cleared, cannot be re-selected.
-  final String? orphanAssigneeId;
+  /// The new assignee and their name, or nulls when cleared.
+  final void Function(String? uid, String? name) onChanged;
 
   String _label(String uid) {
-    final name = displayNames[uid];
+    final name = selectedName;
     if (name != null && name.isNotEmpty) return name;
     return uid.length > 10 ? '${uid.substring(0, 10)}…' : uid;
   }
 
+  Future<void> _pick(BuildContext context) async {
+    final person = await MemberPickerSheet.pickOne(
+      context,
+      eventId: eventId,
+      words: words,
+    );
+    if (person == null) return;
+    onChanged(person.uid, person.displayName);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final orphan = orphanAssigneeId;
-    final hasOrphan = orphan != null && !memberIds.contains(orphan);
-    return AppDropdown<String?>(
-      key: const Key('tasks.create.assignee'),
-      labelText: 'Assignee',
-      hintText: 'Unassigned',
-      prefixIcon: const Icon(AppIcons.navProfile),
-      value: selected,
-      onChanged: onChanged,
-      items: [
-        const AppDropdownItem<String?>(value: null, label: 'Unassigned'),
-        for (final id in memberIds)
-          AppDropdownItem<String?>(value: id, label: _label(id)),
-        if (hasOrphan)
-          AppDropdownItem<String?>(
-            value: orphan,
-            label: '${_label(orphan)} (no longer in event)',
-            enabled: false,
+    final strings = context.strings.memberPicker;
+    final uid = selected;
+    final text = uid == null
+        ? strings.unassigned
+        : selectedLeft
+        ? strings.leftEvent(_label(uid))
+        : _label(uid);
+    return Semantics(
+      button: true,
+      child: InkWell(
+        key: const Key('tasks.create.assignee'),
+        onTap: () => _pick(context),
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: strings.assignee,
+            prefixIcon: const Icon(AppIcons.navProfile),
+            suffixIcon: uid == null
+                ? const Icon(AppIcons.chevronRight)
+                : IconButton(
+                    key: const Key('tasks.create.assignee.clear'),
+                    tooltip: strings.clearAssignee,
+                    onPressed: () => onChanged(null, null),
+                    icon: const Icon(AppIcons.actionClose),
+                  ),
           ),
-      ],
+          child: Text(text, key: const Key('tasks.create.assignee.value')),
+        ),
+      ),
     );
   }
 }

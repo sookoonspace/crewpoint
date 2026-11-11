@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/services/callable_errors.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
-import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
+import 'package:crewpoint_app/app/features/chat/application/people_by_id_provider.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/member_picker_sheet.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart';
 
@@ -25,6 +27,7 @@ class TransferScreen extends ConsumerStatefulWidget {
 
 class _TransferScreenState extends ConsumerState<TransferScreen> {
   String? _picked;
+  String? _pickedName;
   bool _busy = false;
 
   /// Runs [call], then shows [done], or the error. The pick is kept on
@@ -88,9 +91,25 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
     final offeredToMe = offer?.to == me;
     final canSee = isOwner || offeredToMe || event.can(me, 'roles.manage');
 
-    final users = ref.watch(usersByIdProvider(event.id)).value ?? const {};
+    final ownerId = event.memberIds.firstWhere(
+      event.isOwner,
+      orElse: () => event.creatorId,
+    );
+    // Only the people this screen names are read (Req 43a).
+    final users =
+        ref
+            .watch(
+              peopleByIdProvider(
+                PeopleKey(event.id, [ownerId, ?offer?.from, ?offer?.to]),
+              ),
+            )
+            .value ??
+        const {};
     String nameOf(String uid) {
       if (uid == me) return strings.you;
+      if (uid == _picked && (_pickedName?.isNotEmpty ?? false)) {
+        return _pickedName!;
+      }
       final user = users[uid];
       if (user?.displayName?.isNotEmpty ?? false) return user!.displayName!;
       if (user?.email.isNotEmpty ?? false) return user!.email;
@@ -109,10 +128,6 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
     } else if (!canSee) {
       body = const NoAccessView();
     } else {
-      final ownerId = event.memberIds.firstWhere(
-        event.isOwner,
-        orElse: () => event.creatorId,
-      );
       body = ContentMaxWidth(
         key: const Key('transfer.body'),
         maxWidth: 720,
@@ -187,21 +202,41 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
       Text(strings.pickHeading, style: Theme.of(context).textTheme.titleSmall),
       const SizedBox(height: AppSpacing.xs),
       Text(strings.pickHint, style: Theme.of(context).textTheme.bodySmall),
-      RadioGroup<String>(
-        groupValue: picked,
-        onChanged: (uid) {
-          if (!_busy) setState(() => _picked = uid);
-        },
-        child: Column(
-          children: [
-            for (final uid in others)
-              RadioListTile<String>(
-                key: Key('transfer.pick.$uid'),
-                value: uid,
-                title: Text(nameOf(uid)),
-                contentPadding: EdgeInsets.zero,
-              ),
-          ],
+      // Chosen by name search, so a large event never lists everyone
+      // (Req 43a).
+      if (picked != null)
+        ListTile(
+          key: const Key('transfer.picked'),
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(AppIcons.navProfile),
+          title: Text(nameOf(picked)),
+        ),
+      Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: TextButton.icon(
+          key: const Key('transfer.choose'),
+          onPressed: _busy
+              ? null
+              : () async {
+                  final person = await MemberPickerSheet.pickOne(
+                    context,
+                    eventId: widget.event.id,
+                    words: widget.event.words,
+                    exclude: {me},
+                  );
+                  if (person == null || !mounted) return;
+                  setState(() {
+                    _picked = person.uid;
+                    _pickedName = person.displayName;
+                  });
+                },
+          style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+          icon: const Icon(AppIcons.memberAdd),
+          label: Text(
+            context.strings.memberPicker.chooseOne(
+              widget.event.words.one('member'),
+            ),
+          ),
         ),
       ),
       const SizedBox(height: AppSpacing.md),

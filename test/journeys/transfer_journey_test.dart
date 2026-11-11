@@ -25,7 +25,7 @@ void main() {
     await robot.tap(const Key('members.transfer'));
     await robot.finishTransition();
     robot.expectText('Owner: You');
-    await robot.tap(const Key('transfer.pick.sam'));
+    await robot.pickMember(const Key('transfer.choose'), 'sam');
     await robot.tap(const Key('transfer.offer'));
     await robot.tap(const Key('transfer.offerConfirm'));
     expect(harness.calls.calls, ['offerOwnership:sam']);

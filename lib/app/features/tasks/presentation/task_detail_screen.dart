@@ -43,7 +43,7 @@ class TaskDetailScreen extends StatelessWidget {
 
   /// Resolved display name for `task.assigneeId`. When null, the screen falls
   /// back to a truncated UID. Hydrated upstream by `event_task_detail_page.dart`
-  /// via `usersByIdProvider` so this screen stays Riverpod-free.
+  /// via `peopleByIdProvider` so this screen stays Riverpod-free.
   final String? assigneeName;
 
   /// Resolved display name for `task.completedBy`. Falls back to a truncated

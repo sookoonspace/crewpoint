@@ -411,6 +411,8 @@ void main() {
       expect(event.timeZone, 'UTC');
       expect(event.languages, ['en']);
       expect(event.modules['tasks'], isTrue);
+      // No memberCount yet: the member array is counted.
+      expect(event.memberCount, event.memberIds.length);
       configRepo.disposeMirror('owner');
     });
 
@@ -429,6 +431,7 @@ void main() {
         'settings': {'urgentRatePerHour': 3},
         'capacity': 500,
         'memberLimit': 100,
+        'memberCount': 412,
       });
       await seedMemberDocs(firestore);
       final events = await configRepo
@@ -445,6 +448,8 @@ void main() {
       expect(event.settings, {'urgentRatePerHour': 3});
       expect(event.capacity, 500);
       expect(event.memberLimit, 100);
+      // Req 43a: tiles show the server's count, not the member array's.
+      expect(event.memberCount, 412);
       configRepo.disposeMirror('owner');
     });
   });

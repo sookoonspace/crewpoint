@@ -48,6 +48,7 @@ abstract class AppStrings {
   ImportStrings get imports;
   LinkStrings get links;
   InviteStrings get invites;
+  MemberPickerStrings get memberPicker;
 
   /// Static English fallback. Used by service-layer code that has no
   /// `BuildContext` in scope (e.g. `firebaseAuthErrorMessage`). UI code
@@ -348,6 +349,9 @@ abstract class ChatStrings {
 abstract class BudgetStrings {
   const BudgetStrings();
 
+  /// Above the balance card in a large event (Req 43a).
+  String largestShown(int count);
+
   // Saving an expense.
   String get expenseNeedsConnection;
   String get expenseSaveRejected;
@@ -523,6 +527,9 @@ class _EnglishStrings extends AppStrings {
 
   @override
   InviteStrings get invites => const _EnglishInviteStrings();
+
+  @override
+  MemberPickerStrings get memberPicker => const _EnglishMemberPickerStrings();
 }
 
 class _EnglishChatStrings extends ChatStrings {
@@ -586,6 +593,10 @@ class _EnglishChatStrings extends ChatStrings {
 
 class _EnglishBudgetStrings extends BudgetStrings {
   const _EnglishBudgetStrings();
+
+  @override
+  String largestShown(int count) =>
+      'Showing your balance and the $count largest.';
 
   @override
   String get expenseNeedsConnection =>
@@ -1618,6 +1629,8 @@ class _EnglishRoleStrings extends RoleStrings {
 abstract class PeopleStrings {
   const PeopleStrings();
 
+  String get noAdultsYet;
+
   String searchHint(String participants);
   String get hubSubtitle;
   String get onlineNote;
@@ -1671,6 +1684,9 @@ abstract class PeopleStrings {
 
 class _EnglishPeopleStrings extends PeopleStrings {
   const _EnglishPeopleStrings();
+
+  @override
+  String get noAdultsYet => 'No linked adults yet.';
 
   @override
   String searchHint(String participants) =>
@@ -2690,3 +2706,89 @@ class _EnglishInviteStrings extends InviteStrings {
   String get backToEvents => 'Go to my events';
 }
 
+
+/// The paged member picker, task assignee and expense split (Req 43a).
+/// [member] and [members] are the event's own words, from `event.words`.
+abstract class MemberPickerStrings {
+  const MemberPickerStrings();
+
+  String chooseOne(String member);
+  String chooseMany(String members);
+  String search(String members);
+  String get showMore;
+  String get loadFailed;
+  String get retry;
+  String noneFound(String members);
+  String noneYet(String members);
+  String done(int count);
+  String get noName;
+  String you(String name);
+
+  String get assignee;
+  String get unassigned;
+  String leftEvent(String name);
+  String get clearAssignee;
+
+  String get splitHeading;
+  String splitEveryone(int count);
+  String splitChosen(int count);
+  String get choosePeople;
+  String get splitUseEveryone;
+  String splitMustChoose(int limit);
+  String get splitNoneChosen;
+}
+
+class _EnglishMemberPickerStrings extends MemberPickerStrings {
+  const _EnglishMemberPickerStrings();
+
+  @override
+  String chooseOne(String member) => 'Choose a ${member.toLowerCase()}';
+  @override
+  String chooseMany(String members) => 'Choose ${members.toLowerCase()}';
+  @override
+  String search(String members) => 'Search ${members.toLowerCase()} by name';
+  @override
+  String get showMore => 'Show more';
+  @override
+  String get loadFailed =>
+      "Couldn't load the list. Check your connection and try again.";
+  @override
+  String get retry => 'Try again';
+  @override
+  String noneFound(String members) =>
+      'No ${members.toLowerCase()} have a name starting with that.';
+  @override
+  String noneYet(String members) => 'No ${members.toLowerCase()} yet.';
+  @override
+  String done(int count) => count == 0 ? 'Done' : 'Done ($count)';
+  @override
+  String get noName => 'No name yet';
+  @override
+  String you(String name) => '$name (you)';
+
+  @override
+  String get assignee => 'Assignee';
+  @override
+  String get unassigned => 'Unassigned';
+  @override
+  String leftEvent(String name) => '$name (no longer in event)';
+  @override
+  String get clearAssignee => 'Clear assignee';
+
+  @override
+  String get splitHeading => 'Split between';
+  @override
+  String splitEveryone(int count) => 'Everyone ($count)';
+  @override
+  String splitChosen(int count) =>
+      count == 1 ? '1 person chosen' : '$count people chosen';
+  @override
+  String get choosePeople => 'Choose people';
+  @override
+  String get splitUseEveryone => 'Split with everyone';
+  @override
+  String splitMustChoose(int limit) =>
+      'With more than $limit people in this event, choose who shares this cost.';
+  @override
+  String get splitNoneChosen => 'Choose at least one person to share this cost.';
+}

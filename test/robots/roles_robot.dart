@@ -54,6 +54,22 @@ class RolesRobot {
     await tester.pump(const Duration(milliseconds: 100));
   }
 
+  /// Opens the member picker from [chooseKey], ticks [uids] and presses
+  /// Done (Req 43a).
+  Future<void> pickMembers(Key chooseKey, List<String> uids) async {
+    await tap(chooseKey);
+    for (final uid in uids) {
+      await tap(Key('members.picker.row.$uid'));
+    }
+    await tap(const Key('members.picker.done'));
+  }
+
+  /// Opens the member picker from [chooseKey] and picks [uid].
+  Future<void> pickMember(Key chooseKey, String uid) async {
+    await tap(chooseKey);
+    await tap(Key('members.picker.row.$uid'));
+  }
+
   Future<void> openMember(String uid) => tap(Key('members.tile.$uid'));
 
   Future<void> toggleRole(String roleId) =>

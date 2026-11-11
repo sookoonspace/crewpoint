@@ -9,12 +9,12 @@ import 'package:crewpoint_app/app/features/budget/data/member_name_resolver.dart
 import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/my_balance.dart';
-import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
+import 'package:crewpoint_app/app/features/chat/application/people_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
 /// Returns an empty roster override — for tests that don't care about
 /// name resolution and just need the provider not to hit the real repo.
-final _emptyRosterOverride = usersByIdProvider.overrideWith(
+final _emptyRosterOverride = peopleByIdProvider.overrideWith(
   (ref, key) async => const <String, AppUser>{},
 );
 
@@ -380,7 +380,7 @@ void main() {
           expenseListProvider.overrideWith(
             (ref, eventId) => Stream.value([exp]),
           ),
-          usersByIdProvider.overrideWith(
+          peopleByIdProvider.overrideWith(
             (ref, key) async => const <String, AppUser>{
               'me': AppUser(
                 uid: 'me',
@@ -435,7 +435,7 @@ void main() {
           expenseListProvider.overrideWith(
             (ref, eventId) => Stream.value([exp]),
           ),
-          usersByIdProvider.overrideWith(
+          peopleByIdProvider.overrideWith(
             (ref, key) async => const <String, AppUser>{
               'carol': AppUser(uid: 'carol', email: 'carol@x.com'),
             },
@@ -512,7 +512,7 @@ void main() {
           (ref) => Stream.value(const [event]),
         ),
         expenseListProvider.overrideWith((ref, eventId) => Stream.value([exp])),
-        usersByIdProvider.overrideWith(
+        peopleByIdProvider.overrideWith(
           (ref, key) async => const <String, AppUser>{
             'alex': AppUser(
               uid: 'alex',
@@ -536,9 +536,18 @@ void main() {
           (ref) => Stream.value(const [eventA]),
         ),
         expenseListProvider.overrideWith(
-          (ref, eventId) => Stream.value(const <ExpenseModel>[]),
+          (ref, eventId) => Stream.value(const [
+            // A payer to name, so the roster is needed (Req 43a).
+            ExpenseModel(
+              id: 'x',
+              eventId: 'evt-a',
+              payerId: 'alex',
+              amount: 10,
+              splits: [ExpenseSplit(userId: 'alex', amount: 10)],
+            ),
+          ]),
         ),
-        usersByIdProvider.overrideWith((ref, key) {
+        peopleByIdProvider.overrideWith((ref, key) {
           // Never completes → stays AsyncLoading.
           final completer = Completer<Map<String, AppUser>>();
           return completer.future;
@@ -558,9 +567,18 @@ void main() {
           (ref) => Stream.value(const [eventA]),
         ),
         expenseListProvider.overrideWith(
-          (ref, eventId) => Stream.value(const <ExpenseModel>[]),
+          (ref, eventId) => Stream.value(const [
+            // A payer to name, so the roster is needed (Req 43a).
+            ExpenseModel(
+              id: 'x',
+              eventId: 'evt-a',
+              payerId: 'alex',
+              amount: 10,
+              splits: [ExpenseSplit(userId: 'alex', amount: 10)],
+            ),
+          ]),
         ),
-        usersByIdProvider.overrideWith(
+        peopleByIdProvider.overrideWith(
           (ref, key) async => throw StateError('roster boom'),
         ),
       ],

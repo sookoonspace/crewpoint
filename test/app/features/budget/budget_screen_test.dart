@@ -213,4 +213,45 @@ void main() {
     // Both the balance row ("u1 owes £50") and the settlement row render £50.
     expect(find.text('£50.00'), findsAtLeastNWidgets(1));
   });
+
+  // Req 43a: a 1,000-member event shows your balance and the largest 20,
+  // and only your transfers and the largest 20, so the page stays quick.
+  testWidgets('a large event shows you and the largest balances only', (
+    tester,
+  ) async {
+    final members = [for (var i = 0; i < 1000; i++) 'u$i'];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BudgetScreen(
+          currentUserId: 'u500',
+          memberIds: members,
+          expenses: [
+            ExpenseModel(
+              id: 'dinner',
+              eventId: 'e',
+              payerId: 'u0',
+              amount: 10000,
+              splits: [
+                for (final id in members)
+                  ExpenseSplit(userId: id, amount: 10),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.byKey(const Key('budget.balances.trimmed')), findsOneWidget);
+    final rows = find.byWidgetPredicate(
+      (w) =>
+          w.key is ValueKey<String> &&
+          (w.key! as ValueKey<String>).value.startsWith('budget.balance.'),
+      skipOffstage: false,
+    );
+    expect(rows.evaluate().length, lessThanOrEqualTo(21));
+    expect(
+      find.byKey(const Key('budget.balance.u500'), skipOffstage: false),
+      findsOneWidget,
+    );
+  });
 }

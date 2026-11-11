@@ -138,7 +138,7 @@ void main() {
   });
 
   testWidgets(
-    'renders orphan assignee as disabled item when assigneeId left the event',
+    'shows an assignee who left the event as no longer in it',
     (tester) async {
       const orphanEvent = EventModel(
         id: 'evt-1',
@@ -159,10 +159,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byKey(const Key('tasks.create.assignee')));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Casey (no longer in event)'), findsWidgets);
+      expect(find.text('Casey (no longer in event)'), findsOneWidget);
     },
   );
 

@@ -9,7 +9,7 @@ import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/services/callable_errors.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
-import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/chosen_people_list.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/crew.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/member.dart';
@@ -462,10 +462,7 @@ class _CrewMembersSheetState extends ConsumerState<_CrewMembersSheet> {
           .setCrewMembers(
             eventId: widget.event.id,
             crewId: widget.crew.id,
-            uids: [
-              for (final uid in widget.event.memberIds)
-                if (_picked.contains(uid)) uid,
-            ],
+            uids: _picked.toList()..sort(),
           );
       navigator.pop();
       messenger.showSnackBar(SnackBar(content: Text(strings.membersSaved)));
@@ -486,16 +483,6 @@ class _CrewMembersSheetState extends ConsumerState<_CrewMembersSheet> {
   @override
   Widget build(BuildContext context) {
     final strings = context.strings.crews;
-    final memberIds = widget.event.memberIds;
-    final users =
-        ref.watch(usersByIdProvider(widget.event.id)).value ?? const {};
-    String nameOf(String uid) {
-      final user = users[uid];
-      if (user?.displayName?.isNotEmpty ?? false) return user!.displayName!;
-      if (user?.email.isNotEmpty ?? false) return user!.email;
-      return widget.event.words.one('member');
-    }
-
     return PopScope(
       canPop: !_dirty || _busy,
       onPopInvokedWithResult: (didPop, _) {
@@ -518,25 +505,21 @@ class _CrewMembersSheetState extends ConsumerState<_CrewMembersSheet> {
                 ),
               ),
               Flexible(
-                child: ListView(
+                child: SingleChildScrollView(
                   key: const Key('crews.members.list'),
-                  shrinkWrap: true,
-                  children: [
-                    for (final uid in memberIds)
-                      CheckboxListTile(
-                        key: Key('crews.members.$uid'),
-                        value: _picked.contains(uid),
-                        onChanged: _busy
-                            ? null
-                            : (on) => setState(() {
-                                _picked = on == true
-                                    ? {..._picked, uid}
-                                    : ({..._picked}..remove(uid));
-                              }),
-                        title: Text(nameOf(uid)),
-                        controlAffinity: ListTileControlAffinity.leading,
-                      ),
-                  ],
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                  ),
+                  // Chosen by name search, so a large event never lists
+                  // everyone (Req 43a).
+                  child: ChosenPeopleList(
+                    eventId: widget.event.id,
+                    words: widget.event.words,
+                    keyPrefix: 'crews.members',
+                    chosen: _picked,
+                    enabled: !_busy,
+                    onChanged: (uids) => setState(() => _picked = uids),
+                  ),
                 ),
               ),
               if (_error != null)

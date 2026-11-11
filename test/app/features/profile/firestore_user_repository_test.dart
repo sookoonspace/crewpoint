@@ -292,7 +292,7 @@ void main() {
   });
 
   group('people in an event come from its profiles (Req 37)', () {
-    test('names, photos and payment handles, by uid', () async {
+    test('one person: name, photo and payment handles', () async {
       final profiles = firestore
           .collection('events')
           .doc('e1')
@@ -306,23 +306,81 @@ void main() {
         'venmoHandle': 'pat',
         'cashappHandle': null,
       });
-      // Someone who left keeps only their name.
-      await profiles.doc('gil').set({'uid': 'gil', 'displayName': 'Gil'});
       // Their public document is no longer read.
       await firestore.collection('users').doc('pat').set({
         'displayName': 'Wrong',
       });
 
-      final people = await repo.watchEventProfiles('e1').first;
-      expect(people.keys, unorderedEquals(['pat', 'gil']));
-      final pat = people['pat']!;
+      final pat = (await repo.watchEventProfile('e1', 'pat').first)!;
+      expect(pat.uid, 'pat');
       expect(pat.displayName, 'Pat');
       expect(pat.photoUrl, 'p.jpg');
       expect(pat.paymentMethod, 'venmo');
       expect(pat.paymentHandle, '@pat');
       expect(pat.venmoHandle, 'pat');
       expect(pat.cashappHandle, isNull);
-      expect(people['gil']!.venmoHandle, isNull);
+      expect(await repo.watchEventProfile('e1', 'nobody').first, isNull);
+    });
+  });
+
+  // Req 43a: the member picker pages through people still in the event by
+  // name, and searches by the start of a name.
+  group('member pages', () {
+    Future<void> seed(int count) async {
+      final profiles = firestore
+          .collection('events')
+          .doc('e1')
+          .collection('profiles');
+      for (var i = 0; i < count; i++) {
+        final name = 'Person ${i.toString().padLeft(3, '0')}';
+        await profiles.doc('u$i').set({
+          'uid': 'u$i',
+          'displayName': name,
+          'sortName': name.toLowerCase(),
+          'inEvent': true,
+        });
+      }
+      await profiles.doc('gil').set({
+        'uid': 'gil',
+        'displayName': 'Gil',
+        'sortName': 'gil',
+        'inEvent': false,
+      });
+      await profiles.doc('ana').set({
+        'uid': 'ana',
+        'displayName': 'Ana',
+        'sortName': 'ana',
+        'inEvent': true,
+      });
+    }
+
+    test('pages in name order, leaving out people who left', () async {
+      await seed(60);
+      final first = await repo.fetchMemberPage('e1');
+      expect(first.people, hasLength(FirestoreUserRepository.memberPageSize));
+      expect(first.people.first.displayName, 'Ana');
+      expect(first.people.map((p) => p.uid), isNot(contains('gil')));
+      expect(first.hasMore, isTrue);
+
+      final second = await repo.fetchMemberPage('e1', after: first);
+      expect(second.people.first.displayName, 'Person 029');
+      expect(second.hasMore, isTrue);
+
+      // 60 people plus Ana make 30 + 30 + 1.
+      final third = await repo.fetchMemberPage('e1', after: second);
+      expect(third.people.single.displayName, 'Person 059');
+      expect(third.hasMore, isFalse);
+    });
+
+    test('searches by the start of a name, ignoring case', () async {
+      await seed(12);
+      final found = await repo.fetchMemberPage('e1', search: ' PERSON 01');
+      expect(found.people.map((p) => p.displayName), [
+        'Person 010',
+        'Person 011',
+      ]);
+      expect(found.hasMore, isFalse);
+      expect((await repo.fetchMemberPage('e1', search: 'gi')).people, isEmpty);
     });
   });
 }

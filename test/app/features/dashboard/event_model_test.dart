@@ -368,4 +368,30 @@ void main() {
       expect(event.startDate, isNull);
     });
   });
+
+  // Req 43a: the server keeps memberCount, so large events never count the
+  // member array.
+  group('memberCount', () {
+    test('is the server count when there is one', () {
+      const event = EventModel(
+        id: 'e',
+        title: 'T',
+        creatorId: 'a',
+        memberIds: ['a', 'b'],
+        memberCount: 1200,
+      );
+      expect(event.memberCount, 1200);
+      expect(event.copyWith(title: 'U').memberCount, 1200);
+    });
+
+    test('falls back to the member array on older events', () {
+      const event = EventModel(
+        id: 'e',
+        title: 'T',
+        creatorId: 'a',
+        memberIds: ['a', 'b'],
+      );
+      expect(event.memberCount, 2);
+    });
+  });
 }

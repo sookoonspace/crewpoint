@@ -10,7 +10,7 @@ import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/skeletons.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/chat/application/global_inbox_provider.dart';
-import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
+import 'package:crewpoint_app/app/features/chat/application/people_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/chat/data/chat_repository.dart';
 import 'package:crewpoint_app/app/features/chat/data/firestore_chat_service.dart';
 import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
@@ -259,7 +259,7 @@ void main() {
                 _ => Stream.value(const <ChatMessageModel>[]),
               };
             }),
-            usersByIdProvider.overrideWith(
+            peopleByIdProvider.overrideWith(
               (ref, key) async => const <String, AppUser>{
                 'alex': AppUser(
                   uid: 'alex',
@@ -322,7 +322,7 @@ void main() {
             chatMessagesProvider.overrideWith(
               (ref, eventId) => Stream.value([ghostMsg]),
             ),
-            usersByIdProvider.overrideWith(
+            peopleByIdProvider.overrideWith(
               (ref, key) async => const <String, AppUser>{},
             ),
           ],

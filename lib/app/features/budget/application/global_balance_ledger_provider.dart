@@ -3,7 +3,7 @@ import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/budget/data/member_name_resolver.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
-import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
+import 'package:crewpoint_app/app/features/chat/application/people_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
 /// One row in the cross-event debt breakdown. `amount` is always positive
@@ -120,9 +120,33 @@ final globalBalanceLedgerProvider =
           };
         }
 
-        // Fetch the people in this event so debt + recent-expense rows can
-        // render display names instead of raw UIDs.
-        final rosterAsync = ref.watch(usersByIdProvider(event.id));
+        // Someone who may not read every expense gets their transfers from
+        // the server, worked out from all of them (Req 38c, 38f). Debts can
+        // exist even when none of the expenses are in view.
+        final List<Settlement> settlements;
+        if (event.readsAllExpenses(uid)) {
+          if (expenses.isEmpty) continue;
+          settlements = BalanceLedger.calculate(
+            expenses: expenses,
+            memberIds: event.memberIds,
+          ).settlements;
+        } else {
+          final mine = ref.watch(myBalanceProvider(event.id));
+          if (mine.isLoading && !mine.hasValue) return const AsyncLoading();
+          // Offline or refused: leave this event out rather than the tab.
+          settlements = mine.value?.transfers ?? const [];
+        }
+        // Names of the payers and the people you owe, so debt and
+        // recent-expense rows show names. Only they are read (Req 43a).
+        final rosterAsync = ref.watch(
+          peopleByIdProvider(
+            PeopleKey(event.id, [
+              for (final exp in expenses) exp.payerId,
+              for (final s in settlements)
+                if (s.fromUserId == uid) s.toUserId,
+            ]),
+          ),
+        );
         final roster = rosterAsync.value;
         if (roster == null) {
           return switch (rosterAsync) {
@@ -160,22 +184,6 @@ final globalBalanceLedgerProvider =
           );
         }
 
-        // Someone who may not read every expense gets their transfers from
-        // the server, worked out from all of them (Req 38c, 38f). Debts can
-        // exist even when none of the expenses are in view.
-        final List<Settlement> settlements;
-        if (event.readsAllExpenses(uid)) {
-          if (expenses.isEmpty) continue;
-          settlements = BalanceLedger.calculate(
-            expenses: expenses,
-            memberIds: event.memberIds,
-          ).settlements;
-        } else {
-          final mine = ref.watch(myBalanceProvider(event.id));
-          if (mine.isLoading && !mine.hasValue) return const AsyncLoading();
-          // Offline or refused: leave this event out rather than the tab.
-          settlements = mine.value?.transfers ?? const [];
-        }
         for (final settlement in settlements) {
           // Drop near-zero rows (round to cents, $0.00 means nothing
           // owed once display formatting kicks in).

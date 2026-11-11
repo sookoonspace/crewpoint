@@ -33,10 +33,17 @@ class _FakeUserRepo implements IUserRepository {
       throw UnsupportedError('users/$uid is readable only by its owner');
 
   @override
-  Stream<Map<String, AppUser>> watchEventProfiles(String eventId) {
+  Stream<AppUser?> watchEventProfile(String eventId, String uid) {
     if (throwOnGet != null) return Stream.error(throwOnGet!);
-    return Stream.value(users);
+    return Stream.value(users[uid]);
   }
+
+  @override
+  Future<MemberPage> fetchMemberPage(
+    String eventId, {
+    String search = '',
+    MemberPage? after,
+  }) async => const MemberPage(people: [], hasMore: false);
 
   @override
   Future<void> saveProfile({

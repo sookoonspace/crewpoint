@@ -6,11 +6,15 @@ import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
+import 'package:crewpoint_app/app/core/labels/label_resolver.dart';
 import 'package:crewpoint_app/app/core/services/image_service.dart';
 import 'package:crewpoint_app/app/core/widgets/custom_text_field.dart';
 import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
+import 'package:crewpoint_app/app/features/budget/domain/models/large_event.dart';
 import 'package:crewpoint_app/app/features/budget/domain/repositories/i_expense_repository.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/member_picker_sheet.dart';
 
 /// Submit signature: receives the expense model AND the picked receipt
 /// (if any). The parent uploads the bytes out-of-band so the modal stays
@@ -33,6 +37,7 @@ class ExpenseModal extends StatefulWidget {
     required this.eventId,
     required this.payerId,
     required this.memberIds,
+    this.words = const LabelResolver({}),
     this.currencySymbol = '\$',
     this.minAmount = 0.01,
     this.maxAmount = 10000000,
@@ -44,6 +49,9 @@ class ExpenseModal extends StatefulWidget {
   final String eventId;
   final String payerId;
   final List<String> memberIds;
+
+  /// The event's words, for the member picker.
+  final LabelResolver words;
   final String currencySymbol;
   final double minAmount;
   final double maxAmount;
@@ -88,6 +96,7 @@ class ExpenseModal extends StatefulWidget {
     required String eventId,
     required String payerId,
     required List<String> memberIds,
+    LabelResolver words = const LabelResolver({}),
     String currencySymbol = '\$',
     ExpenseModel? initial,
     ReceiptPicker? onPickReceipt,
@@ -100,6 +109,7 @@ class ExpenseModal extends StatefulWidget {
         eventId: eventId,
         payerId: payerId,
         memberIds: memberIds,
+        words: words,
         currencySymbol: currencySymbol,
         initial: initial,
         onPickReceipt: onPickReceipt,
@@ -121,6 +131,11 @@ class _ExpenseModalState extends State<ExpenseModal> {
   bool _saving = false;
   ExpenseSaveResult? _failure;
 
+  /// Who shares the cost, or null for everyone (Req 43a).
+  Set<String>? _chosen;
+  bool _splitError = false;
+  bool _changed = false;
+
   /// Kept across retries, so a save that reached the server is not duplicated.
   final String _newExpenseId = const Uuid().v4();
 
@@ -137,6 +152,63 @@ class _ExpenseModalState extends State<ExpenseModal> {
       text: initial?.description ?? '',
     );
     _isDonation = initial?.isDonation ?? false;
+    _chosen = _initialChoice();
+  }
+
+  /// Editing starts from who shared the expense, or everyone when it has no
+  /// splits saved. A new one is split with
+  /// everyone, except past 50 members, where people must be chosen.
+  Set<String>? _initialChoice() {
+    final initial = widget.initial;
+    if (initial == null) {
+      return splitNeedsChoosing(widget.memberIds.length) ? <String>{} : null;
+    }
+    // An expense saved without its splits was shared with everyone.
+    if (initial.splits.isEmpty) return null;
+    final shared = {
+      for (final s in initial.splits) s.userId,
+      if (initial.isDonation) initial.payerId,
+    };
+    final everyone = widget.memberIds.toSet();
+    return shared.length == everyone.length && shared.containsAll(everyone)
+        ? null
+        : shared;
+  }
+
+  /// Who the amount is divided between, in member order where possible.
+  List<String> get _splitters {
+    final chosen = _chosen;
+    final pool = chosen == null
+        ? widget.memberIds
+        : [
+            for (final id in widget.memberIds)
+              if (chosen.contains(id)) id,
+            for (final id in chosen)
+              if (!widget.memberIds.contains(id)) id,
+          ];
+    return _isDonation
+        ? pool.where((id) => id != widget.payerId).toList()
+        : pool;
+  }
+
+  Future<void> _choosePeople() async {
+    final picked = await MemberPickerSheet.pickMany(
+      context,
+      eventId: widget.eventId,
+      words: widget.words,
+      initial: _chosen ?? widget.memberIds.toSet(),
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      _chosen = picked;
+      _changed = true;
+      _splitError = false;
+    });
+  }
+
+  Future<void> _confirmLeave() async {
+    final navigator = Navigator.of(context);
+    if (await confirmDiscard(context)) navigator.pop();
   }
 
   @override
@@ -155,14 +227,17 @@ class _ExpenseModalState extends State<ExpenseModal> {
   }
 
   Future<void> _submit() async {
-    if (_saving || !(_formKey.currentState?.validate() ?? false)) return;
+    final formOk = _formKey.currentState?.validate() ?? false;
+    final splitOk = _splitters.isNotEmpty;
+    setState(() => _splitError = !splitOk);
+    if (_saving || !formOk || !splitOk) return;
 
     final amount = double.tryParse(_amountController.text.trim()) ?? 0;
     final splits = ExpenseModel.calculateSplits(
       amount: amount,
       payerId: widget.payerId,
-      memberIds: widget.memberIds,
-      isDonation: _isDonation,
+      memberIds: _splitters,
+      isDonation: false,
     );
 
     final initial = widget.initial;
@@ -212,98 +287,201 @@ class _ExpenseModalState extends State<ExpenseModal> {
   @override
   Widget build(BuildContext context) {
     final amount = double.tryParse(_amountController.text.trim()) ?? 0;
-    final splitCount = _isDonation
-        ? widget.memberIds.where((id) => id != widget.payerId).length
-        : widget.memberIds.length;
+    final splitCount = _splitters.length;
+    final pickerStrings = context.strings.memberPicker;
+    final chosen = _chosen;
     final splitAmount = splitCount > 0 ? amount / splitCount : 0.0;
     final canPickReceipt = widget.onPickReceipt != null;
     final strings = context.strings.budget;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: AppSpacing.xl,
-        right: AppSpacing.xl,
-        top: AppSpacing.xl,
-        bottom: MediaQuery.viewInsetsOf(context).bottom + AppSpacing.xl,
-      ),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: .min,
-          crossAxisAlignment: .start,
-          spacing: AppSpacing.lg,
-          children: [
-            Text(
-              _isEdit ? 'Edit Expense' : 'Add Expense',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            CustomTextField(
-              key: const Key('budget.expense.amount'),
-              hintText: 'Amount (${widget.currencySymbol})',
-              controller: _amountController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
+    return PopScope(
+      canPop: !_changed || _saving,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _confirmLeave();
+      },
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: AppSpacing.xl,
+          right: AppSpacing.xl,
+          top: AppSpacing.xl,
+          bottom: MediaQuery.viewInsetsOf(context).bottom + AppSpacing.xl,
+        ),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: .min,
+            crossAxisAlignment: .start,
+            spacing: AppSpacing.lg,
+            children: [
+              Text(
+                _isEdit ? 'Edit Expense' : 'Add Expense',
+                style: Theme.of(context).textTheme.titleLarge,
               ),
-              prefixIcon: const Icon(AppIcons.currency),
-              onChanged: (_) => setState(() {}),
-              validator: (value) => ExpenseModal.validateAmountInput(
-                value,
-                minAmount: widget.minAmount,
-                maxAmount: widget.maxAmount,
+              CustomTextField(
+                key: const Key('budget.expense.amount'),
+                hintText: 'Amount (${widget.currencySymbol})',
+                controller: _amountController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                prefixIcon: const Icon(AppIcons.currency),
+                onChanged: (_) => setState(() => _changed = true),
+                validator: (value) => ExpenseModal.validateAmountInput(
+                  value,
+                  minAmount: widget.minAmount,
+                  maxAmount: widget.maxAmount,
+                ),
               ),
-            ),
-            CustomTextField(
-              hintText: 'Description (optional)',
-              controller: _descriptionController,
-              prefixIcon: const Icon(AppIcons.description),
-            ),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Donate this cost',
-                    style: Theme.of(context).textTheme.bodyMedium,
+              CustomTextField(
+                hintText: 'Description (optional)',
+                controller: _descriptionController,
+                prefixIcon: const Icon(AppIcons.description),
+                onChanged: (_) => _changed = true,
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Donate this cost',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ),
+                  Switch(
+                    value: _isDonation,
+                    onChanged: (value) => setState(() {
+                      _isDonation = value;
+                      _changed = true;
+                    }),
+                    activeThumbColor: AppColors.sage,
+                  ),
+                ],
+              ),
+              _SplitSection(
+                heading: pickerStrings.splitHeading,
+                summary: chosen == null
+                    ? pickerStrings.splitEveryone(widget.memberIds.length)
+                    : pickerStrings.splitChosen(chosen.length),
+                mustChoose:
+                    chosen != null &&
+                        chosen.isEmpty &&
+                        splitNeedsChoosing(widget.memberIds.length)
+                    ? pickerStrings.splitMustChoose(largeEventMembers)
+                    : null,
+                error: _splitError ? pickerStrings.splitNoneChosen : null,
+                chooseLabel: pickerStrings.choosePeople,
+                everyoneLabel: chosen == null
+                    ? null
+                    : pickerStrings.splitUseEveryone,
+                onChoose: _saving ? null : _choosePeople,
+                onEveryone: () => setState(() {
+                  _chosen = null;
+                  _changed = true;
+                  _splitError = false;
+                }),
+              ),
+              if (canPickReceipt)
+                _ReceiptRow(
+                  receipt: _pickedReceipt,
+                  onPick: _pickReceipt,
+                  onClear: () => setState(() => _pickedReceipt = null),
+                ),
+              if (amount > 0)
+                Text(
+                  'Split: ${widget.currencySymbol}${splitAmount.toStringAsFixed(2)} per person ($splitCount people)',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              if (_failure != null)
+                Text(
+                  _failure == ExpenseSaveResult.needsConnection
+                      ? strings.expenseNeedsConnection
+                      : strings.expenseSaveRejected,
+                  key: const Key('budget.expense.error'),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
                   ),
                 ),
-                Switch(
-                  value: _isDonation,
-                  onChanged: (value) => setState(() => _isDonation = value),
-                  activeThumbColor: AppColors.sage,
-                ),
-              ],
-            ),
-            if (canPickReceipt)
-              _ReceiptRow(
-                receipt: _pickedReceipt,
-                onPick: _pickReceipt,
-                onClear: () => setState(() => _pickedReceipt = null),
+              PrimaryButton(
+                key: const Key('budget.expense.save'),
+                label: _failure == ExpenseSaveResult.needsConnection
+                    ? strings.expenseRetry
+                    : (_isEdit ? 'Save changes' : 'Add Expense'),
+                isLoading: _saving,
+                onPressed: _submit,
               ),
-            if (amount > 0)
-              Text(
-                'Split: ${widget.currencySymbol}${splitAmount.toStringAsFixed(2)} per person ($splitCount people)',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            if (_failure != null)
-              Text(
-                _failure == ExpenseSaveResult.needsConnection
-                    ? strings.expenseNeedsConnection
-                    : strings.expenseSaveRejected,
-                key: const Key('budget.expense.error'),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.error,
-                ),
-              ),
-            PrimaryButton(
-              key: const Key('budget.expense.save'),
-              label: _failure == ExpenseSaveResult.needsConnection
-                  ? strings.expenseRetry
-                  : (_isEdit ? 'Save changes' : 'Add Expense'),
-              isLoading: _saving,
-              onPressed: _submit,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+/// Who shares the cost: everyone, or the people chosen in the picker.
+class _SplitSection extends StatelessWidget {
+  const _SplitSection({
+    required this.heading,
+    required this.summary,
+    required this.chooseLabel,
+    required this.onChoose,
+    required this.onEveryone,
+    this.everyoneLabel,
+    this.mustChoose,
+    this.error,
+  });
+
+  final String heading;
+  final String summary;
+  final String chooseLabel;
+  final String? everyoneLabel;
+  final String? mustChoose;
+  final String? error;
+  final VoidCallback? onChoose;
+  final VoidCallback onEveryone;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      key: const Key('budget.expense.split'),
+      crossAxisAlignment: .start,
+      spacing: AppSpacing.xs,
+      children: [
+        Text(heading, style: theme.textTheme.titleSmall),
+        Text(summary, key: const Key('budget.expense.split.summary')),
+        if (mustChoose != null)
+          Text(
+            mustChoose!,
+            key: const Key('budget.expense.split.mustChoose'),
+            style: theme.textTheme.bodySmall,
+          ),
+        if (error != null)
+          Text(
+            error!,
+            key: const Key('budget.expense.split.error'),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.error,
+            ),
+          ),
+        Wrap(
+          spacing: AppSpacing.sm,
+          children: [
+            OutlinedButton.icon(
+              key: const Key('budget.expense.split.choose'),
+              onPressed: onChoose,
+              icon: const Icon(AppIcons.members),
+              label: Text(chooseLabel),
+              style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48)),
+            ),
+            if (everyoneLabel != null)
+              TextButton(
+                key: const Key('budget.expense.split.everyone'),
+                onPressed: onEveryone,
+                style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+                child: Text(everyoneLabel!),
+              ),
+          ],
+        ),
+      ],
     );
   }
 }

@@ -8,7 +8,7 @@ import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
-import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
+import 'package:crewpoint_app/app/features/chat/application/people_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/chat/domain/dispute_window.dart';
 import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
 import 'package:crewpoint_app/app/features/chat/presentation/chat_screen.dart';
@@ -146,7 +146,16 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
     }
 
     final asyncMessages = ref.watch(chatMessagesProvider(widget.event.id));
-    final asyncUsers = ref.watch(usersByIdProvider(widget.event.id));
+    // Names of the people who wrote the loaded messages, read one by one,
+    // never the whole event (Req 43a).
+    final asyncUsers = ref.watch(
+      peopleByIdProvider(
+        PeopleKey(widget.event.id, [
+          for (final m in asyncMessages.value ?? const <ChatMessageModel>[])
+            m.senderId,
+        ]),
+      ),
+    );
     final memberNames = <String, String>{};
     asyncUsers.whenData((users) {
       for (final entry in users.entries) {

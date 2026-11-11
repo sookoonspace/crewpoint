@@ -351,6 +351,7 @@ class EventRepository {
         settings: Value(jsonEncode(event.settings)),
         capacity: Value(event.capacity),
         memberLimit: Value(event.memberLimit),
+        memberCount: Value(event.memberCount),
         dateOnly: Value(event.dateOnly),
         viewerId: Value(event.viewerId),
         myRoleIds: Value(
@@ -388,6 +389,7 @@ class EventRepository {
     settings: _parseMap(data['settings']),
     capacity: (data['capacity'] as num?)?.toInt(),
     memberLimit: (data['memberLimit'] as num?)?.toInt(),
+    memberCount: (data['memberCount'] as num?)?.toInt(),
     dateOnly: data['dateOnly'] == true,
     creatorId: (data['creatorId'] as String?) ?? '',
     startDate: (data['startDate'] as Timestamp?)?.toDate(),
@@ -419,6 +421,7 @@ class EventRepository {
     settings: _parseMap(_decodeJson(row.settings)),
     capacity: row.capacity,
     memberLimit: row.memberLimit,
+    memberCount: row.memberCount,
     dateOnly: row.dateOnly,
     creatorId: row.creatorId,
     startDate: row.startDate,

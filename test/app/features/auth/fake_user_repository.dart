@@ -8,6 +8,11 @@ import 'package:crewpoint_app/app/features/profile/domain/repositories/i_user_re
 /// so tests can assert on count + arguments. Other methods are no-op
 /// stubs because `AuthNotifier` only invokes `createUserIfNotExists`.
 class FakeUserRepository implements IUserRepository {
+  FakeUserRepository({this.profiles = const {}});
+
+  /// Event profiles by uid, returned for any event.
+  final Map<String, AppUser> profiles;
+
   final List<CreateCall> createCalls = [];
 
   /// When set, the next `createUserIfNotExists` call throws this object.
@@ -41,8 +46,15 @@ class FakeUserRepository implements IUserRepository {
   Future<AppUser?> getUser(String uid) async => null;
 
   @override
-  Stream<Map<String, AppUser>> watchEventProfiles(String eventId) =>
-      Stream.value(const {});
+  Stream<AppUser?> watchEventProfile(String eventId, String uid) =>
+      Stream.value(profiles[uid]);
+
+  @override
+  Future<MemberPage> fetchMemberPage(
+    String eventId, {
+    String search = '',
+    MemberPage? after,
+  }) async => const MemberPage(people: [], hasMore: false);
 
   @override
   Future<void> saveProfile({

@@ -12,12 +12,14 @@ import 'package:crewpoint_app/app/features/budget/data/expense_export_pipeline.d
 import 'package:crewpoint_app/app/features/budget/data/member_name_resolver.dart';
 import 'package:crewpoint_app/app/features/budget/data/pay_link_builder.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
+import 'package:crewpoint_app/app/features/budget/domain/models/large_event.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/budget/domain/repositories/i_expense_repository.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/budget_screen.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/expense_modal.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/settle_sheet.dart';
-import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
+import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
+import 'package:crewpoint_app/app/features/chat/application/people_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
 /// Event-scoped budget page. Reads `expenseListProvider(eventId)` and routes
@@ -67,11 +69,10 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
   Future<({String? venmoHandle, String? cashappHandle, String? displayName})>
   _fetchPayeeProfile(String uid) async {
     try {
-      final people = await ref
+      final payee = await ref
           .read(userRepositoryProvider)
-          .watchEventProfiles(widget.event.id)
+          .watchEventProfile(widget.event.id, uid)
           .first;
-      final payee = people[uid];
       return (
         venmoHandle: payee?.venmoHandle,
         cashappHandle: payee?.cashappHandle,
@@ -192,8 +193,42 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
     );
   }
 
+  /// Names of the payers and of the balances and transfers shown, read
+  /// one by one, never the whole event (Req 43a).
+  AsyncValue<Map<String, AppUser>> _names(
+    String uid,
+    List<ExpenseModel> expenses,
+  ) {
+    final event = widget.event;
+    final limited = !event.readsAllExpenses(uid);
+    final ledger = limited
+        ? ref.watch(myBalanceProvider(event.id)).value?.toLedger(uid, expenses)
+        : BalanceLedger.calculate(
+            expenses: expenses,
+            memberIds: event.memberIds,
+          );
+    return ref.watch(
+      peopleByIdProvider(
+        PeopleKey(event.id, [
+          for (final e in expenses) e.payerId,
+          if (ledger != null)
+            ...budgetNameUids(
+              expenses: expenses,
+              ledger: ledger,
+              me: uid,
+              memberCount: event.memberIds.length,
+            ),
+        ]),
+      ),
+    );
+  }
+
   Future<({String from, String to})> _namesFor(Settlement settlement) async {
-    final users = await ref.read(usersByIdProvider(widget.event.id).future);
+    final users = await fetchPeople(
+      ref.read(userRepositoryProvider),
+      widget.event.id,
+      [settlement.fromUserId, settlement.toUserId],
+    );
     String nameOf(String uid) => resolveMemberName(
       uid: uid,
       memberNames: {
@@ -279,10 +314,33 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
     BalanceLedger? ledger,
   }) async {
     try {
+      // The report names everyone in its balances and transfers, not only
+      // the rows on screen, so those names are read now (Req 43a).
+      final full =
+          ledger ??
+          BalanceLedger.calculate(
+            expenses: expenses,
+            memberIds: widget.event.memberIds,
+          );
+      final missing = {
+        ...full.netBalances.keys,
+        for (final s in full.settlements) ...[s.fromUserId, s.toUserId],
+      }.difference(memberNames.keys.toSet());
+      final extra = missing.isEmpty
+          ? const <String, AppUser>{}
+          : await fetchPeople(
+              ref.read(userRepositoryProvider),
+              widget.event.id,
+              missing,
+            );
       await runExpenseExport(
         event: widget.event,
         expenses: expenses,
-        memberNames: memberNames,
+        memberNames: {
+          ...memberNames,
+          for (final p in extra.values)
+            if (p.displayName?.isNotEmpty ?? false) p.uid: p.displayName!,
+        },
         exporter: ref.read(fileExporterProvider),
         kind: kind,
         ledger: ledger,
@@ -389,7 +447,6 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
     }
 
     final asyncExpenses = ref.watch(expenseListProvider(widget.event.id));
-    final asyncUsers = ref.watch(usersByIdProvider(widget.event.id));
     final repo = ref.watch(expenseRepositoryProvider);
     final imageService = ref.watch(imageServiceProvider);
     final symbol = _currencySymbol(widget.event.currency);
@@ -397,7 +454,7 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
     return asyncExpenses.when(
       data: (expenses) {
         // Prefer displayName, fall back to email when not set.
-        final memberNames = asyncUsers.maybeWhen(
+        final memberNames = _names(uid, expenses).maybeWhen(
           data: (users) => {
             for (final entry in users.entries)
               entry.key: () {
@@ -418,6 +475,7 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
             eventId: widget.event.id,
             payerId: expense.payerId,
             memberIds: widget.event.memberIds,
+            words: widget.event.words,
             currencySymbol: symbol,
             initial: expense,
             onSubmit: (updated, _) => repo.saveExpense(updated),
@@ -482,6 +540,7 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
           ledger: ledger,
           expenses: expenses,
           memberIds: widget.event.memberIds,
+          currentUserId: uid,
           currency: widget.event.currency,
           // Observers and Vendors cannot add expenses (Req 34).
           canAddExpense:
@@ -509,6 +568,7 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
             eventId: widget.event.id,
             payerId: uid,
             memberIds: widget.event.memberIds,
+            words: widget.event.words,
             currencySymbol: symbol,
             onPickReceipt: () => imageService.pickFromGallery(
               maxWidth: 1600,
