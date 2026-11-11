@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -94,6 +95,10 @@ Future<void> _resolveFlavorFromNativeBuild() async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Path URLs on web (`/join/ABC234`, not `/#/join/ABC234`), so an invite
+  // link or a scanned QR code reaches the router (Req 47). Hosting already
+  // sends every path to index.html. Does nothing on other platforms.
+  usePathUrlStrategy();
   initEventTimeZones();
   LabelDefaults.current = LabelDefaults.fromJson(
     jsonDecode(await rootBundle.loadString(LabelDefaults.assetPath))

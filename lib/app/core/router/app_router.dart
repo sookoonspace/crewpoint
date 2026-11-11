@@ -27,6 +27,7 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/edit_event_scr
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_settings_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/expense_access_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/fields_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/join_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/account_link_listener.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/import_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/link_requests_screen.dart';
@@ -63,7 +64,20 @@ abstract final class AppRoutes {
   /// Dev-only diagnostic console. Registered conditionally — see
   /// `app_router.dart` and only reachable on `AppFlavor.dev` builds.
   static const String devTools = '/profile/dev-tools';
+
+  /// Where an invite link lands (Req 47), outside the signed-in shell.
+  static const String join = '/join';
 }
+
+/// Where to go back to after onboarding and sign-in. Only invite links come
+/// back (Req 47), so `from` can never send anyone elsewhere.
+String? _returnTo(GoRouterState state) {
+  final from = state.uri.queryParameters['from'];
+  return from != null && from.startsWith('${AppRoutes.join}/') ? from : null;
+}
+
+String _withReturn(String target, String? from) =>
+    from == null ? target : '$target?from=${Uri.encodeComponent(from)}';
 
 /// Creates the app router.
 ///
@@ -103,28 +117,41 @@ GoRouter createRouter({
 
       final onboardingDone = isOnboardingComplete();
       final authed = isAuthenticated();
+      // An invite link opened before onboarding or sign-in is kept, and
+      // opened again once they are done (Req 47).
+      final joining = location.startsWith('${AppRoutes.join}/')
+          ? state.uri.toString()
+          : null;
+      final from = joining ?? _returnTo(state);
 
       if (!onboardingDone && location != AppRoutes.onboarding) {
-        return AppRoutes.onboarding;
+        return _withReturn(AppRoutes.onboarding, from);
       }
 
       if (onboardingDone && location == AppRoutes.onboarding) {
-        return authed ? AppRoutes.dashboard : AppRoutes.auth;
+        return authed
+            ? (from ?? AppRoutes.dashboard)
+            : _withReturn(AppRoutes.auth, from);
       }
 
       if (!authed &&
           location != AppRoutes.auth &&
           location != AppRoutes.onboarding) {
-        return AppRoutes.auth;
+        return _withReturn(AppRoutes.auth, from);
       }
 
       if (authed && location == AppRoutes.auth) {
-        return AppRoutes.dashboard;
+        return from ?? AppRoutes.dashboard;
       }
 
       return null;
     },
     routes: [
+      GoRoute(
+        path: '${AppRoutes.join}/:code',
+        builder: (_, state) =>
+            JoinScreen(code: state.pathParameters['code'] ?? ''),
+      ),
       GoRoute(
         path: AppRoutes.onboarding,
         builder: (context, _) => Consumer(

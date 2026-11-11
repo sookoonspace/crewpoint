@@ -268,18 +268,59 @@ class FakeMemberCalls implements MemberCalls {
     required String eventId,
     String? roleId,
     bool rotate = false,
+    DateTime? expiresAt,
   }) async {
-    calls.add('generateInviteCode:${roleId ?? '-'}:$rotate');
+    calls.add(
+      'generateInviteCode:${roleId ?? '-'}:$rotate'
+      '${expiresAt == null ? '' : ':${expiresAt.toIso8601String()}'}',
+    );
     _maybeFail();
     if (roleId != null && roleId != _inviteRole) {
       _inviteRole = roleId;
       _rotations++;
     }
     if (rotate) _rotations++;
+    if (expiresAt != null) inviteExpiresAt = expiresAt;
     return (
       code: _rotations == 0 ? code : '${code.substring(0, 5)}$_rotations',
       roleId: _inviteRole,
+      expiresAt: inviteExpiresAt,
     );
+  }
+
+  /// When the invite expires, as the server last said.
+  DateTime? inviteExpiresAt = DateTime(2027, 7, 16);
+
+  /// What [previewInvite] answers, by code. Any other code is not found.
+  final previews = <String, InvitePreview>{};
+
+  @override
+  Future<InvitePreview> previewInvite(String code) async {
+    calls.add('previewInvite:$code');
+    _maybeFail();
+    final preview = previews[code.toUpperCase()];
+    if (preview == null) {
+      throw FirebaseFunctionsException(
+        code: 'not-found',
+        message: 'This code is invalid or has expired.',
+      );
+    }
+    return preview;
+  }
+
+  /// Joins as `joinEvent` would, answering with the previewed event.
+  @override
+  Future<String> joinEvent(String code) async {
+    calls.add('joinEvent:$code');
+    _maybeFail();
+    final preview = previews[code.toUpperCase()];
+    if (preview == null) {
+      throw FirebaseFunctionsException(
+        code: 'not-found',
+        message: 'This code is invalid or has expired.',
+      );
+    }
+    return preview.eventId;
   }
 
   @override

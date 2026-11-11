@@ -6,8 +6,24 @@ import 'package:cloud_functions/cloud_functions.dart';
 /// needs verifying.
 typedef LinkResult = ({List<String> linked, List<String> asked, bool unverified});
 
-/// The event's one active invite (Req 31).
-typedef InviteCode = ({String code, String roleId});
+/// The event's one active invite (Req 31, 47): its code, the role it
+/// carries, and when it expires (Req 56).
+typedef InviteCode = ({String code, String roleId, DateTime? expiresAt});
+
+/// What an invite link leads to, before joining (Req 47, `/join/:code`).
+typedef InvitePreview = ({
+  String eventId,
+  String title,
+  String roleName,
+  bool open,
+
+  /// Why it cannot be joined: `draft`, `ended` or `archived`.
+  String? reason,
+  bool alreadyMember,
+  bool full,
+  DateTime? startDate,
+  bool dateOnly,
+});
 
 /// The callables that change who is in an event and what they may do. A seam,
 /// so tests never reach Firebase. The server checks every permission.
@@ -34,12 +50,20 @@ abstract interface class MemberCalls {
   });
 
   /// The active invite. A null [roleId] keeps the active invite's role, and a
-  /// different one replaces the code.
+  /// different one replaces the code. [expiresAt] sets when it expires and
+  /// keeps the code (Req 56).
   Future<InviteCode> generateInviteCode({
     required String eventId,
     String? roleId,
     bool rotate = false,
+    DateTime? expiresAt,
   });
+
+  /// What [code] leads to. Throws `not-found` for an unknown or expired code.
+  Future<InvitePreview> previewInvite(String code);
+
+  /// Joins with [code] and returns the event's ID.
+  Future<String> joinEvent(String code);
 
   /// Removes [uid] from the event, or leaves it when [uid] is the caller.
   Future<void> removeMember({required String eventId, required String uid});
@@ -169,17 +193,48 @@ class FirebaseMemberCalls implements MemberCalls {
     required String eventId,
     String? roleId,
     bool rotate = false,
+    DateTime? expiresAt,
   }) async {
     final data = await _call('generateInviteCode', {
       'eventId': eventId,
       'roleId': ?roleId,
       if (rotate) 'rotate': true,
+      if (expiresAt != null) 'expiresAt': expiresAt.millisecondsSinceEpoch,
     });
+    final expiry = data['expiresAt'];
     return (
       code: data['code'] as String,
-      // Functions from before #67 return no role.
+      // Functions from before #67 return no role, and before #79 no expiry.
       roleId: data['roleId'] as String? ?? 'participant',
+      expiresAt: expiry is num
+          ? DateTime.fromMillisecondsSinceEpoch(expiry.toInt())
+          : null,
     );
+  }
+
+  @override
+  Future<InvitePreview> previewInvite(String code) async {
+    final data = await _call('previewInvite', {'code': code});
+    final start = data['startDate'];
+    return (
+      eventId: data['eventId'] as String,
+      title: data['title'] as String? ?? '',
+      roleName: data['roleName'] as String? ?? '',
+      open: data['open'] == true,
+      reason: data['reason'] as String?,
+      alreadyMember: data['alreadyMember'] == true,
+      full: data['full'] == true,
+      startDate: start is num
+          ? DateTime.fromMillisecondsSinceEpoch(start.toInt(), isUtc: true)
+          : null,
+      dateOnly: data['dateOnly'] == true,
+    );
+  }
+
+  @override
+  Future<String> joinEvent(String code) async {
+    final data = await _call('joinEvent', {'joinCode': code});
+    return data['eventId'] as String;
   }
 
   @override

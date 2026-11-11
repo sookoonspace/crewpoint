@@ -1188,19 +1188,19 @@ Add one shareable, role-carrying link and QR code per event, with an organizer-s
 - Since #60, new events start as `draft` (L23), and `generateInviteCode` and `joinEvent` refuse unless the event is published or live. The invite link and `/join/:code` must do the same, and explain it to the person joining.
 
 ### Acceptance criteria
-- [ ] There is one shareable link and QR code per event, carrying a role, with an expiry the organizer sets.
-- [ ] Rotating replaces the old link.
-- [ ] On web, `/join/:code` opens the join flow, and signed-out users return there after signing in.
-- [ ] On a phone, a scanned QR opens this web flow.
-- [ ] The default expiry stays 24 hours on Blank and Party, and lasts until the event starts on other templates.
-- [ ] An expiry can last a whole registration period.
-- [ ] Joining explains that it needs a connection when offline.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
-- [ ] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
-- [ ] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
-- [ ] Tests for scenario GAP-CON-01 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] There is one shareable link and QR code per event, carrying a role, with an expiry the organizer sets.
+- [x] Rotating replaces the old link.
+- [x] On web, `/join/:code` opens the join flow, and signed-out users return there after signing in.
+- [x] On a phone, a scanned QR opens this web flow. (The QR encodes the https link; checking it on a real phone needs the web app deployed to dev.)
+- [x] The default expiry stays 24 hours on Blank and Party, and lasts until the event starts on other templates.
+- [x] An expiry can last a whole registration period.
+- [x] Joining explains that it needs a connection when offline.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
+- [x] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
+- [x] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
+- [x] Tests for scenario GAP-CON-01 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 19

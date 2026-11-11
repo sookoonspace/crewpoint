@@ -10,11 +10,13 @@ import 'package:crewpoint_app/app/features/budget/presentation/event_budget_page
 import 'package:crewpoint_app/app/features/chat/presentation/event_chat_page.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboard_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/join_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/member_management_screen.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/event_task_detail_page.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/event_tasks_page.dart';
 
 import '../../../app/features/auth/fake_auth_service.dart';
+import '../../../harness/fake_member_calls.dart';
 
 Widget _wrapWithProviders(GoRouter router, {List<EventModel>? eventsForRoute}) {
   final fakeAuthService = FakeAuthService();
@@ -205,4 +207,92 @@ void main() {
       },
     );
   });
+
+  group('an invite link survives onboarding and sign-in (Req 47)', () {
+    late bool onboarded;
+    late bool authed;
+    late ValueNotifier<int> refresh;
+    late GoRouter router;
+
+    String at() => router.routerDelegate.currentConfiguration.uri.toString();
+
+    Future<void> start(WidgetTester tester, String location) async {
+      refresh = ValueNotifier(0);
+      addTearDown(refresh.dispose);
+      router = createRouter(
+        isOnboardingComplete: () => onboarded,
+        isAuthenticated: () => authed,
+        refreshListenable: refresh,
+        initialLocation: location,
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authProvider.overrideWith(
+              () => AuthNotifier(
+                authRepository: AuthRepository(
+                  authService: FakeAuthService(),
+                ),
+              ),
+            ),
+            memberCallsProvider.overrideWithValue(FakeMemberCalls()),
+          ],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await _pumpFrames(tester);
+    }
+
+    Future<void> change(WidgetTester tester) async {
+      refresh.value++;
+      await _pumpFrames(tester);
+    }
+
+    testWidgets('a signed-out person signs in, then lands on the invite', (
+      tester,
+    ) async {
+      onboarded = true;
+      authed = false;
+      await start(tester, '/join/ABC234');
+      expect(at(), '/auth?from=%2Fjoin%2FABC234');
+      authed = true;
+      await change(tester);
+      expect(at(), '/join/ABC234');
+      expect(find.byType(JoinScreen), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('a first visit onboards, signs in, then lands on the invite', (
+      tester,
+    ) async {
+      onboarded = false;
+      authed = false;
+      await start(tester, '/join/ABC234');
+      expect(at(), '/onboarding?from=%2Fjoin%2FABC234');
+      onboarded = true;
+      await change(tester);
+      expect(at(), '/auth?from=%2Fjoin%2FABC234');
+      authed = true;
+      await change(tester);
+      expect(at(), '/join/ABC234');
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('a signed-in person opens the invite directly', (tester) async {
+      onboarded = true;
+      authed = true;
+      await start(tester, '/join/ABC234');
+      expect(at(), '/join/ABC234');
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('only invite links come back', (tester) async {
+      onboarded = true;
+      authed = true;
+      await start(tester, '/auth?from=%2Fprofile');
+      expect(at(), AppRoutes.dashboard);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  });
 }
+

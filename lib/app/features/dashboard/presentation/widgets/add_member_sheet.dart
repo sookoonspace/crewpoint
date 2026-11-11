@@ -4,20 +4,23 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/invite.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:crewpoint_app/app/core/labels/label_resolver.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/widgets/loading_animation.dart';
-import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
 
-/// Bottom sheet showing the event's one active invite (Req 31). The code is
-/// made on the server by `generateInviteCode`, through [memberCallsProvider].
+/// Bottom sheet showing the event's one active invite (Req 31, 47): a link
+/// and QR code that open `/join/:code`, the code itself, the role it carries
+/// and when it expires, which the organizer can change (Req 56). The invite
+/// is made on the server by `generateInviteCode`, through
+/// [memberCallsProvider].
 class AddMemberSheet extends ConsumerStatefulWidget {
   const AddMemberSheet({
     super.key,
@@ -44,6 +47,7 @@ class AddMemberSheet extends ConsumerStatefulWidget {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(AppRadius.xxl),
@@ -64,8 +68,12 @@ class AddMemberSheet extends ConsumerStatefulWidget {
 class _AddMemberSheetState extends ConsumerState<AddMemberSheet> {
   String? _code;
   String? _roleId;
+  DateTime? _expiresAt;
   bool _isLoading = true;
   String? _errorMessage;
+
+  /// What the last failed call asked for, so retrying asks again.
+  ({String? roleId, bool rotate, DateTime? expiresAt})? _lastAsk;
 
   @override
   void initState() {
@@ -76,14 +84,19 @@ class _AddMemberSheetState extends ConsumerState<AddMemberSheet> {
   }
 
   /// Gets the active invite, replacing it when [roleId] differs from its role
-  /// or [rotate] is set.
-  Future<void> _generateCode({String? roleId, bool rotate = false}) async {
+  /// or [rotate] is set. [expiresAt] changes when it expires, keeping it.
+  Future<void> _generateCode({
+    String? roleId,
+    bool rotate = false,
+    DateTime? expiresAt,
+  }) async {
+    _lastAsk = (roleId: roleId, rotate: rotate, expiresAt: expiresAt);
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
-    final strings = context.strings.dashboard;
+    final strings = context.strings;
     try {
       final invite = await ref
           .read(memberCallsProvider)
@@ -91,12 +104,14 @@ class _AddMemberSheetState extends ConsumerState<AddMemberSheet> {
             eventId: widget.eventId,
             roleId: roleId ?? _roleId,
             rotate: rotate,
+            expiresAt: expiresAt,
           );
 
       if (mounted) {
         setState(() {
           _code = invite.code;
           _roleId = invite.roleId;
+          _expiresAt = invite.expiresAt;
           _isLoading = false;
         });
       }
@@ -106,10 +121,11 @@ class _AddMemberSheetState extends ConsumerState<AddMemberSheet> {
         setState(() {
           _isLoading = false;
           _errorMessage = switch (e.code) {
-            'permission-denied' => 'Only admins can generate invite codes.',
-            'not-found' => 'Event not found.',
-            'failed-precondition' => strings.notOpenToInvites,
-            _ => 'Failed to generate code. Please try again.',
+            'permission-denied' => strings.invites.permissionDenied,
+            'not-found' => strings.invites.eventGone,
+            'failed-precondition' => strings.dashboard.notOpenToInvites,
+            'unavailable' || 'deadline-exceeded' => strings.invites.offline,
+            _ => strings.invites.failed,
           };
         });
       }
@@ -118,30 +134,63 @@ class _AddMemberSheetState extends ConsumerState<AddMemberSheet> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage =
-              'Requires an internet connection to generate a secure join code.';
+          _errorMessage = strings.invites.offline;
         });
       }
     }
   }
 
-  void _copyCode() {
+  void _retry() {
+    final ask = _lastAsk;
+    _generateCode(
+      roleId: ask?.roleId,
+      rotate: ask?.rotate ?? false,
+      expiresAt: ask?.expiresAt,
+    );
+  }
+
+  String get _link => inviteLink(_code!);
+
+  void _copyLink() {
     if (_code == null) return;
-    Clipboard.setData(ClipboardData(text: _code!));
+    Clipboard.setData(ClipboardData(text: _link));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Code copied to clipboard'),
-        backgroundColor: AppColors.sage,
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(context.strings.invites.copied),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
 
-  Future<void> _shareCode() async {
+  Future<void> _share() async {
     if (_code == null) return;
+    final title = ref.read(eventByIdProvider(widget.eventId))?.title ?? '';
     await SharePlus.instance.share(
-      ShareParams(text: 'Join my event on CrewPoint! Use code: $_code'),
+      ShareParams(
+        text: context.strings.invites.shareText(title, _link, _code!),
+      ),
     );
+  }
+
+  Future<void> _changeExpiry(Object choice) async {
+    final now = DateTime.now();
+    DateTime? at;
+    if (choice is InviteExpiry) {
+      at = inviteExpiryFor(
+        choice,
+        ref.read(eventByIdProvider(widget.eventId)),
+        now,
+      );
+    } else {
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: _expiresAt?.toLocal() ?? now,
+        firstDate: now,
+        lastDate: now.add(const Duration(days: maxInviteDays - 1)),
+      );
+      if (picked != null) at = expiryOnDate(picked, now);
+    }
+    if (at != null && mounted) _generateCode(expiresAt: at);
   }
 
   /// The role the invite carries. Changing it replaces the code.
@@ -160,6 +209,7 @@ class _AddMemberSheetState extends ConsumerState<AddMemberSheet> {
       children: [
         DropdownButtonFormField<String>(
           key: const Key('dashboard.invite.role'),
+          isExpanded: true,
           initialValue: roles.any((r) => r.id == current) ? current : null,
           decoration: InputDecoration(labelText: strings.inviteRoleLabel),
           items: [
@@ -167,7 +217,7 @@ class _AddMemberSheetState extends ConsumerState<AddMemberSheet> {
               DropdownMenuItem(
                 key: Key('dashboard.invite.role.${role.id}'),
                 value: role.id,
-                child: Text(role.name),
+                child: Text(role.name, overflow: TextOverflow.ellipsis),
               ),
           ],
           onChanged: (roleId) {
@@ -176,19 +226,85 @@ class _AddMemberSheetState extends ConsumerState<AddMemberSheet> {
             }
           },
         ),
-        Text(strings.inviteRoleHint, style: Theme.of(context).textTheme.bodySmall),
+        Text(
+          strings.inviteRoleHint,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ],
+    );
+  }
+
+  Widget _expiry(BuildContext context) {
+    final strings = context.strings.invites;
+    final theme = Theme.of(context);
+    final event = ref.watch(eventByIdProvider(widget.eventId));
+    final expires = _expiresAt;
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: AppSpacing.sm,
+      children: [
+        if (expires != null)
+          Text(
+            strings.expires(
+              DateFormat.yMMMd().add_jm().format(expires.toLocal()),
+            ),
+            key: const Key('dashboard.invite.expires'),
+            style: theme.textTheme.bodyMedium,
+          ),
+        PopupMenuButton<Object>(
+          key: const Key('dashboard.invite.expiry'),
+          tooltip: strings.changeExpiry,
+          onSelected: _changeExpiry,
+          itemBuilder: (_) => [
+            for (final choice in inviteExpiryChoices(event, DateTime.now()))
+              PopupMenuItem(
+                key: Key('dashboard.invite.expiry.${choice.name}'),
+                value: choice,
+                child: Text(strings.expiryChoice(choice.name)),
+              ),
+            PopupMenuItem(
+              key: const Key('dashboard.invite.expiry.date'),
+              value: 'date',
+              child: Text(strings.pickDate),
+            ),
+          ],
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    AppIcons.calendar,
+                    size: 18,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Flexible(
+                    child: Text(
+                      strings.changeExpiry,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Every colour below comes from the scheme so the sheet moves with the
-    // theme. The light-mode values are unchanged: `surfaceContainerHighest`
-    // *is* `offWhite`, `outline` *is* `lightGrey`, and `onSurface` *is*
-    // `charcoal` in `AppTheme.light()`.
-    final colorScheme = Theme.of(context).colorScheme;
-    return Padding(
+    final strings = context.strings.invites;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.xl,
         AppSpacing.xl,
@@ -197,15 +313,18 @@ class _AddMemberSheetState extends ConsumerState<AddMemberSheet> {
       ),
       child: Column(
         mainAxisSize: .min,
+        crossAxisAlignment: .stretch,
         spacing: AppSpacing.lg,
         children: [
           // Drag handle
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: colorScheme.outline,
-              borderRadius: BorderRadius.circular(2),
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: colorScheme.outline,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
 
@@ -213,17 +332,19 @@ class _AddMemberSheetState extends ConsumerState<AddMemberSheet> {
             context.strings.dashboard.inviteLabel(
               widget.memberLabel ?? const LabelResolver({}).other('member'),
             ),
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
           ),
 
           if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
               child: Column(
+                key: const Key('dashboard.invite.loading'),
                 spacing: AppSpacing.md,
-                children: [LoadingAnimation(), Text('Generating code...')],
+                children: [const LoadingAnimation(), Text(strings.generating)],
               ),
             )
           else if (_errorMessage != null)
@@ -235,19 +356,20 @@ class _AddMemberSheetState extends ConsumerState<AddMemberSheet> {
                   Icon(
                     AppIcons.wifiOff,
                     size: 48,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    color: colorScheme.onSurfaceVariant,
                   ),
                   Text(
                     _errorMessage!,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    key: const Key('dashboard.invite.error'),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
                     ),
                     textAlign: TextAlign.center,
                   ),
                   TextButton(
                     key: const Key('dashboard.invite.retry'),
-                    onPressed: _generateCode,
-                    child: const Text('Try Again'),
+                    onPressed: _retry,
+                    child: Text(strings.retry),
                   ),
                 ],
               ),
@@ -255,18 +377,56 @@ class _AddMemberSheetState extends ConsumerState<AddMemberSheet> {
           else if (_code != null) ...[
             if (widget.canChooseRole) _rolePicker(context),
             Text(
-              'Share this code with people you want to invite',
-              style: Theme.of(context).textTheme.bodyMedium,
+              strings.shareHint,
+              style: theme.textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),
 
-            // Code display
-            GestureDetector(
-              onTap: _copyCode,
+            // A QR code needs dark modules on a light ground to scan, in
+            // either theme, so these two colours are fixed on purpose.
+            Center(
+              child: Container(
+                key: const Key('dashboard.invite.qr'),
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: AppRadius.borderLg,
+                  border: Border.all(color: colorScheme.outline),
+                ),
+                child: ref
+                    .watch(qrRendererProvider)
+                    .render(
+                      _link,
+                      size: 200,
+                      foreground: Colors.black,
+                      background: Colors.white,
+                      semanticLabel: strings.qrLabel(_link),
+                    ),
+              ),
+            ),
+
+            Text(
+              strings.linkLabel,
+              style: theme.textTheme.labelLarge,
+              textAlign: TextAlign.center,
+            ),
+            SelectableText(
+              _link,
+              key: const Key('dashboard.invite.link'),
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium,
+            ),
+
+            Text(
+              strings.codeLabel,
+              style: theme.textTheme.bodySmall,
+              textAlign: TextAlign.center,
+            ),
+            Center(
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.xxl,
-                  vertical: AppSpacing.xl,
+                  horizontal: AppSpacing.xl,
+                  vertical: AppSpacing.md,
                 ),
                 decoration: BoxDecoration(
                   color: colorScheme.surfaceContainerHighest,
@@ -276,8 +436,8 @@ class _AddMemberSheetState extends ConsumerState<AddMemberSheet> {
                 child: Text(
                   _code!,
                   key: const Key('dashboard.invite.code'),
-                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    letterSpacing: 10,
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    letterSpacing: 8,
                     fontWeight: FontWeight.w700,
                     color: colorScheme.onSurface,
                   ),
@@ -285,44 +445,46 @@ class _AddMemberSheetState extends ConsumerState<AddMemberSheet> {
               ),
             ),
 
-            Text(
-              'Tap code to copy \u2022 Expires in 24 hours',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            _expiry(context),
 
-            // Action buttons
-            Row(
+            OverflowBar(
+              alignment: MainAxisAlignment.center,
               spacing: AppSpacing.md,
+              overflowSpacing: AppSpacing.sm,
+              overflowAlignment: OverflowBarAlignment.center,
               children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _copyCode,
-                    icon: const Icon(AppIcons.actionCopy, size: 18),
-                    label: const Text('Copy'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: colorScheme.onSurface,
-                      side: BorderSide(color: colorScheme.outline),
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: AppRadius.borderLg,
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        vertical: AppSpacing.md,
-                      ),
-                    ),
+                OutlinedButton.icon(
+                  key: const Key('dashboard.invite.copy'),
+                  onPressed: _copyLink,
+                  icon: const Icon(AppIcons.actionCopy, size: 18),
+                  label: Text(strings.copyLink),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(48, 48),
                   ),
                 ),
-                Expanded(
-                  child: PrimaryButton(label: 'Share', onPressed: _shareCode),
+                FilledButton.icon(
+                  key: const Key('dashboard.invite.share'),
+                  onPressed: _share,
+                  icon: Icon(AppIcons.actionShare, size: 18),
+                  label: Text(strings.share),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(48, 48),
+                  ),
                 ),
               ],
             ),
 
-            // Replaces the code and keeps the role, for a code that may have
-            // leaked.
+            // Replaces the link and keeps the role and expiry, for one that
+            // was shared too widely.
             TextButton(
               key: const Key('dashboard.invite.rotate'),
               onPressed: () => _generateCode(rotate: true),
-              child: const Text('Generate New Code'),
+              child: Text(strings.rotate),
+            ),
+            Text(
+              strings.rotateHint,
+              style: theme.textTheme.bodySmall,
+              textAlign: TextAlign.center,
             ),
           ],
         ],
