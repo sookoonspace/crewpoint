@@ -1254,19 +1254,19 @@ Let organizers build a multi-day schedule of sessions across venues, and edit ti
 - Since #59, `venues` holds `{id, name, address}` on the event, edited on the settings screen. Add map link, directions and "to be announced" here. A-01 is finished with this item, once venues are complete, so add it to the finished list then.
 
 ### Acceptance criteria
-- [ ] `sessions` hold title, start, end, venue, type (free text with suggestions), tags, capacity and eligibility.
-- [ ] Schedules span several days, with day and venue grouping.
-- [ ] Placeholder times can be flagged as "to be confirmed".
-- [ ] Venues hold address, map link and directions, and locations may be "to be announced".
-- [ ] Editing needs `schedule.edit`, and every member can read the published schedule.
-- [ ] The `schedule` and `schedule/:sessionId` routes exist.
-- [ ] Module-off and status rules apply to the new paths.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
-- [ ] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
-- [ ] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
-- [ ] Tests for scenarios A-01, A-02, A-05, GAP-WED-12 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] `sessions` hold title, start, end, venue, type (free text with suggestions), tags, capacity and eligibility.
+- [x] Schedules span several days, with day and venue grouping.
+- [x] Placeholder times can be flagged as "to be confirmed".
+- [x] Venues hold address, map link and directions, and locations may be "to be announced".
+- [x] Editing needs `schedule.edit`, and every member can read the published schedule.
+- [x] The `schedule` and `schedule/:sessionId` routes exist.
+- [x] Module-off and status rules apply to the new paths.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
+- [x] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
+- [x] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
+- [x] Tests for scenarios A-01, A-02, A-05, GAP-WED-12 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 20

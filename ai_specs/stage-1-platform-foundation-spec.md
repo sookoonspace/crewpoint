@@ -173,7 +173,7 @@ Each fix keeps working for current members, and has a regression test written fi
 
 ### 1.7 Schedule and counts
 
-48. `sessions` hold title, start, end, venue, type (free text with suggestions), tags, capacity and eligibility. Schedules span several days, with day and venue grouping. Placeholder times can be flagged as "to be confirmed". (A-02, GAP-WED-12)
+48. `sessions` hold title, start, end, venue, type (free text with suggestions), tags, capacity and eligibility. Schedules span several days, with day and venue grouping. Placeholder times can be flagged as "to be confirmed". (A-02, GAP-WED-12) Eligibility names age bands (categories) and standard field answers (filter tags), and is empty for everyone. A session can be hidden while it is drafted, and then only `schedule.edit` sees it. [Decided 2026-11-11]
 49. Venues hold address, map link and directions, and locations may be "to be announced". (A-01, A-02, A-05)
 50. Participants have optional arrival and departure times. Attendance uses an event policy:
     - **`arrivalToDeparture`** (default for Convention): sessions within a person's arrival and departure.

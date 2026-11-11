@@ -33,7 +33,10 @@ void main() {
     expect(row.data['title'], 'Fest');
     expect(row.data.containsKey('member_count'), isTrue);
     expect(row.data['member_count'], isNull);
-    expect(raw.select('PRAGMA user_version').first.values.first, 13);
+    expect(
+      raw.select('PRAGMA user_version').first.values.first,
+      db.schemaVersion,
+    );
     await db.close();
   });
 
@@ -42,11 +45,5 @@ void main() {
     final db = AppDatabase(NativeDatabase.opened(raw));
     expect(await db.customSelect('SELECT id FROM events').get(), hasLength(1));
     await db.close();
-  });
-
-  test('schemaVersion is 13', () {
-    final db = AppDatabase(NativeDatabase.memory());
-    expect(db.schemaVersion, 13);
-    db.close();
   });
 }

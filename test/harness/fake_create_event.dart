@@ -30,7 +30,12 @@ CreateEventCall fakeCreateEventCall(FirebaseFirestore firestore) =>
         'dateOnly': event.dateOnly,
         'venues': <Object>[],
         'languages': ['en'],
-        'modules': {'tasks': true, 'budget': true, 'chat': true},
+        'modules': {
+          'tasks': true,
+          'budget': true,
+          'chat': true,
+          'schedule': true,
+        },
         'labels': <String, Object>{},
         'settings': <String, Object>{},
         'capacity': null,

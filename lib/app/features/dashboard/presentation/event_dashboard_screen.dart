@@ -266,6 +266,15 @@ class _ModuleHub extends ConsumerWidget {
           strings.moduleBudgetSubtitle,
           AppColors.terracotta,
         ),
+      // Every member reads the schedule (Req 48).
+      if (event.isModuleOn('schedule'))
+        entry(
+          'schedule',
+          AppIcons.calendar,
+          context.strings.schedule.title,
+          context.strings.schedule.hubSubtitle,
+          Theme.of(context).colorScheme.tertiary,
+        ),
       // The roster needs participants.read; a linked adult sees their own
       // group (Req 43).
       if (event.can(me, 'participants.read') || event.can(me, 'group.editOwn'))

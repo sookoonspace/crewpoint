@@ -49,6 +49,7 @@ abstract class AppStrings {
   LinkStrings get links;
   InviteStrings get invites;
   MemberPickerStrings get memberPicker;
+  ScheduleStrings get schedule;
 
   /// Static English fallback. Used by service-layer code that has no
   /// `BuildContext` in scope (e.g. `firebaseAuthErrorMessage`). UI code
@@ -530,6 +531,8 @@ class _EnglishStrings extends AppStrings {
 
   @override
   MemberPickerStrings get memberPicker => const _EnglishMemberPickerStrings();
+  @override
+  ScheduleStrings get schedule => const _EnglishScheduleStrings();
 }
 
 class _EnglishChatStrings extends ChatStrings {
@@ -2551,7 +2554,8 @@ class _EnglishLinkStrings extends LinkStrings {
   @override
   String get notAMatch => 'Not a match';
   @override
-  String get linkFailed => "Couldn't save that. Check your connection and try again.";
+  String get linkFailed =>
+      "Couldn't save that. Check your connection and try again.";
   @override
   String get linkedDone => 'Linked.';
   @override
@@ -2620,8 +2624,7 @@ class _EnglishInviteStrings extends InviteStrings {
   @override
   String get generating => 'Getting the invite…';
   @override
-  String get offline =>
-      'Invites need a connection. Check it and try again.';
+  String get offline => 'Invites need a connection. Check it and try again.';
   @override
   String get permissionDenied =>
       'Only people who manage members can invite others.';
@@ -2692,7 +2695,8 @@ class _EnglishInviteStrings extends InviteStrings {
       "This event isn't open to joining yet. The organizer still needs to "
       'publish it. Try the link again later.';
   @override
-  String get notOpenEnded => 'This event has ended, so it is closed to joining.';
+  String get notOpenEnded =>
+      'This event has ended, so it is closed to joining.';
   @override
   String get full => 'This event is full. Ask the organizer about a place.';
   @override
@@ -2705,7 +2709,6 @@ class _EnglishInviteStrings extends InviteStrings {
   @override
   String get backToEvents => 'Go to my events';
 }
-
 
 /// The paged member picker, task assignee and expense split (Req 43a).
 /// [member] and [members] are the event's own words, from `event.words`.
@@ -2790,5 +2793,226 @@ class _EnglishMemberPickerStrings extends MemberPickerStrings {
   String splitMustChoose(int limit) =>
       'With more than $limit people in this event, choose who shares this cost.';
   @override
-  String get splitNoneChosen => 'Choose at least one person to share this cost.';
+  String get splitNoneChosen =>
+      'Choose at least one person to share this cost.';
+}
+
+/// The schedule and venues (#81, Req 48, 49). Session words come from the
+/// event's labels.
+abstract class ScheduleStrings {
+  const ScheduleStrings();
+
+  String get title;
+  String get hubSubtitle;
+  String get byDay;
+  String get byVenue;
+  String add(String session);
+  String noneYet(String sessions);
+  String get noneYetEditorHint;
+  String get loadFailed;
+  String get retry;
+  String get timeTbc;
+  String get locationTba;
+  String get addressTba;
+  String get noVenue;
+  String get hidden;
+  String get openMap;
+  String get directions;
+  String capacity(int count);
+  String get forEveryone;
+  String forOnly(String who);
+  String get missing;
+
+  String editTitle(String session);
+  String newTitle(String session);
+  String get titleLabel;
+  String get titleRequired;
+  String get dayLabel;
+  String get dayRequired;
+  String get startLabel;
+  String get startRequired;
+  String get endLabel;
+  String get endNextDay;
+  String get clearEnd;
+  String get timeTbcLabel;
+  String get timeTbcHelp;
+  String get venueLabel;
+  String get venueNone;
+  String get venueHelpNoVenues;
+  String get locationTbaLabel;
+  String get typeLabel;
+  String get typeHelp;
+  String get tagsLabel;
+  String get tagAdd;
+  String removeTag(String tag);
+  String get capacityLabel;
+  String get capacityInvalid;
+  String get eligibilityLabel;
+  String get eligibilityHelp;
+  String get eligibilityNone;
+  String get hiddenLabel;
+  String get hiddenHelp;
+  String get save;
+  String get saved;
+  String get pending;
+  String get saveFailed;
+  String get delete;
+  String deleteTitle(String session);
+  String get deleteBody;
+  String get deleteFailed;
+  String get cancel;
+  String get discardTitle;
+  String get discardBody;
+  String get keepEditing;
+  String get discard;
+
+  String get venueMapLabel;
+  String get venueMapInvalid;
+  String get venueDirectionsLabel;
+  String get venueAddressHelp;
+}
+
+class _EnglishScheduleStrings extends ScheduleStrings {
+  const _EnglishScheduleStrings();
+
+  @override
+  String get title => 'Schedule';
+  @override
+  String get hubSubtitle => 'Days, times & venues';
+  @override
+  String get byDay => 'By day';
+  @override
+  String get byVenue => 'By venue';
+  @override
+  String add(String session) => 'Add ${session.toLowerCase()}';
+  @override
+  String noneYet(String sessions) => 'No ${sessions.toLowerCase()} yet.';
+  @override
+  String get noneYetEditorHint => 'Add the first one to start the schedule.';
+  @override
+  String get loadFailed =>
+      "Couldn't load the schedule. Check your connection and try again.";
+  @override
+  String get retry => 'Try again';
+  @override
+  String get timeTbc => 'Time to be confirmed';
+  @override
+  String get locationTba => 'Location to be announced';
+  @override
+  String get addressTba => 'Address to be announced';
+  @override
+  String get noVenue => 'No venue set';
+  @override
+  String get hidden => 'Hidden';
+  @override
+  String get openMap => 'Open map';
+  @override
+  String get directions => 'Directions';
+  @override
+  String capacity(int count) => 'Up to $count';
+  @override
+  String get forEveryone => 'For everyone';
+  @override
+  String forOnly(String who) => 'For $who';
+  @override
+  String get missing => 'This is no longer on the schedule.';
+
+  @override
+  String editTitle(String session) => 'Edit ${session.toLowerCase()}';
+  @override
+  String newTitle(String session) => 'New ${session.toLowerCase()}';
+  @override
+  String get titleLabel => 'Title';
+  @override
+  String get titleRequired => 'Enter a title.';
+  @override
+  String get dayLabel => 'Day';
+  @override
+  String get dayRequired => 'Choose a day.';
+  @override
+  String get startLabel => 'Starts';
+  @override
+  String get startRequired => 'Choose a start time.';
+  @override
+  String get endLabel => 'Ends (optional)';
+  @override
+  String get endNextDay => 'Ends the next day';
+  @override
+  String get clearEnd => 'Clear end time';
+  @override
+  String get timeTbcLabel => 'Time to be confirmed';
+  @override
+  String get timeTbcHelp => 'Shown as a placeholder until you confirm it.';
+  @override
+  String get venueLabel => 'Venue';
+  @override
+  String get venueNone => 'No venue';
+  @override
+  String get venueHelpNoVenues => 'Add venues in event settings.';
+  @override
+  String get locationTbaLabel => 'Location to be announced';
+  @override
+  String get typeLabel => 'Type (optional)';
+  @override
+  String get typeHelp =>
+      'Any words you like. Types already used are suggested.';
+  @override
+  String get tagsLabel => 'Tags';
+  @override
+  String get tagAdd => 'Add tag';
+  @override
+  String removeTag(String tag) => 'Remove $tag';
+  @override
+  String get capacityLabel => 'Capacity (optional)';
+  @override
+  String get capacityInvalid => 'Enter a whole number above 0.';
+  @override
+  String get eligibilityLabel => 'Who it is for';
+  @override
+  String get eligibilityHelp =>
+      'Choose nothing for everyone. With both kinds chosen, people need one of each.';
+  @override
+  String get eligibilityNone =>
+      'Everyone. Add categories or choice fields to limit who it is for.';
+  @override
+  String get hiddenLabel => 'Hidden from members';
+  @override
+  String get hiddenHelp => 'Only people who edit the schedule see it.';
+  @override
+  String get save => 'Save';
+  @override
+  String get saved => 'Saved';
+  @override
+  String get pending =>
+      "Saved on this device. It will be sent when you're back online.";
+  @override
+  String get saveFailed =>
+      "Couldn't save. Your changes are kept, so try again.";
+  @override
+  String get delete => 'Delete';
+  @override
+  String deleteTitle(String session) => 'Delete this ${session.toLowerCase()}?';
+  @override
+  String get deleteBody => 'It is removed from everyone\'s schedule.';
+  @override
+  String get deleteFailed => "Couldn't delete. Try again.";
+  @override
+  String get cancel => 'Cancel';
+  @override
+  String get discardTitle => 'Discard changes?';
+  @override
+  String get discardBody => 'What you entered here will be lost.';
+  @override
+  String get keepEditing => 'Keep editing';
+  @override
+  String get discard => 'Discard';
+
+  @override
+  String get venueMapLabel => 'Map link (optional)';
+  @override
+  String get venueMapInvalid => 'Enter a link starting with https://';
+  @override
+  String get venueDirectionsLabel => 'Directions (optional)';
+  @override
+  String get venueAddressHelp => 'Leave empty while it is to be announced.';
 }

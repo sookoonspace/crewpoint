@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/core/widgets/module_guard.dart';
+import 'package:crewpoint_app/app/features/schedule/presentation/schedule_screen.dart';
+import 'package:crewpoint_app/app/features/schedule/presentation/session_screen.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
@@ -306,6 +308,34 @@ GoRouter createRouter({
                                     state.pathParameters['participantId']!,
                                 initialGroupId:
                                     state.uri.queryParameters['group'],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      GoRoute(
+                        path: 'schedule',
+                        builder: (_, state) => EventGuard(
+                          eventId: _resolveEventId(state),
+                          child: (event) => ModuleGuard(
+                            event: event,
+                            module: 'schedule',
+                            child: ScheduleScreen(event: event),
+                          ),
+                        ),
+                        routes: [
+                          GoRoute(
+                            path: ':sessionId',
+                            builder: (_, state) => EventGuard(
+                              eventId: _resolveEventId(state),
+                              child: (event) => ModuleGuard(
+                                event: event,
+                                module: 'schedule',
+                                child: SessionScreen(
+                                  event: event,
+                                  sessionId:
+                                      state.pathParameters['sessionId'] ?? '',
+                                ),
                               ),
                             ),
                           ),
