@@ -7,7 +7,8 @@
  */
 import {RulesTestEnvironment, assertFails, assertSucceeds} from '@firebase/rules-unit-testing';
 import {
-  collection, deleteDoc, doc, getDoc, getDocs, setDoc, updateDoc, writeBatch,
+  collection, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, setDoc,
+  updateDoc, where, writeBatch,
 } from 'firebase/firestore';
 import {getTestEnv} from './setup';
 import {computePermissions} from '../src/events/permissions';
@@ -116,6 +117,18 @@ describe('names and payment handles (Req 37)', () => {
   test('someone sharing no event cannot read them', async () => {
     await assertFails(getDoc(doc(as('outsider'), `${E}/profiles/plain`)));
     await assertFails(getDocs(collection(as('outsider'), `${E}/profiles`)));
+  });
+
+  // Req 43a: the member picker pages through the people still in the event
+  // by name, with a prefix search.
+  test('the member picker query works for people in the event only', async () => {
+    const picker = (uid: string) => query(
+      collection(as(uid), `${E}/profiles`),
+      where('inEvent', '==', true),
+      where('sortName', '>=', 'pa'), where('sortName', '<', 'pa\uf8ff'),
+      orderBy('sortName'), limit(30));
+    await assertSucceeds(getDocs(picker('plain')));
+    await assertFails(getDocs(picker('outsider')));
   });
 
   test('only the server writes profiles', async () => {

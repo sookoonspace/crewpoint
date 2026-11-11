@@ -1,9 +1,14 @@
 import {onDocumentWritten} from "firebase-functions/v2/firestore";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {commitInChunks, BatchOperation} from "../utils/batch";
-import {HANDLE_FIELDS, PROFILE_FIELDS, profileFrom} from "./profileFields";
+import {
+  HANDLE_FIELDS,
+  PROFILE_FIELDS,
+  nameSortKey,
+  profileFrom,
+} from "./profileFields";
 
-export {profileFrom};
+export {nameSortKey, profileFrom};
 
 const db = getFirestore();
 
@@ -19,7 +24,7 @@ export function profileRef(
 /**
  * Someone joining gets a profile in the event, and someone leaving keeps
  * their name there, so older messages still show who wrote them, without
- * their handles.
+ * their handles and with `inEvent` false, so the member picker skips them.
  */
 export async function handleMemberWritten({
   eventId,
@@ -35,7 +40,7 @@ export async function handleMemberWritten({
   const ref = profileRef(db.collection("events").doc(eventId), uid);
   if (!before && after) {
     const user = await db.collection("users").doc(uid).get();
-    await ref.set(profileFrom(uid, user.data()));
+    await ref.set({...profileFrom(uid, user.data()), inEvent: true});
     return;
   }
   if (before && !after) {
@@ -43,7 +48,7 @@ export async function handleMemberWritten({
       HANDLE_FIELDS.map((f) => [f, FieldValue.delete()])
     );
     try {
-      await ref.update(drop);
+      await ref.update({...drop, inEvent: false});
     } catch (e) {
       // NOT_FOUND: the account was deleted, which removes its profiles.
       if ((e as {code?: number}).code !== 5) throw e;
@@ -76,7 +81,7 @@ export async function handleUserWritten({
   const ops: BatchOperation[] = memberships.docs.map((member) => ({
     type: "set",
     ref: profileRef(member.ref.parent.parent!, uid),
-    data: next,
+    data: {...next, inEvent: true},
   }));
   await commitInChunks(ops);
 }

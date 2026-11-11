@@ -267,9 +267,16 @@ async function profileOps(
   for (const uid of [...members, ...others]) {
     const user = (await db.collection("users").doc(uid).get()).data();
     const full = profileFrom(uid, user);
+    // `sortName` and `inEvent` let the member picker page by name (Req 43a).
     const data = members.has(uid) ?
-      full :
-      {uid, displayName: full.displayName, photoUrl: full.photoUrl};
+      {...full, inEvent: true} :
+      {
+        uid,
+        displayName: full.displayName,
+        photoUrl: full.photoUrl,
+        sortName: full.sortName,
+        inEvent: false,
+      };
     if (sameData(have.get(uid), data)) continue;
     ops.push({type: "set", ref: eventRef.collection("profiles").doc(uid), data});
     result.profiles++;

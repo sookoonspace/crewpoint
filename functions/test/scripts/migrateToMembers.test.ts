@@ -220,6 +220,7 @@ describe('migrateToMembers', () => {
       expect(await profile('m')).toEqual({
         uid: 'm', displayName: 'Mo', photoUrl: null, paymentMethod: null,
         paymentHandle: null, venmoHandle: 'mo', cashappHandle: null,
+        sortName: 'mo', inEvent: true,
       });
       expect((await profile('c'))?.displayName).toBeNull();
       expect(result.profiles).toBe(3);
@@ -234,9 +235,10 @@ describe('migrateToMembers', () => {
       await db().doc('events/e1/expenses/x').set({payerId: 'paid', splits: [{userId: 'm', amount: 1}]});
       await db().doc('events/e1/tasks/x').set({title: 'T', createdBy: 'did', assigneeId: 'm'});
       await run();
-      expect(await profile('gone')).toEqual({uid: 'gone', displayName: 'Gil', photoUrl: 'g.jpg'});
-      expect(await profile('paid')).toEqual({uid: 'paid', displayName: 'Pia', photoUrl: null});
-      expect(await profile('did')).toEqual({uid: 'did', displayName: 'Dee', photoUrl: null});
+      const left = {inEvent: false};
+      expect(await profile('gone')).toEqual({uid: 'gone', displayName: 'Gil', photoUrl: 'g.jpg', sortName: 'gil', ...left});
+      expect(await profile('paid')).toEqual({uid: 'paid', displayName: 'Pia', photoUrl: null, sortName: 'pia', ...left});
+      expect(await profile('did')).toEqual({uid: 'did', displayName: 'Dee', photoUrl: null, sortName: 'dee', ...left});
     });
 
     test('a profile that is already right is left alone', async () => {
@@ -247,6 +249,22 @@ describe('migrateToMembers', () => {
       const again = await run();
       expect(again.profiles).toBe(1);
       expect((await profile('m'))?.displayName).toBe('Maureen');
+    });
+
+    // Req 43a: profiles written before the member picker gain a sort name
+    // and whether the person is still in the event.
+    test('profiles from before the picker gain a sort name and inEvent', async () => {
+      await seedOld('e1');
+      await db().doc('users/m').set({displayName: 'Mo'});
+      await db().doc('users/gone').set({displayName: 'Gil'});
+      await db().doc('events/e1/messages/x').set({senderId: 'gone', text: 'Hi'});
+      await db().doc('events/e1/profiles/m').set(
+        {uid: 'm', displayName: 'Mo', photoUrl: null, paymentMethod: null,
+          paymentHandle: null, venmoHandle: null, cashappHandle: null});
+      await db().doc('events/e1/profiles/gone').set({uid: 'gone', displayName: 'Gil', photoUrl: null});
+      await run();
+      expect(await profile('m')).toMatchObject({sortName: 'mo', inEvent: true});
+      expect(await profile('gone')).toMatchObject({sortName: 'gil', inEvent: false});
     });
   });
 

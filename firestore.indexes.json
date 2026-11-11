@@ -145,6 +145,20 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "profiles",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "inEvent",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "sortName",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": [
