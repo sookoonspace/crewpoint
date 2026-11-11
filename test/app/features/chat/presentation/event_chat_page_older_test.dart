@@ -44,7 +44,7 @@ class _Repo implements ChatRepository {
   }
 
   @override
-  Future<void> markEventRead(String uid, String eventId) async {}
+  Future<void> markEventRead(String uid, String eventId, {int? count}) async {}
 
   @override
   void disposeMirror(String eventId) {}

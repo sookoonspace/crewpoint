@@ -157,6 +157,9 @@ class ChatReads extends Table {
   TextColumn get uid => text()();
   DateTimeColumn get lastReadAt => dateTime()();
 
+  /// The chat summary's message count when read (#86, Req 57a).
+  IntColumn get readCount => integer().nullable()();
+
   @override
   Set<Column> get primaryKey => {eventId, uid};
 }
@@ -230,7 +233,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 17;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -376,6 +379,16 @@ class AppDatabase extends _$AppDatabase {
         if (columns.isNotEmpty &&
             !columns.any((c) => c.data['name'] == 'kind')) {
           await m.addColumn(chatMessages, chatMessages.kind);
+        }
+      }
+      if (from < 17) {
+        // A read marker's message count (#86). Safe to re-run.
+        final columns = await customSelect(
+          'PRAGMA table_info(chat_reads)',
+        ).get();
+        if (columns.isNotEmpty &&
+            !columns.any((c) => c.data['name'] == 'read_count')) {
+          await m.addColumn(chatReads, chatReads.readCount);
         }
       }
     },

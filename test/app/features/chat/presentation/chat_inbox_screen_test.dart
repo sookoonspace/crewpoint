@@ -17,6 +17,7 @@ import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart'
 import 'package:crewpoint_app/app/features/chat/presentation/chat_inbox_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import '../../../../harness/member_docs.dart';
+import '../../../../harness/chat_summaries.dart';
 
 /// Lottie loops forever — bounded pumps, not pumpAndSettle.
 Future<void> _pumpFrames(WidgetTester tester) async {
@@ -128,7 +129,7 @@ void main() {
             dashboardEventsProvider.overrideWith(
               (ref) => Stream.value(const [event]),
             ),
-            chatMessagesProvider.overrideWith(
+            summariesFromMessages(
               (ref, eventId) => Stream.value(const <ChatMessageModel>[]),
             ),
           ],
@@ -252,7 +253,7 @@ void main() {
             dashboardEventsProvider.overrideWith(
               (ref) => Stream.value(const [eventA, eventB]),
             ),
-            chatMessagesProvider.overrideWith((ref, eventId) {
+            summariesFromMessages((ref, eventId) {
               return switch (eventId) {
                 'evt-a' => Stream.value([msgA]),
                 'evt-b' => Stream.value([msgB]),
@@ -319,9 +320,7 @@ void main() {
             dashboardEventsProvider.overrideWith(
               (ref) => Stream.value(const [event]),
             ),
-            chatMessagesProvider.overrideWith(
-              (ref, eventId) => Stream.value([ghostMsg]),
-            ),
+            summariesFromMessages((ref, eventId) => Stream.value([ghostMsg])),
             peopleByIdProvider.overrideWith(
               (ref, key) async => const <String, AppUser>{},
             ),
@@ -364,7 +363,7 @@ void main() {
             dashboardEventsProvider.overrideWith(
               (ref) => Stream.value(const [eventA, eventB]),
             ),
-            chatMessagesProvider.overrideWith(
+            summariesFromMessages(
               (ref, eventId) => Stream.value(const <ChatMessageModel>[]),
             ),
           ],

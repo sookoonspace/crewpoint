@@ -18,6 +18,7 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
 import '../robots/chat_inbox_robot.dart';
 import '../harness/member_docs.dart';
+import '../harness/chat_summaries.dart';
 
 void main() {
   testWidgets(
@@ -79,7 +80,7 @@ void main() {
             dashboardEventsProvider.overrideWith(
               (ref) => Stream.value(const [eventUrgent, eventCalm]),
             ),
-            chatMessagesProvider.overrideWith((ref, eventId) {
+            summariesFromMessages((ref, eventId) {
               return switch (eventId) {
                 'evt-urgent' => Stream.value([urgentMsg]),
                 'evt-calm' => Stream.value([calmMsg]),

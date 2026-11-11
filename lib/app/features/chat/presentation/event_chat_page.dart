@@ -5,6 +5,8 @@ import 'package:crewpoint_app/app/features/chat/data/chat_repository.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/features/chat/application/older_messages.dart';
 import 'package:crewpoint_app/app/features/chat/domain/chat_window.dart';
+import 'package:crewpoint_app/app/features/chat/application/global_inbox_provider.dart'
+    show chatSummaryProvider;
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -46,8 +48,21 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
       if (auth is! Authenticated) return;
       ref
           .read(chatRepositoryProvider)
-          .markEventRead(auth.user.uid, widget.event.id);
+          .markEventRead(
+            auth.user.uid,
+            widget.event.id,
+            count: ref.read(chatSummaryProvider(widget.event.id)).value?.count,
+          );
     });
+  }
+
+  /// While the chat is open, new messages count as read (Req 57a).
+  void _markReadAt(int count) {
+    final auth = ref.read(authProvider);
+    if (auth is! Authenticated) return;
+    ref
+        .read(chatRepositoryProvider)
+        .markEventRead(auth.user.uid, widget.event.id, count: count);
   }
 
   Future<void> _send(String text, {bool isHighPriority = false}) async {
@@ -173,6 +188,10 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
       }
     });
 
+    ref.listen(chatSummaryProvider(widget.event.id), (before, after) {
+      final count = after.value?.count;
+      if (count != null && count != before?.value?.count) _markReadAt(count);
+    });
     final older = ref.watch(olderMessagesProvider(widget.event.id));
     // Read from the device's cache, without a connection (Req 74).
     final offline =

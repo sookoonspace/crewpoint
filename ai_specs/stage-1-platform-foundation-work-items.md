@@ -1429,12 +1429,12 @@ Keep a server-maintained chat summary per event, and use it for inbox previews a
 - `lib/app/features/chat/application/global_inbox_provider.dart`, `lib/app/features/dashboard/application/unread_badge_provider.dart`, `chat_inbox_screen.dart`, and `test/robots/chat_inbox_robot.dart`.
 
 ### Acceptance criteria
-- [ ] Each event keeps a server-maintained chat summary with the latest message and a message count.
-- [ ] The global inbox uses this, plus `chatReads`, for previews and unread badges, instead of loading every event's messages.
-- [ ] Urgent-unread status comes from the same summary.
-- [ ] Previews never show an amount the viewer may not read. If #73 has not landed yet, it covers this path when it does.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] Each event keeps a server-maintained chat summary with the latest message and a message count.
+- [x] The global inbox uses this, plus `chatReads`, for previews and unread badges, instead of loading every event's messages.
+- [x] Urgent-unread status comes from the same summary.
+- [x] Previews never show an amount the viewer may not read. If #73 has not landed yet, it covers this path when it does.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - Requirements: 57a
