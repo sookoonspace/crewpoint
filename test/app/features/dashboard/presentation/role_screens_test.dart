@@ -398,7 +398,7 @@ void main() {
       await addCrew(harness, 'food', 'Food');
       await robot.settle();
       await robot.tap(const Key('crews.tile.food'));
-      await robot.tap(const Key('crews.members.sam'));
+      await robot.pickMembers(const Key('crews.members.choose'), ['sam']);
       await robot.tap(const Key('crews.members.cancel'));
       robot.expectVisible(const Key('roles.discard.keep'));
       await robot.tap(const Key('roles.discard.keep'));
@@ -489,7 +489,7 @@ void main() {
 
     testWidgets('a failed offer keeps the choice', (tester) async {
       final (harness, robot) = await open(tester, 'transfer');
-      await robot.tap(const Key('transfer.pick.sam'));
+      await robot.pickMember(const Key('transfer.choose'), 'sam');
       harness.calls.failNext = FirebaseFunctionsException(
         code: 'unavailable',
         message: 'offline',

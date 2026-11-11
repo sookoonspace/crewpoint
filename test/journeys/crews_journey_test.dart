@@ -34,7 +34,7 @@ void main() {
     robot.expectText('Nobody yet');
 
     await robot.tap(Key('crews.tile.$crewId'));
-    await robot.tap(const Key('crews.members.sam'));
+    await robot.pickMembers(const Key('crews.members.choose'), ['sam']);
     await robot.tap(const Key('crews.members.save'));
     expect(harness.calls.calls.last, 'setCrewMembers:$crewId:sam');
     final sam = await harness.firestore.doc('events/evt/members/sam').get();

@@ -9,13 +9,15 @@ import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/budget/domain/repositories/i_expense_repository.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/event_budget_page.dart';
-import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
+import 'package:crewpoint_app/app/features/chat/application/people_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:drift/native.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../auth/fake_user_repository.dart';
 
 const _event = EventModel(
   id: 'evt',
@@ -84,7 +86,20 @@ Future<void> _confirmPayment(
         urlLauncherProvider.overrideWithValue(_Launcher()),
         recordSettlementCallProvider.overrideWithValue(call),
         expenseListProvider.overrideWith((ref, _) => Stream.value([_dinner])),
-        usersByIdProvider.overrideWith((ref, _) async => {}),
+        peopleByIdProvider.overrideWith((ref, _) async => {}),
+        // The event's profile, as the stored one above (Req 37).
+        userRepositoryProvider.overrideWithValue(
+          FakeUserRepository(
+            profiles: const {
+              'alex': AppUser(
+                uid: 'alex',
+                email: '',
+                displayName: 'Alex',
+                venmoHandle: 'alex_v',
+              ),
+            },
+          ),
+        ),
       ],
       child: const MaterialApp(home: EventBudgetPage(event: _event)),
     ),

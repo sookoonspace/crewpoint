@@ -53,6 +53,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
   late final TextEditingController _descriptionController;
   late final TextEditingController _budgetController;
   late String? _assigneeId;
+  String? _assigneeName;
   late DateTime? _dueDate;
   late int _priority;
   late String? _crewId;
@@ -68,6 +69,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
       text: widget.initial.budgetEstimate?.toString() ?? '',
     );
     _assigneeId = widget.initial.assigneeId;
+    _assigneeName = widget.displayNames[_assigneeId];
     _dueDate = widget.initial.dueDate == null
         ? null
         : widget.event.calendarDay(widget.initial.dueDate!);
@@ -185,12 +187,16 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                       spacing: AppSpacing.md,
                       children: [
                         AssigneePicker(
-                          memberIds: widget.event.memberIds,
-                          displayNames: widget.displayNames,
-                          orphanAssigneeId: orphan,
+                          eventId: widget.event.id,
+                          words: widget.event.words,
                           selected: _assigneeId,
-                          onChanged: (value) =>
-                              setState(() => _assigneeId = value),
+                          selectedName: _assigneeName,
+                          selectedLeft:
+                              _assigneeId != null && _assigneeId == orphan,
+                          onChanged: (uid, name) => setState(() {
+                            _assigneeId = uid;
+                            _assigneeName = name;
+                          }),
                         ),
                         if (widget.crews.isNotEmpty || _crewId != null)
                           CrewPicker(

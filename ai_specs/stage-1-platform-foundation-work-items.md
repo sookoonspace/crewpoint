@@ -1223,16 +1223,16 @@ Replace screens built on the old member arrays with paged pickers and on-screen 
 - `usersByIdProvider` in `lib/app/core/providers.dart`, task assignment under `lib/app/features/tasks/presentation/`, and expense splitting under `lib/app/features/budget/presentation/`.
 
 ### Acceptance criteria
-- [ ] Task assignment and expense splitting use a searchable, paged member picker.
-- [ ] Event tiles use `memberCount`.
-- [ ] Names load only for people on screen, replacing `usersByIdProvider`'s whole-list load.
-- [ ] Equal splits need choosing who is included once an event passes 50 members, instead of defaulting to everyone.
-- [ ] Tasks, chat and shared expenses stay smooth at large sizes.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
-- [ ] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
-- [ ] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] Task assignment and expense splitting use a searchable, paged member picker.
+- [x] Event tiles use `memberCount`.
+- [x] Names load only for people on screen, replacing `usersByIdProvider`'s whole-list load.
+- [x] Equal splits need choosing who is included once an event passes 50 members, instead of defaulting to everyone.
+- [x] Tasks, chat and shared expenses stay smooth at large sizes.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
+- [x] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
+- [x] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 25

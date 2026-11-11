@@ -1,6 +1,17 @@
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/profile/domain/models/notification_prefs.dart';
 
+/// One page of the member picker (Req 43a).
+class MemberPage {
+  const MemberPage({required this.people, required this.hasMore, this.cursor});
+
+  final List<AppUser> people;
+  final bool hasMore;
+
+  /// Where the next page starts. Opaque to callers.
+  final Object? cursor;
+}
+
 /// Abstract user profile repository.
 /// Concrete implementations can use Firestore, mock, or any backend.
 abstract class IUserRepository {
@@ -8,10 +19,21 @@ abstract class IUserRepository {
   /// `users/{uid}` is readable only by its owner (Req 37).
   Future<AppUser?> getUser(String uid);
 
-  /// Everyone with a profile in [eventId], by uid: names, photos and payment
-  /// handles from `events/{eventId}/profiles`, which only people in the event
-  /// can read (Req 37). Someone who left has only a name. `email` is empty.
-  Stream<Map<String, AppUser>> watchEventProfiles(String eventId);
+  /// One person's profile in [eventId], live: name, photo and payment
+  /// handles from `events/{eventId}/profiles/{uid}`, which only people in the
+  /// event can read (Req 37). Someone who left has only a name. `email` is
+  /// empty. Null when they have no profile there. Screens read only the
+  /// people they show, never the whole event (Req 43a).
+  Stream<AppUser?> watchEventProfile(String eventId, String uid);
+
+  /// The people still in [eventId], in name order, a page at a time, whose
+  /// name starts with [search] (Req 43a). Pass the previous page as [after]
+  /// for the next one.
+  Future<MemberPage> fetchMemberPage(
+    String eventId, {
+    String search = '',
+    MemberPage? after,
+  });
 
   /// Saves/updates profile fields. Uses merge semantics.
   Future<void> saveProfile({

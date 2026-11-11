@@ -20,7 +20,8 @@ import 'package:crewpoint_app/app/features/profile/domain/repositories/i_user_re
 ///     displayName, photoUrl and the payment fields, copied from `users/{uid}`
 ///
 /// `getUser()` is for the signed-in person. Everyone else is read through
-/// [watchEventProfiles], which is what `usersByIdProvider` uses.
+/// [watchEventProfile], one person at a time (Req 43a), and the member
+/// picker pages through them with [fetchMemberPage].
 class FirestoreUserRepository implements IUserRepository {
   FirestoreUserRepository({FirebaseFirestore? firestore})
     : _firestore = firestore ?? FirebaseFirestore.instance;
@@ -93,27 +94,57 @@ class FirestoreUserRepository implements IUserRepository {
     }
   }
 
+  /// People per member picker page (Req 43a).
+  static const memberPageSize = 30;
+
+  CollectionReference<Map<String, dynamic>> _profiles(String eventId) =>
+      _firestore.collection('events').doc(eventId).collection('profiles');
+
+  static AppUser _fromProfile(String uid, Map<String, dynamic> data) => AppUser(
+    uid: uid,
+    email: '',
+    displayName: data['displayName'] as String?,
+    photoUrl: data['photoUrl'] as String?,
+    paymentMethod: data['paymentMethod'] as String?,
+    paymentHandle: data['paymentHandle'] as String?,
+    venmoHandle: data['venmoHandle'] as String?,
+    cashappHandle: data['cashappHandle'] as String?,
+  );
+
   @override
-  Stream<Map<String, AppUser>> watchEventProfiles(String eventId) => _firestore
-      .collection('events')
-      .doc(eventId)
-      .collection('profiles')
-      .snapshots()
-      .map(
-        (snapshot) => {
-          for (final doc in snapshot.docs)
-            doc.id: AppUser(
-              uid: doc.id,
-              email: '',
-              displayName: doc.data()['displayName'] as String?,
-              photoUrl: doc.data()['photoUrl'] as String?,
-              paymentMethod: doc.data()['paymentMethod'] as String?,
-              paymentHandle: doc.data()['paymentHandle'] as String?,
-              venmoHandle: doc.data()['venmoHandle'] as String?,
-              cashappHandle: doc.data()['cashappHandle'] as String?,
-            ),
-        },
-      );
+  Stream<AppUser?> watchEventProfile(String eventId, String uid) =>
+      _profiles(eventId).doc(uid).snapshots().map((doc) {
+        final data = doc.data();
+        return data == null ? null : _fromProfile(doc.id, data);
+      });
+
+  @override
+  Future<MemberPage> fetchMemberPage(
+    String eventId, {
+    String search = '',
+    MemberPage? after,
+  }) async {
+    Query<Map<String, dynamic>> query = _profiles(
+      eventId,
+    ).where('inEvent', isEqualTo: true);
+    final prefix = search.trim().toLowerCase();
+    if (prefix.isNotEmpty) {
+      query = query
+          .where('sortName', isGreaterThanOrEqualTo: prefix)
+          .where('sortName', isLessThan: '$prefix\uf8ff');
+    }
+    query = query.orderBy('sortName');
+    if (after?.cursor case final DocumentSnapshot<Map<String, dynamic>> last) {
+      query = query.startAfterDocument(last);
+    }
+    final snap = await query.limit(memberPageSize + 1).get();
+    final docs = snap.docs.take(memberPageSize).toList();
+    return MemberPage(
+      people: [for (final doc in docs) _fromProfile(doc.id, doc.data())],
+      hasMore: snap.docs.length > memberPageSize,
+      cursor: docs.lastOrNull,
+    );
+  }
 
   @override
   Future<void> saveProfile({

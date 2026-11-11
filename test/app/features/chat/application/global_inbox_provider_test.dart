@@ -6,13 +6,13 @@ import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/budget/data/member_name_resolver.dart';
 import 'package:crewpoint_app/app/features/chat/application/global_inbox_provider.dart';
-import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
+import 'package:crewpoint_app/app/features/chat/application/people_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
 /// Empty roster override — keeps the inbox off the real user repo for
 /// tests that don't care about name resolution.
-final _emptyRosterOverride = usersByIdProvider.overrideWith(
+final _emptyRosterOverride = peopleByIdProvider.overrideWith(
   (ref, key) async => const <String, AppUser>{},
 );
 
@@ -488,7 +488,7 @@ void main() {
           chatMessagesProvider.overrideWith(
             (ref, eventId) => Stream.value([msgANewer]),
           ),
-          usersByIdProvider.overrideWith(
+          peopleByIdProvider.overrideWith(
             (ref, key) async => const <String, AppUser>{
               'alex': AppUser(
                 uid: 'alex',
@@ -517,7 +517,7 @@ void main() {
           chatMessagesProvider.overrideWith(
             (ref, eventId) => Stream.value([msgANewer]),
           ),
-          usersByIdProvider.overrideWith(
+          peopleByIdProvider.overrideWith(
             (ref, key) async => const <String, AppUser>{
               'alex': AppUser(uid: 'alex', email: 'alex@x.com'),
             },
@@ -563,7 +563,7 @@ void main() {
           chatMessagesProvider.overrideWith(
             (ref, eventId) => Stream.value([msgANewer]),
           ),
-          usersByIdProvider.overrideWith((ref, key) {
+          peopleByIdProvider.overrideWith((ref, key) {
             final completer = Completer<Map<String, AppUser>>();
             return completer.future;
           }),
@@ -589,7 +589,7 @@ void main() {
         chatMessagesProvider.overrideWith(
           (ref, eventId) => Stream.value([msgANewer]),
         ),
-        usersByIdProvider.overrideWith(
+        peopleByIdProvider.overrideWith(
           (ref, key) async => throw StateError('roster boom'),
         ),
       ],

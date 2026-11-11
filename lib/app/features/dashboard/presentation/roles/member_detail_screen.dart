@@ -7,7 +7,7 @@ import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/services/callable_errors.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
-import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
+import 'package:crewpoint_app/app/features/chat/application/people_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart';
@@ -119,7 +119,9 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
     final canManage =
         event.can(me, 'members.manage') || event.can(me, 'roles.manage');
 
-    final user = ref.watch(usersByIdProvider(event.id)).value?[uid];
+    final user = ref
+        .watch(eventProfileProvider((eventId: event.id, uid: uid)))
+        .value;
     final name = uid == me
         ? strings.you
         : (user?.displayName?.isNotEmpty ?? false)

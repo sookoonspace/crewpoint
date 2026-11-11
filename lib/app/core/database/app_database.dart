@@ -48,6 +48,9 @@ class Events extends Table {
   TextColumn get settings => text().withDefault(const Constant('{}'))(); // JSON
   IntColumn get capacity => integer().nullable()();
   IntColumn get memberLimit => integer().nullable()();
+  // Since v13 (#80): how many people are in the event, kept by the server.
+  // Null on rows synced before, which count the member array.
+  IntColumn get memberCount => integer().nullable()();
   BoolColumn get dateOnly => boolean().withDefault(const Constant(false))();
   // Since v11 (#66): the signed-in person's access, from their member
   // document. Null on rows synced before, which fall back to the arrays.
@@ -171,7 +174,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -279,6 +282,14 @@ class AppDatabase extends _$AppDatabase {
         final hasColumn = existing.any((c) => c.data['name'] == 'crew_id');
         if (existing.isNotEmpty && !hasColumn) {
           await m.addColumn(tasks, tasks.crewId);
+        }
+      }
+      if (from < 13) {
+        // An event's member count (#80). Safe to re-run, like the steps above.
+        final existing = await customSelect('PRAGMA table_info(events)').get();
+        final hasColumn = existing.any((c) => c.data['name'] == 'member_count');
+        if (existing.isNotEmpty && !hasColumn) {
+          await m.addColumn(events, events.memberCount);
         }
       }
     },

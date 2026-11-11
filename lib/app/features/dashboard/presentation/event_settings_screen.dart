@@ -513,7 +513,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
                       // an account (Req 18b).
                       helperText: strings.settingsCapacityCount(
                         ref.watch(participantCountProvider(event.id)).value ??
-                            event.memberIds.length,
+                            event.memberCount,
                         event.capacity,
                       ),
                       border: const OutlineInputBorder(),

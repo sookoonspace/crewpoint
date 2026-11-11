@@ -1,6 +1,6 @@
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
-import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
+import 'package:crewpoint_app/app/features/chat/application/people_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/my_balance.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
@@ -10,6 +10,8 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboar
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../auth/fake_user_repository.dart';
 
 const _event = EventModel(
   id: 'evt',
@@ -52,17 +54,10 @@ Future<void> _openLeave(
         ownershipOfferProvider.overrideWith((ref, _) => Stream.value(offer)),
         if (myBalance != null)
           myBalanceCallProvider.overrideWithValue(myBalance),
-        usersByIdProvider.overrideWith(
-          (ref, eventId) async => {
-            for (final uid in _names.keys)
-              if (_names[uid] != null)
-                uid: AppUser(
-                  uid: uid,
-                  email: '$uid@example.com',
-                  displayName: _names[uid],
-                ),
-          },
+        userRepositoryProvider.overrideWithValue(
+          FakeUserRepository(profiles: _profiles),
         ),
+        peopleByIdProvider.overrideWith((ref, eventId) async => _profiles),
       ],
       child: MaterialApp(home: EventDashboardScreen(event: event)),
     ),
@@ -229,3 +224,13 @@ void main() {
     expect(find.byKey(const Key('event.ownershipOffer')), findsNothing);
   });
 }
+
+final _profiles = {
+  for (final uid in _names.keys)
+    if (_names[uid] != null)
+      uid: AppUser(
+        uid: uid,
+        email: '$uid@example.com',
+        displayName: _names[uid],
+      ),
+};

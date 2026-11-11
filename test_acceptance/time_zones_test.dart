@@ -3,7 +3,7 @@ import 'package:crewpoint_app/app/core/format/event_time.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/budget/application/global_balance_ledger_provider.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
-import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
+import 'package:crewpoint_app/app/features/chat/application/people_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -48,7 +48,7 @@ void main() {
         dashboardEventsProvider.overrideWith(
           (_) => Stream.value([chicago, tokyo]),
         ),
-        usersByIdProvider.overrideWith((_, _) async => const {}),
+        peopleByIdProvider.overrideWith((_, _) async => const {}),
         expenseListProvider.overrideWith(
           (_, eventId) => Stream.value([
             ExpenseModel(

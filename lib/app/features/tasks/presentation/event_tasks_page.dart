@@ -7,7 +7,7 @@ import 'package:crewpoint_app/app/core/services/callable_errors.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
-import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
+import 'package:crewpoint_app/app/features/chat/application/people_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/crew.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/application/tasks_filter.dart';
@@ -134,10 +134,18 @@ class _EventTasksPageState extends ConsumerState<EventTasksPage> {
         _filter.crewId != null && !crews.any((c) => c.id == _filter.crewId)
         ? _filter.copyWith(clearCrewId: true)
         : _filter;
-    final asyncUsers = ref.watch(usersByIdProvider(widget.event.id));
 
     return asyncTasks.when(
       data: (tasks) {
+        // Names of the people these tasks are assigned to, read one by one,
+        // never the whole event (Req 43a).
+        final asyncUsers = ref.watch(
+          peopleByIdProvider(
+            PeopleKey(widget.event.id, [
+              for (final task in tasks) ?task.assigneeId,
+            ]),
+          ),
+        );
         // Prefer displayName, fall back to email when not set.
         final memberNames = asyncUsers.maybeWhen(
           data: (users) => {

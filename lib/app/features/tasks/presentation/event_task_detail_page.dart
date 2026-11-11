@@ -5,7 +5,7 @@ import 'package:crewpoint_app/app/core/services/callable_errors.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
-import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
+import 'package:crewpoint_app/app/features/chat/application/people_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/create_task_screen.dart';
@@ -71,9 +71,13 @@ class EventTaskDetailPage extends ConsumerWidget {
           currentUserId: uid,
         );
 
-        // Names of everyone with a profile in the event, including an
-        // assignee or completer who has since left (Req 37).
-        final asyncUsers = ref.watch(usersByIdProvider(event.id));
+        // Names of the people this task shows, including an assignee or
+        // completer who has since left (Req 37), read one by one (Req 43a).
+        final asyncUsers = ref.watch(
+          peopleByIdProvider(
+            PeopleKey(event.id, [?task.assigneeId, ?task.completedBy]),
+          ),
+        );
         // displayName when set, email as second fallback. TaskDetailScreen
         // shows "Unknown member" if even this is null/empty (offline or
         // user doc not yet hydrated).

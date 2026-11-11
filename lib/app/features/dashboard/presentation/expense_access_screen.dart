@@ -8,12 +8,12 @@ import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/services/callable_errors.dart';
 import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
-import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_access.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/member.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/chosen_people_list.dart';
 
 /// Who can see expenses (Req 38, 38d; route `settings/expenses`). Anyone with
 /// `event.manage` chooses Everyone, Only people involved, or Selected roles
@@ -181,12 +181,6 @@ class _ExpenseAccessScreenState extends ConsumerState<ExpenseAccessScreen> {
     }
     final memberList = members.value!;
     final roleList = roles.value!;
-    final names = ref.watch(usersByIdProvider(event.id)).value ?? const {};
-    String nameOf(String uid) {
-      if (uid == me) return context.strings.roles.you;
-      final name = names[uid]?.displayName;
-      return (name != null && name.isNotEmpty) ? name : uid;
-    }
 
     String roleName(String id, String fallback) =>
         roleList.where((r) => r.id == id).firstOrNull?.name ?? fallback;
@@ -195,10 +189,10 @@ class _ExpenseAccessScreenState extends ConsumerState<ExpenseAccessScreen> {
       for (final r in roleList)
         if (!_roleDefinitionReadsAll(r)) r,
     ];
-    final pickablePeople = [
+    final readsAll = {
       for (final m in memberList)
-        if (!_roleReadsAll(m, roleList)) m,
-    ]..sort((a, b) => nameOf(a.uid).compareTo(nameOf(b.uid)));
+        if (_roleReadsAll(m, roleList)) m.uid,
+    };
     final nobody =
         _choice.mode == ExpenseAccessMode.selected &&
         _choice.roleIds.isEmpty &&
@@ -307,18 +301,21 @@ class _ExpenseAccessScreenState extends ConsumerState<ExpenseAccessScreen> {
                     strings.peopleHeading,
                     style: theme.textTheme.titleSmall,
                   ),
-                  if (pickablePeople.isEmpty) Text(strings.nothingToPick),
-                  for (final m in pickablePeople)
-                    CheckboxListTile(
-                      key: Key('expenses.access.person.${m.uid}'),
-                      contentPadding: EdgeInsets.zero,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      title: Text(nameOf(m.uid)),
-                      value: _choice.uids.contains(m.uid),
-                      onChanged: enabled
-                          ? (on) => _toggle(_choice.uids, m.uid, on!, false)
-                          : null,
+                  // Chosen by name search, so a large event never lists
+                  // everyone (Req 43a).
+                  ChosenPeopleList(
+                    eventId: event.id,
+                    words: event.words,
+                    keyPrefix: 'expenses.access.person',
+                    chosen: _choice.uids.toSet(),
+                    exclude: readsAll,
+                    enabled: enabled,
+                    onChanged: (uids) => setState(
+                      () => _choice = _choice.copyWith(
+                        uids: uids.toList()..sort(),
+                      ),
                     ),
+                  ),
                 ],
                 if (_error != null)
                   Text(

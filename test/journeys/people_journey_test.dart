@@ -348,7 +348,7 @@ void main() {
     await robot.tap(const Key('people.roster.groupFilter'));
     await robot.tap(const Key('people.groupPicker.f2'));
     await robot.tap(const Key('people.roster.groupManage'));
-    await robot.tap(const Key('people.group.adult.plain'));
+    await robot.pickMembers(const Key('people.group.adult.choose'), ['plain']);
     await robot.tap(const Key('people.group.saveAdults'));
     expect(harness.calls.calls, contains('setGroupAdults:f2:plain'));
     final plain = await harness.firestore

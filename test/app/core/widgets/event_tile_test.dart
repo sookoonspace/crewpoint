@@ -60,4 +60,25 @@ void main() {
     await tester.tap(find.byType(EventTile));
     expect(taps, 1);
   });
+
+  // Req 43a: the server keeps memberCount, so a large event never needs its
+  // member list to show how many are in it.
+  testWidgets('shows the server member count', (tester) async {
+    await pump(
+      tester,
+      const EventTile(
+        event: EventModel(
+          id: 'big',
+          title: 'Convention',
+          creatorId: 'me',
+          memberIds: ['me'],
+          memberCount: 1240,
+        ),
+        todo: 0,
+        doing: 0,
+        done: 0,
+      ),
+    );
+    expect(find.text('1240 members'), findsOneWidget);
+  });
 }

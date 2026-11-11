@@ -15,7 +15,7 @@ import 'package:crewpoint_app/app/core/widgets/event_guard.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/auth/data/auth_repository.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
-import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
+import 'package:crewpoint_app/app/features/chat/application/people_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_access.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/expense_access_screen.dart';
@@ -101,6 +101,14 @@ class RolesHarness {
               p,
         ],
         if (groups.isNotEmpty) 'groupIds': groups,
+      });
+      // What the server keeps for the member picker (Req 43a).
+      final name = names[entry.key] ?? entry.key;
+      await firestore.doc('events/$eventId/profiles/${entry.key}').set({
+        'uid': entry.key,
+        'displayName': name,
+        'sortName': name.toLowerCase(),
+        'inEvent': true,
       });
     }
     await firestore.doc('events/$eventId').set({
@@ -288,7 +296,16 @@ class RolesHarness {
         authProvider.overrideWith(() => _StubAuthNotifier(currentUser)),
         memberCallsProvider.overrideWithValue(calls),
         ...overrides,
-        usersByIdProvider.overrideWith(
+        // Fake Firestore streams wait for real time, so names come from
+        // here, as profiles would.
+        eventProfileProvider.overrideWith(
+          (ref, key) => Stream.value(
+            names[key.uid] == null
+                ? null
+                : AppUser(uid: key.uid, email: '', displayName: names[key.uid]),
+          ),
+        ),
+        peopleByIdProvider.overrideWith(
           (ref, eventId) async => {
             for (final uid in names.keys)
               if (names[uid] != null)

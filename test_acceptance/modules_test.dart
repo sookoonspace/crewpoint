@@ -1,6 +1,6 @@
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/module_guard.dart';
-import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
+import 'package:crewpoint_app/app/features/chat/application/people_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/budget/application/global_balance_ledger_provider.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
@@ -74,7 +74,7 @@ void main() {
       final c = ProviderContainer(
         overrides: [
           currentUserIdProvider.overrideWithValue('me'),
-          usersByIdProvider.overrideWith((_, _) async => const {}),
+          peopleByIdProvider.overrideWith((_, _) async => const {}),
           dashboardEventsProvider.overrideWith(
             (_) => Stream.value(const [on, off]),
           ),

@@ -3,6 +3,8 @@ import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
+import 'package:crewpoint_app/app/features/budget/domain/models/large_event.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
 import 'package:crewpoint_app/app/features/budget/data/member_name_resolver.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
@@ -14,6 +16,7 @@ class BudgetScreen extends StatelessWidget {
     super.key,
     required this.expenses,
     required this.memberIds,
+    this.currentUserId = '',
     this.currency = 'USD',
     this.canAddExpense = true,
     this.memberNames = const {},
@@ -34,6 +37,9 @@ class BudgetScreen extends StatelessWidget {
 
   final List<ExpenseModel> expenses;
   final List<String> memberIds;
+
+  /// Whose balance and transfers always show in a large event (Req 43a).
+  final String currentUserId;
   final String currency;
 
   /// False once the event is archived.
@@ -72,6 +78,19 @@ class BudgetScreen extends StatelessWidget {
         BalanceLedger.calculate(expenses: expenses, memberIds: memberIds);
     final regularExpenses = expenses.where((e) => !e.isPayment).toList();
     final symbol = _currencySymbol(currency);
+    // Past 50 members, only you and the largest balances and transfers
+    // show, so a large event stays quick (Req 43a).
+    final shownBalances = shownBalanceUids(
+      ledger.netBalances,
+      me: currentUserId,
+      memberCount: memberIds.length,
+    );
+    final settlements = shownSettlements(
+      ledger.settlements,
+      me: currentUserId,
+      memberCount: memberIds.length,
+    );
+    final trimmed = splitNeedsChoosing(memberIds.length);
 
     return Scaffold(
       appBar: AppBar(
@@ -137,8 +156,19 @@ class BudgetScreen extends StatelessWidget {
           if (memberIds.length > 1 && ledger.netBalances.isNotEmpty) ...[
             const _SectionLabel(label: 'BALANCES'),
             const SizedBox(height: AppSpacing.sm),
+            if (trimmed) ...[
+              Text(
+                context.strings.budget.largestShown(largeEventTopBalances),
+                key: const Key('budget.balances.trimmed'),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
             _BalancesCard(
-              balances: ledger.netBalances,
+              balances: {
+                for (final e in ledger.netBalances.entries)
+                  if (shownBalances.contains(e.key)) e.key: e.value,
+              },
               memberNames: memberNames,
               memberIds: memberIds,
               symbol: symbol,
@@ -147,11 +177,11 @@ class BudgetScreen extends StatelessWidget {
           ],
 
           // Settle Up
-          if (ledger.settlements.isNotEmpty) ...[
+          if (settlements.isNotEmpty) ...[
             const _SectionLabel(label: 'SETTLE UP'),
             const SizedBox(height: AppSpacing.sm),
             _SettleUpCard(
-              settlements: ledger.settlements,
+              settlements: settlements,
               memberNames: memberNames,
               memberIds: memberIds,
               symbol: symbol,

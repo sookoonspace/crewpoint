@@ -29,7 +29,7 @@ class EventTile extends StatelessWidget {
       formatEventDateRange(event.displayStart, event.displayEnd);
 
   String _memberCount() {
-    return event.words.count('member', event.memberIds.length);
+    return event.words.count('member', event.memberCount);
   }
 
   @override

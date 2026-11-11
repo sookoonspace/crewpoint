@@ -9,7 +9,7 @@ import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
-import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
+import 'package:crewpoint_app/app/features/chat/application/people_by_id_provider.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/member.dart';
@@ -70,26 +70,9 @@ class _MemberManagementScreenState
         members[uid]?.permissions.contains(permission) ??
         event.can(uid, permission);
 
-    final asyncUsers = ref.watch(usersByIdProvider(event.id));
-    // displayName when set, email as second fallback. Empty string
-    // signals "no resolved label" so downstream renders "Unknown
-    // member" or similar.
-    final displayNames = asyncUsers.maybeWhen(
-      data: (users) => {
-        for (final entry in users.entries)
-          entry.key: () {
-            final name = entry.value.displayName;
-            if (name != null && name.isNotEmpty) return name;
-            if (entry.value.email.isNotEmpty) return entry.value.email;
-            return '';
-          }(),
-      },
-      orElse: () => const <String, String>{},
-    );
-
     return Scaffold(
       appBar: AppBar(
-        title: Text('Members (${event.memberIds.length})'),
+        title: Text('${event.words.other('member')} (${event.memberCount})'),
         elevation: 0,
         actions: [
           if (event.isOwner(currentUserId))
@@ -140,9 +123,11 @@ class _MemberManagementScreenState
             );
             final isProcessing = _processingIds.contains(memberId);
 
+            // Each row reads its own name, so only the rows on screen
+            // load names (Req 43a).
             return _MemberTile(
+              eventId: event.id,
               memberId: memberId,
-              displayName: displayNames[memberId],
               role: _roleLabel(roles, roleNames, event.words.one('member')),
               onOpen: canOpenDetail || memberId == currentUserId
                   ? () => context.push(
@@ -299,8 +284,11 @@ class _MemberManagementScreenState
   }
 }
 
-class _MemberTile extends StatelessWidget {
+/// One member. It reads its own name, so only the rows on screen load
+/// names (Req 43a).
+class _MemberTile extends ConsumerWidget {
   const _MemberTile({
+    required this.eventId,
     required this.memberId,
     required this.role,
     required this.roleColor,
@@ -308,14 +296,13 @@ class _MemberTile extends StatelessWidget {
     required this.canPromote,
     required this.isAdmin,
     required this.isProcessing,
-    this.displayName,
     this.onRemove,
     this.onToggleAdmin,
     this.onOpen,
   });
 
+  final String eventId;
   final String memberId;
-  final String? displayName;
   final String role;
   final Color roleColor;
   final bool canRemove;
@@ -329,7 +316,12 @@ class _MemberTile extends StatelessWidget {
   final VoidCallback? onOpen;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final name = ref
+        .watch(eventProfileProvider((eventId: eventId, uid: memberId)))
+        .value
+        ?.displayName;
+    final displayName = name != null && name.isNotEmpty ? name : null;
     final Widget? trailing;
     if (isProcessing) {
       trailing = const SizedBox(
@@ -382,11 +374,8 @@ class _MemberTile extends StatelessWidget {
           child: const Icon(AppIcons.navProfileFilled, color: AppColors.sage),
         ),
         title: Text(
-          displayName != null && displayName!.isNotEmpty
-              ? displayName!
-              : (memberId.length > 8
-                    ? '${memberId.substring(0, 8)}…'
-                    : memberId),
+          displayName ??
+              (memberId.length > 8 ? '${memberId.substring(0, 8)}…' : memberId),
         ),
         subtitle: Text(
           role,

@@ -16,7 +16,6 @@ import 'package:crewpoint_app/app/core/widgets/loading_animation.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
 import 'package:crewpoint_app/app/features/dashboard/data/event_repository.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
-import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/member.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/event_status_label.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
@@ -101,7 +100,7 @@ class EventDashboardScreen extends StatelessWidget {
 
                   // Member avatars row
                   _MembersPreview(
-                    label: event.words.count('member', event.memberIds.length),
+                    label: event.words.count('member', event.memberCount),
                     onTap: () =>
                         context.push('/dashboard/event/${event.id}/members'),
                   ),
@@ -662,9 +661,11 @@ class _EventActionsState extends ConsumerState<_EventActions> {
     if (others.length > 1) return null;
     String? name;
     try {
-      final user = (await ref
-          .read(usersByIdProvider(widget.event.id).future)
-          .timeout(const Duration(seconds: 2)))[others.single];
+      final user = await ref
+          .read(userRepositoryProvider)
+          .watchEventProfile(widget.event.id, others.single)
+          .first
+          .timeout(const Duration(seconds: 2));
       name = (user?.displayName?.isNotEmpty ?? false)
           ? user!.displayName
           : null;

@@ -87,10 +87,14 @@ void main() {
         find.byKey(const Key('expenses.access.role.finance')),
         findsNothing,
       );
-      expect(find.byKey(const Key('expenses.access.person.pat')), findsOne);
+      // People are chosen by name search (Req 43a).
+      expect(find.byKey(const Key('expenses.access.person.choose')), findsOne);
       expect(find.byKey(const Key('expenses.access.nobody')), findsOne);
       await robot.tap(const Key('expenses.access.role.crewLead'));
-      await robot.tap(const Key('expenses.access.person.pat'));
+      await robot.pickMembers(const Key('expenses.access.person.choose'), [
+        'pat',
+      ]);
+      robot.expectVisible(const Key('expenses.access.person.pat'));
       await robot.tap(const Key('expenses.access.save'));
 
       // Only Sam loses access: the lead and Pat were picked.
@@ -195,7 +199,7 @@ void main() {
     for (final key in const [
       'expenses.access.option.everyone',
       'expenses.access.role.crewLead',
-      'expenses.access.person.pat',
+      'expenses.access.person.choose',
     ]) {
       expect(tester.getSize(find.byKey(Key(key))).height, greaterThan(47));
     }

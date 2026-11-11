@@ -6,12 +6,12 @@ import 'package:crewpoint_app/app/core/widgets/skeletons.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/budget_ledger_screen.dart';
-import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
+import 'package:crewpoint_app/app/features/chat/application/people_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
 /// Empty roster — keeps the cross-event ledger off the real user repo
 /// in tests that don't care about resolved names.
-final _emptyRosterOverride = usersByIdProvider.overrideWith(
+final _emptyRosterOverride = peopleByIdProvider.overrideWith(
   (ref, key) async => const <String, AppUser>{},
 );
 

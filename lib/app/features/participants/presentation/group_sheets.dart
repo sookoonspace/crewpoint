@@ -8,9 +8,8 @@ import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/services/callable_errors.dart';
-import 'package:crewpoint_app/app/features/chat/application/users_by_id_provider.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/chosen_people_list.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
-import 'package:crewpoint_app/app/features/dashboard/domain/models/member.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart';
 import 'package:crewpoint_app/app/features/participants/application/roster_controller.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
@@ -432,20 +431,6 @@ class _GroupSheetState extends ConsumerState<GroupSheet> {
     final strings = context.strings.people;
     final words = widget.event.words;
     final theme = Theme.of(context);
-    final me = ref.watch(currentUserIdProvider) ?? '';
-    final members = ref.watch(eventMembersProvider(widget.event.id)).value;
-    final names =
-        ref.watch(usersByIdProvider(widget.event.id)).value ?? const {};
-    String nameOf(String uid) {
-      if (uid == me) return context.strings.roles.you;
-      final name = names[uid]?.displayName;
-      return (name != null && name.isNotEmpty) ? name : uid;
-    }
-
-    final uids = <String>[
-      for (final m in members ?? const <MemberModel>[]) m.uid,
-    ]..sort((a, b) => nameOf(a).compareTo(nameOf(b)));
-
     return PopScope(
       canPop: !_busy,
       child: Padding(
@@ -485,27 +470,21 @@ class _GroupSheetState extends ConsumerState<GroupSheet> {
                 strings.adultsHelp(words.one('group')),
                 style: theme.textTheme.bodySmall,
               ),
-              if (members == null)
-                const Padding(
-                  padding: EdgeInsets.all(AppSpacing.lg),
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              else if (uids.isEmpty)
-                Text(strings.noMembers)
-              else
-                for (final uid in uids)
-                  CheckboxListTile(
-                    key: Key('people.group.adult.$uid'),
-                    contentPadding: EdgeInsets.zero,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    title: Text(nameOf(uid)),
-                    value: _adults.contains(uid),
-                    onChanged: _busy
-                        ? null
-                        : (on) => setState(
-                            () => on! ? _adults.add(uid) : _adults.remove(uid),
-                          ),
-                  ),
+              // Chosen by name search, so a large event never lists
+              // everyone (Req 43a).
+              ChosenPeopleList(
+                eventId: widget.event.id,
+                words: words,
+                keyPrefix: 'people.group.adult',
+                chosen: _adults,
+                enabled: !_busy,
+                emptyText: strings.noAdultsYet,
+                onChanged: (uids) => setState(
+                  () => _adults
+                    ..clear()
+                    ..addAll(uids),
+                ),
+              ),
               OverflowBar(
                 alignment: MainAxisAlignment.spaceBetween,
                 overflowAlignment: OverflowBarAlignment.end,

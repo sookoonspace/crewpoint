@@ -83,6 +83,7 @@ class EventModel {
     this.settings = const {},
     this.capacity,
     this.memberLimit,
+    int? memberCount,
     this.dateOnly = false,
     this.startDate,
     this.endDate,
@@ -95,7 +96,7 @@ class EventModel {
     this.viewerId,
     this.myRoleIds,
     this.myPermissions,
-  });
+  }) : _memberCount = memberCount;
 
   static const defaultTemplateId = 'blank';
   static const defaultTimeZone = 'UTC';
@@ -126,6 +127,12 @@ class EventModel {
 
   /// How many people can log in to the event. Null means unlimited.
   final int? memberLimit;
+
+  final int? _memberCount;
+
+  /// How many people are in the event: the server's `memberCount`, or the
+  /// member array on older events (Req 43a).
+  int get memberCount => _memberCount ?? memberIds.length;
 
   /// Whether [startDate] and [endDate] are calendar dates, stored as midnight
   /// UTC so they stay on the chosen date in every zone. False on older events,
@@ -392,6 +399,7 @@ class EventModel {
       settings: settings,
       capacity: clearCapacity ? null : (capacity ?? this.capacity),
       memberLimit: clearMemberLimit ? null : (memberLimit ?? this.memberLimit),
+      memberCount: _memberCount,
       dateOnly: dateOnly ?? this.dateOnly,
       startDate: clearStartDate ? null : (startDate ?? this.startDate),
       endDate: clearEndDate ? null : (endDate ?? this.endDate),
