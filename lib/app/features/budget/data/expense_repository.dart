@@ -100,11 +100,14 @@ class ExpenseRepository implements IExpenseRepository {
     }
     _firestoreSubs.remove(eventId)?.cancel();
     _mirrorScopes[eventId] = involving;
+    var applied = false;
     _firestoreSubs[eventId] = _expensesQuery(eventId, involving)
         .snapshots()
         .listen(
           (snap) {
-            _mirrorSnapshot(eventId, snap).catchError((
+            final full = !applied;
+            applied = true;
+            _mirrorSnapshot(eventId, snap, full: full).catchError((
               Object e,
               StackTrace st,
             ) {
@@ -122,24 +125,39 @@ class ExpenseRepository implements IExpenseRepository {
         );
   }
 
+  /// Applies [snap] in one transaction, so the screen updates once (Req
+  /// 59). [full] reconciles the whole event, removing rows the query no
+  /// longer returns; otherwise only the snapshot's changes are applied.
   Future<void> _mirrorSnapshot(
     String eventId,
-    QuerySnapshot<Map<String, dynamic>> snap,
-  ) async {
-    final remoteIds = <String>{};
-    for (final doc in snap.docs) {
-      remoteIds.add(doc.id);
-      final expense = _fromFirestore(doc.id, eventId, doc.data());
-      await _upsertDrift(expense);
+    QuerySnapshot<Map<String, dynamic>> snap, {
+    required bool full,
+  }) => _expensesDao.transaction(() async {
+    Future<void> remove(String id) async {
+      await _splitsDao.deleteByExpenseId(id);
+      await _expensesDao.deleteExpenseById(id);
     }
-    final localRows = await _expensesDao.expensesByEventId(eventId);
-    for (final row in localRows) {
-      if (!remoteIds.contains(row.id)) {
-        await _splitsDao.deleteByExpenseId(row.id);
-        await _expensesDao.deleteExpenseById(row.id);
+
+    if (full) {
+      final remoteIds = <String>{};
+      for (final doc in snap.docs) {
+        remoteIds.add(doc.id);
+        await _upsertDrift(_fromFirestore(doc.id, eventId, doc.data()));
+      }
+      for (final row in await _expensesDao.expensesByEventId(eventId)) {
+        if (!remoteIds.contains(row.id)) await remove(row.id);
+      }
+      return;
+    }
+    for (final change in snap.docChanges) {
+      final doc = change.doc;
+      if (change.type == DocumentChangeType.removed) {
+        await remove(doc.id);
+      } else {
+        await _upsertDrift(_fromFirestore(doc.id, eventId, doc.data()!));
       }
     }
-  }
+  });
 
   void disposeMirror(String eventId) {
     _firestoreSubs.remove(eventId)?.cancel();

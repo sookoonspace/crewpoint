@@ -56,7 +56,7 @@ Keep the Architecture sections below, including RBAC and the Firestore data mode
 `EventRepository`, `TaskRepository`, `ExpenseRepository`, `ChatRepository` all follow the same shape:
 
 - Writes go straight to Firestore (the SDK's offline queue handles reconnect).
-- A per-key (`uid`, `eventId`, `eventId/taskId`) Firestore listener mirrors snapshots into Drift; the UI watches the Drift stream so cold starts render instantly.
+- A per-key (`uid`, `eventId`, `eventId/taskId`) Firestore listener mirrors snapshots into Drift; the UI watches the Drift stream so cold starts render instantly. Mirrors write each snapshot in one Drift transaction: the first reconciles everything, later ones apply only `docChanges` (Req 59), so one changed document updates the screen once.
 - **`kIsWeb` forks to the raw Firestore stream** — Drift on web is Wasm/in-memory, so mirroring buys nothing there. Any new mirrored stream needs the same fork.
 - Mirror subscriptions are torn down through `ref.onDispose(() => repo.disposeMirror(key))` in the provider, not by the repository itself.
 
