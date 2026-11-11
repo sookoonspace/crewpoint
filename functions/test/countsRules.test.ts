@@ -40,3 +40,11 @@ test('nobody writes counts or the queue from the app', async () => {
   await assertFails(getDoc(doc(as('owner'), 'countsQueue/conv')));
   await assertFails(setDoc(doc(as('owner'), 'countsQueue/conv'), {eventId: 'conv'}));
 });
+
+test('frozen counts are read like counts, and only the server writes them', async () => {
+  await env.withSecurityRulesDisabled((ctx) =>
+    setDoc(doc(ctx.firestore(), `${E}/countFreezes/f1`), {event: {total: 26}}));
+  await assertSucceeds(getDoc(doc(as('lead'), `${E}/countFreezes/f1`)));
+  await assertFails(getDoc(doc(as('plain'), `${E}/countFreezes/f1`)));
+  await assertFails(setDoc(doc(as('owner'), `${E}/countFreezes/f2`), {event: {total: 1}}));
+});
