@@ -4,7 +4,11 @@ import 'package:cloud_functions/cloud_functions.dart';
 /// What linking a signed-in account found (Req 46): events it was linked
 /// in, events where an organizer must decide, and whether the email still
 /// needs verifying.
-typedef LinkResult = ({List<String> linked, List<String> asked, bool unverified});
+typedef LinkResult = ({
+  List<String> linked,
+  List<String> asked,
+  bool unverified,
+});
 
 /// The event's one active invite (Req 31, 47): its code, the role it
 /// carries, and when it expires (Req 56).
@@ -144,6 +148,15 @@ abstract interface class MemberCalls {
   /// Counts the event now (Req 52), into `stats/current`. Needs
   /// `counts.read`.
   Future<void> recalculateCounts(String eventId);
+
+  /// The roster as CSV (Req 53). Private answers and birth dates only with
+  /// [includePrivate], which needs `participants.readPrivate`. Needs
+  /// `reports.export`.
+  Future<String> exportRoster(String eventId, {bool includePrivate = false});
+
+  /// Counts now and keeps the numbers with the date (Req 54). Needs
+  /// `reports.export`.
+  Future<void> freezeCounts(String eventId, {String? label});
 }
 
 class FirebaseMemberCalls implements MemberCalls {
@@ -357,4 +370,20 @@ class FirebaseMemberCalls implements MemberCalls {
   @override
   Future<void> recalculateCounts(String eventId) =>
       _call('recalculateCounts', {'eventId': eventId});
+
+  @override
+  Future<String> exportRoster(
+    String eventId, {
+    bool includePrivate = false,
+  }) async {
+    final data = await _call('exportRoster', {
+      'eventId': eventId,
+      'includePrivate': includePrivate,
+    });
+    return data['csv'] as String? ?? '';
+  }
+
+  @override
+  Future<void> freezeCounts(String eventId, {String? label}) =>
+      _call('freezeCounts', {'eventId': eventId, 'label': ?label});
 }

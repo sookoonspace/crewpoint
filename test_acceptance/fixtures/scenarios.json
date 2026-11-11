@@ -149,9 +149,9 @@
  {
   "id": "B-10",
   "title": "Export registrations + per-meal diet counts to CSV/Excel for the caterer.",
-  "status": "NOT BUILT",
-  "gap": "No registration or per-meal export, and no freeze.",
-  "tested": false
+  "status": "PASS",
+  "gap": "Built in #84: counts export to CSV per session by category and field, and the roster exports through exportRoster; private fields only when chosen.",
+  "tested": true
  },
  {
   "id": "B-11",
@@ -177,9 +177,9 @@
  {
   "id": "B-14",
   "title": "Caterer count freeze: admin locks meal counts on a date; later changes are listed as a delta for the caterer.",
-  "status": "NOT BUILT",
-  "gap": "No registration or per-meal export, and no freeze.",
-  "tested": false
+  "status": "PASS",
+  "gap": "Built in #84: freezeCounts keeps the numbers with the date; the counts screen lists later changes and exports them for the caterer.",
+  "tested": true
  },
  {
   "id": "B-15",

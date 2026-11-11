@@ -24,6 +24,7 @@ import 'package:crewpoint_app/app/core/database/daos/tasks_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/mirror_syncs_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/my_records_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/sessions_dao.dart';
+import 'package:crewpoint_app/app/features/counts/domain/count_export.dart';
 import 'package:crewpoint_app/app/features/counts/domain/event_stats.dart';
 import 'package:crewpoint_app/app/features/schedule/data/my_records_repository.dart';
 import 'package:crewpoint_app/app/features/schedule/data/session_repository.dart';
@@ -822,4 +823,21 @@ final eventStatsProvider = StreamProvider.autoDispose
             final data = doc.data();
             return data == null ? null : EventStats.fromFirestore(data);
           }),
+    );
+
+/// Counts frozen on a date (Req 54), newest first. Watch it only for
+/// someone holding `counts.read`.
+final countFreezesProvider = StreamProvider.autoDispose
+    .family<List<FrozenCounts>, String>(
+      (ref, eventId) => ref
+          .watch(firestoreProvider)
+          .collection('events/$eventId/countFreezes')
+          .orderBy('frozenAt', descending: true)
+          .snapshots()
+          .map(
+            (snap) => [
+              for (final doc in snap.docs)
+                FrozenCounts.fromFirestore(doc.id, doc.data()),
+            ],
+          ),
     );
