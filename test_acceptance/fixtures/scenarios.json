@@ -2,16 +2,16 @@
  {
   "id": "A-01",
   "title": "Event with dates, America/Chicago, venue address, Garland Hall.",
-  "status": "PARTIAL",
-  "gap": "Title and dates are stored. There is no event time zone or venue field.",
+  "status": "PASS",
+  "gap": "Built in #59 and #81: title, dates, the America/Chicago zone, and venues with address, map link and directions.",
   "tested": true
  },
  {
   "id": "A-02",
   "title": "Schedule from §1 incl. programs and kids activity; M3/K1 flagged outdoor; M8 \"location TBD\"; placeholder times editable.",
-  "status": "NOT BUILT",
-  "gap": "No schedule or session model.",
-  "tested": false
+  "status": "PASS",
+  "gap": "Built in #81: sessions over several days with type, tags, venue, placeholder times to be confirmed, and a location to be announced.",
+  "tested": true
  },
  {
   "id": "A-03",
@@ -30,9 +30,9 @@
  {
   "id": "A-05",
   "title": "Map/directions entries: hotel address, Garland Hall, picnic park (TBD), parking.",
-  "status": "NOT BUILT",
-  "gap": "No maps or directions entries.",
-  "tested": false
+  "status": "PASS",
+  "gap": "Built in #81: venues hold an address (or to be announced), a map link and directions, listed by venue on the schedule.",
+  "tested": true
  },
  {
   "id": "L-01",

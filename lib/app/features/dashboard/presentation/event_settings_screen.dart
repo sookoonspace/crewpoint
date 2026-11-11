@@ -1,4 +1,6 @@
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:crewpoint_app/app/features/schedule/domain/models/schedule.dart'
+    show isWebLink;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -33,17 +35,29 @@ List<String> _parseLanguages(String text) => text
 final _languageCode = RegExp(r'^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$');
 
 class _VenueRow {
-  _VenueRow({required this.id, String name = '', String address = ''})
-    : name = TextEditingController(text: name),
-      address = TextEditingController(text: address);
+  _VenueRow({
+    required this.id,
+    String name = '',
+    String address = '',
+    String mapUrl = '',
+    String directions = '',
+  }) : name = TextEditingController(text: name),
+       address = TextEditingController(text: address),
+       mapUrl = TextEditingController(text: mapUrl),
+       directions = TextEditingController(text: directions);
 
   final String id;
   final TextEditingController name;
   final TextEditingController address;
+  final TextEditingController mapUrl;
+  final TextEditingController directions;
+
+  List<TextEditingController> get boxes => [name, address, mapUrl, directions];
 
   void dispose() {
-    name.dispose();
-    address.dispose();
+    for (final box in boxes) {
+      box.dispose();
+    }
   }
 }
 
@@ -132,6 +146,8 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
             id: venue.id,
             name: venue.name,
             address: venue.address ?? '',
+            mapUrl: venue.mapUrl ?? '',
+            directions: venue.directions ?? '',
           ),
         ),
     ];
@@ -157,8 +173,9 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
       TextEditingController(text: text)..addListener(_markDirty);
 
   _VenueRow _trackedVenue(_VenueRow row) {
-    row.name.addListener(_markDirty);
-    row.address.addListener(_markDirty);
+    for (final box in row.boxes) {
+      box.addListener(_markDirty);
+    }
     return row;
   }
 
@@ -208,6 +225,9 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
               form: _labels['$concept.$form']!.text.trim(),
         },
   };
+
+  static String? _orNull(TextEditingController box) =>
+      box.text.trim().isEmpty ? null : box.text.trim();
 
   Future<void> _pickTimeZone() async {
     final picked = await showDialog<String>(
@@ -272,9 +292,9 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
                 EventVenue(
                   id: venue.id,
                   name: venue.name.text.trim(),
-                  address: venue.address.text.trim().isEmpty
-                      ? null
-                      : venue.address.text.trim(),
+                  address: _orNull(venue.address),
+                  mapUrl: _orNull(venue.mapUrl),
+                  directions: _orNull(venue.directions),
                 ),
             ],
             languages: _parseLanguages(_languages.text),
@@ -548,6 +568,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
                         ('chat', strings.moduleChat),
                         ('budget', strings.moduleBudget),
                         ('tasks', strings.moduleTasks),
+                        ('schedule', context.strings.schedule.title),
                       ])
                         SwitchListTile(
                           key: Key('events.settings.module.$module'),
@@ -752,6 +773,7 @@ class _VenueFields extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = context.strings.dashboard;
+    final schedule = context.strings.schedule;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: AppSpacing.sm,
@@ -778,6 +800,35 @@ class _VenueFields extends StatelessWidget {
                 controller: venue.address,
                 decoration: InputDecoration(
                   labelText: strings.settingsVenueAddress,
+                  helperText: schedule.venueAddressHelp,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              TextFormField(
+                key: Key('events.settings.venue.$index.mapUrl'),
+                enabled: enabled,
+                controller: venue.mapUrl,
+                keyboardType: TextInputType.url,
+                decoration: InputDecoration(
+                  labelText: schedule.venueMapLabel,
+                  border: const OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  final text = value?.trim() ?? '';
+                  return text.isEmpty || isWebLink(text)
+                      ? null
+                      : schedule.venueMapInvalid;
+                },
+              ),
+              TextFormField(
+                key: Key('events.settings.venue.$index.directions'),
+                enabled: enabled,
+                controller: venue.directions,
+                minLines: 1,
+                maxLines: 4,
+                maxLength: 500,
+                decoration: InputDecoration(
+                  labelText: schedule.venueDirectionsLabel,
                   border: const OutlineInputBorder(),
                 ),
               ),

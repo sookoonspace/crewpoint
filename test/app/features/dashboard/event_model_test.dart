@@ -182,7 +182,12 @@ void main() {
       expect(event.venues, isEmpty);
       expect(event.currency, 'USD');
       expect(event.languages, ['en']);
-      expect(event.modules, {'tasks': true, 'budget': true, 'chat': true});
+      expect(event.modules, {
+        'tasks': true,
+        'budget': true,
+        'chat': true,
+        'schedule': true,
+      });
       expect(event.labels, isEmpty);
       expect(event.settings, isEmpty);
       expect(event.capacity, isNull);
@@ -326,6 +331,20 @@ void main() {
       expect(at(EventStatus.ended).canEditTasks('member'), isFalse);
       expect(at(EventStatus.ended).canEditTasks('admin'), isTrue);
       expect(at(EventStatus.archived).canEditTasks('owner'), isFalse);
+    });
+
+    test('the schedule needs schedule.edit, the module, and an open event', () {
+      expect(at(EventStatus.live).canEditSchedule('admin'), isTrue);
+      expect(at(EventStatus.draft).canEditSchedule('owner'), isTrue);
+      expect(at(EventStatus.live).canEditSchedule('member'), isFalse);
+      expect(at(EventStatus.ended).canEditSchedule('owner'), isTrue);
+      expect(at(EventStatus.archived).canEditSchedule('owner'), isFalse);
+      expect(
+        at(
+          EventStatus.live,
+        ).copyWith(modules: const {'schedule': false}).canEditSchedule('owner'),
+        isFalse,
+      );
     });
 
     test('an event can go back to draft only with no plain members', () {

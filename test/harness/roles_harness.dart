@@ -1,5 +1,7 @@
 import 'package:drift/native.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:crewpoint_app/app/features/schedule/presentation/schedule_screen.dart';
+import 'package:crewpoint_app/app/features/schedule/presentation/session_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -257,6 +259,25 @@ class RolesHarness {
                   eventId: eventId,
                   child: (event) => CrewsScreen(event: event),
                 ),
+              ),
+              GoRoute(
+                path: 'schedule',
+                builder: (_, _) => EventGuard(
+                  eventId: eventId,
+                  child: (event) => ScheduleScreen(event: event),
+                ),
+                routes: [
+                  GoRoute(
+                    path: ':sessionId',
+                    builder: (_, state) => EventGuard(
+                      eventId: eventId,
+                      child: (event) => SessionScreen(
+                        event: event,
+                        sessionId: state.pathParameters['sessionId']!,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               GoRoute(
                 path: 'roles',

@@ -20,6 +20,9 @@ import 'package:crewpoint_app/app/core/database/daos/expense_splits_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/expenses_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/task_checklist_items_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/tasks_dao.dart';
+import 'package:crewpoint_app/app/core/database/daos/sessions_dao.dart';
+import 'package:crewpoint_app/app/features/schedule/data/session_repository.dart';
+import 'package:crewpoint_app/app/features/schedule/domain/models/session.dart';
 import 'package:crewpoint_app/app/core/services/account_deletion_service.dart';
 import 'package:crewpoint_app/app/core/services/app_badge_service.dart';
 import 'package:crewpoint_app/app/core/services/app_lifecycle_source.dart';
@@ -400,6 +403,33 @@ final taskListProvider = StreamProvider.family<List<TaskModel>, String>((
   final assigneeId = ref.watch(taskReadScopeProvider(eventId));
   ref.onDispose(() => repo.disposeMirror(eventId));
   return repo.watchTasksByEventId(eventId, assigneeId: assigneeId);
+});
+
+/// Sessions repository (Firestore source of truth + Drift mirror), Req 48.
+final sessionRepositoryProvider = Provider<SessionRepository>((ref) {
+  final repo = SessionRepository(
+    dao: SessionsDao(ref.watch(databaseProvider)),
+    firestore: ref.watch(firestoreProvider),
+  );
+  ref.onDispose(repo.dispose);
+  return repo;
+});
+
+/// An event's sessions, unordered. Hidden ones only for `schedule.edit`,
+/// following role changes live.
+final sessionListProvider = StreamProvider.family<List<SessionModel>, String>((
+  ref,
+  eventId,
+) {
+  final repo = ref.watch(sessionRepositoryProvider);
+  final me = ref.watch(currentUserIdProvider);
+  final withHidden = ref.watch(
+    eventByIdProvider(
+      eventId,
+    ).select((e) => me != null && (e?.can(me, 'schedule.edit') ?? false)),
+  );
+  ref.onDispose(() => repo.disposeMirror(eventId));
+  return repo.watchSessions(eventId, withHidden: withHidden);
 });
 
 /// Task budget figures by task ID (Req 36), only for people holding

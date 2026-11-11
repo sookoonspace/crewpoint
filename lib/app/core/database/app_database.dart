@@ -158,6 +158,27 @@ class ChatReads extends Table {
   Set<Column> get primaryKey => {eventId, uid};
 }
 
+/// An event's schedule (#81, Req 48), mirrored from
+/// `events/{eventId}/sessions`. Tags and eligibility are stored as JSON.
+class Sessions extends Table {
+  TextColumn get id => text()();
+  TextColumn get eventId => text()();
+  TextColumn get title => text()();
+  DateTimeColumn get startAt => dateTime()();
+  DateTimeColumn get endAt => dateTime().nullable()();
+  BoolColumn get timeTbc => boolean().withDefault(const Constant(false))();
+  TextColumn get venueId => text().nullable()();
+  BoolColumn get locationTba => boolean().withDefault(const Constant(false))();
+  TextColumn get type => text().nullable()();
+  TextColumn get tags => text().withDefault(const Constant('[]'))();
+  IntColumn get capacity => integer().nullable()();
+  TextColumn get eligibility => text().withDefault(const Constant('{}'))();
+  BoolColumn get hidden => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {eventId, id};
+}
+
 @DriftDatabase(
   tables: [
     Users,
@@ -168,13 +189,14 @@ class ChatReads extends Table {
     Expenses,
     ExpenseSplits,
     ChatReads,
+    Sessions,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -291,6 +313,14 @@ class AppDatabase extends _$AppDatabase {
         if (existing.isNotEmpty && !hasColumn) {
           await m.addColumn(events, events.memberCount);
         }
+      }
+      if (from < 14) {
+        // The schedule mirror (#81). Safe to re-run, like the steps above.
+        final existing = await customSelect(
+          "SELECT name FROM sqlite_master WHERE type = 'table' "
+          "AND name = 'sessions'",
+        ).get();
+        if (existing.isEmpty) await m.createTable(sessions);
       }
     },
   );

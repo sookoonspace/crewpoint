@@ -100,6 +100,11 @@ abstract final class AppIcons {
   // Calendar family collapsed: calendar_month / _month_rounded / _today_outlined all → calendar_today.
   static const IconData calendar = Icons.calendar_today;
   static const IconData event = Icons.event;
+  static const IconData schedule = Icons.schedule;
+  static const IconData place = Icons.place_outlined;
+  static const IconData map = Icons.map_outlined;
+  static const IconData directions = Icons.directions_outlined;
+  static const IconData hidden = Icons.visibility_off_outlined;
   static const IconData eventBusy = Icons.event_busy_outlined;
   static const IconData member = Icons.person_outline;
   static const IconData memberAdd = Icons

@@ -227,6 +227,14 @@ void main() {
       await tester.pump();
       await tester.enterText(find.byKey(_key('venue.0.name')), 'Garland Hall');
       await tester.enterText(find.byKey(_key('venue.0.address')), '1 Main St');
+      await tester.enterText(
+        find.byKey(_key('venue.0.mapUrl')),
+        'https://maps.example.com/hall',
+      );
+      await tester.enterText(
+        find.byKey(_key('venue.0.directions')),
+        'Park behind the hotel.',
+      );
       await tester.enterText(find.byKey(_key('languages')), 'en, gu');
       await tester.enterText(find.byKey(_key('capacity')), '600');
       await tester.enterText(find.byKey(_key('memberLimit')), '100');
@@ -238,6 +246,8 @@ void main() {
           (data['venues'] as List<dynamic>).single as Map<String, dynamic>;
       expect(venue['name'], 'Garland Hall');
       expect(venue['address'], '1 Main St');
+      expect(venue['mapUrl'], 'https://maps.example.com/hall');
+      expect(venue['directions'], 'Park behind the hotel.');
       expect(data['languages'], ['en', 'gu']);
       expect(data['capacity'], 600);
       expect(data['memberLimit'], 100);
@@ -324,6 +334,21 @@ void main() {
       await tester.tap(find.byKey(_key('save')));
       await tester.pump();
       expect(find.text('Enter a name, or remove this venue'), findsOneWidget);
+    });
+
+    testWidgets('a venue map link must be a web link (Req 49)', (tester) async {
+      await pump(tester);
+      await tester.tap(find.byKey(_key('venue.add')));
+      await tester.pump();
+      await tester.enterText(find.byKey(_key('venue.0.name')), 'Park');
+      await tester.enterText(
+        find.byKey(_key('venue.0.mapUrl')),
+        'javascript:alert(1)',
+      );
+      await tester.tap(find.byKey(_key('save')));
+      await tester.pump();
+      expect(find.text('Enter a link starting with https://'), findsOneWidget);
+      expect((await stored())['venues'] ?? const <Object>[], isEmpty);
     });
   });
 
@@ -515,6 +540,7 @@ void main() {
         'tasks': true,
         'budget': false,
         'chat': true,
+        'schedule': true,
       });
     });
 

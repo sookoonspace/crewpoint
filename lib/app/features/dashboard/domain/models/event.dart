@@ -2,32 +2,54 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_acces
 import 'package:crewpoint_app/app/core/format/event_time.dart';
 import 'package:crewpoint_app/app/core/labels/label_resolver.dart';
 
-/// A place an event happens. Map link, directions and "to be announced" arrive
-/// with sessions.
+/// A place an event happens (Req 49). Without an address its location is to
+/// be announced. [mapUrl] is the organizer's own map link; without one the
+/// address is searched. [directions] is free text, such as where to park.
 class EventVenue {
-  const EventVenue({required this.id, required this.name, this.address});
+  const EventVenue({
+    required this.id,
+    required this.name,
+    this.address,
+    this.mapUrl,
+    this.directions,
+  });
 
   factory EventVenue.fromMap(Map<String, dynamic> map) => EventVenue(
     id: (map['id'] as String?) ?? '',
     name: (map['name'] as String?) ?? '',
     address: map['address'] as String?,
+    mapUrl: map['mapUrl'] as String?,
+    directions: map['directions'] as String?,
   );
 
   final String id;
   final String name;
   final String? address;
+  final String? mapUrl;
+  final String? directions;
 
-  Map<String, dynamic> toMap() => {'id': id, 'name': name, 'address': address};
+  /// Whether the address is still to be announced.
+  bool get addressTba => address == null || address!.trim().isEmpty;
+
+  Map<String, dynamic> toMap() => {
+    'id': id,
+    'name': name,
+    'address': address,
+    'mapUrl': mapUrl,
+    'directions': directions,
+  };
 
   @override
   bool operator ==(Object other) =>
       other is EventVenue &&
       other.id == id &&
       other.name == name &&
-      other.address == address;
+      other.address == address &&
+      other.mapUrl == mapUrl &&
+      other.directions == directions;
 
   @override
-  int get hashCode => Object.hash(id, name, address);
+  int get hashCode => Object.hash(id, name, address, mapUrl, directions);
 }
 
 /// Event status (Req 19).
@@ -101,7 +123,12 @@ class EventModel {
   static const defaultTemplateId = 'blank';
   static const defaultTimeZone = 'UTC';
   static const defaultLanguages = ['en'];
-  static const defaultModules = {'tasks': true, 'budget': true, 'chat': true};
+  static const defaultModules = {
+    'tasks': true,
+    'budget': true,
+    'chat': true,
+    'schedule': true,
+  };
 
   final String id;
   final String title;
@@ -286,6 +313,14 @@ class EventModel {
     EventStatus.ended => canManage(uid),
     _ => true,
   };
+
+  /// Adding and editing sessions (Req 48) needs `schedule.edit` and the
+  /// schedule module. Once ended only `event.manage` may, and once archived
+  /// nobody, as with tasks.
+  bool canEditSchedule(String uid) =>
+      isModuleOn('schedule') &&
+      can(uid, 'schedule.edit') &&
+      canEditTasks(uid);
 
   /// Nobody but organizers may see a draft, so an event with plain members
   /// cannot go back to one.
