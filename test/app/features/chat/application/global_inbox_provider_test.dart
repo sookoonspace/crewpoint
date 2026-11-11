@@ -7,8 +7,10 @@ import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/budget/data/member_name_resolver.dart';
 import 'package:crewpoint_app/app/features/chat/application/global_inbox_provider.dart';
 import 'package:crewpoint_app/app/features/chat/application/people_by_id_provider.dart';
+import 'package:crewpoint_app/app/features/chat/domain/chat_summary.dart';
 import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
+import '../../../../harness/chat_summaries.dart';
 
 /// Empty roster override — keeps the inbox off the real user repo for
 /// tests that don't care about name resolution.
@@ -104,7 +106,7 @@ void main() {
           dashboardEventsProvider.overrideWith(
             (ref) => Stream.value(const [eventA, eventB]),
           ),
-          chatMessagesProvider.overrideWith((ref, eventId) {
+          summariesFromMessages((ref, eventId) {
             return switch (eventId) {
               'evt-a' => Stream.value([msgAOlder, msgANewer]),
               'evt-b' => Stream.value([msgBOlder]),
@@ -141,9 +143,7 @@ void main() {
         dashboardEventsProvider.overrideWith(
           (ref) => Stream.value(const [eventA, archivedEvent]),
         ),
-        chatMessagesProvider.overrideWith(
-          (ref, eventId) => Stream.value([msgANewer]),
-        ),
+        summariesFromMessages((ref, eventId) => Stream.value([msgANewer])),
         _emptyRosterOverride,
       ],
     );
@@ -184,7 +184,7 @@ void main() {
           dashboardEventsProvider.overrideWith(
             (ref) => Stream.value(const [eventA]),
           ),
-          chatMessagesProvider.overrideWith(
+          summariesFromMessages(
             (ref, eventId) => const Stream<List<ChatMessageModel>>.empty(),
           ),
         ],
@@ -221,7 +221,7 @@ void main() {
         dashboardEventsProvider.overrideWith(
           (ref) => Stream.value(const [eventA]),
         ),
-        chatMessagesProvider.overrideWith(
+        summariesFromMessages(
           (ref, eventId) =>
               Stream<List<ChatMessageModel>>.error(StateError('chat boom')),
         ),
@@ -242,7 +242,7 @@ void main() {
           dashboardEventsProvider.overrideWith(
             (ref) => Stream.value(const <EventModel>[]),
           ),
-          chatMessagesProvider.overrideWith((ref, eventId) {
+          summariesFromMessages((ref, eventId) {
             throw StateError(
               'chatMessagesProvider must not be subscribed when events list is empty',
             );
@@ -263,7 +263,7 @@ void main() {
         dashboardEventsProvider.overrideWith(
           (ref) => Stream.value(const [eventA, eventB]),
         ),
-        chatMessagesProvider.overrideWith((ref, eventId) {
+        summariesFromMessages((ref, eventId) {
           return switch (eventId) {
             'evt-a' => Stream.value([msgANewer]),
             'evt-b' => Stream.value(const <ChatMessageModel>[]),
@@ -281,116 +281,108 @@ void main() {
     expect(rows.single.event.id, 'evt-a');
   });
 
-  test(
-    'unreadCount counts only other-sender messages newer than lastReadAt',
-    () async {
-      // 2 messages from alex (both after lastReadAt) + 1 from me + 1 from
-      // alex before lastReadAt = expected unreadCount == 2.
-      final lastRead = DateTime(2026, 5, 11, 12);
-      final mineNewer = ChatMessageModel(
-        id: 'm-mine',
-        eventId: 'evt-a',
-        senderId: 'me',
-        text: 'My reply',
-        timestamp: DateTime(2026, 5, 12, 13),
-      );
-      final alexOldBeforeRead = ChatMessageModel(
-        id: 'm-old',
-        eventId: 'evt-a',
-        senderId: 'alex',
-        text: 'Old',
-        timestamp: DateTime(2026, 5, 10, 8),
-      );
-      final alexNew1 = ChatMessageModel(
-        id: 'm-new-1',
-        eventId: 'evt-a',
-        senderId: 'alex',
-        text: 'See you',
-        timestamp: DateTime(2026, 5, 12, 14),
-      );
-      final alexNew2 = ChatMessageModel(
-        id: 'm-new-2',
-        eventId: 'evt-a',
-        senderId: 'alex',
-        text: 'Bring snacks',
-        timestamp: DateTime(2026, 5, 13, 9),
-      );
+  test('unreadCount counts messages since the read marker, own ones excluded '
+      '(Req 57a)', () async {
+    // Four messages; the read marker was at 1. The server moved it to 2
+    // when "me" sent the reply, so alex's two newer ones are unread.
+    final lastRead = DateTime(2026, 5, 11, 12);
+    final mineNewer = ChatMessageModel(
+      id: 'm-mine',
+      eventId: 'evt-a',
+      senderId: 'me',
+      text: 'My reply',
+      timestamp: DateTime(2026, 5, 12, 13),
+    );
+    final alexOldBeforeRead = ChatMessageModel(
+      id: 'm-old',
+      eventId: 'evt-a',
+      senderId: 'alex',
+      text: 'Old',
+      timestamp: DateTime(2026, 5, 10, 8),
+    );
+    final alexNew1 = ChatMessageModel(
+      id: 'm-new-1',
+      eventId: 'evt-a',
+      senderId: 'alex',
+      text: 'See you',
+      timestamp: DateTime(2026, 5, 12, 14),
+    );
+    final alexNew2 = ChatMessageModel(
+      id: 'm-new-2',
+      eventId: 'evt-a',
+      senderId: 'alex',
+      text: 'Bring snacks',
+      timestamp: DateTime(2026, 5, 13, 9),
+    );
 
-      final container = ProviderContainer(
-        overrides: [
-          dashboardEventsProvider.overrideWith(
-            (ref) => Stream.value(const [eventA]),
-          ),
-          chatMessagesProvider.overrideWith(
-            (ref, eventId) => Stream.value([
-              alexOldBeforeRead,
-              mineNewer,
-              alexNew1,
-              alexNew2,
-            ]),
-          ),
-          _emptyRosterOverride,
-          eventChatReadStateProvider.overrideWith(
-            (ref, arg) => Stream.value(lastRead),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
+    final container = ProviderContainer(
+      overrides: [
+        dashboardEventsProvider.overrideWith(
+          (ref) => Stream.value(const [eventA]),
+        ),
+        summariesFromMessages(
+          (ref, eventId) =>
+              Stream.value([alexOldBeforeRead, mineNewer, alexNew1, alexNew2]),
+        ),
+        _emptyRosterOverride,
+        eventChatReadStateProvider.overrideWith(
+          (ref, arg) =>
+              Stream.value(ChatReadState(lastReadAt: lastRead, readCount: 2)),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
 
-      final result = await _readAfterPump(container, 'me');
-      final row = result.requireValue.single;
-      expect(row.unreadCount, 2);
-    },
-  );
+    final result = await _readAfterPump(container, 'me');
+    final row = result.requireValue.single;
+    expect(row.unreadCount, 2);
+  });
 
-  test(
-    'unreadCount equals message count from other senders when lastReadAt is null',
-    () async {
-      final m1 = ChatMessageModel(
-        id: 'm-1',
-        eventId: 'evt-a',
-        senderId: 'alex',
-        text: 'a',
-        timestamp: DateTime(2026, 5, 12),
-      );
-      final m2 = ChatMessageModel(
-        id: 'm-2',
-        eventId: 'evt-a',
-        senderId: 'alex',
-        text: 'b',
-        timestamp: DateTime(2026, 5, 13),
-      );
-      final m3 = ChatMessageModel(
-        id: 'm-3',
-        eventId: 'evt-a',
-        senderId: 'me',
-        text: 'reply',
-        timestamp: DateTime(2026, 5, 14),
-      );
+  test('unreadCount counts every message when the chat was never opened '
+      '(Req 57a: the summary has no senders, and the server marks your own '
+      'messages read as you send them)', () async {
+    final m1 = ChatMessageModel(
+      id: 'm-1',
+      eventId: 'evt-a',
+      senderId: 'alex',
+      text: 'a',
+      timestamp: DateTime(2026, 5, 12),
+    );
+    final m2 = ChatMessageModel(
+      id: 'm-2',
+      eventId: 'evt-a',
+      senderId: 'alex',
+      text: 'b',
+      timestamp: DateTime(2026, 5, 13),
+    );
+    final m3 = ChatMessageModel(
+      id: 'm-3',
+      eventId: 'evt-a',
+      senderId: 'me',
+      text: 'reply',
+      timestamp: DateTime(2026, 5, 14),
+    );
 
-      final container = ProviderContainer(
-        overrides: [
-          dashboardEventsProvider.overrideWith(
-            (ref) => Stream.value(const [eventA]),
-          ),
-          chatMessagesProvider.overrideWith(
-            (ref, eventId) => Stream.value([m1, m2, m3]),
-          ),
-          _emptyRosterOverride,
-          // Provider emits null → user has never opened the chat.
-          eventChatReadStateProvider.overrideWith(
-            (ref, arg) => Stream.value(null),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
+    final container = ProviderContainer(
+      overrides: [
+        dashboardEventsProvider.overrideWith(
+          (ref) => Stream.value(const [eventA]),
+        ),
+        summariesFromMessages((ref, eventId) => Stream.value([m1, m2, m3])),
+        _emptyRosterOverride,
+        // Provider emits null → user has never opened the chat.
+        eventChatReadStateProvider.overrideWith(
+          (ref, arg) => Stream.value(null),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
 
-      final result = await _readAfterPump(container, 'me');
-      final row = result.requireValue.single;
-      // m1 + m2 are from alex; m3 is from me → expected 2.
-      expect(row.unreadCount, 2);
-    },
-  );
+    final result = await _readAfterPump(container, 'me');
+    final row = result.requireValue.single;
+    // No read marker at all: all three count.
+    expect(row.unreadCount, 3);
+  });
 
   test(
     'hasUrgentUnread is true iff an unread message has isHighPriority=true',
@@ -416,7 +408,7 @@ void main() {
           dashboardEventsProvider.overrideWith(
             (ref) => Stream.value(const [eventA]),
           ),
-          chatMessagesProvider.overrideWith(
+          summariesFromMessages(
             (ref, eventId) => Stream.value([urgent, normal]),
           ),
           _emptyRosterOverride,
@@ -458,12 +450,12 @@ void main() {
           dashboardEventsProvider.overrideWith(
             (ref) => Stream.value(const [eventA]),
           ),
-          chatMessagesProvider.overrideWith(
+          summariesFromMessages(
             (ref, eventId) => Stream.value([urgent, normalNewer]),
           ),
           _emptyRosterOverride,
           eventChatReadStateProvider.overrideWith(
-            (ref, arg) => Stream.value(readBoundary),
+            (ref, arg) => Stream.value(ChatReadState(lastReadAt: readBoundary)),
           ),
         ],
       );
@@ -485,9 +477,7 @@ void main() {
           dashboardEventsProvider.overrideWith(
             (ref) => Stream.value(const [eventA]),
           ),
-          chatMessagesProvider.overrideWith(
-            (ref, eventId) => Stream.value([msgANewer]),
-          ),
+          summariesFromMessages((ref, eventId) => Stream.value([msgANewer])),
           peopleByIdProvider.overrideWith(
             (ref, key) async => const <String, AppUser>{
               'alex': AppUser(
@@ -514,9 +504,7 @@ void main() {
           dashboardEventsProvider.overrideWith(
             (ref) => Stream.value(const [eventA]),
           ),
-          chatMessagesProvider.overrideWith(
-            (ref, eventId) => Stream.value([msgANewer]),
-          ),
+          summariesFromMessages((ref, eventId) => Stream.value([msgANewer])),
           peopleByIdProvider.overrideWith(
             (ref, key) async => const <String, AppUser>{
               'alex': AppUser(uid: 'alex', email: 'alex@x.com'),
@@ -539,9 +527,7 @@ void main() {
           dashboardEventsProvider.overrideWith(
             (ref) => Stream.value(const [eventA]),
           ),
-          chatMessagesProvider.overrideWith(
-            (ref, eventId) => Stream.value([msgANewer]),
-          ),
+          summariesFromMessages((ref, eventId) => Stream.value([msgANewer])),
           _emptyRosterOverride,
         ],
       );
@@ -560,9 +546,7 @@ void main() {
           dashboardEventsProvider.overrideWith(
             (ref) => Stream.value(const [eventA]),
           ),
-          chatMessagesProvider.overrideWith(
-            (ref, eventId) => Stream.value([msgANewer]),
-          ),
+          summariesFromMessages((ref, eventId) => Stream.value([msgANewer])),
           peopleByIdProvider.overrideWith((ref, key) {
             final completer = Completer<Map<String, AppUser>>();
             return completer.future;
@@ -586,9 +570,7 @@ void main() {
         dashboardEventsProvider.overrideWith(
           (ref) => Stream.value(const [eventA]),
         ),
-        chatMessagesProvider.overrideWith(
-          (ref, eventId) => Stream.value([msgANewer]),
-        ),
+        summariesFromMessages((ref, eventId) => Stream.value([msgANewer])),
         peopleByIdProvider.overrideWith(
           (ref, key) async => throw StateError('roster boom'),
         ),

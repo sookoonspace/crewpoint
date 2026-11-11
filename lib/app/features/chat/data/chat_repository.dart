@@ -11,6 +11,7 @@ import 'package:crewpoint_app/app/core/database/app_database.dart'
     show ChatMessagesCompanion;
 import 'package:crewpoint_app/app/core/database/daos/chat_messages_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/mirror_syncs_dao.dart';
+import 'package:crewpoint_app/app/features/chat/domain/chat_summary.dart';
 import 'package:crewpoint_app/app/features/chat/domain/chat_window.dart';
 import 'package:crewpoint_app/app/core/database/daos/chat_reads_dao.dart';
 import 'package:crewpoint_app/app/core/services/i_chat_service.dart';
@@ -196,25 +197,33 @@ class ChatRepository implements IChatRepository {
     return fs.collection('users').doc(uid).collection('chatReads').doc(eventId);
   }
 
-  /// Streams the user's last-read timestamp for an event. Composes
-  /// the Drift cache (instant emission on cold start) with the Firestore
-  /// snapshot stream (live updates).
-  ///
-  /// First subscription per (uid, eventId) pair spins up a Firestore
-  /// snapshot listener that mirrors values into Drift; subsequent
-  /// subscriptions reuse the existing mirror. Cancelled by `dispose`.
-  Stream<DateTime?> watchLastRead(String uid, String eventId) {
+  /// Where the user has read up to in an event's chat: the time and the
+  /// message count then (Req 57a). The Drift cache answers first on cold
+  /// start, and a Firestore listener keeps it current.
+  Stream<ChatReadState?> watchReadState(String uid, String eventId) {
     final dao = _chatReadsDao;
     final fs = _firestore;
     if (dao == null) {
-      // No Drift cache — read straight from Firestore.
       if (fs == null) return Stream.value(null);
-      return _readDocRef(uid, eventId).snapshots().map(_extractLastReadAt);
+      return _readDocRef(uid, eventId).snapshots().map((snap) {
+        final at = _extractLastReadAt(snap);
+        return at == null && !snap.exists
+            ? null
+            : ChatReadState(lastReadAt: at, readCount: _readCount(snap));
+      });
     }
-
     _ensureChatReadsMirror(uid, eventId, dao);
-    return dao.watchLastReadAt(eventId: eventId, uid: uid);
+    return dao
+        .watchReadState(eventId: eventId, uid: uid)
+        .map(
+          (r) => r == null
+              ? null
+              : ChatReadState(lastReadAt: r.lastReadAt, readCount: r.readCount),
+        );
   }
+
+  int? _readCount(DocumentSnapshot<Map<String, dynamic>> snap) =>
+      (snap.data()?['readCount'] as num?)?.toInt();
 
   void _ensureChatReadsMirror(String uid, String eventId, ChatReadsDao dao) {
     final fs = _firestore;
@@ -226,7 +235,12 @@ class ChatRepository implements IChatRepository {
         try {
           final ts = _extractLastReadAt(snap);
           if (ts != null) {
-            await dao.upsert(eventId: eventId, uid: uid, lastReadAt: ts);
+            await dao.upsert(
+              eventId: eventId,
+              uid: uid,
+              lastReadAt: ts,
+              readCount: _readCount(snap),
+            );
           }
         } catch (e, st) {
           log(
@@ -295,13 +309,22 @@ class ChatRepository implements IChatRepository {
   /// Writes `users/{uid}/chatReads/{eventId}` with `lastReadAt = serverTimestamp`
   /// and mirrors the value into Drift. Fire-and-forget: a Firestore-write
   /// failure is swallowed + logged so navigation isn't blocked.
-  Future<void> markEventRead(String uid, String eventId) async {
+  ///
+  /// [count] is the chat summary's message count, so the inbox can count
+  /// what arrives after (Req 57a).
+  Future<void> markEventRead(String uid, String eventId, {int? count}) async {
     final ts = DateTime.now();
     try {
       await _readDocRef(uid, eventId).set({
         'lastReadAt': FieldValue.serverTimestamp(),
+        'readCount': ?count,
       }, SetOptions(merge: true));
-      await _chatReadsDao?.upsert(eventId: eventId, uid: uid, lastReadAt: ts);
+      await _chatReadsDao?.upsert(
+        eventId: eventId,
+        uid: uid,
+        lastReadAt: ts,
+        readCount: count,
+      );
     } catch (e, st) {
       log(
         'Failed to mark event read',

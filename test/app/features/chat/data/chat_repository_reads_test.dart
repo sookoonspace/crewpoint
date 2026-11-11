@@ -52,6 +52,28 @@ void main() {
     },
   );
 
+  test('markEventRead keeps the message count it read at (Req 57a)', () async {
+    await repo.markEventRead('u-1', 'e-1', count: 12);
+    final doc = await firestore.doc('users/u-1/chatReads/e-1').get();
+    expect(doc.data()!['readCount'], 12);
+    final state = await repo.watchReadState('u-1', 'e-1').first;
+    expect(state!.readCount, 12);
+    expect(state.lastReadAt, isNotNull);
+  });
+
+  test('the read state follows the server, count included', () async {
+    final stream = repo.watchReadState('u-2', 'e-1');
+    await firestore.doc('users/u-2/chatReads/e-1').set({
+      'lastReadAt': DateTime.utc(2027, 1, 1),
+      'readCount': 4,
+    });
+    final state = await stream.firstWhere((s) => s?.readCount == 4);
+    expect(
+      state!.lastReadAt!.isAtSameMomentAs(DateTime.utc(2027, 1, 1)),
+      isTrue,
+    );
+  });
+
   test(
     'markEventRead never throws even when Firestore is null (defensive)',
     () async {
@@ -127,13 +149,15 @@ void main() {
   );
 
   test(
-    'watchLastRead emits the Drift-cached timestamp first, then propagates Firestore writes',
+    'watchReadState emits the Drift-cached time first, then propagates Firestore writes',
     () async {
       // Pre-seed the Drift cache so the first emission is non-null.
       final seeded = DateTime(2026, 5, 14, 9);
       await readsDao.upsert(eventId: 'e-1', uid: 'u-1', lastReadAt: seeded);
 
-      final stream = repo.watchLastRead('u-1', 'e-1');
+      final stream = repo
+          .watchReadState('u-1', 'e-1')
+          .map((s) => s?.lastReadAt);
       // First emission: Drift cache value.
       final first = await stream.first;
       expect(first, seeded);

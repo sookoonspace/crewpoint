@@ -31,7 +31,10 @@ void main() {
     expect(row.data['content'], 'Hi');
     expect(row.data.containsKey('kind'), isTrue);
     expect(row.data['kind'], isNull);
-    expect(raw.select('PRAGMA user_version').first.values.first, 16);
+    expect(
+      raw.select('PRAGMA user_version').first.values.first,
+      db.schemaVersion,
+    );
     await db.close();
   });
 
@@ -43,11 +46,5 @@ void main() {
       hasLength(1),
     );
     await db.close();
-  });
-
-  test('schemaVersion is 16', () {
-    final db = AppDatabase(NativeDatabase.memory());
-    expect(db.schemaVersion, 16);
-    db.close();
   });
 }

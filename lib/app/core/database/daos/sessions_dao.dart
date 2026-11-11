@@ -22,11 +22,9 @@ class SessionsDao extends DatabaseAccessor<AppDatabase>
 
   /// Replaces the event's rows with [rows] in one transaction, so a snapshot
   /// updates the screen once rather than once per row.
-  Future<void> replaceForEvent(
-    String eventId,
-    List<SessionsCompanion> rows,
-  ) => transaction(() async {
-    await (delete(sessions)..where((s) => s.eventId.equals(eventId))).go();
-    await batch((b) => b.insertAll(sessions, rows));
-  });
+  Future<void> replaceForEvent(String eventId, List<SessionsCompanion> rows) =>
+      transaction(() async {
+        await (delete(sessions)..where((s) => s.eventId.equals(eventId))).go();
+        await batch((b) => b.insertAll(sessions, rows));
+      });
 }
