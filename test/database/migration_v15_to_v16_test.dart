@@ -16,7 +16,7 @@ void main() {
       'timestamp INTEGER NOT NULL);',
     );
     raw.execute(
-      "INSERT INTO chat_messages (id, event_id, sender_id, content, timestamp) "
+      'INSERT INTO chat_messages (id, event_id, sender_id, content, timestamp) '
       "VALUES ('m1', 'e1', 'u1', 'Hi', 0);",
     );
     raw.execute('PRAGMA user_version = 15');
