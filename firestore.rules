@@ -531,6 +531,14 @@ service cloud.firestore {
           && sessionIsValid(request.resource.data);
       }
 
+      // Counts per event and session (Req 52), worked out by the server, which
+      // alone writes them. Totals only, private fields included, so reading
+      // needs `counts.read`.
+      match /stats/{docId} {
+        allow read: if request.auth != null && can(eventId, 'counts.read');
+        allow write: if false;
+      }
+
       // People attending, with or without an account, children included (Req
       // 40, 43). Rosters are online and paged. Someone who may only see their
       // own group must list with `groupId in` their group IDs. `uid` (a
