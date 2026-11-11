@@ -1,4 +1,5 @@
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:crewpoint_app/app/features/schedule/domain/models/attendance.dart';
 import 'package:crewpoint_app/app/features/schedule/domain/models/schedule.dart'
     show isWebLink;
 import 'package:flutter/material.dart';
@@ -126,6 +127,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
   late final Map<String, TextEditingController> _labels;
   late String _currency;
   late EventStatus _status;
+  late AttendancePolicy _policy;
   late final Map<String, bool> _modules;
   bool _dirty = false;
   bool _saving = false;
@@ -153,6 +155,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     ];
     _currency = event.currency;
     _status = event.status;
+    _policy = event.attendancePolicy;
     _modules = {
       for (final module in EventModel.defaultModules.keys)
         module: event.isModuleOn(module),
@@ -284,6 +287,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
         .read(eventRepositoryProvider)
         .saveConfiguration(
           previousStatus: event.status,
+          attendancePolicy: _policy,
           event.copyWith(
             status: _status,
             timeZone: _timeZone.text.trim(),
@@ -552,6 +556,35 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
                       border: const OutlineInputBorder(),
                     ),
                     validator: _validateCount,
+                  ),
+                  DropdownButtonFormField<AttendancePolicy>(
+                    key: const Key('events.settings.attendancePolicy'),
+                    initialValue: _policy,
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      labelText: context.strings.agenda.policyLabel,
+                      helperText: context.strings.agenda.policyHelp(
+                        _policy.name,
+                      ),
+                      helperMaxLines: 3,
+                      border: const OutlineInputBorder(),
+                    ),
+                    items: [
+                      for (final p in AttendancePolicy.values)
+                        DropdownMenuItem(
+                          value: p,
+                          child: Text(context.strings.agenda.policy(p.name)),
+                        ),
+                    ],
+                    onChanged: _archived || _saving
+                        ? null
+                        : (value) {
+                            if (value == null) return;
+                            setState(() {
+                              _policy = value;
+                              _dirty = true;
+                            });
+                          },
                   ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,

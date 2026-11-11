@@ -1,3 +1,4 @@
+import 'package:crewpoint_app/app/features/schedule/domain/models/attendance.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
@@ -344,6 +345,19 @@ void main() {
           EventStatus.live,
         ).copyWith(modules: const {'schedule': false}).canEditSchedule('owner'),
         isFalse,
+      );
+    });
+
+    test('reads its attendance policy, everyone by default (Req 50)', () {
+      expect(at(EventStatus.live).attendancePolicy, AttendancePolicy.everyone);
+      expect(
+        const EventModel(
+          id: 'e1',
+          title: 'T',
+          creatorId: 'owner',
+          settings: {'attendancePolicy': 'invitedOnly'},
+        ).attendancePolicy,
+        AttendancePolicy.invitedOnly,
       );
     });
 

@@ -4,9 +4,11 @@ import 'dart:developer';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart';
+import 'package:crewpoint_app/app/core/database/daos/mirror_syncs_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/sessions_dao.dart';
 import 'package:crewpoint_app/app/features/dashboard/data/event_repository.dart'
     show EventWriteResult, settleEventWrite;
+import 'package:crewpoint_app/app/features/schedule/domain/models/attendance.dart';
 import 'package:crewpoint_app/app/features/schedule/domain/models/session.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -19,10 +21,16 @@ class SessionRepository {
   SessionRepository({
     required SessionsDao dao,
     required FirebaseFirestore firestore,
+    MirrorSyncsDao? syncs,
   }) : _dao = dao,
-       _firestore = firestore;
+       _firestore = firestore,
+       _syncs = syncs;
 
   final SessionsDao _dao;
+  final MirrorSyncsDao? _syncs;
+
+  /// The key under which this mirror records when it last synced (Req 74).
+  static String mirrorKey(String eventId) => 'sessions/$eventId';
   final FirebaseFirestore _firestore;
   final Map<String, StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>
   _subs = {};
@@ -64,24 +72,40 @@ class SessionRepository {
     if (_subs.containsKey(eventId) && _scopes[eventId] == withHidden) return;
     _subs.remove(eventId)?.cancel();
     _scopes[eventId] = withHidden;
-    _subs[eventId] = _query(eventId, withHidden).snapshots().listen(
-      (snap) => _dao
-          .replaceForEvent(eventId, [
-            for (final doc in snap.docs)
-              _toRow(eventId, SessionModel.fromFirestore(doc.id, doc.data())),
-          ])
-          .catchError((Object e, StackTrace st) {
-            log('Mirror failed', error: e, stackTrace: st, name: 'sessions');
-          }),
-      onError: (Object e, StackTrace st) {
-        log(
-          'Firestore stream error',
-          error: e,
-          stackTrace: st,
-          name: 'sessions',
+    var applied = false;
+    _subs[eventId] = _query(eventId, withHidden)
+        .snapshots(includeMetadataChanges: true)
+        .listen(
+          (snap) async {
+            try {
+              // A change only to whether it came from the cache moves no rows.
+              if (!applied || snap.docChanges.isNotEmpty) {
+                applied = true;
+                await _dao.replaceForEvent(eventId, [
+                  for (final doc in snap.docs)
+                    _toRow(
+                      eventId,
+                      SessionModel.fromFirestore(doc.id, doc.data()),
+                    ),
+                ]);
+              }
+              await _syncs?.record(
+                mirrorKey(eventId),
+                fromCache: snap.metadata.isFromCache,
+              );
+            } catch (e, st) {
+              log('Mirror failed', error: e, stackTrace: st, name: 'sessions');
+            }
+          },
+          onError: (Object e, StackTrace st) {
+            log(
+              'Firestore stream error',
+              error: e,
+              stackTrace: st,
+              name: 'sessions',
+            );
+          },
         );
-      },
-    );
   }
 
   void disposeMirror(String eventId) {
@@ -130,6 +154,7 @@ class SessionRepository {
     capacity: Value(s.capacity),
     eligibility: Value(jsonEncode(s.eligibility.toMap())),
     hidden: Value(s.hidden),
+    attendance: Value(s.attendance?.name),
   );
 
   SessionModel _fromRow(Session r) {
@@ -159,6 +184,7 @@ class SessionRepository {
       capacity: r.capacity,
       eligibility: SessionEligibility.fromMap(decode(r.eligibility)),
       hidden: r.hidden,
+      attendance: AttendancePolicy.tryParse(r.attendance),
     );
   }
 }

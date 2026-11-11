@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart';
+import 'package:crewpoint_app/app/core/database/daos/mirror_syncs_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/sessions_dao.dart';
 import 'package:crewpoint_app/app/features/dashboard/data/event_repository.dart'
     show EventWriteResult;
 import 'package:crewpoint_app/app/features/schedule/data/session_repository.dart';
+import 'package:crewpoint_app/app/features/schedule/domain/models/attendance.dart';
 import 'package:crewpoint_app/app/features/schedule/domain/models/session.dart';
 import 'package:drift/native.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
@@ -19,7 +21,11 @@ void main() {
   setUp(() async {
     firestore = FakeFirebaseFirestore();
     db = AppDatabase(NativeDatabase.memory());
-    repo = SessionRepository(dao: SessionsDao(db), firestore: firestore);
+    repo = SessionRepository(
+      dao: SessionsDao(db),
+      firestore: firestore,
+      syncs: MirrorSyncsDao(db),
+    );
     for (final (id, hidden) in [('m1', false), ('gala', true)]) {
       await firestore.doc('events/e1/sessions/$id').set({
         'title': id,
@@ -109,5 +115,24 @@ void main() {
   test('removes a session', () async {
     expect(await repo.remove('e1', 'm1'), EventWriteResult.saved);
     expect((await firestore.doc('events/e1/sessions/m1').get()).exists, false);
+  });
+
+  test('records when the mirror last heard from the server (Req 74)', () async {
+    await ids(repo.watchSessions('e1', withHidden: true));
+    final sync = await MirrorSyncsDao(
+      db,
+    ).watch(SessionRepository.mirrorKey('e1')).firstWhere((s) => s != null);
+    expect(sync!.fromCache, isFalse);
+    expect(sync.syncedAt, isNotNull);
+  });
+
+  test("keeps a session's own attendance rule through the mirror", () async {
+    await firestore.doc('events/e1/sessions/m1').update({
+      'attendance': 'bySession',
+    });
+    final list = await repo
+        .watchSessions('e1', withHidden: false)
+        .firstWhere((l) => l.isNotEmpty);
+    expect(list.single.attendance, AttendancePolicy.bySession);
   });
 }

@@ -530,6 +530,22 @@ void main() {
     });
   });
 
+  group('attendance (Req 50)', () {
+    testWidgets('an organizer chooses who attends sessions', (tester) async {
+      await pump(tester);
+      await tester.ensureVisible(find.byKey(_key('attendancePolicy')));
+      await tester.tap(find.byKey(_key('attendancePolicy')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('From arrival to departure').last);
+      await tester.pumpAndSettle();
+      await save(tester);
+      expect(
+        ((await stored())['settings'] as Map)['attendancePolicy'],
+        'arrivalToDeparture',
+      );
+    });
+  });
+
   group('modules (Req 22)', () {
     testWidgets('an organizer turns one off and on', (tester) async {
       await pump(tester);

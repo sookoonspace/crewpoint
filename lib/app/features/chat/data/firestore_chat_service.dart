@@ -30,6 +30,13 @@ class FirestoreChatService implements IChatService {
   }
 
   @override
+  Stream<bool> readsFromCache(String eventId) => _messagesRef(eventId)
+      .limit(1)
+      .snapshots(includeMetadataChanges: true)
+      .map((snap) => snap.metadata.isFromCache)
+      .distinct();
+
+  @override
   Future<void> sendMessage({
     required String eventId,
     required String senderId,

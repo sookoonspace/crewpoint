@@ -1,3 +1,4 @@
+import 'package:crewpoint_app/app/features/schedule/presentation/attendance_section.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -66,6 +67,13 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
   Map<String, Object?> _answers = {};
   Map<String, Object?> _privateAnswers = {};
 
+  /// Their stay and attendance exceptions (Req 50).
+  DateTime? _arrivalAt;
+  DateTime? _departureAt;
+  List<String> _optOuts = const [];
+  List<String> _signUps = const [];
+  List<String> _invitedTo = const [];
+
   /// What was loaded, to tell whether anything changed.
   ParticipantModel? _saved;
   bool _loaded = false;
@@ -92,12 +100,25 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
     createdBy: _saved?.createdBy ?? ref.read(currentUserIdProvider),
     categoryId: _derived?.id ?? _categoryId,
     fields: _answers,
+    filterTags: _saved?.filterTags ?? const [],
+    arrivalAt: _arrivalAt,
+    departureAt: _departureAt,
+    optOuts: _optOuts,
+    signUps: _signUps,
+    invitedTo: _invitedTo,
   );
 
   bool get _dirty =>
       _birthDateChanged ||
       (_isNew
-          ? _name.text.trim().isNotEmpty || _isChild || _answers.isNotEmpty
+          ? _name.text.trim().isNotEmpty ||
+                _isChild ||
+                _answers.isNotEmpty ||
+                _arrivalAt != null ||
+                _departureAt != null ||
+                _optOuts.isNotEmpty ||
+                _signUps.isNotEmpty ||
+                _invitedTo.isNotEmpty
           : (_saved != null && _current != _saved));
 
   @override
@@ -128,6 +149,11 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
     _isChild = person.isChild;
     _categoryId = person.categoryId;
     _answers = {...person.fields};
+    _arrivalAt = person.arrivalAt;
+    _departureAt = person.departureAt;
+    _optOuts = person.optOuts;
+    _signUps = person.signUps;
+    _invitedTo = person.invitedTo;
   }
 
   void _answer(CustomField field, Object? value) => setState(() {
@@ -191,6 +217,11 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_arrivalAt != null &&
+        _departureAt != null &&
+        _departureAt!.isBefore(_arrivalAt!)) {
+      return;
+    }
     final strings = context.strings.people;
     final messenger = ScaffoldMessenger.of(context);
     final person = _current;
@@ -553,6 +584,38 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
                       enabled: !_busy && (f.isPrivate ? editsPrivate : canEdit),
                       onChanged: (v) => _answer(f, v),
                     ),
+                if (event.isModuleOn('schedule'))
+                  AttendanceSection(
+                    event: event,
+                    sessions:
+                        ref.watch(sessionListProvider(event.id)).value ??
+                        const [],
+                    person: _current.attendee(
+                      groupId == null
+                          ? const []
+                          : ref
+                                    .watch(
+                                      groupsByIdProvider((
+                                        eventId: event.id,
+                                        ids: groupId,
+                                      )),
+                                    )
+                                    .value?[groupId]
+                                    ?.invitedTo ??
+                                const [],
+                    ),
+                    enabled: canEdit && !_busy,
+                    canInvite: manages,
+                    onStay: ({arrivalAt, departureAt}) => setState(() {
+                      _arrivalAt = arrivalAt;
+                      _departureAt = departureAt;
+                    }),
+                    onExceptions: (e) => setState(() {
+                      _optOuts = e.optOuts;
+                      _signUps = e.signUps;
+                      _invitedTo = e.invitedTo;
+                    }),
+                  ),
                 if (_error != null)
                   Text(
                     _error!,

@@ -124,6 +124,51 @@ void main() {
     },
   );
 
+  test(
+    'saves a stay and attendance exceptions, and reads them back (Req 50)',
+    () async {
+      final person = ParticipantModel(
+        id: 'p1',
+        eventId: e,
+        name: 'Savita',
+        createdBy: 'owner',
+        arrivalAt: DateTime.utc(2027, 7, 17, 16),
+        departureAt: DateTime.utc(2027, 7, 19, 18),
+        optOuts: const ['m3'],
+        signUps: const ['k1'],
+        invitedTo: const ['gala'],
+      );
+      await repo.save(person);
+      final data = (await firestore.doc('events/$e/participants/p1').get())
+          .data()!;
+      expect(data['optOuts'], ['m3']);
+      expect(data['signUps'], ['k1']);
+      expect(data['invitedTo'], ['gala']);
+      final read = ParticipantModel.fromFirestore(e, 'p1', data);
+      expect(read.arrivalAt, DateTime.utc(2027, 7, 17, 16));
+      expect(read.departureAt, DateTime.utc(2027, 7, 19, 18));
+      expect(read, person);
+      expect(read.attendee(const ['reception']).groupInvitedTo, ['reception']);
+
+      await repo.save(read.copyWith(clearArrival: true, clearDeparture: true));
+      final cleared = (await firestore.doc('events/$e/participants/p1').get())
+          .data()!;
+      expect(cleared['arrivalAt'], isNull);
+      expect(cleared['departureAt'], isNull);
+    },
+  );
+
+  test("saves a group's session invitations (Req 50)", () async {
+    await firestore.doc('events/$e/groups/g1').set({'name': 'Shahs'});
+    await repo.saveGroupInvitations(e, 'g1', const ['mehndi', 'reception']);
+    final data = (await firestore.doc('events/$e/groups/g1').get()).data()!;
+    expect(data['invitedTo'], ['mehndi', 'reception']);
+    expect(GroupModel.fromFirestore('g1', data).invitedTo, [
+      'mehndi',
+      'reception',
+    ]);
+  });
+
   test('editing private details keeps an imported email, which linking '
       'reads (Req 46), and replaces the answers', () async {
     const person = ParticipantModel(id: 'p1', eventId: e, name: 'Ravi');

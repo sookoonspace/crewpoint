@@ -173,6 +173,11 @@ class ParticipantRepository {
         for (final f in definitions)
           if (f.scope == FieldScope.participant) f,
       ], person.fields),
+      'arrivalAt': _stamp(person.arrivalAt),
+      'departureAt': _stamp(person.departureAt),
+      'optOuts': person.optOuts,
+      'signUps': person.signUps,
+      'invitedTo': person.invitedTo,
       'updatedAt': FieldValue.serverTimestamp(),
     };
     if (existing.exists) {
@@ -196,6 +201,20 @@ class ParticipantRepository {
     }
     await batch.commit();
   }
+
+  static Timestamp? _stamp(DateTime? time) =>
+      time == null ? null : Timestamp.fromDate(time);
+
+  /// Sets the sessions a whole group is invited to (Req 50). Needs
+  /// `participants.edit`.
+  Future<void> saveGroupInvitations(
+    String eventId,
+    String groupId,
+    List<String> sessionIds,
+  ) => _event(eventId).collection('groups').doc(groupId).update({
+    'invitedTo': sessionIds,
+    'updatedAt': FieldValue.serverTimestamp(),
+  });
 
   Future<void> delete(String eventId, String id) async {
     final batch = _firestore.batch()

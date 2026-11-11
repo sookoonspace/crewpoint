@@ -32,6 +32,9 @@ import '../test/harness/fake_create_event.dart';
 import 'seed.dart';
 
 class _FakeChat implements IChatService {
+  @override
+  Stream<bool> readsFromCache(String eventId) => const Stream.empty();
+
   final ctrl = StreamController<List<ChatMessage>>.broadcast();
   @override
   Stream<List<ChatMessage>> messagesForEvent(String eventId) => ctrl.stream;

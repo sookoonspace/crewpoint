@@ -266,7 +266,15 @@ class _ModuleHub extends ConsumerWidget {
           strings.moduleBudgetSubtitle,
           AppColors.terracotta,
         ),
-      // Every member reads the schedule (Req 48).
+      // Everyone's own agenda, then the whole schedule (Req 48, 51, 78b).
+      if (event.isModuleOn('schedule'))
+        entry(
+          'agenda',
+          AppIcons.schedule,
+          context.strings.agenda.title,
+          context.strings.agenda.hubSubtitle,
+          Theme.of(context).colorScheme.secondary,
+        ),
       if (event.isModuleOn('schedule'))
         entry(
           'schedule',

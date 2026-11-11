@@ -10,6 +10,7 @@ import 'package:crewpoint_app/app/core/database/app_database.dart'
 import 'package:crewpoint_app/app/core/database/app_database.dart'
     show ChatMessagesCompanion;
 import 'package:crewpoint_app/app/core/database/daos/chat_messages_dao.dart';
+import 'package:crewpoint_app/app/core/database/daos/mirror_syncs_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/chat_reads_dao.dart';
 import 'package:crewpoint_app/app/core/services/i_chat_service.dart';
 import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
@@ -26,14 +27,21 @@ class ChatRepository implements IChatRepository {
     ChatMessagesDao? chatMessagesDao,
     FirebaseFirestore? firestore,
     ChatReadsDao? chatReadsDao,
+    MirrorSyncsDao? syncs,
     int maxCachedRows = 200,
-  }) : _chatService = chatService,
+  }) : _syncs = syncs,
+       _chatService = chatService,
        _chatMessagesDao = chatMessagesDao,
        _firestore = firestore,
        _chatReadsDao = chatReadsDao,
        _maxCachedRows = maxCachedRows;
 
   final IChatService _chatService;
+  final MirrorSyncsDao? _syncs;
+  final Map<String, StreamSubscription<bool>> _cacheSubs = {};
+
+  /// The key under which this mirror records when it last synced (Req 74).
+  static String mirrorKey(String eventId) => 'chat/$eventId';
   final ChatMessagesDao? _chatMessagesDao;
   final FirebaseFirestore? _firestore;
   final ChatReadsDao? _chatReadsDao;
@@ -65,6 +73,26 @@ class ChatRepository implements IChatRepository {
 
   void _ensureFirestoreMirror(String eventId, ChatMessagesDao dao) {
     if (_firestoreSubs.containsKey(eventId)) return;
+    final syncs = _syncs;
+    if (syncs != null) {
+      _cacheSubs[eventId] = _chatService
+          .readsFromCache(eventId)
+          .listen(
+            (fromCache) => syncs
+                .record(mirrorKey(eventId), fromCache: fromCache)
+                .catchError((Object e, StackTrace st) {
+                  log(
+                    'Sync note failed',
+                    error: e,
+                    stackTrace: st,
+                    name: 'chat',
+                  );
+                }),
+            onError: (Object e, StackTrace st) {
+              log('Cache state error', error: e, stackTrace: st, name: 'chat');
+            },
+          );
+    }
     _firestoreSubs[eventId] = _chatService
         .messagesForEvent(eventId)
         .listen(
@@ -101,6 +129,7 @@ class ChatRepository implements IChatRepository {
 
   void disposeMirror(String eventId) {
     _firestoreSubs.remove(eventId)?.cancel();
+    _cacheSubs.remove(eventId)?.cancel();
   }
 
   Future<void> dispose() async {
@@ -108,6 +137,10 @@ class ChatRepository implements IChatRepository {
       await sub.cancel();
     }
     _firestoreSubs.clear();
+    for (final sub in _cacheSubs.values) {
+      await sub.cancel();
+    }
+    _cacheSubs.clear();
     for (final sub in _readsSubs.values) {
       await sub.cancel();
     }

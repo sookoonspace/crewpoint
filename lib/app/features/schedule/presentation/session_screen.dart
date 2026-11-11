@@ -12,6 +12,7 @@ import 'package:crewpoint_app/app/features/participants/application/roster_contr
     show eventFieldsProvider;
 import 'package:crewpoint_app/app/features/participants/domain/models/category.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
+import 'package:crewpoint_app/app/features/schedule/domain/models/attendance.dart';
 import 'package:crewpoint_app/app/features/schedule/domain/models/schedule.dart';
 import 'package:crewpoint_app/app/features/schedule/domain/models/session.dart';
 import 'package:crewpoint_app/app/features/schedule/presentation/session_tile.dart';
@@ -58,7 +59,10 @@ class SessionScreen extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   spacing: AppSpacing.md,
                   children: [
-                    Text(strings.loadFailed, key: const Key('schedule.detail.error')),
+                    Text(
+                      strings.loadFailed,
+                      key: const Key('schedule.detail.error'),
+                    ),
                     FilledButton(
                       key: const Key('schedule.detail.retry'),
                       onPressed: () =>
@@ -69,7 +73,9 @@ class SessionScreen extends ConsumerWidget {
                 ),
               )
             : const Center(
-                child: CircularProgressIndicator(key: Key('schedule.detail.loading')),
+                child: CircularProgressIndicator(
+                  key: Key('schedule.detail.loading'),
+                ),
               ),
       );
     }
@@ -80,7 +86,10 @@ class SessionScreen extends ConsumerWidget {
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.xl),
-            child: Text(strings.missing, key: const Key('schedule.detail.missing')),
+            child: Text(
+              strings.missing,
+              key: const Key('schedule.detail.missing'),
+            ),
           ),
         ),
       );
@@ -261,6 +270,7 @@ class _SessionFormState extends ConsumerState<_SessionForm> {
   late Set<String> _categoryIds;
   late Set<String> _filterTags;
   late bool _hidden;
+  AttendancePolicy? _attendance;
   bool _dirty = false;
   bool _busy = false;
   String? _error;
@@ -292,6 +302,7 @@ class _SessionFormState extends ConsumerState<_SessionForm> {
     _categoryIds = {...?s?.eligibility.categoryIds};
     _filterTags = {...?s?.eligibility.filterTags};
     _hidden = s?.hidden ?? false;
+    _attendance = s?.attendance;
   }
 
   @override
@@ -389,6 +400,7 @@ class _SessionFormState extends ConsumerState<_SessionForm> {
         filterTags: _filterTags.toList(),
       ),
       hidden: _hidden,
+      attendance: _attendance,
     );
     setState(() {
       _busy = true;
@@ -860,6 +872,36 @@ class _SessionFormState extends ConsumerState<_SessionForm> {
                         ],
                       ],
                     ],
+                  ),
+                  DropdownButtonFormField<AttendancePolicy?>(
+                    key: const Key('schedule.edit.attendance'),
+                    initialValue: _attendance,
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      labelText: context.strings.agenda.sessionRuleLabel,
+                      helperText: context.strings.agenda.policyHelp(
+                        (_attendance ?? _event.attendancePolicy).name,
+                      ),
+                      helperMaxLines: 3,
+                      border: border,
+                    ),
+                    items: [
+                      DropdownMenuItem(
+                        value: null,
+                        child: Text(
+                          '${context.strings.agenda.sessionRuleFollow} '
+                          '(${context.strings.agenda.policy(_event.attendancePolicy.name)})',
+                        ),
+                      ),
+                      for (final p in AttendancePolicy.values)
+                        DropdownMenuItem(
+                          value: p,
+                          child: Text(context.strings.agenda.policy(p.name)),
+                        ),
+                    ],
+                    onChanged: _busy
+                        ? null
+                        : (v) => _change(() => _attendance = v),
                   ),
                   SwitchListTile(
                     key: const Key('schedule.edit.hidden'),

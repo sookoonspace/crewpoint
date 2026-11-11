@@ -50,6 +50,7 @@ abstract class AppStrings {
   InviteStrings get invites;
   MemberPickerStrings get memberPicker;
   ScheduleStrings get schedule;
+  AgendaStrings get agenda;
 
   /// Static English fallback. Used by service-layer code that has no
   /// `BuildContext` in scope (e.g. `firebaseAuthErrorMessage`). UI code
@@ -533,6 +534,8 @@ class _EnglishStrings extends AppStrings {
   MemberPickerStrings get memberPicker => const _EnglishMemberPickerStrings();
   @override
   ScheduleStrings get schedule => const _EnglishScheduleStrings();
+  @override
+  AgendaStrings get agenda => const _EnglishAgendaStrings();
 }
 
 class _EnglishChatStrings extends ChatStrings {
@@ -3015,4 +3018,144 @@ class _EnglishScheduleStrings extends ScheduleStrings {
   String get venueDirectionsLabel => 'Directions (optional)';
   @override
   String get venueAddressHelp => 'Leave empty while it is to be announced.';
+}
+
+/// Attendance, the personal agenda and now and next (#82, Req 50, 51), and
+/// offline notes (Req 74).
+abstract class AgendaStrings {
+  const AgendaStrings();
+
+  String get title;
+  String get hubSubtitle;
+  String get now;
+  String get next;
+  String get nothingNow;
+  String get nothingNext;
+  String get empty;
+  String get noRecord;
+  String get wholeSchedule;
+  String get everyoneInGroup;
+  String get loadFailed;
+  String get retry;
+  String offline(String? when);
+
+  String policy(String name);
+  String policyHelp(String name);
+  String get policyLabel;
+  String get sessionRuleLabel;
+  String get sessionRuleFollow;
+
+  String get attendanceHeading;
+  String get arrivalLabel;
+  String get departureLabel;
+  String get clearTime;
+  String get departureBeforeArrival;
+  String get sessionsHeading;
+  String get sessionsNone;
+  String get attends;
+  String get optedOut;
+  String get invited;
+  String get signedUp;
+  String get notAttending;
+  String get onlyOrganizersInvite;
+  String get groupInvitations;
+  String get groupInvitationsHelp;
+  String get groupInvitationsSaved;
+  String get groupInvitationsFailed;
+}
+
+class _EnglishAgendaStrings extends AgendaStrings {
+  const _EnglishAgendaStrings();
+
+  @override
+  String get title => 'Agenda';
+  @override
+  String get hubSubtitle => 'Where to be, now & next';
+  @override
+  String get now => 'Now';
+  @override
+  String get next => 'Next';
+  @override
+  String get nothingNow => 'Nothing on right now.';
+  @override
+  String get nothingNext => 'Nothing else coming up.';
+  @override
+  String get empty => 'Nothing on your agenda yet.';
+  @override
+  String get noRecord =>
+      "You aren't on the attendee list, so this shows the whole schedule.";
+  @override
+  String get wholeSchedule => 'Full schedule';
+  @override
+  String get everyoneInGroup => 'Everyone';
+  @override
+  String get loadFailed =>
+      "Couldn't load your agenda. Check your connection and try again.";
+  @override
+  String get retry => 'Try again';
+  @override
+  String offline(String? when) => when == null
+      ? 'Offline. Showing what was saved on this device.'
+      : 'Offline. Last updated $when.';
+
+  @override
+  String policy(String name) => switch (name) {
+    'arrivalToDeparture' => 'From arrival to departure',
+    'invitedOnly' => 'Invited only',
+    'everyone' => 'Everyone',
+    'bySession' => 'Sign-up',
+    _ => name,
+  };
+  @override
+  String policyHelp(String name) => switch (name) {
+    'arrivalToDeparture' =>
+      'People attend what happens between their arrival and departure.',
+    'invitedOnly' =>
+      'People attend only what they or their group are invited to.',
+    'everyone' => 'Everyone attends everything.',
+    'bySession' => 'People choose what they attend. Nothing is assumed.',
+    _ => '',
+  };
+  @override
+  String get policyLabel => 'Who attends sessions';
+  @override
+  String get sessionRuleLabel => 'Who attends';
+  @override
+  String get sessionRuleFollow => "Follow the event's setting";
+
+  @override
+  String get attendanceHeading => 'Attendance';
+  @override
+  String get arrivalLabel => 'Arrives (optional)';
+  @override
+  String get departureLabel => 'Leaves (optional)';
+  @override
+  String get clearTime => 'Clear';
+  @override
+  String get departureBeforeArrival => 'Leaving must be after arriving.';
+  @override
+  String get sessionsHeading => 'Sessions';
+  @override
+  String get sessionsNone => 'Nothing is on the schedule yet.';
+  @override
+  String get attends => 'Attends';
+  @override
+  String get optedOut => 'Opted out';
+  @override
+  String get invited => 'Invited';
+  @override
+  String get signedUp => 'Signed up';
+  @override
+  String get notAttending => 'Not attending';
+  @override
+  String get onlyOrganizersInvite => 'Only organizers can invite.';
+  @override
+  String get groupInvitations => 'Invited to';
+  @override
+  String get groupInvitationsHelp => 'Everyone in this group attends these.';
+  @override
+  String get groupInvitationsSaved => 'Invitations saved';
+  @override
+  String get groupInvitationsFailed =>
+      "Couldn't save the invitations. Try again.";
 }

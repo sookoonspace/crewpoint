@@ -32,6 +32,7 @@ class TaskListScreen extends StatelessWidget {
     this.onCreateTask,
     this.onUnauthorizedStatusTap,
     this.onExportPdf,
+    this.banner,
   });
 
   final List<TasksGroup> groups;
@@ -47,6 +48,9 @@ class TaskListScreen extends StatelessWidget {
   final VoidCallback? onCreateTask;
   final VoidCallback? onUnauthorizedStatusTap;
   final VoidCallback? onExportPdf;
+
+  /// Shown above the list, such as the offline note (Req 74).
+  final Widget? banner;
 
   @override
   Widget build(BuildContext context) {
@@ -73,6 +77,7 @@ class TaskListScreen extends StatelessWidget {
         maxWidth: 720,
         child: Column(
           children: [
+            ?banner,
             TasksFilterBar(
               filter: filter,
               onFilterChanged: onFilterChanged,

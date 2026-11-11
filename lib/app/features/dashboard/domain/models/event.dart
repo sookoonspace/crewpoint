@@ -1,6 +1,7 @@
 import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_access.dart';
 import 'package:crewpoint_app/app/core/format/event_time.dart';
 import 'package:crewpoint_app/app/core/labels/label_resolver.dart';
+import 'package:crewpoint_app/app/features/schedule/domain/models/attendance.dart';
 
 /// A place an event happens (Req 49). Without an address its location is to
 /// be announced. [mapUrl] is the organizer's own map link; without one the
@@ -314,13 +315,16 @@ class EventModel {
     _ => true,
   };
 
+  /// How sessions decide who attends (Req 50), from
+  /// `settings.attendancePolicy`. Missing means everyone.
+  AttendancePolicy get attendancePolicy =>
+      AttendancePolicy.of(settings['attendancePolicy']);
+
   /// Adding and editing sessions (Req 48) needs `schedule.edit` and the
   /// schedule module. Once ended only `event.manage` may, and once archived
   /// nobody, as with tasks.
   bool canEditSchedule(String uid) =>
-      isModuleOn('schedule') &&
-      can(uid, 'schedule.edit') &&
-      canEditTasks(uid);
+      isModuleOn('schedule') && can(uid, 'schedule.edit') && canEditTasks(uid);
 
   /// Nobody but organizers may see a draft, so an event with plain members
   /// cannot go back to one.

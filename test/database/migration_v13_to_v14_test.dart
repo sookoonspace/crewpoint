@@ -33,7 +33,10 @@ void main() {
     final db = AppDatabase(NativeDatabase.opened(raw));
     expect(await db.customSelect('SELECT id FROM events').get(), hasLength(1));
     expect(await db.select(db.sessions).get(), isEmpty);
-    expect(raw.select('PRAGMA user_version').first.values.first, 14);
+    expect(
+      raw.select('PRAGMA user_version').first.values.first,
+      db.schemaVersion,
+    );
     await db.close();
   });
 
@@ -42,11 +45,5 @@ void main() {
     final db = AppDatabase(NativeDatabase.opened(raw));
     expect(await db.customSelect('SELECT id FROM sessions').get(), isEmpty);
     await db.close();
-  });
-
-  test('schemaVersion is 14', () {
-    final db = AppDatabase(NativeDatabase.memory());
-    expect(db.schemaVersion, 14);
-    db.close();
   });
 }

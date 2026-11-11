@@ -38,6 +38,7 @@ void main() {
   final budget = find.byKey(const Key('events.hub.budget'));
   final tasks = find.byKey(const Key('events.hub.tasks'));
   final schedule = find.byKey(const Key('events.hub.schedule'));
+  final agenda = find.byKey(const Key('events.hub.agenda'));
 
   testWidgets('shows one entry per module, as a list at 375 px', (
     tester,
@@ -48,6 +49,7 @@ void main() {
     expect(tasks, findsOneWidget);
     // Every member reads the schedule (Req 48).
     expect(schedule, findsOneWidget);
+    expect(agenda, findsOneWidget);
     expect(find.byKey(const Key('events.hub.list')), findsOneWidget);
     expect(find.byKey(const Key('events.hub.grid')), findsNothing);
   });
@@ -65,6 +67,7 @@ void main() {
     expect(tasks, findsOneWidget);
     await pump(tester, width: 375, modules: const {'schedule': false});
     expect(schedule, findsNothing);
+    expect(agenda, findsNothing);
   });
 
   testWidgets('explains when everything is off', (tester) async {

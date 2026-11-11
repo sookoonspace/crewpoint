@@ -3,6 +3,7 @@ import 'package:crewpoint_app/app/core/services/file_picker_service.dart';
 import 'package:crewpoint_app/app/features/participants/data/import_repository.dart';
 import 'package:crewpoint_app/app/features/participants/data/participant_repository.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/my_balance.dart';
+import 'package:clock/clock.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,7 +21,10 @@ import 'package:crewpoint_app/app/core/database/daos/expense_splits_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/expenses_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/task_checklist_items_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/tasks_dao.dart';
+import 'package:crewpoint_app/app/core/database/daos/mirror_syncs_dao.dart';
+import 'package:crewpoint_app/app/core/database/daos/my_records_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/sessions_dao.dart';
+import 'package:crewpoint_app/app/features/schedule/data/my_records_repository.dart';
 import 'package:crewpoint_app/app/features/schedule/data/session_repository.dart';
 import 'package:crewpoint_app/app/features/schedule/domain/models/session.dart';
 import 'package:crewpoint_app/app/core/services/account_deletion_service.dart';
@@ -389,6 +393,7 @@ final taskRepositoryProvider = Provider<TaskRepository>((ref) {
     tasksDao: TasksDao(db),
     checklistDao: TaskChecklistItemsDao(db),
     firestore: ref.watch(firestoreProvider),
+    syncs: MirrorSyncsDao(db),
   );
   ref.onDispose(repo.dispose);
   return repo;
@@ -410,6 +415,7 @@ final sessionRepositoryProvider = Provider<SessionRepository>((ref) {
   final repo = SessionRepository(
     dao: SessionsDao(ref.watch(databaseProvider)),
     firestore: ref.watch(firestoreProvider),
+    syncs: MirrorSyncsDao(ref.watch(databaseProvider)),
   );
   ref.onDispose(repo.dispose);
   return repo;
@@ -638,6 +644,7 @@ final chatRepositoryProvider = Provider<ChatRepository>((ref) {
     chatMessagesDao: ChatMessagesDao(ref.watch(databaseProvider)),
     firestore: ref.watch(firestoreProvider),
     chatReadsDao: ref.watch(chatReadsDaoProvider),
+    syncs: MirrorSyncsDao(ref.watch(databaseProvider)),
   );
   ref.onDispose(repo.dispose);
   return repo;
@@ -752,4 +759,51 @@ final eventMuteProvider = StreamProvider.family<EventMute?, EventMuteKey>((
   return ref
       .watch(eventMuteRepositoryProvider)
       .watchEventMute(uid: key.uid, eventId: key.eventId);
+});
+
+/// When a mirror last heard from the server, and whether it is reading from
+/// the device's cache (Req 74). Keyed like `tasks/{eventId}`.
+final mirrorSyncProvider = StreamProvider.autoDispose
+    .family<MirrorSync?, String>(
+      (ref, key) => MirrorSyncsDao(ref.watch(databaseProvider)).watch(key),
+    );
+
+/// The viewer's own records in an event, mirrored for the agenda (Req 51,
+/// 74): their participant record, their groups' people and those groups.
+final myRecordsRepositoryProvider = Provider<MyRecordsRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  final repo = MyRecordsRepository(
+    dao: MyRecordsDao(db),
+    firestore: ref.watch(firestoreProvider),
+    syncs: MirrorSyncsDao(db),
+  );
+  ref.onDispose(repo.dispose);
+  return repo;
+});
+
+final myRecordsProvider = StreamProvider.family<OwnRecords, String>((
+  ref,
+  eventId,
+) {
+  final me = ref.watch(currentUserIdProvider);
+  if (me == null) return Stream.value(const OwnRecords());
+  final groupIds = ref.watch(
+    myMemberProvider(eventId).select((m) => m.value?.groupIds.join(',') ?? ''),
+  );
+  final repo = ref.watch(myRecordsRepositoryProvider);
+  ref.onDispose(() => repo.disposeMirror(eventId));
+  return repo.watchMine(
+    eventId,
+    uid: me,
+    groupIds: groupIds.isEmpty ? const [] : groupIds.split(','),
+  );
+});
+
+/// The time now, from [clockProvider], updated each minute for now and next.
+final clockProvider = Provider<Clock>((_) => const Clock());
+
+final minuteProvider = StreamProvider.autoDispose<DateTime>((ref) async* {
+  final clock = ref.watch(clockProvider);
+  yield clock.now();
+  yield* Stream.periodic(const Duration(minutes: 1), (_) => clock.now());
 });

@@ -175,8 +175,37 @@ class Sessions extends Table {
   TextColumn get eligibility => text().withDefault(const Constant('{}'))();
   BoolColumn get hidden => boolean().withDefault(const Constant(false))();
 
+  /// The session's own attendance rule, or null to follow the event (#82).
+  TextColumn get attendance => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {eventId, id};
+}
+
+/// The signed-in person's own participant and group records in an event
+/// (#82, Req 74), so the agenda works offline. [data] is the document as
+/// JSON. Rosters are never mirrored.
+class MyRecords extends Table {
+  TextColumn get eventId => text()();
+
+  /// `participant` or `group`.
+  TextColumn get kind => text()();
+  TextColumn get id => text()();
+  TextColumn get data => text()();
+
+  @override
+  Set<Column> get primaryKey => {eventId, kind, id};
+}
+
+/// When each mirror last heard from the server, and whether it is now
+/// reading from the device's cache (Req 74). Keyed like `tasks/{eventId}`.
+class MirrorSyncs extends Table {
+  TextColumn get mirrorKey => text()();
+  DateTimeColumn get syncedAt => dateTime().nullable()();
+  BoolColumn get fromCache => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {mirrorKey};
 }
 
 @DriftDatabase(
@@ -190,13 +219,15 @@ class Sessions extends Table {
     ExpenseSplits,
     ChatReads,
     Sessions,
+    MyRecords,
+    MirrorSyncs,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -321,6 +352,18 @@ class AppDatabase extends _$AppDatabase {
           "AND name = 'sessions'",
         ).get();
         if (existing.isEmpty) await m.createTable(sessions);
+      }
+      if (from < 15) {
+        // Attendance (#82). Safe to re-run, like the steps above.
+        final columns = await customSelect('PRAGMA table_info(sessions)').get();
+        if (!columns.any((c) => c.data['name'] == 'attendance')) {
+          await m.addColumn(sessions, sessions.attendance);
+        }
+        final tables = (await customSelect(
+          "SELECT name FROM sqlite_master WHERE type = 'table'",
+        ).get()).map((r) => r.data['name']).toSet();
+        if (!tables.contains('my_records')) await m.createTable(myRecords);
+        if (!tables.contains('mirror_syncs')) await m.createTable(mirrorSyncs);
       }
     },
   );

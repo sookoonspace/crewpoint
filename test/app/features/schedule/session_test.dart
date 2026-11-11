@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
+import 'package:crewpoint_app/app/features/schedule/domain/models/attendance.dart';
 import 'package:crewpoint_app/app/features/schedule/domain/models/schedule.dart';
 import 'package:crewpoint_app/app/features/schedule/domain/models/session.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -52,8 +53,10 @@ void main() {
           filterTags: ['program=Kids'],
         ),
         hidden: true,
+        attendance: AttendancePolicy.bySession,
       );
       final data = original.toFirestore(updatedBy: 'owner');
+      expect(data['attendance'], 'bySession');
       expect(data['updatedBy'], 'owner');
       expect(data['updatedAt'], isA<FieldValue>());
       expect(data['startAt'], isA<Timestamp>());

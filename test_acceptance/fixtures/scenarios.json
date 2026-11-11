@@ -541,16 +541,16 @@
  {
   "id": "J-05",
   "title": "Live schedule \"now & next\" for everyone.",
-  "status": "NOT BUILT",
-  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
-  "tested": false
+  "status": "PASS",
+  "gap": "Built in #82: the agenda shows what is on now and next, from the viewer's own records, or the whole schedule without one.",
+  "tested": true
  },
  {
   "id": "J-06",
   "title": "Personal agenda per family/person (F4 sees nothing before Sat 11am; F3 elders don't see Sat lunch; kids activity shows only for families with sign-ups).",
-  "status": "NOT BUILT",
-  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
-  "tested": false
+  "status": "PASS",
+  "gap": "Built in #82: agendas follow the event's attendance policy, each session's rule, and stored opt-outs, sign-ups and invitations.",
+  "tested": true
  },
  {
   "id": "J-07",
