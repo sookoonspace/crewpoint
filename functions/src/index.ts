@@ -8,6 +8,7 @@ export {deleteUserAccount} from "./account/deleteUserAccount";
 
 // === Event Functions ===
 export {generateInviteCode} from "./events/generateInviteCode";
+export {previewInvite} from "./events/previewInvite";
 export {joinEvent} from "./events/joinEvent";
 export {removeEventMember} from "./events/removeEventMember";
 export {deleteEvent} from "./events/deleteEvent";

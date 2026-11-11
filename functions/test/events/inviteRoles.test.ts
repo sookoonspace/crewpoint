@@ -107,7 +107,7 @@ describe('one active invite per event', () => {
     await seed();
     const first = await invite('owner', {roleId: 'volunteer'});
     const again = await invite('owner');
-    expect(again).toEqual({code: first.code, roleId: 'volunteer'});
+    expect(again).toEqual({code: first.code, roleId: 'volunteer', expiresAt: first.expiresAt});
     expect(await invites()).toHaveLength(1);
   });
 

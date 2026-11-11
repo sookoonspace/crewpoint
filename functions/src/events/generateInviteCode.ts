@@ -6,12 +6,12 @@ import {assertOpenToJoin} from "./eventStatus";
 
 import {readEventRoles, readPermissions} from "./members";
 import {PRESET_ROLES} from "./permissions";
+import {checkInviteExpiry, defaultInviteExpiry} from "./inviteExpiry";
 const db = getFirestore();
 
 // Characters: A-Z minus ambiguous (O, I, L) + 2-9.
 const CHARSET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const CODE_LENGTH = 6;
-const EXPIRY_MS = 24 * 60 * 60 * 1000;
 
 function generateCode(): string {
   let code = "";
@@ -35,11 +35,15 @@ export function inviteRoleId(invite: FirebaseFirestore.DocumentData): string {
  *   that role. Nobody can invite into Owner.
  * - **No `roleId`:** returns the active invite with its role, or a new
  *   Participant invite if there is none.
+ * - **`expiresAt`** (milliseconds): the organizer's expiry, from 5 minutes
+ *   to a whole registration period (Req 56). Changing only the expiry keeps
+ *   the code. Without it, the current expiry stays, and a new invite gets
+ *   24 hours on Blank and Party or lasts until the event starts otherwise.
  * - **`roleId` the same as the active invite's:** returns that invite, so
  *   codes already shared keep working until their 24-hour expiry.
  * - **A different `roleId`:** replaces the invite with a new code, so an old
  *   code never grants the new role.
- * - **`rotate: true`:** replaces the code and keeps the role. Use when a code
+ * - **`rotate: true`:** replaces the code and keeps the role and expiry. Use when a code
  *   may have leaked. Only the literal boolean `true` rotates, avoiding the
  *   `Boolean('false') === true` JS pitfall.
  * - Everything runs in one transaction, so simultaneous calls cannot leave two
@@ -57,6 +61,7 @@ export const generateInviteCode = onCall(
       eventId?: unknown;
       rotate?: unknown;
       roleId?: unknown;
+      expiresAt?: unknown;
     };
     const eventId = requireString(data.eventId, "eventId");
     const rotate = data.rotate === true;
@@ -66,6 +71,10 @@ export const generateInviteCode = onCall(
         requireString(data.roleId, "roleId");
 
     const uid = request.auth.uid;
+    const requestedExpiry =
+      data.expiresAt === undefined || data.expiresAt === null ?
+        null :
+        checkInviteExpiry(data.expiresAt, Date.now());
     const mode: "rotate" | "reuse" = rotate ? "rotate" : "reuse";
 
     return withStructuredLogs(
@@ -129,7 +138,14 @@ export const generateInviteCode = onCall(
             );
           }
 
-          // Reuse hit: same role, not rotating.
+          const currentExpiry: number | null =
+            current?.data().expiresAt?.toMillis?.() ?? null;
+          // The organizer's expiry, else the current one, else the default
+          // for the event's template (Req 56).
+          const expiresAt =
+            requestedExpiry ?? currentExpiry ?? defaultInviteExpiry(eventData, now);
+
+          // Reuse hit: same role, not rotating. A new expiry keeps the link.
           if (current && !rotate && inviteRoleId(current.data()) === roleId) {
             // ── PHASE 2: writes ───────────────────────────────────────
             const siblings = active.slice(1);
@@ -141,6 +157,9 @@ export const generateInviteCode = onCall(
               );
               for (const sib of siblings) tx.delete(sib.ref);
             }
+            if (expiresAt !== currentExpiry) {
+              tx.update(current.ref, {expiresAt: Timestamp.fromMillis(expiresAt)});
+            }
             logger.info("generateInviteCode reuse hit", {
               op: "generateInviteCode",
               uid,
@@ -150,7 +169,7 @@ export const generateInviteCode = onCall(
               code: current.id,
               roleId,
             });
-            return {code: current.id, roleId};
+            return {code: current.id, roleId, expiresAt};
           }
 
           const freshCode = await pickFreshCode(invitesRef, tx);
@@ -162,7 +181,7 @@ export const generateInviteCode = onCall(
             roleId,
             createdBy: uid,
             createdAt: FieldValue.serverTimestamp(),
-            expiresAt: Timestamp.fromDate(new Date(now + EXPIRY_MS)),
+            expiresAt: Timestamp.fromMillis(expiresAt),
           });
           logger.info("generateInviteCode fresh", {
             op: "generateInviteCode",
@@ -173,7 +192,7 @@ export const generateInviteCode = onCall(
             code: freshCode,
             roleId,
           });
-          return {code: freshCode, roleId};
+          return {code: freshCode, roleId, expiresAt};
         });
       }
     );
