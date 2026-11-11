@@ -61,6 +61,31 @@ service cloud.firestore {
             || (data.filterTags is list && data.filterTags.size() <= 200));
     }
 
+    // A list of session IDs for attendance exceptions (Req 50).
+    function isIdList(data, field) {
+      return !(field in data) || (data[field] is list && data[field].size() <= 200);
+    }
+
+    // A person's stay and exceptions (Req 50). Arrival and departure are
+    // optional times, and departure is not before arrival.
+    function attendanceIsValid(d) {
+      let arrival = d.get('arrivalAt', null);
+      let departure = d.get('departureAt', null);
+      return (arrival == null || arrival is timestamp)
+        && (departure == null || departure is timestamp)
+        && (arrival == null || departure == null || departure >= arrival)
+        && isIdList(d, 'optOuts')
+        && isIdList(d, 'signUps')
+        && isIdList(d, 'invitedTo');
+    }
+
+    // Invitations are set only with `participants.edit`; a group's adults set
+    // their own people's stay, opt-outs and sign-ups.
+    function invitationsAllowed(eventId, before, after) {
+      return after.get('invitedTo', []) == before.get('invitedTo', [])
+        || can(eventId, 'participants.edit');
+    }
+
     function eventData(eventId) {
       return get(/databases/$(database)/documents/events/$(eventId)).data;
     }
@@ -165,7 +190,10 @@ service cloud.firestore {
         && (!('venues' in request.resource.data) || request.resource.data.venues is list)
         && (!('languages' in request.resource.data) || request.resource.data.languages is list)
         && (!('labels' in request.resource.data) || request.resource.data.labels is map)
-        && (!('modules' in request.resource.data) || request.resource.data.modules is map);
+        && (!('modules' in request.resource.data) || request.resource.data.modules is map)
+        // Who attends sessions (Req 50).
+        && request.resource.data.get('settings', {}).get('attendancePolicy', null)
+            in [null, 'arrivalToDeparture', 'invitedOnly', 'everyone', 'bySession'];
 
       // Delete: only the Owner, the one role holding `event.transfer`.
       allow delete: if request.auth != null
@@ -359,14 +387,19 @@ service cloud.firestore {
       match /groups/{groupId} {
         allow read: if request.auth != null
           && (can(eventId, 'participants.read') || inMyGroup(eventId, groupId));
-        // Only a group's custom field answers are written here (Req 41).
-        // Its name and adults go through the group callables.
+        // Only a group's custom field answers (Req 41) and, with
+        // `participants.edit`, its session invitations (Req 50) are written
+        // here. Its name and adults go through the group callables.
         allow update: if request.auth != null
           && isNotArchived(eventId)
-          && editsParticipant(eventId, groupId)
-          && request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(['fields', 'filterTags', 'updatedAt'])
-          && answersAreValid(request.resource.data);
+          && ((editsParticipant(eventId, groupId)
+               && request.resource.data.diff(resource.data).affectedKeys()
+                   .hasOnly(['fields', 'filterTags', 'updatedAt'])
+               && answersAreValid(request.resource.data))
+              || (can(eventId, 'participants.edit')
+                  && request.resource.data.diff(resource.data).affectedKeys()
+                      .hasOnly(['invitedTo', 'updatedAt'])
+                  && isIdList(request.resource.data, 'invitedTo')));
         allow create, delete: if false;
 
         // A group's private answers, like a participant's.
@@ -473,7 +506,9 @@ service cloud.firestore {
         function sessionIsValid(s) {
           return s.keys().hasOnly(['title', 'startAt', 'endAt', 'timeTbc', 'venueId',
                 'locationTba', 'type', 'tags', 'capacity', 'eligibility', 'hidden',
-                'updatedBy', 'updatedAt'])
+                'attendance', 'updatedBy', 'updatedAt'])
+            && s.get('attendance', null) in [null, 'arrivalToDeparture', 'invitedOnly',
+                'everyone', 'bySession']
             && s.title is string && s.title.size() > 0 && s.title.size() <= 120
             && s.startAt is timestamp
             && (s.get('endAt', null) == null
@@ -514,8 +549,10 @@ service cloud.firestore {
           let groupId = d.get('groupId', null);
           return d.keys().hasOnly(['name', 'sortName', 'groupId', 'isChild', 'status',
                                    'createdBy', 'createdAt', 'updatedAt', 'uid', 'externalId',
-                                   'categoryId', 'fields', 'filterTags', 'imported', 'anonymised'])
+                                   'categoryId', 'fields', 'filterTags', 'imported', 'anonymised',
+                                   'arrivalAt', 'departureAt', 'optOuts', 'signUps', 'invitedTo'])
             && (d.get('categoryId', null) == null || d.categoryId is string)
+            && attendanceIsValid(d)
             && answersAreValid(d)
             && d.name is string && d.name.size() > 0 && d.name.size() <= 120
             && d.sortName == d.name.lower()
@@ -530,6 +567,7 @@ service cloud.firestore {
           && isNotArchived(eventId)
           && editsParticipant(eventId, request.resource.data.get('groupId', null))
           && validParticipant()
+          && invitationsAllowed(eventId, {}, request.resource.data)
           && request.resource.data.createdBy == request.auth.uid
           && !('uid' in request.resource.data)
           && !('externalId' in request.resource.data)
@@ -543,6 +581,7 @@ service cloud.firestore {
           && editsParticipant(eventId, resource.data.get('groupId', null))
           && editsParticipant(eventId, request.resource.data.get('groupId', null))
           && validParticipant()
+          && invitationsAllowed(eventId, resource.data, request.resource.data)
           && fieldUnchanged('createdBy')
           && fieldUnchanged('uid')
           && fieldUnchanged('externalId')
