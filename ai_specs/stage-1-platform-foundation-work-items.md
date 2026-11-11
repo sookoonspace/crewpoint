@@ -1455,11 +1455,11 @@ Stop expense and task mirrors rewriting rows in a way that triggers a UI update 
 - Coordinate with #72 if it is in progress, since it also changes the expense query.
 
 ### Acceptance criteria
-- [ ] Expense and task mirrors apply only changes.
-- [ ] They do not write once per row in a way that triggers a UI update per row.
-- [ ] A test proves that one changed document causes one bounded UI update.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] Expense and task mirrors apply only changes.
+- [x] They do not write once per row in a way that triggers a UI update per row.
+- [x] A test proves that one changed document causes one bounded UI update.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 25

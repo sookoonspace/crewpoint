@@ -133,10 +133,13 @@ class TaskRepository implements ITaskRepository {
         .listen(
           (snap) async {
             try {
-              // A change only to whether it came from the cache moves no rows.
-              if (!applied || snap.docChanges.isNotEmpty) {
-                applied = true;
-                await _mirrorSnapshot(eventId, snap);
+              // The first snapshot reconciles everything; later ones apply
+              // only their changes. A change only to whether it came from
+              // the cache moves no rows (Req 59).
+              final full = !applied;
+              applied = true;
+              if (full || snap.docChanges.isNotEmpty) {
+                await _mirrorSnapshot(eventId, snap, full: full);
               }
               await _syncs?.record(
                 mirrorKey(eventId),
@@ -157,23 +160,36 @@ class TaskRepository implements ITaskRepository {
         );
   }
 
+  /// Applies [snap] in one transaction, so the screen updates once (Req
+  /// 59). [full] reconciles the whole event, removing rows the query no
+  /// longer returns; otherwise only the snapshot's changes are applied.
   Future<void> _mirrorSnapshot(
     String eventId,
-    QuerySnapshot<Map<String, dynamic>> snap,
-  ) async {
-    final remoteIds = <String>{};
-    for (final doc in snap.docs) {
-      remoteIds.add(doc.id);
-      final task = _fromFirestore(doc.id, eventId, doc.data());
-      await _upsertDrift(task);
+    QuerySnapshot<Map<String, dynamic>> snap, {
+    required bool full,
+  }) => _tasksDao.transaction(() async {
+    if (full) {
+      final remoteIds = <String>{};
+      for (final doc in snap.docs) {
+        remoteIds.add(doc.id);
+        await _upsertDrift(_fromFirestore(doc.id, eventId, doc.data()));
+      }
+      for (final row in await _tasksDao.tasksByEventId(eventId)) {
+        if (!remoteIds.contains(row.id)) {
+          await _tasksDao.deleteTaskById(row.id);
+        }
+      }
+      return;
     }
-    final localRows = await _tasksDao.tasksByEventId(eventId);
-    for (final row in localRows) {
-      if (!remoteIds.contains(row.id)) {
-        await _tasksDao.deleteTaskById(row.id);
+    for (final change in snap.docChanges) {
+      final doc = change.doc;
+      if (change.type == DocumentChangeType.removed) {
+        await _tasksDao.deleteTaskById(doc.id);
+      } else {
+        await _upsertDrift(_fromFirestore(doc.id, eventId, doc.data()!));
       }
     }
-  }
+  });
 
   void disposeMirror(String eventId) {
     _firestoreSubs.remove(eventId)?.cancel();
