@@ -45,7 +45,10 @@ void main() {
       expect(row.data['attendance'], isNull);
       expect(await db.select(db.myRecords).get(), isEmpty);
       expect(await db.select(db.mirrorSyncs).get(), isEmpty);
-      expect(raw.select('PRAGMA user_version').first.values.first, 15);
+      expect(
+        raw.select('PRAGMA user_version').first.values.first,
+        db.schemaVersion,
+      );
       await db.close();
     },
   );
@@ -58,11 +61,5 @@ void main() {
       hasLength(1),
     );
     await db.close();
-  });
-
-  test('schemaVersion is 15', () {
-    final db = AppDatabase(NativeDatabase.memory());
-    expect(db.schemaVersion, 15);
-    db.close();
   });
 }

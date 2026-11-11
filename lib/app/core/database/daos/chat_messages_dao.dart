@@ -26,13 +26,26 @@ class ChatMessagesDao extends DatabaseAccessor<AppDatabase>
   Future<int> deleteById(String id) =>
       (delete(chatMessages)..where((m) => m.id.equals(id))).go();
 
+  /// Applies one change set in a transaction, so the screen updates once:
+  /// [upserts] written, [deleteIds] removed.
+  Future<void> applyChanges(
+    List<ChatMessagesCompanion> upserts,
+    List<String> deleteIds,
+  ) => transaction(() async {
+    if (deleteIds.isNotEmpty) {
+      await (delete(chatMessages)..where((m) => m.id.isIn(deleteIds))).go();
+    }
+    if (upserts.isNotEmpty) {
+      await batch((b) => b.insertAllOnConflictUpdate(chatMessages, upserts));
+    }
+  });
+
   /// Caps the local cache to `maxRows` per event, deleting oldest first.
   Future<void> evictOldestIfNeeded(String eventId, int maxRows) async {
     final all = await byEventId(eventId);
     if (all.length <= maxRows) return;
     final toDelete = all.length - maxRows;
-    for (final row in all.take(toDelete)) {
-      await deleteById(row.id);
-    }
+    final ids = [for (final row in all.take(toDelete)) row.id];
+    await (delete(chatMessages)..where((m) => m.id.isIn(ids))).go();
   }
 }

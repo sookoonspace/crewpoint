@@ -11,6 +11,7 @@ import 'package:crewpoint_app/app/core/database/app_database.dart'
     show ChatMessagesCompanion;
 import 'package:crewpoint_app/app/core/database/daos/chat_messages_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/mirror_syncs_dao.dart';
+import 'package:crewpoint_app/app/features/chat/domain/chat_window.dart';
 import 'package:crewpoint_app/app/core/database/daos/chat_reads_dao.dart';
 import 'package:crewpoint_app/app/core/services/i_chat_service.dart';
 import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
@@ -38,7 +39,6 @@ class ChatRepository implements IChatRepository {
 
   final IChatService _chatService;
   final MirrorSyncsDao? _syncs;
-  final Map<String, StreamSubscription<bool>> _cacheSubs = {};
 
   /// The key under which this mirror records when it last synced (Req 74).
   static String mirrorKey(String eventId) => 'chat/$eventId';
@@ -46,23 +46,30 @@ class ChatRepository implements IChatRepository {
   final FirebaseFirestore? _firestore;
   final ChatReadsDao? _chatReadsDao;
   final int _maxCachedRows;
-  final Map<String, StreamSubscription<List<ChatMessage>>> _firestoreSubs = {};
+  final Map<String, StreamSubscription<ChatChanges>> _firestoreSubs = {};
   final Map<String, StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>>
   _readsSubs = {};
 
   @override
   Stream<List<ChatMessageModel>> watchMessages(String eventId) {
     final dao = _chatMessagesDao;
-    // Web has no Drift persistence (Wasm is in-memory) and the empty-table
-    // watch on Wasm Drift does not reliably emit its first frame. Match
-    // `EventRepository.watchEventsForUser`'s web fork: read straight from
-    // Firestore — same path as the legacy `dao == null` fallback.
+    // Web has no Drift persistence (Wasm is in-memory), so the latest
+    // messages are kept in memory from the same change sets.
     if (kIsWeb || dao == null) {
-      return _chatService
-          .messagesForEvent(eventId)
-          .map(
-            (messages) => messages.map((m) => _toDomain(eventId, m)).toList(),
-          );
+      final byId = <String, ChatMessage>{};
+      return _chatService.latestMessages(eventId).map((changes) {
+        if (changes.window != null) byId.clear();
+        for (final m in changes.upserts) {
+          byId[m.id] = m;
+        }
+        changes.deleted.forEach(byId.remove);
+        return [
+          for (final m
+              in byId.values.toList()
+                ..sort((a, b) => a.timestamp.compareTo(b.timestamp)))
+            _toDomain(eventId, m),
+        ];
+      });
     }
 
     _ensureFirestoreMirror(eventId, dao);
@@ -71,47 +78,79 @@ class ChatRepository implements IChatRepository {
         .map((rows) => rows.map(_rowToDomain).toList());
   }
 
+  /// Older messages before [before], newest first, read from the server
+  /// each time and not kept on the device (Req 57).
+  Future<List<ChatMessageModel>> fetchOlder(
+    String eventId, {
+    required DateTime before,
+  }) async => [
+    for (final m in await _chatService.olderMessages(eventId, before: before))
+      _toDomain(eventId, m),
+  ];
+
+  ChatMessagesCompanion _toRow(String eventId, ChatMessage m) =>
+      ChatMessagesCompanion(
+        id: Value(m.id),
+        eventId: Value(eventId),
+        senderId: Value(m.senderId),
+        content: Value(m.text),
+        isHighPriority: Value(m.isHighPriority),
+        urgentPushSkipped: Value(m.urgentPushSkipped),
+        timestamp: Value(m.timestamp),
+        kind: Value(m.kind),
+      );
+
+  /// Applies each change set to Drift in one transaction (Req 57): only
+  /// what changed, with deletions removed (Req 58). The first window from
+  /// the server also clears messages deleted while the app was closed. The
+  /// device keeps at most [_maxCachedRows], trimmed when the mirror starts.
   void _ensureFirestoreMirror(String eventId, ChatMessagesDao dao) {
     if (_firestoreSubs.containsKey(eventId)) return;
-    final syncs = _syncs;
-    if (syncs != null) {
-      _cacheSubs[eventId] = _chatService
-          .readsFromCache(eventId)
-          .listen(
-            (fromCache) => syncs
-                .record(mirrorKey(eventId), fromCache: fromCache)
-                .catchError((Object e, StackTrace st) {
-                  log(
-                    'Sync note failed',
-                    error: e,
-                    stackTrace: st,
-                    name: 'chat',
-                  );
-                }),
-            onError: (Object e, StackTrace st) {
-              log('Cache state error', error: e, stackTrace: st, name: 'chat');
-            },
-          );
-    }
+    unawaited(
+      dao.evictOldestIfNeeded(eventId, _maxCachedRows).catchError((
+        Object e,
+        StackTrace st,
+      ) {
+        log('Trim failed', error: e, stackTrace: st, name: 'chat');
+      }),
+    );
+    var confirmed = false;
     _firestoreSubs[eventId] = _chatService
-        .messagesForEvent(eventId)
+        .latestMessages(eventId)
         .listen(
-          (messages) async {
+          (changes) async {
             try {
-              for (final m in messages) {
-                await dao.insertOrReplace(
-                  ChatMessagesCompanion(
-                    id: Value(m.id),
-                    eventId: Value(eventId),
-                    senderId: Value(m.senderId),
-                    content: Value(m.text),
-                    isHighPriority: Value(m.isHighPriority),
-                    urgentPushSkipped: Value(m.urgentPushSkipped),
-                    timestamp: Value(m.timestamp),
+              final deleted = [...changes.deleted];
+              final window = changes.window;
+              if (!confirmed && !changes.fromCache && window != null) {
+                // The first server window: anything it should hold but
+                // does not was deleted while away.
+                final cached = [
+                  for (final r in await dao.byEventId(eventId))
+                    ChatMessage(
+                      id: r.id,
+                      eventId: eventId,
+                      senderId: r.senderId,
+                      text: r.content,
+                      timestamp: r.timestamp,
+                    ),
+                ];
+                deleted.addAll(
+                  staleInCache(
+                    cached: cached,
+                    window: window,
+                    limit: chatPageSize,
                   ),
                 );
+                confirmed = true;
               }
-              await dao.evictOldestIfNeeded(eventId, _maxCachedRows);
+              await dao.applyChanges([
+                for (final m in changes.upserts) _toRow(eventId, m),
+              ], deleted);
+              await _syncs?.record(
+                mirrorKey(eventId),
+                fromCache: changes.fromCache,
+              );
             } catch (e, st) {
               log('Mirror failed', error: e, stackTrace: st, name: 'chat');
             }
@@ -129,7 +168,6 @@ class ChatRepository implements IChatRepository {
 
   void disposeMirror(String eventId) {
     _firestoreSubs.remove(eventId)?.cancel();
-    _cacheSubs.remove(eventId)?.cancel();
   }
 
   Future<void> dispose() async {
@@ -137,10 +175,6 @@ class ChatRepository implements IChatRepository {
       await sub.cancel();
     }
     _firestoreSubs.clear();
-    for (final sub in _cacheSubs.values) {
-      await sub.cancel();
-    }
-    _cacheSubs.clear();
     for (final sub in _readsSubs.values) {
       await sub.cancel();
     }
@@ -318,6 +352,7 @@ class ChatRepository implements IChatRepository {
     text: row.content,
     timestamp: row.timestamp,
     isHighPriority: row.isHighPriority,
+    kind: ChatMessageKind.fromString(row.kind),
     urgentPushSkipped: row.urgentPushSkipped,
   );
 }

@@ -4,19 +4,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/services/i_chat_service.dart';
 import 'package:crewpoint_app/app/features/chat/data/chat_repository.dart';
+import 'package:crewpoint_app/app/features/chat/domain/chat_window.dart';
 import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
 import 'package:crewpoint_app/app/features/chat/presentation/chat_screen.dart';
 
+/// Sends each change as a change set, as Firestore's `docChanges` would.
 class FakeChatService implements IChatService {
-  @override
-  Stream<bool> readsFromCache(String eventId) => const Stream.empty();
-
-  final _controller = StreamController<List<ChatMessage>>.broadcast();
+  final _controller = StreamController<ChatChanges>.broadcast();
   final List<ChatMessage> _messages = [];
 
   @override
-  Stream<List<ChatMessage>> messagesForEvent(String eventId) =>
-      _controller.stream;
+  Stream<ChatChanges> latestMessages(
+    String eventId, {
+    int limit = chatPageSize,
+  }) => _controller.stream;
+
+  @override
+  Future<List<ChatMessage>> olderMessages(
+    String eventId, {
+    required DateTime before,
+    int limit = chatPageSize,
+  }) async => const [];
 
   @override
   Future<void> sendMessage({
@@ -25,17 +33,21 @@ class FakeChatService implements IChatService {
     required String text,
     bool isHighPriority = false,
   }) async {
-    _messages.add(
-      ChatMessage(
-        id: 'msg-${_messages.length + 1}',
-        eventId: eventId,
-        senderId: senderId,
-        text: text,
-        timestamp: DateTime.now(),
-        isHighPriority: isHighPriority,
-      ),
+    final m = ChatMessage(
+      id: 'msg-${_messages.length + 1}',
+      eventId: eventId,
+      senderId: senderId,
+      text: text,
+      timestamp: DateTime.now(),
+      isHighPriority: isHighPriority,
     );
-    _controller.add(List.of(_messages));
+    _messages.add(m);
+    _controller.add((
+      upserts: [m],
+      deleted: const <String>[],
+      window: null,
+      fromCache: false,
+    ));
   }
 
   @override
@@ -44,7 +56,12 @@ class FakeChatService implements IChatService {
     required String messageId,
   }) async {
     _messages.removeWhere((m) => m.id == messageId);
-    _controller.add(List.of(_messages));
+    _controller.add((
+      upserts: const <ChatMessage>[],
+      deleted: [messageId],
+      window: null,
+      fromCache: false,
+    ));
   }
 
   void dispose() => _controller.close();

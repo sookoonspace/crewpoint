@@ -115,6 +115,9 @@ class ChatMessages extends Table {
   DateTimeColumn get timestamp => dateTime()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
+  /// `settlement` for settlement and dispute notices, else null (#85).
+  TextColumn get kind => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -227,7 +230,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -364,6 +367,16 @@ class AppDatabase extends _$AppDatabase {
         ).get()).map((r) => r.data['name']).toSet();
         if (!tables.contains('my_records')) await m.createTable(myRecords);
         if (!tables.contains('mirror_syncs')) await m.createTable(mirrorSyncs);
+      }
+      if (from < 16) {
+        // A chat message's kind (#85). Safe to re-run, like the steps above.
+        final columns = await customSelect(
+          'PRAGMA table_info(chat_messages)',
+        ).get();
+        if (columns.isNotEmpty &&
+            !columns.any((c) => c.data['name'] == 'kind')) {
+          await m.addColumn(chatMessages, chatMessages.kind);
+        }
       }
     },
   );

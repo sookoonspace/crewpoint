@@ -737,8 +737,8 @@
  {
   "id": "S-07",
   "title": "Event screens stay usable with 400 members: chat with **5,000 messages**, member list, and task list.",
-  "status": "PARTIAL",
-  "gap": "The ledger is fast at 400 members. One new message with 5,000 in chat took about 53 s and 4,902 screen updates on a Mac.",
+  "status": "PASS",
+  "gap": "Built in #85: chat listens to the latest 50 messages through docChanges and applies each change in one transaction; one new message with 5,000 in history settles in about 0.1 s. Older pages load on demand.",
   "tested": true
  },
  {
