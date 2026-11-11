@@ -47,6 +47,7 @@ abstract class AppStrings {
   FieldStrings get fields;
   ImportStrings get imports;
   LinkStrings get links;
+  InviteStrings get invites;
 
   /// Static English fallback. Used by service-layer code that has no
   /// `BuildContext` in scope (e.g. `firebaseAuthErrorMessage`). UI code
@@ -519,6 +520,9 @@ class _EnglishStrings extends AppStrings {
 
   @override
   LinkStrings get links => const _EnglishLinkStrings();
+
+  @override
+  InviteStrings get invites => const _EnglishInviteStrings();
 }
 
 class _EnglishChatStrings extends ChatStrings {
@@ -2550,3 +2554,139 @@ class _EnglishLinkStrings extends LinkStrings {
   @override
   String get yourRecord => 'Your record';
 }
+
+/// The invite link and QR code (Req 47, 56), and `/join/:code`.
+abstract class InviteStrings {
+  const InviteStrings();
+
+  String get generating;
+  String get offline;
+  String get permissionDenied;
+  String get eventGone;
+  String get failed;
+  String get retry;
+  String get shareHint;
+  String get linkLabel;
+  String get codeLabel;
+  String qrLabel(String link);
+  String expires(String when);
+  String get changeExpiry;
+  String expiryChoice(String choice);
+  String get pickDate;
+  String get copyLink;
+  String get copied;
+  String get share;
+  String shareText(String title, String link, String code);
+  String get rotate;
+  String get rotateHint;
+
+  // `/join/:code`
+  String get joinTitle;
+  String get joinNeedsConnection;
+  String get joinLoading;
+  String joinAs(String role);
+  String startsOn(String date);
+  String get joinButton;
+  String get joined;
+  String get notFound;
+  String get notOpenDraft;
+  String get notOpenEnded;
+  String get full;
+  String get alreadyMember;
+  String get openEvent;
+  String get joinFailed;
+  String get backToEvents;
+}
+
+class _EnglishInviteStrings extends InviteStrings {
+  const _EnglishInviteStrings();
+
+  @override
+  String get generating => 'Getting the invite…';
+  @override
+  String get offline =>
+      'Invites need a connection. Check it and try again.';
+  @override
+  String get permissionDenied =>
+      'Only people who manage members can invite others.';
+  @override
+  String get eventGone => 'This event no longer exists.';
+  @override
+  String get failed => "Couldn't get the invite. Please try again.";
+  @override
+  String get retry => 'Try again';
+  @override
+  String get shareHint =>
+      'Share the link or QR code. Anyone with it can join until it expires.';
+  @override
+  String get linkLabel => 'Invite link';
+  @override
+  String get codeLabel => 'Or enter this code in the app';
+  @override
+  String qrLabel(String link) => 'QR code for $link';
+  @override
+  String expires(String when) => 'Expires $when';
+  @override
+  String get changeExpiry => 'Change expiry';
+  @override
+  String expiryChoice(String choice) => switch (choice) {
+    'day' => '24 hours',
+    'week' => '7 days',
+    'month' => '30 days',
+    'eventStart' => 'Until the event starts',
+    'eventEnd' => 'Until the event ends',
+    _ => choice,
+  };
+  @override
+  String get pickDate => 'Pick a date…';
+  @override
+  String get copyLink => 'Copy link';
+  @override
+  String get copied => 'Link copied';
+  @override
+  String get share => 'Share';
+  @override
+  String shareText(String title, String link, String code) =>
+      'Join $title on CrewPoint: $link (or enter code $code in the app)';
+  @override
+  String get rotate => 'Replace link';
+  @override
+  String get rotateHint =>
+      'The old link and code stop working, for one that was shared too widely.';
+
+  @override
+  String get joinTitle => 'Join an event';
+  @override
+  String get joinNeedsConnection => 'Joining needs a connection.';
+  @override
+  String get joinLoading => 'Checking the invite…';
+  @override
+  String joinAs(String role) => "You'll join as $role.";
+  @override
+  String startsOn(String date) => 'Starts $date';
+  @override
+  String get joinButton => 'Join';
+  @override
+  String get joined => 'You joined the event!';
+  @override
+  String get notFound =>
+      'This invite is invalid or has expired. Ask the organizer for a new link.';
+  @override
+  String get notOpenDraft =>
+      "This event isn't open to joining yet. The organizer still needs to "
+      'publish it. Try the link again later.';
+  @override
+  String get notOpenEnded => 'This event has ended, so it is closed to joining.';
+  @override
+  String get full => 'This event is full. Ask the organizer about a place.';
+  @override
+  String get alreadyMember => "You're already in this event.";
+  @override
+  String get openEvent => 'Open the event';
+  @override
+  String get joinFailed =>
+      "Couldn't join. Check your connection and try again.";
+  @override
+  String get backToEvents => 'Go to my events';
+}
+

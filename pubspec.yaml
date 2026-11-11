@@ -9,6 +9,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Path URLs on web, so an invite link's /join/:code reaches the router
+  # (Req 47).
+  flutter_web_plugins:
+    sdk: flutter
 
   # UI
   cupertino_icons: ^1.0.8
@@ -97,6 +101,7 @@ dependencies:
   web: ^1.1.0
   timezone: ^0.11.2
   file_selector: ^1.1.0
+  qr_flutter: ^4.1.0
 
 dev_dependencies:
   flutter_test:

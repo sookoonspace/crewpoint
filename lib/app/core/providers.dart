@@ -1,3 +1,4 @@
+import 'package:crewpoint_app/app/core/services/qr_renderer.dart';
 import 'package:crewpoint_app/app/core/services/file_picker_service.dart';
 import 'package:crewpoint_app/app/features/participants/data/import_repository.dart';
 import 'package:crewpoint_app/app/features/participants/data/participant_repository.dart';
@@ -304,6 +305,11 @@ final eventMembersProvider = StreamProvider.family<List<MemberModel>, String>((
 /// The member and role callables. Tests override it with a fake.
 final memberCallsProvider = Provider<MemberCalls>(
   (_) => const FirebaseMemberCalls(),
+);
+
+/// Draws invite QR codes (Req 47). Tests override it with a fake.
+final qrRendererProvider = Provider<IQrRenderer>(
+  (_) => const QrFlutterRenderer(),
 );
 
 /// An event's roles (Req 26a): the presets with the event's own versions, then
