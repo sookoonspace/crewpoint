@@ -1,0 +1,144 @@
+[
+  {
+    "name": "everyone attends every session",
+    "policy": "everyone",
+    "session": {"id": "s", "startAt": "2027-07-17T13:00:00Z"},
+    "person": {},
+    "attends": true
+  },
+  {
+    "name": "an event with no policy treats it as everyone",
+    "policy": null,
+    "session": {"id": "s", "startAt": "2027-07-17T13:00:00Z"},
+    "person": {},
+    "attends": true
+  },
+  {
+    "name": "an opt-out always wins",
+    "policy": "everyone",
+    "session": {"id": "s", "startAt": "2027-07-17T13:00:00Z"},
+    "person": {"optOuts": ["s"], "invitedTo": ["s"]},
+    "attends": false
+  },
+  {
+    "name": "a cancelled person attends nothing",
+    "policy": "everyone",
+    "session": {"id": "s", "startAt": "2027-07-17T13:00:00Z"},
+    "person": {"status": "cancelled"},
+    "attends": false
+  },
+  {
+    "name": "arrival to departure: before arrival is not attended",
+    "policy": "arrivalToDeparture",
+    "session": {"id": "m2", "startAt": "2027-07-17T13:00:00Z"},
+    "person": {"arrivalAt": "2027-07-17T16:00:00Z"},
+    "attends": false
+  },
+  {
+    "name": "arrival to departure: a session starting at arrival is attended",
+    "policy": "arrivalToDeparture",
+    "session": {"id": "m3", "startAt": "2027-07-17T16:00:00Z"},
+    "person": {"arrivalAt": "2027-07-17T16:00:00Z"},
+    "attends": true
+  },
+  {
+    "name": "arrival to departure: a session starting at departure is not attended",
+    "policy": "arrivalToDeparture",
+    "session": {"id": "m8", "startAt": "2027-07-19T13:00:00Z"},
+    "person": {"departureAt": "2027-07-19T13:00:00Z"},
+    "attends": false
+  },
+  {
+    "name": "arrival to departure: no times means the whole event",
+    "policy": "arrivalToDeparture",
+    "session": {"id": "m8", "startAt": "2027-07-19T13:00:00Z"},
+    "person": {},
+    "attends": true
+  },
+  {
+    "name": "arrival to departure: an invitation adds a session outside the stay",
+    "policy": "arrivalToDeparture",
+    "session": {"id": "m1", "startAt": "2027-07-17T00:00:00Z"},
+    "person": {"arrivalAt": "2027-07-17T16:00:00Z", "invitedTo": ["m1"]},
+    "attends": true
+  },
+  {
+    "name": "invited only: nothing without an invitation",
+    "policy": "invitedOnly",
+    "session": {"id": "mehndi", "startAt": "2027-05-21T22:00:00Z"},
+    "person": {},
+    "group": {"invitedTo": ["reception"]},
+    "attends": false
+  },
+  {
+    "name": "invited only: the person's group is invited",
+    "policy": "invitedOnly",
+    "session": {"id": "reception", "startAt": "2027-05-22T22:00:00Z"},
+    "person": {},
+    "group": {"invitedTo": ["reception"]},
+    "attends": true
+  },
+  {
+    "name": "invited only: a sign-up is not an invitation",
+    "policy": "invitedOnly",
+    "session": {"id": "reception", "startAt": "2027-05-22T22:00:00Z"},
+    "person": {"signUps": ["reception"]},
+    "attends": false
+  },
+  {
+    "name": "by session: nothing is assumed",
+    "policy": "bySession",
+    "session": {"id": "k1", "startAt": "2027-07-17T18:30:00Z"},
+    "person": {},
+    "attends": false
+  },
+  {
+    "name": "by session: a sign-up attends",
+    "policy": "bySession",
+    "session": {"id": "k1", "startAt": "2027-07-17T18:30:00Z"},
+    "person": {"signUps": ["k1"]},
+    "attends": true
+  },
+  {
+    "name": "a session's own rule overrides the event's",
+    "policy": "arrivalToDeparture",
+    "session": {"id": "k1", "startAt": "2027-07-17T18:30:00Z", "attendance": "bySession"},
+    "person": {},
+    "attends": false
+  },
+  {
+    "name": "a session open to everyone ignores the stay",
+    "policy": "arrivalToDeparture",
+    "session": {"id": "p1", "startAt": "2027-07-17T02:00:00Z", "attendance": "everyone"},
+    "person": {"arrivalAt": "2027-07-17T16:00:00Z"},
+    "attends": true
+  },
+  {
+    "name": "eligibility: an adult does not attend a session for children",
+    "policy": "everyone",
+    "session": {"id": "k1", "startAt": "2027-07-17T18:30:00Z", "eligibility": {"categoryIds": ["child"]}},
+    "person": {"categoryId": "adult"},
+    "attends": false
+  },
+  {
+    "name": "eligibility: a signed-up child attends",
+    "policy": "arrivalToDeparture",
+    "session": {"id": "k1", "startAt": "2027-07-17T18:30:00Z", "attendance": "bySession", "eligibility": {"categoryIds": ["child"]}},
+    "person": {"categoryId": "child", "signUps": ["k1"]},
+    "attends": true
+  },
+  {
+    "name": "eligibility: a field answer admits",
+    "policy": "everyone",
+    "session": {"id": "l", "startAt": "2027-07-17T18:30:00Z", "eligibility": {"filterTags": ["program=Ladies"]}},
+    "person": {"filterTags": ["program=Ladies"]},
+    "attends": true
+  },
+  {
+    "name": "eligibility: an invitation overrides it",
+    "policy": "everyone",
+    "session": {"id": "k1", "startAt": "2027-07-17T18:30:00Z", "eligibility": {"categoryIds": ["child"]}},
+    "person": {"categoryId": "adult", "invitedTo": ["k1"]},
+    "attends": true
+  }
+]
