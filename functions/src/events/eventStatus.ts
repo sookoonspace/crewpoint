@@ -87,6 +87,18 @@ function endInstant(end: Date, timeZone: string): number {
 }
 
 /**
+ * When [event] starts, in milliseconds, or null without a start date. A
+ * date-only start means the start of that day in the event's time zone.
+ */
+export function eventStartMs(event: DocumentData): number | null {
+  const start = (event.startDate as Timestamp | null | undefined)?.toDate?.();
+  if (!start) return null;
+  return event.dateOnly === true ?
+    startOfDateIn(start.getTime(), event.timeZone ?? "UTC") :
+    start.getTime();
+}
+
+/**
  * The status [event] should move to at [now], or null if it should stay. A time
  * only counts if it passed after the last change by hand (`statusSetAt`), so an
  * organizer's choice is not undone by a time that had already passed.
@@ -108,12 +120,9 @@ export function nextStatus(event: DocumentData, now: Date): string | null {
       endInstant(end, zone);
     if (passedSinceSet(endMs)) return "ended";
   }
-  const start = (event.startDate as Timestamp | null | undefined)?.toDate();
-  if (status === "published" && start) {
-    const startMs = dateOnly ?
-      startOfDateIn(start.getTime(), zone) :
-      start.getTime();
-    if (passedSinceSet(startMs)) return "live";
+  const startMs = eventStartMs(event);
+  if (status === "published" && startMs !== null && passedSinceSet(startMs)) {
+    return "live";
   }
   return null;
 }
