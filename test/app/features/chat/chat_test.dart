@@ -8,6 +8,9 @@ import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart'
 import 'package:crewpoint_app/app/features/chat/presentation/chat_screen.dart';
 
 class FakeChatService implements IChatService {
+  @override
+  Stream<bool> readsFromCache(String eventId) => const Stream.empty();
+
   final _controller = StreamController<List<ChatMessage>>.broadcast();
   final List<ChatMessage> _messages = [];
 

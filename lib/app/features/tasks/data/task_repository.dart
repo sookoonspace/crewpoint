@@ -6,6 +6,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:crewpoint_app/app/core/database/app_database.dart';
+import 'package:crewpoint_app/app/core/database/daos/mirror_syncs_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/task_checklist_items_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/tasks_dao.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
@@ -21,7 +22,9 @@ class TaskRepository implements ITaskRepository {
     required TaskChecklistItemsDao checklistDao,
     required FirebaseFirestore firestore,
     MarkTaskCompleteCall? markTaskComplete,
-  }) : _tasksDao = tasksDao,
+    MirrorSyncsDao? syncs,
+  }) : _syncs = syncs,
+       _tasksDao = tasksDao,
        _checklistDao = checklistDao,
        _firestore = firestore,
        _markTaskComplete =
@@ -37,6 +40,10 @@ class TaskRepository implements ITaskRepository {
            });
 
   final TasksDao _tasksDao;
+  final MirrorSyncsDao? _syncs;
+
+  /// The key under which this mirror records when it last synced (Req 74).
+  static String mirrorKey(String eventId) => 'tasks/$eventId';
   final TaskChecklistItemsDao _checklistDao;
   final FirebaseFirestore _firestore;
   final MarkTaskCompleteCall _markTaskComplete;
@@ -120,16 +127,24 @@ class TaskRepository implements ITaskRepository {
     }
     _firestoreSubs.remove(eventId)?.cancel();
     _mirrorScopes[eventId] = assigneeId;
+    var applied = false;
     _firestoreSubs[eventId] = _tasksQuery(eventId, assigneeId)
-        .snapshots()
+        .snapshots(includeMetadataChanges: true)
         .listen(
-          (snap) {
-            _mirrorSnapshot(eventId, snap).catchError((
-              Object e,
-              StackTrace st,
-            ) {
+          (snap) async {
+            try {
+              // A change only to whether it came from the cache moves no rows.
+              if (!applied || snap.docChanges.isNotEmpty) {
+                applied = true;
+                await _mirrorSnapshot(eventId, snap);
+              }
+              await _syncs?.record(
+                mirrorKey(eventId),
+                fromCache: snap.metadata.isFromCache,
+              );
+            } catch (e, st) {
               log('Mirror failed', error: e, stackTrace: st, name: 'tasks');
-            });
+            }
           },
           onError: (Object e, StackTrace st) {
             log(

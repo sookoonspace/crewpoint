@@ -7,6 +7,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:crewpoint_app/app/core/database/app_database.dart';
 import 'package:crewpoint_app/app/core/database/daos/events_dao.dart';
+import 'package:crewpoint_app/app/features/schedule/domain/models/attendance.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
 /// My membership of one event: its ID, and my roles and permissions there.
@@ -241,9 +242,13 @@ class EventRepository {
   ///
   /// Pass [previousStatus] when the status may have changed. An archived event
   /// allows only a restore, so nothing else is written then.
+  ///
+  /// [attendancePolicy] goes into `settings.attendancePolicy` (Req 50),
+  /// leaving the event's other settings as they are.
   Future<EventWriteResult> saveConfiguration(
     EventModel updated, {
     EventStatus? previousStatus,
+    AttendancePolicy? attendancePolicy,
   }) => settleEventWrite(
     _eventsRef.doc(updated.id).update({
       if (previousStatus != EventStatus.archived) ...{
@@ -254,6 +259,7 @@ class EventRepository {
         'modules': updated.modules,
         'capacity': updated.capacity,
         'memberLimit': updated.memberLimit,
+        'settings.attendancePolicy': ?attendancePolicy?.name,
       },
       if (previousStatus != null && previousStatus != updated.status)
         ..._statusChange(updated.status),

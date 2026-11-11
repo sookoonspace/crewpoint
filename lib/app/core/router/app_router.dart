@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/core/widgets/module_guard.dart';
+import 'package:crewpoint_app/app/features/schedule/presentation/agenda_screen.dart';
 import 'package:crewpoint_app/app/features/schedule/presentation/schedule_screen.dart';
 import 'package:crewpoint_app/app/features/schedule/presentation/session_screen.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
@@ -312,6 +313,17 @@ GoRouter createRouter({
                             ),
                           ),
                         ],
+                      ),
+                      GoRoute(
+                        path: 'agenda',
+                        builder: (_, state) => EventGuard(
+                          eventId: _resolveEventId(state),
+                          child: (event) => ModuleGuard(
+                            event: event,
+                            module: 'schedule',
+                            child: AgendaScreen(event: event),
+                          ),
+                        ),
                       ),
                       GoRoute(
                         path: 'schedule',

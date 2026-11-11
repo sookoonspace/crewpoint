@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:crewpoint_app/app/features/schedule/domain/models/session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
@@ -320,6 +321,7 @@ class GroupSheet extends ConsumerStatefulWidget {
 class _GroupSheetState extends ConsumerState<GroupSheet> {
   late final TextEditingController _name;
   late Set<String> _adults;
+  late Set<String> _invited;
   late GroupModel _group;
   bool _busy = false;
 
@@ -329,6 +331,7 @@ class _GroupSheetState extends ConsumerState<GroupSheet> {
     _group = widget.group;
     _name = TextEditingController(text: _group.name);
     _adults = {..._group.adultUids};
+    _invited = {..._group.invitedTo};
   }
 
   @override
@@ -382,6 +385,8 @@ class _GroupSheetState extends ConsumerState<GroupSheet> {
         id: _group.id,
         name: name,
         adultUids: _group.adultUids,
+        fields: _group.fields,
+        invitedTo: _group.invitedTo,
       );
     } catch (_) {}
   }
@@ -399,7 +404,33 @@ class _GroupSheetState extends ConsumerState<GroupSheet> {
             ),
         context.strings.people.groupSaved,
       );
-      _group = GroupModel(id: _group.id, name: _group.name, adultUids: uids);
+      _group = GroupModel(
+        id: _group.id,
+        name: _group.name,
+        adultUids: uids,
+        fields: _group.fields,
+        invitedTo: _group.invitedTo,
+      );
+    } catch (_) {}
+  }
+
+  /// The sessions the whole group is invited to (Req 50).
+  Future<void> _saveInvitations() async {
+    final ids = _invited.toList()..sort();
+    try {
+      await _run(
+        () => ref
+            .read(participantRepositoryProvider)
+            .saveGroupInvitations(widget.event.id, _group.id, ids),
+        context.strings.agenda.groupInvitationsSaved,
+      );
+      _group = GroupModel(
+        id: _group.id,
+        name: _group.name,
+        adultUids: _group.adultUids,
+        fields: _group.fields,
+        invitedTo: ids,
+      );
     } catch (_) {}
   }
 
@@ -424,6 +455,47 @@ class _GroupSheetState extends ConsumerState<GroupSheet> {
       );
       navigator.pop(const GroupSheetResult(deleted: true));
     } catch (_) {}
+  }
+
+  List<Widget> _invitations(ThemeData theme) {
+    final strings = context.strings.agenda;
+    final sessions = [
+      for (final s
+          in ref.watch(sessionListProvider(widget.event.id)).value ??
+              const <SessionModel>[])
+        if (!s.hidden) s,
+    ]..sort((a, b) => a.startAt.compareTo(b.startAt));
+    if (sessions.isEmpty) return const [];
+    return [
+      const SizedBox(height: AppSpacing.md),
+      Text(strings.groupInvitations, style: theme.textTheme.titleSmall),
+      Text(strings.groupInvitationsHelp, style: theme.textTheme.bodySmall),
+      Wrap(
+        spacing: AppSpacing.sm,
+        runSpacing: AppSpacing.sm,
+        children: [
+          for (final s in sessions)
+            FilterChip(
+              key: Key('people.group.invite.${s.id}'),
+              label: Text(s.title),
+              selected: _invited.contains(s.id),
+              onSelected: _busy
+                  ? null
+                  : (on) => setState(
+                      () => on ? _invited.add(s.id) : _invited.remove(s.id),
+                    ),
+            ),
+        ],
+      ),
+      Align(
+        alignment: Alignment.centerRight,
+        child: TextButton(
+          key: const Key('people.group.saveInvitations'),
+          onPressed: _busy ? null : _saveInvitations,
+          child: Text(context.strings.people.save),
+        ),
+      ),
+    ];
   }
 
   @override
@@ -485,6 +557,7 @@ class _GroupSheetState extends ConsumerState<GroupSheet> {
                     ..addAll(uids),
                 ),
               ),
+              if (widget.event.isModuleOn('schedule')) ..._invitations(theme),
               OverflowBar(
                 alignment: MainAxisAlignment.spaceBetween,
                 overflowAlignment: OverflowBarAlignment.end,

@@ -9,6 +9,8 @@ import 'package:crewpoint_app/app/features/schedule/domain/models/schedule.dart'
 import 'package:crewpoint_app/app/features/schedule/domain/models/session.dart';
 import 'package:crewpoint_app/app/features/schedule/presentation/session_tile.dart';
 import 'package:crewpoint_app/app/features/schedule/presentation/venue_card.dart';
+import 'package:crewpoint_app/app/core/widgets/last_updated_note.dart';
+import 'package:crewpoint_app/app/features/schedule/data/session_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -50,17 +52,26 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
               label: Text(strings.add(words.one('session'))),
             )
           : null,
-      body: ContentMaxWidth(
-        maxWidth: 720,
-        child: switch (sessions) {
-          AsyncValue(:final value?) => _body(event, value, edits),
-          AsyncValue(error: != null) => _Failed(
-            onRetry: () => ref.invalidate(sessionListProvider(event.id)),
+      body: Column(
+        children: [
+          LastUpdatedNote(mirrorKey: SessionRepository.mirrorKey(event.id)),
+          Expanded(
+            child: ContentMaxWidth(
+              maxWidth: 720,
+              child: switch (sessions) {
+                AsyncValue(:final value?) => _body(event, value, edits),
+                AsyncValue(error: != null) => _Failed(
+                  onRetry: () => ref.invalidate(sessionListProvider(event.id)),
+                ),
+                _ => const Center(
+                  child: CircularProgressIndicator(
+                    key: Key('schedule.loading'),
+                  ),
+                ),
+              },
+            ),
           ),
-          _ => const Center(
-            child: CircularProgressIndicator(key: Key('schedule.loading')),
-          ),
-        },
+        ],
       ),
     );
   }

@@ -1,4 +1,6 @@
 import 'package:clock/clock.dart';
+import 'package:crewpoint_app/app/core/widgets/last_updated_note.dart';
+import 'package:crewpoint_app/app/features/tasks/data/task_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -182,6 +184,9 @@ class _EventTasksPageState extends ConsumerState<EventTasksPage> {
         );
 
         return TaskListScreen(
+          banner: LastUpdatedNote(
+            mirrorKey: TaskRepository.mirrorKey(widget.event.id),
+          ),
           groups: groups,
           event: widget.event,
           currentUserId: uid,

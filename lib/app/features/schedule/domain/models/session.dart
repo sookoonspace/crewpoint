@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:crewpoint_app/app/features/schedule/domain/models/attendance.dart';
 import 'package:flutter/foundation.dart';
 
 /// Who a session is for (Req 48): age bands (category IDs, Req 42) and
@@ -68,6 +69,7 @@ class SessionModel {
     this.capacity,
     this.eligibility = const SessionEligibility(),
     this.hidden = false,
+    this.attendance,
   });
 
   factory SessionModel.fromFirestore(String id, Map<String, dynamic> data) {
@@ -92,6 +94,7 @@ class SessionModel {
       capacity: capacity is num ? capacity.toInt() : null,
       eligibility: SessionEligibility.fromMap(data['eligibility']),
       hidden: data['hidden'] == true,
+      attendance: AttendancePolicy.tryParse(data['attendance']),
     );
   }
 
@@ -114,6 +117,10 @@ class SessionModel {
   final SessionEligibility eligibility;
   final bool hidden;
 
+  /// Who attends this session, overriding the event's policy, or null to
+  /// follow it (Req 50).
+  final AttendancePolicy? attendance;
+
   /// The document as written, with blanks stored as null.
   Map<String, Object?> toFirestore({required String updatedBy}) {
     String? blankToNull(String? s) =>
@@ -130,6 +137,7 @@ class SessionModel {
       'capacity': capacity,
       'eligibility': eligibility.toMap(),
       'hidden': hidden,
+      'attendance': attendance?.name,
       'updatedBy': updatedBy,
       'updatedAt': FieldValue.serverTimestamp(),
     };
@@ -149,7 +157,8 @@ class SessionModel {
       listEquals(other.tags, tags) &&
       other.capacity == capacity &&
       other.eligibility == eligibility &&
-      other.hidden == hidden;
+      other.hidden == hidden &&
+      other.attendance == attendance;
 
   @override
   int get hashCode => Object.hash(
@@ -165,5 +174,6 @@ class SessionModel {
     capacity,
     eligibility,
     hidden,
+    attendance,
   );
 }

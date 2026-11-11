@@ -6,12 +6,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart'
     show AppDatabase, EventsCompanion, UsersCompanion;
 import 'package:crewpoint_app/app/core/database/daos/chat_messages_dao.dart';
+import 'package:crewpoint_app/app/core/database/daos/mirror_syncs_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/events_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/users_dao.dart';
 import 'package:crewpoint_app/app/core/services/i_chat_service.dart';
 import 'package:crewpoint_app/app/features/chat/data/chat_repository.dart';
 
 class _ControllableChatService implements IChatService {
+  final cache = StreamController<bool>.broadcast();
+
+  @override
+  Stream<bool> readsFromCache(String eventId) => cache.stream;
+
   final _byEvent = <String, StreamController<List<ChatMessage>>>{};
 
   StreamController<List<ChatMessage>> _controller(String eventId) =>
@@ -73,6 +79,7 @@ void main() {
     repo = ChatRepository(
       chatService: service,
       chatMessagesDao: dao,
+      syncs: MirrorSyncsDao(db),
       maxCachedRows: 3, // tiny cap for eviction test
     );
   });
@@ -105,6 +112,21 @@ void main() {
     // Drift now has the row
     final localRows = await dao.byEventId('event-1');
     expect(localRows, hasLength(1));
+  });
+
+  test('notes when chat is read from the cache, keeping the last update '
+      '(Req 74)', () async {
+    repo.watchMessages('event-1');
+    await Future<void>.delayed(Duration.zero);
+    final syncs = MirrorSyncsDao(db);
+    final key = ChatRepository.mirrorKey('event-1');
+    service.cache.add(false);
+    final online = await syncs.watch(key).firstWhere((s) => s != null);
+    service.cache.add(true);
+    final offline = await syncs
+        .watch(key)
+        .firstWhere((s) => s?.fromCache ?? false);
+    expect(offline!.syncedAt, online!.syncedAt);
   });
 
   test('the urgent limit flag survives the Drift mirror', () async {

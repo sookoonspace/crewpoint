@@ -83,6 +83,9 @@ void main() {
         reason:
             'EventChatPage.initState should fire markEventRead(uid, eventId) after first frame',
       );
+      // Unmount, so the offline note's database watch closes (Req 74).
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 100));
     },
   );
 }

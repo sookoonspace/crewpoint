@@ -1,5 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:crewpoint_app/app/core/widgets/last_updated_note.dart';
+import 'package:crewpoint_app/app/features/chat/data/chat_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -170,6 +172,9 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
 
     return asyncMessages.when(
       data: (messages) => ChatScreen(
+        banner: LastUpdatedNote(
+          mirrorKey: ChatRepository.mirrorKey(widget.event.id),
+        ),
         messages: messages,
         currentUserId: uid,
         memberNames: memberNames,

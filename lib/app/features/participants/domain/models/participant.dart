@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
+import 'package:crewpoint_app/app/features/schedule/domain/models/attendance.dart';
 import 'package:flutter/foundation.dart';
 
 /// A person attending an event, with or without an account, children
@@ -16,6 +18,12 @@ class ParticipantModel {
     this.categoryId,
     this.fields = const {},
     this.anonymised = false,
+    this.filterTags = const [],
+    this.arrivalAt,
+    this.departureAt,
+    this.optOuts = const [],
+    this.signUps = const [],
+    this.invitedTo = const [],
   });
 
   factory ParticipantModel.fromFirestore(
@@ -34,6 +42,12 @@ class ParticipantModel {
     categoryId: data['categoryId'] as String?,
     fields: _answers(data['fields']),
     anonymised: data['anonymised'] == true,
+    filterTags: _ids(data['filterTags']),
+    arrivalAt: _time(data['arrivalAt']),
+    departureAt: _time(data['departureAt']),
+    optOuts: _ids(data['optOuts']),
+    signUps: _ids(data['signUps']),
+    invitedTo: _ids(data['invitedTo']),
   );
 
   final String id;
@@ -60,6 +74,34 @@ class ParticipantModel {
   /// right. Set only by the server.
   final bool anonymised;
 
+  /// Tags from standard answers, as saved (Req 41). Read for eligibility;
+  /// saving works them out again from [fields].
+  final List<String> filterTags;
+
+  /// When they arrive and leave, for arrival-to-departure attendance
+  /// (Req 50). Null means from the start, or to the end.
+  final DateTime? arrivalAt;
+  final DateTime? departureAt;
+
+  /// Attendance exceptions, as session IDs (Req 50). Only organizers with
+  /// `participants.edit` invite.
+  final List<String> optOuts;
+  final List<String> signUps;
+  final List<String> invitedTo;
+
+  /// This person for working out attendance, with their group's invitations.
+  Attendee attendee([List<String> groupInvitedTo = const []]) => Attendee(
+    status: status,
+    categoryId: categoryId,
+    filterTags: filterTags,
+    arrivalAt: arrivalAt,
+    departureAt: departureAt,
+    optOuts: optOuts,
+    signUps: signUps,
+    invitedTo: invitedTo,
+    groupInvitedTo: groupInvitedTo,
+  );
+
   /// Lower-case, for searching by the start of a name.
   String get sortName => name.trim().toLowerCase();
 
@@ -71,6 +113,13 @@ class ParticipantModel {
     String? categoryId,
     bool clearCategory = false,
     Map<String, Object?>? fields,
+    DateTime? arrivalAt,
+    bool clearArrival = false,
+    DateTime? departureAt,
+    bool clearDeparture = false,
+    List<String>? optOuts,
+    List<String>? signUps,
+    List<String>? invitedTo,
   }) => ParticipantModel(
     id: id,
     eventId: eventId,
@@ -83,6 +132,12 @@ class ParticipantModel {
     categoryId: clearCategory ? null : (categoryId ?? this.categoryId),
     fields: fields ?? this.fields,
     anonymised: anonymised,
+    filterTags: filterTags,
+    arrivalAt: clearArrival ? null : (arrivalAt ?? this.arrivalAt),
+    departureAt: clearDeparture ? null : (departureAt ?? this.departureAt),
+    optOuts: optOuts ?? this.optOuts,
+    signUps: signUps ?? this.signUps,
+    invitedTo: invitedTo ?? this.invitedTo,
   );
 
   @override
@@ -98,7 +153,12 @@ class ParticipantModel {
       other.status == status &&
       other.uid == uid &&
       other.createdBy == createdBy &&
-      other.anonymised == anonymised;
+      other.anonymised == anonymised &&
+      other.arrivalAt == arrivalAt &&
+      other.departureAt == departureAt &&
+      listEquals(other.optOuts, optOuts) &&
+      listEquals(other.signUps, signUps) &&
+      listEquals(other.invitedTo, invitedTo);
 
   @override
   int get hashCode => Object.hash(
@@ -113,6 +173,14 @@ class ParticipantModel {
     categoryId,
   );
 }
+
+List<String> _ids(Object? raw) => [
+  if (raw is List)
+    for (final v in raw)
+      if (v is String) v,
+];
+
+DateTime? _time(Object? raw) => raw is Timestamp ? raw.toDate().toUtc() : null;
 
 Map<String, Object?> _answers(Object? raw) => raw is Map
     ? {
@@ -172,6 +240,7 @@ class GroupModel {
     required this.name,
     this.adultUids = const [],
     this.fields = const {},
+    this.invitedTo = const [],
   });
 
   factory GroupModel.fromFirestore(String id, Map<String, dynamic> data) =>
@@ -183,6 +252,7 @@ class GroupModel {
             if (u is String) u,
         ],
         fields: _answers(data['fields']),
+        invitedTo: _ids(data['invitedTo']),
       );
 
   final String id;
@@ -193,4 +263,7 @@ class GroupModel {
 
   /// Standard answers to group fields (Req 41).
   final Map<String, Object?> fields;
+
+  /// Sessions the whole group is invited to (Req 50), set by organizers.
+  final List<String> invitedTo;
 }

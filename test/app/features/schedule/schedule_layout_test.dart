@@ -101,4 +101,14 @@ void main() {
     await robot.expectFound(const Key('schedule.tile.m1'));
     await robot.finish();
   });
+
+  testWidgets('the agenda fits', (tester) async {
+    final robot = await open(tester, '$base/agenda');
+    expect(tester.takeException(), isNull);
+    // The only session is a hidden draft, which no agenda shows.
+    robot.expectVisible(const Key('agenda.noRecord'));
+    robot.expectVisible(const Key('agenda.empty'));
+    expect(tester.takeException(), isNull);
+    await robot.finish();
+  });
 }

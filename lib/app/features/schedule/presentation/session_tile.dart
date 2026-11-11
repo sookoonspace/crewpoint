@@ -32,12 +32,20 @@ class SessionTile extends StatelessWidget {
     required this.session,
     this.withDay = false,
     this.showVenue = true,
+    this.note,
+    this.keyPrefix = 'schedule.tile',
   });
 
   final EventModel event;
   final SessionModel session;
   final bool withDay;
   final bool showVenue;
+
+  /// An extra line, such as who from the viewer's group attends.
+  final String? note;
+
+  /// Keys are `{keyPrefix}.{sessionId}`, so the same session can show twice.
+  final String keyPrefix;
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +60,7 @@ class SessionTile extends StatelessWidget {
     final details = [?session.type, if (showVenue) ?where].join(' · ');
 
     return ListTile(
-      key: Key('schedule.tile.${session.id}'),
+      key: Key('$keyPrefix.${session.id}'),
       contentPadding: EdgeInsets.zero,
       minVerticalPadding: AppSpacing.sm,
       onTap: () =>
@@ -67,6 +75,12 @@ class SessionTile extends StatelessWidget {
             style: theme.textTheme.bodyMedium,
           ),
           if (details.isNotEmpty) Text(details, style: muted),
+          if (note != null)
+            Text(
+              note!,
+              key: Key('$keyPrefix.${session.id}.note'),
+              style: muted,
+            ),
           if (session.timeTbc || session.hidden || session.tags.isNotEmpty)
             Wrap(
               spacing: AppSpacing.xs,
@@ -74,14 +88,14 @@ class SessionTile extends StatelessWidget {
               children: [
                 if (session.timeTbc)
                   _Badge(
-                    key: Key('schedule.tile.${session.id}.tbc'),
+                    key: Key('$keyPrefix.${session.id}.tbc'),
                     label: strings.timeTbc,
                     color: theme.colorScheme.tertiaryContainer,
                     onColor: theme.colorScheme.onTertiaryContainer,
                   ),
                 if (session.hidden)
                   _Badge(
-                    key: Key('schedule.tile.${session.id}.hidden'),
+                    key: Key('$keyPrefix.${session.id}.hidden'),
                     label: strings.hidden,
                     icon: AppIcons.hidden,
                     color: theme.colorScheme.surfaceContainerHighest,

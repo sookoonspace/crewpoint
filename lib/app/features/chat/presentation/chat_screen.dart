@@ -24,6 +24,7 @@ class ChatScreen extends StatefulWidget {
     this.onSendMessage,
     this.onSendCriticalAlert,
     this.onTapSettlement,
+    this.banner,
   });
 
   final List<ChatMessageModel> messages;
@@ -45,6 +46,9 @@ class ChatScreen extends StatefulWidget {
 
   /// Tapped a settlement-kind bubble — caller opens the DisputeSheet.
   final ValueChanged<ChatMessageModel>? onTapSettlement;
+
+  /// Shown above the messages, such as the offline note (Req 74).
+  final Widget? banner;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -138,6 +142,7 @@ class _ChatScreenState extends State<ChatScreen> {
         maxWidth: 720,
         child: Column(
           children: [
+            ?widget.banner,
             Expanded(
               child: widget.messages.isEmpty
                   ? Center(

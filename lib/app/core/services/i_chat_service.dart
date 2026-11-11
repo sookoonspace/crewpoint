@@ -4,6 +4,10 @@
 abstract class IChatService {
   Stream<List<ChatMessage>> messagesForEvent(String eventId);
 
+  /// Whether the event's messages are being read from the device's cache,
+  /// because there is no connection (Req 74).
+  Stream<bool> readsFromCache(String eventId);
+
   Future<void> sendMessage({
     required String eventId,
     required String senderId,

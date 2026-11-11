@@ -1291,20 +1291,20 @@ Work out attendance from an event policy plus stored exceptions, and give each p
 - Offline check-in look-ups wait for Stage 5.
 
 ### Acceptance criteria
-- [ ] Participants have optional arrival and departure times.
-- [ ] Attendance uses an event policy: `arrivalToDeparture` (default for Convention, sessions within a person's arrival and departure), `invitedOnly` (default for Wedding, sessions a person or their group was invited to), `everyone` (default for Party, all sessions), or `bySession` (each person chooses sessions, and nothing is assumed).
-- [ ] Only exceptions are stored, as per-person opt-outs and invitations, and attendance is otherwise worked out from the policy.
-- [ ] Personal agenda and now-and-next screens use the viewer's own record.
-- [ ] A fixture proves that someone arriving later sees nothing earlier, opted-out sessions are hidden, and sessions are limited to those invited.
-- [ ] A person's own group, agenda and sessions, and their tasks and chat, read from the local mirror on mobile, and show when they were last updated.
-- [ ] The `agenda` route exists, and the hub shows Agenda.
-- [ ] A robot journey builds a schedule and views the agenda.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
-- [ ] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
-- [ ] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
-- [ ] Tests for scenarios J-05, J-06 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] Participants have optional arrival and departure times.
+- [x] Attendance uses an event policy: `arrivalToDeparture` (default for Convention, sessions within a person's arrival and departure), `invitedOnly` (default for Wedding, sessions a person or their group was invited to), `everyone` (default for Party, all sessions), or `bySession` (each person chooses sessions, and nothing is assumed).
+- [x] Only exceptions are stored, as per-person opt-outs and invitations, and attendance is otherwise worked out from the policy.
+- [x] Personal agenda and now-and-next screens use the viewer's own record.
+- [x] A fixture proves that someone arriving later sees nothing earlier, opted-out sessions are hidden, and sessions are limited to those invited.
+- [x] A person's own group, agenda and sessions, and their tasks and chat, read from the local mirror on mobile, and show when they were last updated.
+- [x] The `agenda` route exists, and the hub shows Agenda.
+- [x] A robot journey builds a schedule and views the agenda.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
+- [x] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
+- [x] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
+- [x] Tests for scenarios J-05, J-06 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 21-22
