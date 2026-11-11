@@ -15,6 +15,8 @@ getAdminApp();
 const {runImportJob} = require('../src/imports/runImport');
 const {cancelImportedGroups} = require('../src/imports/cancelImportedGroups');
 const {recalculateEvent} = require('../src/counts/recalculate');
+const {exportRoster, freezeCounts} = require('../src/counts/exportAndFreeze');
+const {parseCsv} = require('../src/imports/csv');
 
 const E = 'derod';
 const db = () => getAdminDb();
@@ -144,5 +146,35 @@ describe('counts', () => {
       expect({meal, total: s.total, veg: s.byField.diet.Veg ?? 0, jain: s.byField.diet.Jain ?? 0, nonVeg: s.byField.diet['Non-veg'] ?? 0})
         .toEqual({meal, total, veg, jain, nonVeg});
     }
+  });
+});
+
+describe('export and freeze', () => {
+  const call = (fn: unknown, data: object) => ftest.wrap(fn)({auth: {uid: 'admin'}, data: {eventId: E, ...data}});
+
+  test('B-10 the registrations export for the caterer, one row per person, with diet', async () => {
+    const {csv, rows} = await call(exportRoster, {});
+    expect(rows).toBe(26);
+    const table = parseCsv(csv);
+    const diet = table[0].indexOf('diet');
+    const byDiet: Record<string, number> = {};
+    for (const row of table.slice(1)) byDiet[row[diet]] = (byDiet[row[diet]] ?? 0) + 1;
+    expect(byDiet).toEqual({Veg: 18, Jain: 2, 'Non-veg': 6});
+    // F8 was cancelled, so nobody from it is exported.
+    expect(csv).not.toContain('Adult 1');
+  });
+
+  test('B-14 frozen meal counts stay, and later changes show against them', async () => {
+    const {freezeId} = await call(freezeCounts, {label: 'Caterer'});
+    // After the freeze, Jaya decides to come to Saturday breakfast.
+    const jaya = (await db().collection(`events/${E}/participants`).where('name', '==', 'Jaya').get()).docs[0].ref;
+    await jaya.update({optOuts: []});
+    await recalculateEvent(db(), E, new Date('2027-07-12T12:00:00Z'));
+    const frozen = (await db().doc(`events/${E}/countFreezes/${freezeId}`).get()).data()!;
+    const live = (await db().doc(`events/${E}/stats/current`).get()).data()!;
+    expect(frozen.sessions.M2.total).toBe(24);
+    expect(live.sessions.M2.total).toBe(25);
+    expect(frozen.sessions.M2.byField.diet['Non-veg']).toBe(5);
+    expect(live.sessions.M2.byField.diet['Non-veg']).toBe(6);
   });
 });

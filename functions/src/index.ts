@@ -44,3 +44,4 @@ export {
   onCountsScheduled,
   recalculateCounts,
 } from "./counts/functions";
+export {exportRoster, freezeCounts} from "./counts/exportAndFreeze";

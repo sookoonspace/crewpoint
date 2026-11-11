@@ -539,6 +539,13 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      // Counts frozen on a date for suppliers (Req 54), written only by
+      // freezeCounts and read like the live counts.
+      match /countFreezes/{freezeId} {
+        allow read: if request.auth != null && can(eventId, 'counts.read');
+        allow write: if false;
+      }
+
       // People attending, with or without an account, children included (Req
       // 40, 43). Rosters are online and paged. Someone who may only see their
       // own group must list with `groupId in` their group IDs. `uid` (a

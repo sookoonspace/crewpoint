@@ -49,3 +49,22 @@ export function parseCsv(text: string): string[][] {
   if (cell !== "" || row.length > 0) endRow();
   return rows;
 }
+
+const FORMULA_LEADS = new Set(["=", "+", "-", "@", "\t", "\r"]);
+
+/**
+ * Makes a cell safe to open in a spreadsheet, which would run a cell
+ * starting with one of these as a formula. A leading apostrophe makes it
+ * text. Matches the app's `neutraliseCsvCell`.
+ */
+export function neutraliseCell(cell: string): string {
+  return cell.length > 0 && FORMULA_LEADS.has(cell[0]) ? `'${cell}` : cell;
+}
+
+/** Rows as CSV, every cell neutralised and quoted where needed. */
+export function toCsv(rows: string[][]): string {
+  return rows.map((row) => row.map((raw) => {
+    const cell = neutraliseCell(raw);
+    return /[",\r\n]/.test(cell) ? `"${cell.replace(/"/g, "\"\"")}"` : cell;
+  }).join(",")).join("\r\n") + "\r\n";
+}
