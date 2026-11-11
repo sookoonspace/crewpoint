@@ -87,6 +87,14 @@ service cloud.firestore {
         && (eventData(eventId).get('status', 'active') != 'ended' || canManageEvent(eventId));
     }
 
+    // Once an event ends, only `event.manage` can change its schedule, as with
+    // tasks (Req 19).
+    function scheduleIsOpen(eventId) {
+      return isNotArchived(eventId)
+        && isModuleOn(eventId, 'schedule')
+        && (eventData(eventId).get('status', 'active') != 'ended' || canManageEvent(eventId));
+    }
+
     // Compares with missing treated as null, so older events can be edited.
     function fieldUnchanged(field) {
       return request.resource.data.get(field, null) == resource.data.get(field, null);
@@ -434,6 +442,58 @@ service cloud.firestore {
           && request.resource.data.scope in ['participant', 'group']
           && request.resource.data.visibility in ['standard', 'private']
           && request.resource.data.order is int;
+      }
+
+      // The schedule (Req 48, 49). Every member reads the sessions that are not
+      // hidden, so anyone without `schedule.edit` must list with
+      // `hidden == false`. A hidden session is a draft only editors see.
+      match /sessions/{sessionId} {
+        allow read: if request.auth != null
+          && isEventMember(eventId)
+          && (resource.data.hidden == false
+              || can(eventId, 'schedule.edit'));
+
+        allow delete: if request.auth != null
+          && can(eventId, 'schedule.edit')
+          && scheduleIsOpen(eventId);
+
+        function isStringOrNull(value, max) {
+          return value == null || (value is string && value.size() <= max);
+        }
+
+        function eligibilityIsValid(e) {
+          return e is map
+            && e.keys().hasOnly(['categoryIds', 'filterTags'])
+            && e.get('categoryIds', []) is list
+            && e.get('categoryIds', []).size() <= 50
+            && e.get('filterTags', []) is list
+            && e.get('filterTags', []).size() <= 50;
+        }
+
+        function sessionIsValid(s) {
+          return s.keys().hasOnly(['title', 'startAt', 'endAt', 'timeTbc', 'venueId',
+                'locationTba', 'type', 'tags', 'capacity', 'eligibility', 'hidden',
+                'updatedBy', 'updatedAt'])
+            && s.title is string && s.title.size() > 0 && s.title.size() <= 120
+            && s.startAt is timestamp
+            && (s.get('endAt', null) == null
+                || (s.endAt is timestamp && s.endAt >= s.startAt))
+            && s.timeTbc is bool
+            && s.locationTba is bool
+            && s.hidden is bool
+            && isStringOrNull(s.get('venueId', null), 100)
+            && isStringOrNull(s.get('type', null), 40)
+            && s.tags is list && s.tags.size() <= 20
+            && isPositiveIntOrNull('capacity')
+            && eligibilityIsValid(s.eligibility)
+            && s.updatedBy == request.auth.uid
+            && s.updatedAt == request.time;
+        }
+
+        allow create, update: if request.auth != null
+          && can(eventId, 'schedule.edit')
+          && scheduleIsOpen(eventId)
+          && sessionIsValid(request.resource.data);
       }
 
       // People attending, with or without an account, children included (Req

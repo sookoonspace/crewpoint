@@ -37,7 +37,7 @@ describe('createEvent configuration (Req 18, 18a, 21)', () => {
     expect(saved.venues).toEqual([]);
     expect(saved.currency).toBe('USD');
     expect(saved.languages).toEqual(['en']);
-    expect(saved.modules).toEqual({tasks: true, budget: true, chat: true});
+    expect(saved.modules).toEqual({tasks: true, budget: true, chat: true, schedule: true});
     expect(saved.labels).toEqual({});
     expect(saved.settings).toEqual({});
     expect(saved.capacity).toBeNull();

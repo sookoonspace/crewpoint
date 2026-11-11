@@ -94,7 +94,7 @@ export const createEvent = onCall({timeoutSeconds: 30}, async (request) => {
           dateOnly: data.dateOnly === true,
           venues: [],
           languages: ["en"],
-          modules: {tasks: true, budget: true, chat: true},
+          modules: {tasks: true, budget: true, chat: true, schedule: true},
           labels: {},
           settings: {},
           capacity: null,
