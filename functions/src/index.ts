@@ -37,3 +37,10 @@ export {linkMyParticipants, resolveLinkRequest} from "./participants/linkPartici
 export {onTaskDueScheduled} from "./events/onTaskDueScheduled";
 export {onEventStatusScheduled} from "./events/onEventStatusScheduled";
 export {onDigestSummary} from "./events/onDigestSummary";
+export {
+  onCountsInputWritten,
+  onCountsPrivateWritten,
+  onCountsSettingsChanged,
+  onCountsScheduled,
+  recalculateCounts,
+} from "./counts/functions";
