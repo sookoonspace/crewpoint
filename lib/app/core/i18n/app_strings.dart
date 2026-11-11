@@ -3192,6 +3192,30 @@ abstract class CountsStrings {
   String get noSessions;
   String get removedSession;
   String capacity(int count, int? capacity);
+
+  String get export;
+  String get exportTitle;
+  String get exportCounts;
+  String get exportRoster;
+  String get exportChanges;
+  String get includePrivate;
+  String get includePrivateHelp;
+  String get exportFailed;
+  String get exported;
+  String get freeze;
+  String get freezeTitle;
+  String get freezeBody;
+  String get freezeLabel;
+  String get freezeConfirm;
+  String get cancel;
+  String get freezeFailed;
+  String get frozenNow;
+  String frozenOn(String when, String? label);
+  String get changesHeading;
+  String get noChanges;
+  String change(String what, int before, int after);
+  String get earlierFreezes;
+  String get wholeEventLabel;
 }
 
 class _EnglishCountsStrings extends CountsStrings {
@@ -3252,4 +3276,59 @@ class _EnglishCountsStrings extends CountsStrings {
   @override
   String capacity(int count, int? capacity) =>
       capacity == null ? '$count attending' : '$count of $capacity attending';
+
+  @override
+  String get export => 'Export';
+  @override
+  String get exportTitle => 'Export to CSV';
+  @override
+  String get exportCounts => 'Counts';
+  @override
+  String get exportRoster => 'Roster';
+  @override
+  String get exportChanges => 'Changes since the freeze';
+  @override
+  String get includePrivate => 'Include private fields';
+  @override
+  String get includePrivateHelp =>
+      'Left out unless you choose them. The roster adds birth dates too.';
+  @override
+  String get exportFailed =>
+      "Couldn't export. Check your connection and try again.";
+  @override
+  String get exported => 'Exported';
+  @override
+  String get freeze => 'Freeze counts';
+  @override
+  String get freezeTitle => 'Freeze counts now?';
+  @override
+  String get freezeBody =>
+      'The numbers are kept with today\'s date, for suppliers. Later changes show against them.';
+  @override
+  String get freezeLabel => 'Note (optional), such as who it was sent to';
+  @override
+  String get freezeConfirm => 'Freeze';
+  @override
+  String get cancel => 'Cancel';
+  @override
+  String get freezeFailed => "Couldn't freeze the counts. Try again.";
+  @override
+  String get frozenNow => 'Counts frozen';
+  @override
+  String frozenOn(String when, String? label) =>
+      label == null ? 'Frozen $when' : 'Frozen $when · $label';
+  @override
+  String get changesHeading => 'Changes since the freeze';
+  @override
+  String get noChanges => 'No changes since the freeze.';
+  @override
+  String change(String what, int before, int after) {
+    final d = after - before;
+    return '$what: $before → $after (${d > 0 ? '+' : ''}$d)';
+  }
+
+  @override
+  String get earlierFreezes => 'Compare with';
+  @override
+  String get wholeEventLabel => 'Whole event';
 }

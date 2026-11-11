@@ -178,3 +178,14 @@ describe('export and freeze', () => {
     expect(live.sessions.M2.byField.diet['Non-veg']).toBe(6);
   });
 });
+
+describe('custom fields', () => {
+  test('GE-04 a custom field the organizer added is counted, per session too, and exported', async () => {
+    // The T-shirt field was added by the organizer, like any other.
+    expect(Object.keys(stats.event.byField)).toContain('shirt');
+    expect(stats.sessions.K1.byField.shirt).toBeDefined();
+    const {csv} = await ftest.wrap(exportRoster)({auth: {uid: 'admin'}, data: {eventId: E}});
+    const header = parseCsv(csv)[0];
+    expect(header).toContain('shirt');
+  });
+});

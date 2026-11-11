@@ -1,10 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 
+import '../harness/recording_file_exporter.dart';
 import '../harness/roles_harness.dart';
 import '../robots/schedule_robot.dart';
 
@@ -13,6 +16,7 @@ import '../robots/schedule_robot.dart';
 /// and can recalculate now. Counts are worked out on the server.
 void main() {
   late RolesHarness harness;
+  late RecordingFileExporter exporter;
   const e = 'events/${RolesHarness.eventId}';
   const base = '/dashboard/event/${RolesHarness.eventId}';
 
@@ -96,7 +100,25 @@ void main() {
         'updatedAt': Timestamp.fromDate(DateTime(2027, 7, 10, 9, 30)),
       });
     }
-    await tester.pumpWidget(harness.buildApp(overrides: overrides));
+    // A private field, counted but left out of exports by default.
+    await db.doc('$e/fields/meal').set({
+      'label': 'Meal choice',
+      'type': 'singleChoice',
+      'options': ['Fish', 'Veg'],
+      'required': false,
+      'scope': 'participant',
+      'visibility': 'private',
+      'order': 2,
+    });
+    exporter = RecordingFileExporter();
+    await tester.pumpWidget(
+      harness.buildApp(
+        overrides: [
+          fileExporterProvider.overrideWithValue(exporter),
+          ...overrides,
+        ],
+      ),
+    );
     final robot = ScheduleRobot(tester);
     await robot.settle();
     return robot;
@@ -183,6 +205,101 @@ void main() {
     final robot = await open(tester, as: 'sam');
     robot.expectHidden(const Key('counts.event'));
     robot.expectHidden(const Key('counts.recalculate'));
+    await robot.finish();
+  });
+
+  String lastCsv() => utf8.decode(exporter.lastShare!.bytes);
+
+  testWidgets('B-10 exports per-session diet counts, private fields left out', (
+    tester,
+  ) async {
+    final robot = await open(tester);
+    await robot.tap(const Key('counts.export'));
+    await robot.tap(const Key('counts.export.counts'));
+    expect(exporter.lastShare!.filename, contains('-counts-'));
+    expect(exporter.lastShare!.mimeType, 'text/csv');
+    final csv = lastCsv();
+    // Categories follow the event's order: Child, then Adult.
+    expect(csv, contains('Whole event,,26,10,16,18,2,6,0,7,19,0'));
+    expect(csv, contains('Lunch,2027-07-17 12:30,24'));
+    expect(csv, isNot(contains('Meal choice')));
+
+    await robot.tap(const Key('counts.export'));
+    await robot.tap(const Key('counts.export.private'));
+    await robot.tap(const Key('counts.export.counts'));
+    expect(lastCsv(), contains('Meal choice: Fish'));
+    await robot.finish();
+  });
+
+  testWidgets('B-10 exports the roster through the server', (tester) async {
+    final robot = await open(tester);
+    harness.calls.rosterCsv = 'Name,Group\r\nKunal,Desai\r\n';
+    await robot.tap(const Key('counts.export'));
+    await robot.tap(const Key('counts.export.roster'));
+    expect(harness.calls.calls, contains('exportRoster:evt:false'));
+    expect(exporter.lastShare!.filename, contains('-roster-'));
+    expect(lastCsv(), contains('Kunal,Desai'));
+    await robot.finish();
+  });
+
+  testWidgets('B-14 freezes counts and lists later changes against them', (
+    tester,
+  ) async {
+    final robot = await open(tester);
+    robot.expectHidden(const Key('counts.frozen'));
+    await robot.tap(const Key('counts.freeze'));
+    await tester.enterText(
+      find.byKey(const Key('counts.freeze.label')),
+      'Sent to caterer',
+    );
+    await robot.tap(const Key('counts.freeze.confirm'));
+    expect(harness.calls.calls, contains('freezeCounts:evt:Sent to caterer'));
+    await robot.expectFound(const Key('counts.frozen'));
+    expect(
+      tester.widget<Text>(find.byKey(const Key('counts.frozen.when'))).data,
+      endsWith('Sent to caterer'),
+    );
+    robot.expectVisible(const Key('counts.changes.none'));
+
+    // Two more people come to lunch.
+    await harness.firestore.doc('$e/stats/current').update({
+      'sessions.m3.total': 26,
+      'sessions.m3.byField.diet.Veg': 20,
+    });
+    await robot.settle();
+    await robot.expectFound(const Key('counts.changes.0'));
+    expect(
+      tester.widget<Text>(find.byKey(const Key('counts.changes.0'))).data,
+      'Lunch · Total: 24 → 26 (+2)',
+    );
+
+    await robot.tap(const Key('counts.export'));
+    await robot.tap(const Key('counts.export.changes'));
+    expect(lastCsv(), contains('Lunch,Diet: Veg,18,20,\'+2'));
+    await robot.finish();
+  });
+
+  testWidgets('a failed freeze explains, and can be tried again', (
+    tester,
+  ) async {
+    final robot = await open(tester);
+    harness.calls.failNext = StateError('refused');
+    await robot.tap(const Key('counts.freeze'));
+    await robot.tap(const Key('counts.freeze.confirm'));
+    await robot.expectFound(const Key('counts.recalculateError'));
+    await robot.tap(const Key('counts.freeze'));
+    await robot.tap(const Key('counts.freeze.confirm'));
+    robot.expectHidden(const Key('counts.recalculateError'));
+    await robot.finish();
+  });
+
+  testWidgets('without reports.export, there is no export or freeze', (
+    tester,
+  ) async {
+    final robot = await open(tester, as: 'lead');
+    robot.expectVisible(const Key('counts.event'));
+    robot.expectHidden(const Key('counts.export'));
+    robot.expectHidden(const Key('counts.freeze'));
     await robot.finish();
   });
 }

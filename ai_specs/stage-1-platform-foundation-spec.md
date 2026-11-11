@@ -186,7 +186,7 @@ Each fix keeps working for current members, and has a regression test written fi
 52. Counts per session and per event, by category and by any custom field, are calculated by a function and stored in a `stats` document with a last-updated time, recalculated after changes, so devices never need the whole roster. The screen shows when counts were last updated. (B-04, B-05, GE-04) Private choice fields are counted too, as totals readable only with `counts.read`. Changes queue the event and a scheduled job recalculates queued events every 5 minutes, with "Recalculate now" on the counts screen. [Decided 2026-11-11]
 52a. **Convention values required in Stage 1.** With F1–F7 loaded and F8 cancelled through re-import, and with F10 absent because merging is Stage 2, the fixture must produce: 7 groups, 16 adults, 10 children, 26 people; 18, 2 and 6 by diet; 7 kids activity sign-ups; and the full §4 per-meal table for M1–M8. The before-merge, walk-in and post-event rows of §4 belong to Stages 2 and 5.
 53. Export counts and rosters to CSV, with permissions enforced and any private fields excluded by default. (B-10)
-54. Freeze: an authorised user locks counts on a date. Later changes appear as a list of differences, and the frozen numbers remain available. (B-14)
+54. Freeze: an authorised user locks counts on a date. Later changes appear as a list of differences, and the frozen numbers remain available. (B-14) Exporting counts or the roster and freezing need `reports.export`. Freezing keeps today's numbers with the date; freezing again adds a new set and earlier ones stay. [Decided 2026-11-11]
 
 ### 1.8 Scale foundations
 

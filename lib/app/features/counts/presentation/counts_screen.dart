@@ -7,6 +7,8 @@ import 'package:crewpoint_app/app/core/services/callable_errors.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart'
     show NoAccessView;
+import 'package:crewpoint_app/app/core/services/file_export_service.dart';
+import 'package:crewpoint_app/app/features/counts/domain/count_export.dart';
 import 'package:crewpoint_app/app/features/counts/domain/event_stats.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/participants/application/roster_controller.dart'
@@ -16,6 +18,8 @@ import 'package:crewpoint_app/app/features/participants/domain/models/custom_fie
 import 'package:crewpoint_app/app/features/schedule/domain/models/session.dart';
 import 'package:crewpoint_app/app/features/schedule/presentation/session_tile.dart'
     show sessionTimeLabel;
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -35,6 +39,186 @@ class CountsScreen extends ConsumerStatefulWidget {
 class _CountsScreenState extends ConsumerState<CountsScreen> {
   bool _busy = false;
   String? _error;
+
+  /// The freeze to compare with, or null for the latest.
+  String? _freezeId;
+
+  bool get _exports =>
+      widget.event.can(ref.read(currentUserIdProvider) ?? '', 'reports.export');
+
+  CountLabels _labels() {
+    final strings = context.strings.counts;
+    return CountLabels(
+      wholeEvent: strings.wholeEventLabel,
+      noAnswer: strings.noAnswer,
+      noCategory: strings.noCategory,
+      yes: strings.yes,
+      no: strings.no,
+    );
+  }
+
+  List<CustomField> get _fields =>
+      ref.read(eventFieldsProvider(widget.event.id)).value ?? const [];
+
+  List<SessionModel> get _sessions =>
+      ref.read(sessionListProvider(widget.event.id)).value ?? const [];
+
+  Future<void> _share(String csv, String kind) => ref
+      .read(fileExporterProvider)
+      .share(
+        bytes: utf8.encode(csv),
+        filename: buildExportFilename(
+          eventTitle: widget.event.title,
+          kind: kind,
+          extension: 'csv',
+          date: DateTime.now(),
+        ),
+        mimeType: 'text/csv',
+      );
+
+  /// What to export: counts, the roster, or changes since the freeze, with
+  /// private fields left out unless chosen (Req 53).
+  Future<void> _export(EventStats stats, FrozenCounts? freeze) async {
+    final strings = context.strings.counts;
+    final me = ref.read(currentUserIdProvider) ?? '';
+    final readsPrivate = widget.event.can(me, 'participants.readPrivate');
+    final readsRoster = widget.event.can(me, 'participants.read');
+    var includePrivate = false;
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      builder: (sheet) => StatefulBuilder(
+        builder: (sheet, setSheet) => ListView(
+          key: const Key('counts.export.sheet'),
+          shrinkWrap: true,
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          children: [
+            Text(
+              strings.exportTitle,
+              style: Theme.of(sheet).textTheme.titleMedium,
+            ),
+            SwitchListTile(
+              key: const Key('counts.export.private'),
+              contentPadding: EdgeInsets.zero,
+              title: Text(strings.includePrivate),
+              subtitle: Text(strings.includePrivateHelp),
+              value: includePrivate,
+              onChanged: (v) => setSheet(() => includePrivate = v),
+            ),
+            ListTile(
+              key: const Key('counts.export.counts'),
+              leading: const Icon(AppIcons.members),
+              title: Text(strings.exportCounts),
+              onTap: () => Navigator.of(sheet).pop('counts'),
+            ),
+            if (readsRoster)
+              ListTile(
+                key: const Key('counts.export.roster'),
+                leading: const Icon(AppIcons.member),
+                title: Text(strings.exportRoster),
+                // The roster's private details need readPrivate.
+                enabled: !includePrivate || readsPrivate,
+                onTap: () => Navigator.of(sheet).pop('roster'),
+              ),
+            if (freeze != null)
+              ListTile(
+                key: const Key('counts.export.changes'),
+                leading: const Icon(AppIcons.actionSwap),
+                title: Text(strings.exportChanges),
+                onTap: () => Navigator.of(sheet).pop('changes'),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (choice == null || !mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final labels = _labels();
+    try {
+      switch (choice) {
+        case 'counts':
+          await _share(
+            countsCsv(
+              event: widget.event,
+              stats: stats,
+              sessions: _sessions,
+              fields: _fields,
+              includePrivate: includePrivate,
+              labels: labels,
+            ),
+            'counts',
+          );
+        case 'roster':
+          await _share(
+            await ref
+                .read(memberCallsProvider)
+                .exportRoster(widget.event.id, includePrivate: includePrivate),
+            'roster',
+          );
+        case 'changes':
+          await _share(
+            changesCsv(
+              countChanges(
+                frozen: freeze!.stats,
+                current: stats,
+                sessions: _sessions,
+                fields: _fields,
+                event: widget.event,
+                includePrivate: includePrivate,
+                labels: labels,
+              ),
+            ),
+            'count-changes',
+          );
+      }
+      messenger.showSnackBar(SnackBar(content: Text(strings.exported)));
+    } catch (_) {
+      messenger.showSnackBar(
+        SnackBar(
+          key: const Key('counts.export.failed'),
+          content: Text(strings.exportFailed),
+          action: SnackBarAction(
+            label: strings.retry,
+            onPressed: () => _export(stats, freeze),
+          ),
+        ),
+      );
+    }
+  }
+
+  /// Keeps today's numbers for suppliers (Req 54).
+  Future<void> _freeze() async {
+    final strings = context.strings.counts;
+    // The label typed, or null when cancelled.
+    final text = await showDialog<String>(
+      context: context,
+      builder: (_) => const _FreezeDialog(),
+    );
+    if (text == null || !mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await ref
+          .read(memberCallsProvider)
+          .freezeCounts(widget.event.id, label: text.isEmpty ? null : text);
+      _freezeId = null;
+      messenger.showSnackBar(SnackBar(content: Text(strings.frozenNow)));
+    } catch (e) {
+      if (mounted) {
+        setState(
+          () => _error = isConnectionFailure(e)
+              ? strings.needsConnection
+              : strings.freezeFailed,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   Future<void> _recalculate() async {
     final strings = context.strings.counts;
@@ -98,7 +282,22 @@ class _CountsScreenState extends ConsumerState<CountsScreen> {
     };
 
     return Scaffold(
-      appBar: AppBar(title: Text(strings.title), elevation: 0),
+      appBar: AppBar(
+        title: Text(strings.title),
+        elevation: 0,
+        actions: [
+          if (_exports && (stats.value != null))
+            IconButton(
+              key: const Key('counts.export'),
+              tooltip: strings.export,
+              icon: Icon(AppIcons.actionShare),
+              onPressed: () => _export(
+                stats.value!,
+                _chosenFreeze(ref.read(countFreezesProvider(event.id)).value),
+              ),
+            ),
+        ],
+      ),
       body: ContentMaxWidth(maxWidth: 720, child: body),
     );
   }
@@ -196,6 +395,20 @@ class _CountsScreenState extends ConsumerState<CountsScreen> {
         Text(strings.recalculateHelp, style: theme.textTheme.bodySmall),
         const SizedBox(height: AppSpacing.sm),
         _recalculateButton(label: strings.recalculate),
+        if (_exports)
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.sm),
+            child: OutlinedButton.icon(
+              key: const Key('counts.freeze'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+              ),
+              onPressed: _busy ? null : _freeze,
+              icon: const Icon(AppIcons.lock),
+              label: Text(strings.freeze),
+            ),
+          ),
+        ..._freezeSection(stats, fields, sessions),
         const SizedBox(height: AppSpacing.lg),
         Card(
           key: const Key('counts.event'),
@@ -260,6 +473,92 @@ class _CountsScreenState extends ConsumerState<CountsScreen> {
     );
   }
 
+  FrozenCounts? _chosenFreeze(List<FrozenCounts>? freezes) {
+    if (freezes == null || freezes.isEmpty) return null;
+    return freezes.where((f) => f.id == _freezeId).firstOrNull ?? freezes.first;
+  }
+
+  /// The freeze to compare with and what changed since (Req 54).
+  List<Widget> _freezeSection(
+    EventStats stats,
+    List<CustomField> fields,
+    List<SessionModel> sessions,
+  ) {
+    final strings = context.strings.counts;
+    final theme = Theme.of(context);
+    final freezes =
+        ref.watch(countFreezesProvider(widget.event.id)).value ?? const [];
+    final freeze = _chosenFreeze(freezes);
+    if (freeze == null) return const [];
+    String when(FrozenCounts f) => f.frozenAt == null
+        ? ''
+        : DateFormat.MMMd().add_jm().format(f.frozenAt!.toLocal());
+    final changes = countChanges(
+      frozen: freeze.stats,
+      current: stats,
+      sessions: sessions,
+      fields: fields,
+      event: widget.event,
+      includePrivate: true,
+      labels: _labels(),
+    );
+    return [
+      const SizedBox(height: AppSpacing.lg),
+      Card(
+        key: const Key('counts.frozen'),
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: AppSpacing.sm,
+            children: [
+              if (freezes.length > 1)
+                DropdownButtonFormField<String>(
+                  key: const Key('counts.frozen.pick'),
+                  initialValue: freeze.id,
+                  isExpanded: true,
+                  decoration: InputDecoration(
+                    labelText: strings.earlierFreezes,
+                    border: const OutlineInputBorder(),
+                  ),
+                  items: [
+                    for (final f in freezes)
+                      DropdownMenuItem(
+                        value: f.id,
+                        child: Text(strings.frozenOn(when(f), f.label)),
+                      ),
+                  ],
+                  onChanged: (id) => setState(() => _freezeId = id),
+                )
+              else
+                Text(
+                  strings.frozenOn(when(freeze), freeze.label),
+                  key: const Key('counts.frozen.when'),
+                  style: theme.textTheme.titleSmall,
+                ),
+              Semantics(
+                header: true,
+                child: Text(
+                  strings.changesHeading,
+                  style: theme.textTheme.titleMedium,
+                ),
+              ),
+              if (changes.isEmpty)
+                Text(strings.noChanges, key: const Key('counts.changes.none'))
+              else
+                for (final (i, c) in changes.indexed)
+                  Text(
+                    '${c.where} · ${strings.change(c.what, c.before, c.after)}',
+                    key: Key('counts.changes.$i'),
+                  ),
+            ],
+          ),
+        ),
+      ),
+    ];
+  }
+
   /// Counts by category, then by each field, as rows of label and number.
   List<Widget> _breakdown(
     CountTally tally,
@@ -310,5 +609,62 @@ class _CountsScreenState extends ConsumerState<CountsScreen> {
             ),
         ],
     ];
+  }
+}
+
+/// Asks before freezing, with an optional note. Pops the note, or null when
+/// cancelled.
+class _FreezeDialog extends StatefulWidget {
+  const _FreezeDialog();
+
+  @override
+  State<_FreezeDialog> createState() => _FreezeDialogState();
+}
+
+class _FreezeDialogState extends State<_FreezeDialog> {
+  final _label = TextEditingController();
+
+  @override
+  void dispose() {
+    _label.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = context.strings.counts;
+    return AlertDialog(
+      title: Text(strings.freezeTitle),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          spacing: AppSpacing.md,
+          children: [
+            Text(strings.freezeBody),
+            TextField(
+              key: const Key('counts.freeze.label'),
+              controller: _label,
+              maxLength: 80,
+              decoration: InputDecoration(
+                labelText: strings.freezeLabel,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          key: const Key('counts.freeze.cancel'),
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(strings.cancel),
+        ),
+        FilledButton(
+          key: const Key('counts.freeze.confirm'),
+          onPressed: () => Navigator.of(context).pop(_label.text.trim()),
+          child: Text(strings.freezeConfirm),
+        ),
+      ],
+    );
   }
 }

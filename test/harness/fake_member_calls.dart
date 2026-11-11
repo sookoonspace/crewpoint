@@ -31,6 +31,9 @@ class FakeMemberCalls implements MemberCalls {
   /// would, with `updatedAt` set to now.
   Map<String, Object?> counts = const {};
 
+  /// What [exportRoster] answers.
+  String rosterCsv = 'Name\r\n';
+
   String _inviteRole = 'participant';
   int _rotations = 0;
 
@@ -172,13 +175,12 @@ class FakeMemberCalls implements MemberCalls {
     _maybeFail();
     if (firestore == null) return;
     for (final g in groupIds) {
-      await _event(eventId).collection('groups').doc(g).update({
-        'status': 'cancelled',
-      });
-      final people = await _event(eventId)
-          .collection('participants')
-          .where('groupId', isEqualTo: g)
-          .get();
+      await _event(
+        eventId,
+      ).collection('groups').doc(g).update({'status': 'cancelled'});
+      final people = await _event(
+        eventId,
+      ).collection('participants').where('groupId', isEqualTo: g).get();
       for (final p in people.docs) {
         await p.reference.update({'status': 'cancelled'});
       }
@@ -502,6 +504,34 @@ class FakeMemberCalls implements MemberCalls {
     await firestore?.doc('events/$eventId/stats/current').set({
       ...counts,
       'updatedAt': Timestamp.now(),
+    });
+  }
+
+  @override
+  Future<String> exportRoster(
+    String eventId, {
+    bool includePrivate = false,
+  }) async {
+    calls.add('exportRoster:$eventId:$includePrivate');
+    _maybeFail();
+    return rosterCsv;
+  }
+
+  /// Keeps the current counts as a freeze, as `freezeCounts` does.
+  @override
+  Future<void> freezeCounts(String eventId, {String? label}) async {
+    calls.add('freezeCounts:$eventId:${label ?? ''}');
+    _maybeFail();
+    final db = firestore;
+    if (db == null) return;
+    final current =
+        (await db.doc('events/$eventId/stats/current').get()).data() ?? {};
+    await db.collection('events/$eventId/countFreezes').add({
+      'event': current['event'] ?? const <String, Object?>{},
+      'sessions': current['sessions'] ?? const <String, Object?>{},
+      'frozenAt': Timestamp.now(),
+      'frozenBy': actingAs,
+      'label': label,
     });
   }
 }
