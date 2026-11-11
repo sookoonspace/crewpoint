@@ -45,3 +45,4 @@ export {
   recalculateCounts,
 } from "./counts/functions";
 export {exportRoster, freezeCounts} from "./counts/exportAndFreeze";
+export {onChatMessageWritten} from "./chat/summary";

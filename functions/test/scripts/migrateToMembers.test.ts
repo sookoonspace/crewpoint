@@ -268,6 +268,22 @@ describe('migrateToMembers', () => {
     });
   });
 
+  test('builds each event\'s chat summary from its messages (Req 57a)', async () => {
+    await seedOld('e1');
+    const at = (m: number) => Timestamp.fromDate(new Date(Date.UTC(2026, 5, 1, 12, m)));
+    await db().doc('events/e1/messages/m1').set({senderId: 'a', text: 'Hi', timestamp: at(1), isHighPriority: true});
+    await db().doc('events/e1/messages/m2').set({senderId: 'c', text: 'Hello', timestamp: at(2)});
+    const result = await run();
+    expect(result.chatSummaries).toBe(1);
+    const s = (await db().doc('events/e1/chatSummary/current').get()).data()!;
+    expect(s.count).toBe(2);
+    expect(s.latest.id).toBe('m2');
+    expect(s.lastUrgentSenderId).toBe('a');
+    // An event with no messages needs none.
+    await seedOld('e2');
+    expect((await run()).chatSummaries).toBe(0);
+  });
+
   test('running it again changes nothing, and keeps later role changes', async () => {
     await db().doc('events/e1/tasks/t1').set({title: 'Food', budgetEstimate: 280});
     await db().doc('events/e1/messages/x').set({senderId: 'gone', text: 'Hi'});
@@ -283,7 +299,7 @@ describe('migrateToMembers', () => {
     expect(again).toEqual({
       events: 1, memberDocs: 0, statuses: 0, memberCounts: 0,
       involvedUids: 0, dates: 0, unknownZones: 0, taskBudgets: 0, profiles: 0,
-      permissions: 0,
+      permissions: 0, chatSummaries: 0,
     });
     expect((await member('e1', 'm'))?.roleIds).toEqual(['finance']);
   });

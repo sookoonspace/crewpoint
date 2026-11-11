@@ -25,6 +25,7 @@ import {expenseAccessOf} from "../src/events/expenseAccess";
 import {profileFrom} from "../src/events/profileFields";
 import {EventRoles, legacyRoleIds} from "../src/events/permissions";
 import {mapLegacyStatus} from "../src/events/eventStatus";
+import {ChatSummary, summaryAfterCreate, toSummaryMessage} from "../src/chat/summary";
 
 export interface MigrationResult {
   events: number;
@@ -37,6 +38,7 @@ export interface MigrationResult {
   taskBudgets: number;
   profiles: number;
   permissions: number;
+  chatSummaries: number;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -57,6 +59,7 @@ export async function migrateToMembers(
     taskBudgets: 0,
     profiles: 0,
     permissions: 0,
+    chatSummaries: 0,
   };
   const ops: BatchOperation[] = [];
   for (const doc of events.docs) {
@@ -69,6 +72,7 @@ export async function migrateToMembers(
     ops.push(
       ...(await profileOps(db, doc.ref, event, {expenses, tasks}, result))
     );
+    ops.push(...(await chatSummaryOps(doc.ref, result)));
     const fields = {
       ...eventFields(event, now, result),
       ...(await dateFields(db, event, result)),
@@ -79,6 +83,27 @@ export async function migrateToMembers(
   }
   if (!dryRun) await commitInChunks(ops);
   return result;
+}
+
+/**
+ * The chat summary the inbox reads (Req 57a), built from the event's
+ * messages when it is missing or out of step.
+ */
+async function chatSummaryOps(
+  eventRef: DocumentReference,
+  result: MigrationResult
+): Promise<BatchOperation[]> {
+  const messages = await eventRef.collection("messages").orderBy("timestamp").get();
+  if (messages.empty) return [];
+  const ref = eventRef.collection("chatSummary").doc("current");
+  const existing = (await ref.get()).data();
+  if (existing?.count === messages.size) return [];
+  let summary: ChatSummary | null = null;
+  for (const m of messages.docs) {
+    summary = summaryAfterCreate(summary, toSummaryMessage(m.id, m.data()));
+  }
+  result.chatSummaries++;
+  return [{type: "set", ref, data: summary as unknown as DocumentData}];
 }
 
 /** Fields on the event document itself that need converting. */
