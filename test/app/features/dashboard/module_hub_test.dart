@@ -50,6 +50,8 @@ void main() {
     // Every member reads the schedule (Req 48).
     expect(schedule, findsOneWidget);
     expect(agenda, findsOneWidget);
+    // Counts need counts.read, which a plain member lacks (Req 52).
+    expect(find.byKey(const Key('events.hub.counts')), findsNothing);
     expect(find.byKey(const Key('events.hub.list')), findsOneWidget);
     expect(find.byKey(const Key('events.hub.grid')), findsNothing);
   });

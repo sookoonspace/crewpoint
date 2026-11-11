@@ -24,6 +24,7 @@ import 'package:crewpoint_app/app/core/database/daos/tasks_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/mirror_syncs_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/my_records_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/sessions_dao.dart';
+import 'package:crewpoint_app/app/features/counts/domain/event_stats.dart';
 import 'package:crewpoint_app/app/features/schedule/data/my_records_repository.dart';
 import 'package:crewpoint_app/app/features/schedule/data/session_repository.dart';
 import 'package:crewpoint_app/app/features/schedule/domain/models/session.dart';
@@ -807,3 +808,18 @@ final minuteProvider = StreamProvider.autoDispose<DateTime>((ref) async* {
   yield clock.now();
   yield* Stream.periodic(const Duration(minutes: 1), (_) => clock.now());
 });
+
+/// The event's counts (Req 52), or null before the first count. Watch it
+/// only for someone holding `counts.read`, since rules refuse anyone else.
+/// Read from Firestore, whose cache keeps the last counts offline.
+final eventStatsProvider = StreamProvider.autoDispose
+    .family<EventStats?, String>(
+      (ref, eventId) => ref
+          .watch(firestoreProvider)
+          .doc('events/$eventId/stats/current')
+          .snapshots()
+          .map((doc) {
+            final data = doc.data();
+            return data == null ? null : EventStats.fromFirestore(data);
+          }),
+    );

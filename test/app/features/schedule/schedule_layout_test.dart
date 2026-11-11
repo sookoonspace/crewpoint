@@ -111,4 +111,19 @@ void main() {
     expect(tester.takeException(), isNull);
     await robot.finish();
   });
+
+  testWidgets('the counts fit, with a 48 px recalculate button', (
+    tester,
+  ) async {
+    final robot = await open(tester, '$base/counts');
+    expect(tester.takeException(), isNull);
+    // Not counted yet.
+    await robot.expectFound(const Key('counts.recalculate'));
+    expect(
+      tester.getSize(find.byKey(const Key('counts.recalculate'))).height,
+      greaterThanOrEqualTo(48),
+    );
+    expect(tester.takeException(), isNull);
+    await robot.finish();
+  });
 }

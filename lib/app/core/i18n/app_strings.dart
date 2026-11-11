@@ -51,6 +51,7 @@ abstract class AppStrings {
   MemberPickerStrings get memberPicker;
   ScheduleStrings get schedule;
   AgendaStrings get agenda;
+  CountsStrings get counts;
 
   /// Static English fallback. Used by service-layer code that has no
   /// `BuildContext` in scope (e.g. `firebaseAuthErrorMessage`). UI code
@@ -536,6 +537,8 @@ class _EnglishStrings extends AppStrings {
   ScheduleStrings get schedule => const _EnglishScheduleStrings();
   @override
   AgendaStrings get agenda => const _EnglishAgendaStrings();
+  @override
+  CountsStrings get counts => const _EnglishCountsStrings();
 }
 
 class _EnglishChatStrings extends ChatStrings {
@@ -3158,4 +3161,95 @@ class _EnglishAgendaStrings extends AgendaStrings {
   @override
   String get groupInvitationsFailed =>
       "Couldn't save the invitations. Try again.";
+}
+
+/// Counts per event and session (#83, Req 52).
+abstract class CountsStrings {
+  const CountsStrings();
+
+  String get title;
+  String get hubSubtitle;
+  String updated(String when);
+  String get recalculate;
+  String get recalculating;
+  String get recalculateFailed;
+  String get needsConnection;
+  String get recalculateHelp;
+  String get notYet;
+  String get notYetHelp;
+  String get countNow;
+  String get loadFailed;
+  String get retry;
+  String get wholeEvent;
+  String people(int n);
+  String groups(int n, String groupWord);
+  String get byCategory;
+  String get noCategory;
+  String get noAnswer;
+  String get yes;
+  String get no;
+  String get sessionsHeading;
+  String get noSessions;
+  String get removedSession;
+  String capacity(int count, int? capacity);
+}
+
+class _EnglishCountsStrings extends CountsStrings {
+  const _EnglishCountsStrings();
+
+  @override
+  String get title => 'Counts';
+  @override
+  String get hubSubtitle => 'Headcounts by session';
+  @override
+  String updated(String when) => 'Last updated $when';
+  @override
+  String get recalculate => 'Recalculate now';
+  @override
+  String get recalculating => 'Counting…';
+  @override
+  String get recalculateFailed => "Couldn't recalculate. Try again.";
+  @override
+  String get needsConnection =>
+      'Recalculating needs a connection. The counts shown are the last ones saved.';
+  @override
+  String get recalculateHelp =>
+      'Counts update by themselves within a few minutes of a change.';
+  @override
+  String get notYet => 'Not counted yet';
+  @override
+  String get notYetHelp =>
+      'Counts appear a few minutes after people or sessions are added, or count now.';
+  @override
+  String get countNow => 'Count now';
+  @override
+  String get loadFailed =>
+      "Couldn't load the counts. Check your connection and try again.";
+  @override
+  String get retry => 'Try again';
+  @override
+  String get wholeEvent => 'Whole event';
+  @override
+  String people(int n) => n == 1 ? '1 person' : '$n people';
+  @override
+  String groups(int n, String groupWord) => '$n ${groupWord.toLowerCase()}';
+  @override
+  String get byCategory => 'By category';
+  @override
+  String get noCategory => 'No category';
+  @override
+  String get noAnswer => 'No answer';
+  @override
+  String get yes => 'Yes';
+  @override
+  String get no => 'No';
+  @override
+  String get sessionsHeading => 'By session';
+  @override
+  String get noSessions => 'Nothing is on the schedule yet.';
+  @override
+  String get removedSession => 'Removed from the schedule';
+  @override
+  String capacity(int count, int? capacity) =>
+      capacity == null ? '$count attending' : '$count of $capacity attending';
 }

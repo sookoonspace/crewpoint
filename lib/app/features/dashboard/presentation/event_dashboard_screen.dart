@@ -293,6 +293,15 @@ class _ModuleHub extends ConsumerWidget {
           context.strings.people.hubSubtitle,
           Theme.of(context).colorScheme.primary,
         ),
+      // Headcounts need counts.read (Req 52).
+      if (event.can(me, 'counts.read'))
+        entry(
+          'counts',
+          AppIcons.members,
+          context.strings.counts.title,
+          context.strings.counts.hubSubtitle,
+          Theme.of(context).colorScheme.primary,
+        ),
       if (event.isModuleOn('tasks'))
         entry(
           'tasks',
