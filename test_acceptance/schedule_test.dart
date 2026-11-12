@@ -226,7 +226,8 @@ void main() {
     final repo = EventRepository(
       eventsDao: EventsDao(db),
       firestore: firestore,
-      createEventCall: (_) async => throw UnimplementedError(),
+      createEventCall: (_, {savedTemplateId}) async =>
+          throw UnimplementedError(),
     );
     await firestore.doc('events/conv').set({'title': convention.title});
     await repo.saveConfiguration(convention);

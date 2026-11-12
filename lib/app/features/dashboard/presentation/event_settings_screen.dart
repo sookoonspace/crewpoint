@@ -634,6 +634,33 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
                     ],
                   ),
                   ListTile(
+                    key: const Key('events.settings.setup'),
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(AppIcons.statusDoneOutline),
+                    title: Text(context.strings.templates.setupEntry),
+                    subtitle: Text(context.strings.templates.setupEntryHelp),
+                    trailing: const Icon(AppIcons.chevronRight),
+                    onTap: () => context.push(
+                      '/dashboard/event/${widget.event.id}/setup',
+                    ),
+                  ),
+                  ListTile(
+                    key: const Key('events.settings.saveTemplate'),
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(AppIcons.actionCopy),
+                    title: Text(context.strings.templates.saveAsTemplate),
+                    subtitle: Text(
+                      context.strings.templates.saveAsTemplateHelp,
+                    ),
+                    onTap: () => showDialog<void>(
+                      context: context,
+                      builder: (_) => _SaveTemplateDialog(
+                        eventId: widget.event.id,
+                        initialName: widget.event.title,
+                      ),
+                    ),
+                  ),
+                  ListTile(
                     key: const Key('events.settings.fields'),
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(AppIcons.actionEdit),
@@ -889,6 +916,105 @@ class _VenueFields extends StatelessWidget {
           tooltip: strings.settingsVenueRemove,
           onPressed: enabled ? onRemove : null,
           icon: const Icon(Icons.delete_outline),
+        ),
+      ],
+    );
+  }
+}
+
+/// Names and saves the event's configuration as the person's own template
+/// (Req 65). A failure keeps the name and offers another try.
+class _SaveTemplateDialog extends ConsumerStatefulWidget {
+  const _SaveTemplateDialog({required this.eventId, required this.initialName});
+
+  final String eventId;
+  final String initialName;
+
+  @override
+  ConsumerState<_SaveTemplateDialog> createState() =>
+      _SaveTemplateDialogState();
+}
+
+class _SaveTemplateDialogState extends ConsumerState<_SaveTemplateDialog> {
+  late final TextEditingController _name = TextEditingController(
+    text: widget.initialName.length > 60
+        ? widget.initialName.substring(0, 60)
+        : widget.initialName,
+  );
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final strings = context.strings.templates;
+    final name = _name.text.trim();
+    if (name.isEmpty) {
+      setState(() => _error = strings.saveAsTemplateNameRequired);
+      return;
+    }
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await ref.read(memberCallsProvider).saveAsTemplate(widget.eventId, name);
+      navigator.pop();
+      messenger.showSnackBar(SnackBar(content: Text(strings.savedAsTemplate)));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = isConnectionFailure(e)
+            ? context.strings.dashboard.settingsNeedsConnection
+            : strings.saveAsTemplateFailed;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = context.strings.templates;
+    return AlertDialog(
+      title: Text(strings.saveAsTemplate),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: AppSpacing.md,
+          children: [
+            Text(strings.saveAsTemplateHelp),
+            TextField(
+              key: const Key('events.settings.saveTemplate.name'),
+              controller: _name,
+              enabled: !_busy,
+              maxLength: 60,
+              decoration: InputDecoration(
+                labelText: strings.saveAsTemplateName,
+                errorText: _error,
+                errorMaxLines: 3,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          key: const Key('events.settings.saveTemplate.cancel'),
+          onPressed: _busy ? null : () => Navigator.of(context).pop(),
+          child: Text(strings.cancel),
+        ),
+        FilledButton(
+          key: const Key('events.settings.saveTemplate.save'),
+          onPressed: _busy ? null : _save,
+          child: Text(strings.save),
         ),
       ],
     );

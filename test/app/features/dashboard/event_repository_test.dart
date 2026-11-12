@@ -25,7 +25,8 @@ void main() {
     repo = EventRepository(
       eventsDao: EventsDao(db),
       firestore: firestore,
-      createEventCall: (event) async => sentEvents.add(event),
+      createEventCall: (event, {savedTemplateId}) async =>
+          sentEvents.add(event),
     );
   });
 
@@ -53,7 +54,8 @@ void main() {
       final failing = EventRepository(
         eventsDao: EventsDao(db),
         firestore: firestore,
-        createEventCall: (_) async => throw StateError('offline'),
+        createEventCall: (_, {savedTemplateId}) async =>
+            throw StateError('offline'),
       );
       addTearDown(failing.dispose);
       expect(() => failing.createEvent(event), throwsStateError);
@@ -161,7 +163,7 @@ void main() {
       final r = EventRepository(
         eventsDao: EventsDao(db),
         firestore: firestore,
-        createEventCall: (_) async {},
+        createEventCall: (_, {savedTemplateId}) async {},
         memberships: (_) => live.stream,
       );
       addTearDown(() async {

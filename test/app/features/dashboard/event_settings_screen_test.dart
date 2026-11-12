@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../../../harness/fake_member_calls.dart';
 import 'package:crewpoint_app/app/features/counts/domain/event_stats.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:cloud_functions/cloud_functions.dart';
@@ -564,6 +565,67 @@ void main() {
         ((await stored())['settings'] as Map)['attendancePolicy'],
         'arrivalToDeparture',
       );
+    });
+  });
+
+  group('templates (Req 64, 65)', () {
+    testWidgets('saves the setup as a template, named after the event', (
+      tester,
+    ) async {
+      final calls = FakeMemberCalls(firestore: firestore);
+      await pump(tester, extra: [memberCallsProvider.overrideWithValue(calls)]);
+      await tester.ensureVisible(find.byKey(_key('saveTemplate')));
+      await tester.tap(find.byKey(_key('saveTemplate')));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<TextField>(find.byKey(_key('saveTemplate.name')))
+            .controller!
+            .text,
+        _event.title,
+      );
+      await tester.tap(find.byKey(_key('saveTemplate.save')));
+      await tester.pumpAndSettle();
+      expect(calls.calls, ['saveAsTemplate:evt:${_event.title}']);
+      expect(find.text('Saved to your templates'), findsOneWidget);
+    });
+
+    testWidgets('a failed save keeps the name and offers another try', (
+      tester,
+    ) async {
+      final calls = FakeMemberCalls(firestore: firestore)
+        ..failNext = StateError('refused');
+      await pump(tester, extra: [memberCallsProvider.overrideWithValue(calls)]);
+      await tester.ensureVisible(find.byKey(_key('saveTemplate')));
+      await tester.tap(find.byKey(_key('saveTemplate')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(_key('saveTemplate.name')), 'Ours');
+      await tester.tap(find.byKey(_key('saveTemplate.save')));
+      await tester.pumpAndSettle();
+      expect(
+        find.text("Couldn't save the template. Try again."),
+        findsOneWidget,
+      );
+      expect(find.text('Ours'), findsOneWidget);
+      await tester.tap(find.byKey(_key('saveTemplate.save')));
+      await tester.pumpAndSettle();
+      expect(calls.calls, hasLength(2));
+    });
+
+    testWidgets('an empty name is refused', (tester) async {
+      await pump(tester);
+      await tester.ensureVisible(find.byKey(_key('saveTemplate')));
+      await tester.tap(find.byKey(_key('saveTemplate')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(_key('saveTemplate.name')), ' ');
+      await tester.tap(find.byKey(_key('saveTemplate.save')));
+      await tester.pumpAndSettle();
+      expect(find.text('Enter a name.'), findsOneWidget);
+    });
+
+    testWidgets('setup can be finished later from settings', (tester) async {
+      await pump(tester);
+      expect(find.byKey(_key('setup')), findsOneWidget);
     });
   });
 

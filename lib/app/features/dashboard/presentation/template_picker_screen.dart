@@ -29,6 +29,7 @@ class TemplatePickerScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final language = Localizations.localeOf(context).languageCode;
     final templates = ref.watch(templateCatalogueProvider);
+    final mine = ref.watch(myTemplatesProvider).value ?? const [];
     final padding = Breakpoints.screenHorizontalPadding(context);
 
     return Scaffold(
@@ -42,6 +43,35 @@ class TemplatePickerScreen extends ConsumerWidget {
             children: [
               Text(strings.pickerHelp, style: theme.textTheme.bodyMedium),
               const SizedBox(height: AppSpacing.md),
+              // The person's own templates come first (Req 65).
+              if (mine.isNotEmpty) ...[
+                Semantics(
+                  header: true,
+                  child: Text(
+                    strings.mineHeading,
+                    style: theme.textTheme.titleSmall,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                for (final t in mine)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: _TemplateCard(
+                      template: t,
+                      language: language,
+                      saved: true,
+                    ),
+                  ),
+                const SizedBox(height: AppSpacing.sm),
+                Semantics(
+                  header: true,
+                  child: Text(
+                    strings.systemHeading,
+                    style: theme.textTheme.titleSmall,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+              ],
               for (final t in value)
                 Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -82,20 +112,61 @@ class TemplatePickerScreen extends ConsumerWidget {
   }
 }
 
-class _TemplateCard extends StatelessWidget {
-  const _TemplateCard({required this.template, required this.language});
+class _TemplateCard extends ConsumerWidget {
+  const _TemplateCard({
+    required this.template,
+    required this.language,
+    this.saved = false,
+  });
 
   final EventTemplateInfo template;
   final String language;
 
+  /// One of the person's own templates, which they may delete.
+  final bool saved;
+
+  Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    final strings = context.strings.templates;
+    final sure = await showDialog<bool>(
+      context: context,
+      builder: (dialog) => AlertDialog(
+        title: Text(strings.deleteMineTitle(template.name(language))),
+        content: Text(strings.deleteMineBody),
+        actions: [
+          TextButton(
+            key: const Key('events.create.mine.deleteCancel'),
+            onPressed: () => Navigator.of(dialog).pop(false),
+            child: Text(strings.cancel),
+          ),
+          TextButton(
+            key: const Key('events.create.mine.deleteConfirm'),
+            onPressed: () => Navigator.of(dialog).pop(true),
+            child: Text(strings.delete),
+          ),
+        ],
+      ),
+    );
+    if (sure != true) return;
+    final me = ref.read(currentUserIdProvider);
+    if (me == null) return;
+    await ref
+        .read(firestoreProvider)
+        .doc('users/$me/templates/${template.id}')
+        .delete();
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final strings = context.strings.templates;
     return Card(
       margin: EdgeInsets.zero,
       child: ListTile(
-        key: Key('events.create.template.${template.id}'),
+        key: Key(
+          saved
+              ? 'events.create.mine.${template.id}'
+              : 'events.create.template.${template.id}',
+        ),
         minVerticalPadding: AppSpacing.md,
         leading: Icon(
           TemplatePickerScreen.iconFor(template.icon),
@@ -105,7 +176,8 @@ class _TemplateCard extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(template.description(language)),
+            if (template.description(language).isNotEmpty)
+              Text(template.description(language)),
             if (template.fastPath)
               Text(
                 strings.quick,
@@ -115,8 +187,19 @@ class _TemplateCard extends StatelessWidget {
               ),
           ],
         ),
-        trailing: const Icon(AppIcons.chevronRight),
-        onTap: () => context.push('/dashboard/create/${template.id}'),
+        trailing: saved
+            ? IconButton(
+                key: Key('events.create.mine.${template.id}.delete'),
+                tooltip: strings.deleteMine,
+                icon: const Icon(AppIcons.actionDelete),
+                onPressed: () => _delete(context, ref),
+              )
+            : const Icon(AppIcons.chevronRight),
+        onTap: () => context.push(
+          saved
+              ? '/dashboard/create/mine/${template.id}'
+              : '/dashboard/create/${template.id}',
+        ),
       ),
     );
   }

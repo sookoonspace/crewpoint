@@ -11,6 +11,7 @@ import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/auth/data/auth_repository.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/create_event_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/setup_checklist_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/template_picker_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/edit_event_screen.dart';
@@ -63,6 +64,12 @@ class DashboardJourneyHarness {
             builder: (_, _) => const TemplatePickerScreen(),
             routes: [
               GoRoute(
+                path: 'mine/:savedTemplateId',
+                builder: (_, state) => CreateEventScreen(
+                  savedTemplateId: state.pathParameters['savedTemplateId'],
+                ),
+              ),
+              GoRoute(
                 path: ':templateId',
                 builder: (_, state) => CreateEventScreen(
                   templateId: state.pathParameters['templateId']!,
@@ -77,6 +84,13 @@ class DashboardJourneyHarness {
               child: (event) => EventDashboardScreen(event: event),
             ),
             routes: [
+              GoRoute(
+                path: 'setup',
+                builder: (_, state) => EventGuard(
+                  eventId: state.pathParameters['eventId'] ?? '',
+                  child: (event) => SetupChecklistScreen(event: event),
+                ),
+              ),
               GoRoute(
                 path: 'settings',
                 builder: (_, state) => EventGuard(

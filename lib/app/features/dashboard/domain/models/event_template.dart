@@ -11,6 +11,7 @@ class EventTemplateInfo {
     required this.descriptions,
     required this.icon,
     required this.fastPath,
+    this.baseTemplateId,
   });
 
   /// Reads one template file, refusing a damaged one.
@@ -33,6 +34,7 @@ class EventTemplateInfo {
       descriptions: text(json['description']),
       icon: json['icon'] as String? ?? id,
       fastPath: json['fastPath'] == true,
+      baseTemplateId: json['baseTemplateId'] as String?,
     );
   }
 
@@ -53,6 +55,9 @@ class EventTemplateInfo {
   /// Created with only a title and a date, with no further screens (Req
   /// 63).
   final bool fastPath;
+
+  /// In a saved template, the system template it began from.
+  final String? baseTemplateId;
 
   String name(String language) => names[language] ?? names['en'] ?? id;
 

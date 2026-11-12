@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/core/widgets/module_guard.dart';
 import 'package:crewpoint_app/app/features/counts/presentation/counts_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/setup_checklist_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/template_picker_screen.dart';
 import 'package:crewpoint_app/app/features/schedule/presentation/agenda_screen.dart';
 import 'package:crewpoint_app/app/features/schedule/presentation/schedule_screen.dart';
@@ -210,6 +211,14 @@ GoRouter createRouter({
                     path: 'create',
                     builder: (_, _) => const TemplatePickerScreen(),
                     routes: [
+                      // One of the person's saved templates (Req 65).
+                      GoRoute(
+                        path: 'mine/:savedTemplateId',
+                        builder: (_, state) => CreateEventScreen(
+                          savedTemplateId:
+                              state.pathParameters['savedTemplateId'],
+                        ),
+                      ),
                       GoRoute(
                         path: ':templateId',
                         builder: (_, state) => CreateEventScreen(
@@ -324,6 +333,13 @@ GoRouter createRouter({
                             ),
                           ),
                         ],
+                      ),
+                      GoRoute(
+                        path: 'setup',
+                        builder: (_, state) => EventGuard(
+                          eventId: _resolveEventId(state),
+                          child: (event) => SetupChecklistScreen(event: event),
+                        ),
                       ),
                       GoRoute(
                         path: 'counts',

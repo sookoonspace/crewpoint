@@ -188,7 +188,10 @@ void main() {
       expect(find.byKey(const Key('createEvent.submit')), findsOneWidget);
       // Error widget visible.
       expect(find.byKey(const Key('createEvent.error')), findsOneWidget);
-      expect(find.text("Couldn't create the event. Try again."), findsOneWidget);
+      expect(
+        find.text("Couldn't create the event. Try again."),
+        findsOneWidget,
+      );
       // Success SnackBar NOT shown.
       expect(find.text('Event created'), findsNothing);
     },
@@ -348,11 +351,11 @@ class _FailingEventRepo extends EventRepository {
     : super(
         eventsDao: EventsDao(db),
         firestore: firestore,
-        createEventCall: (_) async {},
+        createEventCall: (_, {savedTemplateId}) async {},
       );
 
   @override
-  Future<void> createEvent(_) async {
+  Future<void> createEvent(_, {savedTemplateId}) async {
     throw FirebaseException(plugin: 'firestore', message: 'simulated failure');
   }
 }
@@ -364,13 +367,13 @@ class _SlowEventRepo extends EventRepository {
     : super(
         eventsDao: EventsDao(db),
         firestore: firestore,
-        createEventCall: (_) async {},
+        createEventCall: (_, {savedTemplateId}) async {},
       );
 
   final Completer<void> completer = Completer<void>();
 
   @override
-  Future<void> createEvent(_) => completer.future;
+  Future<void> createEvent(_, {savedTemplateId}) => completer.future;
 }
 
 /// Fails once as if offline, then succeeds, recording the event IDs it was sent.
@@ -379,13 +382,13 @@ class _OfflineThenOnlineEventRepo extends EventRepository {
     : super(
         eventsDao: EventsDao(db),
         firestore: firestore,
-        createEventCall: (_) async {},
+        createEventCall: (_, {savedTemplateId}) async {},
       );
 
   final List<String> ids = [];
 
   @override
-  Future<void> createEvent(EventModel event) async {
+  Future<void> createEvent(EventModel event, {String? savedTemplateId}) async {
     ids.add(event.id);
     if (ids.length == 1) {
       throw FirebaseFunctionsException(message: 'x', code: 'unavailable');

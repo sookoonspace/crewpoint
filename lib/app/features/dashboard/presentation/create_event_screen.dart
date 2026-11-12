@@ -18,6 +18,8 @@ import 'package:crewpoint_app/app/core/widgets/form_card_shell.dart';
 import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
 import 'package:crewpoint_app/app/features/dashboard/data/event_repository.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/event_template.dart';
+import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
 
 class CreateEventScreen extends ConsumerStatefulWidget {
@@ -25,6 +27,7 @@ class CreateEventScreen extends ConsumerStatefulWidget {
     super.key,
     this.defaultCurrency = 'USD',
     this.templateId = EventModel.defaultTemplateId,
+    this.savedTemplateId,
   });
 
   final String defaultCurrency;
@@ -32,6 +35,9 @@ class CreateEventScreen extends ConsumerStatefulWidget {
   /// The template chosen in the picker (Req 63), which `createEvent` copies
   /// into the event.
   final String templateId;
+
+  /// One of the person's saved templates instead (Req 65).
+  final String? savedTemplateId;
 
   /// V1 supported currencies. Display-only — no FX conversion in V1.
   static const List<String> supportedCurrencies = [
@@ -61,6 +67,16 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   /// Kept across retries, so a create that reached the server is not repeated.
   final String _eventId = const Uuid().v4();
 
+  /// The chosen template: a saved one, or a system one.
+  EventTemplateInfo? get _template {
+    final saved = widget.savedTemplateId;
+    final list = saved == null
+        ? ref.watch(templateCatalogueProvider).value
+        : ref.watch(myTemplatesProvider).value;
+    final id = saved ?? widget.templateId;
+    return list?.where((t) => t.id == id).firstOrNull;
+  }
+
   @override
   void dispose() {
     _titleController.dispose();
@@ -88,6 +104,11 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     // would throw because the element has been deactivated.
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
+    final router = GoRouter.maybeOf(context);
+    final template = _template;
+    // At large text sizes the action button is wider than a phone, so the
+    // note goes without it; the event screen has Publish too.
+    final largeText = MediaQuery.textScalerOf(context).scale(1) > 1.5;
 
     final uid = ref.read(currentUserIdProvider);
     if (uid == null) {
@@ -117,15 +138,22 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       memberIds: [uid],
       currency: _currency,
       timeZone: timeZone,
-      templateId: widget.templateId,
+      templateId: template?.baseTemplateId ?? widget.templateId,
     );
 
     try {
-      await repository.createEvent(event);
+      await repository.createEvent(
+        event,
+        savedTemplateId: widget.savedTemplateId,
+      );
       if (!mounted) return;
       // Back past the form and the picker, to the dashboard: no further
       // screens (Req 63).
       navigator.popUntil((route) => route.isFirst);
+      // Larger templates offer optional follow-up setup (Req 64).
+      if (template != null && !template.fastPath) {
+        router?.push('/dashboard/event/${event.id}/setup');
+      }
       // 6s gives the user time to read "Event created" and tap "Share
       // invite" without rushing them; long enough to react, short enough
       // not to loiter on the dashboard. Material default is ~4s.
@@ -137,26 +165,28 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       messenger.showSnackBar(
         SnackBar(
           content: Text(strings.draftCreated),
-          action: SnackBarAction(
-            label: strings.publishAndInvite,
-            onPressed: () async {
-              final result = await repository.setStatus(
-                event.id,
-                EventStatus.published,
-              );
-              if (result == EventWriteResult.saved) {
-                if (!navigator.mounted) return;
-                await AddMemberSheet.show(
-                  context: navigator.context,
-                  eventId: event.id,
-                );
-              } else {
-                messenger.showSnackBar(
-                  SnackBar(content: Text(strings.publishFailed)),
-                );
-              }
-            },
-          ),
+          action: largeText
+              ? null
+              : SnackBarAction(
+                  label: strings.publishAndInvite,
+                  onPressed: () async {
+                    final result = await repository.setStatus(
+                      event.id,
+                      EventStatus.published,
+                    );
+                    if (result == EventWriteResult.saved) {
+                      if (!navigator.mounted) return;
+                      await AddMemberSheet.show(
+                        context: navigator.context,
+                        eventId: event.id,
+                      );
+                    } else {
+                      messenger.showSnackBar(
+                        SnackBar(content: Text(strings.publishFailed)),
+                      );
+                    }
+                  },
+                ),
           duration: const Duration(seconds: 6),
         ),
       );
@@ -179,13 +209,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       appBar: AppBar(
         title: Text(
           context.strings.templates.formTitle(
-            ref
-                    .watch(templateCatalogueProvider)
-                    .value
-                    ?.where((t) => t.id == widget.templateId)
-                    .firstOrNull
-                    ?.name(Localizations.localeOf(context).languageCode) ??
-                '',
+            _template?.name(Localizations.localeOf(context).languageCode) ?? '',
           ),
         ),
         elevation: 0,

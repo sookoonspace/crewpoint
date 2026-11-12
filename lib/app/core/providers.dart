@@ -227,7 +227,7 @@ final currentUserIdProvider = Provider<String?>((ref) {
 
 /// Default impl wraps `FirebaseFunctions.instance`. Tests override with a fake.
 final createEventCallProvider = Provider<CreateEventCall>(
-  (_) => (event) async {
+  (_) => (event, {savedTemplateId}) async {
     final callable = FirebaseFunctions.instance.httpsCallable(
       'createEvent',
       options: HttpsCallableOptions(timeout: const Duration(seconds: 20)),
@@ -240,6 +240,7 @@ final createEventCallProvider = Provider<CreateEventCall>(
       'dateOnly': event.dateOnly,
       'currency': event.currency,
       'templateId': event.templateId,
+      'savedTemplateId': ?savedTemplateId,
       'startDate': event.startDate?.toUtc().toIso8601String(),
       'endDate': event.endDate?.toUtc().toIso8601String(),
     });
@@ -860,4 +861,22 @@ final templateCatalogueProvider = FutureProvider<List<EventTemplateInfo>>((
     for (final id in EventTemplateInfo.idsFrom(await read('index.json')))
       EventTemplateInfo.fromJson(await read('$id.json')),
   ];
+});
+
+/// The signed-in person's saved templates (Req 65), newest first, from
+/// `users/{uid}/templates`, which only they read.
+final myTemplatesProvider = StreamProvider<List<EventTemplateInfo>>((ref) {
+  final me = ref.watch(currentUserIdProvider);
+  if (me == null) return Stream.value(const []);
+  return ref
+      .watch(firestoreProvider)
+      .collection('users/$me/templates')
+      .orderBy('createdAt', descending: true)
+      .snapshots()
+      .map(
+        (snap) => [
+          for (final doc in snap.docs)
+            EventTemplateInfo.fromJson({...doc.data(), 'id': doc.id}),
+        ],
+      );
 });
