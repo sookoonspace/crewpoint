@@ -27,6 +27,8 @@ async function user(uid: string) {
   await db().doc(`users/${uid}/private/other`).set({note: 'x'});
   await db().doc(`users/${uid}/chatReads/shared`).set({lastReadAt: 'x'});
   await db().doc(`users/${uid}/eventMutes/shared`).set({mutedUntil: 'x'});
+  // Templates they saved (Req 65).
+  await db().doc(`users/${uid}/templates/t1`).set({name: {en: 'Ours'}});
 }
 const remove = (uid: string) => ftest.wrap(deleteUserAccount)({auth: {uid}, data: {}});
 
@@ -172,6 +174,7 @@ describe('deleting an account', () => {
       'users/ann/private/other',
       'users/ann/chatReads/shared',
       'users/ann/eventMutes/shared',
+      'users/ann/templates/t1',
       `${E}/urgentRates/ann`,
       `${E}/profiles/ann`,
       'events/left/profiles/ann',

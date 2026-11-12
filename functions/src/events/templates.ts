@@ -11,7 +11,7 @@
 import {readFileSync} from "fs";
 import {join} from "path";
 import labelDefaults from "../shared/label_defaults.json";
-import {PRESET_ROLES} from "./permissions";
+import {PERMISSIONS, PRESET_ROLES} from "./permissions";
 
 export interface TemplateField {
   id: string;
@@ -39,8 +39,24 @@ export interface EventTemplate {
     categories: {id: string; name: string; minAge?: number; maxAge?: number; isChild?: boolean}[];
   };
   fields: TemplateField[];
-  /** Preset roles renamed for this kind of event, as `{name, base}`. */
-  roles: Record<string, {name: string; base: string}>;
+  /**
+   * Roles for this kind of event: a preset renamed (`{name, base}`), or,
+   * in a saved template, a role with its own `permissions`.
+   */
+  roles: Record<string, TemplateRole>;
+  /** In a saved template, the system template it began from. */
+  baseTemplateId?: string;
+}
+
+export interface TemplateRole {
+  name: string;
+  base?: string;
+  permissions?: string[];
+}
+
+/** The permissions a template role gives. */
+export function rolePermissions(role: TemplateRole): string[] {
+  return role.permissions ? [...role.permissions] : [...PRESET_ROLES[role.base!].permissions];
 }
 
 const DIR = join(__dirname, "..", "..", "templates");
@@ -78,7 +94,11 @@ export function validateTemplate(t: EventTemplate | null): EventTemplate {
     if (!c.id || !c.name) fail("category");
   }
   for (const [roleId, role] of Object.entries(t.roles ?? {})) {
-    if (roleId === "owner" || !role.name || !PRESET_ROLES[role.base]) fail(`role ${roleId}`);
+    const known = role.permissions ?
+      Array.isArray(role.permissions) &&
+        role.permissions.every((p) => (PERMISSIONS as readonly string[]).includes(p)) :
+      Boolean(role.base && PRESET_ROLES[role.base]);
+    if (roleId === "owner" || !role.name || !known) fail(`role ${roleId}`);
   }
   return t;
 }
@@ -97,4 +117,48 @@ export function systemTemplate(id: string): EventTemplate | null {
     cache.set(id, t);
   }
   return t;
+}
+
+/**
+ * A saved template from an event's configuration (Req 65): modules, labels,
+ * the attendance policy, categories, expense access by role, fields and
+ * changed roles. Never people (named people in expense access are dropped),
+ * money, messages, dates, venues or the title.
+ */
+export function templateFromEvent({id, name, event, fields, roles}: {
+  id: string;
+  name: string;
+  event: FirebaseFirestore.DocumentData;
+  fields: TemplateField[];
+  roles: Record<string, {name?: string; permissions?: string[]; preset?: boolean}>;
+}): EventTemplate {
+  const settings = event.settings ?? {};
+  const access = settings.expenseAccess ?? {mode: "everyone"};
+  const base = systemTemplate(String(event.templateId ?? "blank"));
+  return validateTemplate({
+    id,
+    version: 1,
+    name: {en: name},
+    description: {en: ""},
+    icon: base?.icon ?? "add",
+    fastPath: base?.fastPath ?? false,
+    baseTemplateId: base?.id ?? "blank",
+    modules: {...(event.modules ?? {})},
+    labels: {...(event.labels ?? {})},
+    settings: {
+      attendancePolicy: settings.attendancePolicy ?? "everyone",
+      expenseAccess: access.mode === "selected" ?
+        {mode: "selected", roleIds: [...(access.roleIds ?? [])], uids: []} :
+        {mode: access.mode ?? "everyone"},
+      categories: [...(settings.categories ?? [])],
+    },
+    fields: fields.map((f) => ({
+      id: f.id, label: f.label, type: f.type, options: f.options ?? [],
+      required: f.required === true, scope: f.scope, visibility: f.visibility, order: f.order ?? 0,
+    })),
+    roles: Object.fromEntries(
+      Object.entries(roles)
+        .filter(([roleId, r]) => roleId !== "owner" && !r.preset && r.name)
+        .map(([roleId, r]) => [roleId, {name: r.name!, permissions: [...(r.permissions ?? [])]}])),
+  });
 }

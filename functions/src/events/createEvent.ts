@@ -5,7 +5,7 @@ import {requireString, withStructuredLogs} from "../utils/logging";
 import {preparePersonalOrganizer} from "./organizers";
 import {memberDoc, memberRef} from "./members";
 import {PRESET_ROLES} from "./permissions";
-import {systemTemplate} from "./templates";
+import {EventTemplate, rolePermissions, systemTemplate, validateTemplate} from "./templates";
 
 const db = getFirestore();
 
@@ -67,8 +67,9 @@ export const createEvent = onCall({timeoutSeconds: 30}, async (request) => {
   const startDate = optionalDate(data.startDate, "startDate");
   const endDate = optionalDate(data.endDate, "endDate");
   const templateId = optionalString(data.templateId, "templateId") ?? "blank";
-  const template = systemTemplate(templateId);
-  if (!template) throw invalid("templateId is not a template.");
+  const savedTemplateId = optionalString(data.savedTemplateId, "savedTemplateId");
+  const system = savedTemplateId ? null : systemTemplate(templateId);
+  if (!savedTemplateId && !system) throw invalid("templateId is not a template.");
 
   return withStructuredLogs(
     {op: "createEvent", uid, args: {eventId}},
@@ -80,6 +81,16 @@ export const createEvent = onCall({timeoutSeconds: 30}, async (request) => {
           if (existing.data()!.creatorId === uid) return;
           throw new HttpsError("already-exists", "This ID is already in use.");
         }
+        // A saved template belongs to the caller alone (Req 65).
+        let template: EventTemplate;
+        if (savedTemplateId) {
+          const saved = await tx.get(
+            db.collection("users").doc(uid).collection("templates").doc(savedTemplateId));
+          if (!saved.exists) throw invalid("savedTemplateId is not one of your templates.");
+          template = validateTemplate(saved.data() as EventTemplate);
+        } else {
+          template = system!;
+        }
         const writeOrganizer = await preparePersonalOrganizer(db, tx, uid);
         writeOrganizer();
         const now = FieldValue.serverTimestamp();
@@ -88,8 +99,9 @@ export const createEvent = onCall({timeoutSeconds: 30}, async (request) => {
           title,
           description,
           // A copy of the template, so a later version never changes it.
-          templateId: template.id,
+          templateId: savedTemplateId ? template.baseTemplateId ?? "blank" : template.id,
           templateVersion: template.version,
+          ...(savedTemplateId ? {savedTemplateId} : {}),
           creatorId: uid,
           organizerId: uid,
           adminIds: [uid],
@@ -121,7 +133,7 @@ export const createEvent = onCall({timeoutSeconds: 30}, async (request) => {
         for (const [roleId, role] of Object.entries(template.roles)) {
           roles[roleId] = {
             name: role.name,
-            permissions: [...PRESET_ROLES[role.base].permissions],
+            permissions: rolePermissions(role),
             preset: Boolean(PRESET_ROLES[roleId]),
           };
           tx.set(eventRef.collection("roles").doc(roleId), {...roles[roleId], updatedAt: now});

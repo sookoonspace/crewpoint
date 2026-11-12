@@ -733,6 +733,13 @@ service cloud.firestore {
       // members) have no business seeing when someone last opened a
       // chat. ChatRepository.markEventRead / backfillReadStateForExistingEvents
       // / watchLastRead all go through this path.
+      // Templates the user saved from their events (Req 65), written only by
+      // saveAsTemplate. Their owner may delete one.
+      match /templates/{templateId} {
+        allow read, delete: if request.auth != null && request.auth.uid == userId;
+        allow create, update: if false;
+      }
+
       match /chatReads/{eventId} {
         allow read, write: if request.auth != null
           && request.auth.uid == userId;

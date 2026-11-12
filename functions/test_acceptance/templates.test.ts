@@ -7,6 +7,7 @@ import {SYSTEM_TEMPLATE_IDS, systemTemplate} from '../src/events/templates';
 const ftest = require('firebase-functions-test')();
 getAdminApp();
 const {createEvent} = require('../src/events/createEvent');
+const {saveAsTemplate} = require('../src/events/saveAsTemplate');
 const db = () => getAdminDb();
 
 beforeEach(() => clearFirestoreEmulator());
@@ -30,3 +31,20 @@ describe('templates', () => {
     });
   }
 });
+
+describe('saved templates', () => {
+  test('GE-06 an event is saved as a new template, and a new event made from it', async () => {
+    const as = (fn: unknown, data: object) => ftest.wrap(fn)({auth: {uid: 'host'}, data});
+    await as(createEvent, {eventId: 'first', title: 'Summer cup', templateId: 'cricket_tournament'});
+    await db().doc('events/first/participants/p1').set({name: 'Ravi', status: 'active'});
+    await db().doc('events/first/expenses/x1').set({payerId: 'host', amount: 30});
+    const {templateId} = await as(saveAsTemplate, {eventId: 'first', name: 'Our cup'});
+    await as(createEvent, {eventId: 'second', title: 'Winter cup', savedTemplateId: templateId});
+    const second = (await db().doc('events/second').get()).data()!;
+    expect(second.labels).toEqual(systemTemplate('cricket_tournament')!.labels);
+    expect(second.templateId).toBe('cricket_tournament');
+    expect((await db().collection('events/second/participants').get()).size).toBe(0);
+    expect((await db().collection('events/second/expenses').get()).size).toBe(0);
+  });
+});
+
