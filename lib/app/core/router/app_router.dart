@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/core/widgets/module_guard.dart';
 import 'package:crewpoint_app/app/features/counts/presentation/counts_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/template_picker_screen.dart';
 import 'package:crewpoint_app/app/features/schedule/presentation/agenda_screen.dart';
 import 'package:crewpoint_app/app/features/schedule/presentation/schedule_screen.dart';
 import 'package:crewpoint_app/app/features/schedule/presentation/session_screen.dart';
@@ -204,9 +205,18 @@ GoRouter createRouter({
                 path: AppRoutes.dashboard,
                 builder: (_, _) => const DashboardScreen(),
                 routes: [
+                  // The first step of creation is a template picker (Req 63).
                   GoRoute(
                     path: 'create',
-                    builder: (_, _) => const CreateEventScreen(),
+                    builder: (_, _) => const TemplatePickerScreen(),
+                    routes: [
+                      GoRoute(
+                        path: ':templateId',
+                        builder: (_, state) => CreateEventScreen(
+                          templateId: state.pathParameters['templateId']!,
+                        ),
+                      ),
+                    ],
                   ),
                   GoRoute(
                     path: 'event/:eventId',

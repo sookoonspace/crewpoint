@@ -7,7 +7,7 @@
   "description": {
     "en": "Start from nothing and set it up your way."
   },
-  "icon": "blank",
+  "icon": "add",
   "fastPath": true,
   "modules": {
     "tasks": true,

@@ -11,9 +11,25 @@ class CreateEventRobot {
 
   final WidgetTester tester;
 
+  /// Bounded pumps: the dashboard's empty-state animation loops forever, so
+  /// `pumpAndSettle` would never return.
+  Future<void> settle() async {
+    for (var i = 0; i < 12; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+  }
+
   Future<void> tapCreateFab() async {
     await tester.tap(find.byIcon(Icons.add));
-    await tester.pumpAndSettle();
+    await settle();
+  }
+
+  /// Picks a template, the first step of creating an event (Req 63).
+  Future<void> chooseTemplate(String id) async {
+    final card = find.byKey(Key('events.create.template.$id'));
+    await tester.scrollUntilVisible(card, 200);
+    await tester.tap(card);
+    await settle();
   }
 
   Future<void> enterTitle(String title) async {
@@ -23,7 +39,7 @@ class CreateEventRobot {
 
   Future<void> tapSubmit() async {
     await tester.tap(find.byKey(const Key('createEvent.submit')));
-    await tester.pumpAndSettle();
+    await settle();
   }
 
   void expectEmptyDashboard() {

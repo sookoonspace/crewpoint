@@ -7,7 +7,7 @@
   "description": {
     "en": "A birthday, a dinner or any get-together, ready in a minute."
   },
-  "icon": "party",
+  "icon": "celebration",
   "fastPath": true,
   "modules": {
     "tasks": true,

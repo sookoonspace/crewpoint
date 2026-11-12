@@ -7,7 +7,7 @@
   "description": {
     "en": "Hundreds of people over several days, with meals, families and a committee."
   },
-  "icon": "convention",
+  "icon": "groups",
   "fastPath": false,
   "modules": {
     "tasks": true,

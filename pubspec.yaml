@@ -164,6 +164,7 @@ flutter:
   assets:
     - assets/animations/
     - assets/legal/
+    - assets/templates/
     - functions/src/shared/label_defaults.json
     - functions/src/shared/role_presets.json
     - assets/images/auth/
