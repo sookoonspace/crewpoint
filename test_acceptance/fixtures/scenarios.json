@@ -856,8 +856,8 @@
  {
   "id": "O-03",
   "title": "Automated Firestore backups, with a restore rehearsed.",
-  "status": "PARTIAL",
-  "gap": "Daily backups kept 14 days are on for all three projects, with point-in-time recovery on dev and prod. No restore has been rehearsed.",
+  "status": "PASS",
+  "gap": "Manual, in #91: on Nov 12, 2026 the newest dev backup was restored into a new database in 8 min 33 s, matched live in every collection and document checked (functions/scripts/checkRestore.ts), and was deleted. Daily backups kept 14 days are on for all three projects, with point-in-time recovery on dev and prod. See docs/ops/backups-and-alerts.md.",
   "tested": false
  },
  {

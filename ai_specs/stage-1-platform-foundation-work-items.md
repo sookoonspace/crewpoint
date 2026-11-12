@@ -1592,10 +1592,10 @@ Rehearse a Firestore restore into a new database on dev, and document the result
 - `crewpoint-dev` holds real data, so restore only into a new database.
 
 ### Acceptance criteria
-- [ ] A backup is restored into a new database on dev, with live data untouched.
-- [ ] Events and expenses are checked in the restored database, then it is deleted.
-- [ ] The result is documented in `docs/ops/backups-and-alerts.md`, and its list is updated.
-- [ ] Manual results for scenario O-03 are recorded. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] A backup is restored into a new database on dev, with live data untouched.
+- [x] Events and expenses are checked in the restored database, then it is deleted.
+- [x] The result is documented in `docs/ops/backups-and-alerts.md`, and its list is updated.
+- [x] Manual results for scenario O-03 are recorded. A scenario shared with another Work Item is finished when all of its parts are.
 
 ### Covers
 - User Stories: 29
