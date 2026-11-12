@@ -1,0 +1,51 @@
+{
+  "id": "party",
+  "version": 1,
+  "name": {
+    "en": "Party"
+  },
+  "description": {
+    "en": "A birthday, a dinner or any get-together, ready in a minute."
+  },
+  "icon": "party",
+  "fastPath": true,
+  "modules": {
+    "tasks": true,
+    "budget": true,
+    "chat": true,
+    "schedule": true
+  },
+  "labels": {},
+  "settings": {
+    "attendancePolicy": "everyone",
+    "expenseAccess": {
+      "mode": "everyone"
+    },
+    "categories": [
+      {
+        "id": "child",
+        "name": "Child",
+        "maxAge": 17,
+        "isChild": true
+      },
+      {
+        "id": "adult",
+        "name": "Adult",
+        "minAge": 18
+      }
+    ]
+  },
+  "fields": [
+    {
+      "id": "allergy",
+      "label": "Food allergy",
+      "type": "yesNo",
+      "options": [],
+      "required": false,
+      "scope": "participant",
+      "visibility": "private",
+      "order": 0
+    }
+  ],
+  "roles": {}
+}

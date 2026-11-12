@@ -1,0 +1,59 @@
+{
+  "id": "wedding",
+  "version": 1,
+  "name": {
+    "en": "Wedding"
+  },
+  "description": {
+    "en": "Several days of events, guests invited by party, and meal choices."
+  },
+  "icon": "wedding",
+  "fastPath": false,
+  "modules": {
+    "tasks": true,
+    "budget": true,
+    "chat": true,
+    "schedule": true
+  },
+  "labels": {
+    "group": {
+      "one": "Guest party",
+      "other": "Guest parties"
+    }
+  },
+  "settings": {
+    "attendancePolicy": "invitedOnly",
+    "expenseAccess": {
+      "mode": "everyone"
+    },
+    "categories": [
+      {
+        "id": "child",
+        "name": "Child",
+        "maxAge": 17,
+        "isChild": true
+      },
+      {
+        "id": "adult",
+        "name": "Adult",
+        "minAge": 18
+      }
+    ]
+  },
+  "fields": [
+    {
+      "id": "mealChoice",
+      "label": "Meal choice",
+      "type": "singleChoice",
+      "options": [
+        "Veg",
+        "Non-veg"
+      ],
+      "required": false,
+      "scope": "participant",
+      "visibility": "private",
+      "order": 0
+    }
+  ],
+  "roles": {}
+}

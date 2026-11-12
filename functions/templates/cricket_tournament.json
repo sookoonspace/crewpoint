@@ -1,0 +1,69 @@
+{
+  "id": "cricket_tournament",
+  "version": 1,
+  "name": {
+    "en": "Cricket tournament"
+  },
+  "description": {
+    "en": "Teams, matches and players, with costs shared by those involved."
+  },
+  "icon": "cricket",
+  "fastPath": false,
+  "modules": {
+    "tasks": true,
+    "budget": true,
+    "chat": true,
+    "schedule": true
+  },
+  "labels": {
+    "group": {
+      "one": "Team",
+      "other": "Teams"
+    },
+    "session": {
+      "one": "Match",
+      "other": "Matches"
+    }
+  },
+  "settings": {
+    "attendancePolicy": "invitedOnly",
+    "expenseAccess": {
+      "mode": "involved"
+    },
+    "categories": [
+      {
+        "id": "child",
+        "name": "Child",
+        "maxAge": 17,
+        "isChild": true
+      },
+      {
+        "id": "adult",
+        "name": "Adult",
+        "minAge": 18
+      }
+    ]
+  },
+  "fields": [
+    {
+      "id": "playerRole",
+      "label": "Playing role",
+      "type": "singleChoice",
+      "options": [
+        "Batter",
+        "Bowler",
+        "All-rounder"
+      ],
+      "required": false,
+      "scope": "participant",
+      "visibility": "standard",
+      "order": 0
+    }
+  ],
+  "roles": {
+    "crewLead": {
+      "name": "Team captain",
+      "base": "crewLead"
+    }
+  }
+}

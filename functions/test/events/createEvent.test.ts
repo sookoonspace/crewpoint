@@ -39,7 +39,13 @@ describe('createEvent configuration (Req 18, 18a, 21)', () => {
     expect(saved.languages).toEqual(['en']);
     expect(saved.modules).toEqual({tasks: true, budget: true, chat: true, schedule: true});
     expect(saved.labels).toEqual({});
-    expect(saved.settings).toEqual({});
+    // The Blank template's settings (Req 62).
+    expect(saved.settings).toEqual({
+      attendancePolicy: 'everyone',
+      expenseAccess: {mode: 'everyone'},
+      categories: [],
+    });
+    expect(saved.templateVersion).toBe(1);
     expect(saved.capacity).toBeNull();
     expect(saved.memberLimit).toBeNull();
     expect(saved.eventType).toBeUndefined();
@@ -167,3 +173,51 @@ describe('createEvent', () => {
     expect((await eventDoc()).exists).toBe(false);
   });
 });
+
+describe('createEvent from a template (Req 62, 63a, 38a)', () => {
+  const db = () => getAdminDb();
+
+  test('copies the template into the event, its fields and roles, together', async () => {
+    await call('me', input({templateId: 'convention'}));
+    const saved = (await eventDoc()).data()!;
+    expect(saved.templateId).toBe('convention');
+    expect(saved.templateVersion).toBe(1);
+    expect(saved.labels.group).toEqual({one: 'Family', other: 'Families'});
+    expect(saved.settings.attendancePolicy).toBe('arrivalToDeparture');
+    expect(saved.settings.expenseAccess).toEqual({mode: 'selected', roleIds: [], uids: []});
+    expect(saved.settings.categories.map((c: {id: string}) => c.id)).toEqual(['child', 'adult']);
+    expect(saved.status).toBe('draft');
+    const fields = await db().collection('events/evt/fields').get();
+    expect(fields.docs.map((d) => d.id).sort()).toEqual(['diet', 'kids', 'shirt']);
+    expect(fields.docs.find((d) => d.id === 'diet')!.data()).toEqual(expect.objectContaining({
+      label: 'Diet', type: 'singleChoice', required: true, visibility: 'standard', scope: 'participant',
+    }));
+    const role = (await db().doc('events/evt/roles/crewLead').get()).data()!;
+    expect(role.name).toBe('Committee member');
+    expect(role.permissions).toContain('schedule.edit');
+    expect(role.preset).toBe(true);
+    const owner = (await db().doc('events/evt/members/me').get()).data()!;
+    expect(owner.roleIds).toEqual(['owner']);
+  });
+
+  test('cricket and golf share expenses only among those involved', async () => {
+    await call('me', input({templateId: 'golf_outing'}));
+    expect((await eventDoc()).data()!.settings.expenseAccess).toEqual({mode: 'involved'});
+  });
+
+  test('a template it does not know is refused, and nothing is written', async () => {
+    await expect(call('me', input({templateId: 'rodeo'}))).rejects.toEqual(rejected('invalid-argument'));
+    expect((await eventDoc()).exists).toBe(false);
+  });
+
+  test('a later template version never changes an existing event', async () => {
+    await call('me', input({templateId: 'party'}));
+    const before = (await eventDoc()).data()!;
+    // The event holds its own copy; nothing points back to the file.
+    expect(before.labels).toEqual({});
+    expect(before.settings.categories).toHaveLength(2);
+    const fields = await db().collection('events/evt/fields').get();
+    expect(fields.size).toBe(1);
+  });
+});
+
