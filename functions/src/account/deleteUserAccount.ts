@@ -356,7 +356,7 @@ export const deleteUserAccount = onCall(
           // Firestore does NOT cascade-delete subcollections, so personal
           // documents go before the parent user doc. Idempotent on retry.
           const userRef = db.collection("users").doc(uid);
-          for (const sub of ["private", "chatReads", "eventMutes"]) {
+          for (const sub of ["private", "chatReads", "eventMutes", "templates"]) {
             await streamDeleteSubcollection(userRef, sub);
           }
           await db.collection("organizers").doc(uid).delete();
