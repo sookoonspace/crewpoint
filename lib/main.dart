@@ -17,6 +17,8 @@ import 'package:crewpoint_app/app/core/format/event_time.dart';
 import 'package:crewpoint_app/app/core/labels/label_resolver.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
 import 'package:crewpoint_app/app/core/env/app_flavor.dart';
+import 'package:crewpoint_app/app/core/env/env.dart';
+import 'package:crewpoint_app/app/core/services/sentry_crash_reporter.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/router/app_router.dart';
 import 'package:crewpoint_app/app/core/router/current_route_provider.dart';
@@ -114,6 +116,13 @@ Future<void> main() async {
   // the per-flavor config by this point, and initializing again with a
   // different project's options throws [core/duplicate-app].
   await _resolveFlavorFromNativeBuild();
+  // Crash reporting (Req 68) starts as soon as the flavor is known, so it
+  // catches startup failures from here on. Off without a SENTRY_DSN.
+  final crashReporter = await SentryCrashReporter.start(
+    dsn: Env.sentryDsn,
+    environment: AppFlavor.current.name,
+    reportDebugBuilds: Env.sentryDebug,
+  );
   await FirebaseService.initialize(flavor: AppFlavor.current);
   // Background isolate handler must be registered before the first FCM
   // event lands. Register early so a cold-start tap into a closed app
@@ -126,7 +135,10 @@ Future<void> main() async {
   final prefs = await SharedPreferences.getInstance();
   runApp(
     ProviderScope(
-      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        crashReporterProvider.overrideWithValue(crashReporter),
+      ],
       child: const MyApp(),
     ),
   );
@@ -176,9 +188,10 @@ class _MyAppState extends ConsumerState<MyApp> {
       // provider mid-build. Defer the set() onto the next microtask so
       // currentRouteProvider updates after the frame settles.
       onRouteChanged: (location) {
-        Future.microtask(
-          () => ref.read(currentRouteProvider.notifier).set(location),
-        );
+        Future.microtask(() {
+          ref.read(currentRouteProvider.notifier).set(location);
+          ref.read(crashReporterProvider).setRoute(location);
+        });
       },
     );
 

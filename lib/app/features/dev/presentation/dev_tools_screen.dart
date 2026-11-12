@@ -37,6 +37,8 @@ class DevToolsScreen extends ConsumerWidget {
           else
             _FcmDiagnosticTile(uid: uid),
           const SizedBox(height: AppSpacing.lg),
+          const _CrashTestCard(),
+          const SizedBox(height: AppSpacing.lg),
         ],
       ),
     );
@@ -61,6 +63,85 @@ class _FlavorBanner extends StatelessWidget {
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
           color: Colors.amber.shade900,
           fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+/// Confirms crash reports arrive (Req 68): sends a handled test report and
+/// shows its ID, or throws an uncaught error to exercise the automatic
+/// capture. Debug builds need `--dart-define=SENTRY_DEBUG=true` for either
+/// to reach Sentry.
+class _CrashTestCard extends ConsumerStatefulWidget {
+  const _CrashTestCard();
+
+  @override
+  ConsumerState<_CrashTestCard> createState() => _CrashTestCardState();
+}
+
+class _CrashTestCardState extends ConsumerState<_CrashTestCard> {
+  String? _result;
+
+  Future<void> _sendReport() async {
+    final id = await ref
+        .read(crashReporterProvider)
+        .report(
+          StateError('CrewPoint test crash from Dev Tools'),
+          StackTrace.current,
+        );
+    if (!mounted) return;
+    setState(
+      () => _result = id == null
+          ? 'Not sent. Debug builds need SENTRY_DEBUG=true.'
+          : 'Sent as $id',
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isOn = ref.watch(crashReporterProvider).isOn;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Crash reporting',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            if (!isOn)
+              const Text(
+                'Off: this build has no SENTRY_DSN.',
+                key: Key('dev.crash.off'),
+              )
+            else ...[
+              Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
+                children: [
+                  FilledButton(
+                    key: const Key('dev.crash.report'),
+                    onPressed: _sendReport,
+                    child: const Text('Send test report'),
+                  ),
+                  OutlinedButton(
+                    key: const Key('dev.crash.throw'),
+                    onPressed: () => throw StateError(
+                      'CrewPoint uncaught test error from Dev Tools',
+                    ),
+                    child: const Text('Throw test error'),
+                  ),
+                ],
+              ),
+              if (_result != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                SelectableText(_result!, key: const Key('dev.crash.result')),
+              ],
+            ],
+          ],
         ),
       ),
     );

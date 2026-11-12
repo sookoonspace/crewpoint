@@ -79,6 +79,7 @@ import 'package:crewpoint_app/app/features/dashboard/data/member_calls.dart';
 import 'package:crewpoint_app/app/core/database/daos/events_dao.dart';
 import 'package:crewpoint_app/app/features/tasks/data/task_repository.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
+import 'package:crewpoint_app/app/core/services/crash_reporter.dart';
 
 /// Secure storage instance.
 final secureStorageProvider = Provider<SecureStorageService>(
@@ -713,6 +714,12 @@ final appConfigSourceProvider = Provider<IAppConfigSource>(
 
 /// The running app's version, from `package_info_plus`.
 final appInfoProvider = Provider<IAppInfo>((_) => const PackageInfoAppInfo());
+
+/// Crash reporting (Req 68). Sends nothing unless `main` overrides it with
+/// the reporter it started, so tests never reach a real one.
+final crashReporterProvider = Provider<ICrashReporter>(
+  (_) => const NoCrashReporter(),
+);
 
 final appPlatformProvider = Provider<AppPlatform>((_) => currentAppPlatform());
 

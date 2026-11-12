@@ -18,8 +18,13 @@
 //   static final String someApiKey = _Env.someApiKey;
 // }
 
-/// Placeholder class — will be replaced by envied-generated code
-/// once non-Firebase secrets are added to `.env`.
+/// Values passed with `--dart-define-from-file=.env.<flavor>`. No Firebase
+/// keys here — they come from firebase_options_{flavor}.dart.
 abstract final class Env {
-  // No Firebase keys here — they come from firebase_options_{flavor}.dart
+  /// Where crash reports go (Req 68). Not a secret: it only allows sending
+  /// reports. Empty means crash reporting is off.
+  static const sentryDsn = String.fromEnvironment('SENTRY_DSN');
+
+  /// Debug builds report crashes only with `SENTRY_DEBUG=true`.
+  static const sentryDebug = bool.fromEnvironment('SENTRY_DEBUG');
 }
