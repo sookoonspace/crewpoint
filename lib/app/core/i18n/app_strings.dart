@@ -52,6 +52,7 @@ abstract class AppStrings {
   ScheduleStrings get schedule;
   AgendaStrings get agenda;
   CountsStrings get counts;
+  TemplateStrings get templates;
 
   /// Static English fallback. Used by service-layer code that has no
   /// `BuildContext` in scope (e.g. `firebaseAuthErrorMessage`). UI code
@@ -546,6 +547,8 @@ class _EnglishStrings extends AppStrings {
   AgendaStrings get agenda => const _EnglishAgendaStrings();
   @override
   CountsStrings get counts => const _EnglishCountsStrings();
+  @override
+  TemplateStrings get templates => const _EnglishTemplateStrings();
 }
 
 class _EnglishChatStrings extends ChatStrings {
@@ -3350,4 +3353,72 @@ class _EnglishCountsStrings extends CountsStrings {
   String get earlierFreezes => 'Compare with';
   @override
   String get wholeEventLabel => 'Whole event';
+}
+
+/// The template picker, the first step of creating an event (#89, Req 63).
+abstract class TemplateStrings {
+  const TemplateStrings();
+
+  String get pickerTitle;
+  String get pickerHelp;
+  String get quick;
+  String get loadFailed;
+  String get retry;
+  String formTitle(String template);
+
+  String get titleLabel;
+  String get titleHint;
+  String get titleRequired;
+  String get titleTooLong;
+  String get descriptionLabel;
+  String get descriptionHint;
+  String get startDate;
+  String get dateOptional;
+  String get currency;
+  String get create;
+  String get createFailed;
+  String get signInRequired;
+}
+
+class _EnglishTemplateStrings extends TemplateStrings {
+  const _EnglishTemplateStrings();
+
+  @override
+  String get pickerTitle => 'Create an event';
+  @override
+  String get pickerHelp =>
+      'Start from a template. You can change anything afterwards.';
+  @override
+  String get quick => 'Just a title and a date';
+  @override
+  String get loadFailed => "Couldn't load the templates. Try again.";
+  @override
+  String get retry => 'Try again';
+  @override
+  String formTitle(String template) => 'New ${template.toLowerCase()} event';
+
+  @override
+  String get titleLabel => 'Title';
+  @override
+  String get titleHint => 'What are you planning?';
+  @override
+  String get titleRequired => 'Please enter a title';
+  @override
+  String get titleTooLong => 'Title must be under 200 characters';
+  @override
+  String get descriptionLabel => 'Description';
+  @override
+  String get descriptionHint => 'Details, location, notes... (optional)';
+  @override
+  String get startDate => 'Start date';
+  @override
+  String get dateOptional => 'Optional, tap to set';
+  @override
+  String get currency => 'Currency';
+  @override
+  String get create => 'Create event';
+  @override
+  String get createFailed => "Couldn't create the event. Try again.";
+  @override
+  String get signInRequired => 'Sign in to create an event.';
 }

@@ -33,6 +33,7 @@ void main() {
       robot.expectEmptyDashboard();
 
       await robot.tapCreateFab();
+      await robot.chooseTemplate('blank');
       await robot.enterTitle('Tahoe Trip');
       await robot.tapSubmit();
 
@@ -86,4 +87,46 @@ void main() {
       await tester.pumpAndSettle();
     },
   );
+
+  testWidgets('each template creates its event, with its words and settings '
+      '(Req 62)', (tester) async {
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    for (final (id, title, group) in [
+      ('party', 'Lily turns 7', null),
+      ('wedding', 'Asha and Dev', 'Guest party'),
+      ('cricket_tournament', 'Summer cup', 'Team'),
+      ('golf_outing', 'Charity day', 'Foursome'),
+      ('convention', 'Reunion 2027', 'Family'),
+    ]) {
+      final harness = DashboardJourneyHarness(
+        currentUser: const AppUser(uid: 'host', email: 'h@example.com'),
+      );
+      await tester.pumpWidget(harness.buildApp());
+      for (var i = 0; i < 3; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      final robot = CreateEventRobot(tester);
+      await robot.tapCreateFab();
+      await robot.chooseTemplate(id);
+      await robot.enterTitle(title);
+      await robot.tapSubmit();
+      final event = (await harness.firestore.collection('events').get())
+          .docs
+          .single
+          .data();
+      expect(event['templateId'], id, reason: id);
+      expect(
+        ((event['labels'] as Map)['group'] as Map?)?['one'],
+        group,
+        reason: id,
+      );
+      expect(event['status'], 'draft');
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+      await harness.database.close();
+    }
+  });
 }

@@ -188,7 +188,7 @@ void main() {
       expect(find.byKey(const Key('createEvent.submit')), findsOneWidget);
       // Error widget visible.
       expect(find.byKey(const Key('createEvent.error')), findsOneWidget);
-      expect(find.text("Couldn't create event — try again"), findsOneWidget);
+      expect(find.text("Couldn't create the event. Try again."), findsOneWidget);
       // Success SnackBar NOT shown.
       expect(find.text('Event created'), findsNothing);
     },
@@ -250,7 +250,7 @@ void main() {
 
       // Inline error visible.
       expect(find.byKey(const Key('createEvent.error')), findsOneWidget);
-      expect(find.textContaining('Sign-in required'), findsOneWidget);
+      expect(find.text('Sign in to create an event.'), findsOneWidget);
       // No Firestore document created.
       final docs = await firestore.collection('events').get();
       expect(docs.docs, isEmpty);

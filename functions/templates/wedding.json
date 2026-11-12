@@ -7,7 +7,7 @@
   "description": {
     "en": "Several days of events, guests invited by party, and meal choices."
   },
-  "icon": "wedding",
+  "icon": "heart",
   "fastPath": false,
   "modules": {
     "tasks": true,

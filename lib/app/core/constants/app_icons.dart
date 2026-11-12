@@ -101,6 +101,15 @@ abstract final class AppIcons {
   static const IconData calendar = Icons.calendar_today;
   static const IconData event = Icons.event;
   static const IconData schedule = Icons.schedule;
+
+  // ===== Event templates (#89) =====
+  // Named by the template file's `icon`, never by the kind of event.
+  static const IconData templateAdd = Icons.add_box_outlined;
+  static const IconData templateCelebration = Icons.celebration_outlined;
+  static const IconData templateHeart = Icons.favorite_outline;
+  static const IconData templateBat = Icons.sports_outlined;
+  static const IconData templateFlag = Icons.flag_outlined;
+  static const IconData templateGroups = Icons.groups_outlined;
   static const IconData place = Icons.place_outlined;
   static const IconData map = Icons.map_outlined;
   static const IconData directions = Icons.directions_outlined;

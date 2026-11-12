@@ -1517,22 +1517,22 @@ Add the six system templates as data, make the first step of creation a picker, 
 - Since #60, new events start as `draft` (L23), including events from templates. Creation still has no further screens (Req 63), and the organizer is then offered "Publish and invite". PA-01's under-a-minute test covers creating the event.
 
 ### Acceptance criteria
-- [ ] System templates are data only, in versioned JSON files under `assets/templates/`, also read by functions, so they need no separate seeding per environment: Blank, Party, Wedding, Cricket tournament, Golf outing, Convention.
-- [ ] Each sets modules, labels, roles, fields, categories, attendance policy and settings.
-- [ ] Events keep a copy of what they were created with, so a later template version never changes an existing event.
-- [ ] The first step of creation is a picker, at `/dashboard/create`.
-- [ ] Choosing Party or Blank with only a title and date creates the event in under a minute on a phone, with no further screens.
-- [ ] `createEvent` creates the event, owner member, roles and template data together, so a failed creation leaves nothing behind.
-- [ ] Expense access defaults are **Everyone** for Party, Wedding and Blank, **Selected roles and people** with nobody selected for Convention, so that only people holding `money.read` have full access, and **Only people involved** for Cricket tournament and Golf outing. The admin can change this at any time.
-- [ ] Organizers can change anything after starting from a template.
-- [ ] Fixtures prove each template creates correctly with no code differences.
-- [ ] Robot journeys cover create from each template and the party fast path. Unit tests cover template validation.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
-- [ ] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
-- [ ] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
-- [ ] Tests for scenarios GE-06, PA-01 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] System templates are data only, in versioned JSON files under `assets/templates/`, also read by functions, so they need no separate seeding per environment: Blank, Party, Wedding, Cricket tournament, Golf outing, Convention.
+- [x] Each sets modules, labels, roles, fields, categories, attendance policy and settings.
+- [x] Events keep a copy of what they were created with, so a later template version never changes an existing event.
+- [x] The first step of creation is a picker, at `/dashboard/create`.
+- [x] Choosing Party or Blank with only a title and date creates the event in under a minute on a phone, with no further screens.
+- [x] `createEvent` creates the event, owner member, roles and template data together, so a failed creation leaves nothing behind.
+- [x] Expense access defaults are **Everyone** for Party, Wedding and Blank, **Selected roles and people** with nobody selected for Convention, so that only people holding `money.read` have full access, and **Only people involved** for Cricket tournament and Golf outing. The admin can change this at any time.
+- [x] Organizers can change anything after starting from a template.
+- [x] Fixtures prove each template creates correctly with no code differences.
+- [x] Robot journeys cover create from each template and the party fast path. Unit tests cover template validation.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] New or changed screens have loading, empty, error and offline states, with retry where an action failed. Forms keep entered data on failure, and leaving a form with unsaved changes asks for confirmation.
+- [x] New or changed screens work from 375 px to desktop using `ResponsiveShell`, `ContentMaxWidth` and `Breakpoints`, at 200% text, with semantic labels, 48 px targets and themed colours in light and dark mode.
+- [x] Strings go through `context.strings` and the label resolver once it exists. Interactive widgets have `domain.feature.action` keys, and journeys use bounded pumps.
+- [x] Tests for scenarios GE-06, PA-01 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 1-2

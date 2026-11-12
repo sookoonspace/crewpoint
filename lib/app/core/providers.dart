@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:crewpoint_app/app/core/services/qr_renderer.dart';
 import 'package:crewpoint_app/app/core/services/file_picker_service.dart';
 import 'package:crewpoint_app/app/features/participants/data/import_repository.dart';
@@ -6,6 +7,7 @@ import 'package:crewpoint_app/app/features/budget/domain/models/my_balance.dart'
 import 'package:clock/clock.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart';
@@ -25,6 +27,7 @@ import 'package:crewpoint_app/app/core/database/daos/mirror_syncs_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/my_records_dao.dart';
 import 'package:crewpoint_app/app/core/database/daos/sessions_dao.dart';
 import 'package:crewpoint_app/app/features/counts/domain/count_export.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/event_template.dart';
 import 'package:crewpoint_app/app/features/counts/domain/event_stats.dart';
 import 'package:crewpoint_app/app/features/schedule/data/my_records_repository.dart';
 import 'package:crewpoint_app/app/features/schedule/data/session_repository.dart';
@@ -236,6 +239,7 @@ final createEventCallProvider = Provider<CreateEventCall>(
       'timeZone': event.timeZone,
       'dateOnly': event.dateOnly,
       'currency': event.currency,
+      'templateId': event.templateId,
       'startDate': event.startDate?.toUtc().toIso8601String(),
       'endDate': event.endDate?.toUtc().toIso8601String(),
     });
@@ -841,3 +845,19 @@ final countFreezesProvider = StreamProvider.autoDispose
             ],
           ),
     );
+
+/// The system templates for the picker (Req 62), read from
+/// `assets/templates/`, in the index's order.
+final templateCatalogueProvider = FutureProvider<List<EventTemplateInfo>>((
+  ref,
+) async {
+  Future<Map<String, dynamic>> read(String file) async =>
+      jsonDecode(
+            await rootBundle.loadString('${EventTemplateInfo.assetDir}/$file'),
+          )
+          as Map<String, dynamic>;
+  return [
+    for (final id in EventTemplateInfo.idsFrom(await read('index.json')))
+      EventTemplateInfo.fromJson(await read('$id.json')),
+  ];
+});

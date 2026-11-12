@@ -21,9 +21,17 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
 
 class CreateEventScreen extends ConsumerStatefulWidget {
-  const CreateEventScreen({super.key, this.defaultCurrency = 'USD'});
+  const CreateEventScreen({
+    super.key,
+    this.defaultCurrency = 'USD',
+    this.templateId = EventModel.defaultTemplateId,
+  });
 
   final String defaultCurrency;
+
+  /// The template chosen in the picker (Req 63), which `createEvent` copies
+  /// into the event.
+  final String templateId;
 
   /// V1 supported currencies. Display-only — no FX conversion in V1.
   static const List<String> supportedCurrencies = [
@@ -83,7 +91,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
 
     final uid = ref.read(currentUserIdProvider);
     if (uid == null) {
-      setState(() => _errorMessage = 'Sign-in required to create an event.');
+      setState(() => _errorMessage = context.strings.templates.signInRequired);
       return;
     }
 
@@ -109,12 +117,15 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       memberIds: [uid],
       currency: _currency,
       timeZone: timeZone,
+      templateId: widget.templateId,
     );
 
     try {
       await repository.createEvent(event);
       if (!mounted) return;
-      navigator.pop();
+      // Back past the form and the picker, to the dashboard: no further
+      // screens (Req 63).
+      navigator.popUntil((route) => route.isFirst);
       // 6s gives the user time to read "Event created" and tap "Share
       // invite" without rushing them; long enough to react, short enough
       // not to loiter on the dashboard. Material default is ~4s.
@@ -157,7 +168,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
         _needsConnection = isConnectionFailure(e);
         _errorMessage = _needsConnection
             ? context.strings.dashboard.createEventNeedsConnection
-            : "Couldn't create event — try again";
+            : context.strings.templates.createFailed;
       });
     }
   }
@@ -165,7 +176,20 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Event'), elevation: 0),
+      appBar: AppBar(
+        title: Text(
+          context.strings.templates.formTitle(
+            ref
+                    .watch(templateCatalogueProvider)
+                    .value
+                    ?.where((t) => t.id == widget.templateId)
+                    .firstOrNull
+                    ?.name(Localizations.localeOf(context).languageCode) ??
+                '',
+          ),
+        ),
+        elevation: 0,
+      ),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(
           horizontal: Breakpoints.screenHorizontalPadding(context),
@@ -185,22 +209,22 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
 
                   // Title
                   Text(
-                    'Title',
+                    context.strings.templates.titleLabel,
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   CustomTextField(
                     key: const Key('createEvent.title'),
-                    hintText: 'What are you planning?',
+                    hintText: context.strings.templates.titleHint,
                     controller: _titleController,
                     prefixIcon: const Icon(AppIcons.event),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
-                        return 'Please enter a title';
+                        return context.strings.templates.titleRequired;
                       }
                       if (value.length > 200) {
-                        return 'Title must be under 200 characters';
+                        return context.strings.templates.titleTooLong;
                       }
                       return null;
                     },
@@ -208,14 +232,14 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
 
                   // Description
                   Text(
-                    'Description',
+                    context.strings.templates.descriptionLabel,
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   CustomTextField(
                     key: const Key('createEvent.description'),
-                    hintText: 'Details, location, notes... (optional)',
+                    hintText: context.strings.templates.descriptionHint,
                     controller: _descriptionController,
                     maxLines: 3,
                     prefixIcon: const Icon(AppIcons.markdown),
@@ -223,15 +247,16 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
 
                   // Start Date (optional)
                   ListTile(
+                    key: const Key('createEvent.date'),
                     leading: Icon(
                       AppIcons.calendar,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
-                    title: const Text('Start Date'),
+                    title: Text(context.strings.templates.startDate),
                     subtitle: Text(
                       _startDate != null
                           ? _startDate.toString().split(' ')[0]
-                          : 'Optional — tap to set',
+                          : context.strings.templates.dateOptional,
                       style: TextStyle(
                         color: _startDate != null
                             ? Theme.of(context).colorScheme.onSurface
@@ -259,7 +284,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
 
                   // Currency (immutable after creation)
                   Text(
-                    'Currency',
+                    context.strings.templates.currency,
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
@@ -323,7 +348,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                     key: const Key('createEvent.submit'),
                     label: _needsConnection
                         ? context.strings.dashboard.createEventRetry
-                        : 'Create Event',
+                        : context.strings.templates.create,
                     onPressed: _isSubmitting ? null : _submit,
                     isLoading: _isSubmitting,
                   ),

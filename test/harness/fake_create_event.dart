@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crewpoint_app/app/features/dashboard/data/event_repository.dart';
 
@@ -8,6 +11,20 @@ import 'member_docs.dart';
 CreateEventCall fakeCreateEventCall(FirebaseFirestore firestore) =>
     (event) async {
       final uid = event.creatorId;
+      // The template, read from the same file the server copies (Req 62).
+      final template =
+          jsonDecode(
+                File(
+                  'assets/templates/${event.templateId}.json',
+                ).readAsStringSync(),
+              )
+              as Map<String, dynamic>;
+      for (final field in template['fields'] as List<dynamic>) {
+        final f = Map<String, dynamic>.of(field as Map<String, dynamic>);
+        await firestore
+            .doc('events/${event.id}/fields/${f.remove('id')}')
+            .set(f);
+      }
       // The server writes the owner's member document in the same transaction.
       await firestore.doc('events/${event.id}/members/$uid').set({
         'uid': uid,
@@ -18,7 +35,8 @@ CreateEventCall fakeCreateEventCall(FirebaseFirestore firestore) =>
         'id': event.id,
         'title': event.title,
         'description': event.description,
-        'templateId': 'blank',
+        'templateId': event.templateId,
+        'templateVersion': template['version'],
         'creatorId': uid,
         'organizerId': uid,
         'adminIds': [uid],
@@ -35,9 +53,10 @@ CreateEventCall fakeCreateEventCall(FirebaseFirestore firestore) =>
           'budget': true,
           'chat': true,
           'schedule': true,
+          ...template['modules'] as Map<String, dynamic>,
         },
-        'labels': <String, Object>{},
-        'settings': <String, Object>{},
+        'labels': template['labels'],
+        'settings': template['settings'],
         'capacity': null,
         'memberLimit': null,
         'startDate': event.startDate == null

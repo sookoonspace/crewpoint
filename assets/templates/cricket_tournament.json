@@ -7,7 +7,7 @@
   "description": {
     "en": "Teams, matches and players, with costs shared by those involved."
   },
-  "icon": "cricket",
+  "icon": "bat",
   "fastPath": false,
   "modules": {
     "tasks": true,
