@@ -9,7 +9,8 @@ Set up on Nov 3, 2026, after a billing lapse took down every Cloud Function on N
 | Daily backups, kept 14 days | On | On | On |
 | Point-in-time recovery | On | Off | On |
 | `joinEvent` uptime check with email alert | On | Off | On |
-| Crash reporting and backend error alerts | Off | Off | Off |
+| Crash reporting (Sentry, app builds with a `SENTRY_DSN`) | Waiting for DSN | Off | Off |
+| Backend error alerts | Off | Off | Off |
 
 Monthly budgets on the billing account, covering all three projects:
 
@@ -25,7 +26,8 @@ Budgets only send alerts; they do not cap spending.
 - [ ] Write and rehearse a script that copies lost documents from a restored copy back into `(default)`.
 - [ ] Run an outside billing check, as described below.
 - [ ] Confirm an alert actually reaches both inboxes.
-- [ ] Add crash reporting and backend error alerts.
+- [ ] Add crash reporting: built into the app (#92); on once `.env.dev` has a `SENTRY_DSN` and a test crash is confirmed. Then stg and prod.
+- [ ] Add backend error alerts.
 
 ## Commands
 
@@ -140,6 +142,41 @@ Not set up yet. In Monitoring → Alerting, add a log-based policy with this fil
 ```text
 resource.type="cloud_run_revision" AND severity>=ERROR
 ```
+
+## Crash reporting
+
+The app reports crashes to Sentry on iOS, Android and web (Req 68), through `ICrashReporter` (`lib/app/core/services/crash_reporter.dart`). One Sentry project serves all three flavors, told apart by environment (`dev`, `stg`, `prod`). Sentry 9 is used, not 10, because 10 needs Android 8.0 and CrewPoint supports Android 7.0.
+
+Reports carry no user identity: no user ID, email, name, IP address or device name, no screenshots or screen content, no request data and no printed logs. Error text and breadcrumbs have emails, phone numbers and long IDs masked, and the screen is sent as a route with IDs replaced (`/dashboard/event/:id/tasks`). The rules are in `crash_scrub.dart` and `scrubEvent`, with tests.
+
+### Setting it up
+
+1. Create a free Sentry organisation and a **Flutter** project.
+2. In the project's **Settings → Security & Privacy**, turn on **Data Scrubber**, **Use Default Scrubbers** and **Prevent Storing of IP Addresses**. Crashes inside the iOS and Android native code are sent by Sentry's native SDKs and do not pass through the app's scrubbing, so these settings cover them.
+3. Copy the DSN from **Settings → Client Keys (DSN)** into `.env.dev` (and later `.env.stg`, `.env.prod`):
+
+   ```bash
+   SENTRY_DSN=https://<key>@<org>.ingest.sentry.io/<project>
+   ```
+
+   The DSN only allows sending reports, so it is not a secret, but `.env.*` files stay out of git.
+4. Builds pick it up through `--dart-define-from-file=.env.dev`. With no DSN, nothing is sent.
+
+### Checking that reports arrive
+
+Debug builds send nothing unless `--dart-define=SENTRY_DEBUG=true` is added, so everyday development does not fill the dashboard. On a dev build, open **Profile → Dev Tools → Crash reporting**:
+
+- **Send test report** sends a handled `StateError` and shows its ID.
+- **Throw test error** throws an uncaught error, which tests the automatic capture.
+
+```bash
+flutter run --flavor dev -t lib/main.dart --dart-define-from-file=.env.dev \
+  --dart-define=FLAVOR=dev --dart-define=SENTRY_DEBUG=true
+```
+
+Then find the report in Sentry under the `dev` environment, and check that it shows no user and no email.
+
+Debug symbol uploads, which make release stack traces readable, are not set up yet.
 
 ## During the event
 

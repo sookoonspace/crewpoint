@@ -212,7 +212,7 @@ Each fix keeps working for current members, and has a regression test written fi
 ### 1.10 Operations baseline
 
 67. Rehearse a restore into a new database on dev, then document the result. (O-03)
-68. Add crash reporting on iOS, Android and web, with no personal data in reports. (O-02)
+68. Add crash reporting on iOS, Android and web, with no personal data in reports. (O-02) Sentry, with no user identity in reports. [Decided 2026-11-12]
 69. Add backend error alerts for dev and prod, ignoring non-callable browser requests such as `GET` on callable URLs, and emailing derodian@gmail.com and admin@sookoon.space. [L13] (O-02)
 70. Add a scheduled billing check that runs outside Google Cloud, with a read-only service account, and alerts on failure. Confirm that one alert actually reaches both inboxes. (O-01)
 71. Run a live check of Google and Apple sign-in on real devices or simulators, including linking. This needs a person. (L-01, L-02)
@@ -291,7 +291,7 @@ Each has a default the work can start from.
 1. What does "verified organizer" require? Stage 1 only adds the flag. [L8]
 2. Is 30 days the right default dispute window, and 5 urgent messages per hour the right rate limit? Both are settings.
 3. Who is the lawyer reviewing the privacy policy? The owner will arrange this before prod, so it does not block development. [L10] [L16]
-4. Which crash reporter? Sentry covers web as well as mobile, and Crashlytics does not cover web. Default: Sentry, decided in the work item.
+4. ~~Which crash reporter?~~ **Decided 2026-11-12:** Sentry on iOS, Android and web, one project with an environment per flavor; the owner creates the account and supplies the DSN. Reports carry no user identity at all (no user ID, hashed or not, email, name or IP), only app version, platform, flavor and the route with IDs replaced, and emails and phone numbers in error text are masked. See Req 68.
 5. ~~Should a Vendor's view also cover crew chat?~~ **Decided 2026-11-07:** no, unless the Owner adds `chat.send` to their role. Observers likewise. See Req 32.
 6. Are the baselines in requirement 60 acceptable at 2,000 people on a real device? Revisit after measurement.
 

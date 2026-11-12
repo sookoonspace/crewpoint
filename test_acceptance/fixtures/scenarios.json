@@ -849,9 +849,9 @@
  {
   "id": "O-02",
   "title": "Crash reporting and backend error alerts reach a person during event hours.",
-  "status": "NOT BUILT",
-  "gap": "No crash reporting or analytics packages, and no backend error alerts. Dev and prod have one uptime alert each.",
-  "tested": false
+  "status": "PARTIAL",
+  "gap": "Crash reporting built in #92: Sentry on iOS, Android and web behind ICrashReporter, with reports scrubbed of any user identity (`O-02` tests). Backend error alerts are #93. Dev and prod have one uptime alert each.",
+  "tested": true
  },
  {
   "id": "O-03",
