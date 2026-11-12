@@ -1,0 +1,70 @@
+{
+  "id": "golf_outing",
+  "version": 1,
+  "name": {
+    "en": "Golf outing"
+  },
+  "description": {
+    "en": "Foursomes and rounds, with carts and handicaps."
+  },
+  "icon": "golf",
+  "fastPath": false,
+  "modules": {
+    "tasks": true,
+    "budget": true,
+    "chat": true,
+    "schedule": true
+  },
+  "labels": {
+    "group": {
+      "one": "Foursome",
+      "other": "Foursomes"
+    },
+    "session": {
+      "one": "Round",
+      "other": "Rounds"
+    }
+  },
+  "settings": {
+    "attendancePolicy": "everyone",
+    "expenseAccess": {
+      "mode": "involved"
+    },
+    "categories": [
+      {
+        "id": "child",
+        "name": "Child",
+        "maxAge": 17,
+        "isChild": true
+      },
+      {
+        "id": "adult",
+        "name": "Adult",
+        "minAge": 18
+      }
+    ]
+  },
+  "fields": [
+    {
+      "id": "cart",
+      "label": "Needs a cart",
+      "type": "yesNo",
+      "options": [],
+      "required": false,
+      "scope": "participant",
+      "visibility": "private",
+      "order": 0
+    },
+    {
+      "id": "handicap",
+      "label": "Handicap",
+      "type": "number",
+      "options": [],
+      "required": false,
+      "scope": "participant",
+      "visibility": "standard",
+      "order": 1
+    }
+  ],
+  "roles": {}
+}

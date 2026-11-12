@@ -1,0 +1,28 @@
+{
+  "id": "blank",
+  "version": 1,
+  "name": {
+    "en": "Blank"
+  },
+  "description": {
+    "en": "Start from nothing and set it up your way."
+  },
+  "icon": "blank",
+  "fastPath": true,
+  "modules": {
+    "tasks": true,
+    "budget": true,
+    "chat": true,
+    "schedule": true
+  },
+  "labels": {},
+  "settings": {
+    "attendancePolicy": "everyone",
+    "expenseAccess": {
+      "mode": "everyone"
+    },
+    "categories": []
+  },
+  "fields": [],
+  "roles": {}
+}

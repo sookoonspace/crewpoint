@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "templates": [
+    "blank",
+    "party",
+    "wedding",
+    "cricket_tournament",
+    "golf_outing",
+    "convention"
+  ]
+}

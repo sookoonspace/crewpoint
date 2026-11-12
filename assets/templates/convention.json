@@ -1,0 +1,95 @@
+{
+  "id": "convention",
+  "version": 1,
+  "name": {
+    "en": "Convention"
+  },
+  "description": {
+    "en": "Hundreds of people over several days, with meals, families and a committee."
+  },
+  "icon": "convention",
+  "fastPath": false,
+  "modules": {
+    "tasks": true,
+    "budget": true,
+    "chat": true,
+    "schedule": true
+  },
+  "labels": {
+    "group": {
+      "one": "Family",
+      "other": "Families"
+    }
+  },
+  "settings": {
+    "attendancePolicy": "arrivalToDeparture",
+    "expenseAccess": {
+      "mode": "selected",
+      "roleIds": [],
+      "uids": []
+    },
+    "categories": [
+      {
+        "id": "child",
+        "name": "Child",
+        "maxAge": 17,
+        "isChild": true
+      },
+      {
+        "id": "adult",
+        "name": "Adult",
+        "minAge": 18
+      }
+    ]
+  },
+  "fields": [
+    {
+      "id": "diet",
+      "label": "Diet",
+      "type": "singleChoice",
+      "options": [
+        "Veg",
+        "Jain",
+        "Non-veg"
+      ],
+      "required": true,
+      "scope": "participant",
+      "visibility": "standard",
+      "order": 0
+    },
+    {
+      "id": "kids",
+      "label": "Kids activities",
+      "type": "yesNo",
+      "options": [],
+      "required": false,
+      "scope": "participant",
+      "visibility": "standard",
+      "order": 1
+    },
+    {
+      "id": "shirt",
+      "label": "T-shirt size",
+      "type": "singleChoice",
+      "options": [
+        "2T",
+        "YS",
+        "YM",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "required": false,
+      "scope": "participant",
+      "visibility": "standard",
+      "order": 2
+    }
+  ],
+  "roles": {
+    "crewLead": {
+      "name": "Committee member",
+      "base": "crewLead"
+    }
+  }
+}

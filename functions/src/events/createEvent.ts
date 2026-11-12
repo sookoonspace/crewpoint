@@ -4,6 +4,8 @@ import {FieldValue, getFirestore, Timestamp} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 import {preparePersonalOrganizer} from "./organizers";
 import {memberDoc, memberRef} from "./members";
+import {PRESET_ROLES} from "./permissions";
+import {systemTemplate} from "./templates";
 
 const db = getFirestore();
 
@@ -64,6 +66,9 @@ export const createEvent = onCall({timeoutSeconds: 30}, async (request) => {
   const timeZone = deviceZone && isTimeZone(deviceZone) ? deviceZone : "UTC";
   const startDate = optionalDate(data.startDate, "startDate");
   const endDate = optionalDate(data.endDate, "endDate");
+  const templateId = optionalString(data.templateId, "templateId") ?? "blank";
+  const template = systemTemplate(templateId);
+  if (!template) throw invalid("templateId is not a template.");
 
   return withStructuredLogs(
     {op: "createEvent", uid, args: {eventId}},
@@ -82,7 +87,9 @@ export const createEvent = onCall({timeoutSeconds: 30}, async (request) => {
           id: eventId,
           title,
           description,
-          templateId: "blank",
+          // A copy of the template, so a later version never changes it.
+          templateId: template.id,
+          templateVersion: template.version,
           creatorId: uid,
           organizerId: uid,
           adminIds: [uid],
@@ -94,9 +101,9 @@ export const createEvent = onCall({timeoutSeconds: 30}, async (request) => {
           dateOnly: data.dateOnly === true,
           venues: [],
           languages: ["en"],
-          modules: {tasks: true, budget: true, chat: true, schedule: true},
-          labels: {},
-          settings: {},
+          modules: {tasks: true, budget: true, chat: true, schedule: true, ...template.modules},
+          labels: template.labels,
+          settings: template.settings,
           capacity: null,
           memberLimit: null,
           startDate,
@@ -104,11 +111,24 @@ export const createEvent = onCall({timeoutSeconds: 30}, async (request) => {
           createdAt: now,
           updatedAt: now,
         });
-        // A new event has no role documents or expense setting yet, so
-        // presets and Everyone apply.
+        // The template's fields and renamed roles, in the same
+        // transaction, so a failed creation leaves nothing behind.
+        for (const f of template.fields) {
+          const {id, ...field} = f;
+          tx.set(eventRef.collection("fields").doc(id), {...field, updatedAt: now});
+        }
+        const roles: Record<string, {name: string; permissions: string[]; preset: boolean}> = {};
+        for (const [roleId, role] of Object.entries(template.roles)) {
+          roles[roleId] = {
+            name: role.name,
+            permissions: [...PRESET_ROLES[role.base].permissions],
+            preset: Boolean(PRESET_ROLES[roleId]),
+          };
+          tx.set(eventRef.collection("roles").doc(roleId), {...roles[roleId], updatedAt: now});
+        }
         tx.set(
           memberRef(eventRef, uid),
-          memberDoc(uid, {roleIds: ["owner"]}, {}, expenseAccessOf({}))
+          memberDoc(uid, {roleIds: ["owner"]}, roles, expenseAccessOf({settings: template.settings}))
         );
       });
       return {success: true};
