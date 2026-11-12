@@ -20,7 +20,9 @@ Budgets only send alerts; they do not cap spending.
 
 **Still to do:**
 
-- [ ] Rehearse a restore. No backup has been restored yet.
+- [x] Rehearse a restore. Done on dev on Nov 12, 2026; see [Restore rehearsals](#restore-rehearsals).
+- [ ] Rehearse a restore again on prod data before the convention, when prod holds real events.
+- [ ] Write and rehearse a script that copies lost documents from a restored copy back into `(default)`.
 - [ ] Run an outside billing check, as described below.
 - [ ] Confirm an alert actually reaches both inboxes.
 - [ ] Add crash reporting and backend error alerts.
@@ -49,7 +51,8 @@ gcloud firestore databases update \
 Restore into a **new** database, so live data is untouched:
 
 ```bash
-gcloud firestore backups list --project="$PROJECT" --format='value(name)'
+gcloud firestore backups list --project="$PROJECT" \
+  --format='table(name,snapshotTime,state)'
 
 gcloud firestore databases restore \
   --project="$PROJECT" \
@@ -57,7 +60,43 @@ gcloud firestore databases restore \
   --destination-database=restore-test
 ```
 
-Check that events and expenses are there, then delete `restore-test`. Repeat before the convention.
+The restore command returns at once, while the copy is still being made. Wait until the operation it prints reports `done: true`:
+
+```bash
+gcloud firestore operations describe <operation name it printed> \
+  --format='value(done,metadata.operationState)'
+```
+
+Then compare the copy with live. The script only reads, from both, and refuses `(default)` as the copy. It counts the main collections in each, and checks that every event, expense and member document in the copy matches live exactly, unless live changed it after the backup. It needs application-default credentials (`gcloud auth application-default login`).
+
+```bash
+cd functions
+npx tsx scripts/checkRestore.ts --project="$PROJECT" \
+  --database=restore-test --snapshot=<the backup's snapshotTime>
+```
+
+Delete the copy straight after, since it is billed while it exists, and check that only `(default)` is left:
+
+```bash
+gcloud firestore databases delete --project="$PROJECT" \
+  --database=restore-test --quiet
+gcloud firestore databases list --project="$PROJECT" --format='value(name)'
+```
+
+Repeat before the convention.
+
+### Restore rehearsals
+
+| Date | Project | Backup taken | Restore time | Result |
+|---|---|---|---|---|
+| Nov 12, 2026 | dev | Nov 12, 14:22 UTC (newest of 9 daily backups, Nov 4–12) | 8 min 33 s | Passed. Counts matched live in every collection (4 events, 3 users, 3 invites, 7 members, 3 expenses, 8 tasks, 15 messages). All 4 events, 3 expenses and 7 members were identical to live, none changed since. No event newer than the backup. `restore-test` was deleted at 19:00 UTC, leaving only `(default)`. |
+
+What the dev rehearsal shows and does not show:
+
+- Restoring is safe for live data: it only ever creates a new database.
+- Even a database this small took over 8 minutes, so expect at least that on a full convention.
+- The app only reads `(default)`, so a restored copy does not bring the app back by itself. After a real loss, the lost documents have to be copied from the copy into `(default)` with a script. That step has not been written or rehearsed, and should be before the convention. For recent mistakes, point-in-time recovery (on for dev and prod) can read data as it was at any minute of the last 7 days, without a restore.
+- Dev holds very little data, so the next rehearsal should use prod once it holds real events.
 
 ### Budgets
 
