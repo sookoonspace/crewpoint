@@ -1481,15 +1481,15 @@ Generate deterministic load fixtures, record baselines and costs per tier, and m
 - Open Question 6: revisit the baselines after measurement.
 
 ### Acceptance criteria
-- [ ] A deterministic load fixture generates 108 groups and 400 people, and a 2,000-person tier.
-- [ ] Baselines are recorded: import of 400 under 2 minutes, a roster page under 1 second, counts under 2 seconds at 2,000.
-- [ ] A measured cost estimate per tier covers reads, writes and function runs.
-- [ ] Large push sends read recipients in batches, not one read per person, and fit the function's time limit at 2,000 recipients, measured with a mocked transport.
-- [ ] If this cannot hold at 5,000, the limit is recorded for Stage 3's message queue.
-- [ ] Timings are recorded in the report, on emulators only.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] Tests for scenarios S-02, S-08, GE-09 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] A deterministic load fixture generates 108 groups and 400 people, and a 2,000-person tier.
+- [x] Baselines are recorded: import of 400 under 2 minutes, a roster page under 1 second, counts under 2 seconds at 2,000.
+- [x] A measured cost estimate per tier covers reads, writes and function runs.
+- [x] Large push sends read recipients in batches, not one read per person, and fit the function's time limit at 2,000 recipients, measured with a mocked transport.
+- [x] If this cannot hold at 5,000, the limit is recorded for Stage 3's message queue.
+- [x] Timings are recorded in the report, on emulators only.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] Tests for scenarios S-02, S-08, GE-09 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - Requirements: 60, 61, 61a, 83

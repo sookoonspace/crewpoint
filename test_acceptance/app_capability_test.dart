@@ -466,17 +466,16 @@ void main() {
       expect(ledger.netBalances.length, 400);
     });
 
-    test('S-02 scale fixture cannot be imported: no import path exists', () {
+    test('S-02 the scale fixture is 108 groups and 400 people, and the app '
+        'imports through the server', () {
       expect(scaleFamilies().length, 108);
-      final hits = [
-        for (final f in _sources())
-          if (f.path.endsWith('.dart') &&
-              RegExp(
-                r'importRoster|CsvToList|csvDecode|Csv\(\)\.decode',
-              ).hasMatch(f.readAsStringSync()))
-            f.path,
-      ];
-      expect(hits, isNotEmpty);
+      expect(scaleFamilies().fold<int>(0, (a, f) => a + f[1]), 400);
+      // The import screen uploads the file for `onImportQueued`; the server
+      // acceptance suite times 400 people (functions/test_acceptance).
+      final screen = File(
+        'lib/app/features/participants/presentation/import_screen.dart',
+      ).readAsStringSync();
+      expect(screen, contains('importRepositoryProvider'));
     });
   });
 }

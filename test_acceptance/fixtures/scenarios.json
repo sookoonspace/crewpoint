@@ -702,8 +702,8 @@
  {
   "id": "S-02",
   "title": "Import of 108 families finishes within **2 min** and headcounts match.",
-  "status": "NOT BUILT",
-  "gap": "No import path to measure.",
+  "status": "PASS",
+  "gap": "Built in #88: the deterministic fixture (108 groups, 400 people) imports in about 0.5 s on the emulators, and headcounts match. See docs/testing/load-baselines.md.",
   "tested": true
  },
  {
@@ -744,9 +744,9 @@
  {
   "id": "S-08",
   "title": "Monthly cost estimate for reads, writes, function runs, email and SMS at this size.",
-  "status": "PARTIAL",
-  "gap": "Rough estimate only, in section 2.1. Needs real traffic numbers.",
-  "tested": false
+  "status": "PASS",
+  "gap": "Built in #88: reads and writes per operation are measured at 400 and 2,000, with a monthly estimate per tier in docs/testing/load-baselines.md. Email and SMS arrive in Stage 3.",
+  "tested": true
  },
  {
   "id": "R-01",

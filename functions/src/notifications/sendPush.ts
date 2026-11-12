@@ -204,30 +204,26 @@ type TokenOwner = {
   locale: string | null;
 };
 
+/** Recipients read per batch: their preferences, then their mutes. */
+const READ_BATCH_SIZE = 300;
+
 /**
- * Read the recipient's `users/{uid}/eventMutes/{eventId}.mutedUntil`.
- * Returns `null` when the doc is missing / the field is the wrong
- * shape — handled identically by [shouldSuppress].
+ * Reads each recipient's `users/{uid}/eventMutes/{eventId}.mutedUntil` in
+ * one batch, in [uids] order. A failed read counts as unmuted, which
+ * [shouldSuppress] handles like a missing document.
  */
-async function readMutedUntil(
+async function readMutes(
   db: Firestore,
-  uid: string,
+  uids: string[],
   eventId: string
-): Promise<unknown> {
+): Promise<unknown[]> {
   try {
-    const snap = await db
-      .collection("users")
-      .doc(uid)
-      .collection("eventMutes")
-      .doc(eventId)
-      .get();
-    return snap.data()?.mutedUntil ?? null;
+    const snaps = await db.getAll(...uids.map((uid) =>
+      db.collection("users").doc(uid).collection("eventMutes").doc(eventId)));
+    return snaps.map((s) => s.data()?.mutedUntil ?? null);
   } catch (e) {
-    logger.warn(
-      `eventMute read failed for ${uid}/${eventId}; treating as unmuted`,
-      e
-    );
-    return null;
+    logger.warn(`eventMute reads failed for ${eventId}; treating as unmuted`, e);
+    return uids.map(() => null);
   }
 }
 
@@ -284,18 +280,33 @@ export async function sendCategorizedPush(
   // being judged on a slightly newer clock).
   const now = new Date();
 
-  for (const uid of args.recipientUids) {
+  // Preferences and event mutes are read a few hundred people at a time,
+  // not one read per person, so a large event fits the trigger's time
+  // limit (Req 61a).
+  const recipients = args.recipientUids.filter((uid) => {
     if (args.senderId && uid === args.senderId) {
       skipped++;
-      continue;
+      return false;
     }
-    const privateSnap = await db
-      .collection("users")
-      .doc(uid)
-      .collection("private")
-      .doc("profile")
-      .get();
-    const privateData = privateSnap.data();
+    return true;
+  });
+  const profiles = new Map<string, FirebaseFirestore.DocumentData | undefined>();
+  const mutes = new Map<string, unknown>();
+  for (let i = 0; i < recipients.length; i += READ_BATCH_SIZE) {
+    const chunk = recipients.slice(i, i + READ_BATCH_SIZE);
+    const [profileSnaps, muteSnaps] = await Promise.all([
+      db.getAll(...chunk.map((uid) =>
+        db.collection("users").doc(uid).collection("private").doc("profile"))),
+      readMutes(db, chunk, args.eventId),
+    ]);
+    chunk.forEach((uid, j) => {
+      profiles.set(uid, profileSnaps[j].data());
+      mutes.set(uid, muteSnaps[j]);
+    });
+  }
+
+  for (const uid of recipients) {
+    const privateData = profiles.get(uid);
     const prefs =
       (privateData?.notificationPrefs as Record<string, unknown> | undefined) ??
       {};
@@ -325,7 +336,7 @@ export async function sendCategorizedPush(
           null,
       timezone: typeof prefs.timezone === "string" ? prefs.timezone : null,
     };
-    const eventMutedUntil = await readMutedUntil(db, uid, args.eventId);
+    const eventMutedUntil = mutes.get(uid) ?? null;
     if (
       shouldSuppress({
         category: args.category,
