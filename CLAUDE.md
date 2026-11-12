@@ -135,6 +135,8 @@ Riverpod codegen (`riverpod_annotation` / `riverpod_generator`) was removed as u
 
 ## Testing
 
+- Load baselines (#88): `functions/test_acceptance/loadFixture.ts` generates the 400 and 2,000 tiers deterministically, `load.test.ts` times import, a roster page and counts and counts their reads and writes, and `docs/testing/load-baselines.md` records the results and the monthly cost estimate. `sendCategorizedPush` reads recipients 300 at a time with `getAll`; keep it batched.
+
 - **Never call `Firebase.initializeApp()` or `FirebaseService.initialize()` from `test/` or `test_acceptance/`.** A CI grep fails the build on it. Use Riverpod overrides on the service seams instead.
 - Backend tests run on the `demo-crewpoint` project, which can only reach emulators. `crewpoint-dev` holds real data, so no automated test may write to a real project.
 - `test_acceptance/` holds scenario tests, whose names start with the scenario ID, and one fixture per template (`fixtures/templates.json`). When a scenario is finished, add its ID to `finished_scenarios.json` so CI protects it.
