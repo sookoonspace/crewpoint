@@ -534,4 +534,19 @@ class FakeMemberCalls implements MemberCalls {
       'label': label,
     });
   }
+
+  /// Saves a template as `saveAsTemplate` does, with only its name.
+  @override
+  Future<void> saveAsTemplate(String eventId, String name) async {
+    calls.add('saveAsTemplate:$eventId:$name');
+    _maybeFail();
+    await firestore?.collection('users/$actingAs/templates').add({
+      'version': 1,
+      'name': {'en': name},
+      'description': {'en': ''},
+      'icon': 'add',
+      'fastPath': false,
+      'createdAt': Timestamp.now(),
+    });
+  }
 }

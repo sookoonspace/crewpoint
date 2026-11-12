@@ -23,7 +23,10 @@ typedef Membership = ({
 typedef MembershipsSource = Stream<List<Membership>> Function(String uid);
 
 /// Calls the `createEvent` Cloud Function. Injected so tests never reach it.
-typedef CreateEventCall = Future<void> Function(EventModel event);
+/// Calls `createEvent`. [savedTemplateId] names one of the caller's own
+/// saved templates (Req 65) instead of the event's system template.
+typedef CreateEventCall =
+    Future<void> Function(EventModel event, {String? savedTemplateId});
 
 /// Calls the `changeEventCurrency` Cloud Function. Injected so tests never
 /// reach it.
@@ -194,7 +197,8 @@ class EventRepository {
   /// Creates the event through the `createEvent` callable, which makes the
   /// caller its Owner. Throws on failure — the caller is responsible for
   /// surfacing the error to the UI. Safe to retry with the same event ID.
-  Future<void> createEvent(EventModel event) => _createEventCall(event);
+  Future<void> createEvent(EventModel event, {String? savedTemplateId}) =>
+      _createEventCall(event, savedTemplateId: savedTemplateId);
 
   /// Updates the client-editable fields on `events/{id}`.
   ///

@@ -9,7 +9,7 @@ import 'member_docs.dart';
 /// Stands in for the `createEvent` callable, writing what the server would.
 /// Its validation is covered by `functions/test/events/createEvent.test.ts`.
 CreateEventCall fakeCreateEventCall(FirebaseFirestore firestore) =>
-    (event) async {
+    (event, {savedTemplateId}) async {
       final uid = event.creatorId;
       // The template, read from the same file the server copies (Req 62).
       final template =
@@ -36,6 +36,7 @@ CreateEventCall fakeCreateEventCall(FirebaseFirestore firestore) =>
         'title': event.title,
         'description': event.description,
         'templateId': event.templateId,
+        'savedTemplateId': ?savedTemplateId,
         'templateVersion': template['version'],
         'creatorId': uid,
         'organizerId': uid,

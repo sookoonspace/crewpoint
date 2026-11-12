@@ -3378,6 +3378,42 @@ abstract class TemplateStrings {
   String get create;
   String get createFailed;
   String get signInRequired;
+
+  // Saved templates (Req 65).
+  String get systemHeading;
+  String get mineHeading;
+  String get deleteMine;
+  String deleteMineTitle(String name);
+  String get deleteMineBody;
+  String get cancel;
+  String get delete;
+  String get saveAsTemplate;
+  String get saveAsTemplateHelp;
+  String get saveAsTemplateName;
+  String get saveAsTemplateNameRequired;
+  String get save;
+  String get savedAsTemplate;
+  String get saveAsTemplateFailed;
+
+  // Follow-up setup (Req 64).
+  String get setupTitle;
+  String get setupHelp;
+  String get setupSkip;
+  String get setupDone;
+  String get setupEntry;
+  String get setupEntryHelp;
+  String get stepDates;
+  String get stepDatesHelp;
+  String get stepVenues;
+  String get stepVenuesHelp;
+  String get stepSchedule;
+  String get stepScheduleHelp;
+  String get stepFields;
+  String get stepFieldsHelp;
+  String stepPeople(String people);
+  String stepPeopleHelp(String people);
+  String get stepComplete;
+  String get stepToDo;
 }
 
 class _EnglishTemplateStrings extends TemplateStrings {
@@ -3421,4 +3457,74 @@ class _EnglishTemplateStrings extends TemplateStrings {
   String get createFailed => "Couldn't create the event. Try again.";
   @override
   String get signInRequired => 'Sign in to create an event.';
+
+  @override
+  String get systemHeading => 'Templates';
+  @override
+  String get mineHeading => 'Your templates';
+  @override
+  String get deleteMine => 'Delete template';
+  @override
+  String deleteMineTitle(String name) => 'Delete "$name"?';
+  @override
+  String get deleteMineBody => 'Events made from it keep their settings.';
+  @override
+  String get cancel => 'Cancel';
+  @override
+  String get delete => 'Delete';
+  @override
+  String get saveAsTemplate => 'Save as template';
+  @override
+  String get saveAsTemplateHelp =>
+      'Keep this setup to start your next event from. Only settings are saved, never people, money or messages.';
+  @override
+  String get saveAsTemplateName => 'Template name';
+  @override
+  String get saveAsTemplateNameRequired => 'Enter a name.';
+  @override
+  String get save => 'Save';
+  @override
+  String get savedAsTemplate => 'Saved to your templates';
+  @override
+  String get saveAsTemplateFailed => "Couldn't save the template. Try again.";
+
+  @override
+  String get setupTitle => 'Finish setting up';
+  @override
+  String get setupHelp =>
+      'All optional. Skip any of these and finish later from Event settings.';
+  @override
+  String get setupSkip => 'Skip for now';
+  @override
+  String get setupDone => 'Done';
+  @override
+  String get setupEntry => 'Finish setting up';
+  @override
+  String get setupEntryHelp => 'Dates, places, schedule, questions and people';
+  @override
+  String get stepDates => 'Dates';
+  @override
+  String get stepDatesHelp => 'When it starts and ends';
+  @override
+  String get stepVenues => 'Places and time zone';
+  @override
+  String get stepVenuesHelp =>
+      'Where it happens, with addresses and directions';
+  @override
+  String get stepSchedule => 'Schedule';
+  @override
+  String get stepScheduleHelp => 'What happens when, over each day';
+  @override
+  String get stepFields => 'Questions for attendees';
+  @override
+  String get stepFieldsHelp => 'Such as diet or sizes, and age groups';
+  @override
+  String stepPeople(String people) => 'Add ${people.toLowerCase()}';
+  @override
+  String stepPeopleHelp(String people) =>
+      'Import a list or add ${people.toLowerCase()} one by one';
+  @override
+  String get stepComplete => 'Done';
+  @override
+  String get stepToDo => 'Not yet';
 }

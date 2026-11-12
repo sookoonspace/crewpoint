@@ -157,6 +157,10 @@ abstract interface class MemberCalls {
   /// Counts now and keeps the numbers with the date (Req 54). Needs
   /// `reports.export`.
   Future<void> freezeCounts(String eventId, {String? label});
+
+  /// Keeps the event's configuration as the caller's own template (Req 65).
+  /// Needs `event.manage`.
+  Future<void> saveAsTemplate(String eventId, String name);
 }
 
 class FirebaseMemberCalls implements MemberCalls {
@@ -386,4 +390,8 @@ class FirebaseMemberCalls implements MemberCalls {
   @override
   Future<void> freezeCounts(String eventId, {String? label}) =>
       _call('freezeCounts', {'eventId': eventId, 'label': ?label});
+
+  @override
+  Future<void> saveAsTemplate(String eventId, String name) =>
+      _call('saveAsTemplate', {'eventId': eventId, 'name': name});
 }
