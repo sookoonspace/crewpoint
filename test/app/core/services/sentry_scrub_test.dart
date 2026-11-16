@@ -19,7 +19,9 @@ void main() {
 
     final scrubbed = scrubEvent(event);
 
-    expect(scrubbed.user, isNull);
+    // Only a placeholder IP, which stops the server working out the
+    // sender's IP and town; the project discards it on arrival.
+    expect(scrubbed.user!.toJson(), {'ip_address': '0.0.0.0'});
     expect(scrubbed.request, isNull);
     expect(scrubbed.serverName, isNull);
     expect(scrubbed.extra, isNull);
@@ -69,5 +71,17 @@ void main() {
     expect(scrubbed.contexts.device!.model, 'iPhone15,2');
     expect(scrubbed.transaction, '/dashboard/event/:id');
     expect(scrubbed.tags, {'route': '/join/:id', 'flavor': 'dev'});
+  });
+
+  test('no per-device ID', () {
+    final event = SentryEvent(
+      contexts: Contexts(
+        app: SentryApp(deviceAppHash: 'aef1c334e6ba6165f9e366a58cadae80'),
+      ),
+    );
+
+    final scrubbed = scrubEvent(event);
+
+    expect(scrubbed.contexts.app!.deviceAppHash, isNull);
   });
 }

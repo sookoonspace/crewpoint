@@ -95,7 +95,11 @@ Future<void> _resolveFlavorFromNativeBuild() async {
   AppFlavor.resolveFromNativeAppId(packageName);
 }
 
-Future<void> main() async {
+/// On web, startup runs in a zone that reports uncaught errors through the
+/// crash reporter's scrubbing (Req 68); see [runWithCrashReporting].
+void main() => runWithCrashReporting(_start);
+
+Future<void> _start() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Path URLs on web (`/join/ABC234`, not `/#/join/ABC234`), so an invite
   // link or a scanned QR code reaches the router (Req 47). Hosting already

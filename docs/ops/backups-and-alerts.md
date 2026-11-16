@@ -9,7 +9,7 @@ Set up on Nov 3, 2026, after a billing lapse took down every Cloud Function on N
 | Daily backups, kept 14 days | On | On | On |
 | Point-in-time recovery | On | Off | On |
 | `joinEvent` uptime check with email alert | On | Off | On |
-| Crash reporting (Sentry, app builds with a `SENTRY_DSN`) | Waiting for DSN | Off | Off |
+| Crash reporting (Sentry, app builds with a `SENTRY_DSN`) | On | Off | Off |
 | Backend error alerts | Off | Off | Off |
 
 Monthly budgets on the billing account, covering all three projects:
@@ -26,7 +26,8 @@ Budgets only send alerts; they do not cap spending.
 - [ ] Write and rehearse a script that copies lost documents from a restored copy back into `(default)`.
 - [ ] Run an outside billing check, as described below.
 - [ ] Confirm an alert actually reaches both inboxes.
-- [ ] Add crash reporting: built into the app (#92); on once `.env.dev` has a `SENTRY_DSN` and a test crash is confirmed. Then stg and prod.
+- [x] Add crash reporting on dev (#92). Confirmed on Nov 16, 2026; see [Checking that reports arrive](#checking-that-reports-arrive).
+- [ ] Turn crash reporting on for stg and prod by adding the same `SENTRY_DSN` to `.env.stg` and `.env.prod`.
 - [ ] Add backend error alerts.
 
 ## Commands
@@ -145,9 +146,9 @@ resource.type="cloud_run_revision" AND severity>=ERROR
 
 ## Crash reporting
 
-The app reports crashes to Sentry on iOS, Android and web (Req 68), through `ICrashReporter` (`lib/app/core/services/crash_reporter.dart`). One Sentry project serves all three flavors, told apart by environment (`dev`, `stg`, `prod`). Sentry 9 is used, not 10, because 10 needs Android 8.0 and CrewPoint supports Android 7.0.
+The app reports crashes to Sentry on iOS, Android and web (Req 68), through `ICrashReporter` (`lib/app/core/services/crash_reporter.dart`). The Sentry organisation is `sookoon-llc` and the project `desk`. One project serves all three flavors, told apart by environment (`dev`, `stg`, `prod`). Sentry 9 is used, not 10, because 10 needs Android 8.0 and CrewPoint supports Android 7.0.
 
-Reports carry no user identity: no user ID, email, name, IP address or device name, no screenshots or screen content, no request data and no printed logs. Error text and breadcrumbs have emails, phone numbers and long IDs masked, and the screen is sent as a route with IDs replaced (`/dashboard/event/:id/tasks`). The rules are in `crash_scrub.dart` and `scrubEvent`, with tests.
+Reports carry no user identity: no user ID, email, name, IP address, location, per-device ID (`device_app_hash`) or device name, no screenshots or screen content, no request data and no printed logs. Error text and breadcrumbs have emails, phone numbers and long IDs masked, and the screen is sent as a route with IDs replaced (`/dashboard/event/:id/tasks`). The rules are in `crash_scrub.dart` and `scrubEvent`, with tests.
 
 ### Setting it up
 
@@ -175,6 +176,16 @@ flutter run --flavor dev -t lib/main.dart --dart-define-from-file=.env.dev \
 ```
 
 Then find the report in Sentry under the `dev` environment, and check that it shows no user and no email.
+
+On web, Sentry 9 loads its JavaScript SDK from `browser.sentry-cdn.com` and sends every report through it. That SDK also reports uncaught browser errors on its own, without the app's scrubbing. So on web `main` runs inside a zone (`runWithCrashReporting`) that catches uncaught Dart errors and reports them through the scrubbing, and `dropUnscrubbedWebReports` makes the JavaScript SDK drop anything it catches itself. Errors raised outside Dart, in the browser or its scripts, are therefore not reported on web.
+
+Sentry works out a sender's town from their connection whenever a report has no IP address, even with IP storage turned off. So every report carries the placeholder IP `0.0.0.0`, which leaves nothing to look up, and the project's IP setting then discards it.
+
+| Date | Build | Result |
+|---|---|---|
+| Nov 16, 2026 | dev, iOS simulator, debug with `SENTRY_DEBUG=true` | A handled report and an uncaught error both arrived under `dev`. Error text read `<email>`, `<phone>` and `<id>`, the route `/dashboard/event/:id/people/:id`, with 0 users. The first round still carried a town worked out from the connection and the per-device ID; both were removed, and a third round showed no location, no device ID and no IP. |
+| Nov 16, 2026 | dev, Android emulator (Pixel 7 Pro), debug | Both arrived scrubbed, with no location or device ID. |
+| Nov 16, 2026 | dev, web release in Chrome | The handled report arrived scrubbed, but the uncaught error arrived **unscrubbed**, with the test email and a town in it: on web, Sentry's JavaScript SDK reports uncaught browser errors itself, skipping the app's scrubbing. Fixed (see below), and the next run sent both scrubbed, with no location, and nothing from the JavaScript SDK. |
 
 Debug symbol uploads, which make release stack traces readable, are not set up yet.
 
