@@ -1,0 +1,103 @@
+# Checks every hour, from outside Google Cloud, that billing is on for all
+# three projects (Req 70). On Nov 2, 2026 a billing lapse took down every
+# function, and monitoring inside the same projects could not say so.
+# Setup and the test run are in docs/ops/backups-and-alerts.md.
+name: Billing check
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+    inputs:
+      simulate_failure:
+        description: 'Fail on purpose, to test that the alert email arrives'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: billing-check
+  cancel-in-progress: false
+
+jobs:
+  billing:
+    name: billing
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Signs in as the read-only billing-check service account without a
+      # stored key. The provider accepts only this repo's main branch.
+      - id: auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: projects/711822236757/locations/global/workloadIdentityPools/github/providers/crewpoint-repo
+          service_account: billing-check@crewpoint-dev.iam.gserviceaccount.com
+          token_format: access_token
+
+      - name: Check billing is on
+        env:
+          TOKEN: ${{ steps.auth.outputs.access_token }}
+          SIMULATE_FAILURE: ${{ inputs.simulate_failure }}
+        run: |
+          failed=0
+          for project in crewpoint-dev crewpoint-stg crewpoint-prod; do
+            body=$(curl -sS --max-time 30 -w '\n%{http_code}' \
+              -H "Authorization: Bearer $TOKEN" \
+              "https://cloudbilling.googleapis.com/v1/projects/$project/billingInfo") || body=$'\n000'
+            status=$(tail -n1 <<<"$body")
+            enabled=$(head -n -1 <<<"$body" | jq -r '.billingEnabled // false' 2>/dev/null || echo false)
+            if [ "$status" = 200 ] && [ "$enabled" = true ]; then
+              line="$project: billing on"
+            else
+              line="$project: BILLING OFF OR UNREADABLE (HTTP $status, billingEnabled=$enabled)"
+              failed=1
+            fi
+            echo "$line" >> results.txt
+          done
+          if [ "$SIMULATE_FAILURE" = true ]; then
+            echo 'Failing on purpose (simulate_failure), to test the alert email.' >> results.txt
+            failed=1
+          fi
+          cat results.txt
+          cat results.txt >> "$GITHUB_STEP_SUMMARY"
+          exit $failed
+
+      # Emails both inboxes through Gmail. curl talks to Gmail directly, so
+      # the app password is never handed to third-party action code.
+      - name: Email the alert
+        if: failure()
+        env:
+          GMAIL_ADDRESS: ${{ secrets.ALERT_GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.ALERT_GMAIL_APP_PASSWORD }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SIMULATE_FAILURE: ${{ inputs.simulate_failure }}
+        run: |
+          if [ -z "$GMAIL_ADDRESS" ] || [ -z "$GMAIL_APP_PASSWORD" ]; then
+            echo '::error::ALERT_GMAIL_ADDRESS or ALERT_GMAIL_APP_PASSWORD is not set, so no alert email was sent.'
+            exit 1
+          fi
+          subject='CrewPoint billing check FAILED'
+          [ "$SIMULATE_FAILURE" = true ] && subject='CrewPoint billing check FAILED (test, nothing is wrong)'
+          {
+            echo "From: CrewPoint billing check <$GMAIL_ADDRESS>"
+            echo 'To: derodian@gmail.com, admin@sookoon.space'
+            echo "Subject: $subject"
+            echo 'Content-Type: text/plain; charset=utf-8'
+            echo
+            echo 'The hourly billing check failed. If billing is off, every Cloud Function fails.'
+            echo
+            cat results.txt 2>/dev/null || echo 'Signing in to Google Cloud failed, so billing could not be read.'
+            echo
+            echo "Run: $RUN_URL"
+            echo 'Check: gcloud billing projects describe crewpoint-prod --format="value(billingEnabled)"'
+            echo 'What to do: docs/ops/backups-and-alerts.md, "Outside billing check".'
+          } > mail.txt
+          curl -sS --max-time 60 --ssl-reqd 'smtps://smtp.gmail.com:465' \
+            --user "$GMAIL_ADDRESS:$GMAIL_APP_PASSWORD" \
+            --mail-from "$GMAIL_ADDRESS" \
+            --mail-rcpt derodian@gmail.com --mail-rcpt admin@sookoon.space \
+            --upload-file mail.txt
+          echo 'Alert email sent to derodian@gmail.com and admin@sookoon.space.'
