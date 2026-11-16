@@ -10,7 +10,8 @@ Set up on Nov 3, 2026, after a billing lapse took down every Cloud Function on N
 | Point-in-time recovery | On | Off | On |
 | `joinEvent` uptime check with email alert | On | Off | On |
 | Crash reporting (Sentry, app builds with a `SENTRY_DSN`) | On | Off | Off |
-| Backend error alerts | Off | Off | Off |
+| Backend error alerts, emailing both addresses | On | Off | On |
+| Outside billing check (GitHub Actions, hourly) | On | On | On |
 
 Monthly budgets on the billing account, covering all three projects:
 
@@ -24,11 +25,12 @@ Budgets only send alerts; they do not cap spending.
 - [x] Rehearse a restore. Done on dev on Nov 12, 2026; see [Restore rehearsals](#restore-rehearsals).
 - [ ] Rehearse a restore again on prod data before the convention, when prod holds real events.
 - [ ] Write and rehearse a script that copies lost documents from a restored copy back into `(default)`.
-- [ ] Run an outside billing check, as described below.
+- [x] Run an outside billing check (#93). Hourly from GitHub Actions; see [Outside billing check](#outside-billing-check).
 - [ ] Confirm an alert actually reaches both inboxes.
 - [x] Add crash reporting on dev (#92). Confirmed on Nov 16, 2026; see [Checking that reports arrive](#checking-that-reports-arrive).
 - [ ] Turn crash reporting on for stg and prod by adding the same `SENTRY_DSN` to `.env.stg` and `.env.prod`.
-- [ ] Add backend error alerts.
+- [x] Add backend error alerts on dev and prod (#93); see [Error alert](#error-alert).
+- [ ] Look into the `onTaskDueScheduled` scheduler run on prod that failed with `INTERNAL` on Nov 6, 2026, found while testing the error alert's filter.
 
 ## Commands
 
@@ -130,19 +132,96 @@ Then add an alert policy on the `uptime_check/check_passed` metric, with an emai
 
 ### Outside billing check
 
-Monitoring lives in the same project that can lose billing, so it may not alert during the very failure it is meant to catch. This check is not set up yet. Run it on a schedule from outside Google Cloud, such as GitHub Actions with a read-only service account, and fail loudly on `False`:
+Monitoring lives in the same projects that can lose billing, so it may not alert during the very failure it is meant to catch. So `.github/workflows/billing-check.yml` checks from GitHub Actions, every hour at 17 past, that billing is on for dev, stg and prod. If any project has billing off, or the check cannot sign in or read it, the run fails and emails derodian@gmail.com and admin@sookoon.space through Gmail.
+
+How it is set up:
+
+- **Service account:** `billing-check@crewpoint-dev.iam.gserviceaccount.com`, with only the Browser role (`roles/browser`) on each of the three projects. That is enough to read whether billing is on and nothing more.
+- **Sign-in without a key:** GitHub Actions signs in through Workload Identity Federation: pool `github`, provider `crewpoint-repo` in crewpoint-dev. The provider accepts only tokens from `sookoonspace/crewpoint` on `refs/heads/main`, so a fork or another branch cannot use it.
+- **Email:** the repo secrets `ALERT_GMAIL_ADDRESS` (a Gmail address) and `ALERT_GMAIL_APP_PASSWORD` (an app password for it, from Google Account → Security → App passwords). The workflow sends the mail with `curl`, so the password is not handed to third-party action code. Without both secrets the run still fails, and GitHub emails the repo owner instead.
+
+To set the secrets, run these yourself; each prompts for the value:
 
 ```bash
-gcloud billing projects describe "$PROJECT" --format='value(billingEnabled)'
+gh secret set ALERT_GMAIL_ADDRESS
+gh secret set ALERT_GMAIL_APP_PASSWORD
+```
+
+To test the email, run the workflow by hand from main with **simulate_failure** ticked. It still checks the real projects, then fails on purpose and sends an email whose subject says it is a test:
+
+```bash
+gh workflow run billing-check.yml -f simulate_failure=true
+```
+
+Things to know:
+
+- GitHub turns off scheduled workflows in a public repo after 60 days with no commits. If the repo goes quiet, re-enable it under Actions → Billing check.
+- GitHub may start a scheduled run several minutes late.
+- The same check by hand:
+
+  ```bash
+  gcloud billing projects describe "$PROJECT" --format='value(billingEnabled)'
+  ```
+
+How the service account and sign-in were made (on crewpoint-dev, project number 711822236757):
+
+```bash
+gcloud iam service-accounts create billing-check --project=crewpoint-dev
+for P in crewpoint-dev crewpoint-stg crewpoint-prod; do
+  gcloud projects add-iam-policy-binding "$P" --condition=None \
+    --member=serviceAccount:billing-check@crewpoint-dev.iam.gserviceaccount.com \
+    --role=roles/browser
+done
+gcloud services enable sts.googleapis.com --project=crewpoint-dev
+gcloud iam workload-identity-pools create github \
+  --project=crewpoint-dev --location=global
+gcloud iam workload-identity-pools providers create-oidc crewpoint-repo \
+  --project=crewpoint-dev --location=global --workload-identity-pool=github \
+  --issuer-uri=https://token.actions.githubusercontent.com \
+  --attribute-mapping='google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.ref=assertion.ref' \
+  --attribute-condition="assertion.repository=='sookoonspace/crewpoint' && assertion.ref=='refs/heads/main'"
+gcloud iam service-accounts add-iam-policy-binding \
+  billing-check@crewpoint-dev.iam.gserviceaccount.com --project=crewpoint-dev \
+  --role=roles/iam.workloadIdentityUser \
+  --member=principalSet://iam.googleapis.com/projects/711822236757/locations/global/workloadIdentityPools/github/attribute.repository/sookoonspace/crewpoint
 ```
 
 ### Error alert
 
-Not set up yet. In Monitoring → Alerting, add a log-based policy with this filter, rate limited to one notification per hour:
+Dev and prod each have the alert policy **CrewPoint backend errors**, emailing derodian@gmail.com and admin@sookoon.space through the project's existing email channels. It fires when a Cloud Function or scheduled job logs an error, at most one email an hour, and closes itself after 30 minutes without another:
 
 ```text
-resource.type="cloud_run_revision" AND severity>=ERROR
+severity>=ERROR
+AND resource.type=("cloud_run_revision" OR "cloud_function" OR "cloud_scheduler_job")
+AND NOT textPayload:"Invalid request, unable to process."
 ```
+
+The last line skips what a callable logs when something other than the app calls it, such as a browser `GET` on its URL. Those made up most errors in the logs. Checked against the 30 days before Nov 16, 2026, the filter matched only real failures: the Nov 2 billing outage on both projects, two test failures and an `onTaskAssigned` crash on dev, and a failed `onTaskDueScheduled` run on prod.
+
+The policies were created through the Monitoring API (`POST https://monitoring.googleapis.com/v3/projects/$PROJECT/alertPolicies`) with a `conditionMatchedLog` condition, `notificationRateLimit` of 3600s and `autoClose` of 1800s. To list them:
+
+```bash
+gcloud monitoring policies list --project="$PROJECT" \
+  --format='table(displayName,enabled)'
+```
+
+To test one, write a clearly marked error into the project's logs; the email arrives within a few minutes:
+
+```bash
+curl -X POST -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+  -H "x-goog-user-project: $PROJECT" -H 'Content-Type: application/json' \
+  https://logging.googleapis.com/v2/entries:write -d '{
+    "logName": "projects/'"$PROJECT"'/logs/alert-test",
+    "resource": {"type": "cloud_run_revision", "labels": {"project_id": "'"$PROJECT"'",
+      "service_name": "alert-test", "revision_name": "alert-test-00001",
+      "location": "us-central1", "configuration_name": "alert-test"}},
+    "entries": [{"severity": "ERROR", "textPayload": "TEST of the backend error alert. Nothing is wrong."}]}'
+```
+
+### Alert tests
+
+| Date | Alert | Result |
+|---|---|---|
 
 ## Crash reporting
 
