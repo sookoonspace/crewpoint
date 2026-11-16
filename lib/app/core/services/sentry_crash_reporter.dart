@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:crewpoint_app/app/core/services/crash_reporter.dart';
 import 'package:crewpoint_app/app/core/services/crash_scrub.dart';
-import 'package:flutter/foundation.dart' show kReleaseMode;
+import 'package:crewpoint_app/app/core/services/sentry_web_hooks.dart'
+    if (dart.library.js_interop) 'package:crewpoint_app/app/core/services/sentry_web_hooks_web.dart';
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb, kReleaseMode;
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 /// Reports through Sentry on iOS, Android and web (Req 68). Start it with
@@ -28,6 +30,7 @@ class SentryCrashReporter implements ICrashReporter {
         reportDebugBuilds: reportDebugBuilds,
       ),
     );
+    dropUnscrubbedWebReports();
     return SentryCrashReporter._();
   }
 
@@ -50,6 +53,31 @@ class SentryCrashReporter implements ICrashReporter {
       ),
     );
   }
+}
+
+/// Runs the app's startup, [body]. On web it runs inside a zone that sends
+/// uncaught errors through Sentry, and so through `scrubEvent`: web has no
+/// `PlatformDispatcher.onError`, and otherwise those errors would reach
+/// only Sentry's JavaScript SDK, which does not scrub them. Elsewhere
+/// Sentry catches them itself. Before Sentry starts, or with no DSN,
+/// reporting does nothing.
+void runWithCrashReporting(Future<void> Function() body) {
+  if (!kIsWeb) {
+    unawaited(body());
+    return;
+  }
+  runZonedGuarded(body, (error, stackTrace) {
+    debugPrint('Uncaught: $error');
+    unawaited(
+      Sentry.captureException(
+        ThrowableMechanism(
+          Mechanism(type: 'runZonedGuarded', handled: false),
+          error,
+        ),
+        stackTrace: stackTrace,
+      ),
+    );
+  });
 }
 
 /// The options CrewPoint starts Sentry with: no personal data, no screen
@@ -87,7 +115,9 @@ void configureSentry(
 /// have added context.
 SentryEvent scrubEvent(SentryEvent event) {
   event
-    ..user = null
+    // A placeholder IP, so the server does not work out the sender's IP
+    // and town from the connection. Nulling the user is not enough.
+    ..user = SentryUser(ipAddress: '0.0.0.0')
     ..request = null
     ..serverName = null
     // Deprecated in Sentry, but still sent when set.
@@ -112,6 +142,8 @@ SentryEvent scrubEvent(SentryEvent event) {
     scrubBreadcrumb(crumb);
   }
   event.contexts.device?.name = null;
+  // A stable per-install ID the iOS SDK adds.
+  event.contexts.app?.deviceAppHash = null;
   return event;
 }
 

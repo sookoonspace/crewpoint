@@ -49,7 +49,7 @@ void main() {
       _event(),
       Hint(),
     );
-    expect(sent!.user, isNull);
+    expect(sent!.user!.id, isNull);
     expect(sent.message!.formatted, 'Invite for <email> failed');
   });
 }
