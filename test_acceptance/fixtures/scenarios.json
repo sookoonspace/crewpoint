@@ -842,15 +842,15 @@
  {
   "id": "O-01",
   "title": "Billing alerts, budget caps and a named owner. A lapsed billing account must not be able to take the event down unnoticed, as happened on Nov 2, 2026.",
-  "status": "PARTIAL",
-  "gap": "A $5 and a $15 monthly budget cover the billing account. Uptime alerts exist on dev and prod. Stg has none, no check runs outside Google Cloud, and alert delivery is unconfirmed.",
+  "status": "PASS",
+  "gap": "Manual, in #93: an hourly GitHub Actions job (.github/workflows/billing-check.yml) checks from outside Google Cloud, as the read-only billing-check service account signed in without a key, that billing is on for dev, stg and prod, and emails derodian@gmail.com and admin@sookoon.space when not. On Nov 16, 2026 a forced test failure reached both inboxes. A $5 and a $15 monthly budget cover the billing account, and uptime alerts exist on dev and prod. See docs/ops/backups-and-alerts.md.",
   "tested": false
  },
  {
   "id": "O-02",
   "title": "Crash reporting and backend error alerts reach a person during event hours.",
-  "status": "PARTIAL",
-  "gap": "Crash reporting built in #92: Sentry on iOS, Android and web behind ICrashReporter, with reports scrubbed of any user identity (`O-02` tests). Backend error alerts are #93. Dev and prod have one uptime alert each.",
+  "status": "PASS",
+  "gap": "Crash reporting in #92: Sentry on iOS, Android and web behind ICrashReporter, with reports scrubbed of any user identity (`O-02` tests), confirmed live on dev. Backend error alerts in #93: dev and prod each email derodian@gmail.com and admin@sookoon.space when a function logs an error, skipping browser hits on callables; on Nov 16, 2026 a test error on dev reached both inboxes. Crash reporting on stg and prod waits for their DSN.",
   "tested": true
  },
  {

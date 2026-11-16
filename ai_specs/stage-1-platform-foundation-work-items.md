@@ -1649,11 +1649,11 @@ Add backend error alerts for dev and prod, and a scheduled billing check that ru
 - Applies to prod directly: Req 39 says the operations work is not affected by the lawyer approval.
 
 ### Acceptance criteria
-- [ ] Backend error alerts exist for dev and prod, ignoring non-callable browser requests such as `GET` on callable URLs, and emailing derodian@gmail.com and admin@sookoon.space.
-- [ ] A scheduled billing check runs outside Google Cloud, with a read-only service account, and alerts on failure.
-- [ ] One alert is confirmed as actually reaching both inboxes.
-- [ ] The list in `docs/ops/backups-and-alerts.md` is updated.
-- [ ] Manual results for scenarios O-01, O-02 are recorded. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] Backend error alerts exist for dev and prod, ignoring non-callable browser requests such as `GET` on callable URLs, and emailing derodian@gmail.com and admin@sookoon.space.
+- [x] A scheduled billing check runs outside Google Cloud, with a read-only service account, and alerts on failure.
+- [x] One alert is confirmed as actually reaching both inboxes.
+- [x] The list in `docs/ops/backups-and-alerts.md` is updated.
+- [x] Manual results for scenarios O-01, O-02 are recorded. A scenario shared with another Work Item is finished when all of its parts are.
 
 ### Covers
 - User Stories: 29

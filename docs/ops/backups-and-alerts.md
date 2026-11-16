@@ -26,7 +26,7 @@ Budgets only send alerts; they do not cap spending.
 - [ ] Rehearse a restore again on prod data before the convention, when prod holds real events.
 - [ ] Write and rehearse a script that copies lost documents from a restored copy back into `(default)`.
 - [x] Run an outside billing check (#93). Hourly from GitHub Actions; see [Outside billing check](#outside-billing-check).
-- [ ] Confirm an alert actually reaches both inboxes.
+- [x] Confirm an alert actually reaches both inboxes. Done for the error alert and the billing check on Nov 16, 2026; see [Alert tests](#alert-tests).
 - [x] Add crash reporting on dev (#92). Confirmed on Nov 16, 2026; see [Checking that reports arrive](#checking-that-reports-arrive).
 - [ ] Turn crash reporting on for stg and prod by adding the same `SENTRY_DSN` to `.env.stg` and `.env.prod`.
 - [x] Add backend error alerts on dev and prod (#93); see [Error alert](#error-alert).
@@ -222,6 +222,8 @@ curl -X POST -H "Authorization: Bearer $(gcloud auth print-access-token)" \
 
 | Date | Alert | Result |
 |---|---|---|
+| Nov 16, 2026 | Backend error alert, dev | A test error written to dev's logs at 17:52 UTC opened an alert at 17:53. One email, "CrewPoint backend errors for Cloud Run Revision", reached each of derodian@gmail.com and admin@sookoon.space. |
+| Nov 16, 2026 | Outside billing check | A manual run at 17:59 UTC signed in without a key and read billing as on for all three projects. A run with `simulate_failure` at 23:50 UTC sent the test email from sookoonspace@gmail.com, which reached both derodian@gmail.com and admin@sookoon.space. |
 
 ## Crash reporting
 
