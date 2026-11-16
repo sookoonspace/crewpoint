@@ -1619,14 +1619,14 @@ Add crash reporting on iOS, Android and web behind a seam, with no personal data
 - New platform calls go behind an interface and provider. `docs/ops/backups-and-alerts.md` tracks status.
 
 ### Acceptance criteria
-- [ ] Crash reporting works on iOS, Android and web.
-- [ ] Reports contain no personal data, with a test on the scrubbing.
-- [ ] Tests never reach a real reporter, using the seam.
-- [ ] One real test crash from dev is confirmed as received.
-- [ ] The status table in `docs/ops/backups-and-alerts.md` is updated.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] Tests for scenario O-02 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] Crash reporting works on iOS, Android and web.
+- [x] Reports contain no personal data, with a test on the scrubbing.
+- [x] Tests never reach a real reporter, using the seam.
+- [x] One real test crash from dev is confirmed as received.
+- [x] The status table in `docs/ops/backups-and-alerts.md` is updated.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] Tests for scenario O-02 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 29
