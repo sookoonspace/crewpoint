@@ -20,7 +20,7 @@ subsequent deploys.
 
 - Working tree builds locally:
   ```bash
-  flutter build web --release --dart-define=FLAVOR=dev
+  flutter build web --release --dart-define-from-file=.env.dev --dart-define=FLAVOR=dev
   ```
   Should produce `build/web/index.html` plus hashed JS/Wasm assets. Fix
   any analyzer / build errors before continuing.
@@ -99,7 +99,7 @@ firebase deploy --only hosting:crewpoint-dev --project=crewpoint-dev
 ```
 
 The `predeploy` hook in `firebase.json` automatically runs
-`flutter build web --release --dart-define=FLAVOR=dev` first, so you do
+`flutter build web --release --dart-define-from-file=.env.dev --dart-define=FLAVOR=dev` first, so you do
 **not** need a separate build step.
 
 Expected timeline:
@@ -112,7 +112,7 @@ Expected timeline:
    `https://crewpoint-dev.web.app`.
 
 If the predeploy fails, the deploy aborts before any upload happens.
-Diagnose with `flutter build web --release --dart-define=FLAVOR=dev`
+Diagnose with `flutter build web --release --dart-define-from-file=.env.dev --dart-define=FLAVOR=dev`
 locally to reproduce.
 
 ## Step 4 — Verify in Chrome
