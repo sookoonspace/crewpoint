@@ -24,6 +24,7 @@ export {setMemberRoles, saveEventRole, deleteEventRole} from "./events/roles";
 export {saveCrew, setCrewMembers, deleteCrew} from "./events/crews";
 export {offerOwnership, acceptOwnership, cancelOwnershipOffer} from "./events/ownership";
 export {disputeSettlement} from "./events/disputeSettlement";
+export {setExpenseAccess, getMyBalance} from "./events/expenseAccessCallables";
 export {onUrgentMessageCreated} from "./events/onUrgentMessageCreated";
 export {onTaskAssigned} from "./events/onTaskAssigned";
 export {onExpenseCreated} from "./events/onExpenseCreated";
