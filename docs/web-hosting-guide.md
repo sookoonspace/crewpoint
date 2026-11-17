@@ -46,7 +46,7 @@ ship on Firebase's `*.web.app` defaults to keep DNS simple.
 - `firebase.json` `hosting` array (this PR) already lists all three
   targets with flavor-aware predeploy hooks.
 - `.firebaserc` registers the project aliases and target mappings.
-- Local `flutter build web --release --dart-define=FLAVOR=<flavor>`
+- Local `scripts/build_web.sh <flavor>` (release build with `.env.<flavor>`)
   succeeds.
 
 ## Stage 1 — Provision the Hosting site
