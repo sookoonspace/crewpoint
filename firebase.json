@@ -50,7 +50,7 @@
         "**/node_modules/**"
       ],
       "predeploy": [
-        "flutter build web --release --dart-define=FLAVOR=dev"
+        "flutter build web --release --dart-define-from-file=.env.dev --dart-define=FLAVOR=dev"
       ],
       "rewrites": [
         {
@@ -100,7 +100,7 @@
         "**/node_modules/**"
       ],
       "predeploy": [
-        "flutter build web --release --dart-define=FLAVOR=stg"
+        "flutter build web --release --dart-define-from-file=.env.stg --dart-define=FLAVOR=stg"
       ],
       "rewrites": [
         {
@@ -150,7 +150,7 @@
         "**/node_modules/**"
       ],
       "predeploy": [
-        "flutter build web --release --dart-define=FLAVOR=prod"
+        "flutter build web --release --dart-define-from-file=.env.prod --dart-define=FLAVOR=prod"
       ],
       "rewrites": [
         {
