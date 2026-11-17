@@ -187,11 +187,16 @@ describe('scale', () => {
   });
 
   test('S-01 invite codes last long enough for a months-long registration', () => {
-    const src = require('fs').readFileSync(
-      require('path').join(__dirname, '../src/events/generateInviteCode.ts'), 'utf8');
-    const m = src.match(/EXPIRY_MS = (.+);/);
-    // eslint-disable-next-line no-eval
-    expect(eval(m[1])).toBeGreaterThan(30 * 24 * 60 * 60 * 1000);
+    // #79 (Req 56): a convention's invite lasts until the event starts by
+    // default, and an organizer may choose up to 400 days.
+    const {checkInviteExpiry, defaultInviteExpiry} = require('../src/events/inviteExpiry');
+    const day = 24 * 60 * 60 * 1000;
+    const now = Date.UTC(2026, 10, 17);
+    const start = Date.UTC(2027, 6, 16);
+    const convention = {templateId: 'convention', startDate: Timestamp.fromMillis(start)};
+    expect(defaultInviteExpiry(convention, now)).toBe(start);
+    expect(defaultInviteExpiry(convention, now) - now).toBeGreaterThan(200 * day);
+    expect(checkInviteExpiry(now + 400 * day, now)).toBe(now + 400 * day);
   });
 
   async function fanout() {

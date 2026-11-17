@@ -695,8 +695,8 @@
  {
   "id": "S-01",
   "title": "400 people can belong to the event (the 50-member cap must not block this).",
-  "status": "FAIL",
-  "gap": "joinEvent stops at 50 members, and invite codes expire after 24 hours.",
+  "status": "PASS",
+  "gap": "The 50-member cap is gone (#54: an optional memberLimit), and invites last until the event starts by default on non-party templates, or up to 400 days as the organizer chooses (#79). Load baselines for 400 and 2,000 people are in docs/testing/load-baselines.md (#88). Tests: `S-01` in functions/test_acceptance/convention.test.ts.",
   "tested": true
  },
  {
@@ -793,9 +793,9 @@
  {
   "id": "Z-01",
   "title": "Children's data: only a parent enters it, birth dates are not shown to committee or volunteers, and only age bands appear in reports.",
-  "status": "FAIL",
-  "gap": "The privacy policy says CrewPoint is for ages 13 and up and does not knowingly collect data from under-13s. This event registers children as young as 3. Needs a policy change and legal review.",
-  "tested": false
+  "status": "PASS",
+  "gap": "Children have no account; only a linked parent of their group, or someone with participants.edit, enters them (#75). Birth dates sit in private details that committee leads and volunteers cannot read, and counts and reports show age bands (#76, #83). The privacy policy covers children (#74). Tests: `Z-01` in test_acceptance/privacy_policy_test.dart and functions/test_acceptance/children_data.test.ts. A lawyer must still approve the policy before prod (Req 39).",
+  "tested": true
  },
  {
   "id": "Z-02",
