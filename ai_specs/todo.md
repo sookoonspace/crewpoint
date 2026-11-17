@@ -18,6 +18,7 @@ Triaged against the code on 2026-11-03 (#47):
   - Drop the `allow list` rule for older builds, and the draft check that relies on the arrays.
   - Simplify the test helpers that map arrays to member documents: `getTestEnv`'s sync, `seedMemberDocs` and `fakeMemberships`.
   - Runbook: `docs/ops/permissions-cutover.md`. Added 2026-11-06 (#66).
+- `[Stage 1]` **Run the permissions cutover on stg**, deferred by the owner on 2026-11-06 until the full Stage 1 test on dev is done: the same runbook, ending with `minVersion` `1.1.0` on stg. Added 2026-11-17 (#66).
 
 ## Tasks
 - `[Stage 4]` Kanban board view (3 columns, drag-to-move) — alternative to current list view

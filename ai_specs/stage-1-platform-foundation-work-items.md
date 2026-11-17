@@ -712,24 +712,24 @@ Move every rule, callable, trigger and UI gate to permissions, switch "my events
 - This is the Spec's biggest unknown. Follow-Ups says to review pace after slice 1.4.
 
 ### Acceptance criteria
-- [ ] "My events" uses a collection-group query on member documents, then reads the event documents.
-- [ ] Every Firestore path, callable and trigger uses permissions instead of `creatorId`, `adminIds` or job titles.
-- [ ] UI gating reads the same permissions and updates live if a role changes while a screen is open.
-- [ ] Rules check one permission with one member-document read.
-- [ ] Holding several roles grants the union, and own-group access applies regardless of role.
-- [ ] Adding your own expense and creating tasks work for every member except Observer and Vendor.
-- [ ] The interim owner-or-admin checks from #52, #53, #57, #58, #59, #60 and #62 now read the named permissions.
-- [ ] Membership and ownership use server transactions, and other documents use last-write-wins with server timestamps.
-- [ ] If access is lost while on a screen, the app shows a clear message and returns to the event list.
-- [ ] Permission-denied responses are shown as understandable messages, and logged, never as raw errors.
-- [ ] On dev, then stg, the order is: confirm a fresh backup; run the dry run, then the migration, keeping the old arrays; deploy functions and rules together; release the app and raise the minimum version; run the verification script. The result is recorded.
-- [ ] The rollback before array removal is documented and tested: redeploy the previous rules and functions and lower the minimum version.
-- [ ] Removing the old arrays is a separate later step, and is added to `ai_specs/todo.md`, with prod.
-- [ ] Prod is not touched: it waits for the lawyer approval in Req 39.
-- [ ] `CLAUDE.md` RBAC and data-model sections are updated, and `docs/cloud-functions-guide.md` lists changes.
-- [ ] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
-- [ ] Tests for scenario H-06 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
+- [x] "My events" uses a collection-group query on member documents, then reads the event documents.
+- [x] Every Firestore path, callable and trigger uses permissions instead of `creatorId`, `adminIds` or job titles.
+- [x] UI gating reads the same permissions and updates live if a role changes while a screen is open.
+- [x] Rules check one permission with one member-document read.
+- [x] Holding several roles grants the union, and own-group access applies regardless of role.
+- [x] Adding your own expense and creating tasks work for every member except Observer and Vendor.
+- [x] The interim owner-or-admin checks from #52, #53, #57, #58, #59, #60 and #62 now read the named permissions.
+- [x] Membership and ownership use server transactions, and other documents use last-write-wins with server timestamps.
+- [x] If access is lost while on a screen, the app shows a clear message and returns to the event list.
+- [x] Permission-denied responses are shown as understandable messages, and logged, never as raw errors.
+- [x] (Dev done and recorded 2026-11-17; stg deferred by the owner, in `ai_specs/todo.md`.) On dev, then stg, the order is: confirm a fresh backup; run the dry run, then the migration, keeping the old arrays; deploy functions and rules together; release the app and raise the minimum version; run the verification script. The result is recorded.
+- [x] The rollback before array removal is documented and tested: redeploy the previous rules and functions and lower the minimum version.
+- [x] Removing the old arrays is a separate later step, and is added to `ai_specs/todo.md`, with prod.
+- [x] Prod is not touched: it waits for the lawyer approval in Req 39.
+- [x] `CLAUDE.md` RBAC and data-model sections are updated, and `docs/cloud-functions-guide.md` lists changes.
+- [x] Domain logic, rules, callables and migrations in this item are written test first, one behaviour at a time.
+- [x] Tests for scenario H-06 are passing in the acceptance suite, and finished IDs are added to the CI list from Req 5a. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` pass, as relevant to the change, using emulators and seams only.
 
 ### Covers
 - User Stories: 13
