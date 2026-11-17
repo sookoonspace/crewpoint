@@ -1706,11 +1706,11 @@ Confirm Stage 1's exit criteria: every scenario is proven, and all five event ty
 - [ ] Every scenario has a passing test, or a recorded manual result where a person is needed: A-01, A-02, A-05, B-04, B-05, B-10, B-14, H-01, H-02, H-05, H-06, H-07, J-05, J-06, L-01, L-02, O-01, O-02, O-03, S-01, S-02, S-07, S-08, X-01, X-02, X-03, X-05, X-06, Z-01, Z-04, GE-01, GE-02, GE-03, GE-04, GE-05, GE-06, GE-07, GE-08, GE-09, PA-01, PA-05, WE-07, WE-08, WE-10, GAP-CON-01, GAP-ANY-33, GAP-CRK-29, GAP-CON-30, GAP-ANY-31, GAP-WED-32, GAP-WED-12, GAP-WED-14, FND-01, FND-02, FND-03, FND-04, FND-05, FND-06, FND-07, FND-08, FND-09, FND-10, FND-11, FND-12.
 - [ ] All scenarios above pass in the acceptance suite, and the guardrail runs in CI.
 - [ ] A party, wedding, cricket, golf and convention event can each be set up from a template on a real phone, on web, and in the fixtures, with no code differences between them.
-- [ ] Every role is proven against every restricted path.
-- [ ] The 400-person fixture meets its baseline, and the 2,000-person tier is measured.
-- [ ] `docs/testing/CONVENTION_TEST_REPORT_v3.md` is updated as scenarios turn green, with VENDOR rows marked as platform requirements.
-- [ ] `CLAUDE.md` matches what was built.
-- [ ] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` all pass.
+- [x] Every role is proven against every restricted path.
+- [x] The 400-person fixture meets its baseline, and the 2,000-person tier is measured.
+- [x] `docs/testing/CONVENTION_TEST_REPORT_v3.md` is updated as scenarios turn green, with VENDOR rows marked as platform requirements.
+- [x] `CLAUDE.md` matches what was built.
+- [x] `flutter analyze`, `dart run custom_lint`, `flutter test`, `npm run build` and `npm test` all pass.
 
 ### Covers
 - Requirements: 79-81

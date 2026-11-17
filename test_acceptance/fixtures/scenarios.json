@@ -24,7 +24,7 @@
   "id": "A-04",
   "title": "Donation item list from §1 loaded, incl. a closed item (Gala Dinner) and an item with no amount (Bhajan Prasad).",
   "status": "NOT BUILT",
-  "gap": "No donation item model in CrewPoint. Depends on the tool.",
+  "gap": "No donation item model. Contributions arrive in Stage 2.",
   "tested": false
  },
  {
@@ -38,70 +38,70 @@
   "id": "L-01",
   "title": "Google sign-in creates an account.",
   "status": "PASS",
-  "gap": "Manual, in #94, on crewpoint-dev on Nov 17, 2026. Google sign-in worked live on the iOS simulator (iPhone 16) and on the dev website, as westerninnhamilton@gmail.com, whose dev account already used a password: Google was added to that account rather than creating a second one. Linking by verified email worked live twice: after sign-in the account was linked to a throwaway participant carrying its email and joined the event as a Participant, and derodian@gmail.com, signing in with Google on the simulator, was linked as the owner without losing the Owner role. Signing in again on web linked nothing new, as expected. Creating a brand-new account is covered by unit tests, because both test accounts already existed. The throwaway event was deleted afterwards.",
+  "gap": "Manual, in #94, on crewpoint-dev on Nov 17, 2026. Google sign-in worked live on the iOS simulator (iPhone 16) and on the dev website, with a test account that already used a password: Google was added to that account rather than creating a second one. Linking by verified email worked live twice: after sign-in the test account was linked to a throwaway participant carrying its email and joined the event as a Participant, and the event's owner, signing in with Google on the simulator, was linked without losing the Owner role. Signing in again on web linked nothing new, as expected. Creating a brand-new account is covered by unit tests, because both test accounts already existed. The throwaway event was deleted afterwards.",
   "tested": false
  },
  {
   "id": "L-02",
   "title": "Apple sign-in creates an account.",
   "status": "NOT RUN",
-  "gap": "Not yet run live, in #94: the Apple ID for derodian@gmail.com was locked on Nov 17, 2026, and could not be unlocked during a phone outage. Linking by verified email, which Apple sign-in uses the same way, was checked live with Google (see L-01). To finish: sign in with Apple on the iOS simulator as derodian@gmail.com, choosing Share My Email.",
+  "gap": "Not yet run live, in #94: the Apple ID used for testing was locked on Nov 17, 2026. Linking by verified email, which Apple sign-in uses the same way, was checked live with Google (see L-01). To finish: sign in with Apple on the iOS simulator, choosing Share My Email.",
   "tested": false
  },
  {
   "id": "L-03",
   "title": "Phone one-time code login (Meera, F3).",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen. CrewPoint has no phone or email one-time code.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (one-time code sign-in and RSVP links), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "L-04",
   "title": "Email one-time code login (Savita, F4, web only).",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen. CrewPoint has no phone or email one-time code.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (one-time code sign-in and RSVP links), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "L-05",
   "title": "Family contact invites a family member; invitee gets access to **that family only**.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen. CrewPoint has no phone or email one-time code.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (one-time code sign-in and RSVP links), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "L-06",
   "title": "Same person signs in with Google, later with email code using the same email → same account, not a duplicate `[ASSUMPTION]`.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen. CrewPoint has no phone or email one-time code.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (one-time code sign-in and RSVP links), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "L-07",
   "title": "Web link registration works with no app installed; app login later shows the same family.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen. CrewPoint has no phone or email one-time code.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (one-time code sign-in and RSVP links), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "B-01",
   "title": "Contact registers whole family with every per-person field: name, age (or date of birth), diet V/J/N, Derod relation, T-shirt size, arrival date/time, departure date, kids activity (shown only for under-18), per-meal attendance.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "B-02",
   "title": "Per-person arrival/departure: F4 arrives Sat 11:00am → excluded from M1, M2, P1 automatically.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "B-03",
   "title": "Per-meal, per-person opt-out (Jaya M2; Ramesh & Kamla M3).",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
@@ -121,29 +121,29 @@
  {
   "id": "B-06",
   "title": "Family member (Meera) edits registration → counts update; audit shows who changed what.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "B-07",
   "title": "Hotel section: intent (rooms, nights), confirmation number field; booking link + code shown after registration only.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "B-08",
   "title": "Directory opt-in setting per family (default **off**).",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "B-09",
   "title": "Registration form fully usable in Gujarati.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
@@ -156,22 +156,22 @@
  {
   "id": "B-11",
   "title": "Duplicate handling: system flags F10 as a likely duplicate; committee merges into F3; counts go from the before-merge values to the §4 values; F3's fee stays $600; the merge is logged; F10's contact loses access.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "B-12",
   "title": "Capacity: admin sets a limit (400); registration past it goes to a waitlist; a cancellation offers the place to the waitlist; walk-ins past capacity warn but can be overridden by admin `[ASSUMPTION]`.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "B-13",
   "title": "Registration closes on a set date; later changes need committee help.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
@@ -184,253 +184,253 @@
  {
   "id": "B-15",
   "title": "After the Jul 3 hotel cutoff: the booking link is replaced by \"call the hotel\" and hotel reminders stop; F3 is listed for the hotel sub-team.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "C-01",
   "title": "Hybrid fee calculation for every family matches §4 (incl. F4 single adult, F5 three adults, Neel/Rohan age boundary).",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "C-02",
   "title": "Card payment in app (sandbox) → paid + receipt.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "C-03",
   "title": "Zelle: family marks \"sent by Zelle\" → status **pending**; finance confirms → **paid** + receipt; totals before/after match §4.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "C-04",
   "title": "Check (#1043) and cash recorded by finance with method and reference.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "C-05",
   "title": "Pay at check-in: F6 shows \"$300 due at check-in\"; volunteer at desk records card/cash; totals after event match §4.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "C-06",
   "title": "F8 cancels after paying → refund $300 (sandbox) or credit; removed from all counts and totals; cancellation record kept.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "C-07",
   "title": "Receipts name the nonprofit and payment method.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "C-08",
   "title": "Fee settings changeable by admin (family fee, extra-adult fee, kid age) and totals recalculate. Families already paid are not re-billed unless finance chooses to `[ASSUMPTION]`.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "C-09",
   "title": "F1 adds a third adult after paying → owes **+$150**, and the unpaid reminder restarts for that amount.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "C-10",
   "title": "F5 removes Rohan after paying $450 → **$150** refund due, handled by finance.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "C-11",
   "title": "Partial cancellation: one person cancels, the family stays, counts and fee recalculate.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "C-12",
   "title": "No-show: a family never checks in; pay-at-check-in F6 would stay owing $300 and is listed for finance, with meals still counted until the freeze.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "C-13",
   "title": "Refund window: the cancellation deadline and refund percentage are settings. `[OWNER INPUT]` for the policy.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "C-14",
   "title": "Zelle never arrives: finance rejects the pending report → the family is told and returns to unpaid.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "C-15",
   "title": "Zelle amount differs from the fee → finance records the actual amount; the balance shows the difference.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "C-16",
   "title": "Partial payment: F3 pays $300 of $600 → balance $300; reminders use the new balance.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "C-17",
   "title": "Failed card: the family stays unpaid and is told why; no receipt.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "C-18",
   "title": "Double submit or retried webhook → one charge and one receipt.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "C-19",
   "title": "Chargeback: finance is notified; the family returns to owing.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "C-20",
   "title": "Card processing fee: report net vs gross. Who absorbs the fee is `[OWNER INPUT]`.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "D-01",
   "title": "Family picks an open item to sponsor and pledges an amount.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (contributions and receipts), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "D-02",
   "title": "Several families share one item; % pledged and % received shown (Sun Lunch: 100% / 60%).",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (contributions and receipts), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "D-03",
   "title": "Fully pledged and closed items can't be picked (Sun Lunch after F2, Gala Dinner).",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (contributions and receipts), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "D-04",
   "title": "Pledge now, pay later; pledged vs received tracked; totals match §4.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (contributions and receipts), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "D-05",
   "title": "General tier sponsorship (F6 Gold) not tied to an item.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (contributions and receipts), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "D-06",
   "title": "Public thank-you list: names only, recognition opt-in respected, no amounts.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (contributions and receipts), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "D-07",
   "title": "Business/vendor sponsor (non-family) can be added by finance.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (contributions and receipts), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "D-08",
   "title": "Sponsor receipts.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (contributions and receipts), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "D-09",
   "title": "F2 cancels the pledge → Sun Lunch reopens with $1,999 remaining; the reminder stops.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (contributions and receipts), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "D-10",
   "title": "F2 pays $1,000 of $1,999 → received $4,001; reminders continue for $999.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (contributions and receipts), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "D-11",
   "title": "A pledge above the remaining amount is rejected, or offered the remainder.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (contributions and receipts), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "D-12",
   "title": "Two families pledge the last $1,999 at the same moment → one succeeds, the other is told.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (contributions and receipts), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "D-13",
   "title": "Non-shareable items (Gala music/DJ, Photography & video) accept one sponsor for the full amount only.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (contributions and receipts), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "D-14",
   "title": "Bhajan Prasad gets an amount later → existing pledges count toward it.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (contributions and receipts), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "D-15",
   "title": "Donation receipts name the nonprofit and EIN, the date and amount, and state whether goods or services were received. Wording to be approved by the nonprofit's accountant, including sponsors who also attend `[OWNER INPUT]`.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (contributions and receipts), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
@@ -458,22 +458,22 @@
   "id": "H-04",
   "title": "Budget: estimate vs actual per line; visible to admin/finance only.",
   "status": "NOT BUILT",
-  "gap": "Only a display-only `budgetEstimate` per task, readable by every member. No budget lines or actuals.",
+  "gap": "Task budget figures are private to `budget.read` (#71). No budget lines or actuals (Stage 6).",
   "tested": false
  },
  {
   "id": "H-05",
   "title": "Permissions matrix from §2 — one test per role per restricted screen/API (UI **and** backend rules). Especially: committee member cannot read any money field via the API; volunteer sees only the balance of the family being checked in.",
-  "status": "PARTIAL",
-  "gap": "Outsiders are blocked, and members cannot change event settings. But every member can read all expenses and task budgets, and any signed-in user can read anyone's payment handles. Needs finance, committee and volunteer roles enforced in firestore.rules.",
+  "status": "PASS",
+  "gap": "Every preset role is checked against every restricted path in the rules (functions/test/roleMatrix.test.ts, #70, #95), and outsiders, committee members, volunteers and other groups are kept from money, budgets and private profiles (#65–#73). Tests: `H-05`.",
   "tested": true
  },
  {
   "id": "H-06",
   "title": "Dual roles: Amit (F1 contact, program committee) sees F1's fee and receipts, and no other family's money or the budget.",
-  "status": "NOT BUILT",
-  "gap": "No scoped roles exist.",
-  "tested": false
+  "status": "PASS",
+  "gap": "Several roles grant the union of their permissions, a group's contact edits their own group whatever their roles, and nobody sees an expense they are not part of (#66, #72). The fee and receipts wording arrives with payments in Stage 2. Tests: `H-06`.",
+  "tested": true
  },
  {
   "id": "H-07",
@@ -514,28 +514,28 @@
   "id": "J-01",
   "title": "QR code per family (in app and in email); scanning checks in the family and lets the volunteer tick which members are present (F4 alone on Sat; F9 walk-in gets a QR at the desk).",
   "status": "NOT BUILT",
-  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "gap": "Check-in, passes, live updates and the directory arrive in Stage 5. The schedule, personal agenda and offline reads already exist (#81, #82, Req 74).",
   "tested": false
  },
  {
   "id": "J-02",
   "title": "QR contains a token only — no names, phone, or email encoded.",
   "status": "NOT BUILT",
-  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "gap": "Check-in, passes, live updates and the directory arrive in Stage 5. The schedule, personal agenda and offline reads already exist (#81, #82, Req 74).",
   "tested": false
  },
  {
   "id": "J-03",
   "title": "Walk-in: committee registers F9 at the door, takes $300 cash, prints/shows QR; counts update for M4–M7.",
   "status": "NOT BUILT",
-  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "gap": "Check-in, passes, live updates and the directory arrive in Stage 5. The schedule, personal agenda and offline reads already exist (#81, #82, Req 74).",
   "tested": false
  },
  {
   "id": "J-04",
   "title": "Offline: check-in and meal counts work with no network; queue syncs later; same family scanned on two offline devices → **one** check-in after sync; meal counts from two devices **sum** correctly.",
   "status": "NOT BUILT",
-  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "gap": "Check-in, passes, live updates and the directory arrive in Stage 5. The schedule, personal agenda and offline reads already exist (#81, #82, Req 74).",
   "tested": false
  },
  {
@@ -556,70 +556,70 @@
   "id": "J-07",
   "title": "Live update: a **committee member** (not admin) changes M3 location to \"Garland Hall (indoors)\" → schedule updates for everyone; volunteer and family accounts cannot do this.",
   "status": "NOT BUILT",
-  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "gap": "Check-in, passes, live updates and the directory arrive in Stage 5. The schedule, personal agenda and offline reads already exist (#81, #82, Req 74).",
   "tested": false
  },
  {
   "id": "J-08",
   "title": "Directory shows only opted-in families, never contact details.",
   "status": "NOT BUILT",
-  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "gap": "Check-in, passes, live updates and the directory arrive in Stage 5. The schedule, personal agenda and offline reads already exist (#81, #82, Req 74).",
   "tested": false
  },
  {
   "id": "J-09",
   "title": "Language toggle EN ⇄ GU on every event-day screen.",
   "status": "NOT BUILT",
-  "gap": "English only. No Gujarati strings, and no language setting in the app.",
+  "gap": "English only. Gujarati strings and the language setting arrive in Stage 3.",
   "tested": true
  },
  {
   "id": "J-10",
   "title": "Unpaid check-in: F3 is scanned with $600 due → check-in **succeeds**, the volunteer sees the balance and can record a payment, and finance is notified (N-23). Also applies to F6 if it declines to pay at the desk.",
   "status": "NOT BUILT",
-  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "gap": "Check-in, passes, live updates and the directory arrive in Stage 5. The schedule, personal agenda and offline reads already exist (#81, #82, Req 74).",
   "tested": false
  },
  {
   "id": "J-11",
   "title": "Scanning a cancelled family's QR (F8) or a merged one (F10) is rejected with a clear message.",
   "status": "NOT BUILT",
-  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "gap": "Check-in, passes, live updates and the directory arrive in Stage 5. The schedule, personal agenda and offline reads already exist (#81, #82, Req 74).",
   "tested": false
  },
  {
   "id": "J-12",
   "title": "Scanning the same family twice shows \"already checked in at <time>\" and does not double count.",
   "status": "NOT BUILT",
-  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "gap": "Check-in, passes, live updates and the directory arrive in Stage 5. The schedule, personal agenda and offline reads already exist (#81, #82, Req 74).",
   "tested": false
  },
  {
   "id": "J-13",
   "title": "No QR: the volunteer finds the family using the limited name search in §2, and the lookup is logged.",
   "status": "NOT BUILT",
-  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "gap": "Check-in, passes, live updates and the directory arrive in Stage 5. The schedule, personal agenda and offline reads already exist (#81, #82, Req 74).",
   "tested": false
  },
  {
   "id": "J-14",
   "title": "Paper fallback: admin prints a roster and meal sheet the night before, in case phones or network fail.",
   "status": "NOT BUILT",
-  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "gap": "Check-in, passes, live updates and the directory arrive in Stage 5. The schedule, personal agenda and offline reads already exist (#81, #82, Req 74).",
   "tested": false
  },
  {
   "id": "J-15",
   "title": "Partial arrival: part of a family checks in now and the rest later; both are recorded against one family.",
   "status": "NOT BUILT",
-  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "gap": "Check-in, passes, live updates and the directory arrive in Stage 5. The schedule, personal agenda and offline reads already exist (#81, #82, Req 74).",
   "tested": false
  },
  {
   "id": "J-16",
   "title": "Scanners stay signed in with no network for the whole shift, and a lost scanner can be revoked.",
   "status": "NOT BUILT",
-  "gap": "No check-in, QR, agenda, live schedule or directory. Offline covers reads only.",
+  "gap": "Check-in, passes, live updates and the directory arrive in Stage 5. The schedule, personal agenda and offline reads already exist (#81, #82, Req 74).",
   "tested": false
  },
  {
@@ -640,56 +640,56 @@
   "id": "K-03",
   "title": "Export all event data (for the next host city).",
   "status": "PARTIAL",
-  "gap": "Expense CSV is complete, but cells starting with `=` are not neutralised, the PDF stops at 200 expenses, and there is no full export.",
+  "gap": "Every CSV cell is neutralised (#55, #84), but the expense PDF still stops at 200 expenses, and there is no full export (Stage 6).",
   "tested": true
  },
  {
   "id": "X-01",
   "title": "Import a roster of 400 people from the tool's export into CrewPoint, with all per-person fields and a validation report.",
-  "status": "NOT BUILT",
-  "gap": "No import path. This is the new work created by buying registration.",
-  "tested": false
+  "status": "PASS",
+  "gap": "Roster import from a CSV export (#77): 400 people with every per-person field, and a validation report before anything is applied. Tests: `X-01`.",
+  "tested": true
  },
  {
   "id": "X-02",
   "title": "Re-import is safe: new families added, changes updated, nothing duplicated, and manual CrewPoint data kept.",
-  "status": "NOT BUILT",
-  "gap": "No import path. This is the new work created by buying registration.",
-  "tested": false
+  "status": "PASS",
+  "gap": "Re-importing adds new groups, updates changes, duplicates nobody and keeps data entered in CrewPoint, matching by the import's ID (#77). Tests: `X-02`.",
+  "tested": true
  },
  {
   "id": "X-03",
   "title": "A family cancelled in the tool is removed from counts and its QR is revoked on the next import.",
-  "status": "NOT BUILT",
-  "gap": "No import path. This is the new work created by buying registration.",
-  "tested": false
+  "status": "PASS",
+  "gap": "A group missing from a new import is listed, and confirming removes it from counts (#77, cancelImportedGroups). Revoking its pass arrives with passes in Stage 5. Tests: `X-03`.",
+  "tested": true
  },
  {
   "id": "X-04",
   "title": "Payment status and balance are imported, and a payment recorded at the door is reported back to finance for the tool.",
   "status": "NOT BUILT",
-  "gap": "No import path. This is the new work created by buying registration.",
+  "gap": "Payments arrive with registration in Stage 2, so there is no payment status to import or report back yet.",
   "tested": false
  },
  {
   "id": "X-05",
   "title": "A person signing in to CrewPoint is matched to their imported family by email or phone, never to another family's.",
-  "status": "NOT BUILT",
-  "gap": "No import path. This is the new work created by buying registration.",
-  "tested": false
+  "status": "PASS",
+  "gap": "Someone signing in is linked to their own imported record by verified email, never by name, and two adults sharing an email go to an organizer (#78). Checked live on dev on Nov 17, 2026 (L-01). Tests: `X-05`.",
+  "tested": true
  },
  {
   "id": "X-06",
   "title": "Import errors (missing diet, unknown age, duplicate email) are listed, and do not stop the good rows.",
-  "status": "NOT BUILT",
-  "gap": "No import path. This is the new work created by buying registration.",
-  "tested": false
+  "status": "PASS",
+  "gap": "Rows with a missing answer, an unknown age or a duplicate email are listed in the report, and the good rows still import (#77). Tests: `X-06`.",
+  "tested": true
  },
  {
   "id": "X-07",
   "title": "Tool outage or cancelled subscription: all data can still be exported.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 6 (full export), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
@@ -807,15 +807,15 @@
  {
   "id": "Z-03",
   "title": "Liability waiver accepted at registration and recorded `[OWNER INPUT]`.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "Z-04",
   "title": "UK and Canadian attendees: consent, access and deletion requests work, and the privacy policy covers them.",
-  "status": "PARTIAL",
-  "gap": "The policy covers EU/UK rights and deletion exists, but the user ID stays in expense splits and tasks, and personal subcollections survive. Canada is not mentioned.",
+  "status": "PASS",
+  "gap": "The privacy policy covers Canadian and UK rights, regulators and cross-border storage (#74). Deleting an account removes the person from shared records and personal subcollections, and turns a linked attendee record into an unnamed entry that still counts (#56, #78). Tests: `Z-04`. A lawyer must still approve the policy before prod (Req 39).",
   "tested": true
  },
  {
@@ -828,8 +828,8 @@
  {
   "id": "Z-06",
   "title": "Tax and legal wording on receipts is approved, and records are kept for the required period `[OWNER INPUT]`.",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (receipts), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
@@ -940,43 +940,43 @@
  {
   "id": "N-01",
   "title": "Registration confirmation",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen. CrewPoint has no email sending.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 3 (email), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "N-02",
   "title": "Family member invite",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen. CrewPoint has no email sending.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 3 (email), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "N-03",
   "title": "Payment receipt",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen. CrewPoint has no email sending.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 3 (email), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "N-04",
   "title": "Unpaid fee reminder",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen. CrewPoint has no email sending.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 3 (email), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "N-05",
   "title": "Hotel not booked",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen. CrewPoint has no email sending.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 3 (email), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "N-06",
   "title": "Pledge not received",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen. CrewPoint has no email sending.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 3 (email), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
@@ -1038,8 +1038,8 @@
  {
   "id": "N-15",
   "title": "Cancellation",
-  "status": "VENDOR",
-  "gap": "Requirement for the bought tool. Not testable until one is chosen. CrewPoint has no email sending.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 3 (email), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
