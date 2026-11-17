@@ -1,24 +1,50 @@
 #!/usr/bin/env python3
-"""Builds scenarios.json and docs/testing/CONVENTION_TEST_REPORT_v3.md.
+"""Builds docs/testing/CONVENTION_TEST_REPORT_v3.md from the scenario records.
 
 Usage: generate_report.py <flutter-json-results> <jest-json-results>
-Statuses are assessed by hand below, then checked against the real test results:
-the script refuses to write a status that the results contradict.
+
+test_acceptance/fixtures/scenarios.json is the record: each scenario's status
+and gap are kept there by hand as work lands. This script reads it, checks it
+against the real acceptance results, and refuses to write a report whose
+statuses the results contradict. It never changes scenarios.json.
+
+    flutter test test_acceptance/ --reporter json > flutter.json
+    (cd functions && firebase emulators:exec --project demo-crewpoint \\
+      --only firestore,auth \\
+      "npx jest --runInBand --config jest.acceptance.config.js --json --outputFile=../jest.json")
+    python3 test_acceptance/generate_report.py flutter.json jest.json
 """
 import json
+import os
 import re
+import subprocess
 import sys
 from collections import Counter, OrderedDict
 
-DOC = 'docs/testing/CREWPOINT_CONVENTION_TEST_v3.md'
-OUT = 'docs/testing/CONVENTION_TEST_REPORT_v3.md'
-doc = open(DOC, encoding='utf-8').read()
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from check_finished import ids_in, read_flutter, read_jest  # noqa: E402
 
+DOC = 'docs/testing/CREWPOINT_CONVENTION_TEST_v3.md'
+RECORD = 'test_acceptance/fixtures/scenarios.json'
+FINISHED = 'test_acceptance/finished_scenarios.json'
+OUT = 'docs/testing/CONVENTION_TEST_REPORT_v3.md'
+RUN_DATE = 'Nov 17, 2026'
+
+PS, PA, FA, NB, PL, NR = 'PASS', 'PARTIAL', 'FAIL', 'NOT BUILT', 'PLATFORM', 'NOT RUN'
+ST = [PS, PA, FA, NB, PL, NR]
+
+doc = open(DOC, encoding='utf-8').read()
 titles = OrderedDict()
 for m in re.finditer(r'^- \*\*([A-Z]-\d\d)\*\* (.+)$', doc, re.M):
     titles[m[1]] = m[2]
 for m in re.finditer(r'^\| \*\*(N-\d\d)\*\* \| ([^|]+) \|', doc, re.M):
     titles[m[1]] = m[2].strip()
+
+record = OrderedDict((s['id'], s) for s in json.load(open(RECORD, encoding='utf-8')))
+finished = set(json.load(open(FINISHED, encoding='utf-8'))['finished'])
+assert list(record) == list(titles), 'scenarios.json and the test spec list different scenarios'
+unknown = {s['status'] for s in record.values()} - set(ST)
+assert not unknown, f'unknown statuses: {unknown}'
 
 P = {}
 for raw, pri in [
@@ -34,136 +60,60 @@ for raw, pri in [
 def priority(i):
     if i in P:
         return P[i]
-    return {'A': 'P1', 'X': 'P1', 'J': 'P2', 'V': 'P2', 'R': 'P2', 'K': 'P3'}.get(i[0], 'P0 (tool choice)')
+    return {'A': 'P1', 'X': 'P1', 'J': 'P2', 'V': 'P2', 'R': 'P2', 'K': 'P3'}.get(i[0], 'P0')
 
 
-NB, VN, NR = 'NOT BUILT', 'VENDOR', 'NOT RUN'
-PA, FA, PS = 'PARTIAL', 'FAIL', 'PASS'
-A = {}
+# The later stage that owns an open scenario, from ai_specs/event-platform-plan.md.
+STAGE_BY_PREFIX = {'B': 2, 'C': 2, 'D': 2, 'N': 3, 'J': 5, 'V': 5, 'R': 5, 'K': 6}
+STAGE_BY_ID = {
+    'A-03': 3, 'A-04': 2, 'H-03': 6, 'H-04': 6, 'X-04': 2, 'S-03': 3, 'S-04': 5, 'S-05': 5,
+    'S-06': 5, 'U-03': 3, 'O-04': 3, 'O-05': 7, 'O-07': 7, 'Z-03': 2, 'Z-05': 3, 'Z-06': 2,
+    'Z-07': 6,
+}
 
 
-def put(ids, status, gap, effort='', evidence=''):
-    for i in ids.split():
-        A[i] = (status, gap, effort, evidence)
+def stage(i, row):
+    if row['status'] == PS:
+        return '·'
+    m = re.search(r'Stage (\d)', row['gap'])
+    n = int(m[1]) if m else STAGE_BY_ID.get(i, STAGE_BY_PREFIX.get(i[0]))
+    return f'Stage {n}' if n else '·'
 
-
-TOOL = 'Requirement for the bought tool. Not testable until one is chosen.'
-put(' '.join(f'B-{n:02}' for n in (1, 2, 3, 6, 7, 8, 9, 11, 12, 13, 15)), VN, TOOL)
-put(' '.join(f'C-{n:02}' for n in range(1, 21)), VN, TOOL)
-put(' '.join(f'D-{n:02}' for n in range(1, 16)), VN, TOOL)
-put('L-03 L-04 L-05 L-06 L-07', VN, TOOL + ' CrewPoint has no phone or email one-time code.', '', '`grep` for signInWithPhoneNumber, signInWithEmailLink: no hits')
-put('N-01 N-02 N-03 N-04 N-05 N-06 N-15', VN, TOOL + ' CrewPoint has no email sending.')
-put('X-07 Z-03 Z-06', VN, TOOL)
-
-put('A-01', PA, 'Title and dates are stored. There is no event time zone or venue field.', 'S', '`A-01` tests in app_capability_test.dart')
-put('A-02', NB, 'No schedule or session model.', 'M')
-put('A-03', PA, 'Spelling guard added and passing, but the app has no Gujarati content to guard.', 'L', '`A-03` tests')
-put('A-04', NB, 'No donation item model in CrewPoint. Depends on the tool.', 'M')
-put('A-05', NB, 'No maps or directions entries.', 'S')
-put('L-01 L-02', NR, 'Implemented with unit tests, but real Google and Apple sign-in needs a person on a device.', '', 'test/app/features/auth, firebase_auth')
-put('B-04 B-05', NB, 'No attendee data. Needs the roster import plus count logic.', 'M')
-put('B-10 B-14', NB, 'No registration or per-meal export, and no freeze.', 'M')
-put('H-01', NB, 'No sub-teams. Only owner, admin and member exist.', 'M')
-put('H-02', PA, 'Owner, due date, status and overdue filter work. No sub-team on tasks.', 'S', '`H-02` test, lib/app/features/tasks/application/tasks_filter.dart')
-put('H-03', NB, 'No vendor model, contracts or deadlines.', 'M')
-put('H-04', NB, 'Only a display-only `budgetEstimate` per task, readable by every member. No budget lines or actuals.', 'M')
-put('H-05', PA, 'Outsiders are blocked, and members cannot change event settings. But every member can read all expenses and task budgets, and any signed-in user can read anyone\'s payment handles. Needs finance, committee and volunteer roles enforced in firestore.rules.', 'L', '`H-05` tests (3 pass, 4 fail)')
-put('H-06', NB, 'No scoped roles exist.', 'M')
-put('H-07', PS, 'Fixed in PR #40 and verified live on dev and stg. **Not yet deployed to prod.** The at-least-2-admins rule is a process point.', '', '`H-07` tests (3 pass), firestore.rules, removeEventMember.ts')
-put('V-01 V-02 V-03 V-04', NB, 'No shifts, scanner, counter or issue reports.', 'L')
-put('J-01 J-02 J-03 J-04 J-05 J-06 J-07 J-08 J-10 J-11 J-12 J-13 J-14 J-15 J-16', NB, 'No check-in, QR, agenda, live schedule or directory. Offline covers reads only.', 'L')
-put('J-09', NB, 'English only. No Gujarati strings, and no language setting in the app.', 'L', '`J-09` test')
-put('K-01 K-02', NB, 'No reconciliation or sponsor messaging.', 'M')
-put('K-03', PA, 'Expense CSV is complete, but cells starting with `=` are not neutralised, the PDF stops at 200 expenses, and there is no full export.', 'M', '`K-03` tests (1 pass, 2 fail)')
-put('X-01 X-02 X-03 X-04 X-05 X-06', NB, 'No import path. This is the new work created by buying registration.', 'L')
-put('S-01', FA, 'joinEvent stops at 50 members, and invite codes expire after 24 hours.', 'S', '`S-01` tests, functions/src/events/joinEvent.ts:6')
-put('S-02', NB, 'No import path to measure.', 'M', '`S-02` test')
-put('S-03', PA, 'A 400-person send took about 2 s on the local emulator with a mock transport, inside the 30 s limit. Every recipient gets the same text, so a personal agenda is not possible yet. Production timing not measured.', 'M', '`S-03` tests (1 pass, 1 fail)')
-put('S-04', PA, 'Delivery path handled 400 in about 2 s on the local emulator. There is no live-update feature using it, and real delivery time is not measured.', 'M', '`S-04` test')
-put('S-05 S-06', NB, 'No check-in or meal counting to load.', 'L')
-put('S-07', PA, 'The ledger is fast at 400 members. One new message with 5,000 in chat took about 53 s and 4,902 screen updates on a Mac.', 'M', '`S-07` tests (1 pass, 1 fail), chat_repository.dart')
-put('S-08', PA, 'Rough estimate only, in section 2.1. Needs real traffic numbers.', 'S')
-put('R-01 R-02 R-03 R-04 R-05 R-06', NB, 'No safety features or fields.', 'M')
-put('Z-01', FA, 'The privacy policy says CrewPoint is for ages 13 and up and does not knowingly collect data from under-13s. This event registers children as young as 3. Needs a policy change and legal review.', 'M', 'assets/legal/privacy-policy.md:94')
-put('Z-02 Z-07', NB, 'No consent record or retention rule for event data.', 'S')
-put('Z-04', PA, 'The policy covers EU/UK rights and deletion exists, but the user ID stays in expense splits and tasks, and personal subcollections survive. Canada is not mentioned.', 'M', '`Z-04` tests (2 fail), deleteUserAccount.ts')
-put('Z-05', NB, 'No email or SMS, so no unsubscribe.', 'S')
-put('O-01', PA, 'A $5 and a $15 monthly budget cover the billing account. Uptime alerts exist on dev and prod. Stg has none, no check runs outside Google Cloud, and alert delivery is unconfirmed.', 'S', 'gcloud billing budgets list; Monitoring uptime check and alert policy on dev')
-put('O-02', NB, 'No crash reporting or analytics packages, and no backend error alerts. Dev and prod have one uptime alert each.', 'S', 'pubspec.yaml; Cloud Monitoring API: 0 policies')
-put('O-03', PA, 'Daily backups kept 14 days are on for all three projects, with point-in-time recovery on dev and prod. No restore has been rehearsed.', 'S', 'gcloud firestore backups schedules list; databases describe; docs/ops/backups-and-alerts.md')
-put('O-04', NB, 'No email sending or domain setup in the repo.', 'S')
-put('O-05 O-07', NR, 'Needs store console access or a visit to the venue.')
-put('O-06 O-08', NB, 'No release freeze or on-call plan.', 'S')
-put('U-01', PA, 'The dashboard is fine at 200% text. Other screens are untested, and family and volunteer screens do not exist.', 'M', '`U-01` test')
-put('U-02', PA, 'Dashboard tap targets are labelled and sized. Other screens are untested.', 'M', '`U-02` test')
-put('U-03', FA, 'Gujarati is lost from PDF reports: Latin text extracts, Gujarati does not. Phone, web and email rendering are untested. Also see issue #29.', 'S', '`U-03` tests (1 pass, 1 fail)')
-put('U-04', PA, 'The current palette is checked by existing tests. New screens are not built.', 'S', 'test/app/core/constants/app_colors_contrast_test.dart')
-put('U-05', NR, 'Needs a real session with an older user, once the screens exist.')
-put('N-00', PS, 'Push goes only through a mocked transport on the emulator. Email has no transport at all yet.', '', '`N-00` test')
-put('N-07 N-12 N-13 N-17 N-19 N-20 N-22 N-23', NB, 'No email, segments, scheduled messages, history or de-duplication.', 'L')
-put('N-08', PA, 'A daily digest exists, but it is opt-in, fires at 9:00am, and summarises tasks rather than an agenda.', 'M', '`N-08` test, onDigestSummary.ts:14')
-put('N-09', NB, 'Reminders exist for tasks only. Quiet hours also use the profile time zone, so F5\'s 6:45pm reminder would be dropped.', 'M', '`N-09` test')
-put('N-10', PA, 'The quiet-hours window is right for each time zone, but a blocked message is dropped rather than sent at 7:00am.', 'M', '`N-10` tests (1 pass, 1 fail), suppress.ts')
-put('N-11', PA, 'Urgent chat bypasses quiet hours, which is the path a live update could use. There is no schedule-change message or email.', 'M', '`N-11` test')
-put('N-14', PA, 'Urgent chat exists, but a muted event blocks it, so a lost-child alert can be missed. No issue categories.', 'S', '`N-14` test')
-put('N-16', PA, 'Per-category opt-out works for push. No email categories.', 'S', '`N-16` test')
-put('N-18', PA, 'Dead tokens are removed. Failures are not logged anywhere staff can see, and there is no email fallback.', 'M', '`N-18` tests (1 pass, 1 fail)')
-put('N-21', PA, 'Per-recipient language lookup exists, with English templates only.', 'M', '`N-21` test')
-
-missing = [i for i in titles if i not in A]
-extra = [i for i in A if i not in titles]
-assert not missing and not extra, (missing, extra)
 
 # --- real results ---
-res = {}
-def note(i, ok):
-    res.setdefault(i, []).append(ok)
+flutter, f_errors = read_flutter(sys.argv[1])
+jest, j_errors = read_jest(sys.argv[2])
+assert not f_errors and not j_errors, f_errors + j_errors
+summary = {}
+for item in flutter + jest:
+    name, passed = item[0], item[1]
+    if len(item) > 2 and item[2]:
+        continue  # skipped: a registered gap, not a result
+    for i in ids_in(name):
+        if i in record:
+            ok, bad = summary.get(i, (0, 0))
+            summary[i] = (ok + passed, bad + (not passed))
 
-for line in open(sys.argv[1]):
-    try:
-        e = json.loads(line)
-    except ValueError:
-        continue
-    if not isinstance(e, dict):
-        continue
-    if e.get('type') == 'testStart':
-        res.setdefault('_names', {})[e['test']['id']] = e['test']['name']
-    if e.get('type') == 'testDone' and not e.get('hidden'):
-        name = res['_names'][e['testID']]
-        m = re.findall(r'\b([A-Z]-\d\d) ', name)
-        if m:
-            note(m[-1], e['result'] == 'success')
-res.pop('_names')
-for t in json.load(open(sys.argv[2]))['testResults']:
-    for a in t['assertionResults']:
-        # Later scenario families, such as FND, are not in this report.
-        if a['title'][:4] in A:
-            note(a['title'][:4], a['status'] == 'passed')
+problems = []
+for i, row in record.items():
+    s = row['status']
+    ok, bad = summary.get(i, (0, 0))
+    if row['tested'] != (i in summary):
+        problems.append(f'{i}: tested is {row["tested"]}, but results {"exist" if i in summary else "do not"}')
+    if s == PS and bad:
+        problems.append(f'{i}: PASS with {bad} failing tests')
+    if s == FA and not bad:
+        problems.append(f'{i}: FAIL with no failing test')
+    if s in (NB, PL) and ok:
+        problems.append(f'{i}: {s} with {ok} passing tests')
+    if i in finished and s != PS:
+        problems.append(f'{i}: finished in CI but recorded as {s}')
+assert not problems, '\n'.join(problems)
 
-summary = {k: (sum(v), len(v) - sum(v)) for k, v in res.items()}
-for i, (ok, bad) in summary.items():
-    s = A[i][0]
-    if s == PS:
-        assert bad == 0, i
-    if s == FA:
-        assert i in ('U-03', 'S-01') and bad > 0, i
-    if s == PA:
-        assert ok > 0 or i in ('N-21', 'N-14', 'N-08', 'Z-04'), (i, ok, bad)
-    if s == NB:
-        assert ok == 0, i
-assert A['U-01'][0] == PA and summary['U-01'] == (1, 0)
 total_ok = sum(v[0] for v in summary.values())
 total_bad = sum(v[1] for v in summary.values())
-
-json.dump(
-    [
-        dict(id=i, title=titles[i], status=A[i][0], gap=A[i][1], tested=i in res)
-        for i in titles
-    ],
-    open('test_acceptance/fixtures/scenarios.json', 'w', encoding='utf-8'),
-    ensure_ascii=False,
-    indent=1,
-)
+overall = Counter(r['status'] for r in record.values())
+sha = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], capture_output=True, text=True).stdout.strip()
 
 SEC = OrderedDict([
     ('A', 'Event setup'), ('L', 'Login'), ('B', 'Registration'), ('C', 'Fees and payments'),
@@ -171,9 +121,7 @@ SEC = OrderedDict([
     ('K', 'After the event'), ('X', 'Tool integration'), ('S', 'Scale'), ('R', 'Safety'),
     ('Z', 'Privacy'), ('O', 'Operations'), ('U', 'Accessibility'), ('N', 'Notifications'),
 ])
-ST = [PS, PA, FA, NB, VN, NR]
-counts = {k: Counter(A[i][0] for i in titles if i[0] == k) for k in SEC}
-overall = Counter(A[i][0] for i in titles)
+counts = {k: Counter(r['status'] for i, r in record.items() if i[0] == k) for k in SEC}
 
 
 def cell(s):
@@ -183,119 +131,127 @@ def cell(s):
 o = []
 w = o.append
 w('# Derod Gaam Convention 2027: Test Report (v3)\n')
-w(f'**Test spec:** [`CREWPOINT_CONVENTION_TEST_v3.md`](CREWPOINT_CONVENTION_TEST_v3.md) · **Run:** Nov 3, 2026 · **Branch:** `test/derod-convention-v2`, on `main` at `51f5cb8`, including PRs #39 and #40\n')
-w(f'**Result: CrewPoint is not ready for this event, and most of the event-specific product does not exist yet.** Of {len(titles)} scenarios, {overall[PS]} passes, {overall[PA]} are partial, {overall[FA]} fail, {overall[NB]} are not built, {overall[VN]} belong to the tool you are buying, and {overall[NR]} need a person or outside access. The task, budget-split, chat and push foundations are sound, but they need permissions, Gujarati, email and an import path before they can serve this event.\n')
-w('**Most urgent, because they apply before any real data arrives:**\n')
-w('1. Choose the registration tool. The requirements in section 4 narrow the field quickly.')
-w('2. Change the privacy policy. It says CrewPoint is not for under-13s, and this event registers 3-year-olds.')
-w('3. Fix permissions. Every member can read all money today, which breaks your committee and volunteer rules.')
-w('4. Deploy PR #40 to prod, and rehearse a restore. Backups are on, but none has been restored yet.\n')
+w(f'**Test spec:** [`CREWPOINT_CONVENTION_TEST_v3.md`](CREWPOINT_CONVENTION_TEST_v3.md) · **Run:** {RUN_DATE}, at the end of Stage 1, on `main` at `{sha}` · **First run:** Nov 3, 2026\n')
+w(f'**Result: Stage 1, the platform foundation, is complete, but CrewPoint cannot run this event yet.** Registration and payments arrive in Stage 2, email and Gujarati in Stage 3, and event-day check-in in Stage 5. Of {len(titles)} scenarios, {overall[PS]} pass, {overall[PA]} are partial, {overall[FA]} fails, {overall[NB]} are not built, {overall[PL]} are platform requirements for later stages, and {overall[NR]} need a person or outside access. On Nov 3, 2 passed.\n')
+w('**What Stage 1 changed for this event:**\n')
+w('- **Permissions:** twelve preset roles plus custom ones, checked in the rules and on the server, with money kept from everyone who should not see it (H-01, H-05, H-06, H-07).')
+w('- **People:** attendees and groups, children included, with custom fields, private details and age bands, a roster import with re-import and cancellations, and accounts linked to their own records by verified email (X-01…X-06, Z-01, PA-05).')
+w('- **Schedule:** sessions and venues, attendance policies and a personal agenda that works offline (A-01, A-02, A-05, J-05, J-06).')
+w('- **Counts:** headcounts and per-session counts on the server, with CSV export and frozen counts for suppliers (B-04, B-05, B-10, B-14).')
+w('- **Scale and safety net:** no 50-member cap, long-lived invites, paged chat, measured load at 400 and 2,000 people, rehearsed restores, crash reporting, backend error alerts and an outside billing check (S-01, S-02, S-07, S-08, O-01…O-03).\n')
+w('**Most urgent now:**\n')
+w('1. **Get the privacy policy approved by a lawyer.** Stage 1 runs only on dev until then, and prod still has the code from before Stage 1 (Req 39).')
+w('2. **Choose how registration opens.** Building it is Stage 2. A bought tool, brought in through the roster import, is the stopgap if registration must open first (L6).')
+w('3. **Finish the live checks on dev:** Apple sign-in (L-02), and setting up each event type from its template on a real phone and on web (#95).')
+w('4. **Set up an email domain** before Stage 3 needs it (O-04).\n')
 w('**How far to trust this:**\n')
-w(f'- {total_ok + total_bad} tests ran against the real app code and backend code: {total_ok} passed and {total_bad} failed. A failure here is a finding, and these tests sit outside CI so they don\'t block normal work.')
-w('- The tests ran on emulators with mocked push, and no real message was sent. Separately, H-07 was confirmed on live dev and stg with throwaway accounts, which were then deleted.')
-w('- Timings come from a Mac and a local emulator. Expect phones to be slower, and real delivery times are unmeasured.')
-w('- NOT BUILT comes from reading and searching the code. Those scenarios are registered as skipped tests, with the reason.')
-w('- PRs #39 (settlement fix) and #40 (removed members) are merged. #40 is deployed to dev and stg, and **prod still has the old rules and functions**. The Flutter results predate these merges, which changed no code those tests cover.\n')
+w(f'- {total_ok + total_bad} acceptance tests ran against the real app and backend code: {total_ok} passed and {total_bad} failed. A failure is a planned gap for a later stage unless the scenario is on the finished list, which CI protects.')
+w('- The tests run on emulators with mocked push, and no message was sent. Live checks were made on dev, with throwaway data: the Stage 1 rollout, Google sign-in and linking (L-01), crash reporting on iOS, Android and web (O-02), both alert emails reaching both inboxes (O-01, O-02), and a restore (O-03).')
+w('- Timings come from a Mac and local emulators ([load baselines](load-baselines.md)). Expect phones to be slower, and real delivery times are unmeasured.')
+w('- NOT BUILT comes from reading and searching the code. Those scenarios are registered as skipped tests, with the reason.\n')
 w('## 1. Inventory\n')
 w('| Area | Today |\n|---|---|')
 for a, b in [
-    ('Stack', 'Flutter 3.47 (iOS, Android, web), Firebase Auth, Firestore, Storage, Messaging, 16 Cloud Functions on Node 22, Drift on mobile'),
-    ('Data models', 'Events, tasks with checklists, expenses with splits, chat messages, users. **No** family, attendee, schedule, sponsor, vendor, shift or check-in model'),
-    ('Auth', 'Google, Apple, email and password. **No** phone or email one-time code'),
-    ('Roles', 'Owner, admin and member only, enforced in rules and functions. No finance, committee, volunteer or family roles'),
+    ('Stack', 'Flutter 3.47 (iOS, Android, web), Firebase Auth, Firestore, Storage, Messaging, 52 Cloud Functions on Node 22, Drift on mobile'),
+    ('Templates', 'Blank, Party, Wedding, Cricket tournament, Golf outing and Convention, plus templates saved from an event. The same code serves every type'),
+    ('Data models', 'Events with modules, labels, statuses and time zones; roles, crews and member documents; attendees and groups with custom fields and private details; sessions and venues; counts and frozen counts; tasks, expenses and chat. **No** registration, payment, pass, sponsor, vendor, shift or check-in model'),
+    ('Auth', 'Google, Apple, email and password, with accounts linked to attendee records by verified email. **No** phone or email one-time code'),
+    ('Roles', 'Twelve presets and custom roles from a permission catalogue, co-owners and ownership transfer, crews, and own-group access for a group\'s adults'),
     ('Payments', 'None processed. Settle-up records payments between members and opens Venmo or Cash App links; it cannot collect fees'),
-    ('Notifications', 'Push only, with 7 categories, per-category preferences, event mute, dead-token cleanup and English templates. Quiet hours **drop** messages. No email, SMS, scheduled messages, segments, delivery log or history'),
-    ('Scheduling', 'Two jobs: task due reminders every 15 minutes and an hourly digest check. Neither takes an injectable clock'),
-    ('Offline', 'Reads work on mobile through the Drift copy. Firestore queues writes, but nothing covers check-in rules or conflicts'),
-    ('Languages', 'English only. The string layer is designed for more, but no Gujarati exists'),
-    ('Limits', '50 members per event, invite codes last 24 hours, one invite code per event, PDF reports stop at 200 expenses'),
-    ('Existing tests', '865 Flutter tests passing and 4 skipped on `main`, and 169 backend tests passing. One flaky timing test was seen once under load'),
+    ('Notifications', 'Push only, with per-category preferences, event mute and dead-token cleanup, reading recipients in batches up to 5,000. Quiet hours still **drop** messages. No email, SMS, scheduled messages, segments or delivery log'),
+    ('Scheduled jobs', 'Task reminders, the digest, event status changes, counts every 5 minutes and import cleanup'),
+    ('Offline', 'Schedule, agenda, tasks and chat read from the device copy, showing when they were last updated. Firestore queues writes, but nothing covers check-in rules or conflicts'),
+    ('Languages', 'English only. Labels are renameable per event, and the string layer is ready for Gujarati'),
+    ('Limits', 'An optional member limit per event; invites last until the event starts or up to 400 days; the expense PDF stops at 200 expenses'),
+    ('Operations', 'Daily backups with a rehearsed restore, point-in-time recovery, uptime and backend error alerts, an hourly billing check outside Google Cloud, and crash reporting (dev)'),
+    ('Tests', '1,574 Flutter tests and 1,265 backend tests pass, plus the acceptance suites. Every preset role is checked against every restricted path'),
 ]:
     w(f'| {a} | {b} |')
 w('\n## 2. Scorecard\n')
+w('PLATFORM marks what the first run expected a bought tool to do. CrewPoint now builds these itself, in the stage shown in section 3 (L6).\n')
 w('| Section | ' + ' | '.join(ST) + ' | Total |\n|---|' + '---:|' * (len(ST) + 1))
 for k, name in SEC.items():
     c = counts[k]
     w(f'| {k}: {name} | ' + ' | '.join(str(c[s]) if c[s] else '·' for s in ST) + f' | {sum(c.values())} |')
 w('| **Total** | ' + ' | '.join(f'**{overall[s]}**' for s in ST) + f' | **{len(titles)}** |')
-w('\n### 2.1 Cost estimate (S-08)\n')
-w('A rough, worst-case model, not a measurement. Chat loads the whole history, so 400 people opening a 5,000-message chat 5 times a day could mean up to **10 million Firestore reads a day**, or low single-digit dollars a day at list prices as I recall them (check current pricing). Offline caching should reduce this. Cost is not the main risk; the 53-second slowdown per message is. Limiting chat history fixes both. SMS would be the largest variable cost if you adopt it, especially for UK numbers.\n')
+w('\n### 2.1 Cost (S-08)\n')
+w('Measured on emulators rather than modelled: a count run reads about 1.3 documents per person, a roster page 51, and a push 2 per recipient. Chat now loads 50 messages at a time and stores only what changed, which removed the first run\'s worst case of 10 million reads a day. Costs and the monthly estimate are in [load baselines](load-baselines.md).\n')
 w('## 3. Results\n')
-w('| ID | Scenario | Status | Evidence | Gap | Effort | Needed by |\n|---|---|---|---|---|---|---|')
+w('| ID | Scenario | Status | Evidence | Gap | Next | Needed by |\n|---|---|---|---|---|---|---|')
 for i, t in titles.items():
-    s, gap, eff, ev = A[i]
+    row = record[i]
     if i in summary:
         ok, bad = summary[i]
-        ev = ev or f'`{i}` test'
+        ev = f'`{i}` tests ({ok} pass' + (f', {bad} fail)' if bad else ')')
+    elif row['status'] == PS:
+        ev = 'Manual, recorded'
+    else:
+        ev = '·'
     t2 = t if len(t) < 90 else t[:87].rsplit(' ', 1)[0] + '…'
-    w(f'| {i} | {cell(t2)} | {s} | {cell(ev)} | {cell(gap)} | {eff or "·"} | {priority(i)} |')
+    w(f'| {i} | {cell(t2)} | {row["status"]} | {cell(ev)} | {cell(row["gap"])} | {stage(i, row)} | {priority(i)} |')
 w('\n## 4. Priorities by the real calendar\n')
 w('**P0: before announcing registration (Nov–Dec 2026)**\n')
-w('- **Choose the tool.** Check these first, because they are hardest to find: hybrid family fee (C-01), per-person meal choices and arrival times (B-01, B-03), Gujarati forms and emails (B-09, N-01), Zelle pending and offline payments (C-03, C-04), full data export (X-01), and sponsorship items with shared funding (D-02).')
-w('- **Privacy and legal:** Z-01, Z-03, Z-04, Z-05 and Z-06, including the nonprofit\'s legal name, EIN and receipt wording (D-15).')
-w('- **Permissions:** H-05 and H-06, before committee members and real data arrive.')
-w('- **Resilience:** O-01 alert delivery check, O-03 restore rehearsal, O-04 email domain.\n')
+w('- **Legal:** lawyer approval of the privacy policy, then Stage 1 to prod (Z-01, Z-04), the nonprofit\'s legal name, EIN and receipt wording (D-15, Z-06), and the waiver (Z-03).')
+w('- **Registration route:** Stage 2, or a bought tool brought in through the roster import (L6). Either way, the fee rules come first: hybrid family fee (C-01), per-person meal choices and arrival times (B-01, B-03).')
+w('- **Email domain** (O-04).\n')
 w('**P1: sponsorship and hotel push (Jan–Jun 2027)**\n')
-w('- Roster import (X), schedule and venue (A), sub-teams, vendors and budget (H), the 50-member cap (S-01), and app store approval (O-05).')
-w('- Accessibility (U-01…U-04) and notification controls (N-16…N-20).\n')
+w('- Stage 2: registration, payments, receipts, contributions and one-time code sign-in (B, C, D, L-03…L-07).')
+w('- Stage 3: email, scheduled messages that wait out quiet hours, Gujarati and Unicode PDFs (N, J-09, A-03, U-03).')
+w('- App store approval (O-05), and accessibility on every screen (U-01…U-04).\n')
 w('**P2: final week and event days (Jul 2027)**\n')
-w('- QR check-in, offline sync, meal counter, agenda and live updates (J, V), safety (R), and scale rehearsal (S-03…S-07).')
-w('- Event-week messages in both languages, by push and email (N-07…N-14, N-21…N-23). Rehearse before the Jul 9 release freeze (O-06).\n')
+w('- Stage 5: passes, check-in, offline writes, volunteers, live updates and safety (J, V, R, S-05, S-06).')
+w('- Rehearse at scale (S-03, S-04) before the Jul 9 release freeze (O-06), and name who is on call (O-08).\n')
 w('**P3: after the event**\n')
-w('- Reconciliation, sponsor thank-yous, export, and data retention (K, Z-07).\n')
-w('## 5. Top 10 gaps\n')
+w('- Stage 6: reconciliation, vendors, budget lines, full export and data retention (K, H-03, H-04, Z-07).\n')
+w('## 5. Top gaps\n')
 for n, (title, body) in enumerate([
-    ('No event data in CrewPoint', 'Build a roster import from the tool\'s export into new family and attendee models (X-01…X-06). Everything on event days depends on it. Decide the export format once the tool is chosen.'),
-    ('Permissions do not match your roles', 'Add finance, committee, volunteer and family roles. Move money into documents only finance and admins can read, since Firestore rules cannot hide single fields. Add a test per role (H-05, H-06).'),
-    ('Privacy policy excludes this event\'s children', 'Update the policy with counsel, add parental entry, and show age bands rather than birth dates (Z-01).'),
-    ('No Gujarati', 'Add the Gujarati strings through the existing string layer, a language setting, translated templates and a PDF font that supports Gujarati. Use a human translator and keep the spelling check (A-03, J-09, N-21, U-03).'),
-    ('No email', 'Add an email provider with an authenticated domain, unsubscribe and bounce handling. Web-only families depend on it (N-07, N-22, O-04).'),
-    ('No check-in or offline event-day flow', 'Build family QR tokens, a scanner, the limited name search, an offline queue with a clear conflict rule, and a printed fallback (J, V). This is the largest single build, so prototype it early and test it at the hotel.'),
-    ('Scale limits', 'Replace the 50-member cap, and load chat in pages while saving only what changed. That one change removes the 53-second slowdown and most of the read cost (S-01, S-07).'),
-    ('Messages are dropped, not delayed, and cannot be scheduled', 'Add a scheduled message queue that holds quiet-hours messages until 7:00am, uses event time during the event, and supports per-person content. Emergency alerts should ignore event mute (N-09, N-10, N-14, S-03).'),
-    ('Account deletion leaves personal data behind', 'Remove the user ID from expense splits and tasks, and delete `chatReads` and `eventMutes`. The privacy policy promises anonymised records, so this is a compliance gap, and it can also split one deleted person into two in the ledger (Z-04).'),
-    ('No safety net', 'Backups and outage alerts are now on. Rehearse a restore, add crash reporting and an outside billing check, and name an on-call person. Small tasks, and the Nov 2 billing outage shows why they matter (O-01…O-03, O-08).'),
+    ('No registration or payments', 'Families cannot register or pay in CrewPoint until Stage 2. Until then, a bought tool and the roster import, which is built and tested, are the route (B, C, D, X-04).'),
+    ('Prod is still on the code from before Stage 1', 'Every Stage 1 change waits for the lawyer\'s approval of the privacy policy, and runs only on dev (Req 39).'),
+    ('No email', 'Web-only families depend on it. It needs an authenticated domain, unsubscribe and bounce handling (N, O-04, Z-05). Stage 3.'),
+    ('No Gujarati', 'Strings, a language setting, translated templates and a PDF font that supports Gujarati, with a human translator (A-03, J-09, U-03, N-21). Stage 3.'),
+    ('Messages are dropped, not delayed, and mute blocks urgent alerts', 'Quiet hours drop a message instead of sending it at 7:00am, and a muted event blocks a lost-child alert (N-10, N-14). Stage 3\'s scheduled queue must fix both.'),
+    ('No event-day flow', 'Passes, a scanner, the limited name search, offline writes with a clear conflict rule, volunteers and live updates (J, V). This is the largest single build, in Stage 5.'),
+    ('No safety features', 'Incident reports, medical and allergy flags, and lost-child handling (R). Stage 5.'),
+    ('The expense PDF stops at 200 expenses', 'The CSV is complete, but the PDF is not, and there is no full export (K-03). Stage 6.'),
 ], 1):
     w(f'{n}. **{title}.** {body}')
 w('\n## 6. Testability gaps\n')
 for g in [
-    '**No clock seam in the backend.** `sendCategorizedPush` and the scheduled jobs call `new Date()` directly. The N-10 test works around it by faking only `Date` in Jest. Anything that schedules messages should take a clock.',
+    '**No clock seam in the push and scheduled jobs.** `sendCategorizedPush`, `onTaskDueScheduled` and `onDigestSummary` call `new Date()` directly, so the N-10 test fakes `Date` in Jest. Stage 3\'s scheduled messages should take a clock, as counts already do.',
     '**No email or SMS transport to mock.** N-00 can only prove safety for push.',
-    '**Scheduled jobs have no recipient-level result.** `sendCategorizedPush` returns only counts, and skipped messages are not recorded, so recipient assertions must inspect the mock.',
-    '**Real sign-in and real delivery.** Google and Apple sign-in, APNs and FCM delivery need real devices and accounts (L-01, L-02).',
-    '**Not checked: Storage rules, store listings, venue network.**',
-    '**Live device testing was stopped at your request** before any test account was created. The Android and iOS builds succeeded, and the app launched on both. A manual two-account pass on dev is still worth doing for the features that exist.',
-    '**Vendor scenarios** cannot run until a tool is chosen. Rerun them against the tool, using the same fixture.',
+    '**Pushes have no recipient-level result.** `sendCategorizedPush` returns only counts, so recipient assertions inspect the mock.',
+    '**Real delivery.** APNs and FCM delivery need real devices. Apple sign-in still needs its live check (L-02).',
+    '**Not checked: store listings and the venue network** (O-05, O-07).',
 ]:
     w(f'- {g}')
 w('\n## 7. Assumptions\n')
 w('| Assumption | What the app does now | Recommendation |\n|---|---|---|')
 for a, b, c in [
-    ('A 1-adult family pays $300', 'No fee logic. Tool requirement', 'Confirm'),
-    ('Age is computed on Jul 16, 2027', 'No age data', 'Keep, and collect birth year or an under-18 flag if the tool allows, to hold less about children'),
-    ('The buy/CrewPoint split in §1.1', 'New', 'Confirm, especially sponsorships'),
-    ('Sign-in with Google, then email code, is one account (L-06)', 'Not built; depends on the tool', 'Keep'),
+    ('A 1-adult family pays $300', 'No fee logic. Stage 2', 'Confirm'),
+    ('Age is computed on Jul 16, 2027', 'Age bands come from the private birth date, on the event\'s first day', 'Keep'),
+    ('Registration is built, with a bought tool as a stopgap (L6)', 'The roster import is ready for a tool\'s export', 'Decide by December'),
+    ('Sign-in with Google, then email code, is one account (L-06)', 'No email code yet. Stage 2', 'Keep'),
     ('Bhajan Prasad accepts any amount before one is set', 'Not built', 'Keep'),
     ('Pledged-but-unpaid sponsors appear on the thank-you list', 'Not built', 'Confirm: consider listing only after receipt'),
     ('F5\'s pre-event nights get the group rate', 'Outside the app', 'Ask the hotel'),
-    ('Volunteers can search by family name if QR fails', 'Not built', 'Keep, with logging'),
+    ('Volunteers can search by family name if QR fails', 'Not built. Stage 5', 'Keep, with logging'),
     ('Duplicate who already paid goes to finance', 'Not built', 'Keep'),
-    ('Walk-ins past capacity need admin override', 'Not built', 'Confirm the real hall limit with the hotel'),
+    ('Walk-ins past capacity need admin override', 'Capacity is a setting, compared with the counts', 'Confirm the real hall limit with the hotel'),
     ('Paid families are not re-billed after a fee change', 'Not built', 'Keep'),
     ('Pay-at-check-in families get no unpaid reminder', 'Not built', 'Keep, with one reminder in N-07'),
     ('Web-only users get no session reminders', 'No email at all', 'Keep; email every 15 minutes would be noise'),
     ('Quiet hours are 9:00pm–7:00am, deferred not dropped', 'User-set window; **drops** messages', 'Keep; requires a build'),
-    ('Event time applies to quiet hours Jul 16–19', 'Uses the profile time zone', 'Keep; requires a build'),
+    ('Event time applies to quiet hours Jul 16–19', 'Events have a time zone, but quiet hours use the profile\'s', 'Keep; requires a build'),
     ('Pledge reminders stop at event start', 'Not built', 'Confirm'),
     ('Event-day messages reach each family member with a login', 'Not built', 'Keep'),
     ('Shift reminders the day before at 6:00pm, and 30 minutes before', 'Not built', 'Keep'),
     ('Opted-out families still get receipts and live changes', 'Per-category opt-out exists for push', 'Keep, and have counsel check it against email rules'),
     ('Lost-child alerts re-send after 2 minutes with no acknowledgement', 'Not built', 'Confirm with whoever runs safety'),
-    ('Registration is a bought tool even for per-meal data', 'New', 'If no tool handles per-meal choices, collect them in a follow-up form and import'),
 ]:
     w(f'| {a} | {b} | {c} |')
 w('\n**Owner input still needed:** nonprofit legal name and EIN, refund policy (C-13), who absorbs card fees (C-20), waiver text (Z-03), whether to adopt SMS for emergencies (N-14).\n')
 w('## How to re-run\n')
-w('```bash\nflutter test test_acceptance/\ncd functions && npm run test:acceptance\n```')
+w('Keep each scenario\'s status and gap in `test_acceptance/fixtures/scenarios.json` as work lands, then:\n')
+w('```bash\nflutter test test_acceptance/ --reporter json > flutter.json\n(cd functions && firebase emulators:exec --project demo-crewpoint --only firestore,auth \\\n  "npx jest --runInBand --config jest.acceptance.config.js --json --outputFile=../jest.json")\npython3 test_acceptance/generate_report.py flutter.json jest.json\n```')
 open(OUT, 'w', encoding='utf-8').write('\n'.join(o) + '\n')
-print('wrote', OUT, 'scenarios', len(titles), dict(overall), 'tests pass/fail', total_ok, total_bad)
+print(f'wrote {OUT}: {dict(overall)}; {total_ok} passed, {total_bad} failed')
