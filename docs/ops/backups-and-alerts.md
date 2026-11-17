@@ -132,7 +132,7 @@ Then add an alert policy on the `uptime_check/check_passed` metric, with an emai
 
 ### Outside billing check
 
-Monitoring lives in the same projects that can lose billing, so it may not alert during the very failure it is meant to catch. So `.github/workflows/billing-check.yml` checks from GitHub Actions, every hour at 17 past, that billing is on for dev, stg and prod. If any project has billing off, or the check cannot sign in or read it, the run fails and emails derodian@gmail.com and admin@sookoon.space through Gmail.
+Monitoring lives in the same projects that can lose billing, so it may not alert during the very failure it is meant to catch. So `.github/workflows/billing-check.yml` checks from GitHub Actions, every hour at 43 past, that billing is on for dev, stg and prod. If any project has billing off, or the check cannot sign in or read it, the run fails and emails derodian@gmail.com and admin@sookoon.space through Gmail.
 
 How it is set up:
 
