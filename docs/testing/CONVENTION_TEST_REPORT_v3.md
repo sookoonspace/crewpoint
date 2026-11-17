@@ -1,8 +1,8 @@
 # Derod Gaam Convention 2027: Test Report (v3)
 
-**Test spec:** [`CREWPOINT_CONVENTION_TEST_v3.md`](CREWPOINT_CONVENTION_TEST_v3.md) · **Run:** Nov 17, 2026, at the end of Stage 1, on `main` at `76a6334` · **First run:** Nov 3, 2026
+**Test spec:** [`CREWPOINT_CONVENTION_TEST_v3.md`](CREWPOINT_CONVENTION_TEST_v3.md) · **Run:** Nov 17, 2026, at the end of Stage 1, on `main` at `07d76e9` · **First run:** Nov 3, 2026
 
-**Result: Stage 1, the platform foundation, is complete, but CrewPoint cannot run this event yet.** Registration and payments arrive in Stage 2, email and Gujarati in Stage 3, and event-day check-in in Stage 5. Of 157 scenarios, 30 pass, 14 are partial, 1 fails, 47 are not built, 61 are platform requirements for later stages, and 4 need a person or outside access. On Nov 3, 2 passed.
+**Result: Stage 1, the platform foundation, is complete, but CrewPoint cannot run this event yet.** Registration and payments arrive in Stage 2, email and Gujarati in Stage 3, and event-day check-in in Stage 5. Of 157 scenarios, 31 pass, 14 are partial, 1 fails, 47 are not built, 61 are platform requirements for later stages, and 3 need a person or outside access. On Nov 3, 2 passed.
 
 **What Stage 1 changed for this event:**
 
@@ -16,13 +16,13 @@
 
 1. **Get the privacy policy approved by a lawyer.** Stage 1 runs only on dev until then, and prod still has the code from before Stage 1 (Req 39).
 2. **Choose how registration opens.** Building it is Stage 2. A bought tool, brought in through the roster import, is the stopgap if registration must open first (L6).
-3. **Finish the live checks on dev:** Apple sign-in (L-02), and setting up each event type from its template on a real phone and on web (#95).
+3. **Finish the live check on dev:** setting up each event type from its template on a real phone and on web (#95).
 4. **Set up an email domain** before Stage 3 needs it (O-04).
 
 **How far to trust this:**
 
 - 93 acceptance tests ran against the real app and backend code: 82 passed and 11 failed. A failure is a planned gap for a later stage unless the scenario is on the finished list, which CI protects.
-- The tests run on emulators with mocked push, and no message was sent. Live checks were made on dev, with throwaway data: the Stage 1 rollout, Google sign-in and linking (L-01), crash reporting on iOS, Android and web (O-02), both alert emails reaching both inboxes (O-01, O-02), and a restore (O-03).
+- The tests run on emulators with mocked push, and no message was sent. Live checks were made on dev, with throwaway data: the Stage 1 rollout, Google and Apple sign-in and linking (L-01, L-02), crash reporting on iOS, Android and web (O-02), both alert emails reaching both inboxes (O-01, O-02), and a restore (O-03).
 - Timings come from a Mac and local emulators ([load baselines](load-baselines.md)). Expect phones to be slower, and real delivery times are unmeasured.
 - NOT BUILT comes from reading and searching the code. Those scenarios are registered as skipped tests, with the reason.
 
@@ -51,7 +51,7 @@ PLATFORM marks what the first run expected a bought tool to do. CrewPoint now bu
 | Section | PASS | PARTIAL | FAIL | NOT BUILT | PLATFORM | NOT RUN | Total |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | A: Event setup | 3 | 1 | · | 1 | · | · | 5 |
-| L: Login | 1 | · | · | · | 5 | 1 | 7 |
+| L: Login | 2 | · | · | · | 5 | · | 7 |
 | B: Registration | 4 | · | · | · | 11 | · | 15 |
 | C: Fees and payments | · | · | · | · | 20 | · | 20 |
 | D: Sponsorships | · | · | · | · | 15 | · | 15 |
@@ -66,7 +66,7 @@ PLATFORM marks what the first run expected a bought tool to do. CrewPoint now bu
 | O: Operations | 3 | · | · | 3 | · | 2 | 8 |
 | U: Accessibility | · | 3 | 1 | · | · | 1 | 5 |
 | N: Notifications | 1 | 7 | · | 9 | 7 | · | 24 |
-| **Total** | **30** | **14** | **1** | **47** | **61** | **4** | **157** |
+| **Total** | **31** | **14** | **1** | **47** | **61** | **3** | **157** |
 
 ### 2.1 Cost (S-08)
 
@@ -82,7 +82,7 @@ Measured on emulators rather than modelled: a count run reads about 1.3 document
 | A-04 | Donation item list from §1 loaded, incl. a closed item (Gala Dinner) and an item with… | NOT BUILT | · | No donation item model. Contributions arrive in Stage 2. | Stage 2 | P1 |
 | A-05 | Map/directions entries: hotel address, Garland Hall, picnic park (TBD), parking. | PASS | `A-05` tests (1 pass) | Built in #81: venues hold an address (or to be announced), a map link and directions, listed by venue on the schedule. | · | P1 |
 | L-01 | Google sign-in creates an account. | PASS | Manual, recorded | Manual, in #94, on crewpoint-dev on Nov 17, 2026. Google sign-in worked live on the iOS simulator (iPhone 16) and on the dev website, with a test account that already used a password: Google was added to that account rather than creating a second one. Linking by verified email worked live twice: after sign-in the test account was linked to a throwaway participant carrying its email and joined the event as a Participant, and the event's owner, signing in with Google on the simulator, was linked without losing the Owner role. Signing in again on web linked nothing new, as expected. Creating a brand-new account is covered by unit tests, because both test accounts already existed. The throwaway event was deleted afterwards. | · | P0 |
-| L-02 | Apple sign-in creates an account. | NOT RUN | · | Not yet run live, in #94: the Apple ID used for testing was locked on Nov 17, 2026. Linking by verified email, which Apple sign-in uses the same way, was checked live with Google (see L-01). To finish: sign in with Apple on the iOS simulator, choosing Share My Email. | · | P0 |
+| L-02 | Apple sign-in creates an account. | PASS | Manual, recorded | Manual, in #94, on crewpoint-dev on Nov 17, 2026. Apple sign-in worked live on the iOS simulator (iPhone 16e, iOS 26.3), sharing the real email: Apple was added to the owner's existing account (which already used Google) rather than creating a second one, the email stayed verified, and the Owner role was kept. Creating a brand-new account is covered by unit tests, because the test account already existed. Linking by verified email works the same way for Apple and was checked live with Google (see L-01). | · | P0 |
 | L-03 | Phone one-time code login (Meera, F3). | PLATFORM | · | Platform requirement for Stage 2 (one-time code sign-in and RSVP links), now built into CrewPoint rather than a bought tool (L6). | Stage 2 | P0 |
 | L-04 | Email one-time code login (Savita, F4, web only). | PLATFORM | · | Platform requirement for Stage 2 (one-time code sign-in and RSVP links), now built into CrewPoint rather than a bought tool (L6). | Stage 2 | P0 |
 | L-05 | Family contact invites a family member; invitee gets access to **that family only**. | PLATFORM | · | Platform requirement for Stage 2 (one-time code sign-in and RSVP links), now built into CrewPoint rather than a bought tool (L6). | Stage 2 | P0 |
@@ -273,7 +273,7 @@ Measured on emulators rather than modelled: a count run reads about 1.3 document
 - **No clock seam in the push and scheduled jobs.** `sendCategorizedPush`, `onTaskDueScheduled` and `onDigestSummary` call `new Date()` directly, so the N-10 test fakes `Date` in Jest. Stage 3's scheduled messages should take a clock, as counts already do.
 - **No email or SMS transport to mock.** N-00 can only prove safety for push.
 - **Pushes have no recipient-level result.** `sendCategorizedPush` returns only counts, so recipient assertions inspect the mock.
-- **Real delivery.** APNs and FCM delivery need real devices. Apple sign-in still needs its live check (L-02).
+- **Real delivery.** APNs and FCM delivery need real devices.
 - **Not checked: store listings and the venue network** (O-05, O-07).
 
 ## 7. Assumptions
