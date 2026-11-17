@@ -237,21 +237,54 @@ Future<String?> _askName(
   required String title,
   required String label,
   String initial = '',
-}) {
-  final controller = TextEditingController(text: initial);
-  final formKey = GlobalKey<FormState>();
-  final strings = context.strings.people;
-  return showDialog<String>(
-    context: context,
-    builder: (dialog) => AlertDialog(
-      title: Text(title),
+}) => showDialog<String>(
+  context: context,
+  builder: (_) => _NameDialog(title: title, label: label, initial: initial),
+);
+
+/// Owns its text controller, so the controller lives until the dialog has
+/// finished closing. Disposing it when `showDialog` returns crashed the app:
+/// the dialog still rebuilds during its exit, for example as the keyboard
+/// closes.
+class _NameDialog extends StatefulWidget {
+  const _NameDialog({
+    required this.title,
+    required this.label,
+    required this.initial,
+  });
+
+  final String title;
+  final String label;
+  final String initial;
+
+  @override
+  State<_NameDialog> createState() => _NameDialogState();
+}
+
+class _NameDialogState extends State<_NameDialog> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initial,
+  );
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = context.strings.people;
+    return AlertDialog(
+      title: Text(widget.title),
       content: Form(
-        key: formKey,
+        key: _formKey,
         child: TextFormField(
           key: const Key('people.groupName'),
-          controller: controller,
+          controller: _controller,
           autofocus: true,
-          decoration: InputDecoration(labelText: label),
+          decoration: InputDecoration(labelText: widget.label),
           validator: (v) {
             final name = v?.trim() ?? '';
             if (name.isEmpty) return strings.nameRequired;
@@ -262,21 +295,21 @@ Future<String?> _askName(
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(dialog).pop(),
+          onPressed: () => Navigator.of(context).pop(),
           child: Text(context.strings.roles.cancel),
         ),
         TextButton(
           key: const Key('people.groupName.save'),
           onPressed: () {
-            if (formKey.currentState!.validate()) {
-              Navigator.of(dialog).pop(controller.text.trim());
+            if (_formKey.currentState!.validate()) {
+              Navigator.of(context).pop(_controller.text.trim());
             }
           },
           child: Text(strings.save),
         ),
       ],
-    ),
-  ).whenComplete(controller.dispose);
+    );
+  }
 }
 
 /// What managing a group changed, for the roster to follow.

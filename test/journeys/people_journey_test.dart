@@ -325,21 +325,23 @@ void main() {
     await robot.finish();
   });
 
-  testWidgets('stays usable at 5,000 people: one page, and search finds anyone', (
-    tester,
-  ) async {
-    final robot = await open(tester, extra: 5000);
-    expect(find.byKey(const Key('people.roster.more')), findsOneWidget);
-    expect(find.byKey(const Key('people.tile.x4999')), findsNothing);
-    await tester.enterText(
-      find.byKey(const Key('people.roster.search')),
-      'zed 4999',
-    );
-    await tester.pump(const Duration(milliseconds: 400));
-    await robot.settle();
-    expect(find.byKey(const Key('people.tile.x4999')), findsOneWidget);
-    await robot.finish();
-  }, timeout: const Timeout(Duration(minutes: 3)));
+  testWidgets(
+    'stays usable at 5,000 people: one page, and search finds anyone',
+    (tester) async {
+      final robot = await open(tester, extra: 5000);
+      expect(find.byKey(const Key('people.roster.more')), findsOneWidget);
+      expect(find.byKey(const Key('people.tile.x4999')), findsNothing);
+      await tester.enterText(
+        find.byKey(const Key('people.roster.search')),
+        'zed 4999',
+      );
+      await tester.pump(const Duration(milliseconds: 400));
+      await robot.settle();
+      expect(find.byKey(const Key('people.tile.x4999')), findsOneWidget);
+      await robot.finish();
+    },
+    timeout: const Timeout(Duration(minutes: 3)),
+  );
 
   testWidgets('an organizer links an adult to a group, who can then see it', (
     tester,
@@ -351,11 +353,28 @@ void main() {
     await robot.pickMembers(const Key('people.group.adult.choose'), ['plain']);
     await robot.tap(const Key('people.group.saveAdults'));
     expect(harness.calls.calls, contains('setGroupAdults:f2:plain'));
-    final plain = await harness.firestore
-        .doc('$e/members/plain')
-        .get();
+    final plain = await harness.firestore.doc('$e/members/plain').get();
     expect(plain.data()!['groupIds'], ['f2']);
     expect(plain.data()!['permissions'], contains('group.editOwn'));
+    await robot.finish();
+  });
+
+  testWidgets('a new group is named while the keyboard closes, without a '
+      'crash', (tester) async {
+    final robot = await open(tester, location: '$people/new');
+    await robot.tap(const Key('people.edit.group'));
+    await robot.tap(const Key('people.groupPicker.new'));
+    await tester.enterText(find.byKey(const Key('people.groupName')), 'Desais');
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    addTearDown(tester.view.resetViewInsets);
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('people.groupName.save')));
+    await tester.pump();
+    // The keyboard goes away while the dialog is still closing.
+    tester.view.resetViewInsets();
+    await robot.settle();
+    expect(tester.takeException(), isNull);
+    expect(harness.calls.calls.any((c) => c.endsWith(':Desais')), isTrue);
     await robot.finish();
   });
 
