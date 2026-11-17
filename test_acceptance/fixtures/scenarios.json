@@ -37,15 +37,15 @@
  {
   "id": "L-01",
   "title": "Google sign-in creates an account.",
-  "status": "NOT RUN",
-  "gap": "Implemented with unit tests, but real Google and Apple sign-in needs a person on a device.",
+  "status": "PASS",
+  "gap": "Manual, in #94, on crewpoint-dev on Nov 17, 2026. Google sign-in worked live on the iOS simulator (iPhone 16) and on the dev website, as westerninnhamilton@gmail.com, whose dev account already used a password: Google was added to that account rather than creating a second one. Linking by verified email worked live twice: after sign-in the account was linked to a throwaway participant carrying its email and joined the event as a Participant, and derodian@gmail.com, signing in with Google on the simulator, was linked as the owner without losing the Owner role. Signing in again on web linked nothing new, as expected. Creating a brand-new account is covered by unit tests, because both test accounts already existed. The throwaway event was deleted afterwards.",
   "tested": false
  },
  {
   "id": "L-02",
   "title": "Apple sign-in creates an account.",
   "status": "NOT RUN",
-  "gap": "Implemented with unit tests, but real Google and Apple sign-in needs a person on a device.",
+  "gap": "Not yet run live, in #94: the Apple ID for derodian@gmail.com was locked on Nov 17, 2026, and could not be unlocked during a phone outage. Linking by verified email, which Apple sign-in uses the same way, was checked live with Google (see L-01). To finish: sign in with Apple on the iOS simulator as derodian@gmail.com, choosing Share My Email.",
   "tested": false
  },
  {

@@ -1678,7 +1678,7 @@ Run a live check of Google and Apple sign-in on real devices or simulators, incl
 
 ### Acceptance criteria
 - [ ] Google and Apple sign-in are checked live on real devices or simulators.
-- [ ] Linking to a participant through a verified email is checked live.
+- [x] Linking to a participant through a verified email is checked live.
 - [ ] Results are recorded as manual results for L-01 and L-02 in the acceptance report.
 - [ ] Manual results for scenarios L-01, L-02 are recorded. A scenario shared with another Work Item is finished when all of its parts are.
 
