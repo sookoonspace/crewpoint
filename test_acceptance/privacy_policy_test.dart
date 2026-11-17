@@ -2,10 +2,9 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// Req 39 (#74): the privacy policy covers children and Canada. Z-01 and
-/// Z-04 also need the participant and deletion work in later items, so they
-/// are not on the finished list yet. A lawyer must approve this policy
-/// before prod (`ai_specs/todo.md`).
+/// Req 39 (#74): the privacy policy covers children and Canada. Z-01's rules
+/// are also tested in `functions/test_acceptance/children_data.test.ts`.
+/// A lawyer must approve this policy before prod (`ai_specs/todo.md`).
 void main() {
   final source = File('docs/legal/privacy-policy.md').readAsStringSync();
   final bundled = File('assets/legal/privacy-policy.md').readAsStringSync();
