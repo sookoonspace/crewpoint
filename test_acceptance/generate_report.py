@@ -142,11 +142,11 @@ w('- **Scale and safety net:** no 50-member cap, long-lived invites, paged chat,
 w('**Most urgent now:**\n')
 w('1. **Get the privacy policy approved by a lawyer.** Stage 1 runs only on dev until then, and prod still has the code from before Stage 1 (Req 39).')
 w('2. **Choose how registration opens.** Building it is Stage 2. A bought tool, brought in through the roster import, is the stopgap if registration must open first (L6).')
-w('3. **Finish the live checks on dev:** Apple sign-in (L-02), and setting up each event type from its template on a real phone and on web (#95).')
+w('3. **Finish the live check on dev:** setting up each event type from its template on a real phone and on web (#95).')
 w('4. **Set up an email domain** before Stage 3 needs it (O-04).\n')
 w('**How far to trust this:**\n')
 w(f'- {total_ok + total_bad} acceptance tests ran against the real app and backend code: {total_ok} passed and {total_bad} failed. A failure is a planned gap for a later stage unless the scenario is on the finished list, which CI protects.')
-w('- The tests run on emulators with mocked push, and no message was sent. Live checks were made on dev, with throwaway data: the Stage 1 rollout, Google sign-in and linking (L-01), crash reporting on iOS, Android and web (O-02), both alert emails reaching both inboxes (O-01, O-02), and a restore (O-03).')
+w('- The tests run on emulators with mocked push, and no message was sent. Live checks were made on dev, with throwaway data: the Stage 1 rollout, Google and Apple sign-in and linking (L-01, L-02), crash reporting on iOS, Android and web (O-02), both alert emails reaching both inboxes (O-01, O-02), and a restore (O-03).')
 w('- Timings come from a Mac and local emulators ([load baselines](load-baselines.md)). Expect phones to be slower, and real delivery times are unmeasured.')
 w('- NOT BUILT comes from reading and searching the code. Those scenarios are registered as skipped tests, with the reason.\n')
 w('## 1. Inventory\n')
@@ -220,7 +220,7 @@ for g in [
     '**No clock seam in the push and scheduled jobs.** `sendCategorizedPush`, `onTaskDueScheduled` and `onDigestSummary` call `new Date()` directly, so the N-10 test fakes `Date` in Jest. Stage 3\'s scheduled messages should take a clock, as counts already do.',
     '**No email or SMS transport to mock.** N-00 can only prove safety for push.',
     '**Pushes have no recipient-level result.** `sendCategorizedPush` returns only counts, so recipient assertions inspect the mock.',
-    '**Real delivery.** APNs and FCM delivery need real devices. Apple sign-in still needs its live check (L-02).',
+    '**Real delivery.** APNs and FCM delivery need real devices.',
     '**Not checked: store listings and the venue network** (O-05, O-07).',
 ]:
     w(f'- {g}')

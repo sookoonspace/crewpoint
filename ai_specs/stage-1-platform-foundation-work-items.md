@@ -1677,10 +1677,10 @@ Run a live check of Google and Apple sign-in on real devices or simulators, incl
 - Live checks are deliberate, use throwaway data, and are never run on prod (L12).
 
 ### Acceptance criteria
-- [ ] Google and Apple sign-in are checked live on real devices or simulators.
+- [x] Google and Apple sign-in are checked live on real devices or simulators.
 - [x] Linking to a participant through a verified email is checked live.
-- [ ] Results are recorded as manual results for L-01 and L-02 in the acceptance report.
-- [ ] Manual results for scenarios L-01, L-02 are recorded. A scenario shared with another Work Item is finished when all of its parts are.
+- [x] Results are recorded as manual results for L-01 and L-02 in the acceptance report.
+- [x] Manual results for scenarios L-01, L-02 are recorded. A scenario shared with another Work Item is finished when all of its parts are.
 
 ### Covers
 - Requirements: 71
@@ -1703,7 +1703,7 @@ Confirm Stage 1's exit criteria: every scenario is proven, and all five event ty
 - H-06's fee and receipts wording arrives in Stage 2. Stage 1 proves combined roles, own-group access, and that no other money is visible, and the report says so.
 
 ### Acceptance criteria
-- [ ] Every scenario has a passing test, or a recorded manual result where a person is needed: A-01, A-02, A-05, B-04, B-05, B-10, B-14, H-01, H-02, H-05, H-06, H-07, J-05, J-06, L-01, L-02, O-01, O-02, O-03, S-01, S-02, S-07, S-08, X-01, X-02, X-03, X-05, X-06, Z-01, Z-04, GE-01, GE-02, GE-03, GE-04, GE-05, GE-06, GE-07, GE-08, GE-09, PA-01, PA-05, WE-07, WE-08, WE-10, GAP-CON-01, GAP-ANY-33, GAP-CRK-29, GAP-CON-30, GAP-ANY-31, GAP-WED-32, GAP-WED-12, GAP-WED-14, FND-01, FND-02, FND-03, FND-04, FND-05, FND-06, FND-07, FND-08, FND-09, FND-10, FND-11, FND-12.
+- [x] Every scenario has a passing test, or a recorded manual result where a person is needed: A-01, A-02, A-05, B-04, B-05, B-10, B-14, H-01, H-02, H-05, H-06, H-07, J-05, J-06, L-01, L-02, O-01, O-02, O-03, S-01, S-02, S-07, S-08, X-01, X-02, X-03, X-05, X-06, Z-01, Z-04, GE-01, GE-02, GE-03, GE-04, GE-05, GE-06, GE-07, GE-08, GE-09, PA-01, PA-05, WE-07, WE-08, WE-10, GAP-CON-01, GAP-ANY-33, GAP-CRK-29, GAP-CON-30, GAP-ANY-31, GAP-WED-32, GAP-WED-12, GAP-WED-14, FND-01, FND-02, FND-03, FND-04, FND-05, FND-06, FND-07, FND-08, FND-09, FND-10, FND-11, FND-12.
 - [ ] All scenarios above pass in the acceptance suite, and the guardrail runs in CI.
 - [ ] A party, wedding, cricket, golf and convention event can each be set up from a template on a real phone, on web, and in the fixtures, with no code differences between them.
 - [x] Every role is proven against every restricted path.

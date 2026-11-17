@@ -44,8 +44,8 @@
  {
   "id": "L-02",
   "title": "Apple sign-in creates an account.",
-  "status": "NOT RUN",
-  "gap": "Not yet run live, in #94: the Apple ID used for testing was locked on Nov 17, 2026. Linking by verified email, which Apple sign-in uses the same way, was checked live with Google (see L-01). To finish: sign in with Apple on the iOS simulator, choosing Share My Email.",
+  "status": "PASS",
+  "gap": "Manual, in #94, on crewpoint-dev on Nov 17, 2026. Apple sign-in worked live on the iOS simulator (iPhone 16e, iOS 26.3), sharing the real email: Apple was added to the owner's existing account (which already used Google) rather than creating a second one, the email stayed verified, and the Owner role was kept. Creating a brand-new account is covered by unit tests, because the test account already existed. Linking by verified email works the same way for Apple and was checked live with Google (see L-01).",
   "tested": false
  },
  {
