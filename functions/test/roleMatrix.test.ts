@@ -1,7 +1,9 @@
 /**
  * Req 32, 35 (WE-08, H-05): the role matrix. Every preset from the Req 26a
- * table, against every restricted path the rules hold today. #72 and later
- * items add rows as their paths land.
+ * table, against every restricted path in an event: tasks, expenses, chat
+ * and its summary, budgets, profiles, the roster and its private details,
+ * fields, settings and their log, roles, crews, members, ownership offers,
+ * the schedule, counts and freezes, imports, link requests and match keys.
  *
  * Vendors and Observers do not contribute (Req 34): they see only tasks
  * assigned to them and expenses they paid or share in (Req 32), and chat
@@ -10,12 +12,14 @@
  */
 import {RulesTestEnvironment, assertFails, assertSucceeds} from '@firebase/rules-unit-testing';
 import {
+  Timestamp,
   collection,
   deleteDoc,
   doc,
   getDoc,
   getDocs,
   query,
+  serverTimestamp,
   setDoc,
   updateDoc,
   where,
@@ -94,8 +98,29 @@ async function seed(
     for (const role of roles ? Object.keys(roles) : []) {
       await setDoc(doc(db, `${E}/roles/${role}`), roles[role]);
     }
+    // Paths from #77 to #86, written only by the server or by organizers.
+    await setDoc(doc(db, `${E}/sessions/open`), session());
+    await setDoc(doc(db, `${E}/sessions/draft`), session({title: 'Gala', hidden: true}));
+    await setDoc(doc(db, `${E}/stats/current`), {event: {total: 1}});
+    await setDoc(doc(db, `${E}/countFreezes/f1`), {event: {total: 1}, note: 'Caterer'});
+    await setDoc(doc(db, `${E}/imports/j1`), {fileName: 'r.csv', status: 'checked', createdBy: 'owner'});
+    await setDoc(doc(db, `${E}/linkRequests/stranger`), {email: 'a@b.c', status: 'open'});
+    await setDoc(doc(db, `${E}/participantKeys/kid`), {emailKey: 'k'});
+    await setDoc(doc(db, `${E}/chatSummary/current`), {count: 1});
+    await setDoc(doc(db, `${E}/settingsLog/l1`), {setting: 'expenseAccess', by: 'owner'});
+    await setDoc(doc(db, `${E}/ownership/offer`), {toUid: 'coOwner', fromUid: 'owner'});
   });
 }
+
+/** A schedule session the rules accept (Req 47). */
+const session = (over: object = {}) => ({
+  title: 'Welcome dinner',
+  startAt: Timestamp.fromDate(new Date('2027-07-17T00:00:00Z')),
+  endAt: Timestamp.fromDate(new Date('2027-07-17T02:00:00Z')),
+  timeTbc: false, venueId: null, locationTba: true, type: 'Dinner', tags: [], capacity: null,
+  eligibility: {categoryIds: [], filterTags: []}, hidden: false, updatedBy: 'owner',
+  updatedAt: serverTimestamp(), ...over,
+});
 
 const expectAccess = (allowed: boolean, op: Promise<unknown>) =>
   allowed ? assertSucceeds(op) : assertFails(op);
@@ -194,6 +219,54 @@ describe.each(ROLES)('%s', (role) => {
     await assertFails(setDoc(doc(as(role), `${E}/roles/x`), {permissions: []}));
     await assertFails(setDoc(doc(as(role), `${E}/crews/x`), {name: 'X'}));
     await assertFails(updateDoc(doc(as(role), `${E}/members/${role}`), {permissions: ['event.manage']}));
+  });
+
+  test('settings log: read with event.manage, written only by the server', async () => {
+    await expectAccess(holds(role, 'event.manage'), getDoc(doc(as(role), `${E}/settingsLog/l1`)));
+    await assertFails(setDoc(doc(as(role), `${E}/settingsLog/l2`), {setting: 'x', by: role}));
+  });
+
+  test('ownership offer: read by everyone in the event, written only by the server', async () => {
+    await assertSucceeds(getDoc(doc(as(role), `${E}/ownership/offer`)));
+    await assertFails(setDoc(doc(as(role), `${E}/ownership/offer`), {toUid: role, fromUid: 'owner'}));
+  });
+
+  test('schedule: drafts and changes need schedule.edit (Req 47)', async () => {
+    const edits = holds(role, 'schedule.edit');
+    await assertSucceeds(getDoc(doc(as(role), `${E}/sessions/open`)));
+    await assertSucceeds(getDocs(query(collection(as(role), `${E}/sessions`), where('hidden', '==', false))));
+    await expectAccess(edits, getDoc(doc(as(role), `${E}/sessions/draft`)));
+    await expectAccess(edits, getDocs(collection(as(role), `${E}/sessions`)));
+    await expectAccess(edits, setDoc(doc(as(role), `${E}/sessions/new`), session({updatedBy: role})));
+    await expectAccess(edits, deleteDoc(doc(as(role), `${E}/sessions/open`)));
+  });
+
+  test('counts and freezes: read with counts.read, written only by the server (Req 52, 54)', async () => {
+    await expectAccess(holds(role, 'counts.read'), getDoc(doc(as(role), `${E}/stats/current`)));
+    await expectAccess(holds(role, 'counts.read'), getDocs(collection(as(role), `${E}/countFreezes`)));
+    await assertFails(setDoc(doc(as(role), `${E}/stats/current`), {event: {total: 9}}));
+    await assertFails(setDoc(doc(as(role), `${E}/countFreezes/f2`), {event: {total: 9}}));
+  });
+
+  test('imports: read and queued with participants.import (Req 44a)', async () => {
+    const imports = holds(role, 'participants.import');
+    await expectAccess(imports, getDoc(doc(as(role), `${E}/imports/j1`)));
+    await expectAccess(imports, setDoc(doc(as(role), `${E}/imports/j2`), {
+      fileName: 'r.csv', targets: [], header: [], mode: 'dryRun', status: 'queued',
+      createdBy: role, createdAt: serverTimestamp(),
+    }));
+  });
+
+  test('link requests: read with participants.readPrivate, match keys by nobody (Req 46, 14a)', async () => {
+    await expectAccess(holds(role, 'participants.readPrivate'),
+      getDoc(doc(as(role), `${E}/linkRequests/stranger`)));
+    await assertFails(setDoc(doc(as(role), `${E}/linkRequests/${role}`), {email: 'x@y.z', status: 'open'}));
+    await assertFails(getDoc(doc(as(role), `${E}/participantKeys/kid`)));
+  });
+
+  test('chat summary: read with chat.send, written only by the server (Req 57a)', async () => {
+    await expectAccess(holds(role, 'chat.send'), getDoc(doc(as(role), `${E}/chatSummary/current`)));
+    await assertFails(setDoc(doc(as(role), `${E}/chatSummary/current`), {count: 99}));
   });
 });
 
