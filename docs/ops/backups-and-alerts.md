@@ -156,7 +156,7 @@ gh workflow run billing-check.yml -f simulate_failure=true
 Things to know:
 
 - GitHub turns off scheduled workflows in a public repo after 60 days with no commits. If the repo goes quiet, re-enable it under Actions → Billing check.
-- GitHub may start a scheduled run several minutes late.
+- GitHub may start a scheduled run several minutes late, and took about 16 hours to start this schedule at all. After changing the cron line, expect a delay before runs resume.
 - The same check by hand:
 
   ```bash
@@ -224,6 +224,7 @@ curl -X POST -H "Authorization: Bearer $(gcloud auth print-access-token)" \
 |---|---|---|
 | Nov 16, 2026 | Backend error alert, dev | A test error written to dev's logs at 17:52 UTC opened an alert at 17:53. One email, "CrewPoint backend errors for Cloud Run Revision", reached each of derodian@gmail.com and admin@sookoon.space. |
 | Nov 16, 2026 | Outside billing check | A manual run at 17:59 UTC signed in without a key and read billing as on for all three projects. A run with `simulate_failure` at 23:50 UTC sent the test email from sookoonspace@gmail.com, which reached both derodian@gmail.com and admin@sookoon.space. |
+| Nov 17, 2026 | Outside billing check, schedule | GitHub took about 16 hours to start the new schedule; changing the cron line at 01:36 UTC did not speed it up. The first scheduled run, at 09:43 UTC, read billing as on for all three projects. |
 
 ## Crash reporting
 
