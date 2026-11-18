@@ -17,7 +17,7 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/create_task_screen.dart';
 
-// The Create Task form lives inside ResponsiveShell on mobile widths,
+// The Create Task form lives inside CpShell on mobile widths,
 // which means the form's SingleChildScrollView ends just above a
 // Material 3 NavigationBar. The QA-pass screenshot
 // (Create_task_screen_02.PNG) showed the green "Create Task" CTA

@@ -1,6 +1,10 @@
+import 'dart:ui' show Tristate;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:crewpoint_app/app/core/widgets/responsive_shell.dart';
+import 'package:crewpoint_app/app/core/design/layout/cp_shell.dart';
+import 'package:crewpoint_app/app/core/design/theme/cp_theme.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
 
 class _ShellDriver extends StatefulWidget {
   const _ShellDriver();
@@ -23,7 +27,25 @@ class _ShellDriverState extends State<_ShellDriver> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: ResponsiveShell(
+      theme: CpTheme.light(),
+      home: CpShell(
+        appName: 'CrewPoint',
+        signOutLabel: 'Sign out',
+        destinations: const [
+          CpNavDestination(id: 'home', icon: CpIcons.navHome, label: 'Home'),
+          CpNavDestination(id: 'tasks', icon: CpIcons.navTasks, label: 'Tasks'),
+          CpNavDestination(id: 'chat', icon: CpIcons.navChat, label: 'Chat'),
+          CpNavDestination(
+            id: 'budget',
+            icon: CpIcons.navBudget,
+            label: 'Budget',
+          ),
+          CpNavDestination(
+            id: 'profile',
+            icon: CpIcons.navProfile,
+            label: 'Profile',
+          ),
+        ],
         currentIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
         onSignOut: () {},
@@ -33,34 +55,35 @@ class _ShellDriverState extends State<_ShellDriver> {
   }
 }
 
+Tristate _selected(WidgetTester tester, String key) =>
+    tester.getSemantics(find.byKey(Key(key))).flagsCollection.isSelected;
+
 void main() {
   testWidgets(
-    'desktop user navigates to Budget via rail and survives resize to bar',
+    'desktop user navigates to Budget via the sidebar and survives resize '
+    'to the bar',
     (tester) async {
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       await tester.binding.setSurfaceSize(const Size(1280, 800));
       await tester.pumpWidget(const _ShellDriver());
 
-      expect(find.byType(NavigationRail), findsOneWidget);
+      expect(find.byKey(const Key('shell.sidebar')), findsOneWidget);
       expect(find.text('Dashboard branch'), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('shell.rail.budget')));
       await tester.pumpAndSettle();
 
       expect(find.text('Budget branch'), findsOneWidget);
-      final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-      expect(rail.selectedIndex, equals(3));
+      expect(_selected(tester, 'shell.rail.budget'), Tristate.isTrue);
 
       await tester.binding.setSurfaceSize(const Size(600, 800));
       await tester.pumpAndSettle();
 
-      expect(find.byType(NavigationBar), findsOneWidget);
-      expect(find.byType(NavigationRail), findsNothing);
+      expect(find.byKey(const Key('shell.bar')), findsOneWidget);
+      expect(find.byKey(const Key('shell.sidebar')), findsNothing);
       expect(find.text('Budget branch'), findsOneWidget);
-
-      final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
-      expect(bar.selectedIndex, equals(3));
+      expect(_selected(tester, 'shell.bar.budget'), Tristate.isTrue);
     },
   );
 }

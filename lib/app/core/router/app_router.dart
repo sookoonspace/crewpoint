@@ -3,6 +3,9 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
+import 'package:crewpoint_app/app/core/design/layout/cp_shell.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
 import 'package:crewpoint_app/app/core/widgets/module_guard.dart';
 import 'package:crewpoint_app/app/features/counts/presentation/counts_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/setup_checklist_screen.dart';
@@ -17,7 +20,6 @@ import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/env/app_flavor.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/event_guard.dart';
-import 'package:crewpoint_app/app/core/widgets/responsive_shell.dart';
 import 'package:crewpoint_app/app/features/auth/presentation/widgets/email_unverified_banner.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/edit_profile_screen.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/notification_settings_screen.dart';
@@ -176,7 +178,7 @@ GoRouter createRouter({
       GoRoute(path: AppRoutes.auth, builder: (_, _) => const AuthGateScreen()),
       StatefulShellRoute.indexedStack(
         builder: (_, _, navigationShell) => Consumer(
-          builder: (_, ref, _) {
+          builder: (context, ref, _) {
             // Signed-out users see no badges (currentUserIdProvider is null
             // before auth resolves). UnreadBadgeCounts() defaults to zero
             // so the un-badged path keeps the same widget identity.
@@ -184,16 +186,46 @@ GoRouter createRouter({
             final badges = uid == null
                 ? const UnreadBadgeCounts()
                 : ref.watch(unreadBadgeProvider(uid));
-            return ResponsiveShell(
+            final nav = context.strings.nav;
+            return CpShell(
+              appName: nav.appName,
+              signOutLabel: nav.signOutTooltip,
+              destinations: [
+                CpNavDestination(
+                  id: 'home',
+                  icon: CpIcons.navHome,
+                  label: nav.home,
+                ),
+                CpNavDestination(
+                  id: 'tasks',
+                  icon: CpIcons.navTasks,
+                  label: nav.tasks,
+                  badge: badges.tasks,
+                ),
+                CpNavDestination(
+                  id: 'chat',
+                  icon: CpIcons.navChat,
+                  label: nav.chat,
+                  badge: badges.chat,
+                ),
+                CpNavDestination(
+                  id: 'budget',
+                  icon: CpIcons.navBudget,
+                  label: nav.budget,
+                  badge: badges.budget,
+                ),
+                CpNavDestination(
+                  id: 'profile',
+                  icon: CpIcons.navProfile,
+                  label: nav.profile,
+                ),
+              ],
               currentIndex: navigationShell.currentIndex,
               onDestinationSelected: (index) => navigationShell.goBranch(
                 index,
                 initialLocation: index == navigationShell.currentIndex,
               ),
               onSignOut: () => ref.read(authProvider.notifier).signOut(),
-              tasksBadge: badges.tasks,
-              chatBadge: badges.chat,
-              budgetBadge: badges.budget,
               body: Column(
                 children: [
                   const AccountLinkListener(),

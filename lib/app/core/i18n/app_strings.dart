@@ -455,6 +455,13 @@ abstract class NavStrings {
   String get budget;
   String get profile;
   String get signOutTooltip;
+
+  /// The product name beside the logo in the sidebar.
+  String get appName;
+
+  /// The empty detail panel of a list and detail layout (Spec #186
+  /// Req 23); [thing] is the event's word, such as a participant.
+  String selectToSee(String thing);
 }
 
 abstract class ErrorStrings {
@@ -833,6 +840,16 @@ class _EnglishNavStrings extends NavStrings {
 
   @override
   String get signOutTooltip => 'Sign out';
+
+  @override
+  String get appName => 'CrewPoint';
+
+  @override
+  String selectToSee(String thing) {
+    final word = thing.toLowerCase();
+    final article = RegExp('^[aeiou]').hasMatch(word) ? 'an' : 'a';
+    return 'Select $article $word to see details';
+  }
 }
 
 class _EnglishDashboardStrings extends DashboardStrings {

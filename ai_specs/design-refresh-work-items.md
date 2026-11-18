@@ -210,17 +210,17 @@ The app shell and a route-driven list-and-detail layout in the design system, so
 - Approved laptop mockups in `docs/design/mockups/`.
 
 #### Acceptance criteria
-- [ ] The shell lives in `lib/app/core/design/` and uses only tokens and components.
-- [ ] Under 840 px: one column with bottom navigation; from 600 to 839 px the content is capped at a comfortable width and centred.
-- [ ] From 840 px: a left sidebar replaces the bottom bar.
-- [ ] A list-and-detail component: from 840 px, tapping a row opens it in a right-hand panel instead of a new page.
-- [ ] With nothing selected, the panel shows a quiet prompt (for example "Select a {participant} to see details", words from `event.words`).
-- [ ] The route is the source of truth: a detail route opens the list with that row selected, and back and shared links work.
-- [ ] Narrowing below 840 px turns an open detail into a full page; widening returns to the split.
-- [ ] Switching rows with unsaved edits in the panel asks first.
-- [ ] Widget tests at 375, 744 and 1280 px cover each of the above.
-- [ ] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
-- [ ] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
+- [x] The shell lives in `lib/app/core/design/` and uses only tokens and components.
+- [x] Under 840 px: one column with bottom navigation; from 600 to 839 px the content is capped at a comfortable width and centred.
+- [x] From 840 px: a left sidebar replaces the bottom bar.
+- [x] A list-and-detail component: from 840 px, tapping a row opens it in a right-hand panel instead of a new page.
+- [x] With nothing selected, the panel shows a quiet prompt (for example "Select a {participant} to see details", words from `event.words`).
+- [x] The route is the source of truth: a detail route opens the list with that row selected, and back and shared links work.
+- [x] Narrowing below 840 px turns an open detail into a full page; widening returns to the split.
+- [x] Switching rows with unsaved edits in the panel asks first.
+- [x] Widget tests at 375, 744 and 1280 px cover each of the above.
+- [x] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
+- [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
 - [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 
 #### Covers

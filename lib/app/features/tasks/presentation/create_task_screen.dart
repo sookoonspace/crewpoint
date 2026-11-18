@@ -130,7 +130,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
       appBar: AppBar(title: Text(s.createTaskTitle), elevation: 0),
       body: SingleChildScrollView(
         // Bottom padding is doubled vs top so the Create Task CTA at
-        // the form's tail clears the persistent ResponsiveShell
+        // the form's tail clears the persistent CpShell
         // NavigationBar with comfortable breathing room on iPhone 12
         // mini — the previous symmetric `xl` (24) put the button only
         // ~10 px above the nav.
