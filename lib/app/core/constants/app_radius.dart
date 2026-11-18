@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 
-/// Centralized border radius tokens for CrewPoint.
+import 'package:crewpoint_app/app/core/design/tokens/scale.dart';
+
+/// The old radius names, kept only so unmigrated screens compile; each now
+/// forwards to the design tokens (Spec #186 Req 15). New code reads
+/// `context.cp.radii`. Deleted when the last screen moves (#208).
+@Deprecated('Use context.cp.radii (lib/app/core/design/).')
 abstract final class AppRadius {
-  static const double sm = 4.0;
-  static const double md = 8.0;
-  static const double lg = 12.0;
-  static const double xl = 16.0;
-  static const double xxl = 24.0;
-  static const double pill = 999.0;
+  static const double sm = CpScale.radius4;
+  static const double md = CpScale.radius8;
+  static const double lg = CpScale.radius12;
+  static const double xl = CpScale.radius16;
+  static const double xxl = CpScale.radius24;
+  static const double pill = CpScale.radiusPill;
 
   static const BorderRadius borderSm = BorderRadius.all(Radius.circular(sm));
   static const BorderRadius borderMd = BorderRadius.all(Radius.circular(md));

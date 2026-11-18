@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/wcag.dart';
+import 'package:crewpoint_app/app/core/design/tokens/wcag.dart';
 
 /// Documented foreground/background pairs that the app actually puts
 /// in front of users. Each pair must clear WCAG AA at the listed

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
+import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
 
 /// At viewports wider than [Breakpoints.compactMax] wraps [child] in a
 /// padded Material [Card] so a 480-clamped form column doesn't read as

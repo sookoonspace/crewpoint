@@ -1,0 +1,64 @@
+/// The raw numbers of CrewPoint's look: spacing, corner radius, sizes, type
+/// sizes and motion, from the approved mockups (Spec #186).
+///
+/// This is the one place such a number changes. Screens never read this
+/// file: they read [CpSpacing], [CpRadii], [CpSizes], [CpType] and
+/// [CpMotion] through the theme. The old `AppSpacing`, `AppRadius`,
+/// `AppSizes` and `AppDurations` forward here until they are deleted.
+abstract final class CpScale {
+  // ===== Spacing =====
+  static const double space4 = 4;
+  static const double space8 = 8;
+  static const double space12 = 12;
+  static const double space16 = 16;
+  static const double space24 = 24;
+  static const double space32 = 32;
+  static const double space48 = 48;
+
+  // ===== Corner radius =====
+  static const double radius4 = 4;
+  static const double radius8 = 8;
+  static const double radius12 = 12;
+  static const double radius16 = 16;
+  static const double radius24 = 24;
+  static const double radiusPill = 999;
+
+  // ===== Sizes =====
+  static const double icon14 = 14;
+  static const double icon16 = 16;
+  static const double icon20 = 20;
+  static const double icon24 = 24;
+  static const double icon32 = 32;
+  static const double icon64 = 64;
+  static const double avatar16 = 16;
+  static const double avatar18 = 18;
+  static const double avatar20 = 20;
+  static const double avatar42 = 42;
+  static const double emoji22 = 22;
+  static const double emoji28 = 28;
+  static const double emoji32 = 32;
+  static const double rowIndent = 56;
+  static const double ring48 = 48;
+
+  /// The smallest tap target (Material and Apple guidance).
+  static const double tapMin = 48;
+
+  // ===== Type sizes =====
+  static const double type11 = 11;
+  static const double type12 = 12;
+  static const double type13 = 13;
+  static const double type15 = 15;
+  static const double type16 = 16;
+  static const double type17 = 17;
+  static const double type20 = 20;
+  static const double type22 = 22;
+  static const double type26 = 26;
+  static const double type28 = 28;
+  static const double type32 = 32;
+
+  // ===== Motion (milliseconds) =====
+  static const int motionFast = 150;
+  static const int motionMedium = 250;
+  static const int motionSlow = 350;
+  static const int snackbarSeconds = 4;
+}

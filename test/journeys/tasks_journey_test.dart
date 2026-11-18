@@ -5,6 +5,7 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
 import '../harness/tasks_harness.dart';
 import '../robots/tasks_robot.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
 
 void main() {
   testWidgets('owner creates a task and toggles it through to done', (
@@ -63,7 +64,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(harness.markCompleteCalls, hasLength(1));
     expect(harness.markCompleteCalls.first['taskId'], equals(taskId));
-    robot.expectStatusIcon(icon: Icons.check_circle);
+    robot.expectStatusIcon(icon: CpIcons.statusDone);
 
     // Unmount the tree under test before the test framework's invariants
     // run; this lets Drift's StreamQueryStore cleanup timer fire during pump.

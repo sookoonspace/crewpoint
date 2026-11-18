@@ -25,7 +25,7 @@ import 'package:crewpoint_app/app/core/router/current_route_provider.dart';
 import 'package:crewpoint_app/app/core/services/fcm_handler.dart';
 import 'package:crewpoint_app/app/core/services/fcm_handler_bootstrap.dart';
 import 'package:crewpoint_app/app/core/services/firebase_service.dart';
-import 'package:crewpoint_app/app/core/theme/app_theme.dart';
+import 'package:crewpoint_app/app/core/design/theme/cp_theme.dart';
 import 'package:crewpoint_app/app/core/theme/theme_mode_provider.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/application/unread_badge_provider.dart';
@@ -405,8 +405,8 @@ class _MyAppState extends ConsumerState<MyApp> {
     return MaterialApp.router(
       title: 'CrewPoint',
       scaffoldMessengerKey: _messengerKey,
-      theme: AppTheme.light(),
-      darkTheme: AppTheme.dark(),
+      theme: CpTheme.light(),
+      darkTheme: CpTheme.dark(),
       themeMode: themeMode,
       routerConfig: _router,
       // The update gate sits above the router so it never rebuilds it.

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
 
 /// Intent-centric helpers for the create-event journey test.
 ///
@@ -20,7 +21,7 @@ class CreateEventRobot {
   }
 
   Future<void> tapCreateFab() async {
-    await tester.tap(find.byIcon(Icons.add));
+    await tester.tap(find.byIcon(CpIcons.actionAdd));
     await settle();
   }
 

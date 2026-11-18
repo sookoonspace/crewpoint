@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
-import 'package:crewpoint_app/app/core/theme/app_theme.dart';
+import 'package:crewpoint_app/app/core/design/theme/cp_theme.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
 
 import '../../../harness/fake_member_calls.dart';
@@ -15,7 +15,9 @@ const _code = 'ZUPQ8D';
 Future<void> _pumpSheet(WidgetTester tester, ThemeData theme) async {
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [memberCallsProvider.overrideWithValue(FakeMemberCalls(code: _code))],
+      overrides: [
+        memberCallsProvider.overrideWithValue(FakeMemberCalls(code: _code)),
+      ],
       child: MaterialApp(
         theme: theme,
         home: const Scaffold(body: AddMemberSheet(eventId: 'e1')),
@@ -50,7 +52,7 @@ void main() {
     testWidgets('code colour differs from its box in dark mode', (
       tester,
     ) async {
-      await _pumpSheet(tester, AppTheme.dark());
+      await _pumpSheet(tester, CpTheme.dark());
 
       expect(find.text(_code), findsOneWidget);
       expect(_codeColor(tester), isNot(_codeBoxDecoration(tester).color));
@@ -59,7 +61,7 @@ void main() {
     testWidgets('code colour differs from its box in light mode', (
       tester,
     ) async {
-      await _pumpSheet(tester, AppTheme.light());
+      await _pumpSheet(tester, CpTheme.light());
 
       expect(find.text(_code), findsOneWidget);
       expect(_codeColor(tester), isNot(_codeBoxDecoration(tester).color));
@@ -68,7 +70,7 @@ void main() {
     testWidgets('both colours are drawn from the active scheme', (
       tester,
     ) async {
-      final dark = AppTheme.dark();
+      final dark = CpTheme.dark();
       await _pumpSheet(tester, dark);
 
       // The specific pairing matters: reading one from the theme and pinning

@@ -1,43 +1,27 @@
-/// Centralized non-spacing dimension tokens for CrewPoint.
-///
-/// Spacing values live in `AppSpacing`; border radii live in `AppRadius`.
-/// This file is for icon / avatar / emoji / row-indent / ring sizes that
-/// appear in widget code as bare doubles today.
-///
-/// **Promotion rule**: a value lands here only when used in ≥ 2 distinct
-/// call sites in `lib/`. Single-use literals stay inline (see
-/// `EmptyStatePlaceholder`'s `iconHero = 64` for an explicit example).
-/// One exception: the emoji scale is promoted as a coherent group even
-/// though each value is single-caller today — keeping them together
-/// makes future tiles reusing the chat-row emoji size obvious.
+import 'package:crewpoint_app/app/core/design/tokens/scale.dart';
+
+/// The old size names, kept only so unmigrated screens compile; each now
+/// forwards to the design tokens (Spec #186 Req 15). New code reads
+/// `context.cp.sizes`. Deleted when the last screen moves (#208).
+@Deprecated('Use context.cp.sizes (lib/app/core/design/).')
 abstract final class AppSizes {
-  // ===== Icon sizes (Material default = 24) =====
-  static const double iconXs = 14;
-  static const double iconSm = 16;
-  static const double iconMd = 20;
-  static const double iconLg = 24;
-  static const double iconXl = 32;
-  static const double iconHero =
-      64; // 3 callers — empty state, event_guard, router error
+  static const double iconXs = CpScale.icon14;
+  static const double iconSm = CpScale.icon16;
+  static const double iconMd = CpScale.icon20;
+  static const double iconLg = CpScale.icon24;
+  static const double iconXl = CpScale.icon32;
+  static const double iconHero = CpScale.icon64;
 
-  // ===== Avatar radii =====
-  // Each value confirmed via grep to have ≥ 2 call sites in lib/.
-  static const double avatarSm = 16;
-  static const double avatarMd = 18;
-  static const double avatarLg = 20;
-  static const double avatarXl = 42;
+  static const double avatarSm = CpScale.avatar16;
+  static const double avatarMd = CpScale.avatar18;
+  static const double avatarLg = CpScale.avatar20;
+  static const double avatarXl = CpScale.avatar42;
 
-  // ===== Emoji display sizes =====
-  // Promoted as a group; each is single-caller today but the scale is
-  // intentional — a future tile reusing emojiChat's 28 should not have to
-  // rediscover the magic number.
-  static const double emojiTile = 32;
-  static const double emojiChat = 28;
-  static const double emojiStat = 22;
+  static const double emojiTile = CpScale.emoji32;
+  static const double emojiChat = CpScale.emoji28;
+  static const double emojiStat = CpScale.emoji22;
 
-  // ===== Settings list =====
-  static const double settingsRowIndent = 56;
+  static const double settingsRowIndent = CpScale.rowIndent;
 
-  // ===== Progress ring (default size used by ProgressRing) =====
-  static const double progressRingSize = 48;
+  static const double progressRingSize = CpScale.ring48;
 }

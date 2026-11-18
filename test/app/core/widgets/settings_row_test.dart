@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/widgets/settings_row.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
 
 void main() {
   Future<void> pump(WidgetTester tester, Widget child) {
@@ -21,7 +22,7 @@ void main() {
     expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
     expect(find.text('Notifications'), findsOneWidget);
     expect(find.text('All alerts on'), findsOneWidget);
-    expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+    expect(find.byIcon(CpIcons.chevronRight), findsOneWidget);
   });
 
   testWidgets('subtitle is omitted when not provided', (tester) async {
@@ -65,7 +66,7 @@ void main() {
 
     expect(find.byKey(trailingKey), findsOneWidget);
     expect(find.text('Dark'), findsOneWidget);
-    expect(find.byIcon(Icons.chevron_right), findsNothing);
+    expect(find.byIcon(CpIcons.chevronRight), findsNothing);
   });
 
   testWidgets(
@@ -101,7 +102,7 @@ void main() {
       expect(leadingIcon.color, onSurfaceSentinel);
 
       // Default trailing chevron: onSurfaceVariant.
-      final chevron = tester.widget<Icon>(find.byIcon(Icons.chevron_right));
+      final chevron = tester.widget<Icon>(find.byIcon(CpIcons.chevronRight));
       expect(chevron.color, onSurfaceVariantSentinel);
 
       // Title text: onSurface.

@@ -1,19 +1,12 @@
-/// Centralized duration tokens for CrewPoint.
-///
-/// Production-only. Test-only durations (e.g. the 50 ms bounded-pump frame)
-/// live alongside their test helpers, not here. Adding `pumpFrame` here was
-/// considered and rejected — test infrastructure shouldn't ship in the app
-/// bundle and shouldn't bloat the production API surface.
+import 'package:crewpoint_app/app/core/design/tokens/scale.dart';
+
+/// The old duration names, kept only so unmigrated code compiles; each now
+/// forwards to the design tokens (Spec #186 Req 15). New code reads
+/// `context.cp.motion`. Deleted when the last screen moves (#208).
+@Deprecated('Use context.cp.motion (lib/app/core/design/).')
 abstract final class AppDurations {
-  /// Quick interactions (chip toggle, ripple, tooltip dismiss).
-  static const Duration fast = Duration(milliseconds: 150);
-
-  /// Standard transitions (snackbar slide, modal sheet open).
-  static const Duration medium = Duration(milliseconds: 250);
-
-  /// Slower, more deliberate transitions (page route, hero animation).
-  static const Duration slow = Duration(milliseconds: 350);
-
-  /// Snackbar display time before auto-dismiss.
-  static const Duration snackbar = Duration(seconds: 4);
+  static const Duration fast = Duration(milliseconds: CpScale.motionFast);
+  static const Duration medium = Duration(milliseconds: CpScale.motionMedium);
+  static const Duration slow = Duration(milliseconds: CpScale.motionSlow);
+  static const Duration snackbar = Duration(seconds: CpScale.snackbarSeconds);
 }

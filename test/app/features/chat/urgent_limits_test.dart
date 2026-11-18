@@ -1,4 +1,4 @@
-import 'package:crewpoint_app/app/core/theme/app_theme.dart';
+import 'package:crewpoint_app/app/core/design/theme/cp_theme.dart';
 import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
 import 'package:crewpoint_app/app/features/chat/presentation/chat_screen.dart';
 import 'package:crewpoint_app/app/features/chat/presentation/widgets/critical_alert_modal.dart';
@@ -51,7 +51,7 @@ void main() {
         tester,
         message: _message(skipped: true),
         isCurrentUser: true,
-        theme: AppTheme.dark(),
+        theme: CpTheme.dark(),
       );
       expect(find.byKey(_limited), findsOneWidget);
     });

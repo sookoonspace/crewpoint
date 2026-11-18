@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:crewpoint_app/app/core/theme/app_theme.dart';
+import 'package:crewpoint_app/app/core/design/theme/cp_theme.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/join_event_sheet.dart';
 
 import '../../../../core/_helpers/wcag_contrast.dart';
@@ -21,7 +21,7 @@ void main() {
   testWidgets(
     'code TextField fillColor comes from inputDecorationTheme (not hard-coded)',
     (tester) async {
-      for (final theme in [AppTheme.light(), AppTheme.dark()]) {
+      for (final theme in [CpTheme.light(), CpTheme.dark()]) {
         await _pumpWithTheme(tester, theme);
         final field = tester.widget<TextField>(find.byType(TextField));
         // The sheet must not override fillColor anymore — it should fall
@@ -41,7 +41,7 @@ void main() {
   testWidgets(
     'typed-text color meets WCAG AA against the active fillColor in BOTH themes',
     (tester) async {
-      for (final theme in [AppTheme.light(), AppTheme.dark()]) {
+      for (final theme in [CpTheme.light(), CpTheme.dark()]) {
         await _pumpWithTheme(tester, theme);
         final field = tester.widget<TextField>(find.byType(TextField));
         // Background: prefer the input field's effective fillColor; fall
@@ -67,7 +67,7 @@ void main() {
   testWidgets('hint color contrast ≥ 3.0 against fill in BOTH themes', (
     tester,
   ) async {
-    for (final theme in [AppTheme.light(), AppTheme.dark()]) {
+    for (final theme in [CpTheme.light(), CpTheme.dark()]) {
       await _pumpWithTheme(tester, theme);
       final field = tester.widget<TextField>(find.byType(TextField));
       final bg =

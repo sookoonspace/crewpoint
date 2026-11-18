@@ -6,7 +6,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:crewpoint_app/app/core/theme/app_theme.dart';
+import 'package:crewpoint_app/app/core/design/theme/cp_theme.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/widgets/checklist_editor.dart';
 
@@ -31,7 +31,7 @@ void main() {
     'completed checklist item paints colorScheme.onSurfaceVariant with '
     'TextDecoration.lineThrough (dark theme)',
     (tester) async {
-      final theme = AppTheme.dark();
+      final theme = CpTheme.dark();
       const completed = ChecklistItem(
         id: 'c-1',
         text: 'Beers',
@@ -51,7 +51,7 @@ void main() {
     'completed checklist item paints colorScheme.onSurfaceVariant with '
     'TextDecoration.lineThrough (light theme)',
     (tester) async {
-      final theme = AppTheme.light();
+      final theme = CpTheme.light();
       const completed = ChecklistItem(
         id: 'c-1',
         text: 'Beers',
@@ -69,7 +69,7 @@ void main() {
 
   testWidgets('unchecked checklist item paints colorScheme.onSurface, no '
       'strike-through (dark theme)', (tester) async {
-    final theme = AppTheme.dark();
+    final theme = CpTheme.dark();
     const pending = ChecklistItem(id: 'c-2', text: 'Water');
     final text = await _pumpAndFindRowText(tester, theme: theme, item: pending);
     expect(text.style!.color, theme.colorScheme.onSurface);
@@ -78,7 +78,7 @@ void main() {
 
   testWidgets('unchecked checklist item paints colorScheme.onSurface, no '
       'strike-through (light theme)', (tester) async {
-    final theme = AppTheme.light();
+    final theme = CpTheme.light();
     const pending = ChecklistItem(id: 'c-2', text: 'Water');
     final text = await _pumpAndFindRowText(tester, theme: theme, item: pending);
     expect(text.style!.color, theme.colorScheme.onSurface);
