@@ -177,13 +177,13 @@ The design system's buttons, form fields, sheet and dialog, ready for the group 
 - Approved Person form mockup in `docs/design/mockups/`.
 
 #### Acceptance criteria
-- [ ] Buttons: primary, secondary, text and destructive, each with a loading (busy) state that ignores taps.
-- [ ] Form fields: text, select, date, switch row and choice chips (single and multiple), each with label, required mark, help and error text.
-- [ ] Date fields open the platform's native date picker; haptics follow the platform (Req 21).
-- [ ] Sheet and dialog components that keep their text controllers alive until they close (the #185 crash).
-- [ ] Each component has widget tests, gallery entries in light, dark and 200% text, `design` goldens and a section in `docs/design/design-system.md`.
-- [ ] Components are plain widgets with no Riverpod or Firebase imports.
-- [ ] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
+- [x] Buttons: primary, secondary, text and destructive, each with a loading (busy) state that ignores taps.
+- [x] Form fields: text, select, date, switch row and choice chips (single and multiple), each with label, required mark, help and error text.
+- [x] Date fields open the platform's native date picker; haptics follow the platform (Req 21).
+- [x] Sheet and dialog components that keep their text controllers alive until they close (the #185 crash).
+- [x] Each component has widget tests, gallery entries in light, dark and 200% text, `design` goldens and a section in `docs/design/design-system.md`.
+- [x] Components are plain widgets with no Riverpod or Firebase imports.
+- [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
 - [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 
 #### Covers

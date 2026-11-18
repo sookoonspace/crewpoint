@@ -94,6 +94,53 @@ All components are in `lib/app/core/design/components/` (import `components.dart
 
 **`CpTopBar`** goes in `Scaffold.appBar`. It has back (or `CpIcons.actionClose` for a full-screen form) on the left, a title marked as a heading, and up to three `CpTopBarAction`s. Each action has a tooltip, which is also its screen reader label, and is at least 48 px. Mark the screen's main action `primary` to draw it as an accent circle; use one primary action per bar at most.
 
+### Buttons
+
+![Buttons](../../test/design/golden/goldens/buttons-light.png)
+
+**`CpButton`** comes in four variants:
+
+- `CpButton(...)` (primary): the screen's main action. Use one per screen or sheet.
+- `CpButton.secondary`: another action beside it.
+- `CpButton.text`: a quiet action, such as Cancel.
+- `CpButton.destructive`: removes or ends something. Ask for confirmation first, in a `CpDialog`.
+
+Set `busy: true` while the action runs. The button shows a spinner, ignores taps and reads as unavailable, so a save never runs twice. A button with `onPressed: null` is disabled. `expand: true` fills the width, for example a save bar.
+
+### Fields
+
+![Fields](../../test/design/golden/goldens/fields-light.png)
+
+Every field has a label above it (with a red star when `required`; pass `requiredLabel` so screen readers say "required"), then the input, then `help`, or the `error` in its place with an icon. `labelIcon: CpIcons.lock` marks a private field.
+
+- **`CpTextField`** is a text input. It works alone (pass `error`) or in a `Form` (pass `validator`). Put the test key on the input with `fieldKey`.
+- **`CpSelectField`** shows a chosen value and runs `onTap`, where the caller opens its own picker sheet (such as the group picker). `placeholder` is shown, muted, when nothing is chosen.
+- **`CpDateField`** opens the platform's own picker: a wheel on iOS, the calendar dialog elsewhere (Req 21). Dates show through the caller's `format`. With `clearLabel`, a chosen date can be cleared.
+- **`CpSwitchRow`** is a title, optional help and the platform's switch. The whole row toggles, and it reads as one switch.
+- **`CpField`** gives any custom input the same label, help and error frame.
+
+**Text controllers.** The State that creates a `TextEditingController` disposes it in its own `dispose()`. Never dispose one when a dialog or sheet returns: the route still rebuilds while it closes, for example as the keyboard goes down, and that crashed the app in #185.
+
+### Choice chips and segmented choices
+
+![Choice chips](../../test/design/golden/goldens/choices-light.png)
+
+- **`CpChoiceChips`** shows answers as tappable chips that wrap onto more lines (ledger L5).
+  - Single choice by default; `multiple: true` for "choose any".
+  - Tapping the chosen single answer clears it unless the question is `required`.
+  - Each chip reads its label and whether it is selected.
+- **`CpSegmented`** is two to four short exclusive options side by side, such as Adult or Child, or Yes or No. Use chips when there are more options or the labels are long.
+
+Both give a light selection tick on iOS and the platform's tap feedback on Android (Req 21).
+
+### Sheets and dialogs
+
+![Sheets and dialogs](../../test/design/golden/goldens/sheetsAndDialogs-light.png)
+
+- **`showCpSheet`** opens a bottom sheet with a drag handle, an optional `title` (read as a heading), and content that scrolls and stays above the keyboard. Use it for pickers and short forms. Anything in it with a text controller owns that controller in its own State.
+- **`CpDialog`** has a title, a message or content, and its buttons. Show it with `showDialog`. Put Cancel first as `CpButton.text`, then the main action. Make the main action destructive for removals.
+- **`showCpTextPrompt`** asks for one line of text, such as a group name, and returns it trimmed, or null. It owns its controller, so it is safe as the keyboard closes.
+
 ## 200% text
 
 Every component lays out at 200% text without overflowing (the gallery's third variant):
