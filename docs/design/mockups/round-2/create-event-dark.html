@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390">
+<title>Create event · Slate and sage · dark</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=block">
+<style>
+/* Tokens: Slate and sage, dark. These names become the app's design tokens. */
+:root {
+  --cp-background: #111518;
+  --cp-surface: #1A2026;
+  --cp-border: #29323A;
+  --cp-text: #E7EBEE;
+  --cp-text-muted: #9AA5AF;
+  --cp-accent: #82AE90;
+  --cp-accent-soft: #1F2F25;
+  --cp-on-accent: #0D1A12;
+  --cp-banner: #2C4636;
+  --cp-on-banner: #DCEADF;
+  --cp-status-done: #73C796;
+  --cp-status-done-soft: #1B2E23;
+  --cp-status-due: #E7B04A;
+  --cp-status-due-soft: #33280F;
+  --cp-status-overdue: #F2877F;
+  --cp-status-overdue-soft: #3A1B19;
+  --cp-font-text: 'Inter', system-ui, sans-serif;
+  --cp-font-heading-opsz: 32;
+  --cp-type-title: 26px;
+  --cp-type-section: 17px;
+  --cp-type-body: 15px;
+  --cp-type-label: 13px;
+  --cp-type-caption: 12px;
+  --cp-type-stat: 22px;
+  --cp-space-xs: 4px;
+  --cp-space-sm: 8px;
+  --cp-space-md: 12px;
+  --cp-space-lg: 16px;
+  --cp-space-xl: 24px;
+  --cp-space-2xl: 32px;
+  --cp-radius-sm: 8px;
+  --cp-radius-md: 12px;
+  --cp-radius-lg: 16px;
+  --cp-radius-pill: 999px;
+  --cp-shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04);
+  --cp-icon-size: 20px;
+  --cp-tap-min: 48px;
+}
+html, body { width: 390px; height: 1120px; }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--cp-background); color: var(--cp-text); position: relative; overflow: hidden;
+  font-family: var(--cp-font-text); font-size: var(--cp-type-body); line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3 { font-variation-settings: 'opsz' var(--cp-font-heading-opsz); letter-spacing: -0.01em; }
+h1 { font-size: var(--cp-type-title); font-weight: 650; line-height: 1.2; }
+h2 { font-size: var(--cp-type-section); font-weight: 620; }
+h3 { font-size: 15px; font-weight: 620; }
+.icon { display: inline-flex; align-items: center; justify-content: center; line-height: 1; flex: none; }
+.icon svg { display: block; }
+.muted { color: var(--cp-text-muted); }
+.grow { flex: 1; min-width: 0; }
+.tnum { font-feature-settings: 'tnum'; }
+
+/* Phone chrome */
+.status-bar { height: 44px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px; font-size: 15px; font-weight: 600; }
+.status-bar .dots { display: flex; gap: 5px; }
+.status-bar .dots i { width: 17px; height: 10px; border-radius: 3px; background: var(--cp-text); opacity: .85; display: block; }
+.top-bar { height: 52px; display: flex; align-items: center; padding: 0 4px; gap: 4px; }
+.top-bar .btn { width: var(--cp-tap-min); height: var(--cp-tap-min); display: flex; align-items: center; justify-content: center; position: relative; }
+.top-bar .title { flex: 1; font-size: var(--cp-type-section); font-weight: 620; font-variation-settings: 'opsz' 32; padding-left: 4px; }
+.btn-add { width: 36px; height: 36px; border-radius: 50%; background: var(--cp-accent); color: var(--cp-on-accent);
+  display: flex; align-items: center; justify-content: center; margin: 0 8px; }
+.large-title { padding: 4px var(--cp-space-lg) 0; display: flex; align-items: center; justify-content: space-between; }
+.nav { position: absolute; left: 0; right: 0; bottom: 0; height: 84px; padding-bottom: 20px;
+  background: var(--cp-surface); border-top: 1px solid var(--cp-border); display: grid; grid-template-columns: repeat(5, 1fr); }
+.nav div { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  font-size: 11px; font-weight: 600; color: var(--cp-text-muted); }
+.nav .on { color: var(--cp-accent); }
+.nav .on .pill { background: var(--cp-accent-soft); }
+.nav .pill { width: 56px; height: 30px; border-radius: 15px; display: flex; align-items: center; justify-content: center; }
+.save-bar { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px var(--cp-space-lg) 32px;
+  background: var(--cp-surface); border-top: 1px solid var(--cp-border); display: flex; align-items: center; gap: var(--cp-space-md); }
+.save-bar .note { flex: 1; font-size: 13px; font-weight: 600; color: var(--cp-status-overdue); display: flex; align-items: center; gap: 6px; }
+
+/* Layout */
+.page { padding: 0 var(--cp-space-lg); display: flex; flex-direction: column; gap: var(--cp-space-xl); }
+.stack-sm { display: flex; flex-direction: column; gap: var(--cp-space-sm); }
+.stack-md { display: flex; flex-direction: column; gap: var(--cp-space-md); }
+.stack-lg { display: flex; flex-direction: column; gap: var(--cp-space-lg); }
+.hrow { display: flex; align-items: center; gap: var(--cp-space-sm); }
+.wrap { flex-wrap: wrap; }
+.section-head { display: flex; align-items: center; justify-content: space-between; min-height: 32px; gap: 8px; }
+.section-head a { color: var(--cp-accent); font-size: 14px; font-weight: 600; text-decoration: none; display: flex; align-items: center; }
+.section-head .count { font-size: 13px; color: var(--cp-text-muted); font-weight: 500; }
+.overline { font-size: 12px; font-weight: 650; letter-spacing: .04em; text-transform: uppercase; color: var(--cp-text-muted); }
+
+/* Surfaces */
+.card { background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: var(--cp-radius-md); box-shadow: var(--cp-shadow-card); }
+.card-pad { padding: var(--cp-space-lg); }
+.list > .row + .row, .list > .row + .sub-head, .list > .sub-head + .row { border-top: 1px solid var(--cp-border); }
+.row { display: flex; align-items: center; gap: var(--cp-space-md); padding: 12px var(--cp-space-lg); min-height: 60px; }
+.row > .icon.trail { color: var(--cp-text-muted); }
+.row.sel { background: var(--cp-accent-soft); }
+.row-title { font-weight: 560; }
+.row-sub { font-size: 13px; color: var(--cp-text-muted); display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+.amount { font-weight: 620; font-feature-settings: 'tnum'; white-space: nowrap; text-align: right; }
+.amount small { display: block; font-size: 12px; font-weight: 500; color: var(--cp-text-muted); }
+
+/* Chips and badges */
+.chip { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px;
+  border-radius: var(--cp-radius-pill); font-size: var(--cp-type-label); font-weight: 600; white-space: nowrap; }
+.chip-neutral { background: var(--cp-accent-soft); color: var(--cp-accent); }
+.chip-quiet { background: transparent; border: 1px solid var(--cp-border); color: var(--cp-text-muted); }
+.chip-done { background: var(--cp-status-done-soft); color: var(--cp-status-done); }
+.chip-due { background: var(--cp-status-due-soft); color: var(--cp-status-due); }
+.chip-overdue { background: var(--cp-status-overdue-soft); color: var(--cp-status-overdue); }
+.chip .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.badge { min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: var(--cp-accent);
+  color: var(--cp-on-accent); font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+.filters { display: flex; gap: var(--cp-space-sm); overflow: hidden; }
+.filter { height: 34px; padding: 0 12px; border-radius: var(--cp-radius-pill); border: 1px solid var(--cp-border);
+  background: var(--cp-surface); font-size: 14px; font-weight: 550; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.filter.on { background: var(--cp-accent-soft); border-color: transparent; color: var(--cp-accent); }
+
+/* Avatars */
+.avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--cp-accent-soft); color: var(--cp-accent);
+  font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex: none; }
+.avatar.sm { width: 32px; height: 32px; font-size: 11px; }
+.avatar.lg { width: 64px; height: 64px; font-size: 22px; }
+.avatar.blank { background: var(--cp-border); color: var(--cp-text-muted); }
+.stack-av { display: flex; }
+.stack-av .avatar { border: 2px solid var(--cp-background); margin-left: -6px; }
+.stack-av .avatar:first-child { margin-left: 0; }
+.tile-icon { width: 40px; height: 40px; border-radius: var(--cp-radius-sm); background: var(--cp-accent-soft);
+  color: var(--cp-accent); display: flex; align-items: center; justify-content: center; flex: none; }
+.thumb { width: 64px; height: 64px; border-radius: var(--cp-radius-md); overflow: hidden; flex: none;
+  background: var(--cp-accent-soft); color: var(--cp-accent); display: flex; align-items: center; justify-content: center; }
+.thumb svg.photo { width: 100%; height: 100%; display: block; }
+
+/* Buttons */
+.btn-primary, .btn-secondary, .btn-text { height: 48px; border-radius: var(--cp-radius-md); font-weight: 620; font-size: 15px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 18px; white-space: nowrap; }
+.btn-primary { background: var(--cp-accent); color: var(--cp-on-accent); }
+.btn-secondary { background: var(--cp-surface); color: var(--cp-accent); border: 1px solid var(--cp-border); }
+.btn-text { color: var(--cp-accent); padding: 0 8px; }
+.btn-sm { height: 36px; font-size: 14px; padding: 0 12px; border-radius: var(--cp-radius-sm); }
+.btn-dashed { height: 52px; border-radius: var(--cp-radius-md); border: 1.5px dashed var(--cp-border); color: var(--cp-accent);
+  font-weight: 620; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.full { width: 100%; }
+
+/* Form fields */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field > label, .q-label { font-size: 13px; font-weight: 620; display: flex; align-items: center; gap: 6px; }
+.req { color: var(--cp-status-overdue); }
+.input { height: 48px; border: 1px solid var(--cp-border); border-radius: var(--cp-radius-sm); background: var(--cp-surface);
+  padding: 0 12px; display: flex; align-items: center; gap: 8px; font-size: 15px; white-space: nowrap; overflow: hidden; }
+.input .ph { color: var(--cp-text-muted); }
+.input.focus { border: 2px solid var(--cp-accent); padding: 0 11px; }
+.input.error { border: 2px solid var(--cp-status-overdue); padding: 0 11px; }
+.help { font-size: 12px; color: var(--cp-text-muted); line-height: 1.4; }
+.err { font-size: 12px; font-weight: 600; color: var(--cp-status-overdue); display: flex; align-items: center; gap: 4px; }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--cp-background);
+  border: 1px solid var(--cp-border); border-radius: var(--cp-radius-sm); padding: 3px; height: 44px; }
+.seg span { display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 6px; font-size: 14px; font-weight: 600; color: var(--cp-text-muted); }
+.seg .on { background: var(--cp-surface); color: var(--cp-text); box-shadow: 0 1px 2px rgba(16,24,40,.12); }
+.opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.opt { min-height: 36px; padding: 0 14px; border-radius: var(--cp-radius-pill); border: 1px solid var(--cp-border);
+  background: var(--cp-surface); font-size: 14px; font-weight: 550; display: inline-flex; align-items: center; gap: 6px; }
+.opt.on { background: var(--cp-accent); border-color: var(--cp-accent); color: var(--cp-on-accent); }
+.opts.error .opt { border-color: var(--cp-status-overdue); }
+.switch-row { display: flex; align-items: center; gap: 12px; min-height: 48px; }
+.switch { width: 46px; height: 28px; border-radius: 14px; background: var(--cp-border); position: relative; flex: none; }
+.switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--cp-surface); box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+.switch.on { background: var(--cp-accent); }
+.switch.on::after { left: 21px; }
+.private { border: 1px solid var(--cp-border); border-radius: var(--cp-radius-md); background: var(--cp-background); padding: var(--cp-space-lg); }
+.banner-msg { border-radius: var(--cp-radius-md); padding: 12px 14px; display: flex; gap: 10px; font-size: 14px; align-items: flex-start; }
+.banner-msg.error { background: var(--cp-status-overdue-soft); color: var(--cp-status-overdue); }
+.banner-msg.info { background: var(--cp-accent-soft); color: var(--cp-text); }
+.banner-msg.info .icon { color: var(--cp-accent); }
+
+/* Cover */
+.cover { height: 156px; border-radius: var(--cp-radius-lg); overflow: hidden; position: relative; background: var(--cp-banner); color: var(--cp-on-banner); }
+.cover svg.photo { width: 100%; height: 100%; display: block; }
+.cover .big { position: absolute; right: 18px; top: 18px; opacity: .9; }
+.cover .label { position: absolute; left: 16px; bottom: 14px; font-size: var(--cp-type-label); font-weight: 600; opacity: .9; }
+
+/* Stats */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--cp-space-sm); }
+.stat { padding: var(--cp-space-md); display: flex; flex-direction: column; gap: 6px; min-height: 104px; }
+.stat .k { font-size: var(--cp-type-caption); font-weight: 600; color: var(--cp-text-muted); display: flex; align-items: center; gap: 6px; }
+.stat .v { font-size: var(--cp-type-stat); font-weight: 650; font-variation-settings: 'opsz' 32; font-feature-settings: 'tnum'; }
+.stat .s { font-size: var(--cp-type-caption); color: var(--cp-text-muted); }
+.bar { height: 8px; border-radius: 4px; background: var(--cp-border); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--cp-accent); border-radius: 4px; }
+.time { width: 50px; display: flex; flex-direction: column; font-feature-settings: 'tnum'; flex: none; }
+.time strong { font-size: 15px; font-weight: 650; }
+.time span { font-size: 11px; color: var(--cp-text-muted); font-weight: 600; }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: var(--cp-space-sm); }
+.tile { display: flex; align-items: center; gap: 10px; padding: 14px 12px; min-height: 64px;
+  background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: var(--cp-radius-md); }
+.tile .row-sub { font-size: 12px; }
+.check { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--cp-border); flex: none; display: flex; align-items: center; justify-content: center; }
+.check.on { background: var(--cp-status-done); border-color: var(--cp-status-done); color: var(--cp-surface); }
+.menu { position: absolute; z-index: 5; background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: var(--cp-radius-md);
+  box-shadow: 0 8px 24px rgba(16,24,40,.16); padding: 6px; min-width: 200px; }
+.menu div { display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 12px; border-radius: var(--cp-radius-sm); font-weight: 560; }
+.menu div .icon { color: var(--cp-accent); }
+
+/* Laptop */
+.app { display: grid; grid-template-columns: 248px 1fr; height: 100vh; }
+.side { background: var(--cp-surface); border-right: 1px solid var(--cp-border); padding: 20px 14px; display: flex; flex-direction: column; gap: 4px; }
+.side .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; padding: 0 8px 18px; font-variation-settings: 'opsz' 32; }
+.side .brand svg { width: 32px; height: 32px; border-radius: 8px; }
+.side .item { height: 40px; border-radius: var(--cp-radius-sm); padding: 0 10px; display: flex; align-items: center; gap: 12px;
+  font-size: 14px; font-weight: 560; color: var(--cp-text-muted); }
+.side .item.on { background: var(--cp-accent-soft); color: var(--cp-accent); }
+.side .item .badge { margin-left: auto; }
+.side .group { margin-top: 18px; padding: 0 10px 6px; }
+.side .event { display: flex; align-items: center; gap: 10px; padding: 8px 10px; margin-bottom: 4px; }
+.side .event .thumb { width: 36px; height: 36px; border-radius: 8px; }
+.side .event b { font-size: 14px; font-weight: 620; display: block; }
+.side .event span { font-size: 12px; color: var(--cp-text-muted); }
+.side .me { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 10px; border-top: 1px solid var(--cp-border); font-size: 14px; font-weight: 560; }
+.main { overflow: hidden; }
+.main-inner { max-width: 1080px; padding: 28px 40px; display: flex; flex-direction: column; gap: 24px; }
+.cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+.cols-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.split { display: grid; grid-template-columns: 400px 1fr; height: 100vh; }
+.split .pane { border-right: 1px solid var(--cp-border); display: flex; flex-direction: column; overflow: hidden; }
+.kv { display: grid; grid-template-columns: 160px 1fr; row-gap: 12px; font-size: 14px; }
+.kv dt { color: var(--cp-text-muted); }
+.kv dd { font-weight: 560; }
+
+</style>
+</head>
+<body>
+<div class="status-bar"><span>9:41</span><span class="dots"><i></i><i></i></span></div>
+  <div class="top-bar">
+    <span class="btn"><span class="icon" aria-hidden="true"><svg class="lucide lucide-x" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M18 6 6 18" /> <path d="m6 6 12 12" /> </svg></span></span>
+    <span class="title">Create an event</span>
+    
+  </div>
+  <main class="page" style="gap:20px">
+    <p class="muted" style="margin-top:-4px">Start from a template. You can change anything afterwards.</p>
+    <section class="stack-sm">
+      <div class="section-head"><h2>Your templates</h2></div>
+      
+      <div class="card row" style="padding:14px 16px;align-items:flex-start">
+        <span class="tile-icon"><span class="icon" aria-hidden="true"><svg class="lucide lucide-users-round" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M18 21a8 8 0 0 0-16 0" /> <circle cx="10" cy="8" r="5" /> <path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" /> </svg></span></span>
+        <div class="grow"><div class="row-title">Lakeside Convention setup</div><div class="row-sub" style="display:block">Based on Convention · saved 2 October</div>
+          </div>
+        <span class="icon trail" style="align-self:center"><span class="icon" aria-hidden="true"><svg class="lucide lucide-chevron-right" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="m9 18 6-6-6-6" /> </svg></span></span>
+      </div>
+    </section>
+    <section class="stack-sm">
+      <div class="section-head"><h2>Templates</h2></div>
+      
+      <div class="card row" style="padding:14px 16px;align-items:flex-start">
+        <span class="tile-icon"><span class="icon" aria-hidden="true"><svg class="lucide lucide-plus" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M5 12h14" /> <path d="M12 5v14" /> </svg></span></span>
+        <div class="grow"><div class="row-title">Blank</div><div class="row-sub" style="display:block">Start from nothing and set it up your way.</div>
+          <div style="margin-top:8px"><span class="chip chip-neutral">Just a title and a date</span></div></div>
+        <span class="icon trail" style="align-self:center"><span class="icon" aria-hidden="true"><svg class="lucide lucide-chevron-right" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="m9 18 6-6-6-6" /> </svg></span></span>
+      </div>
+      
+      <div class="card row" style="padding:14px 16px;align-items:flex-start">
+        <span class="tile-icon"><span class="icon" aria-hidden="true"><svg class="lucide lucide-party-popper" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M5.8 11.3 2 22l10.7-3.79" /> <path d="M4 3h.01" /> <path d="M22 8h.01" /> <path d="M15 2h.01" /> <path d="M22 20h.01" /> <path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10" /> <path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17" /> <path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7" /> <path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z" /> </svg></span></span>
+        <div class="grow"><div class="row-title">Party</div><div class="row-sub" style="display:block">A birthday, a dinner or any get-together, ready in a minute.</div>
+          <div style="margin-top:8px"><span class="chip chip-neutral">Just a title and a date</span></div></div>
+        <span class="icon trail" style="align-self:center"><span class="icon" aria-hidden="true"><svg class="lucide lucide-chevron-right" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="m9 18 6-6-6-6" /> </svg></span></span>
+      </div>
+      
+      <div class="card row" style="padding:14px 16px;align-items:flex-start">
+        <span class="tile-icon"><span class="icon" aria-hidden="true"><svg class="lucide lucide-heart" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /> </svg></span></span>
+        <div class="grow"><div class="row-title">Wedding</div><div class="row-sub" style="display:block">Several days of events, guests invited by party, and meal choices.</div>
+          </div>
+        <span class="icon trail" style="align-self:center"><span class="icon" aria-hidden="true"><svg class="lucide lucide-chevron-right" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="m9 18 6-6-6-6" /> </svg></span></span>
+      </div>
+      
+      <div class="card row" style="padding:14px 16px;align-items:flex-start">
+        <span class="tile-icon"><span class="icon" aria-hidden="true"><svg class="lucide lucide-trophy" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /> <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /> <path d="M4 22h16" /> <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /> <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /> <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /> </svg></span></span>
+        <div class="grow"><div class="row-title">Cricket tournament</div><div class="row-sub" style="display:block">Teams, matches and players, with costs shared by those involved.</div>
+          </div>
+        <span class="icon trail" style="align-self:center"><span class="icon" aria-hidden="true"><svg class="lucide lucide-chevron-right" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="m9 18 6-6-6-6" /> </svg></span></span>
+      </div>
+      
+      <div class="card row" style="padding:14px 16px;align-items:flex-start">
+        <span class="tile-icon"><span class="icon" aria-hidden="true"><svg class="lucide lucide-flag" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /> <line x1="4" x2="4" y1="22" y2="15" /> </svg></span></span>
+        <div class="grow"><div class="row-title">Golf outing</div><div class="row-sub" style="display:block">Foursomes and rounds, with carts and handicaps.</div>
+          </div>
+        <span class="icon trail" style="align-self:center"><span class="icon" aria-hidden="true"><svg class="lucide lucide-chevron-right" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="m9 18 6-6-6-6" /> </svg></span></span>
+      </div>
+      
+      <div class="card row" style="padding:14px 16px;align-items:flex-start">
+        <span class="tile-icon"><span class="icon" aria-hidden="true"><svg class="lucide lucide-users-round" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M18 21a8 8 0 0 0-16 0" /> <circle cx="10" cy="8" r="5" /> <path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" /> </svg></span></span>
+        <div class="grow"><div class="row-title">Convention</div><div class="row-sub" style="display:block">Hundreds of people over several days, with meals, families and a committee.</div>
+          </div>
+        <span class="icon trail" style="align-self:center"><span class="icon" aria-hidden="true"><svg class="lucide lucide-chevron-right" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="m9 18 6-6-6-6" /> </svg></span></span>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

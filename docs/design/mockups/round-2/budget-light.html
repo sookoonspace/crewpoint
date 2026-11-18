@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390">
+<title>Budget · Slate and sage · light</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=block">
+<style>
+/* Tokens: Slate and sage, light. These names become the app's design tokens. */
+:root {
+  --cp-background: #F6F7F8;
+  --cp-surface: #FFFFFF;
+  --cp-border: #E2E6EA;
+  --cp-text: #1E2A33;
+  --cp-text-muted: #5A6672;
+  --cp-accent: #4A7A5C;
+  --cp-accent-soft: #E5EFE8;
+  --cp-on-accent: #FFFFFF;
+  --cp-banner: #4A7A5C;
+  --cp-on-banner: #FFFFFF;
+  --cp-status-done: #2E7D4F;
+  --cp-status-done-soft: #E6F2EA;
+  --cp-status-due: #9A6200;
+  --cp-status-due-soft: #FBF0DC;
+  --cp-status-overdue: #B3261E;
+  --cp-status-overdue-soft: #FBE6E4;
+  --cp-font-text: 'Inter', system-ui, sans-serif;
+  --cp-font-heading-opsz: 32;
+  --cp-type-title: 26px;
+  --cp-type-section: 17px;
+  --cp-type-body: 15px;
+  --cp-type-label: 13px;
+  --cp-type-caption: 12px;
+  --cp-type-stat: 22px;
+  --cp-space-xs: 4px;
+  --cp-space-sm: 8px;
+  --cp-space-md: 12px;
+  --cp-space-lg: 16px;
+  --cp-space-xl: 24px;
+  --cp-space-2xl: 32px;
+  --cp-radius-sm: 8px;
+  --cp-radius-md: 12px;
+  --cp-radius-lg: 16px;
+  --cp-radius-pill: 999px;
+  --cp-shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04);
+  --cp-icon-size: 20px;
+  --cp-tap-min: 48px;
+}
+html, body { width: 390px; height: 1180px; }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--cp-background); color: var(--cp-text); position: relative; overflow: hidden;
+  font-family: var(--cp-font-text); font-size: var(--cp-type-body); line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3 { font-variation-settings: 'opsz' var(--cp-font-heading-opsz); letter-spacing: -0.01em; }
+h1 { font-size: var(--cp-type-title); font-weight: 650; line-height: 1.2; }
+h2 { font-size: var(--cp-type-section); font-weight: 620; }
+h3 { font-size: 15px; font-weight: 620; }
+.icon { display: inline-flex; align-items: center; justify-content: center; line-height: 1; flex: none; }
+.icon svg { display: block; }
+.muted { color: var(--cp-text-muted); }
+.grow { flex: 1; min-width: 0; }
+.tnum { font-feature-settings: 'tnum'; }
+
+/* Phone chrome */
+.status-bar { height: 44px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px; font-size: 15px; font-weight: 600; }
+.status-bar .dots { display: flex; gap: 5px; }
+.status-bar .dots i { width: 17px; height: 10px; border-radius: 3px; background: var(--cp-text); opacity: .85; display: block; }
+.top-bar { height: 52px; display: flex; align-items: center; padding: 0 4px; gap: 4px; }
+.top-bar .btn { width: var(--cp-tap-min); height: var(--cp-tap-min); display: flex; align-items: center; justify-content: center; position: relative; }
+.top-bar .title { flex: 1; font-size: var(--cp-type-section); font-weight: 620; font-variation-settings: 'opsz' 32; padding-left: 4px; }
+.btn-add { width: 36px; height: 36px; border-radius: 50%; background: var(--cp-accent); color: var(--cp-on-accent);
+  display: flex; align-items: center; justify-content: center; margin: 0 8px; }
+.large-title { padding: 4px var(--cp-space-lg) 0; display: flex; align-items: center; justify-content: space-between; }
+.nav { position: absolute; left: 0; right: 0; bottom: 0; height: 84px; padding-bottom: 20px;
+  background: var(--cp-surface); border-top: 1px solid var(--cp-border); display: grid; grid-template-columns: repeat(5, 1fr); }
+.nav div { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  font-size: 11px; font-weight: 600; color: var(--cp-text-muted); }
+.nav .on { color: var(--cp-accent); }
+.nav .on .pill { background: var(--cp-accent-soft); }
+.nav .pill { width: 56px; height: 30px; border-radius: 15px; display: flex; align-items: center; justify-content: center; }
+.save-bar { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px var(--cp-space-lg) 32px;
+  background: var(--cp-surface); border-top: 1px solid var(--cp-border); display: flex; align-items: center; gap: var(--cp-space-md); }
+.save-bar .note { flex: 1; font-size: 13px; font-weight: 600; color: var(--cp-status-overdue); display: flex; align-items: center; gap: 6px; }
+
+/* Layout */
+.page { padding: 0 var(--cp-space-lg); display: flex; flex-direction: column; gap: var(--cp-space-xl); }
+.stack-sm { display: flex; flex-direction: column; gap: var(--cp-space-sm); }
+.stack-md { display: flex; flex-direction: column; gap: var(--cp-space-md); }
+.stack-lg { display: flex; flex-direction: column; gap: var(--cp-space-lg); }
+.hrow { display: flex; align-items: center; gap: var(--cp-space-sm); }
+.wrap { flex-wrap: wrap; }
+.section-head { display: flex; align-items: center; justify-content: space-between; min-height: 32px; gap: 8px; }
+.section-head a { color: var(--cp-accent); font-size: 14px; font-weight: 600; text-decoration: none; display: flex; align-items: center; }
+.section-head .count { font-size: 13px; color: var(--cp-text-muted); font-weight: 500; }
+.overline { font-size: 12px; font-weight: 650; letter-spacing: .04em; text-transform: uppercase; color: var(--cp-text-muted); }
+
+/* Surfaces */
+.card { background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: var(--cp-radius-md); box-shadow: var(--cp-shadow-card); }
+.card-pad { padding: var(--cp-space-lg); }
+.list > .row + .row, .list > .row + .sub-head, .list > .sub-head + .row { border-top: 1px solid var(--cp-border); }
+.row { display: flex; align-items: center; gap: var(--cp-space-md); padding: 12px var(--cp-space-lg); min-height: 60px; }
+.row > .icon.trail { color: var(--cp-text-muted); }
+.row.sel { background: var(--cp-accent-soft); }
+.row-title { font-weight: 560; }
+.row-sub { font-size: 13px; color: var(--cp-text-muted); display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+.amount { font-weight: 620; font-feature-settings: 'tnum'; white-space: nowrap; text-align: right; }
+.amount small { display: block; font-size: 12px; font-weight: 500; color: var(--cp-text-muted); }
+
+/* Chips and badges */
+.chip { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px;
+  border-radius: var(--cp-radius-pill); font-size: var(--cp-type-label); font-weight: 600; white-space: nowrap; }
+.chip-neutral { background: var(--cp-accent-soft); color: var(--cp-accent); }
+.chip-quiet { background: transparent; border: 1px solid var(--cp-border); color: var(--cp-text-muted); }
+.chip-done { background: var(--cp-status-done-soft); color: var(--cp-status-done); }
+.chip-due { background: var(--cp-status-due-soft); color: var(--cp-status-due); }
+.chip-overdue { background: var(--cp-status-overdue-soft); color: var(--cp-status-overdue); }
+.chip .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.badge { min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: var(--cp-accent);
+  color: var(--cp-on-accent); font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+.filters { display: flex; gap: var(--cp-space-sm); overflow: hidden; }
+.filter { height: 34px; padding: 0 12px; border-radius: var(--cp-radius-pill); border: 1px solid var(--cp-border);
+  background: var(--cp-surface); font-size: 14px; font-weight: 550; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.filter.on { background: var(--cp-accent-soft); border-color: transparent; color: var(--cp-accent); }
+
+/* Avatars */
+.avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--cp-accent-soft); color: var(--cp-accent);
+  font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex: none; }
+.avatar.sm { width: 32px; height: 32px; font-size: 11px; }
+.avatar.lg { width: 64px; height: 64px; font-size: 22px; }
+.avatar.blank { background: var(--cp-border); color: var(--cp-text-muted); }
+.stack-av { display: flex; }
+.stack-av .avatar { border: 2px solid var(--cp-background); margin-left: -6px; }
+.stack-av .avatar:first-child { margin-left: 0; }
+.tile-icon { width: 40px; height: 40px; border-radius: var(--cp-radius-sm); background: var(--cp-accent-soft);
+  color: var(--cp-accent); display: flex; align-items: center; justify-content: center; flex: none; }
+.thumb { width: 64px; height: 64px; border-radius: var(--cp-radius-md); overflow: hidden; flex: none;
+  background: var(--cp-accent-soft); color: var(--cp-accent); display: flex; align-items: center; justify-content: center; }
+.thumb svg.photo { width: 100%; height: 100%; display: block; }
+
+/* Buttons */
+.btn-primary, .btn-secondary, .btn-text { height: 48px; border-radius: var(--cp-radius-md); font-weight: 620; font-size: 15px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 18px; white-space: nowrap; }
+.btn-primary { background: var(--cp-accent); color: var(--cp-on-accent); }
+.btn-secondary { background: var(--cp-surface); color: var(--cp-accent); border: 1px solid var(--cp-border); }
+.btn-text { color: var(--cp-accent); padding: 0 8px; }
+.btn-sm { height: 36px; font-size: 14px; padding: 0 12px; border-radius: var(--cp-radius-sm); }
+.btn-dashed { height: 52px; border-radius: var(--cp-radius-md); border: 1.5px dashed var(--cp-border); color: var(--cp-accent);
+  font-weight: 620; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.full { width: 100%; }
+
+/* Form fields */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field > label, .q-label { font-size: 13px; font-weight: 620; display: flex; align-items: center; gap: 6px; }
+.req { color: var(--cp-status-overdue); }
+.input { height: 48px; border: 1px solid var(--cp-border); border-radius: var(--cp-radius-sm); background: var(--cp-surface);
+  padding: 0 12px; display: flex; align-items: center; gap: 8px; font-size: 15px; white-space: nowrap; overflow: hidden; }
+.input .ph { color: var(--cp-text-muted); }
+.input.focus { border: 2px solid var(--cp-accent); padding: 0 11px; }
+.input.error { border: 2px solid var(--cp-status-overdue); padding: 0 11px; }
+.help { font-size: 12px; color: var(--cp-text-muted); line-height: 1.4; }
+.err { font-size: 12px; font-weight: 600; color: var(--cp-status-overdue); display: flex; align-items: center; gap: 4px; }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--cp-background);
+  border: 1px solid var(--cp-border); border-radius: var(--cp-radius-sm); padding: 3px; height: 44px; }
+.seg span { display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 6px; font-size: 14px; font-weight: 600; color: var(--cp-text-muted); }
+.seg .on { background: var(--cp-surface); color: var(--cp-text); box-shadow: 0 1px 2px rgba(16,24,40,.12); }
+.opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.opt { min-height: 36px; padding: 0 14px; border-radius: var(--cp-radius-pill); border: 1px solid var(--cp-border);
+  background: var(--cp-surface); font-size: 14px; font-weight: 550; display: inline-flex; align-items: center; gap: 6px; }
+.opt.on { background: var(--cp-accent); border-color: var(--cp-accent); color: var(--cp-on-accent); }
+.opts.error .opt { border-color: var(--cp-status-overdue); }
+.switch-row { display: flex; align-items: center; gap: 12px; min-height: 48px; }
+.switch { width: 46px; height: 28px; border-radius: 14px; background: var(--cp-border); position: relative; flex: none; }
+.switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--cp-surface); box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+.switch.on { background: var(--cp-accent); }
+.switch.on::after { left: 21px; }
+.private { border: 1px solid var(--cp-border); border-radius: var(--cp-radius-md); background: var(--cp-background); padding: var(--cp-space-lg); }
+.banner-msg { border-radius: var(--cp-radius-md); padding: 12px 14px; display: flex; gap: 10px; font-size: 14px; align-items: flex-start; }
+.banner-msg.error { background: var(--cp-status-overdue-soft); color: var(--cp-status-overdue); }
+.banner-msg.info { background: var(--cp-accent-soft); color: var(--cp-text); }
+.banner-msg.info .icon { color: var(--cp-accent); }
+
+/* Cover */
+.cover { height: 156px; border-radius: var(--cp-radius-lg); overflow: hidden; position: relative; background: var(--cp-banner); color: var(--cp-on-banner); }
+.cover svg.photo { width: 100%; height: 100%; display: block; }
+.cover .big { position: absolute; right: 18px; top: 18px; opacity: .9; }
+.cover .label { position: absolute; left: 16px; bottom: 14px; font-size: var(--cp-type-label); font-weight: 600; opacity: .9; }
+
+/* Stats */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--cp-space-sm); }
+.stat { padding: var(--cp-space-md); display: flex; flex-direction: column; gap: 6px; min-height: 104px; }
+.stat .k { font-size: var(--cp-type-caption); font-weight: 600; color: var(--cp-text-muted); display: flex; align-items: center; gap: 6px; }
+.stat .v { font-size: var(--cp-type-stat); font-weight: 650; font-variation-settings: 'opsz' 32; font-feature-settings: 'tnum'; }
+.stat .s { font-size: var(--cp-type-caption); color: var(--cp-text-muted); }
+.bar { height: 8px; border-radius: 4px; background: var(--cp-border); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--cp-accent); border-radius: 4px; }
+.time { width: 50px; display: flex; flex-direction: column; font-feature-settings: 'tnum'; flex: none; }
+.time strong { font-size: 15px; font-weight: 650; }
+.time span { font-size: 11px; color: var(--cp-text-muted); font-weight: 600; }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: var(--cp-space-sm); }
+.tile { display: flex; align-items: center; gap: 10px; padding: 14px 12px; min-height: 64px;
+  background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: var(--cp-radius-md); }
+.tile .row-sub { font-size: 12px; }
+.check { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--cp-border); flex: none; display: flex; align-items: center; justify-content: center; }
+.check.on { background: var(--cp-status-done); border-color: var(--cp-status-done); color: var(--cp-surface); }
+.menu { position: absolute; z-index: 5; background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: var(--cp-radius-md);
+  box-shadow: 0 8px 24px rgba(16,24,40,.16); padding: 6px; min-width: 200px; }
+.menu div { display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 12px; border-radius: var(--cp-radius-sm); font-weight: 560; }
+.menu div .icon { color: var(--cp-accent); }
+
+/* Laptop */
+.app { display: grid; grid-template-columns: 248px 1fr; height: 100vh; }
+.side { background: var(--cp-surface); border-right: 1px solid var(--cp-border); padding: 20px 14px; display: flex; flex-direction: column; gap: 4px; }
+.side .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; padding: 0 8px 18px; font-variation-settings: 'opsz' 32; }
+.side .brand svg { width: 32px; height: 32px; border-radius: 8px; }
+.side .item { height: 40px; border-radius: var(--cp-radius-sm); padding: 0 10px; display: flex; align-items: center; gap: 12px;
+  font-size: 14px; font-weight: 560; color: var(--cp-text-muted); }
+.side .item.on { background: var(--cp-accent-soft); color: var(--cp-accent); }
+.side .item .badge { margin-left: auto; }
+.side .group { margin-top: 18px; padding: 0 10px 6px; }
+.side .event { display: flex; align-items: center; gap: 10px; padding: 8px 10px; margin-bottom: 4px; }
+.side .event .thumb { width: 36px; height: 36px; border-radius: 8px; }
+.side .event b { font-size: 14px; font-weight: 620; display: block; }
+.side .event span { font-size: 12px; color: var(--cp-text-muted); }
+.side .me { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 10px; border-top: 1px solid var(--cp-border); font-size: 14px; font-weight: 560; }
+.main { overflow: hidden; }
+.main-inner { max-width: 1080px; padding: 28px 40px; display: flex; flex-direction: column; gap: 24px; }
+.cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+.cols-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.split { display: grid; grid-template-columns: 400px 1fr; height: 100vh; }
+.split .pane { border-right: 1px solid var(--cp-border); display: flex; flex-direction: column; overflow: hidden; }
+.kv { display: grid; grid-template-columns: 160px 1fr; row-gap: 12px; font-size: 14px; }
+.kv dt { color: var(--cp-text-muted); }
+.kv dd { font-weight: 560; }
+
+</style>
+</head>
+<body>
+<div class="status-bar"><span>9:41</span><span class="dots"><i></i><i></i></span></div>
+  <div class="top-bar">
+    <span class="btn"><span class="icon" aria-hidden="true"><svg class="lucide lucide-arrow-left" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="m12 19-7-7 7-7" /> <path d="M19 12H5" /> </svg></span></span>
+    <span class="title">Budget</span>
+    <span class="btn"><span class="icon" aria-hidden="true"><svg class="lucide lucide-upload" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /> <polyline points="17 8 12 3 7 8" /> <line x1="12" x2="12" y1="3" y2="15" /> </svg></span></span><span class="btn-add"><span class="icon" aria-hidden="true"><svg class="lucide lucide-plus" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M5 12h14" /> <path d="M12 5v14" /> </svg></span></span>
+  </div>
+  <main class="page" style="gap:20px">
+    <div class="card card-pad stack-md">
+      <div class="hrow"><div class="grow"><div class="overline">Spent</div>
+        <div class="tnum" style="font-size:28px;font-weight:650;font-variation-settings:'opsz' 32">$4,320 <span class="muted" style="font-size:15px;font-weight:500">of $6,000</span></div></div></div>
+      <div class="bar"><i style="width:72%"></i></div>
+      <div class="hrow muted" style="font-size:13px;justify-content:space-between"><span>72% of budget</span><span class="tnum">$1,680 left</span></div>
+    </div>
+    <div class="card card-pad stack-md">
+      <div class="overline">Your balance</div>
+      <div class="tnum" style="font-size:24px;font-weight:650;font-variation-settings:'opsz' 32">You are owed $120</div>
+      <div class="row-sub" style="margin:0">Ravi owes you $80 · Asha owes you $40</div>
+      <span class="btn-primary full"><span class="icon" aria-hidden="true"><svg class="lucide lucide-arrow-left-right" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M8 3 4 7l4 4" /> <path d="M4 7h16" /> <path d="m16 21 4-4-4-4" /> <path d="M20 17H4" /> </svg></span> Settle up</span>
+    </div>
+    <section class="stack-sm">
+      <div class="section-head"><h2>Balances</h2><a>All 12 <span class="icon" aria-hidden="true"><svg class="lucide lucide-chevron-right" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="m9 18 6-6-6-6" /> </svg></span></a></div>
+      <div class="card list">
+        
+      <div class="row"><span class="avatar sm">PS</span>
+        <div class="grow"><div class="row-title">Priya Shah</div><div class="row-sub">is owed</div></div>
+        <span class="amount">$310</span></div>
+        
+      <div class="row"><span class="avatar sm">RP</span>
+        <div class="grow"><div class="row-title">Ravi Patel</div><div class="row-sub">owes</div></div>
+        <span class="amount">$80</span></div>
+        
+      <div class="row"><span class="avatar sm">AS</span>
+        <div class="grow"><div class="row-title">Asha Singh</div><div class="row-sub">owes</div></div>
+        <span class="amount">$40</span></div>
+      </div>
+    </section>
+    <section class="stack-sm">
+      <div class="section-head"><h2>Expenses</h2><span class="count">14</span></div>
+      <div class="card list">
+        
+      <div class="row"><span class="tile-icon"><span class="icon" aria-hidden="true"><svg class="lucide lucide-receipt" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" /> <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" /> <path d="M12 17.5v-11" /> </svg></span></span>
+        <div class="grow"><div class="row-title">Venue deposit</div><div class="row-sub">Paid by Priya · split 6 ways</div></div>
+        <div class="stack-sm" style="align-items:flex-end;gap:4px"><span class="amount">$2,000<small>3 Jul</small></span></div></div>
+        
+      <div class="row"><span class="tile-icon"><span class="icon" aria-hidden="true"><svg class="lucide lucide-receipt" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" /> <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" /> <path d="M12 17.5v-11" /> </svg></span></span>
+        <div class="grow"><div class="row-title">Catering advance</div><div class="row-sub">Paid by you · split 6 ways</div></div>
+        <div class="stack-sm" style="align-items:flex-end;gap:4px"><span class="amount">$1,500<small>1 Jul</small></span></div></div>
+        
+      <div class="row"><span class="tile-icon"><span class="icon" aria-hidden="true"><svg class="lucide lucide-receipt" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" /> <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" /> <path d="M12 17.5v-11" /> </svg></span></span>
+        <div class="grow"><div class="row-title">T-shirts</div><div class="row-sub">Paid by Neha · Merchandise</div></div>
+        <div class="stack-sm" style="align-items:flex-end;gap:4px"><span class="amount">$620<small>28 Jun</small></span></div></div>
+        <div class="row"><span class="tile-icon"><span class="icon" aria-hidden="true"><svg class="lucide lucide-arrow-left-right" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M8 3 4 7l4 4" /> <path d="M4 7h16" /> <path d="m16 21 4-4-4-4" /> <path d="M20 17H4" /> </svg></span></span>
+          <div class="grow"><div class="row-title">Ravi paid Priya</div><div class="row-sub">Settlement</div></div>
+          <div class="stack-sm" style="align-items:flex-end;gap:4px"><span class="amount">$50</span><span class="chip chip-done"><span class="icon" aria-hidden="true"><svg class="lucide lucide-circle-check" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <circle cx="12" cy="12" r="10" /> <path d="m9 12 2 2 4-4" /> </svg></span>Paid</span></div></div>
+      </div>
+    </section>
+  </main>
+  <nav class="nav"><div class="on"><span class="pill"><span class="icon" aria-hidden="true"><svg class="lucide lucide-calendar" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M8 2v4" /> <path d="M16 2v4" /> <rect width="18" height="18" x="3" y="4" rx="2" /> <path d="M3 10h18" /> </svg></span></span>Events</div><div class=""><span class="pill"><span class="icon" aria-hidden="true"><svg class="lucide lucide-list-checks" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="m3 17 2 2 4-4" /> <path d="m3 7 2 2 4-4" /> <path d="M13 6h8" /> <path d="M13 12h8" /> <path d="M13 18h8" /> </svg></span></span>Tasks</div><div class=""><span class="pill"><span class="icon" aria-hidden="true"><svg class="lucide lucide-message-circle" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" /> </svg></span></span>Chat</div><div class=""><span class="pill"><span class="icon" aria-hidden="true"><svg class="lucide lucide-wallet" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" /> <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" /> </svg></span></span>Budget</div><div class=""><span class="pill"><span class="icon" aria-hidden="true"><svg class="lucide lucide-user" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /> <circle cx="12" cy="7" r="4" /> </svg></span></span>Profile</div></nav>
+</body>
+</html>

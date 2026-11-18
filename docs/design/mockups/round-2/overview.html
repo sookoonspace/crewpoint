@@ -1,0 +1,155 @@
+<title>CrewPoint Design Refresh</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap">
+<style>
+/* Layout: one review column; a sticky screen chooser, the light and dark pair, notes, the approval ask, then Round 1 folded away. */
+:root {
+  --bg: #F4F5F7; --panel: #FFFFFF; --line: #DDE0E5; --fg: #16191E; --muted: #5D6370;
+  --on: #16191E; --on-fg: #FFFFFF; --accent: #4A7A5C;
+  --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0F1114; --panel: #181B20; --line: #2A2E36; --fg: #ECEEF2; --muted: #9AA0AC;
+  --on: #ECEEF2; --on-fg: #0F1114; --accent: #82AE90; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0F1114; --panel: #181B20; --line: #2A2E36; --fg: #ECEEF2; --muted: #9AA0AC;
+  --on: #ECEEF2; --on-fg: #0F1114; --accent: #82AE90; color-scheme: dark }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; line-height: 1.5; margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.wrap { max-width: 960px; margin: 0 auto; padding-block: 24px 64px; display: flex; flex-direction: column; gap: 28px; }
+header { display: flex; flex-direction: column; gap: 6px; }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+h1 { font-size: clamp(26px, 5vw, 34px); line-height: 1.15; margin: 0; font-variation-settings: 'opsz' 32; letter-spacing: -0.015em; text-wrap: balance; }
+h2 { font-size: 19px; margin: 0; font-variation-settings: 'opsz' 28; text-wrap: balance; }
+p { margin: 0; max-width: 65ch; color: var(--muted); }
+.chooser { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  padding-block: 10px; display: flex; flex-direction: column; gap: 6px; border-bottom: 1px solid var(--line); }
+.chooser > span { font-size: 12px; font-weight: 600; color: var(--muted); }
+.seg { display: inline-flex; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 2px; }
+.seg button { font: inherit; font-size: 14px; font-weight: 550; border: 0; background: transparent; color: var(--fg);
+  min-height: 40px; padding: 0 12px; border-radius: 7px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--on); color: var(--on-fg); }
+.seg button:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.desc { display: flex; flex-direction: column; gap: 6px; }
+.desc ul { margin: 0; padding-left: 20px; color: var(--muted); max-width: 70ch; }
+.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+.pair.wide { grid-template-columns: 1fr; }
+figure { margin: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+figure img { width: 100%; height: auto; border-radius: 18px; border: 1px solid var(--line); display: block; margin: 0 auto; }
+.pair:not(.wide) figure img { max-width: 390px; }
+.pair.wide figure img { border-radius: 10px; }
+figcaption { font-size: 13px; color: var(--muted); text-align: center; }
+.box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+.box ul, .box ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.chosen { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+.chosen i { width: 14px; height: 14px; border-radius: 4px; background: var(--accent); display: block; }
+details { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 0 18px; }
+details[open] { padding-bottom: 18px; }
+summary { cursor: pointer; min-height: 52px; display: flex; align-items: center; font-weight: 620; }
+details .inner { display: flex; flex-direction: column; gap: 16px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Design refresh · Round 2</span>
+    <h1>Every main screen in Slate and sage</h1>
+    <p>You chose Slate and sage with Lucide icons in Round 1. Here are the nine most-used phone screens and two laptop screens in that look, in light and dark. Once you approve them, they are the agreed look until each screen is built.</p>
+  </header>
+
+  <div class="chooser" role="group" aria-labelledby="l-screen">
+    <span id="l-screen">Screen</span>
+    <div class="seg" id="screens"></div>
+  </div>
+
+  <section class="desc" aria-live="polite">
+    <h2 id="s-name"></h2>
+    <ul id="s-notes"></ul>
+  </section>
+
+  <div class="pair" id="pair">
+    <figure><img id="img-light" alt=""><figcaption>Light</figcaption></figure>
+    <figure><img id="img-dark" alt=""><figcaption>Dark</figcaption></figure>
+  </div>
+
+  <section class="box">
+    <h2>What stays the same on every screen</h2>
+    <ul>
+      <li>One sage accent for actions and selection. Green, amber and red mean only done or paid, due, and overdue, each with an icon.</li>
+      <li>Answers are tappable chips, not dropdowns. Required questions carry a red star, and Save names what is missing.</li>
+      <li>Words such as "Family" come from the event's template, so a wedding or a tournament shows its own words.</li>
+      <li>The lakeside picture stands in for an organizer's own cover photo. Without a photo, the banner shows the event's icon.</li>
+    </ul>
+  </section>
+
+  <section class="box">
+    <h2>Your approval</h2>
+    <p>Reply in the chat with "Approve" or with changes, for example "make cards less rounded" or "show the date on New family". Changes to one screen carry over to all of them.</p>
+  </section>
+
+  <details>
+    <summary>Round 1: the three directions you compared</summary>
+    <div class="inner">
+      <p><span class="chosen"><i></i>Chosen: Slate and sage with Lucide icons</span></p>
+      <div class="seg" id="r1dirs"></div>
+      <div class="pair">
+        <figure><img id="r1-light" alt=""><figcaption>Light</figcaption></figure>
+        <figure><img id="r1-dark" alt=""><figcaption>Dark</figcaption></figure>
+      </div>
+    </div>
+  </details>
+</div>
+
+<script>
+const R2 = '';
+const R1 = '../round-1/';
+const screens = [
+  { id: 'home', name: 'Home', title: 'Home (event list)', notes: ['Events grouped by Happening now, Upcoming and Drafts.', 'A cover photo shows as the thumbnail; otherwise the template icon.', 'Unread chat as a sage count; Live and Draft as quiet labels.'] },
+  { id: 'event-home', name: 'Event home', title: 'Event home, with a cover photo', notes: ['The cover photo across the top.', 'People, Tasks and Budget at a glance, then Up next and Open tasks.'] },
+  { id: 'event-home-no-photo', name: 'No photo', title: 'Event home, no cover photo', notes: ['A calm sage banner with the template’s icon and name.'] },
+  { id: 'people', name: 'People', title: 'People (roster)', notes: ['The + menu is shown open: Add person or Add family.', '“Your family” with Add people and Edit answers for an adult linked to a family.', 'Search, filters, link requests and an unnamed entry.'] },
+  { id: 'new-group', name: 'New family', title: 'New family (add a whole group)', notes: ['Family name and a question for the whole family.', 'One card per person with answers as chips; “Same answers as Neha” on the second card.', 'A missing required answer, and the save bar saying what is missing.'] },
+  { id: 'person-form', name: 'Person form', title: 'Person form', notes: ['Every field type: text, the Child switch, family picker, single and multiple choice, yes or no, number, a date.', 'The Private section with its own background and lock.', 'Error states: a failed save, a missing answer and a too-long answer.'] },
+  { id: 'schedule', name: 'Schedule', title: 'Schedule (day)', notes: ['By day or by venue, then a day picker.', 'What is on now, who it is for, places left, time to be confirmed, a hidden draft.'] },
+  { id: 'tasks', name: 'Tasks', title: 'Tasks', notes: ['Progress at the top, filters, then Overdue, This week and Done.', 'Budget figures only for people who may see them.'] },
+  { id: 'budget', name: 'Budget', title: 'Budget', notes: ['Spent against the budget, your balance with Settle up, the largest balances, then expenses and settlements.'] },
+  { id: 'create-event', name: 'Create event', title: 'Create event (template picker)', notes: ['Your saved templates first, then the six templates.', 'Party and Blank need just a title and a date.'] },
+  { id: 'laptop-event-home', name: 'Laptop: Event home', title: 'Event home on a laptop', wide: true, notes: ['A left sidebar for the app and the event.', 'Summary cards in three columns; Up next and Open tasks side by side.'] },
+  { id: 'laptop-people', name: 'Laptop: People', title: 'People on a laptop, list and detail', wide: true, notes: ['The list on the left, the chosen person on the right.', 'Answers and the private section in the detail panel.'] },
+];
+const r1 = [['slate-sage', 'Slate and sage'], ['ink-indigo', 'Ink and indigo'], ['warm-neutral', 'Warm neutral']];
+const state = { screen: 'home', r1: 'slate-sage' };
+try { const s = JSON.parse(localStorage.getItem('round2') || '{}');
+  if (screens.some((x) => x.id === s.screen)) state.screen = s.screen;
+  if (r1.some(([k]) => k === s.r1)) state.r1 = s.r1; } catch (e) {}
+
+const seg = document.getElementById('screens');
+seg.innerHTML = screens.map((s) => `<button data-v="${s.id}">${s.name}</button>`).join('');
+const r1seg = document.getElementById('r1dirs');
+r1seg.innerHTML = r1.map(([k, n]) => `<button data-v="${k}">${n}</button>`).join('');
+
+function render() {
+  const s = screens.find((x) => x.id === state.screen);
+  document.getElementById('s-name').textContent = s.title;
+  document.getElementById('s-notes').innerHTML = s.notes.map((n) => `<li>${n}</li>`).join('');
+  document.getElementById('pair').classList.toggle('wide', !!s.wide);
+  for (const mode of ['light', 'dark']) {
+    const img = document.getElementById('img-' + mode);
+    img.src = `${R2}${s.id}-${mode}.png`;
+    img.alt = `${s.title}, ${mode} mode`;
+  }
+  const n = r1.find(([k]) => k === state.r1)[1];
+  for (const mode of ['light', 'dark']) {
+    const img = document.getElementById('r1-' + mode);
+    img.src = `${R1}event-home-${state.r1}-lucide-${mode}.png`;
+    img.alt = `Round 1 Event home, ${n}, ${mode} mode`;
+  }
+  seg.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === state.screen)));
+  r1seg.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === state.r1)));
+  try { localStorage.setItem('round2', JSON.stringify(state)); } catch (e) {}
+}
+seg.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; state.screen = b.dataset.v; render(); });
+r1seg.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; state.r1 = b.dataset.v; render(); });
+render();
+</script>

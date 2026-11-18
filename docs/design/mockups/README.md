@@ -10,10 +10,32 @@ The Event home in three directions (Slate and sage, Ink and indigo, Warm neutral
 
 **Chosen: Slate and sage, with Lucide icons** (ledger L22). Round 2 and the design system tokens start from `round-1/event-home-slate-sage-lucide-{light,dark}.html`.
 
+## Round 2 ([#190](https://github.com/sookoonspace/crewpoint/issues/190))
+
+Slate and sage with Lucide, in light and dark: `round-2/<screen>-<mode>.{html,png}`.
+
+| Screen | File |
+|---|---|
+| Home (event list) | `home` |
+| Event home, with a cover photo | `event-home` |
+| Event home, no cover photo | `event-home-no-photo` |
+| People (roster) | `people` |
+| New group | `new-group` |
+| Person form | `person-form` |
+| Schedule (day) | `schedule` |
+| Tasks | `tasks` |
+| Budget | `budget` |
+| Create event (template picker) | `create-event` |
+| Event home on a laptop (1280 px) | `laptop-event-home` |
+| People on a laptop, list and detail (1280 px) | `laptop-people` |
+
+The mockups use the Convention template's words ("Family" for group). The lakeside picture is a drawn stand-in for an organizer's own cover photo. Chat, settings, roles, counts and other admin screens have no mockups; they follow the design system. `round-2/overview.html` is the review page, published at the same private link as Round 1.
+
 ## Rebuilding
 
 ```bash
-node docs/design/mockups/_src/build.mjs --png   # needs Google Chrome; drop --png for HTML only
+node docs/design/mockups/_src/build.mjs --png    # Round 1; needs Google Chrome; drop --png for HTML only
+node docs/design/mockups/_src/round2.mjs --png   # Round 2; --only=<screen> rebuilds one screen
 ```
 
-`_src/build.mjs` holds the tokens and the screen. Lucide icons are inlined from `_src/lucide/` (lucide-static 0.469.0, ISC licence); Material Symbols and Inter load from Google Fonts.
+`_src/kit.mjs` holds the tokens, icon names and PNG export that both rounds share; `build.mjs` and `round2.mjs` hold the screens. Lucide icons are inlined from `_src/lucide/` (lucide-static 0.469.0, ISC licence); Material Symbols and Inter load from Google Fonts.
