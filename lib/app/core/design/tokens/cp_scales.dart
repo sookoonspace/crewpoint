@@ -95,6 +95,12 @@ class CpSizes extends ThemeExtension<CpSizes> {
   /// The widest a single column of content grows before it is centred.
   double get phoneColumn => CpScale.phoneColumn;
 
+  /// The laptop sidebar's width.
+  double get sidebar => CpScale.sidebar;
+
+  /// The list's width beside a detail panel.
+  double get listPane => CpScale.listPane;
+
   @override
   CpSizes copyWith() => this;
 

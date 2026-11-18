@@ -27,7 +27,6 @@ const notYetMigrated = <String>{
   'lib/app/core/widgets/network_image_with_placeholder.dart',
   'lib/app/core/widgets/primary_button.dart',
   'lib/app/core/widgets/reserved_checkmark_chip.dart',
-  'lib/app/core/widgets/responsive_shell.dart',
   'lib/app/core/widgets/segmented_filter_bar.dart',
   'lib/app/core/widgets/settings_row.dart',
   'lib/app/core/widgets/skeletons.dart',

@@ -141,6 +141,24 @@ Both give a light selection tick on iOS and the platform's tap feedback on Andro
 - **`CpDialog`** has a title, a message or content, and its buttons. Show it with `showDialog`. Put Cancel first as `CpButton.text`, then the main action. Make the main action destructive for removals.
 - **`showCpTextPrompt`** asks for one line of text, such as a group name, and returns it trimmed, or null. It owns its controller, so it is safe as the keyboard closes.
 
+## Layout
+
+Layout lives in `lib/app/core/design/layout/` (Spec #186 Req 21–24). The same app serves phones, tablets and laptops; there is no separate admin site.
+
+- **`CpShell`** frames the signed-in app.
+  - **Under 840 px:** one column with the bottom bar. From 600 to 839 px the column stays phone width and is centred.
+  - **From 840 px:** a left sidebar with the logo replaces the bar.
+  - **Keys:** each destination is keyed `shell.bar.{id}` or `shell.rail.{id}`, and its count badge `….badge`.
+  - **Resizing:** the body keeps its place in the tree, so routes, state and scroll positions survive a resize.
+- **`CpListDetail`** shows a list and the chosen item, used for People, Tasks and Budget.
+  - **From 840 px:** the item opens in a panel beside the list. With nothing chosen, the panel shows a quiet prompt, such as `context.strings.nav.selectToSee(words.one('participant'))`.
+  - **Below 840 px:** the item is a full page.
+- **The route is the source of truth for the list and detail.**
+  - The detail route (such as `people/:participantId`) builds the same screen with that row chosen, so back and shared links work.
+  - Build those pages with `cpListDetailPage`. Wide, rows change without a transition and the list keeps its scroll position. Narrow, the detail slides in as its own page, and resizing moves between the two.
+  - Rows choose through `CpListDetail.select(rowContext, () => context.go(...))`, using a context inside the layout.
+  - A detail with unsaved edits wraps itself in `CpUnsavedChanges(dirty: …)`, so switching rows asks first.
+
 ## 200% text
 
 Every component lays out at 200% text without overflowing (the gallery's third variant):
