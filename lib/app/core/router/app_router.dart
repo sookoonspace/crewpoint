@@ -33,6 +33,7 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/edit_event_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_settings_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/expense_access_screen.dart';
+import 'package:crewpoint_app/app/features/participants/presentation/group_entry_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/fields_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/join_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/account_link_listener.dart';
@@ -321,6 +322,18 @@ GoRouter createRouter({
                               eventId: _resolveEventId(state),
                               child: (event) =>
                                   LinkRequestsScreen(event: event),
+                            ),
+                          ),
+                          // A whole group at once (Spec #186 Req 26), new or
+                          // `?group=` an existing one.
+                          GoRoute(
+                            path: 'group-entry',
+                            builder: (_, state) => EventGuard(
+                              eventId: _resolveEventId(state),
+                              child: (event) => GroupEntryScreen(
+                                event: event,
+                                groupId: state.uri.queryParameters['group'],
+                              ),
                             ),
                           ),
                           GoRoute(

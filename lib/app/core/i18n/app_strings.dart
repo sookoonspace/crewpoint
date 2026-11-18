@@ -44,6 +44,7 @@ abstract class AppStrings {
   TransferStrings get transfer;
   ExpenseAccessStrings get expenseAccess;
   PeopleStrings get people;
+  GroupEntryStrings get groupEntry;
   FieldStrings get fields;
   ImportStrings get imports;
   LinkStrings get links;
@@ -526,6 +527,8 @@ class _EnglishStrings extends AppStrings {
 
   @override
   PeopleStrings get people => const _EnglishPeopleStrings();
+  @override
+  GroupEntryStrings get groupEntry => const _EnglishGroupEntryStrings();
 
   @override
   FieldStrings get fields => const _EnglishFieldStrings();
@@ -1650,6 +1653,151 @@ class _EnglishRoleStrings extends RoleStrings {
       'After you leave, only ${name ?? 'one other person'} can invite and '
       'remove people. Give someone else that permission first, so there is '
       'always a backup.';
+}
+
+/// The group screen (Spec #186 Req 25–36): adding a whole group, or people
+/// to one. [group] is the event's word for a group, from `event.words`.
+abstract class GroupEntryStrings {
+  const GroupEntryStrings();
+
+  String addPerson(String participant);
+  String addGroup(String group);
+  String addPeople(String people);
+  String newTitle(String group);
+  String addToTitle(String name);
+  String groupName(String group);
+  String groupQuestions(String group);
+  String personTitle(int number);
+  String get peopleHeading;
+  String peopleCount(int count);
+  String get adult;
+  String get child;
+  String get nameLabel;
+  String get emailLabel;
+  String get emailHelp;
+  String get birthDateLabel;
+  String birthDateHelp(String? band);
+  String get clearBirthDate;
+  String sameAnswersAs(String name);
+  String get sameAnswersAsPrevious;
+  String get addAnotherPerson;
+  String get removePerson;
+  String get required;
+  String get chooseAnswer;
+  String get enterAnswer;
+  String get privateHeading;
+  String get yes;
+  String get no;
+  String get addAtLeastOne;
+  String missingCount(int count);
+  String get nameRequired;
+  String save(String group);
+  String get saveAdditions;
+  String offline(String group);
+  String groupFailed(String group);
+  String answersFailed(String group);
+  String peopleFailed(String group);
+  String newGroupSaved(String name, int count);
+  String addedToGroup(String name, int count);
+  String get maxPeople;
+}
+
+class _EnglishGroupEntryStrings extends GroupEntryStrings {
+  const _EnglishGroupEntryStrings();
+
+  @override
+  String addPerson(String participant) => 'Add ${participant.toLowerCase()}';
+  @override
+  String addGroup(String group) => 'Add ${group.toLowerCase()}';
+  @override
+  String addPeople(String people) => 'Add people';
+  @override
+  String newTitle(String group) => 'New ${group.toLowerCase()}';
+  @override
+  String addToTitle(String name) => 'Add people to $name';
+  @override
+  String groupName(String group) => '$group name';
+  @override
+  String groupQuestions(String group) => 'For the whole ${group.toLowerCase()}';
+  @override
+  String personTitle(int number) => 'Person $number';
+  @override
+  String get peopleHeading => 'People';
+  @override
+  String peopleCount(int count) => count == 1 ? '1 person' : '$count people';
+  @override
+  String get adult => 'Adult';
+  @override
+  String get child => 'Child';
+  @override
+  String get nameLabel => 'Name';
+  @override
+  String get emailLabel => 'Email (private)';
+  @override
+  String get emailHelp =>
+      'Links their account when they sign in with this email.';
+  @override
+  String get birthDateLabel => 'Birth date (private)';
+  @override
+  String birthDateHelp(String? band) => band == null
+      ? 'Optional. Sets the age band.'
+      : 'Sets the age band: $band.';
+  @override
+  String get clearBirthDate => 'Clear birth date';
+  @override
+  String sameAnswersAs(String name) => 'Same answers as $name';
+  @override
+  String get sameAnswersAsPrevious => 'Same answers as the person above';
+  @override
+  String get addAnotherPerson => 'Add another person';
+  @override
+  String get removePerson => 'Remove this person';
+  @override
+  String get required => 'required';
+  @override
+  String get chooseAnswer => 'Choose an answer.';
+  @override
+  String get enterAnswer => 'Enter an answer.';
+  @override
+  String get privateHeading => 'Private';
+  @override
+  String get yes => 'Yes';
+  @override
+  String get no => 'No';
+  @override
+  String get addAtLeastOne => 'Add at least one person';
+  @override
+  String missingCount(int count) =>
+      count == 1 ? '1 answer missing' : '$count answers missing';
+  @override
+  String get nameRequired => 'Enter a name.';
+  @override
+  String save(String group) => 'Save ${group.toLowerCase()}';
+  @override
+  String get saveAdditions => 'Save people';
+  @override
+  String offline(String group) =>
+      "You're offline. Connect to save this ${group.toLowerCase()}.";
+  @override
+  String groupFailed(String group) =>
+      "Couldn't create the ${group.toLowerCase()}, so nothing was saved. "
+      'Everything you typed is still here, so try again.';
+  @override
+  String answersFailed(String group) =>
+      "The ${group.toLowerCase()}'s answers and people weren't saved. "
+      'Everything you typed is still here, so try again.';
+  @override
+  String peopleFailed(String group) =>
+      "The ${group.toLowerCase()} is saved, but its people aren't. "
+      'Everything you typed is still here, so try again.';
+  @override
+  String newGroupSaved(String name, int count) =>
+      '$name added with ${count == 1 ? '1 person' : '$count people'}';
+  @override
+  String addedToGroup(String name, int count) =>
+      '${count == 1 ? '1 person' : '$count people'} added to $name';
+  @override
+  String get maxPeople => 'Up to 20 people at a time.';
 }
 
 /// The Crews screen and task crews (#68). [crew] and [crews] are the event's

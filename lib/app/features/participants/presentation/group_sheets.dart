@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:crewpoint_app/app/features/schedule/domain/models/session.dart';
 import 'package:flutter/material.dart';
@@ -14,17 +13,14 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart';
 import 'package:crewpoint_app/app/features/participants/application/roster_controller.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/features/participants/domain/models/group_draft.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/participant.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/field_answer_input.dart';
 
 /// A new group's ID, picked once so a retry saves the same group.
-String newGroupId() {
-  final random = Random();
-  return List.generate(
-    20,
-    (_) => 'abcdefghijklmnopqrstuvwxyz0123456789'[random.nextInt(36)],
-  ).join();
-}
+String newGroupId() => newRecordId();
 
 /// Picks a group by searching its name (Req 43), so it works at thousands of
 /// groups. With [allowCreate], offers a new group too. With [onlyIds], lists
@@ -314,10 +310,17 @@ class _NameDialogState extends State<_NameDialog> {
 
 /// What managing a group changed, for the roster to follow.
 class GroupSheetResult {
-  const GroupSheetResult({this.group, this.deleted = false});
+  const GroupSheetResult({
+    this.group,
+    this.deleted = false,
+    this.addPeople = false,
+  });
 
   final GroupModel? group;
   final bool deleted;
+
+  /// "Add people" was chosen: open the group screen on [group].
+  final bool addPeople;
 }
 
 /// A group's custom field answers, and with [manage] (`participants.edit`)
@@ -551,6 +554,19 @@ class _GroupSheetState extends ConsumerState<GroupSheet> {
           children: [
             if (!widget.manage)
               Text(_group.name, style: theme.textTheme.titleMedium),
+            if (widget.manage)
+              CpButton.secondary(
+                key: const Key('people.group.addPeople'),
+                icon: CpIcons.memberAdd,
+                label: context.strings.groupEntry.addPeople(
+                  words.other('participant'),
+                ),
+                onPressed: _busy
+                    ? null
+                    : () => Navigator.of(
+                        context,
+                      ).pop(GroupSheetResult(group: _group, addPeople: true)),
+              ),
             _GroupAnswers(event: widget.event, groupId: _group.id),
             if (widget.manage) ...[
               TextField(

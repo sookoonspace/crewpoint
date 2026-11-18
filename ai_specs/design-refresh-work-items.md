@@ -250,28 +250,28 @@ One screen where an organizer creates a group, or adds people to an existing gro
 - Approved New group mockup in `docs/design/mockups/`.
 
 #### Acceptance criteria
-- [ ] Entry: People gets a "+" menu with "Add person" and "Add {group}" for `participants.edit` holders; an existing group's sheet gets "Add people", which opens the same screen with the group set.
-- [ ] The screen is one route under People; titles and labels use the event's words (`event.words`).
-- [ ] Top of the screen: the group name (required), then the event's group-scope custom fields. Adding to an existing group shows the name without editing it.
-- [ ] One card per person: name (required) and Adult or Child; a child gets an optional birth date that sets the age band; an adult gets an optional email kept in private details; the person's participant-scope fields show in the card.
-- [ ] Choice questions are tappable chips; required questions are marked and Save points to any that are missing; private questions show only to someone allowed to read private details.
-- [ ] Every card after the first offers "Same answers as {previous name}", copying every custom-field answer the viewer can see (standard and private), never name, adult or child, birth date or email.
-- [ ] The screen opens with two empty cards; "Add another person" adds one; each card has a remove button; at most 20 people per save; completely empty cards are ignored.
-- [ ] A new group needs at least one named person; otherwise Save says "Add at least one person".
-- [ ] Save runs `MemberCalls.saveGroup` (new group, pre-generated ID), then `saveGroupAnswers`, then every person and their `private/details` in one Firestore batch, computing `sortName`, `filterTags` and `categoryId` as the person form does.
-- [ ] IDs are fixed when the screen opens; each step records success and a retry repeats only unfinished steps, so no duplicates.
-- [ ] On failure everything typed stays and the message says what did not save.
-- [ ] Offline, Save shows "You're offline. Connect to save this {group}." and nothing is sent or lost.
-- [ ] Save is disabled with progress while saving; a second tap does nothing.
-- [ ] After saving: back to People filtered to that group, with "{Group} added with N people" (new group) or "N people added to {group}" (existing group).
-- [ ] Leaving with anything entered asks first.
-- [ ] A new group starts with no linked adults. Existing rules are unchanged; drafts still refuse plain members.
-- [ ] Person cards are a reusable widget (Stage 2 registration reuses them, Req 38).
-- [ ] Draft logic is written test first, one behaviour at a time: draft rules, empty-card skipping, the 20 cap, "Same answers as", required-answer checks, retry without duplicates, offline refusal.
-- [ ] Robot journeys in `test/journeys/` cover: an organizer adding a new group of several people with answers; adding people to an existing group; a failed batch kept intact and retried without duplicates; offline showing the message and keeping the draft; a second tap on Save doing nothing; closing dialogs and sheets with the keyboard up and leaving mid-edit (#185); leaving with unsaved entries; 375 px at 200% text in dark mode.
-- [ ] Keys follow `domain.feature.action`, for example `people.groupEntry.addPerson`, `people.groupEntry.person.{index}.copy`, `people.groupEntry.save`.
-- [ ] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
-- [ ] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, and `npm test` passes if rules tests are touched, using seams and fakes only; no test initialises Firebase or touches a real project.
+- [x] Entry: People gets a "+" menu with "Add person" and "Add {group}" for `participants.edit` holders; an existing group's sheet gets "Add people", which opens the same screen with the group set.
+- [x] The screen is one route under People; titles and labels use the event's words (`event.words`).
+- [x] Top of the screen: the group name (required), then the event's group-scope custom fields. Adding to an existing group shows the name without editing it.
+- [x] One card per person: name (required) and Adult or Child; a child gets an optional birth date that sets the age band; an adult gets an optional email kept in private details; the person's participant-scope fields show in the card.
+- [x] Choice questions are tappable chips; required questions are marked and Save points to any that are missing; private questions show only to someone allowed to read private details.
+- [x] Every card after the first offers "Same answers as {previous name}", copying every custom-field answer the viewer can see (standard and private), never name, adult or child, birth date or email.
+- [x] The screen opens with two empty cards; "Add another person" adds one; each card has a remove button; at most 20 people per save; completely empty cards are ignored.
+- [x] A new group needs at least one named person; otherwise Save says "Add at least one person".
+- [x] Save runs `MemberCalls.saveGroup` (new group, pre-generated ID), then `saveGroupAnswers`, then every person and their `private/details` in one Firestore batch, computing `sortName`, `filterTags` and `categoryId` as the person form does.
+- [x] IDs are fixed when the screen opens; each step records success and a retry repeats only unfinished steps, so no duplicates.
+- [x] On failure everything typed stays and the message says what did not save.
+- [x] Offline, Save shows "You're offline. Connect to save this {group}." and nothing is sent or lost.
+- [x] Save is disabled with progress while saving; a second tap does nothing.
+- [x] After saving: back to People filtered to that group, with "{Group} added with N people" (new group) or "N people added to {group}" (existing group).
+- [x] Leaving with anything entered asks first.
+- [x] A new group starts with no linked adults. Existing rules are unchanged; drafts still refuse plain members.
+- [x] Person cards are a reusable widget (Stage 2 registration reuses them, Req 38).
+- [x] Draft logic is written test first, one behaviour at a time: draft rules, empty-card skipping, the 20 cap, "Same answers as", required-answer checks, retry without duplicates, offline refusal.
+- [x] Robot journeys in `test/journeys/` cover: an organizer adding a new group of several people with answers; adding people to an existing group; a failed batch kept intact and retried without duplicates; offline showing the message and keeping the draft; a second tap on Save doing nothing; closing dialogs and sheets with the keyboard up and leaving mid-edit (#185); leaving with unsaved entries; 375 px at 200% text in dark mode.
+- [x] Keys follow `domain.feature.action`, for example `people.groupEntry.addPerson`, `people.groupEntry.person.{index}.copy`, `people.groupEntry.save`.
+- [x] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
+- [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, and `npm test` passes if rules tests are touched, using seams and fakes only; no test initialises Firebase or touches a real project.
 - [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 
 #### Covers

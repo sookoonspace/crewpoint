@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:crewpoint_app/app/core/services/connectivity.dart';
 import 'package:crewpoint_app/app/core/services/qr_renderer.dart';
 import 'package:crewpoint_app/app/core/services/file_picker_service.dart';
 import 'package:crewpoint_app/app/features/participants/data/import_repository.dart';
@@ -705,6 +706,12 @@ final fileExporterProvider = Provider<IFileExporter>(
 /// Reloads the page on web, to fetch a newer build. Does nothing natively.
 final pageReloaderProvider = Provider<IPageReloader>(
   (_) => createPageReloader(),
+);
+
+/// Whether the server can be reached now, for saves that must not queue
+/// offline (Spec #186 Req 34).
+final connectivityProvider = Provider<IConnectivity>(
+  (ref) => FirestoreConnectivity(ref.watch(firestoreProvider)),
 );
 
 /// Reads the public `config/app` document (Req 34a).

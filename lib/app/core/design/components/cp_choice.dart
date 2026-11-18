@@ -73,7 +73,8 @@ class CpChoiceChips<T> extends StatelessWidget {
       labelIcon: labelIcon,
       child: Wrap(
         spacing: cp.space.sm,
-        runSpacing: cp.space.sm,
+        // Each chip's tap area reaches above and below it, filling the gap.
+        runSpacing: 0,
         children: [
           for (final choice in choices)
             _ChoicePill(
@@ -120,49 +121,58 @@ class _ChoicePill extends StatelessWidget {
       label: label,
       excludeSemantics: true,
       onTap: onTap,
-      child: Material(
-        color: selected ? c.accent : c.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: cp.radii.pill,
-          side: BorderSide(
-            color: selected
-                ? c.accent
-                : hasError
-                ? c.overdue
-                : c.border,
-            width: cp.sizes.hairline,
-          ),
-        ),
-        child: InkWell(
-          onTap: onTap,
-          customBorder: RoundedRectangleBorder(borderRadius: cp.radii.pill),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: cp.sizes.tapMin - cp.space.sm,
-              minWidth: cp.sizes.tapMin,
-            ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: cp.space.md + 2,
-                vertical: cp.space.xs,
+      // A transparent margin above and below the chip also takes the tap,
+      // so the target is at least 48 px while the chip looks lighter.
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: cp.space.xs),
+          child: Material(
+            color: selected ? c.accent : c.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: cp.radii.pill,
+              side: BorderSide(
+                color: selected
+                    ? c.accent
+                    : hasError
+                    ? c.overdue
+                    : c.border,
+                width: cp.sizes.hairline,
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                spacing: cp.space.xs + 2,
-                children: [
-                  if (selected)
-                    Icon(CpIcons.check, size: cp.sizes.iconSm, color: fg),
-                  Flexible(
-                    child: Text(
-                      label,
-                      style: cp.type.titleSmall.copyWith(
-                        color: fg,
-                        fontSize: cp.type.labelLarge.fontSize! - 1,
-                      ),
-                    ),
+            ),
+            child: InkWell(
+              onTap: onTap,
+              customBorder: RoundedRectangleBorder(borderRadius: cp.radii.pill),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: cp.sizes.tapMin - cp.space.sm,
+                  minWidth: cp.sizes.tapMin,
+                ),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: cp.space.md + 2,
+                    vertical: cp.space.xs,
                   ),
-                ],
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    spacing: cp.space.xs + 2,
+                    children: [
+                      if (selected)
+                        Icon(CpIcons.check, size: cp.sizes.iconSm, color: fg),
+                      Flexible(
+                        child: Text(
+                          label,
+                          style: cp.type.titleSmall.copyWith(
+                            color: fg,
+                            fontSize: cp.type.labelLarge.fontSize! - 1,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
