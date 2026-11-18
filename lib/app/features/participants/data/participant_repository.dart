@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/category.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
+import 'package:crewpoint_app/app/features/participants/domain/models/group_draft.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/link_request.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/participant.dart';
 
@@ -198,6 +199,51 @@ class ParticipantRepository {
         'fields': privateDetails.fields,
         'updatedAt': FieldValue.serverTimestamp(),
       });
+    }
+    await batch.commit();
+  }
+
+  /// Writes new people and their private details in one batch (Spec #186
+  /// Req 32). Their IDs were fixed when the group screen opened, so writing
+  /// again after a failure replaces the same documents instead of adding
+  /// more. [definitions] are the event's fields, for the filter tags.
+  Future<void> saveNewPeople(
+    String eventId,
+    List<PersonRecord> records, {
+    List<CustomField> definitions = const [],
+  }) async {
+    final participantFields = [
+      for (final f in definitions)
+        if (f.scope == FieldScope.participant) f,
+    ];
+    final batch = _firestore.batch();
+    for (final PersonRecord(:person, :private) in records) {
+      batch.set(_people(eventId).doc(person.id), {
+        'name': person.name.trim(),
+        'sortName': person.sortName,
+        'groupId': person.groupId,
+        'isChild': person.isChild,
+        'status': person.status,
+        'categoryId': person.categoryId,
+        'fields': person.fields,
+        'filterTags': filterTagsFor(participantFields, person.fields),
+        'arrivalAt': null,
+        'departureAt': null,
+        'optOuts': const <String>[],
+        'signUps': const <String>[],
+        'invitedTo': const <String>[],
+        'createdBy': person.createdBy,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      if (private != null) {
+        batch.set(_private(eventId, person.id), {
+          'birthDate': private.birthDate,
+          'email': ?private.email,
+          'fields': private.fields,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
     }
     await batch.commit();
   }

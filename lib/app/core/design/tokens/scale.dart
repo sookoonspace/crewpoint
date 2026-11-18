@@ -60,6 +60,9 @@ abstract final class CpScale {
   static const double avatarRing = 2;
   static const double avatarOverlap = 6;
 
+  /// The widest a phone-style column grows before it is centred (L16).
+  static const double phoneColumn = 600;
+
   // ===== Type sizes =====
   static const double type11 = 11;
   static const double type12 = 12;

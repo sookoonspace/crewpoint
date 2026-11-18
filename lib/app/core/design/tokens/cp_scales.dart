@@ -92,6 +92,9 @@ class CpSizes extends ThemeExtension<CpSizes> {
   double get skeletonLine => CpScale.skeletonLine;
   double get hairline => CpScale.hairline;
 
+  /// The widest a single column of content grows before it is centred.
+  double get phoneColumn => CpScale.phoneColumn;
+
   @override
   CpSizes copyWith() => this;
 

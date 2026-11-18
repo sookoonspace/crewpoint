@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
 import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
@@ -16,6 +18,7 @@ import 'package:crewpoint_app/app/features/participants/data/participant_reposit
 import 'package:crewpoint_app/app/features/participants/domain/models/category.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/participant.dart';
+import 'package:crewpoint_app/app/features/participants/presentation/group_entry_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/group_sheets.dart';
 
 /// Who is attending (Req 43, route `people`). With `participants.read` it
@@ -131,6 +134,10 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
       group: group,
     );
     if (!mounted) return;
+    if (result case GroupSheetResult(addPeople: true, :final group?)) {
+      await _openGroupEntry(group: group);
+      return;
+    }
     setState(() {
       _group = switch (result) {
         GroupSheetResult(deleted: true) => null,
@@ -139,6 +146,54 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
       };
       _started = null;
     });
+  }
+
+  /// The group screen (Spec #186 Req 26): a new group, or more people for
+  /// [group]. Afterwards People shows that group (Req 35).
+  Future<void> _openGroupEntry({GroupModel? group}) async {
+    final result = await context.push<GroupEntryResult>(
+      '/dashboard/event/${widget.event.id}/people/group-entry'
+      '${group == null ? '' : '?group=${group.id}'}',
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      _group = result.group;
+      _started = null;
+    });
+  }
+
+  /// "+" for someone who may add anyone: one person or a whole group.
+  Future<void> _chooseAdd() async {
+    final words = widget.event.words;
+    final strings = context.strings.groupEntry;
+    final choice = await showCpSheet<String>(
+      context: context,
+      builder: (sheet) => CpCard(
+        child: CpRowGroup(
+          children: [
+            CpListRow(
+              key: const Key('people.roster.addPerson'),
+              leading: const Icon(CpIcons.memberAdd),
+              title: strings.addPerson(words.one('participant')),
+              onTap: () => Navigator.of(sheet).pop('person'),
+            ),
+            CpListRow(
+              key: const Key('people.roster.addGroup'),
+              leading: const Icon(CpIcons.members),
+              title: strings.addGroup(words.one('group')),
+              onTap: () => Navigator.of(sheet).pop('group'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted) return;
+    switch (choice) {
+      case 'person':
+        _open('new');
+      case 'group':
+        await _openGroupEntry();
+    }
   }
 
   void _open(String participantId) => context.push(
@@ -445,7 +500,9 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
       fab: canAdd
           ? FloatingActionButton.extended(
               key: const Key('people.roster.add'),
-              onPressed: () => _open('new'),
+              // Anyone who may add anyone chooses a person or a whole group;
+              // a linked adult adds to their own group.
+              onPressed: edits ? _chooseAdd : () => _open('new'),
               icon: const Icon(AppIcons.actionAdd),
               label: Text(strings.add(words.one('participant'))),
             )

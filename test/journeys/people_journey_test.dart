@@ -380,7 +380,9 @@ void main() {
 
   testWidgets('leaving with unsaved changes asks first', (tester) async {
     final robot = await open(tester);
+    // An organizer chooses one person or a whole group (Spec #186 Req 26).
     await robot.tap(const Key('people.roster.add'));
+    await robot.tap(const Key('people.roster.addPerson'));
     await robot.finishTransition();
     await tester.enterText(
       find.byKey(const Key('people.edit.name')),

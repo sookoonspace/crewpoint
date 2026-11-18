@@ -1,5 +1,7 @@
 import 'package:drift/native.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:crewpoint_app/app/core/design/theme/cp_theme.dart';
+import 'package:crewpoint_app/app/features/participants/presentation/group_entry_screen.dart';
 import 'package:crewpoint_app/app/features/counts/presentation/counts_screen.dart';
 import 'package:crewpoint_app/app/features/schedule/presentation/agenda_screen.dart';
 import 'package:crewpoint_app/app/features/schedule/presentation/schedule_screen.dart';
@@ -229,6 +231,16 @@ class RolesHarness {
                     ),
                   ),
                   GoRoute(
+                    path: 'group-entry',
+                    builder: (_, state) => EventGuard(
+                      eventId: eventId,
+                      child: (event) => GroupEntryScreen(
+                        event: event,
+                        groupId: state.uri.queryParameters['group'],
+                      ),
+                    ),
+                  ),
+                  GoRoute(
                     path: ':participantId',
                     builder: (_, state) => EventGuard(
                       eventId: eventId,
@@ -321,7 +333,12 @@ class RolesHarness {
     ],
   );
 
-  Widget buildApp({List<Override> overrides = const []}) {
+  /// With [themeMode], the app uses the design system's themes in that mode;
+  /// without, Flutter's default theme, as older journeys expect.
+  Widget buildApp({
+    List<Override> overrides = const [],
+    ThemeMode? themeMode,
+  }) {
     return ProviderScope(
       overrides: [
         databaseProvider.overrideWithValue(database),
@@ -354,7 +371,12 @@ class RolesHarness {
           },
         ),
       ],
-      child: MaterialApp.router(routerConfig: router),
+      child: MaterialApp.router(
+        routerConfig: router,
+        theme: themeMode == null ? null : CpTheme.light(),
+        darkTheme: themeMode == null ? null : CpTheme.dark(),
+        themeMode: themeMode ?? ThemeMode.system,
+      ),
     );
   }
 }
