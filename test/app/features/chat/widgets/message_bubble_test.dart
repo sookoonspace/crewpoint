@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:crewpoint_app/app/core/theme/app_theme.dart';
+import 'package:crewpoint_app/app/core/design/theme/cp_theme.dart';
 import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
 import 'package:crewpoint_app/app/features/chat/presentation/widgets/message_bubble.dart';
 
@@ -115,7 +115,7 @@ void main() {
   testWidgets('other-user bubble meets WCAG AA in light AND dark mode', (
     tester,
   ) async {
-    for (final theme in [AppTheme.light(), AppTheme.dark()]) {
+    for (final theme in [CpTheme.light(), CpTheme.dark()]) {
       await pumpWithTheme(
         tester,
         theme: theme,
@@ -136,7 +136,7 @@ void main() {
   testWidgets('own-user bubble meets WCAG AA in light AND dark mode', (
     tester,
   ) async {
-    for (final theme in [AppTheme.light(), AppTheme.dark()]) {
+    for (final theme in [CpTheme.light(), CpTheme.dark()]) {
       await pumpWithTheme(
         tester,
         theme: theme,
@@ -163,7 +163,7 @@ void main() {
       timestamp: DateTime(2025, 1, 1),
       isHighPriority: true,
     );
-    for (final theme in [AppTheme.light(), AppTheme.dark()]) {
+    for (final theme in [CpTheme.light(), CpTheme.dark()]) {
       await pumpWithTheme(
         tester,
         theme: theme,
@@ -193,7 +193,7 @@ void main() {
       timestamp: DateTime(2025, 1, 1),
       kind: ChatMessageKind.settlement,
     );
-    for (final theme in [AppTheme.light(), AppTheme.dark()]) {
+    for (final theme in [CpTheme.light(), CpTheme.dark()]) {
       await pumpWithTheme(
         tester,
         theme: theme,

@@ -7,7 +7,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart';
 import 'package:crewpoint_app/app/core/database/daos/events_dao.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
-import 'package:crewpoint_app/app/core/theme/app_theme.dart';
+import 'package:crewpoint_app/app/core/design/theme/cp_theme.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/dashboard/data/event_repository.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
@@ -705,8 +705,8 @@ void main() {
 
   group('layout', () {
     for (final (name, theme) in [
-      ('light', AppTheme.light()),
-      ('dark', AppTheme.dark()),
+      ('light', CpTheme.light()),
+      ('dark', CpTheme.dark()),
     ]) {
       testWidgets('fits 375 px at 200% text in $name mode', (tester) async {
         await pump(

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/theme/app_theme.dart';
+import 'package:crewpoint_app/app/core/design/theme/cp_theme.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/task_detail_screen.dart';
@@ -301,7 +301,7 @@ void main() {
     testWidgets(
       'dark mode todo → onSurfaceVariant on surfaceContainerHighest',
       (tester) async {
-        final theme = AppTheme.dark();
+        final theme = CpTheme.dark();
         final colours = await badgeColours(
           tester,
           theme: theme,
@@ -313,7 +313,7 @@ void main() {
     );
 
     testWidgets('dark mode todo pill ≥ AA contrast (4.5:1)', (tester) async {
-      final theme = AppTheme.dark();
+      final theme = CpTheme.dark();
       final colours = await badgeColours(
         tester,
         theme: theme,
@@ -331,7 +331,7 @@ void main() {
     ) async {
       final colours = await badgeColours(
         tester,
-        theme: AppTheme.light(),
+        theme: CpTheme.light(),
         status: TaskStatus.todo,
       );
       expect(colours.fg, AppColors.charcoal);
@@ -341,7 +341,7 @@ void main() {
     testWidgets('inProgress unchanged across themes — sage bg + white text', (
       tester,
     ) async {
-      for (final theme in [AppTheme.light(), AppTheme.dark()]) {
+      for (final theme in [CpTheme.light(), CpTheme.dark()]) {
         final colours = await badgeColours(
           tester,
           theme: theme,
@@ -355,7 +355,7 @@ void main() {
     testWidgets('done unchanged across themes — sageDark bg + white text', (
       tester,
     ) async {
-      for (final theme in [AppTheme.light(), AppTheme.dark()]) {
+      for (final theme in [CpTheme.light(), CpTheme.dark()]) {
         final colours = await badgeColours(
           tester,
           theme: theme,

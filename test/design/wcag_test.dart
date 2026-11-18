@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:crewpoint_app/app/core/constants/wcag.dart';
+import 'package:crewpoint_app/app/core/design/tokens/wcag.dart';
 
 void main() {
   test('black on white returns the maximum WCAG contrast ratio of 21.0', () {

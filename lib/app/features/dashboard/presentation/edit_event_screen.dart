@@ -4,7 +4,7 @@ import 'package:crewpoint_app/app/core/format/event_time.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
+import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/core/widgets/custom_text_field.dart';
 import 'package:crewpoint_app/app/core/widgets/form_card_shell.dart';

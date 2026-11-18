@@ -16,7 +16,9 @@ dependencies:
 
   # UI
   cupertino_icons: ^1.0.8
-  google_fonts: ^8.2.1
+  # The design system's icon set (Spec #186, ledger L22), reached only
+  # through the icon tokens in lib/app/core/design/.
+  lucide_icons_flutter: ^4.0.3
   lottie: ^3.3.1
   flutter_svg: ^2.0.0
   # flutter_markdown was archived by the Flutter team in 2024;
@@ -169,3 +171,22 @@ flutter:
     - functions/src/shared/label_defaults.json
     - functions/src/shared/role_presets.json
     - assets/images/auth/
+  # Inter 4.1 (SIL OFL 1.1, assets/fonts/OFL.txt), bundled so the app and the
+  # golden tests never fetch fonts at runtime. Headings use Inter Display.
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
+    - family: InterDisplay
+      fonts:
+        - asset: assets/fonts/InterDisplay-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/InterDisplay-Bold.ttf
+          weight: 700

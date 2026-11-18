@@ -1,162 +1,110 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
-/// Centralized icon glyph tokens for CrewPoint.
-///
-/// Each name describes the *role* (not the glyph), so swapping the underlying
-/// `Icons.X` later changes one line. See `ai_specs/constants-and-polish-spec.md`
-/// for the normalisation rule + naming convention this file enforces.
-///
-/// **Normalisation policy** (applies to every variant collision):
-/// - Nav unselected → `Icons.X_outlined` / `Icons.X_outline`.
-/// - Nav selected → the filled (default) variant of the same family. No
-///   `_rounded` variants in nav.
-/// - All `_rounded` glyphs in non-nav code collapse to their default variant.
-/// - Calendar family collapses to `Icons.calendar_today`.
-/// - `add` family: `actionAdd = Icons.add` (no circle);
-///   `actionAddCircle = Icons.add_circle_outline` (always outlined).
-///
-/// **Naming convention** (strict): `nav<Tab>[Filled]`, `status<Name>`,
-/// `action<Verb>[Variant]`, `payment<Method>`, `chevron<Direction>`,
-/// `<domainNoun>` for general nouns, `<stateNoun>` for error/empty states.
-/// One-off decoratives keep a Material-mirror camelCase name.
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+
+/// The old icon names, kept only so unmigrated screens compile; each now
+/// forwards to the Lucide icon tokens in [CpIcons] (Spec #186 Req 15,
+/// ledger L22). New code uses [CpIcons]. Deleted when the last screen
+/// moves (#208).
+@Deprecated('Use CpIcons (lib/app/core/design/).')
 abstract final class AppIcons {
-  // ===== Navigation (bottom bar + rail) =====
-  // Unselected = outlined; selected = filled. Rounded variants collapse here.
-  static const IconData navHome = Icons.dashboard_outlined;
-  static const IconData navHomeFilled = Icons.dashboard;
-  static const IconData navTasks = Icons.task_outlined;
-  static const IconData navTasksFilled = Icons.task;
-  static const IconData navChat =
-      Icons.chat_outlined; // chat_rounded collapses here
-  static const IconData navChatFilled = Icons.chat;
-  static const IconData navBudget = Icons.account_balance_wallet_outlined;
-  // account_balance_wallet_rounded collapses to the default filled variant.
-  static const IconData navBudgetFilled = Icons.account_balance_wallet;
-  static const IconData navProfile = Icons.person_outline;
-  static const IconData navProfileFilled = Icons.person;
-
-  // ===== Status (TaskStatus + general "this thing is X") =====
-  // Per spec: warning_amber_rounded → warning_amber (drop _rounded).
-  static const IconData statusTodo = Icons.radio_button_unchecked;
-  static const IconData statusDoing = Icons.play_circle_outline;
-  static const IconData statusDoingAlt =
-      Icons.timelapse; // used by TaskTile chip
-  static const IconData statusDone = Icons.check_circle;
-  static const IconData statusDoneOutline = Icons.check_circle_outline;
-  static const IconData statusUrgent = Icons.warning_amber; // was _rounded
-  static const IconData statusInfo = Icons.info_outline;
-  static const IconData statusError = Icons.error_outline;
-
-  // ===== Actions (verbs) =====
-  // _rounded collapses to default (logout_rounded → logout, copy_rounded → copy).
-  static const IconData actionAdd = Icons.add;
-  static const IconData actionAddCircle = Icons.add_circle_outline;
-  static const IconData actionEdit = Icons.edit;
-  static const IconData actionDelete = Icons.delete;
-  static const IconData actionDeletePermanent = Icons.delete_forever;
-  static const IconData actionClose = Icons.close;
-  static const IconData actionClear = Icons.clear;
-  static const IconData actionCopy = Icons.copy;
-  static const IconData actionMore = Icons.more_vert;
-  static const IconData actionMoreHoriz = Icons.more_horiz;
-  static const IconData actionOpenInNew = Icons.open_in_new;
-  static const IconData actionRetry = Icons.refresh;
-  static const IconData appUpdate = Icons.system_update_outlined;
-  static const IconData actionSearch = Icons.search;
-  static const IconData filter = Icons.filter_list;
-  static const IconData importFile = Icons.upload_file;
-  static const IconData actionLogout = Icons.logout;
-  static final IconData actionShare =
-      Icons.adaptive.share; // Automatically adapts to iOS vs Android
-  static const IconData actionSend = Icons.send;
-  static const IconData actionBack = Icons.arrow_back;
-  static const IconData actionSettings = Icons.settings_outlined;
-  static const IconData actionSort = Icons.sort;
-  static const IconData actionSwap = Icons.swap_horiz; // was _rounded
-
-  // ===== Payment methods (canonical per profile_screen._PaymentCard) =====
-  static const IconData paymentVenmo = Icons.payment;
-  static const IconData paymentZelle = Icons.account_balance;
-  static const IconData paymentCashApp = Icons.attach_money;
-  static const IconData paymentPayPal = Icons.paypal_outlined;
-  static const IconData paymentCash = Icons.money;
-  static const IconData paymentGeneric = Icons.payment_outlined;
-
-  // ===== Chevrons =====
-  static const IconData chevronRight = Icons.chevron_right;
-
-  // ===== Auth providers =====
-  // Sign-in screen uses the SVG brand marks from `assets/images/auth/`
-  // (see social_auth_buttons.dart). These IconData tokens are reserved
-  // for secondary surfaces (e.g. delete_account_dialog re-auth prompts)
-  // where a plain Material glyph is appropriate.
-  static const IconData authGoogle = Icons.account_circle_outlined;
-  static const IconData authApple = Icons.apple;
-  static const IconData authEmail = Icons.alternate_email;
-  static const IconData authEmailField = Icons.email_outlined;
-  static const IconData authPassword = Icons.lock_outline;
-
-  // ===== Domain nouns =====
-  // Calendar family collapsed: calendar_month / _month_rounded / _today_outlined all → calendar_today.
-  static const IconData calendar = Icons.calendar_today;
-  static const IconData event = Icons.event;
-  static const IconData schedule = Icons.schedule;
-
-  // ===== Event templates (#89) =====
-  // Named by the template file's `icon`, never by the kind of event.
-  static const IconData templateAdd = Icons.add_box_outlined;
-  static const IconData templateCelebration = Icons.celebration_outlined;
-  static const IconData templateHeart = Icons.favorite_outline;
-  static const IconData templateBat = Icons.sports_outlined;
-  static const IconData templateFlag = Icons.flag_outlined;
-  static const IconData templateGroups = Icons.groups_outlined;
-  static const IconData place = Icons.place_outlined;
-  static const IconData map = Icons.map_outlined;
-  static const IconData directions = Icons.directions_outlined;
-  static const IconData hidden = Icons.visibility_off_outlined;
-  static const IconData eventBusy = Icons.event_busy_outlined;
-  static const IconData member = Icons.person_outline;
-  static const IconData memberAdd = Icons
-      .person_add_rounded; // intentional rounded; one of the few rounded retained for visual weight
-  static const IconData members = Icons.group_outlined;
-  static const IconData notifications = Icons.notifications_none_rounded;
-  static const IconData privacy = Icons.privacy_tip_outlined;
-  static const IconData privacyPolicy = Icons.policy_outlined;
-  static const IconData terms =
-      Icons.article_outlined; // closest match to "document/legal" icon
-  static const IconData currency = Icons.attach_money;
-  static const IconData joinEvent =
-      Icons.group_add_outlined; // was login_rounded; collapsed to default
-  static const IconData markdown = Icons.description_outlined;
-  static const IconData description = Icons.description;
-  static const IconData image = Icons.image;
-  static const IconData photoLibrary = Icons.photo_library_outlined;
-  static const IconData camera = Icons.camera_alt_outlined;
-  static const IconData receipt = Icons.receipt;
-  static const IconData flag = Icons.flag;
-  static const IconData priorityHigh = Icons.priority_high;
-  static const IconData hub =
-      Icons.hub_rounded; // intentional rounded — feature glyph
-  static const IconData shield =
-      Icons.shield_rounded; // intentional rounded — feature glyph
-  static const IconData extension = Icons.extension_outlined;
-  static const IconData inbox = Icons.inbox_outlined;
-  static const IconData emailUnread = Icons.mark_email_unread;
-
-  // ===== States (errors, empty placeholders) =====
-  static const IconData imageBroken = Icons.broken_image;
-  static const IconData errorCompass = Icons.compass_calibration_outlined;
-  static const IconData wifiOff =
-      Icons.wifi_off_rounded; // was _rounded; keep — single non-nav use
-  static const IconData cloudOff = Icons.cloud_off;
-  static const IconData blocked =
-      Icons.block_rounded; // was _rounded; keep — single non-nav use
-  static const IconData lock = Icons.lock_outline;
-  static const IconData circleOutlined = Icons.circle_outlined;
-
-  // ===== Decorative one-offs =====
-  static const IconData wavingHand =
-      Icons.waving_hand_rounded; // used in dashboard greeting
-  static const IconData volunteerActivism = Icons.volunteer_activism;
-  static const IconData homeOutlined = Icons.home_outlined;
+  static const IconData navHome = CpIcons.navHome;
+  static const IconData navHomeFilled = CpIcons.navHomeFilled;
+  static const IconData navTasks = CpIcons.navTasks;
+  static const IconData navTasksFilled = CpIcons.navTasksFilled;
+  static const IconData navChat = CpIcons.navChat;
+  static const IconData navChatFilled = CpIcons.navChatFilled;
+  static const IconData navBudget = CpIcons.navBudget;
+  static const IconData navBudgetFilled = CpIcons.navBudgetFilled;
+  static const IconData navProfile = CpIcons.navProfile;
+  static const IconData navProfileFilled = CpIcons.navProfileFilled;
+  static const IconData statusTodo = CpIcons.statusTodo;
+  static const IconData statusDoing = CpIcons.statusDoing;
+  static const IconData statusDoingAlt = CpIcons.statusDoingAlt;
+  static const IconData statusDone = CpIcons.statusDone;
+  static const IconData statusDoneOutline = CpIcons.statusDoneOutline;
+  static const IconData statusUrgent = CpIcons.statusUrgent;
+  static const IconData statusInfo = CpIcons.statusInfo;
+  static const IconData statusError = CpIcons.statusError;
+  static const IconData actionAdd = CpIcons.actionAdd;
+  static const IconData actionAddCircle = CpIcons.actionAddCircle;
+  static const IconData actionEdit = CpIcons.actionEdit;
+  static const IconData actionDelete = CpIcons.actionDelete;
+  static const IconData actionDeletePermanent = CpIcons.actionDeletePermanent;
+  static const IconData actionClose = CpIcons.actionClose;
+  static const IconData actionClear = CpIcons.actionClear;
+  static const IconData actionCopy = CpIcons.actionCopy;
+  static const IconData actionMore = CpIcons.actionMore;
+  static const IconData actionMoreHoriz = CpIcons.actionMoreHoriz;
+  static const IconData actionOpenInNew = CpIcons.actionOpenInNew;
+  static const IconData actionRetry = CpIcons.actionRetry;
+  static const IconData appUpdate = CpIcons.appUpdate;
+  static const IconData actionSearch = CpIcons.actionSearch;
+  static const IconData filter = CpIcons.filter;
+  static const IconData importFile = CpIcons.importFile;
+  static const IconData actionLogout = CpIcons.actionLogout;
+  static const IconData actionShare = CpIcons.actionShare;
+  static const IconData actionSend = CpIcons.actionSend;
+  static const IconData actionBack = CpIcons.actionBack;
+  static const IconData actionSettings = CpIcons.actionSettings;
+  static const IconData actionSort = CpIcons.actionSort;
+  static const IconData actionSwap = CpIcons.actionSwap;
+  static const IconData paymentVenmo = CpIcons.paymentVenmo;
+  static const IconData paymentZelle = CpIcons.paymentZelle;
+  static const IconData paymentCashApp = CpIcons.paymentCashApp;
+  static const IconData paymentPayPal = CpIcons.paymentPayPal;
+  static const IconData paymentCash = CpIcons.paymentCash;
+  static const IconData paymentGeneric = CpIcons.paymentGeneric;
+  static const IconData chevronRight = CpIcons.chevronRight;
+  static const IconData authGoogle = CpIcons.authGoogle;
+  static const IconData authApple = CpIcons.authApple;
+  static const IconData authEmail = CpIcons.authEmail;
+  static const IconData authEmailField = CpIcons.authEmailField;
+  static const IconData authPassword = CpIcons.authPassword;
+  static const IconData calendar = CpIcons.calendar;
+  static const IconData event = CpIcons.event;
+  static const IconData schedule = CpIcons.schedule;
+  static const IconData templateAdd = CpIcons.templateAdd;
+  static const IconData templateCelebration = CpIcons.templateCelebration;
+  static const IconData templateHeart = CpIcons.templateHeart;
+  static const IconData templateBat = CpIcons.templateBat;
+  static const IconData templateFlag = CpIcons.templateFlag;
+  static const IconData templateGroups = CpIcons.templateGroups;
+  static const IconData place = CpIcons.place;
+  static const IconData map = CpIcons.map;
+  static const IconData directions = CpIcons.directions;
+  static const IconData hidden = CpIcons.hidden;
+  static const IconData eventBusy = CpIcons.eventBusy;
+  static const IconData member = CpIcons.member;
+  static const IconData memberAdd = CpIcons.memberAdd;
+  static const IconData members = CpIcons.members;
+  static const IconData notifications = CpIcons.notifications;
+  static const IconData privacy = CpIcons.privacy;
+  static const IconData privacyPolicy = CpIcons.privacyPolicy;
+  static const IconData terms = CpIcons.terms;
+  static const IconData currency = CpIcons.currency;
+  static const IconData joinEvent = CpIcons.joinEvent;
+  static const IconData markdown = CpIcons.markdown;
+  static const IconData description = CpIcons.description;
+  static const IconData image = CpIcons.image;
+  static const IconData photoLibrary = CpIcons.photoLibrary;
+  static const IconData camera = CpIcons.camera;
+  static const IconData receipt = CpIcons.receipt;
+  static const IconData flag = CpIcons.flag;
+  static const IconData priorityHigh = CpIcons.priorityHigh;
+  static const IconData hub = CpIcons.hub;
+  static const IconData shield = CpIcons.shield;
+  static const IconData extension = CpIcons.extension;
+  static const IconData inbox = CpIcons.inbox;
+  static const IconData emailUnread = CpIcons.emailUnread;
+  static const IconData imageBroken = CpIcons.imageBroken;
+  static const IconData errorCompass = CpIcons.errorCompass;
+  static const IconData wifiOff = CpIcons.wifiOff;
+  static const IconData cloudOff = CpIcons.cloudOff;
+  static const IconData blocked = CpIcons.blocked;
+  static const IconData lock = CpIcons.lock;
+  static const IconData circleOutlined = CpIcons.circleOutlined;
+  static const IconData wavingHand = CpIcons.wavingHand;
+  static const IconData volunteerActivism = CpIcons.volunteerActivism;
+  static const IconData homeOutlined = CpIcons.homeOutlined;
 }

@@ -1,6 +1,6 @@
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
+import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/version/app_version_check.dart';

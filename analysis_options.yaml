@@ -4,6 +4,11 @@ analyzer:
   errors:
     always_use_package_imports: error
     avoid_print: error
+    # The old style constants (AppColors, AppSpacing, AppIcons and the rest)
+    # are deprecated forwarders to lib/app/core/design/ while screens move
+    # across one by one (Spec #186). Remove this line with the forwarders in
+    # the last migration Work Item (#208).
+    deprecated_member_use_from_same_package: ignore
   exclude:
     - build/**
     - android/**

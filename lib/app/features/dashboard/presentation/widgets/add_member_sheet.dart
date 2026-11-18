@@ -465,7 +465,7 @@ class _AddMemberSheetState extends ConsumerState<AddMemberSheet> {
                 FilledButton.icon(
                   key: const Key('dashboard.invite.share'),
                   onPressed: _share,
-                  icon: Icon(AppIcons.actionShare, size: 18),
+                  icon: const Icon(AppIcons.actionShare, size: 18),
                   label: Text(strings.share),
                   style: FilledButton.styleFrom(
                     minimumSize: const Size(48, 48),

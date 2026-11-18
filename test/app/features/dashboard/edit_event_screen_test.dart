@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/edit_event_screen.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
 
 void main() {
   final initial = EventModel(
@@ -80,7 +81,7 @@ void main() {
       await tester.tap(
         find.descendant(
           of: find.byKey(const Key('editEvent.endDate')),
-          matching: find.byIcon(Icons.clear),
+          matching: find.byIcon(CpIcons.actionClear),
         ),
       );
       await tester.pump();

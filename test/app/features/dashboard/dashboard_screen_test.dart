@@ -9,6 +9,7 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/event_card.dart';
 import 'package:crewpoint_app/app/features/tasks/application/event_task_counts_provider.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
 
 void main() {
   // Empty-state branch renders an `EmptyStatePlaceholder` whose lottie
@@ -55,8 +56,7 @@ void main() {
     );
     await pumpFrames(tester);
 
-    // AppIcons.joinEvent → Icons.group_add_outlined.
-    expect(find.byIcon(Icons.group_add_outlined), findsWidgets);
+    expect(find.byIcon(CpIcons.joinEvent), findsWidgets);
   });
 
   testWidgets('renders EventCards when dashboardEventsProvider emits events', (

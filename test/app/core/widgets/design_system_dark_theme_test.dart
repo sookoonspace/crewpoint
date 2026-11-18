@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:crewpoint_app/app/core/theme/app_theme.dart';
+import 'package:crewpoint_app/app/core/design/theme/cp_theme.dart';
 import 'package:crewpoint_app/app/core/widgets/balance_tile.dart';
 import 'package:crewpoint_app/app/core/widgets/conversation_tile.dart';
 import 'package:crewpoint_app/app/core/widgets/event_tile.dart';
@@ -8,13 +8,13 @@ import 'package:crewpoint_app/app/core/widgets/task_progress_summary.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
 /// Smoke check: each headline design-system tile renders under
-/// `AppTheme.dark()` without throwing (e.g., null color lookup,
+/// `CpTheme.dark()` without throwing (e.g., null color lookup,
 /// overflow, missing token).
 void main() {
   Future<void> pumpDark(WidgetTester tester, Widget child) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: AppTheme.dark(),
+        theme: CpTheme.dark(),
         home: Scaffold(body: SingleChildScrollView(child: child)),
       ),
     );

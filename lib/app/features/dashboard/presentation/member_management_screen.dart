@@ -7,7 +7,7 @@ import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_radius.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/constants/breakpoints.dart';
+import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/chat/application/people_by_id_provider.dart';
 import 'package:crewpoint_app/app/core/providers.dart';

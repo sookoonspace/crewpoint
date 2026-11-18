@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/expense_tile.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
 
 void main() {
   testWidgets(
@@ -70,7 +71,7 @@ void main() {
         find.byKey(const Key('budget.expense.tile.exp-1.thumbnail')),
         findsNothing,
       );
-      expect(find.byIcon(Icons.receipt), findsOneWidget);
+      expect(find.byIcon(CpIcons.receipt), findsOneWidget);
     },
   );
 

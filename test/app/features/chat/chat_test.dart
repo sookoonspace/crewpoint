@@ -7,6 +7,7 @@ import 'package:crewpoint_app/app/features/chat/data/chat_repository.dart';
 import 'package:crewpoint_app/app/features/chat/domain/chat_window.dart';
 import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
 import 'package:crewpoint_app/app/features/chat/presentation/chat_screen.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
 
 /// Sends each change as a change set, as Firestore's `docChanges` would.
 class FakeChatService implements IChatService {
@@ -122,7 +123,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.warning_amber), findsOneWidget);
+      expect(find.byIcon(CpIcons.statusUrgent), findsOneWidget);
     });
 
     testWidgets('shows messages', (tester) async {
