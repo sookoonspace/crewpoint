@@ -162,3 +162,168 @@ Decision: As recommended. The owner wants a clean, professional look and not a "
 
 Negative Requirements:
 - No gradients, no illustrations, no more than one accent colour.
+
+### L10
+
+Status: current
+
+Question: What happens when someone taps Save on the group screen with no connection, or taps it twice?
+
+Recommended Answer:
+- Saving needs a connection for a new group and an existing one alike: "You're offline. Connect to save this {group}." and everything typed stays.
+- Save is disabled with progress while saving.
+
+Answer: Needs a connection (as recommended).
+
+Decision: As recommended.
+
+Reason: A new group cannot be created offline (the group step is a callable), and an offline Firestore batch never completes, so the screen would wait forever.
+
+Negative Requirements:
+- No offline queueing of group saves.
+
+### L11
+
+Status: current
+
+Question: How does a group's linked adult (no `participants.edit`) add people and change their group's answers, given they have no group sheet today?
+
+Recommended Answer:
+- People shows a "Your {group}" header per linked group, with "Add people" and "Edit answers", both opening the group screen; "Edit answers" fills in the existing people's cards.
+- Organizers get "Edit answers" too.
+- No renaming, adults, deletion or invitations for linked adults.
+
+Answer: Header + group screen (as recommended).
+
+Decision: As recommended. The group screen has an add mode and an edit-answers mode.
+
+### L12
+
+Status: current
+
+Question: How are the cover photo's Storage rules tested, since the role matrix covers Firestore only?
+
+Recommended Answer: Its own Storage rules test like `importRules.test.ts`, for each of the twelve preset roles, plus file type and size checks.
+
+Answer: Yes, own test.
+
+Decision: As recommended.
+
+### L13
+
+Status: current
+
+Question: What does the event record for its cover, is it available offline, and what happens to the file on removal?
+
+Recommended Answer:
+- `cover: {path, updatedAt}`; the app works out the download URL.
+- Mirrored into Drift (v17 → v18) so thumbnails show on an offline cold start.
+- Removing the photo or deleting the event deletes the file.
+- Pick at 1600 px, quality 85; JPEG, PNG or WebP under 5 MB; read checked on the member document; Storage CORS set per project for web.
+
+Answer: Path + updated time; yes, store locally; delete the file.
+
+Decision: As recommended.
+
+### L14
+
+Status: current
+
+Question: What does "Same answers as" copy, who are a new group's linked adults, can a new group be empty, and how are group answers saved?
+
+Recommended Answer:
+- "Same answers as" copies every answer the person filling in the screen can see, standard and private; never name, adult or child, birth date or email.
+- A new group starts with no linked adults.
+- A new group needs at least one named person.
+- Save order: group, then group answers (`saveGroupAnswers`), then the people batch; a retry repeats only unfinished steps.
+
+Answer: All visible answers; none at first; need one person.
+
+Decision: As recommended.
+
+### L15
+
+Status: current
+
+Question: Should CI compare the Design gallery against saved screenshots?
+
+Recommended Answer: Yes: a `design` tag run in CI, fonts bundled, goldens generated on Linux; the `screenshots` tag stays manual.
+
+Answer: Yes, gallery in CI.
+
+Decision: As recommended.
+
+### L16
+
+Status: current
+
+Question: How do screens 600–839 px wide look?
+
+Recommended Answer: Phone layout with bottom navigation, content capped and centred, as today.
+
+Answer: Phone layout, wider.
+
+Decision: As recommended.
+
+### L17
+
+Status: current
+
+Question: On a laptop, what is Budget's list and detail, and how does the detail panel behave?
+
+Recommended Answer:
+- Budget: expense list, expense opens on the right; summary and settle-up stay above the list.
+- Nothing selected: a quiet "Select a {participant} to see details".
+- Routes select the row, so shared links work; below 840 px the detail becomes a full page; switching rows with unsaved edits asks first.
+
+Answer: Expenses → expense; yes, as described.
+
+Decision: As recommended.
+
+### L18
+
+Status: current
+
+Question: What exactly does the design guard test flag?
+
+Recommended Answer: `Color(0x…)`, `Colors.…`, `GoogleFonts`, `fontFamily:`, non-zero numbers in `EdgeInsets`, `SizedBox`, `BorderRadius`, `Radius`, and plain Material visual widgets (`Card`, `ListTile`, chips, buttons). Layout widgets and calculated sizes are allowed.
+
+Answer: Precise list.
+
+Decision: As recommended.
+
+### L19
+
+Status: current
+
+Question: What happens to the other files in `lib/app/core/constants/`?
+
+Recommended Answer: Durations and icons become tokens; the PDF theme reads the tokens so PDFs match the app; `app_assets.dart` stays; `CLAUDE.md` "UI conventions" is rewritten in the last migration Work Item.
+
+Answer: Three move, assets stay.
+
+Decision: As recommended.
+
+### L20
+
+Status: current
+
+Question: Which outlined icon set does CrewPoint use?
+
+Recommended Answer: Material Symbols Outlined.
+
+Answer: Decide at mockups.
+
+Decision: Round 1 mockups show Material Symbols Outlined and Lucide; the owner picks one with the style direction. Icons are reached only through icon tokens.
+
+### L21
+
+Status: current
+
+Question: Which icon shows on the banner when an event has no cover photo?
+
+Recommended Answer: The template's icon (a saved template uses its base template's), else the older `eventType` icon, else a plain event icon.
+
+Answer: Template, then old type.
+
+Decision: As recommended.
