@@ -1,0 +1,165 @@
+<title>CrewPoint Round 1 Looks</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap">
+<style>
+/* Layout: one review column; a sticky chooser on top, the screen pair below, a logo strip and the two questions at the end. */
+:root {
+  --bg: #F4F5F7; --panel: #FFFFFF; --line: #DDE0E5; --fg: #16191E; --muted: #5D6370;
+  --on: #16191E; --on-fg: #FFFFFF;
+  --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0F1114; --panel: #181B20; --line: #2A2E36; --fg: #ECEEF2; --muted: #9AA0AC;
+  --on: #ECEEF2; --on-fg: #0F1114; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0F1114; --panel: #181B20; --line: #2A2E36; --fg: #ECEEF2; --muted: #9AA0AC;
+  --on: #ECEEF2; --on-fg: #0F1114; color-scheme: dark }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.wrap { max-width: 920px; margin: 0 auto; padding-block: 24px 64px; display: flex; flex-direction: column; gap: 28px; }
+header { display: flex; flex-direction: column; gap: 6px; }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+h1 { font-size: clamp(26px, 5vw, 34px); line-height: 1.15; margin: 0; font-variation-settings: 'opsz' 32; letter-spacing: -0.015em; text-wrap: balance; }
+h2 { font-size: 19px; margin: 0; font-variation-settings: 'opsz' 28; text-wrap: balance; }
+p { margin: 0; max-width: 65ch; color: var(--muted); }
+.chooser { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  padding-block: 10px; display: flex; flex-wrap: wrap; gap: 10px 18px; border-bottom: 1px solid var(--line); }
+.group { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.group > span { font-size: 12px; font-weight: 600; color: var(--muted); }
+.seg { display: inline-flex; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 2px; }
+.seg button { font: inherit; font-size: 14px; font-weight: 550; border: 0; background: transparent; color: var(--fg);
+  min-height: 40px; padding: 0 12px; border-radius: 7px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--on); color: var(--on-fg); }
+.seg button:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.desc { display: flex; flex-direction: column; gap: 4px; }
+.swatches { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.sw { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.sw i { width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--line); display: block; }
+.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+figure { margin: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+figure img { width: 100%; max-width: 390px; height: auto; border-radius: 18px; border: 1px solid var(--line); display: block; margin: 0 auto; }
+figcaption { font-size: 13px; color: var(--muted); text-align: center; }
+.logos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr)); gap: 12px; }
+.logo { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.logo .tiles { display: flex; gap: 8px; }
+.logo svg { width: 64px; height: 64px; border-radius: 14px; display: block; }
+.logo span { font-size: 13px; font-weight: 550; }
+.ask { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+.ask ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.keep { display: flex; flex-direction: column; gap: 6px; }
+.keep ul { margin: 0; padding-left: 20px; color: var(--muted); }
+@media (prefers-reduced-motion: no-preference) { figure img { transition: opacity .15s ease; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Design refresh · Round 1</span>
+    <h1>Choose a look for CrewPoint</h1>
+    <p>The same Event home in three directions, each with two icon sets, in light and dark. Pick one direction and one icon set; Round 2 then draws the other screens in that look.</p>
+  </header>
+
+  <div class="chooser" role="group" aria-label="What to show">
+    <div class="group"><span id="l-dir">Direction</span>
+      <div class="seg" aria-labelledby="l-dir" data-key="dir">
+        <button id="dir-slate-sage" data-v="slate-sage" aria-pressed="true">Slate and sage</button>
+        <button id="dir-ink-indigo" data-v="ink-indigo" aria-pressed="false">Ink and indigo</button>
+        <button id="dir-warm-neutral" data-v="warm-neutral" aria-pressed="false">Warm neutral</button>
+      </div>
+    </div>
+    <div class="group"><span id="l-icons">Icons</span>
+      <div class="seg" aria-labelledby="l-icons" data-key="icons">
+        <button id="icons-material" data-v="material" aria-pressed="true">Material Symbols</button>
+        <button id="icons-lucide" data-v="lucide" aria-pressed="false">Lucide</button>
+      </div>
+    </div>
+  </div>
+
+  <section class="desc" aria-live="polite">
+    <h2 id="dir-name">Slate and sage</h2>
+    <p id="dir-text"></p>
+    <div class="swatches" id="swatches"></div>
+  </section>
+
+  <div class="pair">
+    <figure><img id="img-light" alt="" width="390" height="1580"><figcaption>Light</figcaption></figure>
+    <figure><img id="img-dark" alt="" width="390" height="1580"><figcaption>Dark</figcaption></figure>
+  </div>
+
+  <section class="keep">
+    <h2>The same in every direction</h2>
+    <ul>
+      <li>The CrewPoint name and logo shape, and Inter for all text (headings in Inter Display).</li>
+      <li>One accent colour. Green, amber and red only mean done or paid, due, and overdue, always with an icon.</li>
+      <li>No gradients, no illustrations, no cream background. The banner shows the event's own icon until an organizer adds a cover photo.</li>
+    </ul>
+  </section>
+
+  <section class="keep">
+    <h2>The logo in each direction</h2>
+    <div class="logos" id="logos"></div>
+  </section>
+
+  <section class="ask">
+    <h2>Two choices</h2>
+    <ol>
+      <li>Which direction: Slate and sage, Ink and indigo, or Warm neutral?</li>
+      <li>Which icons: Material Symbols (close to today's, widest range) or Lucide (thinner lines, a few icons need stand-ins)?</li>
+    </ol>
+    <p>Reply in the chat, for example "Ink and indigo with Lucide". Changes such as "a little warmer" are welcome too.</p>
+  </section>
+</div>
+
+<script>
+const dirs = {
+  'slate-sage': { name: 'Slate and sage', text: 'White surfaces, slate grey text and a deeper sage accent. Calm and outdoorsy, closest to today’s green.',
+    light: { Accent: '#4A7A5C', Text: '#1E2A33', Muted: '#5A6672', Background: '#F6F7F8' },
+    dark: { accent: '#82AE90', text: '#E7EBEE', bg: '#111518', soft: '#2C4636' } },
+  'ink-indigo': { name: 'Ink and indigo', text: 'White surfaces, near-black text and a muted indigo accent. The crisp dashboard feel of the MeetCraft reference, without its gradients.',
+    light: { Accent: '#4A51A6', Text: '#111318', Muted: '#5C606E', Background: '#F8F8FA' },
+    dark: { accent: '#9097E3', text: '#ECEDF2', bg: '#0E0F14', soft: '#2B2F66' } },
+  'warm-neutral': { name: 'Warm neutral', text: 'Off-white surfaces, charcoal text and a toned-down terracotta accent. Friendly and warm, keeping a trace of today’s terracotta without the cream.',
+    light: { Accent: '#A85F45', Text: '#2A2927', Muted: '#6A6661', Background: '#F8F7F5' },
+    dark: { accent: '#D99276', text: '#EEEAE5', bg: '#151413', soft: '#5E3426' } },
+};
+const state = { dir: 'slate-sage', icons: 'material' };
+try { const s = JSON.parse(localStorage.getItem('round1') || '{}'); if (dirs[s.dir]) state.dir = s.dir; if (s.icons === 'lucide' || s.icons === 'material') state.icons = s.icons; } catch (e) {}
+
+function logo(c) {
+  const sats = [[379,172,48,'a'],[740,180,67,'s'],[254,354,105,'m'],[833,374,79,'m2'],[291,715,180,'a'],[853,669,48,'a'],[695,806,105,'m'],[339,403,41,'s'],[313,678,56,'s'],[579,790,41,'a']];
+  const spokes = [[379,172],[740,180],[339,403],[833,374],[313,678],[853,669],[579,790]];
+  const fill = { a: c.accent, s: c.soft, m: c.muted, m2: c.muted2 };
+  return `<svg viewBox="0 0 1024 1024" role="img" aria-label="CrewPoint logo"><rect width="1024" height="1024" fill="${c.bg}"/>`
+    + sats.slice(0, 7).map(([x,y,r,k]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${fill[k]}"/>`).join('')
+    + spokes.map(([x,y]) => `<line x1="538" y1="495" x2="${x}" y2="${y}" stroke="${c.ink}" stroke-width="10"/>`).join('')
+    + sats.slice(7).map(([x,y,r,k]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${c.ink}"/>`).join('')
+    + `<circle cx="538" cy="495" r="97" fill="${c.ink}"/></svg>`;
+}
+const logoColors = {
+  'slate-sage': [{ bg: '#FFFFFF', ink: '#1E2A33', accent: '#4A7A5C', soft: '#E5EFE8', muted: '#9DB5A5', muted2: '#C9D6CD' }, { bg: '#111518', ink: '#E7EBEE', accent: '#82AE90', soft: '#2C4636', muted: '#4D6B58', muted2: '#3A4A40' }],
+  'ink-indigo': [{ bg: '#FFFFFF', ink: '#111318', accent: '#4A51A6', soft: '#ECEDF8', muted: '#A3A7D6', muted2: '#CDD0EC' }, { bg: '#0E0F14', ink: '#ECEDF2', accent: '#9097E3', soft: '#2B2F66', muted: '#4D5296', muted2: '#33366A' }],
+  'warm-neutral': [{ bg: '#FFFFFF', ink: '#2A2927', accent: '#A85F45', soft: '#F4E8E2', muted: '#D2A897', muted2: '#E6CFC5' }, { bg: '#151413', ink: '#EEEAE5', accent: '#D99276', soft: '#5E3426', muted: '#8A5A48', muted2: '#4A332A' }],
+};
+document.getElementById('logos').innerHTML = Object.entries(dirs).map(([k, d]) =>
+  `<div class="logo"><div class="tiles">${logo(logoColors[k][0])}${logo(logoColors[k][1])}</div><span>${d.name}</span></div>`).join('');
+
+function render() {
+  const d = dirs[state.dir];
+  document.getElementById('dir-name').textContent = d.name + (state.icons === 'lucide' ? ' · Lucide icons' : ' · Material Symbols');
+  document.getElementById('dir-text').textContent = d.text;
+  document.getElementById('swatches').innerHTML = Object.entries(d.light).map(([n, v]) => `<span class="sw"><i style="background:${v}"></i>${n} ${v}</span>`).join('');
+  for (const mode of ['light', 'dark']) {
+    const img = document.getElementById('img-' + mode);
+    img.src = `event-home-${state.dir}-${state.icons}-${mode}.png`;
+    img.alt = `Event home, ${d.name}, ${state.icons === 'lucide' ? 'Lucide' : 'Material Symbols'} icons, ${mode} mode`;
+  }
+  document.querySelectorAll('.seg').forEach((seg) => seg.querySelectorAll('button').forEach((b) =>
+    b.setAttribute('aria-pressed', String(state[seg.dataset.key] === b.dataset.v))));
+  try { localStorage.setItem('round1', JSON.stringify(state)); } catch (e) {}
+}
+document.querySelectorAll('.seg').forEach((seg) => seg.addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return; state[seg.dataset.key] = b.dataset.v; render();
+}));
+render();
+</script>
