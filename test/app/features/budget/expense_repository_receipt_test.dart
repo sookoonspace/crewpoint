@@ -18,6 +18,15 @@ import 'package:crewpoint_app/app/features/budget/domain/repositories/i_expense_
 import '../../../harness/fake_save_expense.dart';
 
 class _FakeImageService implements IImageService {
+  @override
+  Future<Uint8List?> downloadBytes(
+    String storagePath, {
+    int maxSize = 5 * 1024 * 1024,
+  }) async => null;
+
+  @override
+  Future<void> deleteFromStorage(String storagePath) async {}
+
   bool shouldThrow = false;
   String? lastPath;
   String? lastContentType;

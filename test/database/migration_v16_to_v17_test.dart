@@ -29,7 +29,10 @@ void main() {
         (await db.customSelect('SELECT * FROM chat_reads').get()).single;
     expect(row.data.containsKey('read_count'), isTrue);
     expect(row.data['read_count'], isNull);
-    expect(raw.select('PRAGMA user_version').first.values.first, 17);
+    expect(
+      raw.select('PRAGMA user_version').first.values.first,
+      db.schemaVersion,
+    );
     await db.close();
   });
 
@@ -43,9 +46,9 @@ void main() {
     await db.close();
   });
 
-  test('schemaVersion is 17', () {
+  test('schemaVersion is at least 17', () {
     final db = AppDatabase(NativeDatabase.memory());
-    expect(db.schemaVersion, 17);
+    expect(db.schemaVersion, greaterThanOrEqualTo(17));
     db.close();
   });
 }

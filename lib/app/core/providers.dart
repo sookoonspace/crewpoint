@@ -1,7 +1,10 @@
+import 'dart:developer' show log;
+import 'dart:typed_data';
 import 'dart:convert';
 import 'package:crewpoint_app/app/core/services/connectivity.dart';
 import 'package:crewpoint_app/app/core/services/qr_renderer.dart';
 import 'package:crewpoint_app/app/core/services/file_picker_service.dart';
+import 'package:crewpoint_app/app/features/dashboard/data/event_cover_service.dart';
 import 'package:crewpoint_app/app/features/participants/data/import_repository.dart';
 import 'package:crewpoint_app/app/features/participants/data/participant_repository.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/my_balance.dart';
@@ -41,6 +44,9 @@ import 'package:crewpoint_app/app/core/services/fcm_service.dart';
 import 'package:crewpoint_app/app/core/services/device_timezone.dart';
 import 'package:crewpoint_app/app/core/services/notification_channels.dart';
 import 'package:crewpoint_app/app/core/services/file_export_service.dart';
+import 'package:crewpoint_app/app/core/services/cover_cache.dart';
+import 'package:crewpoint_app/app/core/services/cover_cache_native.dart'
+    if (dart.library.html) 'package:crewpoint_app/app/core/services/cover_cache_web.dart';
 import 'package:crewpoint_app/app/core/services/file_export_service_native.dart'
     if (dart.library.html) 'package:crewpoint_app/app/core/services/file_export_service_web.dart';
 import 'package:crewpoint_app/app/core/services/i_auth_service.dart';
@@ -129,6 +135,40 @@ final databaseProvider = Provider<AppDatabase>(
 final imageServiceProvider = Provider<IImageService>(
   (_) => FirebaseImageService(),
 );
+
+/// Sets, replaces and removes event cover photos (Spec #186 Req 41).
+final eventCoverServiceProvider = Provider<EventCoverService>(
+  (ref) => EventCoverService(
+    images: ref.watch(imageServiceProvider),
+    events: ref.watch(eventRepositoryProvider),
+  ),
+);
+
+/// Cover photos kept on the device (Spec #186 Req 43): files natively, in
+/// memory on the web and in tests.
+final coverCacheProvider = Provider<ICoverCache>((_) => createCoverCache());
+
+/// An event cover's bytes: the device copy for this version when there is
+/// one, otherwise downloaded and kept. Null when it cannot be read, so the
+/// banner falls back to the event's icon.
+final coverBytesProvider = FutureProvider.autoDispose
+    .family<Uint8List?, EventCover>((ref, cover) async {
+      final cache = ref.watch(coverCacheProvider);
+      final kept = await cache.read(cover.path, cover.updatedAt);
+      if (kept != null) return kept;
+      try {
+        final bytes = await ref
+            .watch(imageServiceProvider)
+            .downloadBytes(cover.path);
+        if (bytes != null) {
+          await cache.write(cover.path, cover.updatedAt, bytes);
+        }
+        return bytes;
+      } catch (e, st) {
+        log('Cover download failed', error: e, stackTrace: st, name: 'cover');
+        return null;
+      }
+    });
 
 /// User profile repository (Firestore).
 final userRepositoryProvider = Provider<IUserRepository>(

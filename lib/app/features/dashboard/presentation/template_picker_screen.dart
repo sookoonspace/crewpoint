@@ -1,3 +1,4 @@
+import 'package:crewpoint_app/app/features/dashboard/domain/event_type_emoji.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
@@ -14,14 +15,7 @@ import 'package:go_router/go_router.dart';
 class TemplatePickerScreen extends ConsumerWidget {
   const TemplatePickerScreen({super.key});
 
-  static IconData iconFor(String icon) => switch (icon) {
-    'celebration' => AppIcons.templateCelebration,
-    'heart' => AppIcons.templateHeart,
-    'bat' => AppIcons.templateBat,
-    'flag' => AppIcons.templateFlag,
-    'groups' => AppIcons.templateGroups,
-    _ => AppIcons.templateAdd,
-  };
+  static IconData iconFor(String icon) => iconForTemplate(icon);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

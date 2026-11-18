@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_access.dart';
 import 'package:crewpoint_app/app/core/format/event_time.dart';
 import 'package:crewpoint_app/app/core/labels/label_resolver.dart';
@@ -88,6 +89,29 @@ enum EventStatus {
   };
 }
 
+/// An event's cover photo (Spec #186 Req 41–43): where it sits in Storage
+/// and when it last changed, which keys the cached copy so a replaced photo
+/// never shows stale.
+@immutable
+class EventCover {
+  const EventCover({required this.path, required this.updatedAt});
+
+  /// Only ever `events/{eventId}/cover.jpg`.
+  static String pathFor(String eventId) => 'events/$eventId/cover.jpg';
+
+  final String path;
+  final DateTime updatedAt;
+
+  @override
+  bool operator ==(Object other) =>
+      other is EventCover &&
+      other.path == path &&
+      other.updatedAt == updatedAt;
+
+  @override
+  int get hashCode => Object.hash(path, updatedAt);
+}
+
 /// Domain model for an event.
 class EventModel {
   const EventModel({
@@ -119,7 +143,11 @@ class EventModel {
     this.viewerId,
     this.myRoleIds,
     this.myPermissions,
+    this.cover,
   }) : _memberCount = memberCount;
+
+  /// The cover photo, or null for none (a missing field).
+  final EventCover? cover;
 
   static const defaultTemplateId = 'blank';
   static const defaultTimeZone = 'UTC';
@@ -451,6 +479,7 @@ class EventModel {
       viewerId: viewerId ?? this.viewerId,
       myRoleIds: myRoleIds ?? this.myRoleIds,
       myPermissions: myPermissions ?? this.myPermissions,
+      cover: cover,
     );
   }
 }

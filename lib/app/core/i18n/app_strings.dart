@@ -45,6 +45,7 @@ abstract class AppStrings {
   ExpenseAccessStrings get expenseAccess;
   PeopleStrings get people;
   GroupEntryStrings get groupEntry;
+  CoverStrings get cover;
   FieldStrings get fields;
   ImportStrings get imports;
   LinkStrings get links;
@@ -536,6 +537,8 @@ class _EnglishStrings extends AppStrings {
   PeopleStrings get people => const _EnglishPeopleStrings();
   @override
   GroupEntryStrings get groupEntry => const _EnglishGroupEntryStrings();
+  @override
+  CoverStrings get cover => const _EnglishCoverStrings();
 
   @override
   FieldStrings get fields => const _EnglishFieldStrings();
@@ -1670,6 +1673,56 @@ class _EnglishRoleStrings extends RoleStrings {
       'After you leave, only ${name ?? 'one other person'} can invite and '
       'remove people. Give someone else that permission first, so there is '
       'always a backup.';
+}
+
+/// An event's cover photo (Spec #186 Req 41–44).
+abstract class CoverStrings {
+  const CoverStrings();
+
+  String get heading;
+  String get help;
+  String get none;
+  String get choose;
+  String get replace;
+  String get remove;
+  String get saved;
+  String get removed;
+  String get tooLarge;
+  String get notAnImage;
+  String get failed;
+  String get removeFailed;
+}
+
+class _EnglishCoverStrings extends CoverStrings {
+  const _EnglishCoverStrings();
+
+  @override
+  String get heading => 'Cover photo';
+  @override
+  String get help =>
+      'Shown on the event home and in the event list. JPEG, PNG or WebP, '
+      'under 5 MB.';
+  @override
+  String get none => 'No photo yet. The event shows its icon instead.';
+  @override
+  String get choose => 'Choose photo';
+  @override
+  String get replace => 'Replace photo';
+  @override
+  String get remove => 'Remove photo';
+  @override
+  String get saved => 'Cover photo saved';
+  @override
+  String get removed => 'Cover photo removed';
+  @override
+  String get tooLarge => 'That photo is 5 MB or more. Choose a smaller one.';
+  @override
+  String get notAnImage => 'Choose a JPEG, PNG or WebP photo.';
+  @override
+  String get failed =>
+      "Couldn't save the photo. Check your connection and try again.";
+  @override
+  String get removeFailed => "Couldn't remove the photo. Try again.";
 }
 
 /// The group screen (Spec #186 Req 25–36): adding a whole group, or people

@@ -30,7 +30,8 @@ enum DesignGallerySection {
   buttons('Buttons'),
   fields('Fields'),
   choices('Choice chips and segmented choices'),
-  sheetsAndDialogs('Sheets and dialogs');
+  sheetsAndDialogs('Sheets and dialogs'),
+  cover('Event cover');
 
   const DesignGallerySection(this.title);
 
@@ -120,6 +121,7 @@ class DesignGallery extends StatelessWidget {
     DesignGallerySection.fields => const _Fields(),
     DesignGallerySection.choices => const _Choices(),
     DesignGallerySection.sheetsAndDialogs => const _SheetsAndDialogs(),
+    DesignGallerySection.cover => const _Cover(),
   };
 }
 
@@ -658,6 +660,35 @@ class _SheetsAndDialogs extends StatelessWidget {
           actions: [
             CpButton.text(label: 'Cancel', onPressed: _noop),
             CpButton.destructive(label: 'Remove', onPressed: _noop),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _Cover extends StatelessWidget {
+  const _Cover();
+
+  @override
+  Widget build(BuildContext context) {
+    final cp = context.cp;
+    // Without a photo; a photo shows in its place, cropped to fill.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: cp.space.md,
+      children: [
+        const CpCoverBanner(
+          icon: CpIcons.templateGroups,
+          label: 'Convention',
+          semanticLabel: 'Cover photo',
+        ),
+        Row(
+          spacing: cp.space.sm,
+          children: const [
+            CpCoverThumb(icon: CpIcons.templateGroups),
+            CpCoverThumb(icon: CpIcons.templateCelebration),
+            CpCoverThumb(icon: CpIcons.templateHeart),
           ],
         ),
       ],

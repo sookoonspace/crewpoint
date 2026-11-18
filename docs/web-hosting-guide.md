@@ -166,7 +166,7 @@ gcloud config set project crewpoint-prod   # one of dev / stg / prod
 scripts/apply-cors.sh prod                 # or: dev / stg / all
 ```
 
-The payload is `infra/storage-cors.json`:
+Each flavor has its own payload, `infra/storage-cors.<flavor>.json`, allowing that flavor's web origins (see `docs/ops/storage-cors.md`). Prod's:
 
 ```json
 [
@@ -267,7 +267,7 @@ change needed.
 
 - `firebase.json` — `hosting[]` array (all three flavors).
 - `.firebaserc` — project aliases + target bindings.
-- `infra/storage-cors.json` — allow-list payload.
+- `infra/storage-cors.<flavor>.json` — allow-list payloads, one per flavor.
 - `scripts/apply-cors.sh` — flavor-aware CORS apply wrapper.
 - `web/.well-known/apple-developer-domain-association.txt` — Apple
   domain-verification placeholder.

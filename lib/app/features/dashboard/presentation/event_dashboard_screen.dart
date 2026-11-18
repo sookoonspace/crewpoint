@@ -2,6 +2,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/event_cover.dart';
 import 'package:crewpoint_app/app/core/format/event_time.dart';
 import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
@@ -35,6 +36,20 @@ class EventDashboardScreen extends StatelessWidget {
         slivers: [
           // Hero
           SliverToBoxAdapter(child: _EventHero(event: event)),
+
+          // Cover photo, or the event's icon (Spec #186 Req 43, 44). #199
+          // rebuilds this screen around it.
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                Breakpoints.screenHorizontalPadding(context),
+                AppSpacing.xl,
+                Breakpoints.screenHorizontalPadding(context),
+                0,
+              ),
+              child: EventCoverBanner(event: event),
+            ),
+          ),
 
           // Content
           SliverPadding(

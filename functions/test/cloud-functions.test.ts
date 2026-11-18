@@ -11,6 +11,7 @@
  */
 import {getAuth} from 'firebase-admin/auth';
 import {Timestamp} from 'firebase-admin/firestore';
+import {getStorage} from 'firebase-admin/storage';
 import {clearFirestoreEmulator, getAdminApp, getAdminDb} from './setup';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -853,6 +854,26 @@ describe('disputeSettlement', () => {
 });
 
 describe('deleteEvent', () => {
+  test('deletes the cover photo with the event (Spec #186 Req 41)', async () => {
+    const eventId = 'evtDECover';
+    await seedEvent({eventId, creatorUid: 'creatorDEC'});
+    const file = getStorage(getAdminApp()).bucket().file(`events/${eventId}/cover.jpg`);
+    await file.save(Buffer.from('jpeg'), {contentType: 'image/jpeg'});
+    expect((await file.exists())[0]).toBe(true);
+
+    await ftest.wrap(deleteEvent)({auth: {uid: 'creatorDEC'}, data: {eventId}});
+
+    expect((await file.exists())[0]).toBe(false);
+  });
+
+  test('an event without a cover deletes as before', async () => {
+    const eventId = 'evtDENoCover';
+    await seedEvent({eventId, creatorUid: 'creatorDEN'});
+    await expect(
+      ftest.wrap(deleteEvent)({auth: {uid: 'creatorDEN'}, data: {eventId}})
+    ).resolves.toEqual({success: true});
+  });
+
   test('non-creator caller rejected with permission-denied', async () => {
     await seedEvent({
       eventId: 'evtDE1',

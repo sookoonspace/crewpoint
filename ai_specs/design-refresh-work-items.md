@@ -366,20 +366,20 @@ An optional cover photo per event, set from Event settings, shown as a banner on
 - `docs/ops/` for the CORS checklist step.
 
 #### Acceptance criteria
-- [ ] Event settings has "Cover photo" for `event.manage` holders: choose from the phone or computer, replace, or remove.
-- [ ] The photo is picked with `maxWidth`/`maxHeight` 1600 and quality 85 through `IImageService`, and stored at `events/{eventId}/cover.jpg`.
-- [ ] The event document carries `cover: {path, updatedAt}`; the app works out the download URL; a replaced photo shows everywhere without a stale copy. A missing field means no photo; `createEvent` defaults are unchanged.
-- [ ] `storage.rules`: read for anyone with a member document in the event; write and delete with `event.manage` (checked on the member document, not `memberIds`); JPEG, PNG or WebP only, under 5 MB.
-- [ ] Removing the photo deletes the file; `deleteEvent` deletes `events/{eventId}/cover.jpg`.
-- [ ] Drift's events table gains `cover_path` and `cover_updated_at` (schema v17 → v18) with `test/database/migration_v17_to_v18_test.dart`; thumbnails show on an offline cold start once loaded before. The `kIsWeb` fork reads the field from Firestore.
-- [ ] A banner component shows the photo on the Event home and a thumbnail on the event list card.
-- [ ] With no photo: a calm accent-coloured banner with the event's icon: the template's icon (a saved template uses its base template's), else `iconForEventType`, else a plain event icon. No stock photos, no per-template default photos.
-- [ ] A Storage rules test built like `importRules.test.ts` runs for each of the twelve preset roles: everyone in the event reads; only `event.manage` holders upload, replace and delete; outsiders and signed-out users do nothing; a file of 5 MB or more, or a non-image, is refused. `roleMatrix.test.ts` is unchanged.
-- [ ] App tests use a fake `IImageService` and cover set, replace, remove and the banner icon fallbacks.
+- [x] Event settings has "Cover photo" for `event.manage` holders: choose from the phone or computer, replace, or remove.
+- [x] The photo is picked with `maxWidth`/`maxHeight` 1600 and quality 85 through `IImageService`, and stored at `events/{eventId}/cover.jpg`.
+- [x] The event document carries `cover: {path, updatedAt}`; the app works out the download URL; a replaced photo shows everywhere without a stale copy. A missing field means no photo; `createEvent` defaults are unchanged.
+- [x] `storage.rules`: read for anyone with a member document in the event; write and delete with `event.manage` (checked on the member document, not `memberIds`); JPEG, PNG or WebP only, under 5 MB.
+- [x] Removing the photo deletes the file; `deleteEvent` deletes `events/{eventId}/cover.jpg`.
+- [x] Drift's events table gains `cover_path` and `cover_updated_at` (schema v17 → v18) with `test/database/migration_v17_to_v18_test.dart`; thumbnails show on an offline cold start once loaded before. The `kIsWeb` fork reads the field from Firestore.
+- [x] A banner component shows the photo on the Event home and a thumbnail on the event list card.
+- [x] With no photo: a calm accent-coloured banner with the event's icon: the template's icon (a saved template uses its base template's), else `iconForEventType`, else a plain event icon. No stock photos, no per-template default photos.
+- [x] A Storage rules test built like `importRules.test.ts` runs for each of the twelve preset roles: everyone in the event reads; only `event.manage` holders upload, replace and delete; outsiders and signed-out users do nothing; a file of 5 MB or more, or a non-image, is refused. `roleMatrix.test.ts` is unchanged.
+- [x] App tests use a fake `IImageService` and cover set, replace, remove and the banner icon fallbacks.
 - [ ] `docs/ops/` records the one-time Storage CORS setting for dev, stg and prod, and it is checked on dev.
-- [ ] CLAUDE.md's data model notes the `cover` field and the Storage path.
-- [ ] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
-- [ ] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, `npm run build` and `npm test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
+- [x] CLAUDE.md's data model notes the `cover` field and the Storage path.
+- [x] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
+- [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, `npm run build` and `npm test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
 - [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 
 #### Covers

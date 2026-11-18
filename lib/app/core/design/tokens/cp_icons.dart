@@ -91,6 +91,11 @@ abstract final class CpIcons {
   static const IconData templateFlag = LucideIcons.flag;
   static const IconData templateGroups = LucideIcons.usersRound;
 
+  // ===== Older event types (display text only since #65) =====
+  static const IconData eventTrip = LucideIcons.luggage;
+  static const IconData eventProject = LucideIcons.clipboardList;
+  static const IconData eventSocial = LucideIcons.usersRound;
+
   // ===== Things =====
   static const IconData calendar = LucideIcons.calendar;
   static const IconData event = LucideIcons.calendarDays;

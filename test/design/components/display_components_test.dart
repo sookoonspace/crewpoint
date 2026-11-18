@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'dart:ui' show Tristate;
 
 import 'package:flutter/material.dart';
@@ -277,6 +278,57 @@ void main() {
     });
   });
 
+  group('CpCoverBanner and CpCoverThumb', () {
+    testWidgets('without a photo: the accent banner with icon and label', (
+      tester,
+    ) async {
+      await pumpCp(
+        tester,
+        const CpCoverBanner(
+          key: Key('b'),
+          icon: CpIcons.templateGroups,
+          label: 'Convention',
+          semanticLabel: 'Cover photo',
+        ),
+      );
+      expect(find.byKey(const Key('cover.fallback')), findsOneWidget);
+      expect(find.byIcon(CpIcons.templateGroups), findsOneWidget);
+      expect(find.text('Convention'), findsOneWidget);
+      final box = tester.widget<ColoredBox>(
+        find.byKey(const Key('cover.fallback')),
+      );
+      expect(box.color, CpColors.light.banner);
+      expect(find.bySemanticsLabel('Cover photo'), findsOneWidget);
+    });
+
+    testWidgets('with a photo: the photo, no icon', (tester) async {
+      await pumpCp(
+        tester,
+        Column(
+          children: [
+            CpCoverBanner(
+              icon: CpIcons.event,
+              semanticLabel: 'Cover photo',
+              image: MemoryImage(_onePixel),
+            ),
+            CpCoverThumb(icon: CpIcons.event, image: MemoryImage(_onePixel)),
+          ],
+        ),
+      );
+      expect(find.byKey(const Key('cover.photo')), findsOneWidget);
+      expect(find.byKey(const Key('cover.thumb')), findsOneWidget);
+      expect(find.byIcon(CpIcons.event), findsNothing);
+    });
+
+    testWidgets('a thumbnail without a photo shows the icon on the tint', (
+      tester,
+    ) async {
+      await pumpCp(tester, const CpCoverThumb(icon: CpIcons.templateHeart));
+      expect(find.byKey(const Key('cover.thumbFallback')), findsOneWidget);
+      expect(find.byIcon(CpIcons.templateHeart), findsOneWidget);
+    });
+  });
+
   group('CpAvatar', () {
     test('takes the first and last initials', () {
       expect(CpAvatar.initialsOf('Neha Mehta'), 'NM');
@@ -484,3 +536,73 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 }
+
+final _onePixel = Uint8List.fromList(const [
+  0x89,
+  0x50,
+  0x4E,
+  0x47,
+  0x0D,
+  0x0A,
+  0x1A,
+  0x0A,
+  0x00,
+  0x00,
+  0x00,
+  0x0D,
+  0x49,
+  0x48,
+  0x44,
+  0x52,
+  0x00,
+  0x00,
+  0x00,
+  0x01,
+  0x00,
+  0x00,
+  0x00,
+  0x01,
+  0x08,
+  0x06,
+  0x00,
+  0x00,
+  0x00,
+  0x1F,
+  0x15,
+  0xC4,
+  0x89,
+  0x00,
+  0x00,
+  0x00,
+  0x0A,
+  0x49,
+  0x44,
+  0x41,
+  0x54,
+  0x78,
+  0x9C,
+  0x63,
+  0x00,
+  0x01,
+  0x00,
+  0x00,
+  0x05,
+  0x00,
+  0x01,
+  0x0D,
+  0x0A,
+  0x2D,
+  0xB4,
+  0x00,
+  0x00,
+  0x00,
+  0x00,
+  0x49,
+  0x45,
+  0x4E,
+  0x44,
+  0xAE,
+  0x42,
+  0x60,
+  0x82,
+]);

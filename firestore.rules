@@ -184,6 +184,12 @@ service cloud.firestore {
                 && (request.resource.data.status != 'draft'
                     || request.resource.data.memberIds.hasOnly(
                         request.resource.data.adminIds.concat([request.resource.data.creatorId])))))
+        // The cover photo (Spec #186 Req 41): none, or this event's one file
+        // and when it changed.
+        && (request.resource.data.get('cover', null) == null
+            || (request.resource.data.cover.keys().hasOnly(['path', 'updatedAt'])
+                && request.resource.data.cover.path == 'events/' + eventId + '/cover.jpg'
+                && request.resource.data.cover.updatedAt is timestamp))
         && isPositiveIntOrNull('capacity')
         && isPositiveIntOrNull('memberLimit')
         && (!('timeZone' in request.resource.data) || request.resource.data.timeZone is string)

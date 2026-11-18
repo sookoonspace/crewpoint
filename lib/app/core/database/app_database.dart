@@ -57,6 +57,10 @@ class Events extends Table {
   TextColumn get viewerId => text().nullable()();
   TextColumn get myRoleIds => text().nullable()(); // JSON
   TextColumn get myPermissions => text().nullable()(); // JSON
+  // Since v18 (Spec #186): the cover photo's Storage path and when it last
+  // changed, so thumbnails show on an offline cold start.
+  TextColumn get coverPath => text().nullable()();
+  DateTimeColumn get coverUpdatedAt => dateTime().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 
@@ -233,7 +237,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 18;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -389,6 +393,17 @@ class AppDatabase extends _$AppDatabase {
         if (columns.isNotEmpty &&
             !columns.any((c) => c.data['name'] == 'read_count')) {
           await m.addColumn(chatReads, chatReads.readCount);
+        }
+      }
+      if (from < 18) {
+        // An event's cover photo (Spec #186 Req 43). Safe to re-run.
+        final columns = await customSelect('PRAGMA table_info(events)').get();
+        final names = columns.map((c) => c.data['name']).toSet();
+        if (columns.isNotEmpty && !names.contains('cover_path')) {
+          await m.addColumn(events, events.coverPath);
+        }
+        if (columns.isNotEmpty && !names.contains('cover_updated_at')) {
+          await m.addColumn(events, events.coverUpdatedAt);
         }
       }
     },

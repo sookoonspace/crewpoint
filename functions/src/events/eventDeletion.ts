@@ -1,9 +1,12 @@
 import {getFirestore} from "firebase-admin/firestore";
+import {getStorage} from "firebase-admin/storage";
+import {logger} from "firebase-functions/v2";
 import {commitInChunks, BatchOperation} from "../utils/batch";
 
 /**
  * Deletes an event completely: every subcollection, including checklists and
- * any added later, its invite codes, and members' personal documents for it.
+ * any added later, its invite codes, members' personal documents for it, and
+ * its cover photo.
  * The event goes last, so a retry after a failure can still find its members.
  */
 export async function deleteEventCompletely(
@@ -25,6 +28,21 @@ export async function deleteEventCompletely(
     .get();
   invites.docs.forEach((invite) => ops.push({type: "delete", ref: invite.ref}));
   await commitInChunks(ops);
+
+  // The cover photo (Spec #186 Req 41). A failure here must not keep the
+  // event: once its member documents are gone nobody can read the file, and
+  // the warning shows what to clean up.
+  try {
+    await getStorage()
+      .bucket()
+      .file(`events/${eventRef.id}/cover.jpg`)
+      .delete({ignoreNotFound: true});
+  } catch (error) {
+    logger.warn("deleteEvent cover cleanup failed", {
+      eventId: eventRef.id,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 
   await db.recursiveDelete(eventRef);
 }
