@@ -27,7 +27,20 @@ class PersonDraft {
     this.email = '',
     this.answers = const {},
     this.privateAnswers = const {},
+    this.original,
   });
+
+  /// Someone already saved, as loaded for editing (Spec #186 Req 26).
+  factory PersonDraft.existing(PersonDraft loaded) => PersonDraft(
+    id: loaded.id,
+    name: loaded.name,
+    isChild: loaded.isChild,
+    birthDate: loaded.birthDate,
+    email: loaded.email,
+    answers: loaded.answers,
+    privateAnswers: loaded.privateAnswers,
+    original: loaded,
+  );
 
   /// Fixed when the card is made, so a retried save never duplicates them.
   final String id;
@@ -46,6 +59,23 @@ class PersonDraft {
   /// Private custom field answers, by field ID.
   final Map<String, Object?> privateAnswers;
 
+  /// As saved, for someone being edited; null for someone new.
+  final PersonDraft? original;
+
+  bool get isExisting => original != null;
+
+  /// Differs from what was saved; someone new always counts.
+  bool get isChanged {
+    final o = original;
+    return o == null ||
+        o.name != name ||
+        o.isChild != isChild ||
+        o.birthDate != birthDate ||
+        o.email != email ||
+        !mapEquals(o.answers, answers) ||
+        !mapEquals(o.privateAnswers, privateAnswers);
+  }
+
   PersonDraft copyWith({
     String? name,
     bool? isChild,
@@ -62,6 +92,7 @@ class PersonDraft {
     email: email ?? this.email,
     answers: answers ?? this.answers,
     privateAnswers: privateAnswers ?? this.privateAnswers,
+    original: original,
   );
 
   /// Nothing typed or chosen.
@@ -84,6 +115,7 @@ class GroupDraft {
     this.groupName = '',
     this.groupAnswers = const {},
     this.groupPrivateAnswers = const {},
+    this.editing = false,
   });
 
   /// Two empty people, ready to fill in (Req 31).
@@ -117,25 +149,37 @@ class GroupDraft {
   /// The group's own answers to group-scope fields, standard and private.
   final Map<String, Object?> groupAnswers;
   final Map<String, Object?> groupPrivateAnswers;
+
+  /// Changing an existing group's answers and people ("Edit answers",
+  /// Req 26), where nobody new is needed.
+  final bool editing;
   final List<PersonDraft> people;
 
   /// The people to save: cards left completely empty are ignored, not an
-  /// error (Req 31).
+  /// error (Req 31), and so is anyone being edited who did not change.
   List<PersonDraft> get toSave => [
     for (final p in people)
-      if (!p.isEmpty) p,
+      if (p.isExisting ? p.isChanged : !p.isEmpty) p,
   ];
 
   bool get canAddPerson => people.length < maxPeople;
 
-  GroupDraft _withPeople(List<PersonDraft> people) => GroupDraft(
+  GroupDraft copyWith({
+    String? groupName,
+    Map<String, Object?>? groupAnswers,
+    Map<String, Object?>? groupPrivateAnswers,
+    List<PersonDraft>? people,
+  }) => GroupDraft(
     groupId: groupId,
     isNewGroup: isNewGroup,
-    groupName: groupName,
-    groupAnswers: groupAnswers,
-    groupPrivateAnswers: groupPrivateAnswers,
-    people: people,
+    groupName: groupName ?? this.groupName,
+    groupAnswers: groupAnswers ?? this.groupAnswers,
+    groupPrivateAnswers: groupPrivateAnswers ?? this.groupPrivateAnswers,
+    editing: editing,
+    people: people ?? this.people,
   );
+
+  GroupDraft _withPeople(List<PersonDraft> people) => copyWith(people: people);
 
   /// Another empty card, unless there are [maxPeople] already.
   GroupDraft addPerson(String id) =>
@@ -181,8 +225,14 @@ class GroupDraft {
     List<EventCategory> categories,
     DateTime eventStart,
   ) {
-    final birthDate = p.isChild ? p.birthDate : null;
-    final email = p.isChild || p.email.trim().isEmpty ? null : p.email.trim();
+    // Someone new keeps only what their card shows: a child's birth date
+    // or an adult's email. Someone edited keeps what was loaded too, so a
+    // hidden birth date or imported email is never lost.
+    final birthDate = p.isChild || p.isExisting ? p.birthDate : null;
+    final trimmed = p.email.trim();
+    final email = trimmed.isEmpty || (p.isChild && !p.isExisting)
+        ? null
+        : trimmed;
     final derived = categoryFor(birthDate, eventStart, categories);
     final person = ParticipantModel(
       id: p.id,
@@ -199,6 +249,7 @@ class GroupDraft {
     final hasPrivate =
         birthDate != null || email != null || privateFields.isNotEmpty;
     return PersonRecord(
+      existing: p.isExisting,
       person,
       hasPrivate
           ? ParticipantPrivate(
@@ -231,7 +282,7 @@ class GroupDraft {
 
     return GroupDraftCheck(
       groupNameMissing: isNewGroup && groupName.trim().isEmpty,
-      noPeople: toSave.isEmpty,
+      noPeople: !editing && toSave.isEmpty,
       groupMissing: problems(
         FieldScope.group,
         groupAnswers,
@@ -256,10 +307,13 @@ class GroupDraft {
 /// private, their private details.
 @immutable
 class PersonRecord {
-  const PersonRecord(this.person, this.private);
+  const PersonRecord(this.person, this.private, {this.existing = false});
 
   final ParticipantModel person;
   final ParticipantPrivate? private;
+
+  /// Already saved: only what the group screen edits is updated.
+  final bool existing;
 }
 
 /// What one person still needs before saving.

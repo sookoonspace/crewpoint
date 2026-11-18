@@ -298,15 +298,15 @@ A group's linked adult can add people to their own group and change their group'
 - The group screen from the New group Work Item.
 
 #### Acceptance criteria
-- [ ] For a linked adult, People shows a "Your {group}" header for each group they are linked to, with "Add people" and "Edit answers".
-- [ ] A linked adult never sees "Add {group}" and cannot rename the group, change its adults, delete it or change invitations.
-- [ ] "Edit answers" opens the group screen in edit mode: the group's answers and one filled-in card per existing person, saved in one go with the same retry, offline and double-tap rules as adding.
-- [ ] Organizers with `participants.edit` get "Edit answers" on the group sheet.
-- [ ] Private answers show and save only for someone allowed to read private details (a linked adult of the group is).
-- [ ] Existing rules are unchanged; existing participant and group rules tests keep passing.
-- [ ] Robot journeys cover: a linked adult adding to their own group and not seeing "Add {group}"; a linked adult changing answers; an organizer changing answers from the group sheet.
-- [ ] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
-- [ ] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
+- [x] For a linked adult, People shows a "Your {group}" header for each group they are linked to, with "Add people" and "Edit answers".
+- [x] A linked adult never sees "Add {group}" and cannot rename the group, change its adults, delete it or change invitations.
+- [x] "Edit answers" opens the group screen in edit mode: the group's answers and one filled-in card per existing person, saved in one go with the same retry, offline and double-tap rules as adding.
+- [x] Organizers with `participants.edit` get "Edit answers" on the group sheet.
+- [x] Private answers show and save only for someone allowed to read private details (a linked adult of the group is).
+- [x] Existing rules are unchanged; existing participant and group rules tests keep passing.
+- [x] Robot journeys cover: a linked adult adding to their own group and not seeing "Add {group}"; a linked adult changing answers; an organizer changing answers from the group sheet.
+- [x] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
+- [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
 - [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 
 #### Covers

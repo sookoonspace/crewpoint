@@ -1700,6 +1700,11 @@ abstract class GroupEntryStrings {
   String newGroupSaved(String name, int count);
   String addedToGroup(String name, int count);
   String get maxPeople;
+  String yourGroup(String group);
+  String get editAnswers;
+  String editTitle(String name);
+  String get saveAnswers;
+  String answersSaved(String name);
 }
 
 class _EnglishGroupEntryStrings extends GroupEntryStrings {
@@ -1798,6 +1803,16 @@ class _EnglishGroupEntryStrings extends GroupEntryStrings {
       '${count == 1 ? '1 person' : '$count people'} added to $name';
   @override
   String get maxPeople => 'Up to 20 people at a time.';
+  @override
+  String yourGroup(String group) => 'Your ${group.toLowerCase()}';
+  @override
+  String get editAnswers => 'Edit answers';
+  @override
+  String editTitle(String name) => 'Answers for $name';
+  @override
+  String get saveAnswers => 'Save answers';
+  @override
+  String answersSaved(String name) => 'Answers saved for $name';
 }
 
 /// The Crews screen and task crews (#68). [crew] and [crews] are the event's

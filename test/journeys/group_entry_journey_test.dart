@@ -21,14 +21,20 @@ class _FlakyRepository extends ParticipantRepository {
   int peopleSaves = 0;
 
   @override
-  Future<void> saveNewPeople(
+  Future<void> savePeople(
     String eventId,
     List<PersonRecord> records, {
     List<CustomField> definitions = const [],
+    bool writesPrivateOfExisting = true,
   }) {
     peopleSaves++;
     if (failPeople) throw Exception('network');
-    return super.saveNewPeople(eventId, records, definitions: definitions);
+    return super.savePeople(
+      eventId,
+      records,
+      definitions: definitions,
+      writesPrivateOfExisting: writesPrivateOfExisting,
+    );
   }
 }
 

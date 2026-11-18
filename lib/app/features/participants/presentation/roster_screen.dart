@@ -8,6 +8,7 @@ import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/design/components/components.dart';
 import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
 import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
@@ -138,6 +139,10 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
       await _openGroupEntry(group: group);
       return;
     }
+    if (result case GroupSheetResult(editAnswers: true, :final group?)) {
+      await _openGroupEntry(group: group, editing: true);
+      return;
+    }
     setState(() {
       _group = switch (result) {
         GroupSheetResult(deleted: true) => null,
@@ -150,10 +155,14 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
 
   /// The group screen (Spec #186 Req 26): a new group, or more people for
   /// [group]. Afterwards People shows that group (Req 35).
-  Future<void> _openGroupEntry({GroupModel? group}) async {
+  Future<void> _openGroupEntry({
+    GroupModel? group,
+    bool editing = false,
+  }) async {
     final result = await context.push<GroupEntryResult>(
       '/dashboard/event/${widget.event.id}/people/group-entry'
-      '${group == null ? '' : '?group=${group.id}'}',
+      '${group == null ? '' : '?group=${group.id}'}'
+      '${group != null && editing ? '&mode=edit' : ''}',
     );
     if (result == null || !mounted) return;
     setState(() {
@@ -270,11 +279,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
         if (f.filters && f.scope == FieldScope.participant) f,
     ];
     final fieldStrings = context.strings.fields;
-    final hasGroupFields =
-        (ref.watch(eventFieldsProvider(event.id)).value ??
-                const <CustomField>[])
-            .any((f) => f.scope == FieldScope.group);
-    final ownGroupNames = ownGroups == null || !hasGroupFields
+    final ownGroupNames = ownGroups == null
         ? const <String, GroupModel>{}
         : ref
                   .watch(
@@ -400,14 +405,15 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
                 ),
           ],
         ),
-      // A linked adult answers their own group's questions (Req 41).
+      // A linked adult adds people to, and answers for, their own group
+      // (Spec #186 Req 26), but never creates, renames or deletes one.
       for (final g in ownGroupNames.values)
-        OutlinedButton.icon(
-          key: Key('people.roster.ownGroup.${g.id}'),
-          onPressed: () =>
-              GroupSheet.show(context, event: event, group: g, manage: false),
-          icon: const Icon(AppIcons.members),
-          label: Text(g.name),
+        _OwnGroupHeader(
+          event: event,
+          group: g,
+          enabled: event.status != EventStatus.archived,
+          onAddPeople: () => _openGroupEntry(group: g),
+          onEditAnswers: () => _openGroupEntry(group: g, editing: true),
         ),
       Text(
         strings.onlineNote,
@@ -507,6 +513,95 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
               label: Text(strings.add(words.one('participant'))),
             )
           : null,
+    );
+  }
+}
+
+/// "Your {group}" for a linked adult (Spec #186 Req 26): their group's
+/// name, with "Add people" and "Edit answers".
+class _OwnGroupHeader extends StatelessWidget {
+  const _OwnGroupHeader({
+    required this.event,
+    required this.group,
+    required this.enabled,
+    required this.onAddPeople,
+    required this.onEditAnswers,
+  });
+
+  final EventModel event;
+  final GroupModel group;
+  final bool enabled;
+  final VoidCallback onAddPeople;
+  final VoidCallback onEditAnswers;
+
+  @override
+  Widget build(BuildContext context) {
+    final cp = context.cp;
+    final strings = context.strings.groupEntry;
+    final words = event.words;
+    return CpCard(
+      key: Key('people.roster.ownGroup.${group.id}'),
+      padding: EdgeInsets.all(cp.space.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: cp.space.md,
+        children: [
+          Row(
+            spacing: cp.space.md,
+            children: [
+              Container(
+                width: cp.sizes.iconTile,
+                height: cp.sizes.iconTile,
+                decoration: BoxDecoration(
+                  color: cp.colors.accentSoft,
+                  borderRadius: cp.radii.sm,
+                ),
+                child: Icon(
+                  CpIcons.members,
+                  size: cp.sizes.iconMd,
+                  color: cp.colors.accent,
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      strings.yourGroup(words.one('group')),
+                      style: cp.type.labelSmall.copyWith(
+                        color: cp.colors.textMuted,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      group.name,
+                      style: cp.type.titleSmall.copyWith(color: cp.colors.text),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          Wrap(
+            spacing: cp.space.sm,
+            runSpacing: cp.space.sm,
+            children: [
+              CpButton.secondary(
+                key: Key('people.roster.ownGroup.${group.id}.addPeople'),
+                icon: CpIcons.memberAdd,
+                label: strings.addPeople(words.other('participant')),
+                onPressed: enabled ? onAddPeople : null,
+              ),
+              CpButton.secondary(
+                key: Key('people.roster.ownGroup.${group.id}.editAnswers'),
+                icon: CpIcons.actionEdit,
+                label: strings.editAnswers,
+                onPressed: enabled ? onEditAnswers : null,
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

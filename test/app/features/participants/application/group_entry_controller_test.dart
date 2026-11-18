@@ -38,13 +38,19 @@ class _FlakyRepository extends ParticipantRepository {
   }
 
   @override
-  Future<void> saveNewPeople(
+  Future<void> savePeople(
     String eventId,
     List<PersonRecord> records, {
     List<CustomField> definitions = const [],
+    bool writesPrivateOfExisting = true,
   }) {
     if (failPeople) throw Exception('network');
-    return super.saveNewPeople(eventId, records, definitions: definitions);
+    return super.savePeople(
+      eventId,
+      records,
+      definitions: definitions,
+      writesPrivateOfExisting: writesPrivateOfExisting,
+    );
   }
 }
 
@@ -322,5 +328,121 @@ void main() {
       ),
     );
     expect(state().hasEntries, isTrue);
+  });
+
+  group('editing answers', () {
+    const editing = GroupEntryArgs(eventId: 'e1', groupId: 'g9', editing: true);
+    const ravi = PersonDraft(
+      id: 'ravi',
+      name: 'Ravi Shah',
+      email: 'ravi@example.com',
+      answers: {'diet': 'Veg'},
+      privateAnswers: {'allergies': 'None'},
+    );
+
+    setUp(() async {
+      await firestore.doc('events/e1/groups/g9').set({
+        'name': 'Shah',
+        'sortName': 'shah',
+        'adultUids': ['parent'],
+      });
+      await firestore.doc('events/e1/participants/ravi').set({
+        'name': 'Ravi Shah',
+        'sortName': 'ravi shah',
+        'groupId': 'g9',
+        'isChild': false,
+        'status': 'active',
+        'createdBy': 'someone',
+        'fields': {'diet': 'Veg'},
+        'optOuts': ['s1'],
+        'signUps': ['s2'],
+      });
+      await firestore.doc('events/e1/participants/ravi/private/details').set({
+        'email': 'ravi@example.com',
+        'fields': {'allergies': 'None'},
+      });
+    });
+
+    GroupEntryController editor() =>
+        container.read(groupEntryProvider(editing).notifier);
+
+    Future<GroupSaveOutcome> saveEdits({bool readsPrivate = true}) =>
+        editor().save(
+          fields: const [arriving],
+          readsPrivate: readsPrivate,
+          createdBy: 'parent',
+          categories: const [],
+          eventStart: DateTime.utc(2027, 7, 9),
+        );
+
+    test('opens with no blank cards, then the people loaded', () {
+      container.listen(groupEntryProvider(editing), (_, _) {});
+      expect(container.read(groupEntryProvider(editing)).draft.people, isEmpty);
+      editor().loadPeople([ravi]);
+      final people = container.read(groupEntryProvider(editing)).draft.people;
+      expect(people.single.isExisting, isTrue);
+      expect(people.single.isChanged, isFalse);
+    });
+
+    test('updates only what the screen edits, keeping the rest', () async {
+      container.listen(groupEntryProvider(editing), (_, _) {});
+      editor().loadPeople([ravi]);
+      editor().edit(
+        (d) => GroupDraft(
+          groupId: d.groupId,
+          isNewGroup: false,
+          editing: true,
+          people: [
+            d.people.single.copyWith(
+              answers: {'diet': 'Jain'},
+              privateAnswers: {'allergies': 'Peanuts'},
+            ),
+          ],
+        ),
+      );
+      expect(await saveEdits(), GroupSaveOutcome.saved);
+      final doc = (await firestore.doc('events/e1/participants/ravi').get())
+          .data()!;
+      expect(doc['fields'], {'diet': 'Jain'});
+      expect(doc['optOuts'], ['s1']);
+      expect(doc['signUps'], ['s2']);
+      expect(doc['createdBy'], 'someone');
+      final private =
+          (await firestore
+                  .doc('events/e1/participants/ravi/private/details')
+                  .get())
+              .data()!;
+      expect(private['fields'], {'allergies': 'Peanuts'});
+      expect(private['email'], 'ravi@example.com');
+    });
+
+    test("never touches private details the viewer can't read", () async {
+      container.listen(groupEntryProvider(editing), (_, _) {});
+      editor().loadPeople([
+        const PersonDraft(
+          id: 'ravi',
+          name: 'Ravi Shah',
+          answers: {'diet': 'Veg'},
+        ),
+      ]);
+      editor().edit(
+        (d) => GroupDraft(
+          groupId: d.groupId,
+          isNewGroup: false,
+          editing: true,
+          people: [
+            d.people.single.copyWith(answers: {'diet': 'Jain'}),
+          ],
+        ),
+      );
+      expect(await saveEdits(readsPrivate: false), GroupSaveOutcome.saved);
+      final private =
+          (await firestore
+                  .doc('events/e1/participants/ravi/private/details')
+                  .get())
+              .data()!;
+      expect(private['email'], 'ravi@example.com');
+      expect(private['fields'], {'allergies': 'None'});
+    });
   });
 }

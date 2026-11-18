@@ -12,6 +12,7 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart';
 import 'package:crewpoint_app/app/features/participants/application/group_entry_controller.dart';
 import 'package:crewpoint_app/app/features/participants/application/roster_controller.dart';
+import 'package:crewpoint_app/app/features/participants/data/participant_repository.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/category.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/group_draft.dart';
@@ -34,14 +35,23 @@ class GroupEntryResult {
 
 /// Adds a whole group, or people to an existing group, with everyone's
 /// answers, in one save that is safe to retry (Spec #186 Req 25–36). Route
-/// `people/group-entry`, with `?group=` to add to an existing group.
+/// `people/group-entry`, with `?group=` to add to an existing group, and
+/// `&mode=edit` to change its answers and people ("Edit answers", Req 26).
 class GroupEntryScreen extends ConsumerStatefulWidget {
-  const GroupEntryScreen({super.key, required this.event, this.groupId});
+  const GroupEntryScreen({
+    super.key,
+    required this.event,
+    this.groupId,
+    this.editing = false,
+  });
 
   final EventModel event;
 
   /// The group to add to; null for a new group.
   final String? groupId;
+
+  /// Edit [groupId]'s answers and people, filled in.
+  final bool editing;
 
   @override
   ConsumerState<GroupEntryScreen> createState() => _GroupEntryScreenState();
@@ -51,6 +61,7 @@ class _GroupEntryScreenState extends ConsumerState<GroupEntryScreen> {
   late final GroupEntryArgs _args = GroupEntryArgs(
     eventId: widget.event.id,
     groupId: widget.groupId,
+    editing: widget.editing && widget.groupId != null,
   );
   late final TextEditingController _groupName = TextEditingController();
 
@@ -100,12 +111,17 @@ class _GroupEntryScreenState extends ConsumerState<GroupEntryScreen> {
     try {
       final groups = await repo.groupsByIds(widget.event.id, [widget.groupId!]);
       final group = groups[widget.groupId];
-      final private = _readsPrivate
+      final readsPrivate = _readsPrivate;
+      final private = readsPrivate
           ? await repo.readGroupPrivate(widget.event.id, widget.groupId!)
           : null;
+      final people = _args.editing && group != null
+          ? await _loadPeople(repo, readsPrivate)
+          : const <PersonDraft>[];
       if (!mounted) return;
       if (group != null) {
         _controller.loadGroupAnswers(group.fields, private, name: group.name);
+        if (_args.editing) _controller.loadPeople(people);
       }
       setState(() {
         _group = group;
@@ -122,17 +138,46 @@ class _GroupEntryScreenState extends ConsumerState<GroupEntryScreen> {
     }
   }
 
+  /// Everyone in the group, a page at a time, with their private details
+  /// when the viewer may read them.
+  Future<List<PersonDraft>> _loadPeople(
+    ParticipantRepository repo,
+    bool readsPrivate,
+  ) async {
+    final eventId = widget.event.id;
+    final query = RosterQuery(groupId: widget.groupId);
+    final people = <ParticipantModel>[];
+    RosterPage? page;
+    do {
+      page = await repo.fetchPage(eventId, query, after: page);
+      people.addAll(page.items);
+    } while (page.hasMore);
+    return [
+      for (final p in people)
+        if (!p.anonymised && p.status == 'active')
+          await () async {
+            final private = readsPrivate
+                ? await repo.readPrivate(eventId, p.id)
+                : null;
+            return PersonDraft(
+              id: p.id,
+              name: p.name,
+              isChild: p.isChild,
+              birthDate: private?.birthDate,
+              email: private?.email ?? '',
+              answers: p.fields,
+              privateAnswers: private?.fields ?? const {},
+            );
+          }(),
+    ];
+  }
+
   void _edit(GroupDraft Function(GroupDraft d) change) {
     _controller.edit(change);
     if (_message != null) setState(() => _message = null);
   }
 
-  GroupDraft _withPerson(GroupDraft d, PersonDraft person) => GroupDraft(
-    groupId: d.groupId,
-    isNewGroup: d.isNewGroup,
-    groupName: d.groupName,
-    groupAnswers: d.groupAnswers,
-    groupPrivateAnswers: d.groupPrivateAnswers,
+  GroupDraft _withPerson(GroupDraft d, PersonDraft person) => d.copyWith(
     people: [for (final p in d.people) p.id == person.id ? person : p],
   );
 
@@ -141,13 +186,10 @@ class _GroupEntryScreenState extends ConsumerState<GroupEntryScreen> {
     String? name,
     Map<String, Object?>? answers,
     Map<String, Object?>? privateAnswers,
-  }) => GroupDraft(
-    groupId: d.groupId,
-    isNewGroup: d.isNewGroup,
-    groupName: name ?? d.groupName,
-    groupAnswers: answers ?? d.groupAnswers,
-    groupPrivateAnswers: privateAnswers ?? d.groupPrivateAnswers,
-    people: d.people,
+  }) => d.copyWith(
+    groupName: name,
+    groupAnswers: answers,
+    groupPrivateAnswers: privateAnswers,
   );
 
   void _groupAnswer(CustomField field, Object? value) => _edit((d) {
@@ -191,7 +233,9 @@ class _GroupEntryScreenState extends ConsumerState<GroupEntryScreen> {
           SnackBar(
             key: const Key('people.groupEntry.saved'),
             content: Text(
-              draft.isNewGroup
+              draft.editing
+                  ? strings.answersSaved(name)
+                  : draft.isNewGroup
                   ? strings.newGroupSaved(name, count)
                   : strings.addedToGroup(name, count),
             ),
@@ -246,9 +290,12 @@ class _GroupEntryScreenState extends ConsumerState<GroupEntryScreen> {
     final personFields = visible(FieldScope.participant);
     final categories = categoriesOf(event.settings);
     final start = event.displayStart ?? DateTime.now();
+    final groupName = _group?.name ?? draft.groupName;
     final title = draft.isNewGroup
         ? strings.newTitle(word)
-        : strings.addToTitle(_group?.name ?? draft.groupName);
+        : draft.editing
+        ? strings.editTitle(groupName)
+        : strings.addToTitle(groupName);
     final saving = state.saving;
 
     Widget scaffold(Widget body, {Widget? bottom}) => PopScope(
@@ -365,7 +412,11 @@ class _GroupEntryScreenState extends ConsumerState<GroupEntryScreen> {
               groupCard,
               CpSectionHeader(
                 title: strings.peopleHeading,
-                trailingText: strings.peopleCount(draft.toSave.length),
+                trailingText: strings.peopleCount(
+                  draft.editing
+                      ? draft.people.where((p) => !p.isEmpty).length
+                      : draft.toSave.length,
+                ),
               ),
               for (var i = 0; i < draft.people.length; i++)
                 PersonCard(
@@ -379,7 +430,10 @@ class _GroupEntryScreenState extends ConsumerState<GroupEntryScreen> {
                   check: check?.people[draft.people[i].id],
                   previousName: i > 0 ? draft.people[i - 1].name : null,
                   onChanged: (p) => _edit((d) => _withPerson(d, p)),
-                  onRemove: draft.people.length > 1
+                  // Someone already saved is removed from their own screen,
+                  // not here.
+                  onRemove:
+                      draft.people.length > 1 && !draft.people[i].isExisting
                       ? () => _edit((d) => d.removePerson(draft.people[i].id))
                       : null,
                   onCopyPrevious: i > 0
@@ -443,6 +497,8 @@ class _GroupEntryScreenState extends ConsumerState<GroupEntryScreen> {
                     key: const Key('people.groupEntry.save'),
                     label: draft.isNewGroup
                         ? strings.save(word)
+                        : draft.editing
+                        ? strings.saveAnswers
                         : strings.saveAdditions,
                     busy: saving,
                     onPressed: _save,

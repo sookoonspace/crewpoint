@@ -203,40 +203,53 @@ class ParticipantRepository {
     await batch.commit();
   }
 
-  /// Writes new people and their private details in one batch (Spec #186
-  /// Req 32). Their IDs were fixed when the group screen opened, so writing
-  /// again after a failure replaces the same documents instead of adding
-  /// more. [definitions] are the event's fields, for the filter tags.
-  Future<void> saveNewPeople(
+  /// Writes the group screen's people and their private details in one
+  /// batch (Spec #186 Req 32). New people's IDs were fixed when the screen
+  /// opened, so writing again after a failure replaces the same documents
+  /// instead of adding more. Someone already saved is updated only in what
+  /// the screen edits, keeping their stay, sessions and creator; their
+  /// private details are written only with [writesPrivateOfExisting], for a
+  /// viewer who read them. [definitions] are the event's fields, for the
+  /// filter tags.
+  Future<void> savePeople(
     String eventId,
     List<PersonRecord> records, {
     List<CustomField> definitions = const [],
+    bool writesPrivateOfExisting = true,
   }) async {
     final participantFields = [
       for (final f in definitions)
         if (f.scope == FieldScope.participant) f,
     ];
     final batch = _firestore.batch();
-    for (final PersonRecord(:person, :private) in records) {
-      batch.set(_people(eventId).doc(person.id), {
+    for (final PersonRecord(:person, :private, :existing) in records) {
+      final ref = _people(eventId).doc(person.id);
+      final edited = <String, Object?>{
         'name': person.name.trim(),
         'sortName': person.sortName,
-        'groupId': person.groupId,
         'isChild': person.isChild,
-        'status': person.status,
         'categoryId': person.categoryId,
         'fields': person.fields,
         'filterTags': filterTagsFor(participantFields, person.fields),
-        'arrivalAt': null,
-        'departureAt': null,
-        'optOuts': const <String>[],
-        'signUps': const <String>[],
-        'invitedTo': const <String>[],
-        'createdBy': person.createdBy,
-        'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
-      });
-      if (private != null) {
+      };
+      if (existing) {
+        batch.update(ref, edited);
+      } else {
+        batch.set(ref, {
+          ...edited,
+          'groupId': person.groupId,
+          'status': person.status,
+          'arrivalAt': null,
+          'departureAt': null,
+          'optOuts': const <String>[],
+          'signUps': const <String>[],
+          'invitedTo': const <String>[],
+          'createdBy': person.createdBy,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+      if (private != null && (!existing || writesPrivateOfExisting)) {
         batch.set(_private(eventId, person.id), {
           'birthDate': private.birthDate,
           'email': ?private.email,

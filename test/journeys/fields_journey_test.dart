@@ -293,12 +293,21 @@ void main() {
 
   testWidgets('a linked adult answers their group’s questions', (tester) async {
     final robot = await open(tester, as: 'parent', location: '$base/people');
-    await robot.tap(const Key('people.roster.ownGroup.f1'));
-    await tester.enterText(find.byKey(const Key('people.answer.hotel')), 'Inn');
-    await robot.tap(const Key('people.group.saveAnswers'));
+    // Through "Your {group}" and "Edit answers" (Spec #186 Req 26).
+    await robot.tap(const Key('people.roster.ownGroup.f1.editAnswers'));
+    await robot.finishTransition();
+    // Answers only: the name is shown, not edited.
+    expect(find.byKey(const Key('people.groupEntry.groupName')), findsNothing);
+    await robot.reveal(
+      find.byKey(const Key('people.groupEntry.group.answer.hotel')),
+    );
+    await tester.enterText(
+      find.byKey(const Key('people.groupEntry.group.answer.hotel')),
+      'Inn',
+    );
+    await robot.tap(const Key('people.groupEntry.save'));
+    await robot.finishTransition();
     expect(((await doc('$e/groups/f1'))!['fields'] as Map)['hotel'], 'Inn');
-    // Answers only: no rename, adults or delete.
-    expect(find.byKey(const Key('people.group.rename')), findsNothing);
     await robot.finish();
   });
 
