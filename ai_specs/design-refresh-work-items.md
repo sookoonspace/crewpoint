@@ -107,18 +107,18 @@ The single home of the look: tokens and theme in `lib/app/core/design/`, built f
 - The Round 1 decision (direction and icon set) in Spec #186's ledger.
 
 #### Acceptance criteria
-- [ ] Tokens live in `lib/app/core/design/` as `ThemeExtension`(s) read through `Theme.of(context)`: colours for light and dark, type scale, spacing, corner radius, shadows, motion (from `app_durations.dart`) and icons (from `app_icons.dart`), with the chosen direction's values. A brand colour or font is a one-line change.
-- [ ] A design-system theme builder makes light and dark `ThemeData` only from the tokens and replaces `AppTheme.light()` / `AppTheme.dark()`; light and dark differ only in token values.
-- [ ] The chosen icon set is reached only through icon tokens.
-- [ ] Inter (and Inter Display if chosen) is bundled as a font asset; tests turn off runtime font fetching.
-- [ ] `wcag.dart` and `breakpoints.dart` move into `lib/app/core/design/`; `app_pdf_theme.dart` moves there and reads the tokens, so exported PDFs match the app.
-- [ ] `AppColors`, `AppTypography`, `AppSpacing`, `AppRadius`, `AppSizes`, `AppDurations` and `AppIcons` become deprecated forwarders to the tokens so unmigrated screens keep compiling; `app_assets.dart` stays in `lib/app/core/constants/`.
-- [ ] A guard test in `test/` (a plain Dart test) fails if code outside `lib/app/core/design/` uses `Color(0x…)`, `Colors.…`, `GoogleFonts`, `fontFamily:`, a number other than `0` inside `EdgeInsets`, `SizedBox`, `BorderRadius` or `Radius`, or `Card`, `ListTile`, `Chip`/`ChoiceChip`/`FilterChip`/`InputChip`, `ElevatedButton`, `FilledButton`, `OutlinedButton` or `TextButton`. Calculated sizes are allowed. Listed exceptions sit in the test.
-- [ ] Until the last screen moves, the guard test carries a temporary list of not-yet-migrated files; a file not on the list that breaks a rule fails the test.
-- [ ] Platform behaviours stay native (back swipe, date pickers, haptics); the theme is CrewPoint's own, not stock Cupertino or Material (Req 21).
-- [ ] Existing journey tests keep passing.
-- [ ] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
-- [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
+- [x] Tokens live in `lib/app/core/design/` as `ThemeExtension`(s) read through `Theme.of(context)`: colours for light and dark, type scale, spacing, corner radius, shadows, motion (from `app_durations.dart`) and icons (from `app_icons.dart`), with the chosen direction's values. A brand colour or font is a one-line change.
+- [x] A design-system theme builder makes light and dark `ThemeData` only from the tokens and replaces `AppTheme.light()` / `AppTheme.dark()`; light and dark differ only in token values.
+- [x] The chosen icon set is reached only through icon tokens.
+- [x] Inter (and Inter Display if chosen) is bundled as a font asset; tests turn off runtime font fetching.
+- [x] `wcag.dart` and `breakpoints.dart` move into `lib/app/core/design/`; `app_pdf_theme.dart` moves there and reads the tokens, so exported PDFs match the app.
+- [x] `AppColors`, `AppTypography`, `AppSpacing`, `AppRadius`, `AppSizes`, `AppDurations` and `AppIcons` become deprecated forwarders to the tokens so unmigrated screens keep compiling; `app_assets.dart` stays in `lib/app/core/constants/`.
+- [x] A guard test in `test/` (a plain Dart test) fails if code outside `lib/app/core/design/` uses `Color(0x…)`, `Colors.…`, `GoogleFonts`, `fontFamily:`, a number other than `0` inside `EdgeInsets`, `SizedBox`, `BorderRadius` or `Radius`, or `Card`, `ListTile`, `Chip`/`ChoiceChip`/`FilterChip`/`InputChip`, `ElevatedButton`, `FilledButton`, `OutlinedButton` or `TextButton`. Calculated sizes are allowed. Listed exceptions sit in the test.
+- [x] Until the last screen moves, the guard test carries a temporary list of not-yet-migrated files; a file not on the list that breaks a rule fails the test.
+- [x] Platform behaviours stay native (back swipe, date pickers, haptics); the theme is CrewPoint's own, not stock Cupertino or Material (Req 21).
+- [x] Existing journey tests keep passing.
+- [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
+- [x] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 
 #### Covers
 - User Stories: 3
@@ -144,14 +144,14 @@ The first set of design-system components, a dev-only Design gallery showing the
 - Existing golden setup: `test/screenshots/_screenshot_helpers.dart`, `dart_test.yaml`, `scripts/regenerate-screenshots.sh`, `.github/workflows/flutter.yml`.
 
 #### Acceptance criteria
-- [ ] In `lib/app/core/design/components/`: card, list row, status chip, section header, stat card, progress ring, avatar and avatar stack, empty state, loading state, error state and top bar, built only from tokens.
-- [ ] Components are plain widgets with no Riverpod or Firebase imports.
-- [ ] Each component has widget tests, including its interactive keys and semantics.
-- [ ] Status chips show icon and colour together; status colours appear only for status.
-- [ ] A "Design gallery" screen, reachable only in the dev build, shows every component in light, dark and 200% text.
-- [ ] Gallery golden tests run in light, dark and 200% text under a new `design` tag that CI runs on every PR; the goldens are generated on Linux by a script or CI job, not on a Mac. The `screenshots` tag stays manual.
-- [ ] `docs/design/design-system.md` explains the tokens and when to use each component, with pictures from the gallery.
-- [ ] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
+- [x] In `lib/app/core/design/components/`: card, list row, status chip, section header, stat card, progress ring, avatar and avatar stack, empty state, loading state, error state and top bar, built only from tokens.
+- [x] Components are plain widgets with no Riverpod or Firebase imports.
+- [x] Each component has widget tests, including its interactive keys and semantics.
+- [x] Status chips show icon and colour together; status colours appear only for status.
+- [x] A "Design gallery" screen, reachable only in the dev build, shows every component in light, dark and 200% text.
+- [x] Gallery golden tests run in light, dark and 200% text under a new `design` tag that CI runs on every PR; the goldens are generated on Linux by a script or CI job, not on a Mac. The `screenshots` tag stays manual.
+- [x] `docs/design/design-system.md` explains the tokens and when to use each component, with pictures from the gallery.
+- [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
 - [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 
 #### Covers
