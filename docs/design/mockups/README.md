@@ -12,7 +12,7 @@ The Event home in three directions (Slate and sage, Ink and indigo, Warm neutral
 
 ## Round 2 ([#190](https://github.com/sookoonspace/crewpoint/issues/190))
 
-Slate and sage with Lucide, in light and dark: `round-2/<screen>-<mode>.{html,png}`.
+Slate and sage with Lucide, in light and dark: `round-2/<screen>-<mode>.{html,png}`. **Approved by the owner on 2026-11-18**: these are the agreed look until each screen is built (Spec Req 19).
 
 | Screen | File |
 |---|---|

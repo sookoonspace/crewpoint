@@ -42,16 +42,16 @@ Static HTML mockups of the Event home in the three style directions, exported to
 - Current palette and type for comparison: `lib/app/core/constants/app_colors.dart`, `app_typography.dart`.
 
 #### Acceptance criteria
-- [ ] `docs/design/mockups/` holds one HTML source and one PNG per screen, in light and dark, phone width 390 px.
-- [ ] Three directions on the Event home only:
+- [x] `docs/design/mockups/` holds one HTML source and one PNG per screen, in light and dark, phone width 390 px.
+- [x] Three directions on the Event home only:
   - **Slate and sage:** white, slate grey text, a deeper sage accent.
   - **Ink and indigo:** white, near-black text, a muted indigo accent, like the MeetCraft reference without gradients.
   - **Warm neutral:** off-white, charcoal, a toned-down terracotta accent.
-- [ ] Every direction keeps the CrewPoint name and logo shape and Inter for text, uses exactly one accent colour, uses status colours only for status (green paid or done, amber due, red overdue), has no gradients, no illustrations and no cream background. Headings are Inter or Inter Display.
-- [ ] The Event home is also shown with Material Symbols Outlined and with Lucide icons.
-- [ ] Colour and type values are written as named values in the HTML, so the chosen direction can become the token file (Technical Decision 8).
-- [ ] All mockups are published together as one private page the owner can open on a phone and share.
-- [ ] The owner's choice of direction and icon set is recorded in Spec #186 (and `ai_specs/design-refresh-spec.md`) as a new Interview Ledger record.
+- [x] Every direction keeps the CrewPoint name and logo shape and Inter for text, uses exactly one accent colour, uses status colours only for status (green paid or done, amber due, red overdue), has no gradients, no illustrations and no cream background. Headings are Inter or Inter Display.
+- [x] The Event home is also shown with Material Symbols Outlined and with Lucide icons.
+- [x] Colour and type values are written as named values in the HTML, so the chosen direction can become the token file (Technical Decision 8).
+- [x] All mockups are published together as one private page the owner can open on a phone and share.
+- [x] The owner's choice of direction and icon set is recorded in Spec #186 (and `ai_specs/design-refresh-spec.md`) as a new Interview Ledger record.
 
 #### Covers
 - User Stories: 1
@@ -75,14 +75,14 @@ Mockups of the most-used screens, phone and laptop, in the direction and icon se
 - Custom field types: `lib/app/features/participants/domain/models/custom_field.dart`.
 
 #### Acceptance criteria
-- [ ] Nine phone screens (390 px), light and dark, HTML plus PNG in `docs/design/mockups/`: Home (event list), Event home, People (roster), New group, Person form, Schedule (day), Tasks, Budget and Create event (template picker).
-- [ ] The Person form covers every field type in use: text, the adult or child switch, a date, the group picker, single and multiple choice, yes or no, custom questions, a private section, the save bar and error states.
-- [ ] The New group mockup shows the group name, group answers, person cards with chips, "Same answers as {previous name}", "Add another person" and a missing required answer.
-- [ ] Two laptop screens: the Event home dashboard (summary cards in two or three columns, next sessions and open tasks side by side, left sidebar) and People as list and detail.
-- [ ] Event home shows the cover banner and the no-photo banner (accent colour with the event's icon).
-- [ ] No mockups for chat, settings, roles, counts or other admin screens.
-- [ ] The private page from Round 1 is updated with every Round 2 mockup.
-- [ ] The owner approves the set; the mockups are the agreed look until each screen is built (Req 19).
+- [x] Nine phone screens (390 px), light and dark, HTML plus PNG in `docs/design/mockups/`: Home (event list), Event home, People (roster), New group, Person form, Schedule (day), Tasks, Budget and Create event (template picker).
+- [x] The Person form covers every field type in use: text, the adult or child switch, a date, the group picker, single and multiple choice, yes or no, custom questions, a private section, the save bar and error states.
+- [x] The New group mockup shows the group name, group answers, person cards with chips, "Same answers as {previous name}", "Add another person" and a missing required answer.
+- [x] Two laptop screens: the Event home dashboard (summary cards in two or three columns, next sessions and open tasks side by side, left sidebar) and People as list and detail.
+- [x] Event home shows the cover banner and the no-photo banner (accent colour with the event's icon).
+- [x] No mockups for chat, settings, roles, counts or other admin screens.
+- [x] The private page from Round 1 is updated with every Round 2 mockup.
+- [x] The owner approves the set; the mockups are the agreed look until each screen is built (Req 19).
 
 #### Covers
 - User Stories: 2
