@@ -46,6 +46,7 @@ The owner first approves the look from mockups saved in the repo, then the desig
    - **Ink and indigo:** white, near-black text, and a muted indigo accent, like the MeetCraft reference without gradients.
    - **Warm neutral:** off-white, charcoal, and a toned-down terracotta accent.
    - Round 1 also shows two icon sets, Material Symbols Outlined and Lucide, and the owner picks one together with the style direction. [L20]
+   - **Chosen:** Slate and sage, with Lucide icons. Round 2 and the design system tokens start from the values in `docs/design/mockups/round-1/event-home-slate-sage-lucide-{light,dark}.html`. [L22]
 7. Round 2, in the chosen direction: nine phone screens, Home (event list), Event home, People (roster), New group, Person form, Schedule (day), Tasks, Budget and Create event (template picker). Also two laptop screens: the Event home dashboard and People as list and detail. [L2] [L6]
 8. The Person form mockup covers every field type in use: text, the adult or child switch, a date, the group picker, single and multiple choice, yes or no, custom questions, a private section, the save bar and error states. Other forms (event details, expense, task, session) follow its pattern. [L2]
 9. Every direction keeps: the CrewPoint name and logo shape, and Inter for text. [L9]
@@ -65,7 +66,7 @@ The owner first approves the look from mockups saved in the repo, then the desig
 17. The dev build has a "Design gallery" screen showing every component in light, dark and 200% text. [L3]
 18. `docs/design/design-system.md` explains the tokens and when to use each component, with pictures. [L3]
 19. The PNG mockups are the agreed look until a screen is built; after that the code is the source of truth. [L3]
-20. One outlined icon set is used throughout, chosen in Round 1 (Req 6) and reached only through icon tokens, so changing it is a one-file change. Motion is short and subtle. [L20]
+20. One outlined icon set is used throughout, Lucide (chosen in Round 1, Req 6), reached only through icon tokens, so changing it is a one-file change. Motion is short and subtle. [L20] [L22]
 
 ### Layout
 

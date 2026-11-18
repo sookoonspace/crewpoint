@@ -327,3 +327,15 @@ Recommended Answer: The template's icon (a saved template uses its base template
 Answer: Template, then old type.
 
 Decision: As recommended.
+
+### L22
+
+Status: current
+
+Question: Which Round 1 style direction and icon set does CrewPoint use?
+
+Recommended Answer: Slate and sage. Warm neutral's terracotta accent sits close to the red Overdue colour, so unread badges and accent chips read as warnings on every screen; sage's nearness to the green Done colour is milder and the cooler palette fits "clean, professional, not a candy store".
+
+Answer: Slate and sage, with Lucide icons. (The owner weighed Slate and sage against Warm neutral.)
+
+Decision: Slate and sage with Lucide. Round 2 mockups and the design system tokens start from the `:root` values in `docs/design/mockups/round-1/event-home-slate-sage-lucide-{light,dark}.html`. Status colours stay as shown. App icons do not need to change.

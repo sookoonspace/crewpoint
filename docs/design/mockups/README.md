@@ -8,6 +8,8 @@ The PNGs are the agreed look until a screen is built; after that the code is the
 
 The Event home in three directions (Slate and sage, Ink and indigo, Warm neutral), each with Material Symbols Outlined and with Lucide icons, in light and dark: `round-1/event-home-<direction>-<icons>-<mode>.{html,png}`. `round-1/overview.html` is the review page, also published as a private page: https://claude.ai/artifact/LWKb6KDEKVbp7kCoSiUfhb
 
+**Chosen: Slate and sage, with Lucide icons** (ledger L22). Round 2 and the design system tokens start from `round-1/event-home-slate-sage-lucide-{light,dark}.html`.
+
 ## Rebuilding
 
 ```bash
