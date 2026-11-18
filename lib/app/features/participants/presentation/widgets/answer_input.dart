@@ -128,7 +128,7 @@ class _AnswerInputState extends State<AnswerInput> {
           error: error,
           firstDate: DateTime(1900),
           lastDate: DateTime(now.year + 10),
-          format: (d) => MaterialLocalizations.of(context).formatMediumDate(d),
+          format: (d) => MaterialLocalizations.of(context).formatShortDate(d),
           clearLabel: field.required
               ? null
               : MaterialLocalizations.of(context).deleteButtonTooltip,

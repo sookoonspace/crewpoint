@@ -218,9 +218,8 @@ void main() {
   testWidgets('GAP-WED-14 answers are saved, standard on the person with a '
       'filter tag, private apart', (tester) async {
     final robot = await open(tester, location: '$base/people/raj');
-    await robot.tap(const Key('people.answer.diet'));
-    await tester.tap(find.text('Jain').last);
-    await robot.settle();
+    // Choices are chips now (Spec #186 Req 29), one key per answer.
+    await robot.tap(const Key('people.answer.diet.Jain'));
     await tester.enterText(
       find.byKey(const Key('people.answer.allergy')),
       'Shellfish',
@@ -247,7 +246,7 @@ void main() {
       'No Diet',
     );
     await robot.tap(const Key('people.edit.save'));
-    expect(find.text('This is required.'), findsOneWidget);
+    expect(find.text('Choose an answer.'), findsOneWidget);
     expect(find.text('No Diet'), findsOneWidget);
     final added = await harness.firestore
         .collection('$e/participants')

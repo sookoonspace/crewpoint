@@ -114,7 +114,7 @@ Set `busy: true` while the action runs. The button shows a spinner, ignores taps
 Every field has a label above it (with a red star when `required`; pass `requiredLabel` so screen readers say "required"), then the input, then `help`, or the `error` in its place with an icon. `labelIcon: CpIcons.lock` marks a private field.
 
 - **`CpTextField`** is a text input. It works alone (pass `error`) or in a `Form` (pass `validator`). Put the test key on the input with `fieldKey`.
-- **`CpSelectField`** shows a chosen value and runs `onTap`, where the caller opens its own picker sheet (such as the group picker). `placeholder` is shown, muted, when nothing is chosen.
+- **`CpSelectField`** shows a chosen value and runs `onTap`, where the caller opens its own picker sheet (such as the group picker). `placeholder` is shown, muted, when nothing is chosen. With `onClear` and `clearLabel`, a chosen value can be cleared. `fieldKey` (on this and `CpDateField`) puts a test key on the tappable field itself.
 - **`CpDateField`** opens the platform's own picker: a wheel on iOS, the calendar dialog elsewhere (Req 21). Dates show through the caller's `format`. With `clearLabel`, a chosen date can be cleared.
 - **`CpSwitchRow`** is a title, optional help and the platform's switch. The whole row toggles, and it reads as one switch.
 - **`CpField`** gives any custom input the same label, help and error frame.

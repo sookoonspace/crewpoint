@@ -1,5 +1,6 @@
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/format/event_time.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
@@ -68,7 +69,7 @@ class AttendanceSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = context.strings.agenda;
-    final theme = Theme.of(context);
+    final cp = context.cp;
     final policy = event.attendancePolicy;
     final visible = [
       for (final s in sessions)
@@ -76,12 +77,13 @@ class AttendanceSection extends StatelessWidget {
     ]..sort((a, b) => a.startAt.compareTo(b.startAt));
 
     Widget stay(String key, String label, DateTime? value, bool arrival) =>
-        ListTile(
-          key: Key('people.edit.$key'),
-          contentPadding: EdgeInsets.zero,
-          leading: const Icon(AppIcons.schedule),
-          title: Text(label),
-          subtitle: Text(_label(value)),
+        CpSelectField(
+          key: Key('people.edit.$key.field'),
+          fieldKey: Key('people.edit.$key'),
+          label: label,
+          leadingIcon: CpIcons.schedule,
+          value: value == null ? null : _label(value),
+          placeholder: _label(null),
           onTap: enabled
               ? () async {
                   final picked = await _pick(context, value);
@@ -93,15 +95,12 @@ class AttendanceSection extends StatelessWidget {
                   }
                 }
               : null,
-          trailing: enabled && value != null
-              ? IconButton(
-                  key: Key('people.edit.$key.clear'),
-                  tooltip: strings.clearTime,
-                  icon: const Icon(AppIcons.actionClose),
-                  onPressed: () => arrival
-                      ? onStay(departureAt: person.departureAt)
-                      : onStay(arrivalAt: person.arrivalAt),
-                )
+          clearLabel: strings.clearTime,
+          clearKey: Key('people.edit.$key.clear'),
+          onClear: enabled
+              ? () => arrival
+                    ? onStay(departureAt: person.departureAt)
+                    : onStay(arrivalAt: person.arrivalAt)
               : null,
         );
 
@@ -123,64 +122,93 @@ class AttendanceSection extends StatelessWidget {
     return Column(
       key: const Key('people.edit.attendance'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: AppSpacing.xs,
+      spacing: cp.space.sm,
       children: [
-        Text(strings.attendanceHeading, style: theme.textTheme.titleSmall),
-        Text(strings.policyHelp(policy.name), style: theme.textTheme.bodySmall),
-        stay('arrival', strings.arrivalLabel, person.arrivalAt, true),
-        stay('departure', strings.departureLabel, person.departureAt, false),
-        if (badOrder)
-          Text(
-            strings.departureBeforeArrival,
-            key: const Key('people.edit.stayError'),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.error,
-            ),
-          ),
-        Padding(
-          padding: const EdgeInsets.only(top: AppSpacing.sm),
-          child: Text(
-            strings.sessionsHeading,
-            style: theme.textTheme.titleSmall,
+        CpSectionHeader(title: strings.attendanceHeading),
+        CpCard(
+          padding: EdgeInsets.all(cp.space.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: cp.space.lg,
+            children: [
+              Text(
+                strings.policyHelp(policy.name),
+                style: cp.type.bodySmall.copyWith(color: cp.colors.textMuted),
+              ),
+              stay('arrival', strings.arrivalLabel, person.arrivalAt, true),
+              stay(
+                'departure',
+                strings.departureLabel,
+                person.departureAt,
+                false,
+              ),
+              if (badOrder)
+                CpFieldError(
+                  strings.departureBeforeArrival,
+                  key: const Key('people.edit.stayError'),
+                ),
+            ],
           ),
         ),
-        if (visible.isEmpty)
-          Text(strings.sessionsNone, style: theme.textTheme.bodySmall)
-        else
-          for (final s in visible)
-            Builder(
-              builder: (_) {
-                final going = attends(
-                  policy: policy,
-                  session: s,
-                  person: person,
-                );
-                AttendanceExceptions? change(bool on) => setAttending(
-                  policy: policy,
-                  session: s,
-                  person: person,
-                  attend: on,
-                  canInvite: canInvite,
-                );
-                final allowed = change(!going) != null;
-                return SwitchListTile(
-                  key: Key('people.edit.session.${s.id}'),
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(s.title),
-                  subtitle: Text(
-                    [
-                      sessionTimeLabel(event, s, withDay: true),
-                      reason(s, going),
-                      if (!allowed && enabled) strings.onlyOrganizersInvite,
-                    ].join(' · '),
+        CpSectionHeader(title: strings.sessionsHeading),
+        CpCard(
+          padding: EdgeInsets.symmetric(
+            horizontal: cp.space.lg,
+            vertical: cp.space.sm,
+          ),
+          child: visible.isEmpty
+              ? Padding(
+                  padding: EdgeInsets.symmetric(vertical: cp.space.sm),
+                  child: Text(
+                    strings.sessionsNone,
+                    style: cp.type.bodySmall.copyWith(
+                      color: cp.colors.textMuted,
+                    ),
                   ),
-                  value: going,
-                  onChanged: enabled && allowed
-                      ? (on) => onExceptions(change(on)!)
-                      : null,
-                );
-              },
-            ),
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final s in visible)
+                      Builder(
+                        builder: (_) {
+                          final going = attends(
+                            policy: policy,
+                            session: s,
+                            person: person,
+                          );
+                          AttendanceExceptions? change(bool on) => setAttending(
+                            policy: policy,
+                            session: s,
+                            person: person,
+                            attend: on,
+                            canInvite: canInvite,
+                          );
+                          final allowed = change(!going) != null;
+                          return Padding(
+                            padding: EdgeInsets.symmetric(
+                              vertical: cp.space.xs,
+                            ),
+                            child: CpSwitchRow(
+                              key: Key('people.edit.session.${s.id}'),
+                              title: s.title,
+                              help: [
+                                sessionTimeLabel(event, s, withDay: true),
+                                reason(s, going),
+                                if (!allowed && enabled)
+                                  strings.onlyOrganizersInvite,
+                              ].join(' · '),
+                              value: going,
+                              onChanged: enabled && allowed
+                                  ? (on) => onExceptions(change(on)!)
+                                  : null,
+                            ),
+                          );
+                        },
+                      ),
+                  ],
+                ),
+        ),
       ],
     );
   }

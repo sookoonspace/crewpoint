@@ -181,7 +181,7 @@ class _PersonCardState extends State<PersonCard> {
               lastDate: now,
               clearLabel: strings.clearBirthDate,
               format: (d) =>
-                  MaterialLocalizations.of(context).formatMediumDate(d),
+                  MaterialLocalizations.of(context).formatShortDate(d),
               onChanged: (d) => _change(
                 d == null
                     ? _person.copyWith(clearBirthDate: true)

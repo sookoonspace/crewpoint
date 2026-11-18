@@ -244,14 +244,15 @@ void main() {
     tester,
   ) async {
     final robot = await open(tester, as: 'parent', location: '$people/ana');
-    expect(find.textContaining('2020-05-01'), findsOneWidget);
+    // Shown in the platform's date format (Spec #186).
+    expect(find.textContaining('May 1, 2020'), findsOneWidget);
     await robot.finish();
   });
 
   testWidgets('Z-01 a crew lead edits a child without seeing, or wiping, the '
       'birth date', (tester) async {
     final robot = await open(tester, as: 'lead', location: '$people/ana');
-    expect(find.textContaining('2020-05-01'), findsNothing);
+    expect(find.textContaining('May 1, 2020'), findsNothing);
     await tester.enterText(
       find.byKey(const Key('people.edit.name')),
       'Anaya Shah',
