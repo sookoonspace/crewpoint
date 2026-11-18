@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390">
+<title>Event home · Warm neutral · Lucide · light</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=block">
+<style>
+/* Tokens: Warm neutral, light. These names become the app's design tokens. */
+:root {
+  --cp-background: #F8F7F5;
+  --cp-surface: #FFFFFF;
+  --cp-border: #E7E3DE;
+  --cp-text: #2A2927;
+  --cp-text-muted: #6A6661;
+  --cp-accent: #A85F45;
+  --cp-accent-soft: #F4E8E2;
+  --cp-on-accent: #FFFFFF;
+  --cp-banner: #A85F45;
+  --cp-on-banner: #FFFFFF;
+  --cp-status-done: #2E7D4F;
+  --cp-status-done-soft: #E6F2EA;
+  --cp-status-due: #9A6200;
+  --cp-status-due-soft: #FBF0DC;
+  --cp-status-overdue: #B3261E;
+  --cp-status-overdue-soft: #FBE6E4;
+  --cp-font-text: 'Inter', system-ui, sans-serif;
+  --cp-font-heading-opsz: 32;
+  --cp-type-title: 26px;
+  --cp-type-section: 17px;
+  --cp-type-body: 15px;
+  --cp-type-label: 13px;
+  --cp-type-caption: 12px;
+  --cp-type-stat: 22px;
+  --cp-space-xs: 4px;
+  --cp-space-sm: 8px;
+  --cp-space-md: 12px;
+  --cp-space-lg: 16px;
+  --cp-space-xl: 24px;
+  --cp-space-2xl: 32px;
+  --cp-radius-sm: 8px;
+  --cp-radius-md: 12px;
+  --cp-radius-lg: 16px;
+  --cp-radius-pill: 999px;
+  --cp-shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04);
+  --cp-icon-size: 20px;
+  --cp-tap-min: 48px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 390px; height: 1580px; overflow: hidden; }
+body { position: relative; }
+body {
+  background: var(--cp-background); color: var(--cp-text);
+  font-family: var(--cp-font-text); font-size: var(--cp-type-body); line-height: 1.4;
+  -webkit-font-smoothing: antialiased; padding-bottom: 96px;
+}
+h1, h2 { font-variation-settings: 'opsz' var(--cp-font-heading-opsz); letter-spacing: -0.01em; }
+h1 { font-size: var(--cp-type-title); font-weight: 650; line-height: 1.2; }
+h2 { font-size: var(--cp-type-section); font-weight: 620; }
+.icon { display: inline-flex; align-items: center; justify-content: center; line-height: 1; flex: none; }
+.icon svg { display: block; }
+.ms { font-family: 'Material Symbols Outlined'; font-weight: 400; font-style: normal;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+.status-bar { height: 44px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px; font-size: 15px; font-weight: 600; }
+.status-bar .dots { display: flex; gap: 5px; }
+.status-bar .dots i { width: 17px; height: 10px; border-radius: 3px; background: var(--cp-text); opacity: .85; display: block; }
+.top-bar { height: 52px; display: flex; align-items: center; padding: 0 4px; color: var(--cp-text); }
+.top-bar .btn { width: var(--cp-tap-min); height: var(--cp-tap-min); display: flex; align-items: center; justify-content: center; }
+.top-bar .grow { flex: 1; }
+.page { padding: 0 var(--cp-space-lg); display: flex; flex-direction: column; gap: var(--cp-space-xl); }
+.banner { height: 132px; border-radius: var(--cp-radius-lg); background: var(--cp-banner);
+  color: var(--cp-on-banner); display: flex; align-items: flex-end; justify-content: space-between;
+  padding: var(--cp-space-lg); position: relative; overflow: hidden; }
+.banner .big { position: absolute; right: 18px; top: 18px; opacity: .9; }
+.banner .label { font-size: var(--cp-type-label); font-weight: 600; opacity: .9; }
+.head { display: flex; flex-direction: column; gap: var(--cp-space-sm); }
+.meta { display: flex; flex-direction: column; gap: 6px; color: var(--cp-text-muted); font-size: 14px; }
+.meta div { display: flex; align-items: center; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px;
+  border-radius: var(--cp-radius-pill); font-size: var(--cp-type-label); font-weight: 600; white-space: nowrap; }
+.chip-neutral { background: var(--cp-accent-soft); color: var(--cp-accent); }
+.chip-done { background: var(--cp-status-done-soft); color: var(--cp-status-done); }
+.chip-due { background: var(--cp-status-due-soft); color: var(--cp-status-due); }
+.chip-overdue { background: var(--cp-status-overdue-soft); color: var(--cp-status-overdue); }
+.title-row { display: flex; align-items: center; gap: var(--cp-space-sm); }
+.people { display: flex; align-items: center; gap: 10px; margin-top: 4px; font-size: 14px; color: var(--cp-text-muted); }
+.stack { display: flex; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--cp-accent-soft); color: var(--cp-accent);
+  border: 2px solid var(--cp-background); font-size: 11px; font-weight: 700; display: flex;
+  align-items: center; justify-content: center; margin-left: -6px; position: relative; }
+.avatar:first-child { margin-left: 0; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--cp-space-sm); }
+.card { background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: var(--cp-radius-md);
+  box-shadow: var(--cp-shadow-card); }
+.stat { padding: var(--cp-space-md); display: flex; flex-direction: column; gap: 6px; min-height: 104px; }
+.stat .k { font-size: var(--cp-type-caption); font-weight: 600; color: var(--cp-text-muted); display: flex; align-items: center; gap: 6px; }
+.stat .v { font-size: var(--cp-type-stat); font-weight: 650; font-variation-settings: 'opsz' 32; font-feature-settings: 'tnum'; }
+.stat .s { font-size: var(--cp-type-caption); color: var(--cp-text-muted); }
+.ring-wrap { display: flex; align-items: center; gap: 8px; }
+.section { display: flex; flex-direction: column; gap: var(--cp-space-sm); }
+.section-head { display: flex; align-items: center; justify-content: space-between; min-height: 32px; }
+.section-head a { color: var(--cp-accent); font-size: 14px; font-weight: 600; text-decoration: none; display: flex; align-items: center; }
+.list .row + .row { border-top: 1px solid var(--cp-border); }
+.row { display: flex; align-items: center; gap: var(--cp-space-md); padding: 12px var(--cp-space-lg); min-height: 64px; color: var(--cp-text); }
+.row > .icon:last-child { color: var(--cp-text-muted); }
+.grow { flex: 1; min-width: 0; }
+.row-title { font-weight: 560; }
+.row-sub { font-size: 13px; color: var(--cp-text-muted); display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+.time { width: 44px; display: flex; flex-direction: column; align-items: flex-start; font-feature-settings: 'tnum'; }
+.time strong { font-size: 15px; font-weight: 650; }
+.time span { font-size: 11px; color: var(--cp-text-muted); font-weight: 600; }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: var(--cp-space-sm); }
+.tile { display: flex; align-items: center; gap: 10px; padding: 14px 12px; min-height: 64px;
+  background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: var(--cp-radius-md); position: relative; }
+.tile .row-sub { font-size: 12px; }
+.tile-icon { width: 36px; height: 36px; border-radius: var(--cp-radius-sm); background: var(--cp-accent-soft);
+  color: var(--cp-accent); display: flex; align-items: center; justify-content: center; flex: none; }
+.badge { min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: var(--cp-accent);
+  color: var(--cp-on-accent); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.button-secondary { height: 48px; border-radius: var(--cp-radius-md); border: 1px solid var(--cp-border);
+  background: var(--cp-surface); color: var(--cp-accent); font-weight: 600; display: flex;
+  align-items: center; justify-content: center; gap: 8px; }
+.nav { position: absolute; left: 0; width: 390px; top: 1496px; height: 84px; padding-bottom: 20px;
+  background: var(--cp-surface); border-top: 1px solid var(--cp-border); display: grid; grid-template-columns: repeat(5, 1fr); }
+.nav div { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  font-size: 11px; font-weight: 600; color: var(--cp-text-muted); }
+.nav .on { color: var(--cp-accent); }
+.nav .on .pill { background: var(--cp-accent-soft); }
+.nav .pill { width: 56px; height: 30px; border-radius: 15px; display: flex; align-items: center; justify-content: center; }
+</style>
+</head>
+<body>
+  <div class="status-bar"><span>9:41</span><span class="dots"><i></i><i></i></span></div>
+  <div class="top-bar">
+    <span class="btn"><span class="icon" aria-hidden="true"><svg class="lucide lucide-arrow-left" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="m12 19-7-7 7-7" /> <path d="M19 12H5" /> </svg></span></span>
+    <span class="grow"></span>
+    <span class="btn"><span class="icon" aria-hidden="true"><svg class="lucide lucide-bell-off" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M10.268 21a2 2 0 0 0 3.464 0" /> <path d="M17 17H4a1 1 0 0 1-.74-1.673C4.59 13.956 6 12.499 6 8a6 6 0 0 1 .258-1.742" /> <path d="m2 2 20 20" /> <path d="M8.668 3.01A6 6 0 0 1 18 8c0 2.687.77 4.653 1.707 6.05" /> </svg></span></span>
+    <span class="btn"><span class="icon" aria-hidden="true"><svg class="lucide lucide-settings" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /> <circle cx="12" cy="12" r="3" /> </svg></span></span>
+  </div>
+
+  <main class="page">
+    <div class="banner" role="img" aria-label="Event cover (no photo)">
+      <span class="big"><span class="icon" aria-hidden="true"><svg class="lucide lucide-users-round" xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M18 21a8 8 0 0 0-16 0" /> <circle cx="10" cy="8" r="5" /> <path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" /> </svg></span></span>
+      <span class="label">Convention</span>
+    </div>
+
+    <div class="head">
+      <div class="title-row"><span class="chip chip-neutral">Published</span></div>
+      <h1>Lakeside Convention 2027</h1>
+      <div class="meta">
+        <div><span class="icon" aria-hidden="true"><svg class="lucide lucide-calendar" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M8 2v4" /> <path d="M16 2v4" /> <rect width="18" height="18" x="3" y="4" rx="2" /> <path d="M3 10h18" /> </svg></span> Fri 9 – Sun 11 July 2027</div>
+        <div><span class="icon" aria-hidden="true"><svg class="lucide lucide-map-pin" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /> <circle cx="12" cy="10" r="3" /> </svg></span> Lakeside Centre, Madison</div>
+      </div>
+      <div class="people"><span class="stack"><span class="avatar" style="z-index:10">AS</span><span class="avatar" style="z-index:9">RP</span><span class="avatar" style="z-index:8">MK</span><span class="avatar" style="z-index:7">JL</span></span> 148 attending · 12 crew</div>
+    </div>
+
+    <div class="stats">
+      <div class="card stat">
+        <span class="k"><span class="icon" aria-hidden="true"><svg class="lucide lucide-users" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /> <circle cx="9" cy="7" r="4" /> <path d="M22 21v-2a4 4 0 0 0-3-3.87" /> <path d="M16 3.13a4 4 0 0 1 0 7.75" /> </svg></span> People</span>
+        <span class="v">148</span>
+        <span class="s">41 groups</span>
+      </div>
+      <div class="card stat">
+        <span class="k"><span class="icon" aria-hidden="true"><svg class="lucide lucide-list-checks" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="m3 17 2 2 4-4" /> <path d="m3 7 2 2 4-4" /> <path d="M13 6h8" /> <path d="M13 12h8" /> <path d="M13 18h8" /> </svg></span> Tasks</span>
+        <div class="ring-wrap">
+          <svg width="40" height="40" viewBox="0 0 40 40" aria-label="18 of 26 done">
+            <circle cx="20" cy="20" r="17" fill="none" stroke="var(--cp-border)" stroke-width="5"/>
+            <circle cx="20" cy="20" r="17" fill="none" stroke="var(--cp-accent)" stroke-width="5"
+              stroke-linecap="round" stroke-dasharray="73.9 106.8"
+              transform="rotate(-90 20 20)"/>
+          </svg>
+          <span class="v" style="font-size:18px">18/26</span>
+        </div>
+        <span class="s">2 overdue</span>
+      </div>
+      <div class="card stat">
+        <span class="k"><span class="icon" aria-hidden="true"><svg class="lucide lucide-wallet" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" /> <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" /> </svg></span> Budget</span>
+        <span class="v">$4,320</span>
+        <span class="s">of $6,000</span>
+      </div>
+    </div>
+
+    <section class="section">
+      <div class="section-head"><h2>Up next</h2><a>Schedule <span class="icon" aria-hidden="true"><svg class="lucide lucide-chevron-right" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="m9 18 6-6-6-6" /> </svg></span></a></div>
+      <div class="card list">
+        
+      <div class="row">
+        <div class="time"><strong>9:00</strong><span>AM</span></div>
+        <div class="grow">
+          <div class="row-title">Registration opens</div>
+          <div class="row-sub"><span class="icon" aria-hidden="true"><svg class="lucide lucide-map-pin" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /> <circle cx="12" cy="10" r="3" /> </svg></span> Main hall</div>
+        </div>
+        <span class="icon" aria-hidden="true"><svg class="lucide lucide-chevron-right" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="m9 18 6-6-6-6" /> </svg></span>
+      </div>
+        
+      <div class="row">
+        <div class="time"><strong>10:30</strong><span>AM</span></div>
+        <div class="grow">
+          <div class="row-title">Opening session</div>
+          <div class="row-sub"><span class="icon" aria-hidden="true"><svg class="lucide lucide-map-pin" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /> <circle cx="12" cy="10" r="3" /> </svg></span> Ballroom A · Everyone</div>
+        </div>
+        <span class="icon" aria-hidden="true"><svg class="lucide lucide-chevron-right" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="m9 18 6-6-6-6" /> </svg></span>
+      </div>
+        
+      <div class="row">
+        <div class="time"><strong>12:30</strong><span>PM</span></div>
+        <div class="grow">
+          <div class="row-title">Lunch</div>
+          <div class="row-sub"><span class="icon" aria-hidden="true"><svg class="lucide lucide-map-pin" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /> <circle cx="12" cy="10" r="3" /> </svg></span> Garden terrace</div>
+        </div>
+        <span class="icon" aria-hidden="true"><svg class="lucide lucide-chevron-right" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="m9 18 6-6-6-6" /> </svg></span>
+      </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>Open tasks</h2><a>All tasks <span class="icon" aria-hidden="true"><svg class="lucide lucide-chevron-right" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="m9 18 6-6-6-6" /> </svg></span></a></div>
+      <div class="card list">
+        
+      <div class="row">
+        <div class="grow">
+          <div class="row-title">Confirm catering numbers</div>
+          <div class="row-sub">Priya · Logistics</div>
+        </div>
+        <span class="chip chip-overdue"><span class="icon" aria-hidden="true"><svg class="lucide lucide-circle-alert" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <circle cx="12" cy="12" r="10" /> <line x1="12" x2="12" y1="8" y2="12" /> <line x1="12" x2="12.01" y1="16" y2="16" /> </svg></span> Overdue</span>
+      </div>
+        
+      <div class="row">
+        <div class="grow">
+          <div class="row-title">Print name badges</div>
+          <div class="row-sub">Ravi · Registration</div>
+        </div>
+        <span class="chip chip-due"><span class="icon" aria-hidden="true"><svg class="lucide lucide-clock" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <circle cx="12" cy="12" r="10" /> <polyline points="12 6 12 12 16 14" /> </svg></span> Due Fri</span>
+      </div>
+        
+      <div class="row">
+        <div class="grow">
+          <div class="row-title">Book sound crew</div>
+          <div class="row-sub">Asha · Programme</div>
+        </div>
+        <span class="chip chip-done"><span class="icon" aria-hidden="true"><svg class="lucide lucide-circle-check" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <circle cx="12" cy="12" r="10" /> <path d="m9 12 2 2 4-4" /> </svg></span> Done</span>
+      </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>Event</h2></div>
+      <div class="tiles">
+        
+      <div class="tile">
+        <span class="tile-icon"><span class="icon" aria-hidden="true"><svg class="lucide lucide-message-circle" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" /> </svg></span></span>
+        <div class="grow">
+          <div class="row-title">Chat</div>
+          <div class="row-sub">Updates and talk</div>
+        </div>
+        <span class="badge">3</span>
+      </div>
+        
+      <div class="tile">
+        <span class="tile-icon"><span class="icon" aria-hidden="true"><svg class="lucide lucide-wallet" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" /> <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" /> </svg></span></span>
+        <div class="grow">
+          <div class="row-title">Budget</div>
+          <div class="row-sub">You are owed $120</div>
+        </div>
+        
+      </div>
+        
+      <div class="tile">
+        <span class="tile-icon"><span class="icon" aria-hidden="true"><svg class="lucide lucide-clock" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <circle cx="12" cy="12" r="10" /> <polyline points="12 6 12 12 16 14" /> </svg></span></span>
+        <div class="grow">
+          <div class="row-title">Schedule</div>
+          <div class="row-sub">24 sessions</div>
+        </div>
+        
+      </div>
+        
+      <div class="tile">
+        <span class="tile-icon"><span class="icon" aria-hidden="true"><svg class="lucide lucide-calendar-days" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M8 2v4" /> <path d="M16 2v4" /> <rect width="18" height="18" x="3" y="4" rx="2" /> <path d="M3 10h18" /> <path d="M8 14h.01" /> <path d="M12 14h.01" /> <path d="M16 14h.01" /> <path d="M8 18h.01" /> <path d="M12 18h.01" /> <path d="M16 18h.01" /> </svg></span></span>
+        <div class="grow">
+          <div class="row-title">Agenda</div>
+          <div class="row-sub">Your own plan</div>
+        </div>
+        
+      </div>
+        
+      <div class="tile">
+        <span class="tile-icon"><span class="icon" aria-hidden="true"><svg class="lucide lucide-users" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /> <circle cx="9" cy="7" r="4" /> <path d="M22 21v-2a4 4 0 0 0-3-3.87" /> <path d="M16 3.13a4 4 0 0 1 0 7.75" /> </svg></span></span>
+        <div class="grow">
+          <div class="row-title">People</div>
+          <div class="row-sub">148 people</div>
+        </div>
+        
+      </div>
+        
+      <div class="tile">
+        <span class="tile-icon"><span class="icon" aria-hidden="true"><svg class="lucide lucide-chart-column" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M3 3v16a2 2 0 0 0 2 2h16" /> <path d="M18 17V9" /> <path d="M13 17V5" /> <path d="M8 17v-3" /> </svg></span></span>
+        <div class="grow">
+          <div class="row-title">Counts</div>
+          <div class="row-sub">Updated 5 min ago</div>
+        </div>
+        
+      </div>
+      </div>
+      <div class="button-secondary"><span class="icon" aria-hidden="true"><svg class="lucide lucide-user-plus" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /> <circle cx="9" cy="7" r="4" /> <line x1="19" x2="19" y1="8" y2="14" /> <line x1="22" x2="16" y1="11" y2="11" /> </svg></span> Invite people</div>
+    </section>
+  </main>
+
+  <nav class="nav">
+    <div class="on"><span class="pill"><span class="icon" aria-hidden="true"><svg class="lucide lucide-calendar" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M8 2v4" /> <path d="M16 2v4" /> <rect width="18" height="18" x="3" y="4" rx="2" /> <path d="M3 10h18" /> </svg></span></span>Events</div>
+    <div><span class="pill"><span class="icon" aria-hidden="true"><svg class="lucide lucide-list-checks" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="m3 17 2 2 4-4" /> <path d="m3 7 2 2 4-4" /> <path d="M13 6h8" /> <path d="M13 12h8" /> <path d="M13 18h8" /> </svg></span></span>Tasks</div>
+    <div><span class="pill"><span class="icon" aria-hidden="true"><svg class="lucide lucide-message-circle" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" /> </svg></span></span>Chat</div>
+    <div><span class="pill"><span class="icon" aria-hidden="true"><svg class="lucide lucide-wallet" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" /> <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" /> </svg></span></span>Budget</div>
+    <div><span class="pill"><span class="icon" aria-hidden="true"><svg class="lucide lucide-user" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" > <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /> <circle cx="12" cy="7" r="4" /> </svg></span></span>Profile</div>
+  </nav>
+</body>
+</html>
