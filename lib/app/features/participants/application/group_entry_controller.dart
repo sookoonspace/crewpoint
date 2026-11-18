@@ -9,9 +9,17 @@ import 'package:crewpoint_app/app/features/participants/domain/models/group_draf
 /// Which group screen: a new group, or adding to [groupId].
 @immutable
 class GroupEntryArgs {
-  const GroupEntryArgs({required this.eventId, this.groupId, this.groupName});
+  const GroupEntryArgs({
+    required this.eventId,
+    this.groupId,
+    this.groupName,
+    this.editing = false,
+  });
 
   final String eventId;
+
+  /// "Edit answers" on [groupId]: its people, filled in (Req 26).
+  final bool editing;
 
   /// An existing group to add people to; null for a new group.
   final String? groupId;
@@ -22,10 +30,11 @@ class GroupEntryArgs {
       other is GroupEntryArgs &&
       other.eventId == eventId &&
       other.groupId == groupId &&
-      other.groupName == groupName;
+      other.groupName == groupName &&
+      other.editing == editing;
 
   @override
-  int get hashCode => Object.hash(eventId, groupId, groupName);
+  int get hashCode => Object.hash(eventId, groupId, groupName, editing);
 }
 
 /// How a save ended.
@@ -125,13 +134,34 @@ class GroupEntryController extends Notifier<GroupEntryState> {
 
   @override
   GroupEntryState build() => GroupEntryState(
-    draft: GroupDraft.start(
-      groupId: args.groupId ?? newRecordId(),
-      isNewGroup: args.groupId == null,
-      groupName: args.groupName ?? '',
-      newId: newRecordId,
-    ),
+    draft: args.editing && args.groupId != null
+        ? GroupDraft(
+            groupId: args.groupId!,
+            isNewGroup: false,
+            editing: true,
+            groupName: args.groupName ?? '',
+            people: const [],
+          )
+        : GroupDraft.start(
+            groupId: args.groupId ?? newRecordId(),
+            isNewGroup: args.groupId == null,
+            groupName: args.groupName ?? '',
+            newId: newRecordId,
+          ),
   );
+
+  /// The group's people as saved, when editing. Filled in once.
+  bool _peopleLoaded = false;
+  void loadPeople(List<PersonDraft> loaded) {
+    if (_peopleLoaded) return;
+    _peopleLoaded = true;
+    final d = state.draft;
+    state = state.copyWith(
+      draft: d.copyWith(
+        people: [for (final p in loaded) PersonDraft.existing(p), ...d.people],
+      ),
+    );
+  }
 
   /// The fields and visibility of the last save, to keep [GroupEntryState.check]
   /// current as the draft changes.
@@ -165,13 +195,10 @@ class GroupEntryController extends Notifier<GroupEntryState> {
     _groupLoaded = true;
     final d = state.draft;
     state = state.copyWith(
-      draft: GroupDraft(
-        groupId: d.groupId,
-        isNewGroup: d.isNewGroup,
-        groupName: name ?? d.groupName,
+      draft: d.copyWith(
+        groupName: name,
         groupAnswers: {...standard},
         groupPrivateAnswers: {...?private},
-        people: d.people,
       ),
       savedGroupAnswers: {...standard},
       savedGroupPrivateAnswers: {...?private},
@@ -239,8 +266,9 @@ class GroupEntryController extends Notifier<GroupEntryState> {
           private: readsPrivate ? draft.groupPrivateAnswers : null,
           definitions: fields,
         ),
-      GroupSaveStep.people: () => repo.saveNewPeople(
+      GroupSaveStep.people: () => repo.savePeople(
         eventId,
+        writesPrivateOfExisting: readsPrivate,
         draft.records(
           eventId: eventId,
           createdBy: createdBy,

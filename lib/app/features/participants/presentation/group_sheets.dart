@@ -314,10 +314,14 @@ class GroupSheetResult {
     this.group,
     this.deleted = false,
     this.addPeople = false,
+    this.editAnswers = false,
   });
 
   final GroupModel? group;
   final bool deleted;
+
+  /// "Edit answers" was chosen: open the group screen editing [group].
+  final bool editAnswers;
 
   /// "Add people" was chosen: open the group screen on [group].
   final bool addPeople;
@@ -566,6 +570,17 @@ class _GroupSheetState extends ConsumerState<GroupSheet> {
                     : () => Navigator.of(
                         context,
                       ).pop(GroupSheetResult(group: _group, addPeople: true)),
+              ),
+            if (widget.manage)
+              CpButton.secondary(
+                key: const Key('people.group.editAnswers'),
+                icon: CpIcons.actionEdit,
+                label: context.strings.groupEntry.editAnswers,
+                onPressed: _busy
+                    ? null
+                    : () => Navigator.of(
+                        context,
+                      ).pop(GroupSheetResult(group: _group, editAnswers: true)),
               ),
             _GroupAnswers(event: widget.event, groupId: _group.id),
             if (widget.manage) ...[

@@ -333,6 +333,8 @@ GoRouter createRouter({
                               child: (event) => GroupEntryScreen(
                                 event: event,
                                 groupId: state.uri.queryParameters['group'],
+                                editing:
+                                    state.uri.queryParameters['mode'] == 'edit',
                               ),
                             ),
                           ),

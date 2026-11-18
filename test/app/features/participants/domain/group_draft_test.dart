@@ -323,4 +323,90 @@ void main() {
       expect(record.private, isNull);
     });
   });
+
+  group('editing existing people', () {
+    const loaded = PersonDraft(
+      id: 'a',
+      name: 'Neha Mehta',
+      answers: {'diet': 'Veg'},
+    );
+    final existing = PersonDraft.existing(loaded);
+
+    test('an unchanged person is not saved again; a changed one is', () {
+      final changed = PersonDraft.existing(
+        const PersonDraft(id: 'b', name: 'Kabir'),
+      ).copyWith(answers: {'diet': 'Jain'});
+      final draft = GroupDraft(
+        groupId: 'g1',
+        isNewGroup: false,
+        people: [existing, changed],
+      );
+      expect([for (final p in draft.toSave) p.id], ['b']);
+      expect(changed.isExisting, isTrue);
+    });
+
+    test('an existing person cleared of everything is still saved, and '
+        'needs a name', () {
+      final cleared = existing.copyWith(name: '', answers: {});
+      final draft = GroupDraft(
+        groupId: 'g1',
+        isNewGroup: false,
+        people: [cleared],
+      );
+      expect(draft.toSave, [cleared]);
+      expect(
+        draft.check(const [], readsPrivate: false).people['a']!.nameMissing,
+        isTrue,
+      );
+    });
+
+    test('editing answers needs no new person', () {
+      final draft = GroupDraft(
+        groupId: 'g1',
+        isNewGroup: false,
+        editing: true,
+        groupAnswers: const {'arriving': 'Sat'},
+        people: [existing],
+      );
+      expect(draft.check(const [], readsPrivate: false).ok, isTrue);
+    });
+
+    test("keeps what an edit card hides: an adult's birth date, a child's "
+        'email', () {
+      final adult = PersonDraft.existing(
+        const PersonDraft(
+          id: 'a',
+          name: 'Neha',
+          birthDate: '1990-01-01',
+          email: 'neha@example.com',
+        ),
+      ).copyWith(answers: {'diet': 'Veg'});
+      final child = PersonDraft.existing(
+        const PersonDraft(
+          id: 'b',
+          name: 'Kabir',
+          isChild: true,
+          birthDate: '2018-03-14',
+          email: 'imported@example.com',
+        ),
+      ).copyWith(answers: {'diet': 'Jain'});
+      final records =
+          GroupDraft(
+            groupId: 'g1',
+            isNewGroup: false,
+            editing: true,
+            people: [adult, child],
+          ).records(
+            eventId: 'e1',
+            createdBy: 'owner',
+            categories: const [],
+            eventStart: DateTime.utc(2027, 7, 9),
+          );
+      expect(records.first.existing, isTrue);
+      expect(records.first.private!.birthDate, '1990-01-01');
+      expect(records.first.private!.email, 'neha@example.com');
+      expect(records.last.private!.email, 'imported@example.com');
+      expect(records.last.private!.birthDate, '2018-03-14');
+    });
+  });
 }

@@ -237,6 +237,7 @@ class RolesHarness {
                       child: (event) => GroupEntryScreen(
                         event: event,
                         groupId: state.uri.queryParameters['group'],
+                        editing: state.uri.queryParameters['mode'] == 'edit',
                       ),
                     ),
                   ),
@@ -335,10 +336,7 @@ class RolesHarness {
 
   /// With [themeMode], the app uses the design system's themes in that mode;
   /// without, Flutter's default theme, as older journeys expect.
-  Widget buildApp({
-    List<Override> overrides = const [],
-    ThemeMode? themeMode,
-  }) {
+  Widget buildApp({List<Override> overrides = const [], ThemeMode? themeMode}) {
     return ProviderScope(
       overrides: [
         databaseProvider.overrideWithValue(database),
