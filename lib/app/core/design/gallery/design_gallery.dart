@@ -26,7 +26,11 @@ enum DesignGallerySection {
   stats('Stat cards and progress rings'),
   people('Avatars'),
   states('Empty, loading and error states'),
-  topBar('Top bar');
+  topBar('Top bar'),
+  buttons('Buttons'),
+  fields('Fields'),
+  choices('Choice chips and segmented choices'),
+  sheetsAndDialogs('Sheets and dialogs');
 
   const DesignGallerySection(this.title);
 
@@ -112,6 +116,10 @@ class DesignGallery extends StatelessWidget {
     DesignGallerySection.people => const _People(),
     DesignGallerySection.states => const _States(),
     DesignGallerySection.topBar => const _TopBar(),
+    DesignGallerySection.buttons => const _Buttons(),
+    DesignGallerySection.fields => const _Fields(),
+    DesignGallerySection.choices => const _Choices(),
+    DesignGallerySection.sheetsAndDialogs => const _SheetsAndDialogs(),
   };
 }
 
@@ -457,6 +465,200 @@ class _TopBar extends StatelessWidget {
           leadingIcon: CpIcons.actionClose,
           leadingTooltip: 'Close',
           onLeading: _noop,
+        ),
+      ],
+    );
+  }
+}
+
+class _Buttons extends StatelessWidget {
+  const _Buttons();
+
+  @override
+  Widget build(BuildContext context) {
+    final cp = context.cp;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: cp.space.md,
+      children: [
+        Wrap(
+          spacing: cp.space.sm,
+          runSpacing: cp.space.sm,
+          children: const [
+            CpButton(label: 'Save', onPressed: _noop),
+            CpButton.secondary(
+              label: 'Add people',
+              icon: CpIcons.memberAdd,
+              onPressed: _noop,
+            ),
+            CpButton.text(label: 'Cancel', onPressed: _noop),
+            CpButton.destructive(label: 'Remove', onPressed: _noop),
+          ],
+        ),
+        Wrap(
+          spacing: cp.space.sm,
+          runSpacing: cp.space.sm,
+          children: const [
+            CpButton(label: 'Saving', busy: true, onPressed: _noop),
+            CpButton(label: 'Save', onPressed: null),
+          ],
+        ),
+        const CpButton(label: 'Save group', expand: true, onPressed: _noop),
+      ],
+    );
+  }
+}
+
+class _Fields extends StatelessWidget {
+  const _Fields();
+
+  @override
+  Widget build(BuildContext context) {
+    final cp = context.cp;
+    return CpCard(
+      padding: EdgeInsets.all(cp.space.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: cp.space.lg,
+        children: [
+          const CpTextField(
+            label: 'Name',
+            required: true,
+            hint: 'Full name',
+            help: 'As it should appear on a badge.',
+          ),
+          const CpTextField(
+            label: 'Email',
+            labelIcon: CpIcons.lock,
+            error: 'Enter a valid email.',
+          ),
+          const CpSelectField(label: 'Group', value: 'Mehta', onTap: _noop),
+          CpDateField(
+            label: 'Birth date',
+            labelIcon: CpIcons.lock,
+            value: DateTime(2018, 3, 14),
+            onChanged: (_) {},
+            format: (d) => '14 March ${d.year}',
+            firstDate: DateTime(1900),
+            lastDate: DateTime(2030),
+            clearLabel: 'Clear birth date',
+            help: 'Sets the age band: 6–12.',
+          ),
+          CpSwitchRow(
+            title: 'Child',
+            help: 'Children have no account.',
+            value: true,
+            onChanged: (_) {},
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Choices extends StatelessWidget {
+  const _Choices();
+
+  @override
+  Widget build(BuildContext context) {
+    final cp = context.cp;
+    return CpCard(
+      padding: EdgeInsets.all(cp.space.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: cp.space.lg,
+        children: [
+          CpChoiceChips<String>(
+            label: 'Diet',
+            required: true,
+            choices: const [
+              CpChoice('veg', 'Veg'),
+              CpChoice('jain', 'Jain'),
+              CpChoice('nonVeg', 'Non-veg'),
+            ],
+            selected: const {'veg'},
+            onChanged: (_) {},
+          ),
+          CpChoiceChips<String>(
+            label: 'Interested in',
+            multiple: true,
+            help: 'Choose any.',
+            choices: const [
+              CpChoice('workshops', 'Workshops'),
+              CpChoice('sports', 'Sports'),
+              CpChoice('music', 'Music'),
+            ],
+            selected: const {'workshops', 'sports'},
+            onChanged: (_) {},
+          ),
+          CpChoiceChips<String>(
+            label: 'T-shirt size',
+            required: true,
+            error: 'Choose an answer.',
+            choices: const [
+              CpChoice('s', 'S'),
+              CpChoice('m', 'M'),
+              CpChoice('l', 'L'),
+            ],
+            selected: const {},
+            onChanged: (_) {},
+          ),
+          CpSegmented<String>(
+            semanticLabel: 'Adult or child',
+            choices: const [
+              CpChoice('adult', 'Adult'),
+              CpChoice('child', 'Child'),
+            ],
+            selected: 'adult',
+            onChanged: (_) {},
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SheetsAndDialogs extends StatelessWidget {
+  const _SheetsAndDialogs();
+
+  @override
+  Widget build(BuildContext context) {
+    final cp = context.cp;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: cp.space.md,
+      children: [
+        // A sheet as it sits over the page, shown in place.
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: cp.colors.surface,
+            borderRadius: cp.radii.lg,
+            border: Border.all(
+              color: cp.colors.border,
+              width: cp.sizes.hairline,
+            ),
+          ),
+          child: Padding(
+            padding: EdgeInsets.only(top: cp.space.lg),
+            child: const CpSheet(
+              title: 'Choose a group',
+              child: CpRowGroup(
+                children: [
+                  CpListRow(title: 'Mehta', subtitle: '3 people'),
+                  CpListRow(title: 'Shah', subtitle: '4 people'),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const CpDialog(
+          title: 'Remove Asha Singh?',
+          message:
+              'They will no longer be counted for this event. This cannot be undone.',
+          actions: [
+            CpButton.text(label: 'Cancel', onPressed: _noop),
+            CpButton.destructive(label: 'Remove', onPressed: _noop),
+          ],
         ),
       ],
     );
