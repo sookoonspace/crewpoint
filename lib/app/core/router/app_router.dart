@@ -24,6 +24,7 @@ import 'package:crewpoint_app/app/features/profile/presentation/notification_set
 import 'package:crewpoint_app/app/features/profile/presentation/privacy_dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/profile_screen.dart';
 import 'package:crewpoint_app/app/features/auth/presentation/auth_gate_screen.dart';
+import 'package:crewpoint_app/app/features/dev/presentation/design_gallery_screen.dart';
 import 'package:crewpoint_app/app/features/dev/presentation/dev_tools_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/application/unread_badge_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/create_event_screen.dart';
@@ -70,6 +71,9 @@ abstract final class AppRoutes {
   /// Dev-only diagnostic console. Registered conditionally — see
   /// `app_router.dart` and only reachable on `AppFlavor.dev` builds.
   static const String devTools = '/profile/dev-tools';
+
+  /// Dev-only Design gallery (Spec #186 Req 17), under Dev Tools.
+  static const String designGallery = '/profile/dev-tools/design-gallery';
 
   /// Where an invite link lands (Req 47), outside the signed-in shell.
   static const String join = '/join';
@@ -528,6 +532,12 @@ GoRouter createRouter({
                     GoRoute(
                       path: 'dev-tools',
                       builder: (_, _) => const DevToolsScreen(),
+                      routes: [
+                        GoRoute(
+                          path: 'design-gallery',
+                          builder: (_, _) => const DesignGalleryScreen(),
+                        ),
+                      ],
                     ),
                 ],
               ),

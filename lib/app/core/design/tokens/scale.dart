@@ -43,6 +43,23 @@ abstract final class CpScale {
   /// The smallest tap target (Material and Apple guidance).
   static const double tapMin = 48;
 
+  // Component sizes from the Round 2 mockups.
+  static const double avatar32 = 32;
+  static const double avatar40 = 40;
+  static const double avatar64 = 64;
+  static const double ring40 = 40;
+  static const double ring52 = 52;
+  static const double ringStroke = 5;
+  static const double chip28 = 28;
+  static const double row60 = 60;
+  static const double topBar52 = 52;
+  static const double stat104 = 104;
+  static const double iconTile40 = 40;
+  static const double skeletonLine = 12;
+  static const double hairline = 1;
+  static const double avatarRing = 2;
+  static const double avatarOverlap = 6;
+
   // ===== Type sizes =====
   static const double type11 = 11;
   static const double type12 = 12;

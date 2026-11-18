@@ -1,0 +1,127 @@
+# CrewPoint design system
+
+CrewPoint's look is **Slate and sage with Lucide icons**, chosen in Round 1 (Spec #186, ledger L22). The approved mockups are in [`mockups/`](mockups/README.md). The mockups are the agreed look until a screen is built; after that, the code is the source of truth.
+
+Everything that sets the look lives in `lib/app/core/design/`. Screens take colours, type, spacing and visual widgets from it and never set their own. `test/design/design_guard_test.dart` enforces this (see [The guard](#the-guard)).
+
+The pictures below are the Design gallery's golden images. They are made on Linux by CI. To see the gallery in the app, open **Profile → Dev Tools → Design gallery** in the dev build. It shows every component in light, dark and 200% text.
+
+## Tokens
+
+Read tokens through the theme with `context.cp`:
+
+```dart
+final cp = context.cp;
+Text('Up next', style: cp.type.titleLarge.copyWith(color: cp.colors.text));
+Padding(padding: EdgeInsets.all(cp.space.lg), child: ...);
+```
+
+| Token | Read with | What it holds |
+|---|---|---|
+| Colours | `cp.colors` | `background`, `surface`, `fill`, `border`, `text`, `textMuted`, `accent`, `accentSoft`, `onAccent`, `banner`, `onBanner`, and the status pairs `done`/`doneSoft`, `due`/`dueSoft`, `overdue`/`overdueSoft`. Light and dark differ only in these values. |
+| Type | `cp.type` | Material's roles (`headlineLarge` is the page title, `titleLarge` a section, `titleSmall` a row title, `bodyMedium` body text, `bodySmall` a subtitle, `labelMedium` a chip) plus `stat` and `number` with tabular figures. Inter for text and Inter Display for headings, both bundled. |
+| Spacing | `cp.space` | `xs` 4, `sm` 8, `md` 12, `lg` 16, `xl` 24, `xxl` 32, `xxxl` 48. |
+| Corners | `cp.radii` | `xs` 4, `sm` 8 (fields, icon tiles), `md` 12 (cards, buttons), `lg` 16 (banners, sheets), `xl` 24, `pill`. |
+| Sizes | `cp.sizes` | Icon sizes, avatar sizes, `tapMin` 48, and component sizes. |
+| Motion | `cp.motion` | `fast` 150 ms, `medium` 250 ms, `slow` 350 ms, and `curve`. Keep motion short and subtle. |
+| Shadows | `cp.shadows` | `card`, the faintest lift (none in dark mode), and `raised` for menus and sheets. |
+| Icons | `CpIcons.x` | Every glyph by its role, all Lucide. Constants, so `const Icon(CpIcons.actionAdd)` works. |
+
+The raw values sit in two files, so each change happens in one place:
+
+- `tokens/palette.dart` holds every colour, as ARGB integers, so the PDF theme (`pdf/cp_pdf_theme.dart`) reads the same values without Flutter.
+- `tokens/scale.dart` holds every number.
+
+`CpTheme.light()` and `CpTheme.dark()` build `ThemeData` from the tokens alone. A screen that still uses plain Material widgets therefore gets the same colours and fonts.
+
+![Colours, light](../../test/design/golden/goldens/colours-light.png) ![Colours, dark](../../test/design/golden/goldens/colours-dark.png)
+
+![Type](../../test/design/golden/goldens/type-light.png)
+
+### Colour rules
+
+- **One accent.** Sage marks what can be tapped or is selected: primary buttons, links, the selected tab, selected rows and choices.
+- **Status colours mean status.** Green means done or paid, amber means due, and red means overdue, an error or a destructive action. They always sit beside an icon and are never used for decoration. To label something that isn't a status, use a `CpTag`.
+- **Contrast.** Body text, chip text and button text clear WCAG AA (4.5:1) in both modes. `test/design/cp_theme_test.dart` checks this. The light Done green is a shade darker than the mockup's for this reason.
+- No gradients, illustrations or cream background.
+
+## Components
+
+All components are in `lib/app/core/design/components/` (import `components.dart`). They are plain widgets with no Riverpod, Firebase or feature code, and they take every string from their caller, so screens pass `context.strings`. Interactive parts take a `Key` from the caller, named `domain.feature.action`.
+
+### Card and list row
+
+![Cards and rows](../../test/design/golden/goldens/cardsAndRows-light.png)
+
+- **`CpCard`** is the container for rows, stats and form sections. Its default padding is none, so rows run edge to edge. For free content, pass `EdgeInsets.all(cp.space.lg)`. With `onTap`, the whole card becomes one button; give it a `semanticLabel`.
+- **`CpListRow`** has an optional leading widget (avatar, icon tile or time), a title, an optional subtitle and an optional trailing widget. With `onTap`, it reads as one button and shows a chevron. `selected` marks the chosen row in a list and detail layout.
+- **`CpRowGroup`** places rows inside one card with hairline dividers between them.
+
+### Status chip, tag and section header
+
+![Chips and section headers](../../test/design/golden/goldens/chipsAndHeaders-light.png)
+
+- **`CpStatusChip`** is for done, due or overdue only. It always shows an icon and a colour, so status never relies on colour alone.
+- **`CpTag`** is any other label. The `accent` tone is for a state worth noticing, such as Published or Live (with `dot: true` for "now"). The `quiet` tone is for a small fact, such as Draft or Child.
+- **`CpSectionHeader`** is a section title marked as a heading. It can have a quiet count on the right (`trailingText`) or a link (`actionLabel`, `onAction`, `actionKey`).
+
+### Stat card, stat grid and progress ring
+
+![Stat cards and rings](../../test/design/golden/goldens/stats-light.png) ![Stat cards at 200% text](../../test/design/golden/goldens/stats-largeText.png)
+
+- **`CpStatCard`** shows an icon and label, a large value and an optional caption. With `progress` (0 to 1) and `progressLabel`, the value sits beside a ring. Screen readers hear the label, value and caption as one.
+- **`CpStatGrid`** puts stat cards side by side, as many to a row as fit: three on a phone at normal text, one at 200%. Always lay stat cards out with it.
+- **`CpProgressRing`** is a single accent arc. It needs a `semanticLabel`, such as "18 of 26 done".
+
+### Avatar and avatar stack
+
+![Avatars](../../test/design/golden/goldens/people-light.png)
+
+- **`CpAvatar`** shows initials in an accent tint, in small (32), medium (40) or large (64). Someone with no name shows a person icon; pass a `semanticLabel` such as "Unnamed person". Screen readers hear the name, not the initials.
+- **`CpAvatarStack`** shows the first few avatars overlapping, plus a "+N" for the rest. It reads as its `semanticLabel`, such as "148 attending".
+
+### Empty, loading and error states
+
+![States](../../test/design/golden/goldens/states-light.png)
+
+- **`CpEmptyState`** has an icon, a title, a short hint and an optional action. Say what will appear and how to add it.
+- **`CpLoadingState`** is a spinner with an optional label. Use `CpLoadingState.rows` when a list is about to appear. Either way, screen readers hear one `semanticLabel`.
+- **`CpErrorState`** shows what failed, what to do, and a retry button. It is a live region, so screen readers announce it. Say what the person can do, such as "This list needs a connection, so check yours."
+
+### Top bar
+
+![Top bar](../../test/design/golden/goldens/topBar-light.png)
+
+**`CpTopBar`** goes in `Scaffold.appBar`. It has back (or `CpIcons.actionClose` for a full-screen form) on the left, a title marked as a heading, and up to three `CpTopBarAction`s. Each action has a tooltip, which is also its screen reader label, and is at least 48 px. Mark the screen's main action `primary` to draw it as an accent circle; use one primary action per bar at most.
+
+## 200% text
+
+Every component lays out at 200% text without overflowing (the gallery's third variant):
+
+- Rows and chips wrap.
+- Stat grids drop to fewer columns.
+- Avatars keep their initials at a fixed size, so the circle never overflows.
+
+![Cards and rows at 200% text](../../test/design/golden/goldens/cardsAndRows-largeText.png)
+
+## The guard
+
+`test/design/design_guard_test.dart` fails if code outside `lib/app/core/design/` uses any of these:
+
+- a raw colour (`Color(0x…)`, `Colors.…`)
+- `GoogleFonts` or `fontFamily:`
+- a bare non-zero number in `EdgeInsets`, `SizedBox`, `BorderRadius` or `Radius`
+- a plain Material `Card`, `ListTile`, chip, `ElevatedButton`, `FilledButton`, `OutlinedButton` or `TextButton`
+
+Layout widgets and calculated sizes (`maxWidth * 0.5`) are allowed. Screens that haven't moved to the design system yet sit in the test's `notYetMigrated` list. Each migration Work Item removes its files, and the test fails if a listed file already follows the rules.
+
+The old `AppColors`, `AppSpacing`, `AppRadius`, `AppTypography`, `AppSizes`, `AppDurations` and `AppIcons` are deprecated forwarders to the tokens until #208 deletes them. Don't use them in new code.
+
+## Golden tests
+
+`test/design/golden/design_gallery_golden_test.dart` pictures every gallery section in light, dark and 200% text. The tests are tagged `design`:
+
+- **Locally:** `dart_test.yaml` skips the `design` tag, because font rendering differs between macOS and Linux.
+- **CI:** CI runs the goldens on every PR (`flutter test --tags design --run-skipped test/design/golden`) and uploads any differences as the `design-golden-failures` artifact.
+- **Regenerating:** after an intended change, run `scripts/update-design-goldens.sh`. On Linux it regenerates the goldens directly. Elsewhere, it starts the **Design goldens** workflow, which regenerates them on Linux and commits them to your branch. Before that workflow is on `main`, push a commit whose message contains `[update-goldens]` instead.
+- **Never commit goldens made on a Mac.**
