@@ -60,3 +60,6 @@ functions/node_modules/
 .firebase/
 
 # Flutter web build output is /build/ (already covered above)
+
+# Golden test differences (written when a golden comparison fails)
+**/failures/

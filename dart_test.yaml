@@ -1,3 +1,5 @@
 tags:
   screenshots:
     skip: "Run with `flutter test --tags screenshots --update-goldens` (or `scripts/regenerate-screenshots.sh`) to (re)generate the placeholder screenshot PNGs in screenshots/."
+  design:
+    skip: "Design gallery goldens are made and compared on Linux only (Spec #186, ledger L15). CI runs them with `flutter test --tags design --run-skipped test/design/golden`; regenerate with the 'Design goldens' workflow or scripts/update-design-goldens.sh on Linux."

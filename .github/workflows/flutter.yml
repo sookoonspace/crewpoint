@@ -65,3 +65,18 @@ jobs:
 
       - name: Test
         run: flutter test
+
+      # The Design gallery goldens (Spec #186, ledger L15). dart_test.yaml
+      # skips the `design` tag locally because goldens are made on Linux;
+      # CI compares them on every PR. Regenerate them with the "Design
+      # goldens" workflow (see scripts/update-design-goldens.sh).
+      - name: Design gallery goldens
+        run: flutter test --tags design --run-skipped test/design/golden
+
+      - name: Upload golden differences
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: design-golden-failures
+          path: test/design/golden/failures/
+          if-no-files-found: ignore

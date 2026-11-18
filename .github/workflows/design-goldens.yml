@@ -1,0 +1,64 @@
+name: Design goldens
+
+# Regenerates the Design gallery goldens on Linux (Spec #186, ledger L15)
+# and commits them to the branch. Goldens are never made on a Mac, whose
+# font rendering differs from CI's.
+#
+# Run it by pushing a commit whose message contains [update-goldens], or,
+# once this file is on main, with
+#   gh workflow run design-goldens.yml --ref <branch>
+# (scripts/update-design-goldens.sh does either). Never on main.
+
+on:
+  workflow_dispatch:
+  push:
+    branches-ignore: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: design-goldens-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  update:
+    if: >-
+      github.ref != 'refs/heads/main' &&
+      (github.event_name == 'workflow_dispatch' ||
+       contains(github.event.head_commit.message, '[update-goldens]'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          # Same pin as flutter.yml, so goldens match the comparing job.
+          flutter-version: 3.47.0
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run build_runner
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Regenerate goldens
+        run: flutter test --tags design --run-skipped --update-goldens test/design/golden
+
+      - name: Commit goldens
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add test/design/golden/goldens
+          if git diff --cached --quiet; then
+            echo "Goldens unchanged."
+          else
+            git commit -m "test(design): regenerate the Design gallery goldens on Linux"
+            git push
+          fi

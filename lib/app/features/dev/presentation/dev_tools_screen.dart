@@ -3,8 +3,12 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
 import 'package:crewpoint_app/app/core/env/app_flavor.dart';
+import 'package:crewpoint_app/app/core/router/app_router.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 
 /// Flavor-gated developer console at `/profile/dev-tools`. Surfaces ad-hoc
@@ -13,6 +17,7 @@ import 'package:crewpoint_app/app/core/providers.dart';
 ///  * **FCM state check** — dumps the OS authorization status, APNs token,
 ///    FCM token, and the `users/{uid}/private/profile.fcmTokens` array so
 ///    we can see which leg of the iOS push chain is broken.
+///  * **Design gallery** — every design-system component (Spec #186).
 ///  * **Force re-attach** — replays `FcmService.attach(uid)` so the
 ///    token-refresh-after-APNs-ready path can be exercised on demand.
 ///
@@ -39,6 +44,15 @@ class DevToolsScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.lg),
           const _CrashTestCard(),
           const SizedBox(height: AppSpacing.lg),
+          CpCard(
+            child: CpListRow(
+              key: const Key('dev.designGallery'),
+              leading: const Icon(CpIcons.image),
+              title: 'Design gallery',
+              subtitle: 'Every component in light, dark and 200% text',
+              onTap: () => context.push(AppRoutes.designGallery),
+            ),
+          ),
         ],
       ),
     );

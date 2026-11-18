@@ -72,6 +72,26 @@ class CpSizes extends ThemeExtension<CpSizes> {
   /// The smallest tap target.
   double get tapMin => CpScale.tapMin;
 
+  double get avatarSm => CpScale.avatar32;
+  double get avatarMd => CpScale.avatar40;
+  double get avatarLg => CpScale.avatar64;
+
+  /// The ring around a stacked avatar, in the page colour.
+  double get avatarRing => CpScale.avatarRing;
+
+  /// How far each stacked avatar tucks under the one before.
+  double get avatarOverlap => CpScale.avatarOverlap;
+  double get ringSm => CpScale.ring40;
+  double get ringLg => CpScale.ring52;
+  double get ringStroke => CpScale.ringStroke;
+  double get chipHeight => CpScale.chip28;
+  double get rowMinHeight => CpScale.row60;
+  double get topBarHeight => CpScale.topBar52;
+  double get statMinHeight => CpScale.stat104;
+  double get iconTile => CpScale.iconTile40;
+  double get skeletonLine => CpScale.skeletonLine;
+  double get hairline => CpScale.hairline;
+
   @override
   CpSizes copyWith() => this;
 
