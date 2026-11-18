@@ -1705,6 +1705,7 @@ abstract class GroupEntryStrings {
   String editTitle(String name);
   String get saveAnswers;
   String answersSaved(String name);
+  String get questionsHeading;
 }
 
 class _EnglishGroupEntryStrings extends GroupEntryStrings {
@@ -1813,6 +1814,8 @@ class _EnglishGroupEntryStrings extends GroupEntryStrings {
   String get saveAnswers => 'Save answers';
   @override
   String answersSaved(String name) => 'Answers saved for $name';
+  @override
+  String get questionsHeading => 'Questions';
 }
 
 /// The Crews screen and task crews (#68). [crew] and [crews] are the event's

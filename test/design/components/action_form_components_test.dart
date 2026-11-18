@@ -221,6 +221,55 @@ void main() {
     });
   });
 
+  group('CpSelectField clearing', () {
+    testWidgets('a chosen value can be cleared; an empty one cannot', (
+      tester,
+    ) async {
+      var cleared = 0;
+      var opened = 0;
+      Widget field(String? value) => CpSelectField(
+        label: 'Group',
+        value: value,
+        placeholder: 'No group',
+        fieldKey: const Key('test.group'),
+        clearKey: const Key('test.group.clear'),
+        clearLabel: 'No group',
+        onClear: () => cleared++,
+        onTap: () => opened++,
+      );
+      await pumpCp(tester, field('Mehta'));
+      await tester.tap(find.byKey(const Key('test.group.clear')));
+      await tester.tap(find.byKey(const Key('test.group')));
+      expect((cleared, opened), (1, 1));
+      await pumpCp(tester, field(null));
+      expect(find.byKey(const Key('test.group.clear')), findsNothing);
+      expect(find.byIcon(CpIcons.chevronDown), findsOneWidget);
+    });
+  });
+
+  testWidgets('a date field key opens the picker; disabled, it does not', (
+    tester,
+  ) async {
+    Widget field({required bool enabled}) => CpDateField(
+      label: 'Birth date',
+      fieldKey: const Key('test.date.field'),
+      value: DateTime(2018, 3, 14),
+      enabled: enabled,
+      onChanged: (_) {},
+      format: (d) => '${d.year}',
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2030),
+    );
+    await pumpCp(tester, field(enabled: false));
+    await tester.tap(find.byKey(const Key('test.date.field')));
+    await tester.pumpAndSettle();
+    expect(find.byType(DatePickerDialog), findsNothing);
+    await pumpCp(tester, field(enabled: true));
+    await tester.tap(find.byKey(const Key('test.date.field')));
+    await tester.pumpAndSettle();
+    expect(find.byType(DatePickerDialog), findsOneWidget);
+  });
+
   group('CpDateField', () {
     Widget field({
       required ValueChanged<DateTime?> onChanged,

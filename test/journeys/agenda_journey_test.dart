@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -290,7 +291,7 @@ void main() {
       location: '$base/people/savita',
     );
     await robot.reveal(find.byKey(const Key('people.edit.session.m2')));
-    final toggle = tester.widget<SwitchListTile>(
+    final toggle = tester.widget<CpSwitchRow>(
       find.byKey(const Key('people.edit.session.m2')),
     );
     expect(toggle.value, isFalse);

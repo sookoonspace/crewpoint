@@ -342,9 +342,21 @@ class CpSelectField extends StatelessWidget {
     this.error,
     this.labelIcon,
     this.leadingIcon,
+    this.fieldKey,
+    this.onClear,
+    this.clearLabel,
+    this.clearKey,
   });
 
   final String label;
+
+  /// The key on the tappable field itself, for tests.
+  final Key? fieldKey;
+
+  /// With [clearLabel], a chosen value can be cleared.
+  final VoidCallback? onClear;
+  final String? clearLabel;
+  final Key? clearKey;
 
   /// The chosen value's text, or null when nothing is chosen.
   final String? value;
@@ -370,17 +382,29 @@ class CpSelectField extends StatelessWidget {
       error: error,
       labelIcon: labelIcon,
       child: _TapField(
+        key: fieldKey,
         semanticLabel: '$label, ${value ?? placeholder ?? ''}',
         onTap: onTap,
         hasError: error != null,
         leading: leadingIcon,
         text: value ?? placeholder ?? '',
         muted: value == null,
-        trailing: Icon(
-          CpIcons.chevronDown,
-          size: cp.sizes.iconMd,
-          color: cp.colors.textMuted,
-        ),
+        trailing: value != null && onClear != null && clearLabel != null
+            ? IconButton(
+                key: clearKey,
+                tooltip: clearLabel,
+                onPressed: onClear,
+                icon: Icon(
+                  CpIcons.actionClear,
+                  size: cp.sizes.iconMd,
+                  color: cp.colors.textMuted,
+                ),
+              )
+            : Icon(
+                CpIcons.chevronDown,
+                size: cp.sizes.iconMd,
+                color: cp.colors.textMuted,
+              ),
       ),
     );
   }
@@ -406,9 +430,17 @@ class CpDateField extends StatelessWidget {
     this.help,
     this.error,
     this.labelIcon,
+    this.fieldKey,
+    this.clearKey,
+    this.enabled = true,
   });
 
   final String label;
+
+  /// The key on the tappable field itself, for tests.
+  final Key? fieldKey;
+  final Key? clearKey;
+  final bool enabled;
   final DateTime? value;
   final ValueChanged<DateTime?> onChanged;
   final String Function(DateTime) format;
@@ -468,14 +500,16 @@ class CpDateField extends StatelessWidget {
       error: error,
       labelIcon: labelIcon,
       child: _TapField(
+        key: fieldKey,
         semanticLabel: '$label, $shown',
-        onTap: () => _pick(context),
+        onTap: enabled ? () => _pick(context) : null,
         hasError: error != null,
         leading: CpIcons.calendar,
         text: shown,
         muted: value == null,
-        trailing: value != null && clearLabel != null
+        trailing: enabled && value != null && clearLabel != null
             ? IconButton(
+                key: clearKey,
                 tooltip: clearLabel,
                 onPressed: () => onChanged(null),
                 icon: Icon(
@@ -621,6 +655,7 @@ class CpSwitchRow extends StatelessWidget {
 
 class _TapField extends StatelessWidget {
   const _TapField({
+    super.key,
     required this.semanticLabel,
     required this.onTap,
     required this.text,

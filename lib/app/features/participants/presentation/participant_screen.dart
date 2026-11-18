@@ -2,20 +2,19 @@ import 'package:crewpoint_app/app/features/schedule/presentation/attendance_sect
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
-import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart';
 import 'package:crewpoint_app/app/features/participants/application/roster_controller.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/category.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/participant.dart';
-import 'package:crewpoint_app/app/features/participants/presentation/field_answer_input.dart';
+import 'package:crewpoint_app/app/features/participants/presentation/widgets/answer_input.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/group_sheets.dart';
 
 /// The route ID that opens the screen on a new participant.
@@ -181,25 +180,14 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
     });
   }
 
-  Future<void> _pickBirthDate() async {
-    final now = DateTime.now();
-    final initial =
-        DateTime.tryParse(_birthDate ?? '') ?? DateTime(now.year - 10);
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: initial,
-      firstDate: DateTime(1900),
-      lastDate: now,
-    );
-    if (picked == null || !mounted) return;
-    setState(() {
-      _birthDate =
-          '${picked.year.toString().padLeft(4, '0')}-'
-          '${picked.month.toString().padLeft(2, '0')}-'
-          '${picked.day.toString().padLeft(2, '0')}';
-      _birthDateChanged = true;
-    });
-  }
+  void _setBirthDate(DateTime? picked) => setState(() {
+    _birthDate = picked == null
+        ? null
+        : '${picked.year.toString().padLeft(4, '0')}-'
+              '${picked.month.toString().padLeft(2, '0')}-'
+              '${picked.day.toString().padLeft(2, '0')}';
+    _birthDateChanged = true;
+  });
 
   void _close() {
     if (context.canPop()) {
@@ -215,8 +203,26 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
     } catch (_) {}
   }
 
+  /// Answers shown with their problems once a save has been tried.
+  bool _tried = false;
+
+  /// The questions this viewer answers here, standard and private.
+  List<CustomField> _editableFields = const [];
+
+  int get _answerProblems => [
+    for (final f in _editableFields)
+      if (checkAnswer(
+            f,
+            f.isPrivate ? _privateAnswers[f.id] : _answers[f.id],
+          ) !=
+          null)
+        f,
+  ].length;
+
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
+    final nameOk = _formKey.currentState!.validate();
+    setState(() => _tried = true);
+    if (!nameOk || _answerProblems > 0) return;
     if (_arrivalAt != null &&
         _departureAt != null &&
         _departureAt!.isBefore(_arrivalAt!)) {
@@ -301,7 +307,6 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
     final event = widget.event;
     final words = event.words;
     final strings = context.strings.people;
-    final theme = Theme.of(context);
     final me = ref.watch(currentUserIdProvider) ?? '';
     final manages = event.can(me, 'participants.edit');
     final browses = event.can(me, 'participants.read');
@@ -312,7 +317,7 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
     final ownRecord =
         !_isNew && mine.value?.participantId == widget.participantId;
 
-    Widget scaffold(Widget body) => PopScope(
+    Widget scaffold(Widget body, {Widget? bottom}) => PopScope(
       canPop: !_dirty || _busy,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
@@ -330,19 +335,20 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
         }
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(
-            _isNew
-                ? strings.newTitle(words.one('participant'))
-                : switch (_saved?.name) {
-                    null => words.one('participant'),
-                    '' => context.strings.links.unnamed,
-                    final name => name,
-                  },
-          ),
-          elevation: 0,
+        appBar: CpTopBar(
+          title: _isNew
+              ? strings.newTitle(words.one('participant'))
+              : switch (_saved?.name) {
+                  null => words.one('participant'),
+                  '' => context.strings.links.unnamed,
+                  final name => name,
+                },
+          leadingTooltip: MaterialLocalizations.of(context).backButtonTooltip,
+          leadingKey: const Key('people.edit.back'),
+          onLeading: () => Navigator.of(context).maybePop(),
         ),
         body: body,
+        bottomNavigationBar: bottom,
       ),
     );
 
@@ -426,164 +432,284 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
                   .value?[groupId]
                   ?.name);
 
+    // Every question is answered here, private ones only by someone who
+    // may (Z-01).
+    _editableFields = [
+      for (final f in fields)
+        if (f.isPrivate ? editsPrivate : canEdit) f,
+    ];
+    final cp = context.cp;
+    final groupWord = words.one('group');
+    final standardFields = [
+      for (final f in fields)
+        if (!f.isPrivate) f,
+    ];
+    final privateFields = [
+      for (final f in fields)
+        if (f.isPrivate && showsPrivate) f,
+    ];
+    final problems = _tried ? _answerProblems : 0;
+    final fieldStrings = context.strings.fields;
+
+    Widget answer(CustomField f) {
+      final editable = !_busy && (f.isPrivate ? editsPrivate : canEdit);
+      return IgnorePointer(
+        ignoring: !editable,
+        child: AnswerInput(
+          key: Key('people.question.${f.id}'),
+          field: f,
+          keyPrefix: 'people',
+          value: f.isPrivate ? _privateAnswers[f.id] : _answers[f.id],
+          showError: _tried,
+          onChanged: (v) => _answer(f, v),
+        ),
+      );
+    }
+
+    final details = CpCard(
+      padding: EdgeInsets.all(cp.space.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: cp.space.lg,
+        children: [
+          CpTextField(
+            label: strings.nameLabel,
+            fieldKey: const Key('people.edit.name'),
+            controller: _name,
+            enabled: canEdit && !_busy,
+            required: true,
+            requiredLabel: context.strings.groupEntry.required,
+            textInputAction: TextInputAction.next,
+            validator: (v) {
+              final name = v?.trim() ?? '';
+              if (name.isEmpty) return strings.nameRequired;
+              if (name.length > _maxName) return strings.nameTooLong(_maxName);
+              return null;
+            },
+          ),
+          CpSwitchRow(
+            key: const Key('people.edit.child'),
+            title: strings.childLabel,
+            help: strings.childHelp,
+            value: _derived?.isChild ?? _isChild,
+            onChanged: canEdit && !_busy && _derived == null
+                ? (on) => setState(() => _isChild = on)
+                : null,
+          ),
+          CpSelectField(
+            label: strings.groupLabel(groupWord),
+            fieldKey: const Key('people.edit.group'),
+            leadingIcon: CpIcons.members,
+            value: groupName,
+            placeholder: strings.noGroup(groupWord),
+            onTap: canEdit && !_busy
+                ? () => _pickGroup(anyGroup: manages, own: own)
+                : null,
+            clearLabel: strings.noGroup(groupWord),
+            clearKey: const Key('people.edit.groupClear'),
+            onClear: canEdit && manages && !_busy
+                ? () => setState(() {
+                    _groupId = null;
+                    _groupName = null;
+                  })
+                : null,
+          ),
+          if (categories.isNotEmpty)
+            _derived != null
+                ? CpField(
+                    key: const Key('people.edit.category'),
+                    label: fieldStrings.categoryLabel(words.one('category')),
+                    child: Text(
+                      fieldStrings.derivedCategory(_derived!.name),
+                      style: cp.type.bodyMedium.copyWith(color: cp.colors.text),
+                    ),
+                  )
+                : IgnorePointer(
+                    ignoring: !canEdit || _busy,
+                    child: CpChoiceChips<String>(
+                      key: const Key('people.edit.category'),
+                      label: words.one('category'),
+                      choices: [
+                        for (final c in categories)
+                          CpChoice(
+                            c.id,
+                            c.name,
+                            key: Key('people.edit.category.${c.id}'),
+                          ),
+                      ],
+                      selected: {
+                        if (categories.any((c) => c.id == _categoryId))
+                          _categoryId!,
+                      },
+                      onChanged: (ids) => setState(
+                        () => _categoryId = ids.isEmpty ? null : ids.first,
+                      ),
+                    ),
+                  ),
+        ],
+      ),
+    );
+
+    final privateSection =
+        editsPrivate || _birthDate != null || privateFields.isNotEmpty
+        ? Container(
+            key: const Key('people.edit.private'),
+            padding: EdgeInsets.all(cp.space.lg),
+            decoration: BoxDecoration(
+              color: cp.colors.fill,
+              borderRadius: cp.radii.md,
+              border: Border.all(
+                color: cp.colors.border,
+                width: cp.sizes.hairline,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: cp.space.lg,
+              children: [
+                Row(
+                  spacing: cp.space.sm,
+                  children: [
+                    Icon(
+                      CpIcons.lock,
+                      size: cp.sizes.iconMd - 2,
+                      color: cp.colors.accent,
+                    ),
+                    Expanded(
+                      child: Semantics(
+                        header: true,
+                        child: Text(
+                          context.strings.groupEntry.privateHeading,
+                          style: cp.type.titleSmall.copyWith(
+                            color: cp.colors.text,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  strings.birthDateHelp,
+                  style: cp.type.bodySmall.copyWith(color: cp.colors.textMuted),
+                ),
+                if (editsPrivate || _birthDate != null)
+                  CpDateField(
+                    key: const Key('people.edit.birthDateField'),
+                    fieldKey: const Key('people.edit.birthDate'),
+                    clearKey: const Key('people.edit.birthDateClear'),
+                    label: strings.birthDateLabel,
+                    value: DateTime.tryParse(_birthDate ?? ''),
+                    enabled: editsPrivate && !_busy,
+                    placeholder: '',
+                    firstDate: DateTime(1900),
+                    lastDate: DateTime.now(),
+                    clearLabel: strings.clearBirthDate,
+                    format: (d) =>
+                        MaterialLocalizations.of(context).formatShortDate(d),
+                    onChanged: _setBirthDate,
+                  ),
+                for (final f in privateFields) answer(f),
+              ],
+            ),
+          )
+        : null;
+
+    final saveBar = canEdit
+        ? Material(
+            color: cp.colors.surface,
+            child: SafeArea(
+              top: false,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: cp.colors.border)),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(cp.space.md),
+                  child: Row(
+                    spacing: cp.space.md,
+                    children: [
+                      Expanded(
+                        child: problems == 0
+                            ? const SizedBox.shrink()
+                            : CpFieldError(
+                                context.strings.groupEntry.missingCount(
+                                  problems,
+                                ),
+                              ),
+                      ),
+                      Flexible(
+                        child: CpButton(
+                          key: const Key('people.edit.save'),
+                          label: strings.save,
+                          busy: _busy,
+                          onPressed: _save,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          )
+        : null;
+
     return scaffold(
       SingleChildScrollView(
-        padding: EdgeInsets.symmetric(
-          horizontal: Breakpoints.screenHorizontalPadding(context),
-          vertical: AppSpacing.lg,
+        padding: EdgeInsets.fromLTRB(
+          cp.space.lg,
+          cp.space.sm,
+          cp.space.lg,
+          cp.space.xxl,
         ),
         child: ContentMaxWidth(
-          maxWidth: 560,
+          maxWidth: cp.sizes.phoneColumn,
           child: Form(
             key: _formKey,
             child: Column(
               key: const Key('people.edit.body'),
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              spacing: AppSpacing.md,
+              spacing: cp.space.lg,
               children: [
+                if (_error != null)
+                  Container(
+                    key: const Key('people.edit.error'),
+                    padding: EdgeInsets.all(cp.space.md),
+                    decoration: BoxDecoration(
+                      color: cp.colors.overdueSoft,
+                      borderRadius: cp.radii.md,
+                    ),
+                    child: CpFieldError(_error!),
+                  ),
                 if (!canEdit)
                   Text(
                     strings.readOnly,
                     key: const Key('people.edit.readOnly'),
-                    style: theme.textTheme.bodyMedium,
+                    style: cp.type.bodyMedium.copyWith(color: cp.colors.text),
                   ),
                 if (_saved?.anonymised ?? false)
                   Text(
                     context.strings.links.unnamedHint,
                     key: const Key('people.edit.unnamed'),
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                    style: cp.type.bodyMedium.copyWith(
+                      color: cp.colors.textMuted,
                     ),
                   ),
-                TextFormField(
-                  key: const Key('people.edit.name'),
-                  controller: _name,
-                  enabled: canEdit && !_busy,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: InputDecoration(
-                    labelText: strings.nameLabel,
-                    border: const OutlineInputBorder(),
+                details,
+                if (standardFields.isNotEmpty)
+                  CpSectionHeader(
+                    title: context.strings.groupEntry.questionsHeading,
                   ),
-                  validator: (v) {
-                    final name = v?.trim() ?? '';
-                    if (name.isEmpty) return strings.nameRequired;
-                    if (name.length > _maxName) {
-                      return strings.nameTooLong(_maxName);
-                    }
-                    return null;
-                  },
-                ),
-                ListTile(
-                  key: const Key('people.edit.group'),
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(AppIcons.members),
-                  title: Text(strings.groupLabel(words.one('group'))),
-                  subtitle: Text(
-                    groupName ?? strings.noGroup(words.one('group')),
-                  ),
-                  trailing: canEdit && manages && groupId != null
-                      ? IconButton(
-                          key: const Key('people.edit.groupClear'),
-                          tooltip: strings.noGroup(words.one('group')),
-                          icon: const Icon(AppIcons.actionClose),
-                          onPressed: _busy
-                              ? null
-                              : () => setState(() {
-                                  _groupId = null;
-                                  _groupName = null;
-                                }),
-                        )
-                      : null,
-                  onTap: canEdit && !_busy
-                      ? () => _pickGroup(anyGroup: manages, own: own)
-                      : null,
-                ),
-                SwitchListTile(
-                  key: const Key('people.edit.child'),
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(strings.childLabel),
-                  subtitle: Text(strings.childHelp),
-                  value: _derived?.isChild ?? _isChild,
-                  onChanged: canEdit && !_busy && _derived == null
-                      ? (on) => setState(() => _isChild = on)
-                      : null,
-                ),
-                if (categories.isNotEmpty)
-                  _derived != null
-                      ? ListTile(
-                          key: const Key('people.edit.category'),
-                          contentPadding: EdgeInsets.zero,
-                          leading: const Icon(AppIcons.members),
-                          title: Text(
-                            context.strings.fields.categoryLabel(
-                              words.one('category'),
-                            ),
-                          ),
-                          subtitle: Text(
-                            context.strings.fields.derivedCategory(
-                              _derived!.name,
-                            ),
-                          ),
-                        )
-                      : DropdownButtonFormField<String?>(
-                          key: const Key('people.edit.category'),
-                          isExpanded: true,
-                          initialValue:
-                              categories.any((c) => c.id == _categoryId)
-                              ? _categoryId
-                              : null,
-                          decoration: InputDecoration(
-                            labelText: words.one('category'),
-                            border: const OutlineInputBorder(),
-                          ),
-                          items: [
-                            DropdownMenuItem<String?>(
-                              child: Text(context.strings.fields.noCategory),
-                            ),
-                            for (final c in categories)
-                              DropdownMenuItem<String?>(
-                                value: c.id,
-                                child: Text(c.name),
-                              ),
-                          ],
-                          onChanged: canEdit && !_busy
-                              ? (id) => setState(() => _categoryId = id)
-                              : null,
-                        ),
-                if (editsPrivate || _birthDate != null)
-                  ListTile(
-                    key: const Key('people.edit.birthDate'),
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(AppIcons.calendar),
-                    title: Text(strings.birthDateLabel),
-                    subtitle: Text(
-                      [?_birthDate, strings.birthDateHelp].join('\n'),
+                if (standardFields.isNotEmpty)
+                  CpCard(
+                    padding: EdgeInsets.all(cp.space.lg),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      spacing: cp.space.lg,
+                      children: [for (final f in standardFields) answer(f)],
                     ),
-                    trailing: editsPrivate && _birthDate != null
-                        ? IconButton(
-                            key: const Key('people.edit.birthDateClear'),
-                            tooltip: strings.clearBirthDate,
-                            icon: const Icon(AppIcons.actionClose),
-                            onPressed: _busy
-                                ? null
-                                : () => setState(() {
-                                    _birthDate = null;
-                                    _birthDateChanged = true;
-                                  }),
-                          )
-                        : null,
-                    onTap: editsPrivate && !_busy ? _pickBirthDate : null,
                   ),
-                for (final f in fields)
-                  if (!f.isPrivate || showsPrivate)
-                    FieldAnswerInput(
-                      field: f,
-                      value: f.isPrivate
-                          ? _privateAnswers[f.id]
-                          : _answers[f.id],
-                      enabled: !_busy && (f.isPrivate ? editsPrivate : canEdit),
-                      onChanged: (v) => _answer(f, v),
-                    ),
+                ?privateSection,
                 if (event.isModuleOn('schedule'))
                   AttendanceSection(
                     event: event,
@@ -616,29 +742,14 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
                       _invitedTo = e.invitedTo;
                     }),
                   ),
-                if (_error != null)
-                  Text(
-                    _error!,
-                    key: const Key('people.edit.error'),
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.error,
-                    ),
-                  ),
-                if (canEdit)
-                  PrimaryButton(
-                    key: const Key('people.edit.save'),
-                    label: strings.save,
-                    isLoading: _busy,
-                    onPressed: _save,
-                  ),
                 if (canEdit && !_isNew)
-                  TextButton.icon(
-                    key: const Key('people.edit.delete'),
-                    onPressed: _busy ? null : _delete,
-                    icon: const Icon(AppIcons.actionDelete),
-                    label: Text(strings.delete),
-                    style: TextButton.styleFrom(
-                      foregroundColor: theme.colorScheme.error,
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: CpButton.text(
+                      key: const Key('people.edit.delete'),
+                      icon: CpIcons.actionDelete,
+                      label: strings.delete,
+                      onPressed: _busy ? null : _delete,
                     ),
                   ),
               ],
@@ -646,6 +757,7 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
           ),
         ),
       ),
+      bottom: saveBar,
     );
   }
 }
