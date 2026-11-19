@@ -29,7 +29,7 @@ import 'package:crewpoint_app/app/features/participants/presentation/fields_scre
 import 'package:crewpoint_app/app/features/participants/presentation/import_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/link_requests_screen.dart';
 import 'package:crewpoint_app/app/core/router/app_router.dart'
-    show participantPage, taskPage;
+    show expensePage, participantPage, taskPage;
 import 'package:crewpoint_app/app/features/participants/presentation/roster_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/member_management_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/crews_screen.dart';
@@ -177,6 +177,13 @@ class RolesHarness {
                   eventId: eventId,
                   child: (event) => EventBudgetPage(event: event),
                 ),
+                routes: [
+                  GoRoute(
+                    path: ':expenseId',
+                    pageBuilder: (context, state) =>
+                        expensePage(context, state, eventId: eventId),
+                  ),
+                ],
               ),
               GoRoute(
                 path: 'chat',

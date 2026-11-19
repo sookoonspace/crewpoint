@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/expense_tile.dart';
 import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
@@ -120,91 +121,57 @@ void main() {
     expect(find.text('€25.00'), findsOneWidget);
   });
 
-  group('overflow menu (Edit / Delete)', () {
+  group('row (Spec #186)', () {
     Widget pump(Widget child) => MaterialApp(
       home: Scaffold(body: SizedBox(width: 400, child: child)),
     );
 
-    const exp = ExpenseModel(
-      id: 'exp-1',
-      eventId: 'evt-1',
-      payerId: 'payer-1',
-      amount: 25,
-      description: 'Lunch',
-    );
-    const settlement = ExpenseModel(
-      id: 'pay-1',
-      eventId: 'evt-1',
-      payerId: 'payer-1',
-      amount: 50,
-      isPayment: true,
-    );
-
-    testWidgets('hidden when both callbacks are null', (tester) async {
-      await tester.pumpWidget(pump(const ExpenseTile(expense: exp)));
-      expect(
-        find.byKey(const Key('budget.expense.exp-1.overflow')),
-        findsNothing,
-      );
-    });
-
-    testWidgets('renders Edit + Delete when both callbacks non-null', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        pump(ExpenseTile(expense: exp, onEdit: () {}, onDelete: () {})),
-      );
-      await tester.tap(find.byKey(const Key('budget.expense.exp-1.overflow')));
-      await tester.pumpAndSettle();
-      expect(
-        find.byKey(const Key('budget.expense.exp-1.edit')),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(const Key('budget.expense.exp-1.delete')),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('hides Edit when expense.isPayment is true', (tester) async {
-      await tester.pumpWidget(
-        pump(ExpenseTile(expense: settlement, onEdit: () {}, onDelete: () {})),
-      );
-      await tester.tap(find.byKey(const Key('budget.expense.pay-1.overflow')));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const Key('budget.expense.pay-1.edit')), findsNothing);
-      expect(
-        find.byKey(const Key('budget.expense.pay-1.delete')),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('Edit + Delete tap fires the matching callback', (
-      tester,
-    ) async {
-      var editFired = false;
-      var deleteFired = false;
+    testWidgets('tapping the row opens the expense', (tester) async {
+      var opened = false;
       await tester.pumpWidget(
         pump(
           ExpenseTile(
-            expense: exp,
-            onEdit: () => editFired = true,
-            onDelete: () => deleteFired = true,
+            expense: const ExpenseModel(
+              id: 'exp-1',
+              eventId: 'evt-1',
+              payerId: 'payer-1',
+              amount: 25,
+              description: 'Lunch',
+            ),
+            payerName: 'Priya',
+            onTap: () => opened = true,
           ),
         ),
       );
+      expect(find.text('Paid by Priya'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('budget.expense.tile.exp-1')));
+      expect(opened, isTrue);
+    });
 
-      await tester.tap(find.byKey(const Key('budget.expense.exp-1.overflow')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('budget.expense.exp-1.edit')));
-      await tester.pumpAndSettle();
-      expect(editFired, isTrue);
-
-      await tester.tap(find.byKey(const Key('budget.expense.exp-1.overflow')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('budget.expense.exp-1.delete')));
-      await tester.pumpAndSettle();
-      expect(deleteFired, isTrue);
+    testWidgets('a settlement reads "Ravi paid Priya" with the green Paid '
+        'chip and its icon', (tester) async {
+      await tester.pumpWidget(
+        pump(
+          const ExpenseTile(
+            expense: ExpenseModel(
+              id: 'pay-1',
+              eventId: 'evt-1',
+              payerId: 'ravi',
+              amount: 50,
+              isPayment: true,
+            ),
+            payerName: 'Ravi',
+            payeeName: 'Priya',
+          ),
+        ),
+      );
+      expect(find.text('Ravi paid Priya'), findsOneWidget);
+      final chip = find.byKey(const Key('budget.expense.tile.pay-1.paid'));
+      expect(tester.widget<CpStatusChip>(chip).status, CpStatus.done);
+      expect(
+        find.descendant(of: chip, matching: find.byIcon(CpIcons.statusDone)),
+        findsOneWidget,
+      );
     });
   });
 }

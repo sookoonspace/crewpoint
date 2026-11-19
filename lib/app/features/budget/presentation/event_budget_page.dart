@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/layout/cp_list_detail.dart';
+import 'package:crewpoint_app/app/features/budget/application/budget_list_controller.dart';
+import 'package:crewpoint_app/app/features/budget/domain/models/budget_summary.dart';
 import 'package:crewpoint_app/app/core/services/callable_errors.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/services/app_lifecycle_source.dart';
@@ -22,12 +28,23 @@ import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/chat/application/people_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
-/// Event-scoped budget page. Reads `expenseListProvider(eventId)` and routes
-/// mutations + settlement flow through the repository providers.
+/// The event's Budget. Reads `expenseListProvider(eventId)` and routes
+/// saving and the settle-up flow through the repository providers.
+///
+/// On an expense's route [detail] is that expense: from 840 px it shows
+/// beside the list with [selectedId] chosen, and narrower it is the whole
+/// page (Spec #186 Req 23).
 class EventBudgetPage extends ConsumerStatefulWidget {
-  const EventBudgetPage({super.key, required this.event});
+  const EventBudgetPage({
+    super.key,
+    required this.event,
+    this.selectedId,
+    this.detail,
+  });
 
   final EventModel event;
+  final String? selectedId;
+  final Widget? detail;
 
   @override
   ConsumerState<EventBudgetPage> createState() => _EventBudgetPageState();
@@ -36,10 +53,15 @@ class EventBudgetPage extends ConsumerStatefulWidget {
 class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
   late final WidgetsAppLifecycleSource _lifecycleSource;
   late final PendingSettlementNotifier _pending;
+  late final ScrollController _scroll;
 
   @override
   void initState() {
     super.initState();
+    _scroll = ScrollController(initialScrollOffset: _list.scrollOffset);
+    _scroll.addListener(() {
+      if (mounted && _scroll.hasClients) _list.scrollOffset = _scroll.offset;
+    });
     _lifecycleSource = WidgetsAppLifecycleSource();
     _pending = PendingSettlementNotifier(
       launcher: ref.read(urlLauncherProvider),
@@ -48,21 +70,36 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
     _pending.onConfirmRequested = _handleConfirmRequested;
   }
 
+  /// Read fresh each time, never in dispose: the provider is rebuilt when
+  /// no list has watched it for a while.
+  BudgetListController get _list =>
+      ref.read(budgetListProvider(widget.event.id).notifier);
+
+  void _say(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _open(ExpenseModel expense) {
+    final path = '/dashboard/event/${widget.event.id}/budget/${expense.id}';
+    if (CpListDetail.isSplit(context)) {
+      context.go(path);
+    } else {
+      context.push(path);
+    }
+  }
+
   @override
   void dispose() {
+    _scroll.dispose();
     _pending.dispose();
     _lifecycleSource.dispose();
     super.dispose();
   }
 
-  String _currencySymbol(String code) => switch (code) {
-    'USD' || 'CAD' || 'AUD' => '\$',
-    'EUR' => '€',
-    'GBP' => '£',
-    'JPY' => '¥',
-    'INR' => '₹',
-    _ => '\$',
-  };
+  String _currencySymbol(String code) => currencySymbolFor(code);
 
   /// The payee's handles, from the event's profiles: only people who share
   /// an event can see them (Req 37).
@@ -111,7 +148,7 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
       context: context,
       settlement: settlement,
       currencySymbol: symbol,
-      fromName: 'You',
+      fromName: context.strings.budget.youCapital,
       toName: payee.displayName,
       venmoHandle: payee.venmoHandle,
       cashappHandle: payee.cashappHandle,
@@ -129,14 +166,14 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
             },
       onCopyDetails: () {
         Navigator.of(context).pop();
-        final details =
-            '$symbol${settlement.amount.toStringAsFixed(2)} '
-            'to ${payee.displayName ?? settlement.toUserId} '
-            'for ${widget.event.title}';
-        Clipboard.setData(ClipboardData(text: details));
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Copied — paste it where you settle')),
+        final s = context.strings.budget;
+        final details = s.copyDetailsText(
+          '$symbol${settlement.amount.toStringAsFixed(2)}',
+          payee.displayName ?? settlement.toUserId,
+          widget.event.title,
         );
+        Clipboard.setData(ClipboardData(text: details));
+        _say(s.copiedDetails);
       },
     );
   }
@@ -160,25 +197,23 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
     final symbol = _currencySymbol(widget.event.currency);
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(strings.settleOnBehalfTitle),
-        content: Text(
-          strings.settleOnBehalfBody(
-            '$symbol${settlement.amount.toStringAsFixed(2)}',
-            names.from,
-            names.to,
-          ),
+      builder: (ctx) => CpDialog(
+        title: strings.settleOnBehalfTitle,
+        message: strings.settleOnBehalfBody(
+          '$symbol${settlement.amount.toStringAsFixed(2)}',
+          names.from,
+          names.to,
         ),
         actions: [
-          TextButton(
+          CpButton.text(
             key: const Key('budget.settle.onBehalf.cancel'),
+            label: strings.settleOnBehalfCancel,
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text(strings.settleOnBehalfCancel),
           ),
-          FilledButton(
+          CpButton(
             key: const Key('budget.settle.onBehalf.confirm'),
+            label: strings.settleOnBehalfConfirm,
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text(strings.settleOnBehalfConfirm),
           ),
         ],
       ),
@@ -299,12 +334,7 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
 
   void _showInvalidHandleSnackbar() {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('That payment handle looks invalid'),
-        backgroundColor: AppColors.terracotta,
-      ),
-    );
+    _say(context.strings.budget.invalidHandle);
   }
 
   Future<void> _runExport({
@@ -347,12 +377,7 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
       );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Couldn't generate report"),
-          backgroundColor: AppColors.terracotta,
-        ),
-      );
+      _say(context.strings.budget.exportFailed);
     }
   }
 
@@ -361,25 +386,27 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
     final symbol = _currencySymbol(widget.event.currency);
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Did you send the payment?'),
-        content: Text(
-          'Did you send $symbol${pending.amount.toStringAsFixed(2)}? '
-          'We\'ll record it in the budget so the ledger balances.',
-        ),
-        actions: [
-          TextButton(
-            key: const Key('budget.settle.confirm.no'),
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Not yet'),
+      builder: (ctx) {
+        final s = ctx.strings.budget;
+        return CpDialog(
+          title: s.confirmSentTitle,
+          message: s.confirmSentBody(
+            '$symbol${pending.amount.toStringAsFixed(2)}',
           ),
-          FilledButton(
-            key: const Key('budget.settle.confirm'),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Yes, recorded'),
-          ),
-        ],
-      ),
+          actions: [
+            CpButton.text(
+              key: const Key('budget.settle.confirm.no'),
+              label: s.notYet,
+              onPressed: () => Navigator.pop(ctx, false),
+            ),
+            CpButton(
+              key: const Key('budget.settle.confirm'),
+              label: s.yesRecorded,
+              onPressed: () => Navigator.pop(ctx, true),
+            ),
+          ],
+        );
+      },
     );
     _pending.clearPending();
     if (confirmed != true) return;
@@ -421,7 +448,6 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
               ? strings.settlementNeedsConnection
               : strings.settlementRejected,
         ),
-        backgroundColor: AppColors.terracotta,
         action: needsConnection
             ? SnackBarAction(
                 key: const Key('budget.settle.retry'),
@@ -440,12 +466,28 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Narrower than 840 px an expense's route is the expense alone.
+    final detail = widget.detail;
+    if (detail != null && !CpListDetail.isSplit(context)) return detail;
+
+    final s = context.strings.budget;
     final auth = ref.watch(authProvider);
     final uid = auth is Authenticated ? auth.user.uid : null;
+    Widget bare(Widget body) => Scaffold(
+      appBar: CpTopBar(
+        title: widget.event.title,
+        leadingKey: const Key('budget.back'),
+        leadingTooltip: MaterialLocalizations.of(context).backButtonTooltip,
+        onLeading: () => Navigator.of(context).maybePop(),
+      ),
+      body: body,
+    );
     if (uid == null) {
-      return const Scaffold(body: Center(child: Text('Sign in required')));
+      return bare(CpEmptyState(icon: CpIcons.lock, title: s.signInRequired));
     }
 
+    // Kept while the list shows, so its scroll place survives a choice.
+    ref.watch(budgetListProvider(widget.event.id));
     final asyncExpenses = ref.watch(expenseListProvider(widget.event.id));
     final repo = ref.watch(expenseRepositoryProvider);
     final imageService = ref.watch(imageServiceProvider);
@@ -466,56 +508,6 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
           },
           orElse: () => <String, String>{},
         );
-        bool canMutate(ExpenseModel expense) =>
-            uid == expense.payerId || widget.event.can(uid, 'money.record');
-
-        Future<void> editExpense(ExpenseModel expense) async {
-          await ExpenseModal.show(
-            context: context,
-            eventId: widget.event.id,
-            payerId: expense.payerId,
-            memberIds: widget.event.memberIds,
-            words: widget.event.words,
-            currencySymbol: symbol,
-            initial: expense,
-            onSubmit: (updated, _) => repo.saveExpense(updated),
-          );
-        }
-
-        Future<void> deleteExpense(ExpenseModel expense) async {
-          final confirmed = await showDialog<bool>(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('Delete this expense?'),
-              content: const Text(
-                'It will be removed for everyone and balances will update.',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx, true),
-                  child: const Text(
-                    'Delete',
-                    style: TextStyle(color: AppColors.terracotta),
-                  ),
-                ),
-              ],
-            ),
-          );
-          if (confirmed != true || !context.mounted) return;
-          final ok = await repo.deleteExpense(expense.id);
-          if (!ok && context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Could not delete expense'),
-                backgroundColor: AppColors.terracotta,
-              ),
-            );
-          }
-        }
 
         // Someone who may not read every expense sees their own balance from
         // the server, worked out from all of them (Req 38c).
@@ -547,10 +539,12 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
               widget.event.allowsChatAndMoney && widget.event.contributes(uid),
           memberNames: memberNames,
           appBarTitle: widget.event.title,
-          onEditExpense: (expense) =>
-              canMutate(expense) ? editExpense(expense) : null,
-          onDeleteExpense: (expense) =>
-              canMutate(expense) ? deleteExpense(expense) : null,
+          selectedId: widget.selectedId,
+          detail: detail,
+          scrollController: _scroll,
+          inZone: widget.event.inZone,
+          onOpenExpense: _open,
+          onBack: () => Navigator.of(context).maybePop(),
           onRecordPayment: _onSettlePressed,
           onExportPdf: () => _runExport(
             expenses: expenses,
@@ -595,34 +589,30 @@ class _EventBudgetPageState extends ConsumerState<EventBudgetPage> {
                   receipt != null &&
                   receiptUrl == null;
               if (savedWithoutReceipt && context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Receipt upload failed — saved the expense without it',
-                    ),
-                    backgroundColor: AppColors.terracotta,
-                  ),
-                );
+                _say(s.receiptUploadFailed);
               }
               return result;
             },
           ),
         );
       },
-      loading: () => Scaffold(
-        appBar: AppBar(title: const Text('Budget'), elevation: 0),
-        body: const Center(child: CircularProgressIndicator()),
+      loading: () => bare(
+        CpLoadingState.rows(
+          key: const Key('budget.loading'),
+          semanticLabel: s.title,
+        ),
       ),
-      error: (e, _) => Scaffold(
-        appBar: AppBar(title: const Text('Budget'), elevation: 0),
-        body: Center(
-          child: Text(
-            userMessageFor(
-              e,
-              strings: context.strings.errors,
-              fallback: context.strings.errors.genericFallback,
-            ),
+      error: (e, _) => bare(
+        CpErrorState(
+          title: s.loadFailed,
+          message: userMessageFor(
+            e,
+            strings: context.strings.errors,
+            fallback: context.strings.errors.genericFallback,
           ),
+          retryLabel: context.strings.people.retry,
+          retryKey: const Key('budget.retry'),
+          onRetry: () => ref.invalidate(expenseListProvider(widget.event.id)),
         ),
       ),
     );

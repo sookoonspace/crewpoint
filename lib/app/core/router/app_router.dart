@@ -54,6 +54,7 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/roles/transfer
 import 'package:crewpoint_app/app/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/budget_ledger_screen.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/event_budget_page.dart';
+import 'package:crewpoint_app/app/features/budget/presentation/expense_detail_page.dart';
 import 'package:crewpoint_app/app/features/chat/presentation/chat_inbox_screen.dart';
 import 'package:crewpoint_app/app/features/chat/presentation/event_chat_page.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/event_task_detail_page.dart';
@@ -479,6 +480,18 @@ GoRouter createRouter({
                             child: EventBudgetPage(event: event),
                           ),
                         ),
+                        routes: [
+                          // From 840 px the list with this expense beside
+                          // it (Spec #186 Req 23); narrower, its page.
+                          GoRoute(
+                            path: ':expenseId',
+                            pageBuilder: (context, state) => expensePage(
+                              context,
+                              state,
+                              eventId: _resolveEventId(state),
+                            ),
+                          ),
+                        ],
                       ),
                       GoRoute(
                         path: 'chat',
@@ -648,6 +661,39 @@ Page<void> taskPage(
             key: ValueKey('tasks.detail.$id'),
             event: event,
             taskId: id,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/// The page for `budget/:expenseId`: from 840 px the Budget list with that
+/// expense beside it, and narrower the expense alone (Spec #186 Req 23).
+/// Shared with test harnesses so they route the same way.
+Page<void> expensePage(
+  BuildContext context,
+  GoRouterState state, {
+  required String eventId,
+}) {
+  final id = state.pathParameters['expenseId']!;
+  return cpListDetailPage(
+    context: context,
+    pageKey: state.pageKey,
+    splitKey: const ValueKey('budget.split'),
+    child: EventGuard(
+      eventId: eventId,
+      child: (event) => ModuleGuard(
+        event: event,
+        module: 'budget',
+        child: EventBudgetPage(
+          event: event,
+          selectedId: id,
+          detail: ExpenseDetailPage(
+            // Another expense is another page, and another form.
+            key: ValueKey('budget.detail.$id'),
+            event: event,
+            expenseId: id,
           ),
         ),
       ),

@@ -442,6 +442,86 @@ abstract class BudgetStrings {
   /// Uppercase labels used by `BalanceTile` (same copy as ledgerHero*).
   String get balanceTileYouAreOwedLabel;
   String get balanceTileYouOweLabel;
+
+  // Budget in the new look (Spec #186, #202).
+  String get title;
+  String get signInRequired;
+  String get loadFailed;
+  String get spentLabel;
+  String expenseCount(int count);
+  String get yourBalanceLabel;
+  String youAreOwed(String amount);
+  String youOwe(String amount);
+  String get allSettled;
+  String owesYou(String name, String amount);
+  String youOweName(String name, String amount);
+  String get settleUp;
+  String get settle;
+  String get balancesHeading;
+  String get settleUpHeading;
+  String get expensesHeading;
+  String get isOwed;
+  String get owes;
+  String get settled;
+  String pays(String from, String to);
+  String paid(String from, String to);
+  String get settlementLabel;
+  String get paidChip;
+  String paidBy(String name);
+  String get you;
+  String get youCapital;
+  String splitWays(int count);
+  String get donated;
+  String get expenseFallback;
+  String get expenseWord;
+  String get noExpenses;
+  String get noExpensesHelp;
+  String get exportTooltip;
+  String get exportPdf;
+  String get exportCsv;
+  String get exportFailed;
+  String get addExpenseTitle;
+  String get editExpenseTitle;
+  String get addExpenseCta;
+  String get saveChangesCta;
+  String get amountLabel;
+  String get descriptionLabel;
+  String get descriptionHint;
+  String get donateLabel;
+  String get donateHelp;
+  String perPerson(String amount, int count);
+  String get addReceipt;
+  String get receiptAttached;
+  String get removeReceipt;
+  String get receiptLabel;
+  String get viewReceipt;
+  String get deleteTitle;
+  String get deleteBody;
+  String get cancel;
+  String get delete;
+  String get edit;
+  String get deleteFailed;
+  String get receiptUploadFailed;
+  String get invalidHandle;
+  String get copiedDetails;
+  String copyDetailsText(String amount, String to, String event);
+  String get confirmSentTitle;
+  String confirmSentBody(String amount);
+  String get notYet;
+  String get yesRecorded;
+  String get notFound;
+  String get paidByLabel;
+  String get dateLabel;
+  String get splitLabel;
+  String eachShare(String amount);
+  String sheetPays(String from, String to);
+  String get them;
+  String get payWithVenmo;
+  String get noVenmo;
+  String get payWithCashApp;
+  String get noCashApp;
+  String get copyPaymentDetails;
+  String someonePaid(String name);
 }
 
 /// User-facing strings for the Profile feature (profile screen + settings).
@@ -779,6 +859,170 @@ class _EnglishBudgetStrings extends BudgetStrings {
 
   @override
   String get balanceTileYouOweLabel => 'You owe';
+
+  @override
+  String get title => 'Budget';
+  @override
+  String get signInRequired => 'Sign in to view the budget';
+  @override
+  String get loadFailed => 'Could not load the budget';
+  @override
+  String get spentLabel => 'Spent';
+  @override
+  String expenseCount(int count) =>
+      count == 1 ? '1 expense' : '$count expenses';
+  @override
+  String get yourBalanceLabel => 'Your balance';
+  @override
+  String youAreOwed(String amount) => 'You are owed $amount';
+  @override
+  String youOwe(String amount) => 'You owe $amount';
+  @override
+  String get allSettled => 'You are all settled';
+  @override
+  String owesYou(String name, String amount) => '$name owes you $amount';
+  @override
+  String youOweName(String name, String amount) => 'You owe $name $amount';
+  @override
+  String get settleUp => 'Settle up';
+  @override
+  String get settle => 'Settle';
+  @override
+  String get balancesHeading => 'Balances';
+  @override
+  String get settleUpHeading => 'Settle up';
+  @override
+  String get expensesHeading => 'Expenses';
+  @override
+  String get isOwed => 'is owed';
+  @override
+  String get owes => 'owes';
+  @override
+  String get settled => 'settled';
+  @override
+  String pays(String from, String to) => '$from pays $to';
+  @override
+  String paid(String from, String to) => '$from paid $to';
+  @override
+  String get settlementLabel => 'Settlement';
+  @override
+  String get paidChip => 'Paid';
+  @override
+  String paidBy(String name) => 'Paid by $name';
+  @override
+  String get you => 'you';
+  @override
+  String get youCapital => 'You';
+  @override
+  String splitWays(int count) => 'split $count ways';
+  @override
+  String get donated => 'Donated';
+  @override
+  String get expenseFallback => 'Expense';
+  @override
+  String get expenseWord => 'Expense';
+  @override
+  String get noExpenses => 'No expenses yet';
+  @override
+  String get noExpensesHelp => 'Tap + to add the first one';
+  @override
+  String get exportTooltip => 'Export';
+  @override
+  String get exportPdf => 'Export PDF';
+  @override
+  String get exportCsv => 'Export CSV';
+  @override
+  String get exportFailed => "Couldn't generate report";
+  @override
+  String get addExpenseTitle => 'Add Expense';
+  @override
+  String get editExpenseTitle => 'Edit Expense';
+  @override
+  String get addExpenseCta => 'Add Expense';
+  @override
+  String get saveChangesCta => 'Save changes';
+  @override
+  String get amountLabel => 'Amount';
+  @override
+  String get descriptionLabel => 'Description';
+  @override
+  String get descriptionHint => 'Description (optional)';
+  @override
+  String get donateLabel => 'Donate this cost';
+  @override
+  String get donateHelp => 'You cover it, so nobody owes you for it';
+  @override
+  String perPerson(String amount, int count) =>
+      'Split: $amount per person ($count people)';
+  @override
+  String get addReceipt => 'Add receipt';
+  @override
+  String get receiptAttached => 'Receipt attached';
+  @override
+  String get removeReceipt => 'Remove receipt';
+  @override
+  String get receiptLabel => 'Receipt';
+  @override
+  String get viewReceipt => 'View receipt';
+  @override
+  String get deleteTitle => 'Delete this expense?';
+  @override
+  String get deleteBody =>
+      'It will be removed for everyone and balances will update.';
+  @override
+  String get cancel => 'Cancel';
+  @override
+  String get delete => 'Delete';
+  @override
+  String get edit => 'Edit';
+  @override
+  String get deleteFailed => 'Could not delete expense';
+  @override
+  String get receiptUploadFailed =>
+      'Receipt upload failed — saved the expense without it';
+  @override
+  String get invalidHandle => 'That payment handle looks invalid';
+  @override
+  String get copiedDetails => 'Copied — paste it where you settle';
+  @override
+  String copyDetailsText(String amount, String to, String event) =>
+      '$amount to $to for $event';
+  @override
+  String get confirmSentTitle => 'Did you send the payment?';
+  @override
+  String confirmSentBody(String amount) =>
+      "Did you send $amount? We'll record it in the budget so the ledger "
+      'balances.';
+  @override
+  String get notYet => 'Not yet';
+  @override
+  String get yesRecorded => 'Yes, recorded';
+  @override
+  String get notFound => 'Expense not found';
+  @override
+  String get paidByLabel => 'Paid by';
+  @override
+  String get dateLabel => 'Date';
+  @override
+  String get splitLabel => 'Split';
+  @override
+  String eachShare(String amount) => '$amount each';
+  @override
+  String sheetPays(String from, String to) => '$from pay $to';
+  @override
+  String get them => 'them';
+  @override
+  String get payWithVenmo => 'Pay with Venmo';
+  @override
+  String get noVenmo => 'No Venmo handle';
+  @override
+  String get payWithCashApp => 'Pay with Cash App';
+  @override
+  String get noCashApp => 'No Cash App handle';
+  @override
+  String get copyPaymentDetails => 'Copy payment details';
+  @override
+  String someonePaid(String name) => '$name paid';
 }
 
 class _EnglishProfileStrings extends ProfileStrings {

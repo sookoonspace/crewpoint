@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_radius.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/widgets/money_text.dart';
 import 'package:crewpoint_app/app/features/budget/application/global_balance_ledger_provider.dart';
 import 'package:crewpoint_app/app/features/budget/data/member_name_resolver.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/donated_pill.dart';
 
-/// Chronological row in the cross-event "Recent expenses" feed.
+/// One row in the Budget tab's recent expenses across events (Spec #186):
+/// who paid, what, which event, the amount and how long ago. Use inside a
+/// [CpRowGroup].
 class RecentExpenseTile extends StatelessWidget {
   const RecentExpenseTile({
     super.key,
@@ -21,11 +24,8 @@ class RecentExpenseTile extends StatelessWidget {
   final String currentUserId;
   final VoidCallback onTap;
 
-  String _firstLetter(String s) =>
-      s.isEmpty ? '?' : s.characters.first.toUpperCase();
-
-  /// Relative timestamp ("2h" / "yesterday" / "Mar 4"). Older than 30
-  /// days uses absolute (spec req 37).
+  /// Relative time ("2h", "yesterday", "Mar 4"); older than 30 days shows
+  /// the date (spec req 37).
   String _formatTimestamp(DateTime? when) {
     if (when == null) return '';
     final now = DateTime.now();
@@ -40,102 +40,71 @@ class RecentExpenseTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final cp = context.cp;
+    final s = context.strings.budget;
     final exp = row.expense;
-    final payerLabel = exp.payerId == currentUserId ? 'You' : row.payerName;
-    final avatarInitial = payerLabel == kRemovedMemberPlaceholder
-        ? '?'
-        : _firstLetter(payerLabel);
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      margin: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.xs,
+    final payerLabel = exp.payerId == currentUserId
+        ? s.youCapital
+        : row.payerName;
+    final removed = payerLabel == kRemovedMemberPlaceholder;
+    final tile = ConstrainedBox(
+      constraints: BoxConstraints(minHeight: cp.sizes.rowMinHeight),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: cp.space.lg,
+          vertical: cp.space.md,
+        ),
+        child: Row(
+          spacing: cp.space.md,
+          children: [
+            CpAvatar(
+              name: removed ? '?' : payerLabel,
+              semanticLabel: payerLabel,
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: cp.space.xs / 2,
+                children: [
+                  Text(
+                    exp.description ?? s.someonePaid(payerLabel),
+                    style: cp.type.titleSmall.copyWith(color: cp.colors.text),
+                  ),
+                  Text(
+                    row.event.title,
+                    style: cp.type.bodySmall.copyWith(
+                      color: cp.colors.textMuted,
+                    ),
+                  ),
+                  if (exp.isDonation) const DonatedPill(),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              spacing: cp.space.xs / 2,
+              children: [
+                MoneyText(
+                  amount: exp.amount,
+                  currencyCode: row.event.currency,
+                  style: cp.type.titleSmall.copyWith(color: cp.colors.text),
+                ),
+                Text(
+                  _formatTimestamp(exp.createdAt),
+                  style: cp.type.bodySmall.copyWith(color: cp.colors.textMuted),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
-      shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
-      clipBehavior: Clip.antiAlias,
+    );
+    return Material(
+      type: MaterialType.transparency,
       child: InkWell(
         key: Key('budget.ledger.recentExpense.${exp.id}'),
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.sm,
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: AppColors.sageLight,
-                child: Text(
-                  avatarInitial,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      exp.description ?? '$payerLabel paid',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            row.event.title,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (exp.isDonation) ...[
-                          const SizedBox(width: AppSpacing.sm),
-                          const DonatedPill(),
-                        ],
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  MoneyText(
-                    amount: exp.amount,
-                    currencyCode: row.event.currency,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _formatTimestamp(exp.createdAt),
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
+        child: tile,
       ),
     );
   }

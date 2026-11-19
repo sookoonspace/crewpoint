@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/settle_sheet.dart';
 
@@ -27,12 +28,12 @@ void main() {
       ),
     );
 
-    final venmo = tester.widget<ElevatedButton>(
+    final venmo = tester.widget<CpButton>(
       find.byKey(const Key('budget.settle.venmo')),
     );
     expect(venmo.onPressed, isNotNull);
 
-    final cash = tester.widget<OutlinedButton>(
+    final cash = tester.widget<CpButton>(
       find.byKey(const Key('budget.settle.cashapp')),
     );
     expect(cash.onPressed, isNull);
@@ -60,12 +61,12 @@ void main() {
       ),
     );
 
-    final venmo = tester.widget<ElevatedButton>(
+    final venmo = tester.widget<CpButton>(
       find.byKey(const Key('budget.settle.venmo')),
     );
     expect(venmo.onPressed, isNull);
 
-    final cash = tester.widget<OutlinedButton>(
+    final cash = tester.widget<CpButton>(
       find.byKey(const Key('budget.settle.cashapp')),
     );
     expect(cash.onPressed, isNull);

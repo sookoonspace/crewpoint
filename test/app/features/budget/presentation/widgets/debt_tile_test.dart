@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
 import 'package:crewpoint_app/app/features/budget/application/global_balance_ledger_provider.dart';
 import 'package:crewpoint_app/app/features/budget/data/member_name_resolver.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/debt_tile.dart';
@@ -65,11 +66,11 @@ void main() {
     );
     await tester.pump();
 
-    final button = tester.widget<OutlinedButton>(find.byType(OutlinedButton));
+    final button = tester.widget<CpButton>(find.byType(CpButton));
     expect(button.onPressed, isNull);
   });
 
-  testWidgets('wraps content in a Card for the elevated-tile look', (
+  testWidgets('what you owe shows as an amber chip with its icon', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -77,10 +78,8 @@ void main() {
         home: Scaffold(body: DebtTile(row: _debt)),
       ),
     );
-    expect(
-      find.descendant(of: find.byType(DebtTile), matching: find.byType(Card)),
-      findsOneWidget,
-    );
+    final chip = tester.widget<CpStatusChip>(find.byType(CpStatusChip));
+    expect(chip.status, CpStatus.due);
   });
 
   testWidgets(
@@ -114,10 +113,8 @@ void main() {
       );
       await tester.pump();
       expect(find.text(kRemovedMemberPlaceholder), findsOneWidget);
-      // Avatar bubble inside DebtTile.
-      final avatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar));
-      final avatarText = avatar.child! as Text;
-      expect(avatarText.data, '?');
+      // The avatar shows "?", never a stray letter of the placeholder.
+      expect(tester.widget<CpAvatar>(find.byType(CpAvatar)).name, '?');
     },
   );
 }
