@@ -3,12 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
-import 'package:crewpoint_app/app/core/widgets/section_label.dart';
-import 'package:crewpoint_app/app/core/widgets/skeletons.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/application/my_assigned_tasks_provider.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/my_tasks_screen.dart';
+import 'package:crewpoint_app/app/features/tasks/presentation/widgets/tasks_group_header.dart';
 
 /// Lottie animations loop forever — use bounded pumps, not pumpAndSettle.
 Future<void> _pumpFrames(WidgetTester tester) async {
@@ -19,7 +18,7 @@ Future<void> _pumpFrames(WidgetTester tester) async {
 
 void main() {
   testWidgets(
-    'loading branch — renders MyTasksSkeleton, no empty state, no list',
+    'loading branch — renders placeholder rows, no empty state, no list',
     (tester) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -36,7 +35,7 @@ void main() {
       );
       await _pumpFrames(tester);
 
-      expect(find.byType(MyTasksSkeleton), findsOneWidget);
+      expect(find.byKey(const Key('myTasks.loading')), findsOneWidget);
       expect(find.byKey(const Key('emptyState.title')), findsNothing);
     },
   );
@@ -130,7 +129,7 @@ void main() {
       await _pumpFrames(tester);
 
       expect(find.text('Sign in to view your tasks'), findsOneWidget);
-      expect(find.byType(MyTasksSkeleton), findsNothing);
+      expect(find.byKey(const Key('myTasks.loading')), findsNothing);
       expect(
         dashboardSubscriptions,
         0,
@@ -192,7 +191,7 @@ void main() {
 
       // One SectionLabel header per distinct event (groupHeader keys still
       // present so robot tests can target them by event id).
-      expect(find.byType(SectionLabel), findsNWidgets(2));
+      expect(find.byType(TasksGroupHeader), findsNWidgets(2));
       expect(
         find.byKey(const Key('myTasks.groupHeader.evt-a')),
         findsOneWidget,
@@ -203,8 +202,8 @@ void main() {
       );
       // SectionLabel uppercases its text — assert via case-insensitive
       // match because the wireframe shows "TAHOE TRIP" all caps.
-      expect(find.textContaining('TAHOE TRIP'), findsOneWidget);
-      expect(find.textContaining('PROJECT SYNC'), findsOneWidget);
+      expect(find.text('Tahoe Trip'), findsOneWidget);
+      expect(find.text('Project Sync'), findsOneWidget);
       // Both task tiles render.
       expect(find.byKey(const Key('tasks.tile.t-a')), findsOneWidget);
       expect(find.byKey(const Key('tasks.tile.t-b')), findsOneWidget);

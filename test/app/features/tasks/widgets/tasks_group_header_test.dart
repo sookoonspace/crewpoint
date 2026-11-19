@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/widgets/tasks_group_header.dart';
 
 void main() {
@@ -14,15 +14,18 @@ void main() {
     expect(find.text('To Do'), findsOneWidget);
   });
 
-  testWidgets('renders a thin sage divider below the label', (tester) async {
+  testWidgets('is a section header with the group count on the right', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const MaterialApp(
-        home: Scaffold(body: TasksGroupHeader(label: 'To Do')),
+        home: Scaffold(body: TasksGroupHeader(label: 'Overdue', count: 2)),
       ),
     );
 
-    final container = tester.widget<Container>(find.byType(Container));
-    expect(container.color, AppColors.sage.withValues(alpha: 0.25));
-    expect(container.constraints?.maxHeight, 1.0);
+    final header = tester.widget<CpSectionHeader>(find.byType(CpSectionHeader));
+    expect(header.title, 'Overdue');
+    expect(header.trailingText, '2');
+    expect(find.text('2'), findsOneWidget);
   });
 }

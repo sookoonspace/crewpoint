@@ -51,8 +51,14 @@ void main() {
     ),
   );
 
+  /// The text in the field (the only text inside it).
   String shown(WidgetTester tester) => tester
-      .widget<Text>(find.byKey(const Key('tasks.create.assignee.value')))
+      .widget<Text>(
+        find.descendant(
+          of: find.byKey(const Key('tasks.create.assignee')),
+          matching: find.byType(Text),
+        ),
+      )
       .data!;
 
   testWidgets('shows the name, or a shortened ID when none is known', (

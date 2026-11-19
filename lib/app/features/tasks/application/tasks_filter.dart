@@ -173,6 +173,31 @@ class TasksGroup {
   final List<TaskModel> tasks;
 }
 
+/// The words on group headers, from `context.strings.tasks` in the app.
+typedef TasksGroupLabels = ({
+  String todo,
+  String inProgress,
+  String done,
+  String unassigned,
+  String overdue,
+  String today,
+  String thisWeek,
+  String later,
+  String noDueDate,
+});
+
+const TasksGroupLabels defaultTasksGroupLabels = (
+  todo: 'To Do',
+  inProgress: 'In Progress',
+  done: 'Done',
+  unassigned: 'Unassigned',
+  overdue: 'Overdue',
+  today: 'Today',
+  thisWeek: 'This week',
+  later: 'Later',
+  noDueDate: 'No due date',
+);
+
 /// Pure: bucket the (already-filtered, already-sorted) task list into
 /// groups for presentation. Empty buckets are omitted; group order matches
 /// the spec.
@@ -183,14 +208,15 @@ List<TasksGroup> groupTasks(
   required Map<String, String> assigneeNames,
   Map<String, String> crewNames = const {},
   String noCrewLabel = 'No crew',
+  TasksGroupLabels labels = defaultTasksGroupLabels,
 }) {
   switch (groupBy) {
     case TasksGroupBy.status:
-      return _groupByStatus(tasks);
+      return _groupByStatus(tasks, labels);
     case TasksGroupBy.assignee:
-      return _groupByAssignee(tasks, assigneeNames);
+      return _groupByAssignee(tasks, assigneeNames, labels);
     case TasksGroupBy.dueWindow:
-      return _groupByDueWindow(tasks, now);
+      return _groupByDueWindow(tasks, now, labels);
     case TasksGroupBy.crew:
       return _groupByCrew(tasks, crewNames, noCrewLabel);
   }
@@ -219,10 +245,10 @@ List<TasksGroup> _groupByCrew(
   return groups;
 }
 
-List<TasksGroup> _groupByStatus(List<TaskModel> tasks) {
+List<TasksGroup> _groupByStatus(List<TaskModel> tasks, TasksGroupLabels words) {
   const order = [TaskStatus.todo, TaskStatus.inProgress, TaskStatus.done];
   const keys = ['todo', 'inProgress', 'done'];
-  const labels = ['To Do', 'In Progress', 'Done'];
+  final labels = [words.todo, words.inProgress, words.done];
 
   final groups = <TasksGroup>[];
   for (var i = 0; i < order.length; i++) {
@@ -236,6 +262,7 @@ List<TasksGroup> _groupByStatus(List<TaskModel> tasks) {
 List<TasksGroup> _groupByAssignee(
   List<TaskModel> tasks,
   Map<String, String> assigneeNames,
+  TasksGroupLabels words,
 ) {
   // Preserve incoming sort order within each bucket by walking the list
   // once and appending each task to its bucket.
@@ -266,13 +293,17 @@ List<TasksGroup> _groupByAssignee(
   }
   if (unassigned.isNotEmpty) {
     groups.add(
-      TasksGroup(key: 'unassigned', label: 'Unassigned', tasks: unassigned),
+      TasksGroup(key: 'unassigned', label: words.unassigned, tasks: unassigned),
     );
   }
   return groups;
 }
 
-List<TasksGroup> _groupByDueWindow(List<TaskModel> tasks, DateTime now) {
+List<TasksGroup> _groupByDueWindow(
+  List<TaskModel> tasks,
+  DateTime now,
+  TasksGroupLabels words,
+) {
   final today = startOfDay(now);
   final weekEnd = today.add(const Duration(days: 7));
 
@@ -307,11 +338,11 @@ List<TasksGroup> _groupByDueWindow(List<TaskModel> tasks, DateTime now) {
     }
   }
 
-  addIf('overdue', 'Overdue', overdue);
-  addIf('today', 'Today', todayBucket);
-  addIf('thisweek', 'This week', thisWeek);
-  addIf('later', 'Later', later);
-  addIf('noDueDate', 'No due date', none);
+  addIf('overdue', words.overdue, overdue);
+  addIf('today', words.today, todayBucket);
+  addIf('thisweek', words.thisWeek, thisWeek);
+  addIf('later', words.later, later);
+  addIf('noDueDate', words.noDueDate, none);
   return groups;
 }
 
@@ -339,4 +370,60 @@ int _compare(TaskModel a, TaskModel b, TasksSortKey key) {
       final cmp = a.title.toLowerCase().compareTo(b.title.toLowerCase());
       return cmp != 0 ? cmp : byId();
   }
+}
+
+/// Where an open task stands against its due date, for its status chip.
+enum TaskDueState {
+  /// Finished.
+  done,
+
+  /// Due before today.
+  overdue,
+
+  /// Due today or in the next six days.
+  soon,
+
+  /// Due a week or more from today.
+  later,
+
+  /// No due date.
+  none,
+}
+
+/// Pure: [task]'s due state on [now]'s day. Days flip at midnight.
+TaskDueState taskDueState(TaskModel task, DateTime now) {
+  if (task.status == TaskStatus.done) return TaskDueState.done;
+  final due = task.dueDate;
+  if (due == null) return TaskDueState.none;
+  final today = startOfDay(now);
+  final day = startOfDay(due);
+  if (day.isBefore(today)) return TaskDueState.overdue;
+  if (day.isBefore(today.add(const Duration(days: 7)))) {
+    return TaskDueState.soon;
+  }
+  return TaskDueState.later;
+}
+
+/// Pure: how far along [tasks] are, for the progress card ("18 of 26
+/// done", "2 overdue · 4 due this week").
+({int done, int total, int overdue, int dueThisWeek}) taskProgress(
+  List<TaskModel> tasks,
+  DateTime now,
+) {
+  var done = 0;
+  var overdue = 0;
+  var soon = 0;
+  for (final t in tasks) {
+    switch (taskDueState(t, now)) {
+      case TaskDueState.done:
+        done++;
+      case TaskDueState.overdue:
+        overdue++;
+      case TaskDueState.soon:
+        soon++;
+      case TaskDueState.later || TaskDueState.none:
+        break;
+    }
+  }
+  return (done: done, total: tasks.length, overdue: overdue, dueThisWeek: soon);
 }

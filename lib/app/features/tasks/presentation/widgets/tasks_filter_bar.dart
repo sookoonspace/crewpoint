@@ -1,26 +1,21 @@
-/// `TasksFilterBar` — the Tasks-screen control surface above the list.
+/// `TasksFilterBar` — the search, filters, grouping and sort above the
+/// Tasks list (Spec #186). Every control is keyed for journey tests:
+/// the search field `tasks.list.search`, filter pills
+/// `tasks.list.filterChip.<name>`, the crew pill `tasks.list.crewFilter`
+/// (choices `tasks.list.crewFilter.<id>` and `.all`), the grouping
+/// `tasks.list.groupToggle.<value>` and the sort button
+/// `tasks.list.sortMenu` (choices `tasks.list.sortMenu.<key>`).
 ///
-/// Renders four interactive zones, all keyed for journey tests:
-/// 1. A search row keyed `tasks.list.search` that emits filter.query
-///    changes on every keystroke.
-/// 2. A `Wrap` of `FilterChip`s for status (todo / inProgress / done)
-///    plus "Mine", "Overdue", and "Has budget" predicate chips.
-/// 3. A sort `PopupMenuButton<TasksSortKey>` keyed `tasks.list.sortMenu`
-///    with items keyed `tasks.list.sortMenu.<key>`.
-/// 4. A `SegmentedButton<TasksGroupBy>` for the group toggle, each
-///    segment keyed `tasks.list.groupToggle.<value>`.
-///
-/// Stateless: receives the current `filter` and a single
-/// `onFilterChanged` callback. The parent (`EventTasksPage`) owns the
-/// session-only state.
+/// Stateless about the filter: it receives the current `filter` and one
+/// `onFilterChanged` callback, and the caller keeps the state.
 library;
 
 import 'package:flutter/material.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
-import 'package:crewpoint_app/app/core/widgets/reserved_checkmark_chip.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/crew.dart';
 import 'package:crewpoint_app/app/features/tasks/application/tasks_filter.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
@@ -46,7 +41,7 @@ class TasksFilterBar extends StatefulWidget {
   final ({String one, String other}) crewWords;
 
   /// Whether the viewer may read budget figures (`budget.read`, Req 36).
-  /// Without it the "Has budget" chip is hidden.
+  /// Without it the "Has budget" pill is hidden.
   final bool readsBudgets;
 
   @override
@@ -80,251 +75,244 @@ class _TasksFilterBarState extends State<TasksFilterBar> {
 
   void _toggleStatus(TaskStatus status) {
     final next = {...widget.filter.statuses};
-    if (next.contains(status)) {
-      next.remove(status);
-    } else {
-      next.add(status);
-    }
+    if (!next.remove(status)) next.add(status);
     _emit(widget.filter.copyWith(statuses: next));
+  }
+
+  /// Back to every task, keeping the search, sort and grouping.
+  void _all() {
+    final f = widget.filter;
+    _emit(TasksFilter(query: f.query, sortKey: f.sortKey, groupBy: f.groupBy));
+  }
+
+  Future<void> _pickCrew() async {
+    final f = widget.filter;
+    final strings = context.strings.crews;
+    final picked = await showCpSheet<String>(
+      context: context,
+      title: widget.crewWords.one,
+      builder: (sheet) => CpCard(
+        child: CpRowGroup(
+          children: [
+            CpListRow(
+              key: const Key('tasks.list.crewFilter.all'),
+              title: strings.allCrews(widget.crewWords.other),
+              selected: f.crewId == null,
+              trailing: f.crewId == null ? const _Tick() : const SizedBox(),
+              onTap: () => Navigator.of(sheet).pop(''),
+            ),
+            for (final crew in widget.crews)
+              CpListRow(
+                key: Key('tasks.list.crewFilter.${crew.id}'),
+                title: crew.name,
+                selected: f.crewId == crew.id,
+                trailing: f.crewId == crew.id
+                    ? const _Tick()
+                    : const SizedBox(),
+                onTap: () => Navigator.of(sheet).pop(crew.id),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    _emit(
+      picked.isEmpty
+          ? widget.filter.copyWith(clearCrewId: true)
+          : widget.filter.copyWith(crewId: picked),
+    );
+  }
+
+  Future<void> _pickSort() async {
+    final s = context.strings.tasks;
+    final current = widget.filter.sortKey;
+    final picked = await showCpSheet<TasksSortKey>(
+      context: context,
+      title: s.sortBy,
+      builder: (sheet) => CpCard(
+        child: CpRowGroup(
+          children: [
+            for (final key in TasksSortKey.values)
+              CpListRow(
+                key: Key('tasks.list.sortMenu.${key.name}'),
+                title: _sortLabel(s, key),
+                selected: key == current,
+                trailing: key == current ? const _Tick() : const SizedBox(),
+                onTap: () => Navigator.of(sheet).pop(key),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    _emit(widget.filter.copyWith(sortKey: picked));
   }
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
     final s = context.strings.tasks;
     final f = widget.filter;
+    final crew = widget.crews.where((c) => c.id == f.crewId).firstOrNull;
+    final anyFilter =
+        f.statuses.isNotEmpty ||
+        f.onlyMine ||
+        f.onlyOverdue ||
+        f.onlyWithBudget ||
+        f.crewId != null;
+
+    final large = MediaQuery.textScalerOf(context).scale(1) > 1.3;
+    final groupChoices = [
+      CpChoice(
+        TasksGroupBy.status,
+        s.groupStatus,
+        key: const Key('tasks.list.groupToggle.status'),
+      ),
+      CpChoice(
+        TasksGroupBy.assignee,
+        s.groupAssignee,
+        key: const Key('tasks.list.groupToggle.assignee'),
+      ),
+      CpChoice(
+        TasksGroupBy.dueWindow,
+        s.groupDueWindow,
+        key: const Key('tasks.list.groupToggle.dueWindow'),
+      ),
+      if (widget.crews.isNotEmpty)
+        CpChoice(
+          TasksGroupBy.crew,
+          widget.crewWords.one,
+          key: const Key('tasks.list.groupToggle.crew'),
+        ),
+    ];
+    // With no crews, grouping by crew shows as status.
+    final groupBy = widget.crews.isEmpty && f.groupBy == TasksGroupBy.crew
+        ? TasksGroupBy.status
+        : f.groupBy;
+    final sort = IconButton(
+      key: const Key('tasks.list.sortMenu'),
+      tooltip: '${s.sortBy}: ${_sortLabel(s, f.sortKey)}',
+      onPressed: _pickSort,
+      icon: Icon(
+        CpIcons.actionSort,
+        size: cp.sizes.iconMd,
+        color: cp.colors.text,
+      ),
+    );
+
+    Widget pill(String name, String label, bool on, VoidCallback onTap) =>
+        CpFilterChip(
+          key: Key('tasks.list.filterChip.$name'),
+          label: label,
+          selected: on,
+          onTap: onTap,
+        );
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: cp.space.sm,
       children: [
-        // 1. Search row.
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.xs,
-          ),
-          // KeyedSubtree carries the row-level key; widget tests assert
-          // the TextField as a descendant for stable lookup.
-          child: KeyedSubtree(
-            key: const Key('tasks.list.search'),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (v) => _emit(f.copyWith(query: v)),
-              decoration: InputDecoration(
-                hintText: s.searchHint,
-                prefixIcon: const Icon(AppIcons.actionSearch),
-                border: const OutlineInputBorder(),
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.sm,
-                ),
-              ),
-            ),
+        // The key sits above the field, which tests find inside it.
+        KeyedSubtree(
+          key: const Key('tasks.list.search'),
+          child: CpSearchField(
+            hint: s.searchHint,
+            controller: _searchController,
+            onChanged: (v) => _emit(f.copyWith(query: v)),
           ),
         ),
-
-        // 2. Filter chips (predicate + per-status).
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: 4,
+        SingleChildScrollView(
+          key: const Key('tasks.list.filters'),
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            spacing: cp.space.sm,
             children: [
-              ReservedCheckmarkChip(
-                key: const Key('tasks.list.filterChip.mine'),
-                label: s.filterChipMine,
-                selected: f.onlyMine,
-                onChanged: (sel) => _emit(f.copyWith(onlyMine: sel)),
-                selectedColor: AppColors.sage.withValues(alpha: 0.25),
+              pill('all', s.filterAll, !anyFilter, _all),
+              pill(
+                'mine',
+                s.filterChipMine,
+                f.onlyMine,
+                () => _emit(f.copyWith(onlyMine: !f.onlyMine)),
               ),
-              ReservedCheckmarkChip(
-                key: const Key('tasks.list.filterChip.overdue'),
-                label: s.filterChipOverdue,
-                selected: f.onlyOverdue,
-                onChanged: (sel) => _emit(f.copyWith(onlyOverdue: sel)),
-                selectedColor: AppColors.terracotta.withValues(alpha: 0.25),
+              pill(
+                'overdue',
+                s.filterChipOverdue,
+                f.onlyOverdue,
+                () => _emit(f.copyWith(onlyOverdue: !f.onlyOverdue)),
               ),
+              if (widget.crews.isNotEmpty)
+                CpFilterChip(
+                  key: const Key('tasks.list.crewFilter'),
+                  label: crew?.name ?? widget.crewWords.one,
+                  selected: crew != null,
+                  menu: true,
+                  onTap: _pickCrew,
+                ),
               if (widget.readsBudgets)
-                ReservedCheckmarkChip(
-                  key: const Key('tasks.list.filterChip.hasBudget'),
-                  label: s.filterChipHasBudget,
-                  selected: f.onlyWithBudget,
-                  onChanged: (sel) => _emit(f.copyWith(onlyWithBudget: sel)),
-                  selectedColor: AppColors.sage.withValues(alpha: 0.25),
+                pill(
+                  'hasBudget',
+                  s.filterChipHasBudget,
+                  f.onlyWithBudget,
+                  () => _emit(f.copyWith(onlyWithBudget: !f.onlyWithBudget)),
                 ),
-              ReservedCheckmarkChip(
-                key: const Key('tasks.list.filterChip.todo'),
-                label: s.statusTodo,
-                selected: f.statuses.contains(TaskStatus.todo),
-                onChanged: (_) => _toggleStatus(TaskStatus.todo),
-                selectedColor: AppColors.sage.withValues(alpha: 0.25),
+              pill(
+                'todo',
+                s.statusTodo,
+                f.statuses.contains(TaskStatus.todo),
+                () => _toggleStatus(TaskStatus.todo),
               ),
-              ReservedCheckmarkChip(
-                key: const Key('tasks.list.filterChip.inProgress'),
-                label: s.statusInProgress,
-                selected: f.statuses.contains(TaskStatus.inProgress),
-                onChanged: (_) => _toggleStatus(TaskStatus.inProgress),
-                selectedColor: AppColors.sage.withValues(alpha: 0.25),
+              pill(
+                'inProgress',
+                s.statusInProgress,
+                f.statuses.contains(TaskStatus.inProgress),
+                () => _toggleStatus(TaskStatus.inProgress),
               ),
-              ReservedCheckmarkChip(
-                key: const Key('tasks.list.filterChip.done'),
-                label: s.statusDone,
-                selected: f.statuses.contains(TaskStatus.done),
-                onChanged: (_) => _toggleStatus(TaskStatus.done),
-                selectedColor: AppColors.sage.withValues(alpha: 0.25),
+              pill(
+                'done',
+                s.statusDone,
+                f.statuses.contains(TaskStatus.done),
+                () => _toggleStatus(TaskStatus.done),
               ),
-              if (widget.crews.isNotEmpty) _crewFilter(context),
             ],
           ),
         ),
-
-        const SizedBox(height: AppSpacing.sm),
-
-        // 3. Sort menu + 4. Group toggle row. Wrap so the segmented button
-        // drops to a new line on narrow viewports instead of overflowing.
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.sm,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            alignment: WrapAlignment.spaceBetween,
+        // Side by side normally; at large text the choices wrap as pills
+        // so no label breaks mid-word (Req 45).
+        if (large)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              PopupMenuButton<TasksSortKey>(
-                key: const Key('tasks.list.sortMenu'),
-                initialValue: f.sortKey,
-                onSelected: (key) => _emit(f.copyWith(sortKey: key)),
-                itemBuilder: (_) => [
-                  PopupMenuItem(
-                    key: const Key('tasks.list.sortMenu.dueDate'),
-                    value: TasksSortKey.dueDate,
-                    child: Text(s.sortDueDate),
-                  ),
-                  PopupMenuItem(
-                    key: const Key('tasks.list.sortMenu.priority'),
-                    value: TasksSortKey.priority,
-                    child: Text(s.sortPriority),
-                  ),
-                  PopupMenuItem(
-                    key: const Key('tasks.list.sortMenu.created'),
-                    value: TasksSortKey.created,
-                    child: Text(s.sortCreated),
-                  ),
-                  PopupMenuItem(
-                    key: const Key('tasks.list.sortMenu.title'),
-                    value: TasksSortKey.title,
-                    child: Text(s.sortTitle),
-                  ),
-                ],
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      AppIcons.actionSort,
-                      size: 18,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    Text(
-                      '${s.sortBy}: ${_sortLabel(s, f.sortKey)}',
-                      style: Theme.of(context).textTheme.labelMedium,
-                    ),
-                  ],
+              Expanded(
+                child: CpChoiceChips<TasksGroupBy>(
+                  key: const Key('tasks.list.groupToggle'),
+                  label: s.groupBy,
+                  choices: groupChoices,
+                  selected: {groupBy},
+                  onChanged: (g) {
+                    if (g.isNotEmpty) _emit(f.copyWith(groupBy: g.first));
+                  },
                 ),
               ),
-              SegmentedButton<TasksGroupBy>(
-                key: const Key('tasks.list.groupToggle'),
-                // showSelectedIcon: false removes Material's auto-✓
-                // entirely. Selection is signalled by the background
-                // color from the SegmentedButton's theme; widths stay
-                // constant across selection because no segment ever
-                // has to grow to fit a ✓. Labels render at the full
-                // segment width (no reserved slot stealing space),
-                // so "Status"/"People" stop ellipsizing to "Sta..."/
-                // "Peo..." at iPhone 12 mini (2026-06-11 follow-up).
-                showSelectedIcon: false,
-                segments: [
-                  ButtonSegment(
-                    value: TasksGroupBy.status,
-                    label: Text(
-                      s.groupStatus,
-                      key: const Key('tasks.list.groupToggle.status'),
-                    ),
-                  ),
-                  ButtonSegment(
-                    value: TasksGroupBy.assignee,
-                    label: Text(
-                      s.groupAssignee,
-                      key: const Key('tasks.list.groupToggle.assignee'),
-                    ),
-                  ),
-                  ButtonSegment(
-                    value: TasksGroupBy.dueWindow,
-                    label: Text(
-                      s.groupDueWindow,
-                      key: const Key('tasks.list.groupToggle.dueWindow'),
-                    ),
-                  ),
-                  if (widget.crews.isNotEmpty)
-                    ButtonSegment(
-                      value: TasksGroupBy.crew,
-                      label: Text(
-                        widget.crewWords.one,
-                        key: const Key('tasks.list.groupToggle.crew'),
-                      ),
-                    ),
-                ],
-                selected: {
-                  // With no crews, grouping by crew shows as status.
-                  widget.crews.isEmpty && f.groupBy == TasksGroupBy.crew
-                      ? TasksGroupBy.status
-                      : f.groupBy,
-                },
-                onSelectionChanged: (set) =>
-                    _emit(f.copyWith(groupBy: set.first)),
-                style: const ButtonStyle(visualDensity: VisualDensity.compact),
+              sort,
+            ],
+          )
+        else
+          Row(
+            spacing: cp.space.sm,
+            children: [
+              Expanded(
+                child: CpSegmented<TasksGroupBy>(
+                  key: const Key('tasks.list.groupToggle'),
+                  semanticLabel: s.groupBy,
+                  choices: groupChoices,
+                  selected: groupBy,
+                  onChanged: (g) => _emit(f.copyWith(groupBy: g)),
+                ),
               ),
+              sort,
             ],
           ),
-        ),
       ],
-    );
-  }
-
-  /// Filters to one crew's tasks, or all of them.
-  Widget _crewFilter(BuildContext context) {
-    final strings = context.strings.crews;
-    final f = widget.filter;
-    final selected = widget.crews.where((c) => c.id == f.crewId).firstOrNull;
-    return PopupMenuButton<String>(
-      key: const Key('tasks.list.crewFilter'),
-      tooltip: widget.crewWords.one,
-      initialValue: f.crewId ?? '',
-      onSelected: (crewId) => _emit(
-        crewId.isEmpty
-            ? f.copyWith(clearCrewId: true)
-            : f.copyWith(crewId: crewId),
-      ),
-      itemBuilder: (_) => [
-        PopupMenuItem(
-          key: const Key('tasks.list.crewFilter.all'),
-          value: '',
-          child: Text(strings.allCrews(widget.crewWords.other)),
-        ),
-        for (final crew in widget.crews)
-          PopupMenuItem(
-            key: Key('tasks.list.crewFilter.${crew.id}'),
-            value: crew.id,
-            child: Text(crew.name),
-          ),
-      ],
-      child: Chip(
-        avatar: const Icon(AppIcons.members, size: 18),
-        label: Text(selected?.name ?? strings.allCrews(widget.crewWords.other)),
-        backgroundColor: selected == null
-            ? null
-            : AppColors.sage.withValues(alpha: 0.25),
-      ),
     );
   }
 
@@ -334,4 +322,15 @@ class _TasksFilterBarState extends State<TasksFilterBar> {
     TasksSortKey.created => s.sortCreated,
     TasksSortKey.title => s.sortTitle,
   };
+}
+
+/// The tick on the chosen row of a sheet.
+class _Tick extends StatelessWidget {
+  const _Tick();
+
+  @override
+  Widget build(BuildContext context) {
+    final cp = context.cp;
+    return Icon(CpIcons.check, size: cp.sizes.iconMd, color: cp.colors.accent);
+  }
 }

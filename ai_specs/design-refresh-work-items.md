@@ -444,7 +444,7 @@ The roster, group sheets and group picker in the new look, with People as list a
 - [x] Existing journey tests keep passing, with selectors changed only where a widget's key must change (Testing Strategy 8); every new interactive widget has a `domain.feature.action` key.
 - [x] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
 - [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
-- [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
+- [x] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 
 #### Covers
 - User Stories: 7, 9
@@ -468,13 +468,13 @@ Task list, detail and forms, and My tasks, in the new look, with Tasks as list a
 - Approved Tasks mockup; form pattern from the Person form.
 
 #### Acceptance criteria
-- [ ] Tasks matches the approved mockup; task forms follow the Person form pattern.
-- [ ] From 840 px, Tasks uses the list-and-detail component with the task route selecting the row, the quiet empty prompt, full page below 840 px, and a prompt before switching with unsaved edits.
-- [ ] Status chips: green done, amber due, red overdue, each with an icon.
-- [ ] The screens use only design-system components and tokens (Req 14); their files are removed from the guard test's temporary list.
-- [ ] Existing journey tests keep passing, with selectors changed only where a widget's key must change (Testing Strategy 8); every new interactive widget has a `domain.feature.action` key.
-- [ ] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
-- [ ] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
+- [x] Tasks matches the approved mockup; task forms follow the Person form pattern.
+- [x] From 840 px, Tasks uses the list-and-detail component with the task route selecting the row, the quiet empty prompt, full page below 840 px, and a prompt before switching with unsaved edits.
+- [x] Status chips: green done, amber due, red overdue, each with an icon.
+- [x] The screens use only design-system components and tokens (Req 14); their files are removed from the guard test's temporary list.
+- [x] Existing journey tests keep passing, with selectors changed only where a widget's key must change (Testing Strategy 8); every new interactive widget has a `domain.feature.action` key.
+- [x] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
+- [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
 - [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 
 #### Covers

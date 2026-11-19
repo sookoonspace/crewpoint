@@ -502,23 +502,15 @@ GoRouter createRouter({
                           ),
                         ),
                         routes: [
+                          // From 840 px the list with this task beside it
+                          // (Spec #186 Req 23); narrower, its page.
                           GoRoute(
                             path: ':taskId',
-                            builder: (_, state) {
-                              final taskId =
-                                  state.pathParameters['taskId'] ?? '';
-                              return EventGuard(
-                                eventId: _resolveEventId(state),
-                                child: (event) => ModuleGuard(
-                                  event: event,
-                                  module: 'tasks',
-                                  child: EventTaskDetailPage(
-                                    event: event,
-                                    taskId: taskId,
-                                  ),
-                                ),
-                              );
-                            },
+                            pageBuilder: (context, state) => taskPage(
+                              context,
+                              state,
+                              eventId: _resolveEventId(state),
+                            ),
                           ),
                         ],
                       ),
@@ -624,6 +616,39 @@ Page<void> participantPage(
           event: event,
           participantId: id,
           initialGroupId: state.uri.queryParameters['group'],
+        ),
+      ),
+    ),
+  );
+}
+
+/// The page for `tasks/:taskId`: from 840 px the Tasks list with that task
+/// beside it, and narrower the task alone (Spec #186 Req 23). Shared with
+/// test harnesses so they route the same way.
+Page<void> taskPage(
+  BuildContext context,
+  GoRouterState state, {
+  required String eventId,
+}) {
+  final id = state.pathParameters['taskId']!;
+  return cpListDetailPage(
+    context: context,
+    pageKey: state.pageKey,
+    splitKey: const ValueKey('tasks.split'),
+    child: EventGuard(
+      eventId: eventId,
+      child: (event) => ModuleGuard(
+        event: event,
+        module: 'tasks',
+        child: EventTasksPage(
+          event: event,
+          selectedId: id,
+          detail: EventTaskDetailPage(
+            // Another task is another page, and another form.
+            key: ValueKey('tasks.detail.$id'),
+            event: event,
+            taskId: id,
+          ),
         ),
       ),
     ),

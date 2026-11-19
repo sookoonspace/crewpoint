@@ -109,8 +109,9 @@ void main() {
   testWidgets('accepts past due-date (modal path) — firstDate=DateTime(2000)', (
     tester,
   ) async {
-    // Narrow viewport → AppDateField uses the modal path.
-    tester.view.physicalSize = const Size(360, 800);
+    // Narrow viewport → the modal picker; tall enough that the save bar
+    // never covers the field.
+    tester.view.physicalSize = const Size(360, 1600);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -129,7 +130,7 @@ void main() {
     // the pre-filled past date).
     await tester.ensureVisible(find.byKey(const Key('tasks.edit.dueDate')));
     await tester.pump();
-    await tester.tap(find.byKey(const Key('forms.date.trigger')));
+    await tester.tap(find.byKey(const Key('tasks.edit.dueDate.field')));
     await tester.pumpAndSettle();
     expect(find.byType(DatePickerDialog), findsOneWidget);
 

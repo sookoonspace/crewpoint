@@ -1,28 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
+
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
-import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
-import 'package:crewpoint_app/app/core/widgets/form_card_shell.dart';
-import 'package:crewpoint_app/app/core/widgets/forms/app_currency_field.dart';
-import 'package:crewpoint_app/app/core/widgets/forms/app_date_field.dart';
-import 'package:crewpoint_app/app/core/widgets/forms/app_form_section.dart';
-import 'package:crewpoint_app/app/core/widgets/forms/app_radio_group.dart';
-import 'package:crewpoint_app/app/core/widgets/forms/app_text_field.dart';
-import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/crew.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
-import 'package:crewpoint_app/app/features/tasks/presentation/widgets/assignee_picker.dart';
-import 'package:crewpoint_app/app/features/dashboard/domain/models/crew.dart';
-import 'package:crewpoint_app/app/features/tasks/presentation/widgets/crew_picker.dart';
+import 'package:crewpoint_app/app/features/tasks/presentation/widgets/task_form.dart';
 
-/// Edit screen for an existing task. Mirrors `CreateTaskScreen`: three
-/// `AppFormSection`s (Details / Assignment / Timing & Budget), pure
-/// presentation, emits the updated `TaskModel` via `onSubmit`.
+/// Edits an existing task. Pure presentation: emits the updated
+/// `TaskModel` through [onSubmit]. Past due dates are allowed.
 ///
-/// Past dates work — `AppDateField` defaults to `firstDate: DateTime(2000)`.
-class EditTaskScreen extends StatefulWidget {
+/// With [onCancel] it shows in place, as beside the Tasks list, and closing
+/// it calls [onCancel] instead of leaving the page.
+class EditTaskScreen extends StatelessWidget {
   const EditTaskScreen({
     super.key,
     required this.event,
@@ -31,6 +20,7 @@ class EditTaskScreen extends StatefulWidget {
     this.displayNames = const {},
     this.crews = const [],
     this.onSubmit,
+    this.onCancel,
   });
 
   final EventModel event;
@@ -38,224 +28,40 @@ class EditTaskScreen extends StatefulWidget {
   final TaskModel initial;
   final Map<String, String> displayNames;
 
-  /// The event's crews (Req 72). The crew field shows only when there are
-  /// some, or the task already has one.
+  /// The event's crews (Req 72).
   final List<CrewModel> crews;
   final ValueChanged<TaskModel>? onSubmit;
-
-  @override
-  State<EditTaskScreen> createState() => _EditTaskScreenState();
-}
-
-class _EditTaskScreenState extends State<EditTaskScreen> {
-  final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _titleController;
-  late final TextEditingController _descriptionController;
-  late final TextEditingController _budgetController;
-  late String? _assigneeId;
-  String? _assigneeName;
-  late DateTime? _dueDate;
-  late int _priority;
-  late String? _crewId;
-
-  @override
-  void initState() {
-    super.initState();
-    _titleController = TextEditingController(text: widget.initial.title);
-    _descriptionController = TextEditingController(
-      text: widget.initial.description ?? '',
-    );
-    _budgetController = TextEditingController(
-      text: widget.initial.budgetEstimate?.toString() ?? '',
-    );
-    _assigneeId = widget.initial.assigneeId;
-    _assigneeName = widget.displayNames[_assigneeId];
-    _dueDate = widget.initial.dueDate == null
-        ? null
-        : widget.event.calendarDay(widget.initial.dueDate!);
-    _priority = widget.initial.priority;
-    _crewId = widget.initial.crewId;
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _descriptionController.dispose();
-    _budgetController.dispose();
-    super.dispose();
-  }
-
-  /// Setting a task's budget figure needs `budget.edit` (Req 36). Without
-  /// it the field is hidden and the figure is kept as it was.
-  bool get _editsBudget =>
-      widget.event.can(widget.currentUserId, 'budget.edit');
-
-  void _submit() {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-
-    final localeTag = Localizations.localeOf(context).toLanguageTag();
-    final budget = parseCurrencyInput(
-      _budgetController.text,
-      locale: localeTag,
-    );
-
-    final updated = widget.initial.copyWith(
-      title: _titleController.text.trim(),
-      description: _descriptionController.text.trim().isEmpty
-          ? null
-          : _descriptionController.text.trim(),
-      assigneeId: _assigneeId,
-      priority: _priority,
-      dueDate: _dueDate == null ? null : widget.event.startOfDay(_dueDate!),
-      budgetEstimate: _editsBudget ? budget : widget.initial.budgetEstimate,
-      clearBudgetEstimate: _editsBudget && budget == null,
-      crewId: _crewId,
-      clearCrewId: _crewId == null,
-    );
-    widget.onSubmit?.call(updated);
-  }
+  final VoidCallback? onCancel;
 
   @override
   Widget build(BuildContext context) {
     final s = context.strings.tasks;
-    final orphan =
-        widget.initial.assigneeId != null &&
-            !widget.event.memberIds.contains(widget.initial.assigneeId)
-        ? widget.initial.assigneeId
-        : null;
-
-    return Scaffold(
-      appBar: AppBar(title: Text(s.editTaskTitle), elevation: 0),
-      body: SingleChildScrollView(
-        // Same asymmetric bottom padding as create_task_screen.dart —
-        // the Save CTA at the form tail clears the persistent
-        // NavigationBar with breathing room.
-        padding: EdgeInsets.fromLTRB(
-          Breakpoints.screenHorizontalPadding(context),
-          AppSpacing.xl,
-          Breakpoints.screenHorizontalPadding(context),
-          AppSpacing.xxxl,
-        ),
-        child: ContentMaxWidth(
-          key: const Key('editTask.body.clamped'),
-          maxWidth: 480,
-          child: FormCardShell(
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: .start,
-                spacing: AppSpacing.xl,
-                children: [
-                  AppFormSection(
-                    key: const Key('tasks.edit.section.details'),
-                    title: s.sectionDetails,
-                    child: Column(
-                      crossAxisAlignment: .start,
-                      spacing: AppSpacing.md,
-                      children: [
-                        AppTextField(
-                          key: const Key('tasks.edit.title'),
-                          hintText: s.taskTitleHint,
-                          controller: _titleController,
-                          prefixIcon: const Icon(AppIcons.navTasksFilled),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Please enter a title';
-                            }
-                            if (value.trim().length > 120) {
-                              return 'Title must be 120 characters or fewer';
-                            }
-                            return null;
-                          },
-                        ),
-                        // See create_task_screen.dart for the rationale
-                        // — same multi-line + centred-prefixIcon bug.
-                        AppTextField(
-                          key: const Key('tasks.edit.description'),
-                          hintText: s.descriptionOptionalHint,
-                          controller: _descriptionController,
-                          maxLines: 3,
-                        ),
-                      ],
-                    ),
-                  ),
-                  AppFormSection(
-                    key: const Key('tasks.edit.section.assignment'),
-                    title: s.sectionAssignment,
-                    child: Column(
-                      crossAxisAlignment: .start,
-                      spacing: AppSpacing.md,
-                      children: [
-                        AssigneePicker(
-                          eventId: widget.event.id,
-                          words: widget.event.words,
-                          selected: _assigneeId,
-                          selectedName: _assigneeName,
-                          selectedLeft:
-                              _assigneeId != null && _assigneeId == orphan,
-                          onChanged: (uid, name) => setState(() {
-                            _assigneeId = uid;
-                            _assigneeName = name;
-                          }),
-                        ),
-                        if (widget.crews.isNotEmpty || _crewId != null)
-                          CrewPicker(
-                            crews: widget.crews,
-                            crewWord: widget.event.words.one('crew'),
-                            selected: _crewId,
-                            // Only a pick changes the crew, so one that has
-                            // not loaded yet is never cleared by mistake.
-                            onChanged: (value) =>
-                                setState(() => _crewId = value),
-                          ),
-                        AppRadioGroup<int>(
-                          key: const Key('tasks.edit.priority'),
-                          labelText: s.fieldPriority,
-                          value: _priority,
-                          options: [
-                            AppRadioOption(value: 0, label: s.priorityNone),
-                            AppRadioOption(value: 1, label: s.priorityLow),
-                            AppRadioOption(value: 2, label: s.priorityMedium),
-                            AppRadioOption(value: 3, label: s.priorityHigh),
-                          ],
-                          onChanged: (v) => setState(() => _priority = v ?? 0),
-                          direction: Axis.horizontal,
-                        ),
-                      ],
-                    ),
-                  ),
-                  AppFormSection(
-                    key: const Key('tasks.edit.section.timing'),
-                    title: s.sectionTimingAndBudget,
-                    child: Column(
-                      crossAxisAlignment: .start,
-                      spacing: AppSpacing.md,
-                      children: [
-                        AppDateField(
-                          key: const Key('tasks.edit.dueDate'),
-                          labelText: s.dueDateLabel,
-                          value: _dueDate,
-                          onChanged: (v) => setState(() => _dueDate = v),
-                        ),
-                        if (_editsBudget)
-                          AppCurrencyField(
-                            key: const Key('tasks.edit.budget'),
-                            controller: _budgetController,
-                            currencyCode: widget.event.currency,
-                            labelText: s.budgetEstimateLabel,
-                          ),
-                      ],
-                    ),
-                  ),
-                  PrimaryButton(
-                    key: const Key('tasks.edit.save'),
-                    label: s.saveChangesCta,
-                    onPressed: _submit,
-                  ),
-                ],
-              ),
-            ),
-          ),
+    // Without `budget.edit` the field is hidden and the figure kept (Req 36).
+    final editsBudget = event.can(currentUserId, 'budget.edit');
+    return TaskForm(
+      keyPrefix: 'tasks.edit',
+      title: s.editTaskTitle,
+      saveLabel: s.saveChangesCta,
+      event: event,
+      editsBudget: editsBudget,
+      initial: initial,
+      displayNames: displayNames,
+      crews: crews,
+      onCancel: onCancel,
+      onSubmit: (v) => onSubmit?.call(
+        initial.copyWith(
+          title: v.title,
+          description: v.description,
+          clearDescription: v.description == null,
+          assigneeId: v.assigneeId,
+          clearAssigneeId: v.assigneeId == null,
+          priority: v.priority,
+          dueDate: v.dueDay == null ? null : event.startOfDay(v.dueDay!),
+          clearDueDate: v.dueDay == null,
+          budgetEstimate: editsBudget ? v.budget : initial.budgetEstimate,
+          clearBudgetEstimate: editsBudget && v.budget == null,
+          crewId: v.crewId,
+          clearCrewId: v.crewId == null,
         ),
       ),
     );

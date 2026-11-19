@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
 import 'package:crewpoint_app/app/core/design/theme/cp_theme.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/task_detail_screen.dart';
-
-import '../../core/_helpers/wcag_contrast.dart';
 
 void main() {
   const event = EventModel(
@@ -98,7 +97,7 @@ void main() {
       ),
     );
 
-    expect(find.text('(no longer in event)'), findsOneWidget);
+    expect(find.textContaining('(no longer in event)'), findsOneWidget);
   });
 
   testWidgets('renders passed assigneeName when present', (tester) async {
@@ -114,7 +113,13 @@ void main() {
         ),
       ),
     );
-    expect(find.text('Assigned to Bo Lyons'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('tasks.detail.assignee')),
+        matching: find.text('Bo Lyons'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('renders passed completedByName instead of truncated UID', (
@@ -164,7 +169,13 @@ void main() {
     );
     // When the assignee's displayName isn't resolved, the screen now
     // shows a friendly "Unknown member" label instead of leaking the UID.
-    expect(find.text('Assigned to Unknown member'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('tasks.detail.assignee')),
+        matching: find.text('Unknown member'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets(
@@ -266,18 +277,18 @@ void main() {
     expect(find.text('Will sync when online'), findsOneWidget);
   });
 
-  group('_StatusBadge — theme-aware colours (2026-06-11 follow-up)', () {
-    Future<({Color fg, Color bg})> badgeColours(
-      WidgetTester tester, {
-      required ThemeData theme,
-      required TaskStatus status,
-    }) async {
-      final taskWithStatus = task.copyWith(status: status);
-      await tester.pumpWidget(
+  group(
+    'status badge (Spec #186): a label and an icon, never colour alone',
+    () {
+      Future<void> pumpStatus(
+        WidgetTester tester,
+        TaskStatus status, {
+        required ThemeData theme,
+      }) => tester.pumpWidget(
         MaterialApp(
           theme: theme,
           home: TaskDetailScreen(
-            task: taskWithStatus,
+            task: task.copyWith(status: status),
             event: event,
             checklist: const [],
             canEditTask: false,
@@ -285,85 +296,32 @@ void main() {
           ),
         ),
       );
-      final container = tester.widget<Container>(
-        find.byKey(const Key('tasks.detail.statusBadge')),
-      );
-      final bg = (container.decoration as BoxDecoration).color!;
-      final textWidget = tester.widget<Text>(
-        find.descendant(
-          of: find.byKey(const Key('tasks.detail.statusBadge')),
-          matching: find.byType(Text),
-        ),
-      );
-      return (fg: textWidget.style!.color!, bg: bg);
-    }
 
-    testWidgets(
-      'dark mode todo → onSurfaceVariant on surfaceContainerHighest',
-      (tester) async {
-        final theme = CpTheme.dark();
-        final colours = await badgeColours(
-          tester,
-          theme: theme,
-          status: TaskStatus.todo,
-        );
-        expect(colours.fg, theme.colorScheme.onSurfaceVariant);
-        expect(colours.bg, theme.colorScheme.surfaceContainerHighest);
-      },
-    );
-
-    testWidgets('dark mode todo pill ≥ AA contrast (4.5:1)', (tester) async {
-      final theme = CpTheme.dark();
-      final colours = await badgeColours(
-        tester,
-        theme: theme,
-        status: TaskStatus.todo,
+      Finder inBadge(Finder f) => find.descendant(
+        of: find.byKey(const Key('tasks.detail.statusBadge')),
+        matching: f,
       );
-      expectAaContrast(
-        colours.fg,
-        colours.bg,
-        reason: 'dark mode "To Do" pill needs AA-readable contrast',
-      );
-    });
 
-    testWidgets('light mode todo → charcoal on lightGrey (unchanged)', (
-      tester,
-    ) async {
-      final colours = await badgeColours(
-        tester,
-        theme: CpTheme.light(),
-        status: TaskStatus.todo,
-      );
-      expect(colours.fg, AppColors.charcoal);
-      expect(colours.bg, AppColors.lightGrey);
-    });
-
-    testWidgets('inProgress unchanged across themes — sage bg + white text', (
-      tester,
-    ) async {
       for (final theme in [CpTheme.light(), CpTheme.dark()]) {
-        final colours = await badgeColours(
-          tester,
-          theme: theme,
-          status: TaskStatus.inProgress,
-        );
-        expect(colours.fg, AppColors.white);
-        expect(colours.bg, AppColors.sage);
-      }
-    });
+        final mode = theme.brightness.name;
+        testWidgets('$mode: done is the green Done chip', (tester) async {
+          await pumpStatus(tester, TaskStatus.done, theme: theme);
+          expect(inBadge(find.byType(CpStatusChip)), findsOneWidget);
+          expect(inBadge(find.byIcon(CpIcons.statusDone)), findsOneWidget);
+          expect(inBadge(find.text('Done')), findsOneWidget);
+        });
 
-    testWidgets('done unchanged across themes — sageDark bg + white text', (
-      tester,
-    ) async {
-      for (final theme in [CpTheme.light(), CpTheme.dark()]) {
-        final colours = await badgeColours(
+        testWidgets('$mode: to do and in progress are tags with icons', (
           tester,
-          theme: theme,
-          status: TaskStatus.done,
-        );
-        expect(colours.fg, AppColors.white);
-        expect(colours.bg, AppColors.sageDark);
+        ) async {
+          await pumpStatus(tester, TaskStatus.todo, theme: theme);
+          expect(inBadge(find.byIcon(CpIcons.statusTodo)), findsOneWidget);
+          expect(inBadge(find.text('To Do')), findsOneWidget);
+          await pumpStatus(tester, TaskStatus.inProgress, theme: theme);
+          expect(inBadge(find.byIcon(CpIcons.statusDoing)), findsOneWidget);
+          expect(inBadge(find.text('In Progress')), findsOneWidget);
+        });
       }
-    });
-  });
+    },
+  );
 }

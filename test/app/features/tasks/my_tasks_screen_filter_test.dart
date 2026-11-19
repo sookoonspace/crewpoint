@@ -6,6 +6,7 @@ import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/my_tasks_screen.dart';
+import 'package:crewpoint_app/app/features/tasks/presentation/widgets/task_tile.dart';
 
 /// Lottie animations loop forever — bounded pumps, not pumpAndSettle.
 Future<void> _pumpFrames(WidgetTester tester) async {
@@ -71,7 +72,7 @@ void main() {
     await _pumpFrames(tester);
 
     // Progress ring shows 1/3 done (1 done out of 3 total).
-    expect(find.text('1/3'), findsOneWidget);
+    expect(find.text('1 of 3 done'), findsOneWidget);
     // All four pills present.
     expect(find.byKey(const Key('myTasks.filter.all')), findsOneWidget);
     expect(find.byKey(const Key('myTasks.filter.todo')), findsOneWidget);
@@ -93,7 +94,7 @@ void main() {
     expect(find.byKey(const Key('tasks.tile.t-doing')), findsNothing);
     expect(find.byKey(const Key('tasks.tile.t-done')), findsNothing);
     // Filtered set has 1 todo + 0 doing + 0 done = "0/1".
-    expect(find.text('0/1'), findsOneWidget);
+    expect(find.text('0 of 1 done'), findsOneWidget);
   });
 
   testWidgets('tapping the Overdue toggle keeps only past-due active rows', (
@@ -125,6 +126,6 @@ void main() {
     await _pumpFrames(tester);
 
     expect(find.byKey(const Key('myTasks.noMatches')), findsOneWidget);
-    expect(find.byKey(const Key('myTasks.list')), findsNothing);
+    expect(find.byType(TaskTile), findsNothing);
   });
 }

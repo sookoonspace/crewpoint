@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/labels/label_resolver.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/member_picker_sheet.dart';
@@ -52,32 +53,20 @@ class AssigneePicker extends StatelessWidget {
   Widget build(BuildContext context) {
     final strings = context.strings.memberPicker;
     final uid = selected;
-    final text = uid == null
-        ? strings.unassigned
-        : selectedLeft
-        ? strings.leftEvent(_label(uid))
-        : _label(uid);
-    return Semantics(
-      button: true,
-      child: InkWell(
-        key: const Key('tasks.create.assignee'),
-        onTap: () => _pick(context),
-        child: InputDecorator(
-          decoration: InputDecoration(
-            labelText: strings.assignee,
-            prefixIcon: const Icon(AppIcons.navProfile),
-            suffixIcon: uid == null
-                ? const Icon(AppIcons.chevronRight)
-                : IconButton(
-                    key: const Key('tasks.create.assignee.clear'),
-                    tooltip: strings.clearAssignee,
-                    onPressed: () => onChanged(null, null),
-                    icon: const Icon(AppIcons.actionClose),
-                  ),
-          ),
-          child: Text(text, key: const Key('tasks.create.assignee.value')),
-        ),
-      ),
+    return CpSelectField(
+      label: strings.assignee,
+      fieldKey: const Key('tasks.create.assignee'),
+      leadingIcon: CpIcons.member,
+      value: uid == null
+          ? null
+          : selectedLeft
+          ? strings.leftEvent(_label(uid))
+          : _label(uid),
+      placeholder: strings.unassigned,
+      onTap: () => _pick(context),
+      clearLabel: strings.clearAssignee,
+      clearKey: const Key('tasks.create.assignee.clear'),
+      onClear: () => onChanged(null, null),
     );
   }
 }
