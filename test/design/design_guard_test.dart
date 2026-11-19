@@ -89,12 +89,6 @@ const notYetMigrated = <String>{
   'lib/app/features/schedule/presentation/session_screen.dart',
   'lib/app/features/schedule/presentation/session_tile.dart',
   'lib/app/features/schedule/presentation/venue_card.dart',
-  'lib/app/features/tasks/presentation/event_task_detail_page.dart',
-  'lib/app/features/tasks/presentation/my_tasks_screen.dart',
-  'lib/app/features/tasks/presentation/task_detail_screen.dart',
-  'lib/app/features/tasks/presentation/widgets/task_tile.dart',
-  'lib/app/features/tasks/presentation/widgets/tasks_filter_bar.dart',
-  'lib/app/features/tasks/presentation/widgets/tasks_group_header.dart',
   'lib/main.dart',
 };
 

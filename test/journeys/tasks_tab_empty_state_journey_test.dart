@@ -37,8 +37,8 @@ class MyTasksTabRobot {
   }
 
   void expectEmptyState() {
-    expect(find.byKey(const Key('emptyState.title')), findsOneWidget);
-    expect(find.byKey(const Key('emptyState.cta')), findsOneWidget);
+    expect(find.byKey(const Key('myTasks.empty')), findsOneWidget);
+    expect(find.byKey(const Key('myTasks.empty.action')), findsOneWidget);
   }
 
   void expectNoEventsCtaLabel() {
@@ -46,7 +46,7 @@ class MyTasksTabRobot {
   }
 
   Future<void> tapCta() async {
-    await tester.tap(find.byKey(const Key('emptyState.cta')));
+    await tester.tap(find.byKey(const Key('myTasks.empty.action')));
     for (var i = 0; i < 3; i++) {
       await tester.pump(const Duration(milliseconds: 50));
     }

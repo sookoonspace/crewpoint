@@ -1,32 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 
-/// Shared group-header strip used by the per-event `TaskListScreen` and
-/// the cross-event `MyTasksScreen`. Label + thin sage divider.
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
+
+/// A group's title above its card of tasks, such as "Overdue" with "2",
+/// shared by the event's Tasks list and My tasks.
 class TasksGroupHeader extends StatelessWidget {
-  const TasksGroupHeader({super.key, required this.label});
+  const TasksGroupHeader({super.key, required this.label, this.count});
 
   final String label;
 
+  /// How many tasks the group holds, shown quietly on the right.
+  final int? count;
+
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
     return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.xs),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Container(height: 1, color: AppColors.sage.withValues(alpha: 0.25)),
-        ],
-      ),
+      padding: EdgeInsets.only(top: cp.space.lg, bottom: cp.space.sm),
+      child: CpSectionHeader(title: label, trailingText: count?.toString()),
     );
   }
 }

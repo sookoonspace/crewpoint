@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
+
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
+import 'package:crewpoint_app/app/core/widgets/money_text.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/widgets/checklist_editor.dart';
+import 'package:crewpoint_app/app/features/tasks/presentation/widgets/task_tile.dart';
 
 enum _DetailAction { edit, duplicate, delete }
 
-/// Task detail screen — pure presentation. The parent owns mutation wiring and
-/// passes only the callbacks the current user is authorized to use.
+/// One task (Spec #186): its status, who has it, when it is due, its crew,
+/// budget and description, then the checklist. Pure presentation: the
+/// parent saves, and passes only the callbacks the viewer may use.
 class TaskDetailScreen extends StatelessWidget {
   const TaskDetailScreen({
     super.key,
@@ -25,9 +27,11 @@ class TaskDetailScreen extends StatelessWidget {
     required this.canChangeStatus,
     this.assigneeName,
     this.completedByName,
+    this.crewName,
     this.onEdit,
     this.onDuplicate,
     this.onDelete,
+    this.onBack,
     this.onChecklistToggle,
     this.onChecklistAdd,
     this.onChecklistEditText,
@@ -41,20 +45,23 @@ class TaskDetailScreen extends StatelessWidget {
   final bool canEditTask;
   final bool canChangeStatus;
 
-  /// Resolved display name for `task.assigneeId`. When null, the screen falls
-  /// back to a truncated UID. Hydrated upstream by `event_task_detail_page.dart`
-  /// via `peopleByIdProvider` so this screen stays Riverpod-free.
+  /// The assignee's name, read by the parent (Req 43a). Without it the
+  /// screen says "Unknown member" rather than show an ID.
   final String? assigneeName;
 
-  /// Resolved display name for `task.completedBy`. Falls back to a truncated
-  /// UID when null. Hydrated upstream by `event_task_detail_page.dart`.
+  /// Who finished the task, read by the parent.
   final String? completedByName;
+
+  /// The task's crew (Req 72), when crews are in use.
+  final String? crewName;
   final VoidCallback? onEdit;
 
-  /// Optional callback to duplicate the task. Visible to every viewer when
-  /// non-null (any member can spawn a copy under their own `createdBy`).
+  /// Duplicating is open to every viewer (the copy is theirs).
   final VoidCallback? onDuplicate;
   final VoidCallback? onDelete;
+
+  /// Back, or closing the task beside the list. Pops by default.
+  final VoidCallback? onBack;
   final void Function(ChecklistItem item, bool isCompleted)? onChecklistToggle;
   final void Function(String id, String text)? onChecklistAdd;
   final void Function(ChecklistItem item, String text)? onChecklistEditText;
@@ -64,90 +71,197 @@ class TaskDetailScreen extends StatelessWidget {
   bool get _assigneeStillInEvent =>
       task.assigneeId == null || event.memberIds.contains(task.assigneeId);
 
-  String _completedByLabel(String uid) {
-    if (completedByName != null && completedByName!.isNotEmpty) {
-      return completedByName!;
+  Future<void> _openMenu(BuildContext context) async {
+    final s = context.strings.tasks;
+    final action = await showCpSheet<_DetailAction>(
+      context: context,
+      title: task.title,
+      builder: (sheet) => CpCard(
+        child: CpRowGroup(
+          children: [
+            if (canEditTask)
+              CpListRow(
+                key: const Key('tasks.detail.overflow.edit'),
+                leading: const _MenuIcon(CpIcons.actionEdit),
+                title: s.detailEdit,
+                trailing: const SizedBox(),
+                onTap: () => Navigator.of(sheet).pop(_DetailAction.edit),
+              ),
+            if (onDuplicate != null)
+              CpListRow(
+                key: const Key('tasks.detail.overflow.duplicate'),
+                leading: const _MenuIcon(CpIcons.actionCopy),
+                title: s.detailDuplicate,
+                trailing: const SizedBox(),
+                onTap: () => Navigator.of(sheet).pop(_DetailAction.duplicate),
+              ),
+            if (canEditTask)
+              CpListRow(
+                key: const Key('tasks.detail.overflow.delete'),
+                leading: const _MenuIcon(CpIcons.actionDelete, danger: true),
+                title: s.detailDelete,
+                trailing: const SizedBox(),
+                onTap: () => Navigator.of(sheet).pop(_DetailAction.delete),
+              ),
+          ],
+        ),
+      ),
+    );
+    switch (action) {
+      case _DetailAction.edit:
+        onEdit?.call();
+      case _DetailAction.duplicate:
+        onDuplicate?.call();
+      case _DetailAction.delete:
+        onDelete?.call();
+      case null:
+        break;
     }
-    return 'Unknown member';
   }
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
+    final s = context.strings.tasks;
+    final muted = cp.type.bodySmall.copyWith(color: cp.colors.textMuted);
+    final dateFormat = DateFormat.yMMMd();
+    final chip = taskDueChip(context, task);
+    final showChip =
+        task.dueDate != null && task.status != TaskStatus.done && chip != null;
+    final large = MediaQuery.textScalerOf(context).scale(1) > 1.3;
+    final assignee = (assigneeName != null && assigneeName!.isNotEmpty)
+        ? assigneeName!
+        : s.unknownMember;
+    final completedBy = task.completedBy == null
+        ? null
+        : (completedByName != null && completedByName!.isNotEmpty)
+        ? completedByName!
+        : s.unknownMember;
+
+    final facts = <Widget>[
+      CpListRow(
+        key: const Key('tasks.detail.status'),
+        title: s.statusLabel,
+        trailing: _StatusBadge(status: task.status),
+      ),
+      if (task.assigneeId != null)
+        CpListRow(
+          key: const Key('tasks.detail.assignee'),
+          title: s.assigneeLabel,
+          subtitle: _assigneeStillInEvent
+              ? assignee
+              : '$assignee ${s.noLongerInEvent}',
+          leading: CpAvatar(name: assignee),
+        ),
+      if (task.dueDate != null)
+        CpListRow(
+          key: const Key('tasks.detail.due'),
+          title: s.dueLabel,
+          subtitle: dateFormat.format(event.inZone(task.dueDate!)),
+          trailing: showChip && !large ? chip : null,
+        ),
+      // At large text the chip takes its own line, so neither it nor the
+      // date breaks mid-word (Req 45).
+      if (showChip && large)
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: cp.space.lg,
+            vertical: cp.space.md,
+          ),
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: chip,
+          ),
+        ),
+      if (crewName != null)
+        CpListRow(
+          key: const Key('tasks.detail.crew'),
+          title: event.words.one('crew'),
+          subtitle: crewName,
+        ),
+      if (task.priority > 0)
+        CpListRow(
+          key: const Key('tasks.detail.priority'),
+          title: s.fieldPriority,
+          subtitle: switch (task.priority) {
+            1 => s.priorityLow,
+            2 => s.priorityMedium,
+            _ => s.priorityHigh,
+          },
+        ),
+      if (task.budgetEstimate != null)
+        CpListRow(
+          key: const Key('tasks.detail.budget'),
+          title: s.budgetLabel,
+          trailing: MoneyText(
+            amount: task.budgetEstimate!,
+            currencyCode: event.currency,
+            style: cp.type.titleSmall.copyWith(color: cp.colors.text),
+          ),
+        ),
+    ];
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(task.title),
-        elevation: 0,
+      backgroundColor: cp.colors.background,
+      appBar: CpTopBar(
+        title: task.title,
+        leadingKey: const Key('tasks.detail.back'),
+        leadingTooltip: MaterialLocalizations.of(context).backButtonTooltip,
+        onLeading: onBack ?? () => Navigator.of(context).maybePop(),
         actions: [
           if (canEditTask || onDuplicate != null)
-            _DetailOverflowMenu(
-              canEdit: canEditTask,
-              onEdit: onEdit,
-              onDuplicate: onDuplicate,
-              onDelete: onDelete,
+            CpTopBarAction(
+              key: const Key('tasks.detail.overflow'),
+              icon: CpIcons.actionMore,
+              tooltip: MaterialLocalizations.of(context).moreButtonTooltip,
+              onPressed: () => _openMenu(context),
             ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(
-          horizontal: Breakpoints.screenHorizontalPadding(context),
-          vertical: AppSpacing.xl,
+        padding: EdgeInsets.fromLTRB(
+          cp.space.lg,
+          cp.space.sm,
+          cp.space.lg,
+          cp.space.xxl,
         ),
         child: ContentMaxWidth(
           key: const Key('eventTaskDetail.body.clamped'),
-          maxWidth: 960,
+          maxWidth: cp.sizes.phoneColumn,
           child: Column(
-            crossAxisAlignment: .start,
-            spacing: AppSpacing.lg,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: cp.space.lg,
             children: [
-              _StatusBadge(status: task.status),
               if (hasPendingWrites)
                 Row(
-                  spacing: AppSpacing.sm,
+                  spacing: cp.space.sm,
                   children: [
                     Icon(
-                      AppIcons.cloudOff,
-                      size: AppSizes.iconSm,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      CpIcons.cloudOff,
+                      size: cp.sizes.iconSm,
+                      color: cp.colors.textMuted,
                     ),
-                    Text(
-                      'Will sync when online',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
+                    Flexible(child: Text(s.willSync, style: muted)),
                   ],
                 ),
-              if (task.description != null && task.description!.isNotEmpty)
-                Text(
-                  task.description!,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-              if (task.assigneeId != null)
-                _AssigneeRow(
-                  assigneeId: task.assigneeId!,
-                  displayName: assigneeName,
-                  stillInEvent: _assigneeStillInEvent,
-                ),
-              if (task.dueDate != null)
-                Row(
-                  spacing: AppSpacing.sm,
-                  children: [
-                    Icon(
-                      AppIcons.calendar,
-                      size: AppSizes.iconSm,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    Text(
-                      'Due ${DateFormat.yMMMd().format(event.inZone(task.dueDate!))}',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ],
-                ),
+              CpCard(child: CpRowGroup(children: facts)),
               if (task.status == TaskStatus.done && task.completedAt != null)
                 Text(
-                  'Completed ${DateFormat.yMMMd().format(event.inZone(task.completedAt!))}'
-                  '${task.completedBy != null ? ' by ${_completedByLabel(task.completedBy!)}' : ''}',
-                  style: Theme.of(context).textTheme.bodySmall,
+                  s.completedOn(
+                    dateFormat.format(event.inZone(task.completedAt!)),
+                    completedBy,
+                  ),
+                  key: const Key('tasks.detail.completed'),
+                  style: muted,
+                ),
+              if (task.description != null && task.description!.isNotEmpty)
+                CpCard(
+                  key: const Key('tasks.detail.description'),
+                  padding: EdgeInsets.all(cp.space.lg),
+                  child: Text(
+                    task.description!,
+                    style: cp.type.bodyMedium.copyWith(color: cp.colors.text),
+                  ),
                 ),
               ChecklistEditor(
                 items: checklist,
@@ -164,52 +278,26 @@ class TaskDetailScreen extends StatelessWidget {
   }
 }
 
-class _AssigneeRow extends StatelessWidget {
-  const _AssigneeRow({
-    required this.assigneeId,
-    required this.stillInEvent,
-    this.displayName,
-  });
+/// A sheet row's icon; red for Delete.
+class _MenuIcon extends StatelessWidget {
+  const _MenuIcon(this.icon, {this.danger = false});
 
-  final String assigneeId;
-  final String? displayName;
-  final bool stillInEvent;
+  final IconData icon;
+  final bool danger;
 
   @override
   Widget build(BuildContext context) {
-    // Display name comes from the Firestore user doc; when it hasn't
-    // been set (or hasn't synced yet) we show a neutral label rather
-    // than the raw UID. Exposing UIDs in the UI is both ugly and a
-    // mild privacy leak.
-    final label = (displayName != null && displayName!.isNotEmpty)
-        ? displayName!
-        : 'Unknown member';
-    return Row(
-      spacing: AppSpacing.sm,
-      children: [
-        Icon(
-          AppIcons.navProfile,
-          size: AppSizes.iconSm,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-        Text('Assigned to $label'),
-        if (!stillInEvent)
-          const Padding(
-            padding: EdgeInsets.only(left: AppSpacing.sm),
-            child: Text(
-              '(no longer in event)',
-              style: TextStyle(
-                color: AppColors.terracotta,
-                fontStyle: FontStyle.italic,
-                fontSize: 12,
-              ),
-            ),
-          ),
-      ],
+    final cp = context.cp;
+    return Icon(
+      icon,
+      size: cp.sizes.iconMd,
+      color: danger ? cp.colors.overdue : cp.colors.textMuted,
     );
   }
 }
 
+/// The task's status: green with a tick when done, the accent while in
+/// progress, quiet to do. Never colour alone: the label always shows.
 class _StatusBadge extends StatelessWidget {
   const _StatusBadge({required this.status});
 
@@ -217,96 +305,24 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // `todo` reverses correctly in dark mode by reading from the theme
-    // (the older `(charcoal, lightGrey)` pair painted dark text on a
-    // pale pill island against the dark surrounding chrome — 2026-06-11
-    // follow-up). Light mode keeps the original tokens visually
-    // unchanged. `inProgress` + `done` already pick theme-agnostic
-    // sage tokens that contrast in both modes; left untouched.
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final colors = Theme.of(context).colorScheme;
-    final (color, bgColor) = switch (status) {
-      TaskStatus.todo =>
-        isDark
-            ? (colors.onSurfaceVariant, colors.surfaceContainerHighest)
-            : (AppColors.charcoal, AppColors.lightGrey),
-      TaskStatus.inProgress => (AppColors.white, AppColors.sage),
-      TaskStatus.done => (AppColors.white, AppColors.sageDark),
-    };
-
-    return Container(
-      key: const Key('tasks.detail.statusBadge'),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        status.label,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(color: color),
-      ),
-    );
-  }
-}
-
-/// Detail-screen overflow menu. Items in spec'd order:
-/// Edit (canEditTask only) → Duplicate (visible to any viewer with a
-/// non-null callback) → Delete (canEditTask only).
-class _DetailOverflowMenu extends StatelessWidget {
-  const _DetailOverflowMenu({
-    required this.canEdit,
-    required this.onEdit,
-    required this.onDuplicate,
-    required this.onDelete,
-  });
-
-  final bool canEdit;
-  final VoidCallback? onEdit;
-  final VoidCallback? onDuplicate;
-  final VoidCallback? onDelete;
-
-  @override
-  Widget build(BuildContext context) {
     final s = context.strings.tasks;
-    return PopupMenuButton<_DetailAction>(
-      key: const Key('tasks.detail.overflow'),
-      icon: const Icon(AppIcons.actionMore),
-      onSelected: (action) {
-        switch (action) {
-          case _DetailAction.edit:
-            onEdit?.call();
-          case _DetailAction.duplicate:
-            onDuplicate?.call();
-          case _DetailAction.delete:
-            onDelete?.call();
-        }
+    return KeyedSubtree(
+      key: const Key('tasks.detail.statusBadge'),
+      child: switch (status) {
+        TaskStatus.done => CpStatusChip(
+          status: CpStatus.done,
+          label: s.statusDone,
+        ),
+        TaskStatus.inProgress => CpTag(
+          label: s.statusInProgress,
+          icon: CpIcons.statusDoing,
+        ),
+        TaskStatus.todo => CpTag(
+          label: s.statusTodo,
+          icon: CpIcons.statusTodo,
+          tone: CpTagTone.quiet,
+        ),
       },
-      itemBuilder: (_) => [
-        if (canEdit)
-          PopupMenuItem<_DetailAction>(
-            key: const Key('tasks.detail.overflow.edit'),
-            value: _DetailAction.edit,
-            child: Text(s.detailEdit),
-          ),
-        if (onDuplicate != null)
-          PopupMenuItem<_DetailAction>(
-            key: const Key('tasks.detail.overflow.duplicate'),
-            value: _DetailAction.duplicate,
-            child: Text(s.detailDuplicate),
-          ),
-        if (canEdit)
-          PopupMenuItem<_DetailAction>(
-            key: const Key('tasks.detail.overflow.delete'),
-            value: _DetailAction.delete,
-            child: Text(
-              s.detailDelete,
-              style: const TextStyle(color: AppColors.terracotta),
-            ),
-          ),
-      ],
     );
   }
 }

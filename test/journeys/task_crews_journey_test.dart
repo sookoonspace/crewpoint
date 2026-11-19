@@ -70,6 +70,13 @@ void main() {
       expect(find.byKey(const Key('tasks.tile.d.crew')), findsNothing);
 
       // Food's tasks only.
+      // The filter pills scroll sideways on a phone.
+      await tester.ensureVisible(
+        find.byKey(const Key('tasks.list.crewFilter')),
+      );
+      await tester.ensureVisible(
+        find.byKey(const Key('tasks.list.crewFilter')),
+      );
       await tester.tap(find.byKey(const Key('tasks.list.crewFilter')));
       await pumpFrames(tester);
       await tester.tap(find.byKey(const Key('tasks.list.crewFilter.food')));
@@ -79,13 +86,22 @@ void main() {
       expect(find.text('Book DJ'), findsNothing);
 
       // With overdue too: only Food's overdue task.
+      await tester.ensureVisible(
+        find.byKey(const Key('tasks.list.filterChip.overdue')),
+      );
       await tester.tap(find.byKey(const Key('tasks.list.filterChip.overdue')));
       await pumpFrames(tester);
       expect(find.text('Confirm caterer'), findsOneWidget);
       expect(find.text('Order snacks'), findsNothing);
 
       // Back to every crew, grouped by crew.
+      await tester.ensureVisible(
+        find.byKey(const Key('tasks.list.filterChip.overdue')),
+      );
       await tester.tap(find.byKey(const Key('tasks.list.filterChip.overdue')));
+      await tester.ensureVisible(
+        find.byKey(const Key('tasks.list.crewFilter')),
+      );
       await tester.tap(find.byKey(const Key('tasks.list.crewFilter')));
       await pumpFrames(tester);
       await tester.tap(find.byKey(const Key('tasks.list.crewFilter.all')));

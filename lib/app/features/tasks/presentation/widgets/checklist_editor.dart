@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/layout/cp_list_detail.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 
@@ -11,6 +13,9 @@ import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 /// Permissions are enforced by the parent passing the right callbacks:
 ///   * `onToggle` always available to authorized callers (assignee or higher)
 ///   * `onAdd` / `onDelete` / `onEditText` only wired for creator/owner/admin
+///
+/// A typed item not yet added counts as unsaved, so choosing another task
+/// beside the list asks first (Spec #186 Req 23).
 class ChecklistEditor extends StatefulWidget {
   const ChecklistEditor({
     super.key,
@@ -39,8 +44,18 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
   final _addController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _addController.addListener(_changed);
+  }
+
+  void _changed() => setState(() {});
+
+  @override
   void dispose() {
-    _addController.dispose();
+    _addController
+      ..removeListener(_changed)
+      ..dispose();
     super.dispose();
   }
 
@@ -55,45 +70,46 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
+    final s = context.strings.tasks;
     final canAdd = widget.onAdd != null;
-    final canEditMutate = widget.onEditText != null;
-    final canDelete = widget.onDelete != null;
+    final adding = canAdd && widget.items.length < widget.maxItems;
 
-    return Column(
-      key: const Key('tasks.detail.checklist'),
-      crossAxisAlignment: .start,
-      spacing: AppSpacing.sm,
-      children: [
-        Text(
-          'Checklist (${widget.items.length}/${widget.maxItems})',
-          style: Theme.of(context).textTheme.titleMedium,
+    final rows = <Widget>[
+      for (final item in widget.items)
+        _ChecklistRow(
+          item: item,
+          canEditText: widget.onEditText != null,
+          canDelete: widget.onDelete != null,
+          onToggle: widget.onToggle == null
+              ? null
+              : (value) => widget.onToggle!(item, value),
+          onEditText: widget.onEditText == null
+              ? null
+              : (newText) => widget.onEditText!(item, newText),
+          onDelete: widget.onDelete == null
+              ? null
+              : () => widget.onDelete!(item),
         ),
-        for (final item in widget.items)
-          _ChecklistRow(
-            item: item,
-            canEditText: canEditMutate,
-            canDelete: canDelete,
-            onToggle: widget.onToggle == null
-                ? null
-                : (value) => widget.onToggle!(item, value),
-            onEditText: widget.onEditText == null
-                ? null
-                : (newText) => widget.onEditText!(item, newText),
-            onDelete: widget.onDelete == null
-                ? null
-                : () => widget.onDelete!(item),
+      if (adding)
+        Padding(
+          padding: EdgeInsetsDirectional.only(
+            start: cp.space.lg,
+            end: cp.space.xs,
+            top: cp.space.sm,
+            bottom: cp.space.sm,
           ),
-        if (canAdd && widget.items.length < widget.maxItems)
-          Row(
-            spacing: AppSpacing.sm,
+          child: Row(
+            spacing: cp.space.xs,
             children: [
               Expanded(
                 child: TextField(
                   key: const Key('tasks.detail.checklist.add'),
                   controller: _addController,
+                  style: cp.type.bodyMedium.copyWith(color: cp.colors.text),
                   decoration: InputDecoration(
-                    hintText: context.strings.tasks.checklistAddHint,
-                    border: const OutlineInputBorder(),
+                    hintText: s.checklistAddHint,
+                    counterText: '',
                     isDense: true,
                   ),
                   onSubmitted: (_) => _submitNew(),
@@ -103,15 +119,32 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
               ),
               IconButton(
                 key: const Key('tasks.detail.checklist.add.submit'),
+                tooltip: s.checklistAdd,
                 onPressed: _submitNew,
-                icon: const Icon(
-                  AppIcons.actionAddCircle,
-                  color: AppColors.sage,
+                icon: Icon(
+                  CpIcons.actionAddCircle,
+                  size: cp.sizes.iconLg,
+                  color: cp.colors.accent,
                 ),
               ),
             ],
           ),
-      ],
+        ),
+    ];
+
+    return CpUnsavedChanges(
+      dirty: _addController.text.trim().isNotEmpty,
+      child: Column(
+        key: const Key('tasks.detail.checklist'),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: cp.space.sm,
+        children: [
+          CpSectionHeader(
+            title: s.checklistHeading(widget.items.length, widget.maxItems),
+          ),
+          if (rows.isNotEmpty) CpCard(child: CpRowGroup(children: rows)),
+        ],
+      ),
     );
   }
 }
@@ -159,52 +192,59 @@ class _ChecklistRowState extends State<_ChecklistRow> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final cp = context.cp;
+    final done = widget.item.isCompleted;
+    return ConstrainedBox(
       key: Key('tasks.detail.checklist.item.${widget.item.id}'),
-      children: [
-        Checkbox(
-          key: Key('tasks.detail.checklist.item.${widget.item.id}.toggle'),
-          value: widget.item.isCompleted,
-          onChanged: widget.onToggle == null
-              ? null
-              : (value) => widget.onToggle!(value ?? false),
-        ),
-        Expanded(
-          child: _editing
-              ? TextField(
-                  controller: _controller,
-                  autofocus: true,
-                  decoration: const InputDecoration(isDense: true),
-                  onSubmitted: (_) => _commitEdit(),
-                )
-              : GestureDetector(
-                  onTap: widget.canEditText
-                      ? () => setState(() => _editing = true)
-                      : null,
-                  child: Text(
-                    widget.item.text,
-                    style: TextStyle(
-                      decoration: widget.item.isCompleted
-                          ? TextDecoration.lineThrough
-                          : null,
-                      color: widget.item.isCompleted
-                          ? Theme.of(context).colorScheme.onSurfaceVariant
-                          : Theme.of(context).colorScheme.onSurface,
+      constraints: BoxConstraints(minHeight: cp.sizes.tapMin),
+      child: Row(
+        children: [
+          Checkbox(
+            key: Key('tasks.detail.checklist.item.${widget.item.id}.toggle'),
+            value: done,
+            activeColor: cp.colors.done,
+            onChanged: widget.onToggle == null
+                ? null
+                : (value) => widget.onToggle!(value ?? false),
+          ),
+          Expanded(
+            child: _editing
+                ? TextField(
+                    controller: _controller,
+                    autofocus: true,
+                    style: cp.type.bodyMedium.copyWith(color: cp.colors.text),
+                    decoration: const InputDecoration(isDense: true),
+                    onSubmitted: (_) => _commitEdit(),
+                  )
+                : GestureDetector(
+                    onTap: widget.canEditText
+                        ? () => setState(() => _editing = true)
+                        : null,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: cp.space.sm),
+                      child: Text(
+                        widget.item.text,
+                        style: cp.type.bodyMedium.copyWith(
+                          decoration: done ? TextDecoration.lineThrough : null,
+                          color: done ? cp.colors.textMuted : cp.colors.text,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-        ),
-        if (widget.canDelete)
-          IconButton(
-            key: Key('tasks.detail.checklist.item.${widget.item.id}.delete'),
-            onPressed: widget.onDelete,
-            icon: Icon(
-              AppIcons.actionClose,
-              size: 18,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
           ),
-      ],
+          if (widget.canDelete)
+            IconButton(
+              key: Key('tasks.detail.checklist.item.${widget.item.id}.delete'),
+              tooltip: context.strings.tasks.checklistRemove,
+              onPressed: widget.onDelete,
+              icon: Icon(
+                CpIcons.actionClose,
+                size: cp.sizes.iconSm,
+                color: cp.colors.textMuted,
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

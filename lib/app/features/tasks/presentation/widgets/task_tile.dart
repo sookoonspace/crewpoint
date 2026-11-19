@@ -1,14 +1,19 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:intl/intl.dart';
+
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/widgets/money_text.dart';
 import 'package:crewpoint_app/app/features/tasks/application/tasks_filter.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 
+/// One task in a list (Spec #186): a status button, the title, who and
+/// which crew, then its budget figure and a status chip (green done, amber
+/// due this week, red overdue, each with an icon). Use inside a
+/// [CpRowGroup] in a [CpCard].
 class TaskTile extends StatelessWidget {
   const TaskTile({
     super.key,
@@ -19,6 +24,9 @@ class TaskTile extends StatelessWidget {
     this.onStatusChanged,
     this.onUnauthorizedTap,
     this.crewName,
+    this.assigneeName,
+    this.showAssignee = true,
+    this.selected = false,
   });
 
   final TaskModel task;
@@ -31,283 +39,357 @@ class TaskTile extends StatelessWidget {
   /// The task's crew name (Req 72), when crews are in use.
   final String? crewName;
 
-  Color _stripeColor() => switch (task.status) {
-    TaskStatus.todo => AppColors.lightGrey,
-    TaskStatus.inProgress => AppColors.sage,
-    TaskStatus.done => AppColors.sageDark,
-  };
+  /// The assignee's name, once read (Req 43a).
+  final String? assigneeName;
+
+  /// False where every task is the viewer's own, as in My tasks.
+  final bool showAssignee;
+
+  /// The task open beside the list (Req 23).
+  final bool selected;
 
   int get _completedCount =>
       task.checklistItems.where((i) => i.isCompleted).length;
 
-  /// Progress bar (and the X/Y text next to it) only render when the
-  /// checklist has items AND the task isn't already done. Avoids the
-  /// "60% bar under a done icon" inconsistency from spec edge case 33.
+  /// Checklist progress shows only while the task is open, so a done task
+  /// never carries a part-filled bar (spec edge case 33).
   bool get _showProgressBar =>
       task.checklistItems.isNotEmpty && task.status != TaskStatus.done;
 
-  /// True when the task is past its due date and not already done.
-  /// Uses `clock.now()` (CI3 seam) so tests can freeze time via
-  /// `withClock(Clock.fixed(...))`. Comparison is start-of-day so the
-  /// badge flips at midnight, not at the dueDate timestamp.
-  bool get _isOverdue {
-    final due = task.dueDate;
-    if (due == null) return false;
-    if (task.status == TaskStatus.done) return false;
-    return startOfDay(due).isBefore(startOfDay(clock.now()));
+  void _cycleStatus() {
+    if (!canChangeStatus) {
+      onUnauthorizedTap?.call();
+      return;
+    }
+    onStatusChanged?.call(switch (task.status) {
+      TaskStatus.todo => TaskStatus.inProgress,
+      TaskStatus.inProgress => TaskStatus.done,
+      TaskStatus.done => TaskStatus.todo,
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        key: Key('tasks.tile.${task.id}'),
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Row(
-          children: [
-            Container(
-              key: Key('tasks.tile.${task.id}.stripe'),
-              width: 4,
-              color: _stripeColor(),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                child: Row(
-                  spacing: AppSpacing.md,
-                  children: [
-                    _StatusChip(
-                      key: Key('tasks.tile.${task.id}.status'),
-                      status: task.status,
-                      enabled: canChangeStatus,
-                      onTap: () {
-                        if (!canChangeStatus) {
-                          onUnauthorizedTap?.call();
-                          return;
-                        }
-                        final next = switch (task.status) {
-                          TaskStatus.todo => TaskStatus.inProgress,
-                          TaskStatus.inProgress => TaskStatus.done,
-                          TaskStatus.done => TaskStatus.todo,
-                        };
-                        onStatusChanged?.call(next);
-                      },
-                    ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: .start,
-                        children: [
-                          Text(
-                            task.title,
-                            style: Theme.of(context).textTheme.titleSmall
-                                ?.copyWith(
-                                  decoration: task.status == TaskStatus.done
-                                      ? TextDecoration.lineThrough
-                                      : null,
-                                ),
+    final cp = context.cp;
+    final s = context.strings.tasks;
+    final muted = cp.type.bodySmall.copyWith(color: cp.colors.textMuted);
+    final who = !showAssignee
+        ? null
+        : task.assigneeId == null
+        ? s.assigneeUnassigned
+        : (assigneeName == null || assigneeName!.isEmpty)
+        ? null
+        : assigneeName;
+    final subtitle = <Widget>[
+      if (who != null) Text(who, style: muted),
+      if (crewName != null)
+        Text(crewName!, key: Key('tasks.tile.${task.id}.crew'), style: muted),
+    ];
+    final chip = taskDueChip(context, task);
+    final trailing = <Widget>[
+      if (task.budgetEstimate != null)
+        MoneyText(
+          key: Key('tasks.tile.${task.id}.budget'),
+          amount: task.budgetEstimate!,
+          currencyCode: currencyCode,
+          style: cp.type.labelMedium.copyWith(color: cp.colors.textMuted),
+        ),
+      ?chip,
+    ];
+    // At large text on a narrow row the figure and chip go under the
+    // title, so no word breaks mid-way (Req 45).
+    final scale = MediaQuery.textScalerOf(context).scale(1);
+
+    final row = ConstrainedBox(
+      constraints: BoxConstraints(minHeight: cp.sizes.rowMinHeight),
+      child: Padding(
+        padding: EdgeInsetsDirectional.only(
+          start: cp.space.xs,
+          end: cp.space.lg,
+          top: cp.space.sm,
+          bottom: cp.space.sm,
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final stacked = constraints.maxWidth / scale < 260;
+            return Row(
+              children: [
+                _StatusButton(
+                  key: Key('tasks.tile.${task.id}.status'),
+                  status: task.status,
+                  enabled: canChangeStatus,
+                  onTap: _cycleStatus,
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: cp.space.xs),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      spacing: cp.space.xs / 2,
+                      children: [
+                        Text(
+                          task.title,
+                          style: cp.type.titleSmall.copyWith(
+                            color: cp.colors.text,
                           ),
-                          if (task.description != null)
-                            Text(
-                              task.description!,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                                  ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          if (_isOverdue ||
-                              task.priority > 0 ||
-                              crewName != null) ...[
-                            const SizedBox(height: AppSpacing.xs),
-                            Wrap(
-                              spacing: AppSpacing.xs,
-                              runSpacing: 2,
+                        ),
+                        if (subtitle.isNotEmpty)
+                          Wrap(
+                            children: [
+                              for (var i = 0; i < subtitle.length; i++) ...[
+                                if (i > 0) Text(' · ', style: muted),
+                                subtitle[i],
+                              ],
+                            ],
+                          ),
+                        if (task.priority > 0 || _showProgressBar)
+                          Padding(
+                            padding: EdgeInsets.only(top: cp.space.xs / 2),
+                            child: Wrap(
+                              spacing: cp.space.sm,
+                              runSpacing: cp.space.xs,
+                              crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
-                                if (_isOverdue)
-                                  _Pill(
-                                    key: Key(
-                                      'tasks.tile.${task.id}.overdueBadge',
-                                    ),
-                                    label: context.strings.tasks.overdueBadge,
-                                    bg: AppColors.terracotta,
-                                    fg: AppColors.white,
-                                  ),
-                                if (crewName != null)
-                                  _Pill(
-                                    key: Key('tasks.tile.${task.id}.crew'),
-                                    label: crewName!,
-                                    bg: Theme.of(
-                                      context,
-                                    ).colorScheme.secondaryContainer,
-                                    fg: Theme.of(
-                                      context,
-                                    ).colorScheme.onSecondaryContainer,
-                                  ),
                                 if (task.priority > 0)
-                                  _PriorityPill(
+                                  _PriorityTag(
                                     key: Key(
                                       'tasks.tile.${task.id}.priorityBadge',
                                     ),
                                     level: task.priority,
                                   ),
+                                if (_showProgressBar)
+                                  _ChecklistProgress(
+                                    key: Key(
+                                      'tasks.tile.${task.id}.progressBar',
+                                    ),
+                                    completed: _completedCount,
+                                    total: task.checklistItems.length,
+                                  ),
                               ],
                             ),
-                          ],
-                          if (_showProgressBar) ...[
-                            const SizedBox(height: AppSpacing.xs),
-                            _ProgressBar(
-                              key: Key('tasks.tile.${task.id}.progressBar'),
-                              completed: _completedCount,
-                              total: task.checklistItems.length,
-                              color: _stripeColor(),
+                          ),
+                        if (stacked && trailing.isNotEmpty)
+                          Padding(
+                            padding: EdgeInsets.only(top: cp.space.xs / 2),
+                            child: Wrap(
+                              spacing: cp.space.sm,
+                              runSpacing: cp.space.xs,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: trailing,
                             ),
-                          ],
-                        ],
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                // The figure and chip take at most half the row, so the title
+                // keeps room at large text sizes, and sit at the row's end.
+                if (!stacked && trailing.isNotEmpty)
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: constraints.maxWidth / 2,
+                    ),
+                    child: Padding(
+                      padding: EdgeInsetsDirectional.only(start: cp.space.sm),
+                      child: Wrap(
+                        alignment: WrapAlignment.end,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: cp.space.sm,
+                        runSpacing: cp.space.xs,
+                        children: trailing,
                       ),
                     ),
-                    if (task.budgetEstimate != null)
-                      MoneyText(
-                        key: Key('tasks.tile.${task.id}.budget'),
-                        amount: task.budgetEstimate!,
-                        currencyCode: currencyCode,
-                        style: Theme.of(context).textTheme.labelSmall,
-                      ),
-                    if (_showProgressBar)
-                      Text(
-                        '$_completedCount/${task.checklistItems.length}',
-                        style: Theme.of(context).textTheme.labelSmall,
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+
+    return Semantics(
+      selected: selected,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          key: Key('tasks.tile.${task.id}'),
+          onTap: onTap,
+          child: selected
+              ? ColoredBox(color: cp.colors.accentSoft, child: row)
+              : row,
         ),
       ),
     );
   }
 }
 
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({
+/// The task's status chip (green done, amber due this week, red overdue,
+/// a quiet tag further off), or nothing when it has no due date.
+Widget? taskDueChip(BuildContext context, TaskModel task) {
+  final s = context.strings.tasks;
+  final now = clock.now();
+  final due = task.dueDate;
+  String day(DateTime d) {
+    final date = startOfDay(d);
+    final days = date.difference(startOfDay(now)).inDays.abs();
+    return days < 7
+        ? DateFormat.E().format(date)
+        : DateFormat.MMMd().format(date);
+  }
+
+  return switch (taskDueState(task, now)) {
+    TaskDueState.done => CpStatusChip(
+      key: Key('tasks.tile.${task.id}.done'),
+      status: CpStatus.done,
+      label: s.statusDone,
+    ),
+    TaskDueState.overdue => CpStatusChip(
+      key: Key('tasks.tile.${task.id}.overdueBadge'),
+      status: CpStatus.overdue,
+      label: s.overdueOn(day(due!)),
+    ),
+    TaskDueState.soon => CpStatusChip(
+      key: Key('tasks.tile.${task.id}.due'),
+      status: CpStatus.due,
+      label: startOfDay(due!) == startOfDay(now)
+          ? s.dueToday
+          : s.dueOn(day(due)),
+    ),
+    TaskDueState.later => CpTag(
+      key: Key('tasks.tile.${task.id}.due'),
+      label: s.dueOn(day(due!)),
+      tone: CpTagTone.quiet,
+    ),
+    TaskDueState.none => null,
+  };
+}
+
+/// The round status button at the start of a row: empty to do, a play
+/// sign in progress, a filled tick done. Tapping moves to the next status.
+class _StatusButton extends StatelessWidget {
+  const _StatusButton({
     super.key,
     required this.status,
     required this.enabled,
-    this.onTap,
+    required this.onTap,
   });
 
   final TaskStatus status;
   final bool enabled;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final (color, icon) = switch (status) {
-      TaskStatus.todo => (AppColors.lightGrey, AppIcons.statusTodo),
-      TaskStatus.inProgress => (AppColors.sage, AppIcons.statusDoingAlt),
-      TaskStatus.done => (AppColors.sage, AppIcons.statusDone),
+    final cp = context.cp;
+    final c = cp.colors;
+    final size = cp.sizes.iconLg;
+    final mark = switch (status) {
+      TaskStatus.todo => Icon(
+        CpIcons.statusTodo,
+        size: size,
+        color: c.textMuted,
+      ),
+      TaskStatus.inProgress => Icon(
+        CpIcons.statusDoing,
+        size: size,
+        color: enabled ? c.accent : c.textMuted,
+      ),
+      TaskStatus.done => Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: enabled ? c.done : c.textMuted,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(CpIcons.check, size: cp.sizes.iconSm, color: c.surface),
+      ),
     };
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Icon(
-        icon,
-        color: enabled ? color : AppColors.lightGrey,
-        size: AppSizes.iconLg,
-      ),
-    );
-  }
-}
-
-/// Compact filled rounded label used for status pills (Overdue, Priority).
-class _Pill extends StatelessWidget {
-  const _Pill({
-    super.key,
-    required this.label,
-    required this.bg,
-    required this.fg,
-  });
-
-  final String label;
-  final Color bg;
-  final Color fg;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: 2,
-      ),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: fg,
-          fontWeight: FontWeight.w600,
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: '${context.strings.tasks.statusChange}: ${_label(context)}',
+      excludeSemantics: true,
+      child: InkResponse(
+        onTap: onTap,
+        radius: cp.sizes.tapMin / 2,
+        child: SizedBox.square(
+          dimension: cp.sizes.tapMin,
+          child: Center(child: mark),
         ),
       ),
     );
   }
+
+  String _label(BuildContext context) {
+    final s = context.strings.tasks;
+    return switch (status) {
+      TaskStatus.todo => s.statusTodo,
+      TaskStatus.inProgress => s.statusInProgress,
+      TaskStatus.done => s.statusDone,
+    };
+  }
 }
 
-/// Priority pill: Low (sageLight), Medium (charcoal), High (terracotta).
-class _PriorityPill extends StatelessWidget {
-  const _PriorityPill({super.key, required this.level});
+/// Low, Medium or High, as a quiet tag.
+class _PriorityTag extends StatelessWidget {
+  const _PriorityTag({super.key, required this.level});
 
   final int level;
 
   @override
   Widget build(BuildContext context) {
     final t = context.strings.tasks;
-    final (label, bg, fg) = switch (level) {
-      1 => (t.priorityLow, AppColors.sageLight, AppColors.charcoal),
-      2 => (t.priorityMedium, AppColors.charcoal, AppColors.white),
-      _ => (t.priorityHigh, AppColors.terracotta, AppColors.white),
-    };
-    return _Pill(label: label, bg: bg, fg: fg);
+    return CpTag(
+      label: switch (level) {
+        1 => t.priorityLow,
+        2 => t.priorityMedium,
+        _ => t.priorityHigh,
+      },
+      icon: level >= 3 ? CpIcons.priorityHigh : null,
+      tone: level >= 3 ? CpTagTone.accent : CpTagTone.quiet,
+    );
   }
 }
 
-/// Thin (3-px) progress bar showing checklist completion fraction.
-///
-/// Foreground tint matches the parent tile's status stripe so a glance
-/// across the list communicates both status (left edge) and progress
-/// (under the title) with the same colour.
-class _ProgressBar extends StatelessWidget {
-  const _ProgressBar({
+/// A short bar and "3/5" for the checklist.
+class _ChecklistProgress extends StatelessWidget {
+  const _ChecklistProgress({
     super.key,
     required this.completed,
     required this.total,
-    required this.color,
   }) : assert(total > 0);
 
   final int completed;
   final int total;
-  final Color color;
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
     final fraction = (completed / total).clamp(0.0, 1.0);
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(1.5),
-      child: Container(
-        height: 3,
-        color: AppColors.lightGrey.withValues(alpha: 0.3),
-        child: FractionallySizedBox(
-          alignment: Alignment.centerLeft,
-          widthFactor: fraction,
-          child: Container(color: color),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      spacing: cp.space.xs,
+      children: [
+        ClipRRect(
+          borderRadius: cp.radii.pill,
+          child: SizedBox(
+            width: cp.space.xxl * 1.5,
+            height: cp.space.xs,
+            child: ColoredBox(
+              color: cp.colors.border,
+              child: FractionallySizedBox(
+                alignment: AlignmentDirectional.centerStart,
+                widthFactor: fraction,
+                child: ColoredBox(color: cp.colors.accent),
+              ),
+            ),
+          ),
         ),
-      ),
+        Text(
+          '$completed/$total',
+          style: cp.type.labelSmall.copyWith(color: cp.colors.textMuted),
+        ),
+      ],
     );
   }
 }

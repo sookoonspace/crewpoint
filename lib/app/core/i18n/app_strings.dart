@@ -205,6 +205,47 @@ abstract class TasksStrings {
 
   // Checklist editor.
   String get checklistAddHint;
+  String checklistHeading(int count, int max);
+  String get checklistAdd;
+  String get checklistRemove;
+
+  // Tasks in the new look (Spec #186, #201).
+  String get filterAll;
+  String doneOf(int done, int total);
+  String progressDetail(int overdue, int dueThisWeek);
+  String dueOn(String day);
+  String overdueOn(String day);
+  String get dueToday;
+  String get sortTooltip;
+  String get createFailed;
+  String get statusFailed;
+  String get statusNotAllowed;
+  String get exportFailed;
+  String get saveFailed;
+  String get duplicateFailed;
+  String get loadFailed;
+  String get notFound;
+  String get taskWord;
+  String get deleteTitle;
+  String get deleteBody;
+  String get cancel;
+  String get statusLabel;
+  String get assigneeLabel;
+  String get dueLabel;
+  String get budgetLabel;
+  String completedOn(String date, String? by);
+  String get unknownMember;
+  String get noLongerInEvent;
+  String get willSync;
+  String get titleLabel;
+  String get descriptionLabel;
+  String get titleRequired;
+  String titleTooLong(int max);
+  String get clearDueDate;
+  String get myTasksNoMatches;
+  String overdueCount(int count);
+  String get statusChange;
+  String get budgetInvalid;
 }
 
 /// User-facing strings for the Dashboard feature (events list + empty state).
@@ -1243,6 +1284,134 @@ class _EnglishTasksStrings extends TasksStrings {
 
   @override
   String get checklistAddHint => 'Add item';
+
+  @override
+  String checklistHeading(int count, int max) => 'Checklist ($count/$max)';
+
+  @override
+  String get checklistAdd => 'Add to checklist';
+
+  @override
+  String get checklistRemove => 'Remove item';
+
+  @override
+  String get filterAll => 'All';
+
+  @override
+  String doneOf(int done, int total) => '$done of $total done';
+
+  @override
+  String progressDetail(int overdue, int dueThisWeek) {
+    final parts = [
+      if (overdue > 0) '$overdue overdue',
+      if (dueThisWeek > 0) '$dueThisWeek due this week',
+    ];
+    return parts.isEmpty ? 'Nothing due this week' : parts.join(' · ');
+  }
+
+  @override
+  String dueOn(String day) => 'Due $day';
+
+  @override
+  String overdueOn(String day) => 'Overdue $day';
+
+  @override
+  String get dueToday => 'Due today';
+
+  @override
+  String get sortTooltip => 'Sort';
+
+  @override
+  String get createFailed => 'Failed to create task';
+
+  @override
+  String get statusFailed => 'Could not update status';
+
+  @override
+  String get statusNotAllowed =>
+      'Only the assignee or an admin can change this';
+
+  @override
+  String get exportFailed => "Couldn't generate report";
+
+  @override
+  String get saveFailed => 'Could not save changes';
+
+  @override
+  String get duplicateFailed => 'Could not duplicate task';
+
+  @override
+  String get loadFailed => 'Could not load tasks';
+
+  @override
+  String get notFound => 'Task not found';
+
+  @override
+  String get taskWord => 'Task';
+
+  @override
+  String get deleteTitle => 'Delete this task?';
+
+  @override
+  String get deleteBody =>
+      'This cannot be undone. Members will lose the task and any '
+      'checklist items.';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get statusLabel => 'Status';
+
+  @override
+  String get assigneeLabel => 'Assigned to';
+
+  @override
+  String get dueLabel => 'Due';
+
+  @override
+  String get budgetLabel => 'Budget';
+
+  @override
+  String completedOn(String date, String? by) =>
+      by == null ? 'Completed $date' : 'Completed $date by $by';
+
+  @override
+  String get unknownMember => 'Unknown member';
+
+  @override
+  String get noLongerInEvent => '(no longer in event)';
+
+  @override
+  String get willSync => 'Will sync when online';
+
+  @override
+  String get titleLabel => 'Title';
+
+  @override
+  String get descriptionLabel => 'Description';
+
+  @override
+  String get titleRequired => 'Please enter a title';
+
+  @override
+  String titleTooLong(int max) => 'Title must be $max characters or fewer';
+
+  @override
+  String get clearDueDate => 'No due date';
+
+  @override
+  String get myTasksNoMatches => 'No tasks match this filter';
+
+  @override
+  String overdueCount(int count) => 'Overdue · $count';
+
+  @override
+  String get statusChange => 'Change status';
+
+  @override
+  String get budgetInvalid =>
+      'Must be a non-negative number with up to 2 decimals';
 }
 
 class _EnglishAuthStrings extends AuthStrings {

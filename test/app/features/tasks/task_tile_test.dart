@@ -1,7 +1,8 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/widgets/task_tile.dart';
 
@@ -17,26 +18,21 @@ void main() {
     status: status,
   );
 
-  Color stripeColor(WidgetTester tester) {
-    final stripe = tester.widget<Container>(
-      find.byKey(const Key('tasks.tile.task-1.stripe')),
-    );
-    final decoration = stripe.decoration as BoxDecoration?;
-    return decoration?.color ?? (stripe.color ?? const Color(0x00000000));
-  }
+  Finder inStatus(Finder f) => find.descendant(
+    of: find.byKey(const Key('tasks.tile.task-1.status')),
+    matching: f,
+  );
 
-  testWidgets('stripe color matches status — todo → lightGrey', (tester) async {
+  testWidgets('status button: an empty circle to do', (tester) async {
     await tester.pumpWidget(
       harness(
         TaskTile(task: buildTask(TaskStatus.todo), canChangeStatus: false),
       ),
     );
-    expect(stripeColor(tester), AppColors.lightGrey);
+    expect(inStatus(find.byIcon(CpIcons.statusTodo)), findsOneWidget);
   });
 
-  testWidgets('stripe color matches status — inProgress → sage', (
-    tester,
-  ) async {
+  testWidgets('status button: a play sign in progress', (tester) async {
     await tester.pumpWidget(
       harness(
         TaskTile(
@@ -45,16 +41,66 @@ void main() {
         ),
       ),
     );
-    expect(stripeColor(tester), AppColors.sage);
+    expect(inStatus(find.byIcon(CpIcons.statusDoing)), findsOneWidget);
   });
 
-  testWidgets('stripe color matches status — done → sageDark', (tester) async {
+  testWidgets('done: a tick, and the green Done chip with its icon', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       harness(
         TaskTile(task: buildTask(TaskStatus.done), canChangeStatus: false),
       ),
     );
-    expect(stripeColor(tester), AppColors.sageDark);
+    expect(inStatus(find.byIcon(CpIcons.check)), findsOneWidget);
+    final chip = find.byKey(const Key('tasks.tile.task-1.done'));
+    expect(tester.widget<CpStatusChip>(chip).status, CpStatus.done);
+    expect(
+      find.descendant(of: chip, matching: find.byIcon(CpIcons.statusDone)),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('tapping the status moves it on; without permission it says '
+      'why instead', (tester) async {
+    TaskStatus? next;
+    var refused = false;
+    await tester.pumpWidget(
+      harness(
+        TaskTile(
+          task: buildTask(TaskStatus.todo),
+          canChangeStatus: true,
+          onStatusChanged: (s) => next = s,
+        ),
+      ),
+    );
+    await tester.tap(find.byKey(const Key('tasks.tile.task-1.status')));
+    expect(next, TaskStatus.inProgress);
+
+    await tester.pumpWidget(
+      harness(
+        TaskTile(
+          task: buildTask(TaskStatus.todo),
+          canChangeStatus: false,
+          onUnauthorizedTap: () => refused = true,
+        ),
+      ),
+    );
+    await tester.tap(find.byKey(const Key('tasks.tile.task-1.status')));
+    expect(refused, isTrue);
+  });
+
+  testWidgets('the status button is at least 48 px', (tester) async {
+    await tester.pumpWidget(
+      harness(
+        TaskTile(task: buildTask(TaskStatus.todo), canChangeStatus: true),
+      ),
+    );
+    final size = tester.getSize(
+      find.byKey(const Key('tasks.tile.task-1.status')),
+    );
+    expect(size.width, greaterThanOrEqualTo(48));
+    expect(size.height, greaterThanOrEqualTo(48));
   });
 
   testWidgets('renders budget text only when budgetEstimate is non-null', (
@@ -291,10 +337,35 @@ void main() {
         ),
         DateTime(2026, 6, 15, 12, 0),
       );
+      final chip = find.byKey(const Key('tasks.tile.task-1.overdueBadge'));
+      expect(tester.widget<CpStatusChip>(chip).status, CpStatus.overdue);
       expect(
-        find.byKey(const Key('tasks.tile.task-1.overdueBadge')),
+        find.descendant(of: chip, matching: find.byIcon(CpIcons.statusOverdue)),
         findsOneWidget,
       );
+    });
+
+    testWidgets('amber Due chip with a clock when due within the week', (
+      tester,
+    ) async {
+      await pumpAtFrozenNow(
+        tester,
+        TaskTile(
+          task: withDue(
+            dueDate: DateTime(2026, 6, 18),
+            status: TaskStatus.todo,
+          ),
+          canChangeStatus: false,
+        ),
+        DateTime(2026, 6, 15, 12, 0),
+      );
+      final chip = find.byKey(const Key('tasks.tile.task-1.due'));
+      expect(tester.widget<CpStatusChip>(chip).status, CpStatus.due);
+      expect(
+        find.descendant(of: chip, matching: find.byIcon(CpIcons.statusDue)),
+        findsOneWidget,
+      );
+      expect(find.text('Due Thu'), findsOneWidget);
     });
 
     testWidgets('hidden when status == done even if past due', (tester) async {

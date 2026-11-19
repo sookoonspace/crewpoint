@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
-import 'package:crewpoint_app/app/core/services/callable_errors.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
+import 'package:crewpoint_app/app/core/services/callable_errors.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/chat/application/people_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
@@ -12,9 +14,13 @@ import 'package:crewpoint_app/app/features/tasks/presentation/create_task_screen
 import 'package:crewpoint_app/app/features/tasks/presentation/edit_task_screen.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/task_detail_screen.dart';
 
-/// Loads task + checklist live streams and wires mutations through the
-/// repository. Routing-friendly entry point at /event/:eventId/tasks/:taskId.
-class EventTaskDetailPage extends ConsumerWidget {
+/// Loads one task and its checklist, and saves through the repository.
+/// The route `/event/:eventId/tasks/:taskId`, beside the Tasks list from
+/// 840 px (Spec #186 Req 23).
+///
+/// Editing happens in place, so beside the list the form keeps its place
+/// and choosing another task with unsaved edits asks first.
+class EventTaskDetailPage extends ConsumerStatefulWidget {
   const EventTaskDetailPage({
     super.key,
     required this.event,
@@ -24,16 +30,83 @@ class EventTaskDetailPage extends ConsumerWidget {
   final EventModel event;
   final String taskId;
 
-  String? _currentUserId(WidgetRef ref) {
+  @override
+  ConsumerState<EventTaskDetailPage> createState() =>
+      _EventTaskDetailPageState();
+}
+
+class _EventTaskDetailPageState extends ConsumerState<EventTaskDetailPage> {
+  bool _editing = false;
+
+  String? _currentUserId() {
     final auth = ref.read(authProvider);
     return auth is Authenticated ? auth.user.uid : null;
   }
 
+  void _say(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<bool> _confirmDelete() async {
+    final s = context.strings.tasks;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialog) => CpDialog(
+        title: s.deleteTitle,
+        message: s.deleteBody,
+        actions: [
+          CpButton.text(
+            key: const Key('tasks.detail.delete.cancel'),
+            label: s.cancel,
+            onPressed: () => Navigator.of(dialog).pop(false),
+          ),
+          CpButton.destructive(
+            key: const Key('tasks.detail.delete.confirm'),
+            label: s.detailDelete,
+            onPressed: () => Navigator.of(dialog).pop(true),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final uid = _currentUserId(ref);
+  Widget build(BuildContext context) {
+    final event = widget.event;
+    final taskId = widget.taskId;
+    final s = context.strings.tasks;
+
+    Widget bare(String title, Widget body) => Scaffold(
+      appBar: CpTopBar(
+        title: title,
+        leadingKey: const Key('tasks.detail.back'),
+        leadingTooltip: MaterialLocalizations.of(context).backButtonTooltip,
+        onLeading: () => Navigator.of(context).maybePop(),
+      ),
+      body: body,
+    );
+    Widget failed(Object e) => CpErrorState(
+      title: s.loadFailed,
+      message: userMessageFor(
+        e,
+        strings: context.strings.errors,
+        fallback: context.strings.errors.genericFallback,
+      ),
+      retryLabel: context.strings.people.retry,
+      retryKey: const Key('tasks.detail.retry'),
+      onRetry: () => ref.invalidate(taskListProvider(event.id)),
+    );
+
+    final uid = _currentUserId();
     if (uid == null) {
-      return const Scaffold(body: Center(child: Text('Sign in required')));
+      return bare(
+        s.taskWord,
+        CpEmptyState(icon: CpIcons.lock, title: s.signInRequiredTitle),
+      );
     }
 
     final budgets =
@@ -51,14 +124,15 @@ class EventTaskDetailPage extends ConsumerWidget {
 
     return asyncTasks.when(
       data: (tasks) {
-        final task = tasks
-            .where((t) => t.id == taskId)
-            .cast<TaskModel?>()
-            .firstWhere((t) => true, orElse: () => null);
+        final task = tasks.where((t) => t.id == taskId).firstOrNull;
         if (task == null) {
-          return Scaffold(
-            appBar: AppBar(title: const Text('Task'), elevation: 0),
-            body: const Center(child: Text('Task not found')),
+          return bare(
+            s.taskWord,
+            CpEmptyState(
+              key: const Key('tasks.detail.notFound'),
+              icon: CpIcons.navTasks,
+              title: s.notFound,
+            ),
           );
         }
 
@@ -78,9 +152,7 @@ class EventTaskDetailPage extends ConsumerWidget {
             PeopleKey(event.id, [?task.assigneeId, ?task.completedBy]),
           ),
         );
-        // displayName when set, email as second fallback. TaskDetailScreen
-        // shows "Unknown member" if even this is null/empty (offline or
-        // user doc not yet hydrated).
+        // The display name, else the email; null shows "Unknown member".
         String? labelFor(String uid) => asyncUsers.maybeWhen(
           data: (users) {
             final user = users[uid];
@@ -92,20 +164,38 @@ class EventTaskDetailPage extends ConsumerWidget {
           },
           orElse: () => null,
         );
-        final assigneeName = task.assigneeId == null
-            ? null
-            : labelFor(task.assigneeId!);
-        final completedByName = task.completedBy == null
-            ? null
-            : labelFor(task.completedBy!);
-
-        final displayNamesMap = asyncUsers.maybeWhen(
+        final displayNames = asyncUsers.maybeWhen(
           data: (users) => {
             for (final entry in users.entries)
               entry.key: entry.value.displayName ?? '',
           },
           orElse: () => <String, String>{},
         );
+
+        if (_editing && canEdit) {
+          return EditTaskScreen(
+            event: event,
+            currentUserId: uid,
+            initial: task,
+            displayNames: displayNames,
+            crews: crews,
+            onCancel: () => setState(() => _editing = false),
+            onSubmit: (updated) async {
+              setState(() => _editing = false);
+              final failed = s.saveFailed;
+              // The figure is saved only when someone allowed to set it
+              // changed it (Req 36).
+              final budgetChanged =
+                  event.can(uid, 'budget.edit') &&
+                  updated.budgetEstimate != task.budgetEstimate;
+              final ok = await repo.updateTask(
+                updated,
+                budgetEditedBy: budgetChanged ? uid : null,
+              );
+              if (!ok) _say(failed);
+            },
+          );
+        }
 
         return asyncChecklist.when(
           data: (items) => TaskDetailScreen(
@@ -114,47 +204,18 @@ class EventTaskDetailPage extends ConsumerWidget {
             checklist: items,
             canEditTask: canEdit,
             canChangeStatus: canChangeStatus,
-            assigneeName: assigneeName,
-            completedByName: completedByName,
-            onEdit: canEdit
-                ? () async {
-                    final updated = await Navigator.of(context).push<TaskModel>(
-                      MaterialPageRoute(
-                        builder: (_) => EditTaskScreen(
-                          event: event,
-                          currentUserId: uid,
-                          initial: task,
-                          displayNames: displayNamesMap,
-                          crews: crews,
-                          onSubmit: (t) => Navigator.of(context).pop(t),
-                        ),
-                      ),
-                    );
-                    if (updated == null || !context.mounted) return;
-                    // The figure is saved only when someone allowed to
-                    // set it changed it (Req 36).
-                    final budgetChanged =
-                        event.can(uid, 'budget.edit') &&
-                        updated.budgetEstimate != task.budgetEstimate;
-                    final ok = await repo.updateTask(
-                      updated,
-                      budgetEditedBy: budgetChanged ? uid : null,
-                    );
-                    if (!ok && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Could not save changes'),
-                          backgroundColor: AppColors.terracotta,
-                        ),
-                      );
-                    }
-                  }
-                : null,
+            assigneeName: task.assigneeId == null
+                ? null
+                : labelFor(task.assigneeId!),
+            completedByName: task.completedBy == null
+                ? null
+                : labelFor(task.completedBy!),
+            crewName: crews.where((c) => c.id == task.crewId).firstOrNull?.name,
+            onEdit: canEdit ? () => setState(() => _editing = true) : null,
             onDuplicate: () async {
-              // Reads checklist from the already-watched stream so the
-              // copy carries every item from the source. Any viewer
-              // (creator/admin/member) may duplicate; the new task gets
-              // their uid as createdBy.
+              // The copy carries every checklist item, and is the viewer's
+              // own (`createdBy`), so anyone may duplicate.
+              final failed = s.duplicateFailed;
               final duplicate = task.duplicate(
                 currentUserId: uid,
                 checklist: items,
@@ -165,60 +226,30 @@ class EventTaskDetailPage extends ConsumerWidget {
                     event: event,
                     currentUserId: uid,
                     initial: duplicate,
-                    displayNames: displayNamesMap,
+                    displayNames: displayNames,
                     crews: crews,
                     onSubmit: (t) => Navigator.of(context).pop(t),
                   ),
                 ),
               );
-              if (edited == null || !context.mounted) return;
+              if (edited == null) return;
               final ok = await repo.createTaskWithChecklist(
                 edited,
                 edited.checklistItems,
               );
-              if (!ok && context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Could not duplicate task'),
-                    backgroundColor: AppColors.terracotta,
-                  ),
-                );
-              }
+              if (!ok) _say(failed);
             },
             onDelete: canEdit
                 ? () async {
-                    final confirmed = await showDialog<bool>(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: const Text('Delete this task?'),
-                        content: const Text(
-                          'This cannot be undone. Members will lose the task '
-                          'and any checklist items.',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx, false),
-                            child: const Text('Cancel'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx, true),
-                            child: const Text(
-                              'Delete',
-                              style: TextStyle(color: AppColors.terracotta),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                    if (confirmed != true) return;
+                    if (!await _confirmDelete()) return;
                     final ok = await repo.deleteTask(task.id);
                     if (!ok || !context.mounted) return;
                     Navigator.of(context).pop();
                   }
                 : null,
             onChecklistToggle: (item, isCompleted) {
-              // Assignee uses the toggle-only path; creator/admin can use
-              // either, but toggle is the safer write.
+              // The assignee uses the toggle-only path; it is the safer
+              // write for everyone.
               repo.toggleChecklistItem(
                 eventId: event.id,
                 taskId: taskId,
@@ -251,40 +282,24 @@ class EventTaskDetailPage extends ConsumerWidget {
                   )
                 : null,
           ),
-          loading: () => Scaffold(
-            appBar: AppBar(title: Text(task.title), elevation: 0),
-            body: const Center(child: CircularProgressIndicator()),
-          ),
-          error: (e, _) => Scaffold(
-            appBar: AppBar(title: Text(task.title), elevation: 0),
-            body: Center(
-              child: Text(
-                userMessageFor(
-                  e,
-                  strings: context.strings.errors,
-                  fallback: context.strings.errors.genericFallback,
-                ),
-              ),
+          loading: () => bare(
+            task.title,
+            CpLoadingState(
+              key: const Key('tasks.detail.loading'),
+              semanticLabel: task.title,
             ),
           ),
+          error: (e, _) => bare(task.title, failed(e)),
         );
       },
-      loading: () => Scaffold(
-        appBar: AppBar(title: const Text('Task'), elevation: 0),
-        body: const Center(child: CircularProgressIndicator()),
-      ),
-      error: (e, _) => Scaffold(
-        appBar: AppBar(title: const Text('Task'), elevation: 0),
-        body: Center(
-          child: Text(
-            userMessageFor(
-              e,
-              strings: context.strings.errors,
-              fallback: context.strings.errors.genericFallback,
-            ),
-          ),
+      loading: () => bare(
+        s.taskWord,
+        CpLoadingState(
+          key: const Key('tasks.detail.loading'),
+          semanticLabel: s.taskWord,
         ),
       ),
+      error: (e, _) => bare(s.taskWord, failed(e)),
     );
   }
 }

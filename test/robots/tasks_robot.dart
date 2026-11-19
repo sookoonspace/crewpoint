@@ -105,7 +105,7 @@ class TasksRobot {
 
   // ===== Global MyTasks tab helpers =====
 
-  /// Taps a `SegmentedFilterBar` pill on `MyTasksScreen`. `segment` is
+  /// Taps a filter pill on `MyTasksScreen`. `segment` is
   /// one of "all", "todo", "doing", "done".
   Future<void> tapSegment(String segment) async {
     await tester.tap(find.byKey(Key('myTasks.filter.$segment')));
@@ -118,15 +118,15 @@ class TasksRobot {
     await _bounded();
   }
 
-  /// Asserts the progress strip at the top of `MyTasksScreen` shows the
-  /// expected counts (formatted as "{done}/{total}").
+  /// Asserts the progress card at the top of `MyTasksScreen` shows the
+  /// expected counts ("{done} of {total} done").
   void expectSummary({
     required int done,
     required int doing,
     required int todo,
   }) {
     final total = done + doing + todo;
-    final label = total == 0 ? '—' : '$done/$total';
+    final label = '$done of $total done';
     expect(
       find.descendant(
         of: find.byKey(const Key('tasks.header.summary')),

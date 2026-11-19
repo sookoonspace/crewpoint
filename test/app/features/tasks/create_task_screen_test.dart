@@ -1,29 +1,14 @@
-/// Pins the multi-line description prefix-icon fix from the
-/// 2026-06-08 iPhone 12 mini UI QA pass (Create_task_screen_01.PNG).
-/// Material's `InputDecorator` vertically centers `prefixIcon` in the
-/// full multi-line height, so on a `maxLines: 3` field the icon ends
-/// up below the placeholder — visibly disconnected.
-///
-/// The fix: don't pass a `prefixIcon` to the description AppTextField
-/// (the single-line title field above keeps its icon). The shared
-/// `AppTextField` is left untouched so other single-line callers stay
-/// consistent.
+/// The Create Task form in the Person form's pattern (Spec #186): no icon
+/// floating beside the multi-line description, the save button in a bar
+/// of its own at the bottom, and the budget figure only for `budget.edit`.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:crewpoint_app/app/core/widgets/forms/app_text_field.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/create_task_screen.dart';
-
-// The Create Task form lives inside CpShell on mobile widths,
-// which means the form's SingleChildScrollView ends just above a
-// Material 3 NavigationBar. The QA-pass screenshot
-// (Create_task_screen_02.PNG) showed the green "Create Task" CTA
-// floating ~10 px above that bar — visibly cramped. Anything < ~40 px
-// reads as occlusion to the eye even when nothing is actually clipped.
-const _minScrollBottomPaddingForNav = 40.0;
 
 void main() {
   const event = EventModel(
@@ -34,12 +19,9 @@ void main() {
     currency: 'USD',
   );
 
-  testWidgets('multi-line description field has no prefixIcon — '
-      'avoids the InputDecorator centring the icon below the placeholder', (
+  testWidgets('the multi-line description has no prefix icon', (
     tester,
   ) async {
-    // Tall viewport so the full form lays out without scrolling and
-    // the description field stays mounted for inspection.
     tester.view.physicalSize = const Size(800, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -51,43 +33,34 @@ void main() {
       ),
     );
 
-    final descField = tester.widget<AppTextField>(
+    final descField = tester.widget<CpTextField>(
       find.byKey(const Key('tasks.create.description')),
     );
-    expect(
-      descField.prefixIcon,
-      isNull,
-      reason:
-          'Description AppTextField (maxLines=3) must not pass a '
-          'prefixIcon — Material centres it vertically across all 3 '
-          'lines and the result looks orphaned next to the hint.',
-    );
+    expect(descField.prefixIcon, isNull);
+    expect(descField.maxLines, 3);
   });
 
-  testWidgets('scroll view leaves enough bottom padding for the persistent nav '
-      'so the Create Task CTA breathes', (tester) async {
-    tester.view.physicalSize = const Size(800, 2400);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
+  testWidgets('the save button sits in the bottom bar, clear of the form', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: CreateTaskScreen(event: event, currentUserId: 'owner-1'),
       ),
     );
 
-    final scrollView = tester.widget<SingleChildScrollView>(
-      find.byType(SingleChildScrollView),
-    );
-    final padding = scrollView.padding as EdgeInsets;
+    final bar = tester.widget<Scaffold>(find.byType(Scaffold).first);
+    expect(bar.bottomNavigationBar, isNotNull);
     expect(
-      padding.bottom,
-      greaterThanOrEqualTo(_minScrollBottomPaddingForNav),
-      reason:
-          'SingleChildScrollView.padding.bottom must clear the persistent '
-          'NavigationBar with breathing room. The Create Task CTA otherwise '
-          'sits flush against the nav at iPhone 12 mini.',
+      find.descendant(
+        of: find.byWidget(bar.bottomNavigationBar!),
+        matching: find.byKey(const Key('tasks.create.save')),
+      ),
+      findsOneWidget,
+    );    // Only as tall as its button, never covering the form.
+    expect(
+      tester.getSize(find.byWidget(bar.bottomNavigationBar!)).height,
+      lessThan(120),
     );
   });
 

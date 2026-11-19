@@ -469,9 +469,27 @@ void main() {
 
     test('a crew combines with the overdue filter', () {
       final dated = [
-        TaskModel(id: 'a', eventId: 'e', title: 'x', crewId: 'food', dueDate: DateTime(2026, 6, 1)),
-        TaskModel(id: 'b', eventId: 'e', title: 'y', crewId: 'program', dueDate: DateTime(2026, 6, 1)),
-        TaskModel(id: 'c', eventId: 'e', title: 'z', crewId: 'food', dueDate: DateTime(2026, 7, 1)),
+        TaskModel(
+          id: 'a',
+          eventId: 'e',
+          title: 'x',
+          crewId: 'food',
+          dueDate: DateTime(2026, 6, 1),
+        ),
+        TaskModel(
+          id: 'b',
+          eventId: 'e',
+          title: 'y',
+          crewId: 'program',
+          dueDate: DateTime(2026, 6, 1),
+        ),
+        TaskModel(
+          id: 'c',
+          eventId: 'e',
+          title: 'z',
+          crewId: 'food',
+          dueDate: DateTime(2026, 7, 1),
+        ),
       ];
       final kept = applyTasksFilter(
         dated,
@@ -507,9 +525,86 @@ void main() {
     });
 
     test('a duplicated task keeps its crew', () {
-      final copy = tasks.first.duplicate(currentUserId: 'u', checklist: const []);
+      final copy = tasks.first.duplicate(
+        currentUserId: 'u',
+        checklist: const [],
+      );
       expect(copy.crewId, 'food');
       expect(tasks.first.copyWith(clearCrewId: true).crewId, isNull);
+    });
+  });
+
+  group('due state and progress (Spec #186)', () {
+    final now = DateTime(2026, 6, 15, 18);
+    TaskModel t(
+      String id, {
+      DateTime? due,
+      TaskStatus status = TaskStatus.todo,
+    }) => TaskModel(
+      id: id,
+      eventId: 'e',
+      title: id,
+      dueDate: due,
+      status: status,
+    );
+
+    test('done beats any date; days flip at midnight', () {
+      expect(
+        taskDueState(
+          t('a', due: DateTime(2026, 6, 1), status: TaskStatus.done),
+          now,
+        ),
+        TaskDueState.done,
+      );
+      expect(
+        taskDueState(t('b', due: DateTime(2026, 6, 14, 23)), now),
+        TaskDueState.overdue,
+      );
+      expect(
+        taskDueState(t('c', due: DateTime(2026, 6, 15, 1)), now),
+        TaskDueState.soon,
+      );
+      expect(
+        taskDueState(t('d', due: DateTime(2026, 6, 21)), now),
+        TaskDueState.soon,
+      );
+      expect(
+        taskDueState(t('e', due: DateTime(2026, 6, 22)), now),
+        TaskDueState.later,
+      );
+      expect(taskDueState(t('f'), now), TaskDueState.none);
+    });
+
+    test('progress counts done, overdue and due this week', () {
+      final p = taskProgress([
+        t('a', status: TaskStatus.done),
+        t('b', due: DateTime(2026, 6, 10)),
+        t('c', due: DateTime(2026, 6, 16)),
+        t('d', due: DateTime(2026, 7, 1)),
+        t('e'),
+      ], now);
+      expect(p, (done: 1, total: 5, overdue: 1, dueThisWeek: 1));
+    });
+
+    test('group headers use the words they are given', () {
+      final groups = groupTasks(
+        [t('a'), t('b', status: TaskStatus.done)],
+        TasksGroupBy.status,
+        now: now,
+        assigneeNames: const {},
+        labels: (
+          todo: 'Open',
+          inProgress: 'Doing',
+          done: 'Finished',
+          unassigned: 'Nobody',
+          overdue: 'Late',
+          today: 'Now',
+          thisWeek: 'Soon',
+          later: 'Later on',
+          noDueDate: 'Whenever',
+        ),
+      );
+      expect([for (final g in groups) g.label], ['Open', 'Finished']);
     });
   });
 }
