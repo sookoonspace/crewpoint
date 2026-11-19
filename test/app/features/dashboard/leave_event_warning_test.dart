@@ -1,3 +1,4 @@
+import 'package:crewpoint_app/app/core/design/components/components.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/chat/application/people_by_id_provider.dart';
@@ -12,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../auth/fake_user_repository.dart';
+import '../../../harness/event_home_overrides.dart';
 
 const _event = EventModel(
   id: 'evt',
@@ -49,6 +51,7 @@ Future<void> _openLeave(
     ProviderScope(
       overrides: [
         currentUserIdProvider.overrideWithValue('me'),
+        ...eventHomeOverrides(expenses: null),
         expenseListProvider.overrideWith((ref, _) => expenses),
         eventMembersProvider.overrideWith((ref, _) => Stream.value(members)),
         ownershipOfferProvider.overrideWith((ref, _) => Stream.value(offer)),
@@ -87,7 +90,7 @@ void main() {
     await _openLeave(tester, Stream.value([_expense('owner', 'me')]));
     expect(find.byKey(_warning), findsOneWidget);
     expect(find.byKey(_leave), findsOneWidget);
-    expect(tester.widget<TextButton>(find.byKey(_leave)).onPressed, isNotNull);
+    expect(tester.widget<CpButton>(find.byKey(_leave)).onPressed, isNotNull);
   });
 
   testWidgets('warns someone who is owed money', (tester) async {
@@ -152,10 +155,7 @@ void main() {
         findsOneWidget,
       );
       // A warning, never a block.
-      expect(
-        tester.widget<TextButton>(find.byKey(_leave)).onPressed,
-        isNotNull,
-      );
+      expect(tester.widget<CpButton>(find.byKey(_leave)).onPressed, isNotNull);
     },
   );
 

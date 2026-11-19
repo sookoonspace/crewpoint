@@ -2,28 +2,33 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/event_cover.dart';
-import 'package:crewpoint_app/app/core/format/event_time.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_radius.dart';
-import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
-import 'package:crewpoint_app/app/core/format/event_date_range.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:intl/intl.dart';
+
+import 'package:crewpoint_app/app/core/design/components/components.dart';
 import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
+import 'package:crewpoint_app/app/core/format/event_date_range.dart';
+import 'package:crewpoint_app/app/core/format/event_time.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
-import 'package:crewpoint_app/app/core/widgets/loading_animation.dart';
+import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
 import 'package:crewpoint_app/app/features/dashboard/data/event_repository.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/member.dart';
-import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/event_status_label.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/event_cover.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/event_status_label.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/mute_event_sheet.dart';
+import 'package:crewpoint_app/app/features/schedule/domain/models/session.dart';
+import 'package:crewpoint_app/app/features/tasks/application/event_task_counts_provider.dart';
+import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
 
-/// Event detail hub — shows event info, member avatars, and quick links
-/// to sub-features (Chat, Budget, Tasks).
+/// The Event home (Spec #186, #199): the cover, the event at a glance, what
+/// is next and what is open, then its sections and admin actions. From
+/// 840 px it is a dashboard grid: summary cards in a row, the next sessions
+/// and open tasks side by side.
 class EventDashboardScreen extends StatelessWidget {
   const EventDashboardScreen({super.key, required this.event});
 
@@ -31,203 +36,67 @@ class EventDashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
+    final wide = MediaQuery.sizeOf(context).width >= Breakpoints.mediumMax;
+    final gap = SizedBox(height: cp.space.xl);
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          // Hero
-          SliverToBoxAdapter(child: _EventHero(event: event)),
-
-          // Cover photo, or the event's icon (Spec #186 Req 43, 44). #199
-          // rebuilds this screen around it.
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                Breakpoints.screenHorizontalPadding(context),
-                AppSpacing.xl,
-                Breakpoints.screenHorizontalPadding(context),
-                0,
-              ),
-              child: EventCoverBanner(event: event),
-            ),
-          ),
-
-          // Content
-          SliverPadding(
-            padding: EdgeInsets.symmetric(
-              horizontal: Breakpoints.screenHorizontalPadding(context),
-              vertical: AppSpacing.xl,
-            ),
-            sliver: SliverConstrainedCrossAxis(
-              maxExtent: 960,
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  const SizedBox(
-                    key: Key('eventDashboard.body.clamped'),
-                    height: 1,
-                  ),
-                  if (event.description != null &&
-                      event.description!.isNotEmpty) ...[
-                    Text(
-                      event.description!,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
+      appBar: _EventTopBar(event: event),
+      body: ListView(
+        key: const Key('eventDashboard.list'),
+        padding: EdgeInsets.fromLTRB(
+          cp.space.lg,
+          cp.space.xs,
+          cp.space.lg,
+          cp.space.xxl,
+        ),
+        children: [
+          ContentMaxWidth(
+            key: const Key('eventDashboard.body.clamped'),
+            maxWidth: wide ? 960 : cp.sizes.phoneColumn,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                EventCoverBanner(
+                  event: event,
+                  height: wide ? cp.sizes.coverBannerWide : null,
+                ),
+                SizedBox(height: cp.space.lg),
+                _Head(event: event, wide: wide),
+                _OwnershipOffer(event: event),
+                gap,
+                _Stats(event: event),
+                gap,
+                if (wide)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: cp.space.lg + cp.space.xs,
+                    children: [
+                      if (event.isModuleOn('schedule'))
+                        Expanded(child: _UpNext(event: event)),
+                      if (event.isModuleOn('tasks'))
+                        Expanded(child: _OpenTasks(event: event)),
+                    ],
+                  )
+                else ...[
+                  if (event.isModuleOn('schedule')) ...[
+                    _UpNext(event: event),
+                    gap,
                   ],
-
-                  // Shown to the person offered ownership (Req 30).
-                  Consumer(
-                    builder: (_, ref, _) {
-                      final uid = ref.watch(currentUserIdProvider);
-                      final offer = ref
-                          .watch(ownershipOfferProvider(event.id))
-                          .value;
-                      if (uid == null || offer == null || offer.to != uid) {
-                        return const SizedBox.shrink();
-                      }
-                      final strings = context.strings.transfer;
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                        child: Card(
-                          key: const Key('event.ownershipOffer'),
-                          elevation: 0,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.secondaryContainer,
-                          child: ListTile(
-                            minTileHeight: 56,
-                            leading: const Icon(AppIcons.actionSwap),
-                            title: Text(strings.title),
-                            subtitle: Text(strings.bannerBody),
-                            trailing: TextButton(
-                              key: const Key('event.ownershipOffer.open'),
-                              onPressed: () => context.push(
-                                '/dashboard/event/${event.id}/transfer',
-                              ),
-                              child: Text(strings.open),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
+                  if (event.isModuleOn('tasks')) _OpenTasks(event: event),
+                ],
+                gap,
+                CpSectionHeader(title: context.strings.eventHome.eventSection),
+                SizedBox(height: cp.space.sm),
+                _ModuleHub(event: event),
+                _Manage(event: event),
+                gap,
+                Consumer(
+                  builder: (_, ref, _) => _EventActions(
+                    event: event,
+                    currentUserId: ref.watch(currentUserIdProvider) ?? '',
                   ),
-
-                  // Member avatars row
-                  _MembersPreview(
-                    label: event.words.count('member', event.memberCount),
-                    onTap: () =>
-                        context.push('/dashboard/event/${event.id}/members'),
-                  ),
-
-                  const SizedBox(height: AppSpacing.md),
-
-                  // Edit Event tile — admin/owner only. Manage-then-add:
-                  // sits above the Invite Members tile so admins reach
-                  // the edit affordance first. Adds a discoverable body
-                  // entry point alongside the gear icon in the hero
-                  // (2026-06-11 iPhone 12 mini QA).
-                  Consumer(
-                    builder: (_, ref, _) {
-                      final uid = ref.watch(currentUserIdProvider);
-                      if (uid == null || !event.canManage(uid)) {
-                        return const SizedBox.shrink();
-                      }
-                      return Padding(
-                        padding: const EdgeInsets.only(top: AppSpacing.md),
-                        child: _QuickLinkCard(
-                          key: const Key('eventDashboard.editEvent.tile'),
-                          icon: AppIcons.actionEdit,
-                          label: 'Edit Event',
-                          subtitle: 'Update title, dates, or details',
-                          color: AppColors.sage,
-                          onTap: () =>
-                              context.push('/dashboard/event/${event.id}/edit'),
-                        ),
-                      );
-                    },
-                  ),
-
-                  // Invite Members tile — admin/owner only. Explicit
-                  // null-uid guard so we don't rely on canManage('') semantics.
-                  Consumer(
-                    builder: (_, ref, _) {
-                      final uid = ref.watch(currentUserIdProvider);
-                      if (uid == null) return const SizedBox.shrink();
-                      if (event.status == EventStatus.draft) {
-                        if (!event.canManage(uid)) {
-                          return const SizedBox.shrink();
-                        }
-                        final strings = context.strings.dashboard;
-                        return Padding(
-                          padding: const EdgeInsets.only(top: AppSpacing.md),
-                          child: _QuickLinkCard(
-                            key: const Key('events.dashboard.publish'),
-                            icon: AppIcons.memberAdd,
-                            label: strings.publishEvent,
-                            subtitle: strings.publishEventSubtitle,
-                            color: AppColors.terracotta,
-                            onTap: () async {
-                              final messenger = ScaffoldMessenger.of(context);
-                              final result = await ref
-                                  .read(eventRepositoryProvider)
-                                  .setStatus(event.id, EventStatus.published);
-                              if (result == EventWriteResult.failed) {
-                                messenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text(strings.publishFailed),
-                                  ),
-                                );
-                              }
-                            },
-                          ),
-                        );
-                      }
-                      // Inviting matches generateInviteCode: members.manage.
-                      if (!event.isJoinable ||
-                          !event.can(uid, 'members.manage')) {
-                        return const SizedBox.shrink();
-                      }
-                      return Padding(
-                        padding: const EdgeInsets.only(top: AppSpacing.md),
-                        child: _QuickLinkCard(
-                          key: const Key('eventDashboard.inviteMembers.tile'),
-                          icon: AppIcons.memberAdd,
-                          label: context.strings.dashboard.inviteLabel(
-                            event.words.other('member'),
-                          ),
-                          subtitle: 'Share a code to add people',
-                          color: AppColors.terracotta,
-                          onTap: () => AddMemberSheet.show(
-                            context: context,
-                            eventId: event.id,
-                            memberLabel: event.words.other('member'),
-                            canChooseRole: event.can(uid, 'roles.manage'),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: AppSpacing.xl),
-
-                  _ModuleHub(event: event),
-
-                  const SizedBox(height: AppSpacing.xl),
-
-                  // Event actions (archive, leave, delete) — uid threaded
-                  // from currentUserIdProvider so isOwner / isAdmin /
-                  // isMember branches evaluate correctly.
-                  Consumer(
-                    builder: (_, ref, _) => _EventActions(
-                      event: event,
-                      currentUserId: ref.watch(currentUserIdProvider) ?? '',
-                    ),
-                  ),
-
-                  const SizedBox(height: AppSpacing.xl),
-                ]),
-              ),
+                ),
+              ],
             ),
           ),
         ],
@@ -236,9 +105,431 @@ class EventDashboardScreen extends StatelessWidget {
   }
 }
 
-/// One entry per enabled module, in a list that becomes a grid from 840 px. No
-/// `extra:` payload, because child routes resolve the event by id via
-/// EventGuard.
+/// Back, mute (everyone) and settings (`event.manage`).
+class _EventTopBar extends ConsumerWidget implements PreferredSizeWidget {
+  const _EventTopBar({required this.event});
+
+  final EventModel event;
+
+  @override
+  Size get preferredSize => const CpTopBar().preferredSize;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = context.strings.eventHome;
+    final uid = ref.watch(currentUserIdProvider);
+    final mute = uid == null
+        ? null
+        : ref.watch(eventMuteProvider((uid: uid, eventId: event.id))).value;
+    final isMuted = mute != null && mute.isMutedAt(DateTime.now().toUtc());
+    return CpTopBar(
+      leadingTooltip: MaterialLocalizations.of(context).backButtonTooltip,
+      leadingKey: const Key('event.dashboard.back'),
+      onLeading: () => context.pop(),
+      actions: [
+        // Muting is each person's own choice (Phase 5.1).
+        if (uid != null)
+          CpTopBarAction(
+            key: const Key('event.dashboard.muteIcon'),
+            icon: isMuted ? CpIcons.actionMute : CpIcons.notifications,
+            tooltip: isMuted ? strings.muted : strings.mute,
+            onPressed: () => MuteEventSheet.show(
+              context: context,
+              uid: uid,
+              eventId: event.id,
+            ),
+          ),
+        if (uid != null && event.canManage(uid))
+          CpTopBarAction(
+            key: const Key('event.dashboard.settingsIcon'),
+            icon: CpIcons.actionSettings,
+            tooltip: strings.editEvent,
+            onPressed: () => context.push('/dashboard/event/${event.id}/edit'),
+          ),
+      ],
+    );
+  }
+}
+
+/// Status, title, dates, place and description. How many people are in
+/// it is the first summary card.
+class _Head extends ConsumerWidget {
+  const _Head({required this.event, required this.wide});
+
+  final EventModel event;
+  final bool wide;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cp = context.cp;
+    final dates = formatEventDateRange(event.displayStart, event.displayEnd);
+    // The time zone is named only where the viewer's device differs.
+    final note = zoneNoteFor(
+      event.timeZone,
+      ref.watch(deviceZoneNameProvider).value,
+      at: DateTime.now(),
+    );
+    final place = event.venues.isEmpty ? null : event.venues.first.name;
+    final status = eventStatusLabel(context.strings.dashboard, event.status);
+    Widget meta(IconData icon, String text, {Key? key}) => Row(
+      key: key,
+      spacing: cp.space.sm,
+      children: [
+        Icon(icon, size: cp.sizes.iconSm + 1, color: cp.colors.textMuted),
+        Flexible(
+          child: Text(
+            text,
+            style: cp.type.bodySmall.copyWith(
+              color: cp.colors.textMuted,
+              fontSize: cp.type.titleSmall.fontSize! - 1,
+            ),
+          ),
+        ),
+      ],
+    );
+    final details = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: cp.space.sm,
+      children: [
+        CpTag(
+          key: const Key('events.dashboard.status'),
+          label: status,
+          dot: event.status == EventStatus.live,
+          tone:
+              event.status == EventStatus.draft ||
+                  event.status == EventStatus.archived
+              ? CpTagTone.quiet
+              : CpTagTone.accent,
+        ),
+        Semantics(
+          header: true,
+          child: Text(
+            event.title,
+            style: (wide ? cp.type.displaySmall : cp.type.headlineLarge)
+                .copyWith(color: cp.colors.text),
+          ),
+        ),
+        if (dates.isNotEmpty)
+          meta(
+            CpIcons.calendar,
+            note == null ? dates : '$dates · $note',
+            key: const Key('events.dashboard.dates'),
+          ),
+        ?(place == null ? null : meta(CpIcons.place, place)),
+        if (event.description != null && event.description!.isNotEmpty)
+          Text(
+            event.description!,
+            style: cp.type.bodyMedium.copyWith(color: cp.colors.textMuted),
+          ),
+      ],
+    );
+    return details;
+  }
+}
+
+/// Shown to the person offered ownership (Req 30).
+class _OwnershipOffer extends ConsumerWidget {
+  const _OwnershipOffer({required this.event});
+
+  final EventModel event;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final uid = ref.watch(currentUserIdProvider);
+    final offer = ref.watch(ownershipOfferProvider(event.id)).value;
+    if (uid == null || offer == null || offer.to != uid) {
+      return const SizedBox.shrink();
+    }
+    final cp = context.cp;
+    final strings = context.strings.transfer;
+    return Padding(
+      padding: EdgeInsets.only(top: cp.space.lg),
+      child: CpCard(
+        key: const Key('event.ownershipOffer'),
+        padding: EdgeInsets.all(cp.space.lg),
+        child: Row(
+          spacing: cp.space.md,
+          children: [
+            Icon(CpIcons.actionSwap, color: cp.colors.accent),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    strings.title,
+                    style: cp.type.titleSmall.copyWith(color: cp.colors.text),
+                  ),
+                  Text(
+                    strings.bannerBody,
+                    style: cp.type.bodySmall.copyWith(
+                      color: cp.colors.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            CpButton.text(
+              key: const Key('event.ownershipOffer.open'),
+              label: strings.open,
+              onPressed: () =>
+                  context.push('/dashboard/event/${event.id}/transfer'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// People, tasks and money at a glance.
+class _Stats extends ConsumerWidget {
+  const _Stats({required this.event});
+
+  final EventModel event;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = context.strings.eventHome;
+    final me = ref.watch(currentUserIdProvider) ?? '';
+    final counts = event.isModuleOn('tasks')
+        ? ref.watch(eventTaskCountsProvider(event.id)).value
+        : null;
+    // Spending only for someone who reads every expense (Req 38c).
+    final expenses = event.isModuleOn('budget') && event.readsAllExpenses(me)
+        ? ref.watch(expenseListProvider(event.id)).value
+        : null;
+    final total = counts == null ? 0 : counts.todo + counts.doing + counts.done;
+    return CpStatGrid(
+      children: [
+        CpStatCard(
+          key: const Key('events.dashboard.stat.members'),
+          icon: CpIcons.members,
+          label: event.words.other('member'),
+          value: '${event.memberCount}',
+          onTap: () => context.push('/dashboard/event/${event.id}/members'),
+        ),
+        if (event.isModuleOn('tasks'))
+          CpStatCard(
+            key: const Key('events.dashboard.stat.tasks'),
+            icon: CpIcons.tasks,
+            label: strings.tasks,
+            value: counts == null ? '…' : '${counts.done}/$total',
+            progress: total == 0 ? null : counts!.done / total,
+            progressLabel: total == 0
+                ? null
+                : strings.tasksDone(counts!.done, total),
+            caption: counts == null
+                ? null
+                : total == 0
+                ? strings.noTasks
+                : strings.openCount(counts.todo + counts.doing),
+            onTap: () => context.push('/dashboard/event/${event.id}/tasks'),
+          ),
+        if (expenses != null)
+          CpStatCard(
+            key: const Key('events.dashboard.stat.budget'),
+            icon: CpIcons.budget,
+            label: strings.budget,
+            value: NumberFormat.simpleCurrency(
+              name: event.currency,
+              decimalDigits: 0,
+            ).format(expenses.fold<double>(0, (sum, e) => sum + e.amount)),
+            caption: strings.expenseCount(expenses.length),
+            onTap: () => context.push('/dashboard/event/${event.id}/budget'),
+          ),
+      ],
+    );
+  }
+}
+
+/// The next three sessions, in the event's time zone.
+class _UpNext extends ConsumerWidget {
+  const _UpNext({required this.event});
+
+  final EventModel event;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cp = context.cp;
+    final strings = context.strings.eventHome;
+    final now = DateTime.now().toUtc();
+    final sessions = [
+      for (final s
+          in ref.watch(sessionListProvider(event.id)).value ??
+              const <SessionModel>[])
+        // A session with no end lasts an hour (#82).
+        if (!s.hidden &&
+            (s.endAt ?? s.startAt.add(const Duration(hours: 1))).isAfter(now))
+          s,
+    ]..sort((a, b) => a.startAt.compareTo(b.startAt));
+    final venues = {for (final v in event.venues) v.id: v.name};
+    return Column(
+      key: const Key('events.dashboard.upNext'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: cp.space.sm,
+      children: [
+        CpSectionHeader(
+          title: strings.upNext,
+          actionLabel: strings.scheduleLink,
+          actionKey: const Key('events.dashboard.upNext.schedule'),
+          onAction: () => context.push('/dashboard/event/${event.id}/schedule'),
+        ),
+        CpCard(
+          child: sessions.isEmpty
+              ? Padding(
+                  padding: EdgeInsets.all(cp.space.lg),
+                  child: Text(
+                    strings.nothingNext,
+                    style: cp.type.bodySmall.copyWith(
+                      color: cp.colors.textMuted,
+                    ),
+                  ),
+                )
+              : CpRowGroup(
+                  children: [
+                    for (final s in sessions.take(3))
+                      CpListRow(
+                        key: Key('events.dashboard.session.${s.id}'),
+                        leading: _Time(at: event.inZone(s.startAt)),
+                        title: s.title,
+                        subtitle: venues[s.venueId],
+                        onTap: () => context.push(
+                          '/dashboard/event/${event.id}/schedule/${s.id}',
+                        ),
+                      ),
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class _Time extends StatelessWidget {
+  const _Time({required this.at});
+
+  final DateTime at;
+
+  @override
+  Widget build(BuildContext context) {
+    final cp = context.cp;
+    // Split on any space: `jm` puts a narrow no-break space before AM/PM.
+    final parts = DateFormat.jm().format(at).split(RegExp(r'\s'));
+    return SizedBox(
+      width: cp.sizes.tapMin + cp.space.sm,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            parts.first,
+            style: cp.type.titleSmall.copyWith(
+              color: cp.colors.text,
+              fontWeight: FontWeight.w600,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+          if (parts.length > 1)
+            Text(
+              parts.skip(1).join(' '),
+              style: cp.type.labelSmall.copyWith(
+                color: cp.colors.textMuted,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The three most pressing open tasks, with their status.
+class _OpenTasks extends ConsumerWidget {
+  const _OpenTasks({required this.event});
+
+  final EventModel event;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cp = context.cp;
+    final strings = context.strings.eventHome;
+    final today = DateUtils.dateOnly(DateTime.now());
+    final open =
+        [
+          for (final t
+              in ref.watch(taskListProvider(event.id)).value ??
+                  const <TaskModel>[])
+            if (t.status != TaskStatus.done) t,
+        ]..sort((a, b) {
+          final x = a.dueDate;
+          final y = b.dueDate;
+          // Tasks without a due date go last.
+          if (x == null || y == null) {
+            return x == null ? (y == null ? 0 : 1) : -1;
+          }
+          return x.compareTo(y);
+        });
+    Widget? chip(TaskModel t) {
+      final due = t.dueDate;
+      if (due == null) return null;
+      final day = DateUtils.dateOnly(due.toLocal());
+      if (day.isBefore(today)) {
+        return CpStatusChip(status: CpStatus.overdue, label: strings.overdue);
+      }
+      if (day.difference(today).inDays < 7) {
+        return CpStatusChip(
+          status: CpStatus.due,
+          label: strings.due(DateFormat.E().format(day)),
+        );
+      }
+      return null;
+    }
+
+    return Column(
+      key: const Key('events.dashboard.openTasks'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: cp.space.sm,
+      children: [
+        CpSectionHeader(
+          title: strings.openTasks,
+          actionLabel: strings.allTasks,
+          actionKey: const Key('events.dashboard.openTasks.all'),
+          onAction: () => context.push('/dashboard/event/${event.id}/tasks'),
+        ),
+        CpCard(
+          child: open.isEmpty
+              ? Padding(
+                  padding: EdgeInsets.all(cp.space.lg),
+                  child: Text(
+                    strings.noOpenTasks,
+                    style: cp.type.bodySmall.copyWith(
+                      color: cp.colors.textMuted,
+                    ),
+                  ),
+                )
+              : CpRowGroup(
+                  children: [
+                    for (final t in open.take(3))
+                      CpListRow(
+                        key: Key('events.dashboard.task.${t.id}'),
+                        title: t.title,
+                        subtitle: t.dueDate == null
+                            ? null
+                            : DateFormat.MMMEd().format(t.dueDate!.toLocal()),
+                        trailing: chip(t),
+                        onTap: () => context.push(
+                          '/dashboard/event/${event.id}/tasks/${t.id}',
+                        ),
+                      ),
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+/// One entry per enabled module: two to a row on a phone, three from
+/// 840 px. Child routes resolve the event by ID through EventGuard.
 class _ModuleHub extends ConsumerWidget {
   const _ModuleHub({required this.event});
 
@@ -246,107 +537,113 @@ class _ModuleHub extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final cp = context.cp;
     final strings = context.strings.dashboard;
     final me = ref.watch(currentUserIdProvider) ?? '';
-    Widget entry(
-      String module,
-      IconData icon,
-      String label,
-      String subtitle,
-      Color color,
-    ) => _QuickLinkCard(
-      key: Key('events.hub.$module'),
-      icon: icon,
-      label: label,
-      subtitle: subtitle,
-      color: color,
-      onTap: () => context.push('/dashboard/event/${event.id}/$module'),
-    );
+    Widget entry(String module, IconData icon, String label, String subtitle) =>
+        _HubTile(
+          key: Key('events.hub.$module'),
+          icon: icon,
+          label: label,
+          subtitle: subtitle,
+          onTap: () => context.push('/dashboard/event/${event.id}/$module'),
+        );
 
     final entries = [
       // Reading chat needs `chat.send` (Req 32).
       if (event.isModuleOn('chat') && event.readsChat(me))
         entry(
           'chat',
-          AppIcons.navChatFilled,
+          CpIcons.chat,
           strings.moduleChat,
           strings.moduleChatSubtitle,
-          AppColors.sage,
         ),
       if (event.isModuleOn('budget'))
         entry(
           'budget',
-          AppIcons.navBudgetFilled,
+          CpIcons.budget,
           strings.moduleBudget,
           strings.moduleBudgetSubtitle,
-          AppColors.terracotta,
         ),
       // Everyone's own agenda, then the whole schedule (Req 48, 51, 78b).
       if (event.isModuleOn('schedule'))
         entry(
           'agenda',
-          AppIcons.schedule,
+          CpIcons.agenda,
           context.strings.agenda.title,
           context.strings.agenda.hubSubtitle,
-          Theme.of(context).colorScheme.secondary,
         ),
       if (event.isModuleOn('schedule'))
         entry(
           'schedule',
-          AppIcons.calendar,
+          CpIcons.schedule,
           context.strings.schedule.title,
           context.strings.schedule.hubSubtitle,
-          Theme.of(context).colorScheme.tertiary,
         ),
       // The roster needs participants.read; a linked adult sees their own
       // group (Req 43).
       if (event.can(me, 'participants.read') || event.can(me, 'group.editOwn'))
         entry(
           'people',
-          AppIcons.members,
+          CpIcons.members,
           event.words.other('participant'),
           context.strings.people.hubSubtitle,
-          Theme.of(context).colorScheme.primary,
         ),
       // Headcounts need counts.read (Req 52).
       if (event.can(me, 'counts.read'))
         entry(
           'counts',
-          AppIcons.members,
+          CpIcons.counts,
           context.strings.counts.title,
           context.strings.counts.hubSubtitle,
-          Theme.of(context).colorScheme.primary,
         ),
       if (event.isModuleOn('tasks'))
         entry(
           'tasks',
-          AppIcons.statusDone,
+          CpIcons.tasks,
           strings.moduleTasks,
           strings.moduleTasksSubtitle,
-          Theme.of(context).colorScheme.onSurface,
         ),
     ];
 
     if (entries.isEmpty) {
-      return Text(strings.hubEmpty, key: const Key('events.hub.empty'));
-    }
-    if (MediaQuery.sizeOf(context).width < Breakpoints.mediumMax) {
-      return Column(
-        key: const Key('events.hub.list'),
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: AppSpacing.md,
-        children: entries,
+      return Text(
+        strings.hubEmpty,
+        key: const Key('events.hub.empty'),
+        style: cp.type.bodySmall.copyWith(color: cp.colors.textMuted),
       );
     }
+    final wide = MediaQuery.sizeOf(context).width >= Breakpoints.mediumMax;
     return LayoutBuilder(
-      builder: (_, constraints) {
-        final width = (constraints.maxWidth - AppSpacing.md) / 2;
-        return Wrap(
-          key: const Key('events.hub.grid'),
-          spacing: AppSpacing.md,
-          runSpacing: AppSpacing.md,
+      key: Key(wide ? 'events.hub.grid' : 'events.hub.list'),
+      builder: (context, constraints) {
+        // As many to a row as fit, never more than three, so a tile's text
+        // is never squeezed at large text sizes.
+        final scale = MediaQuery.textScalerOf(context).scale(1);
+        final fit =
+            ((constraints.maxWidth + cp.space.sm) /
+                    (cp.sizes.statMinHeight * 1.5 * scale + cp.space.sm))
+                .floor();
+        final columns = fit.clamp(1, wide ? 3 : 2);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: cp.space.sm,
           children: [
-            for (final card in entries) SizedBox(width: width, child: card),
+            for (var start = 0; start < entries.length; start += columns)
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  spacing: cp.space.sm,
+                  children: [
+                    for (var i = start; i < start + columns; i++)
+                      Expanded(
+                        child: i < entries.length
+                            ? entries[i]
+                            : const SizedBox.shrink(),
+                      ),
+                  ],
+                ),
+              ),
           ],
         );
       },
@@ -354,285 +651,150 @@ class _ModuleHub extends ConsumerWidget {
   }
 }
 
-class _EventHero extends StatelessWidget {
-  const _EventHero({required this.event});
-
-  final EventModel event;
-
-  @override
-  Widget build(BuildContext context) {
-    final dateLabel = formatEventDateRange(
-      event.displayStart,
-      event.displayEnd,
-    );
-
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: .topCenter,
-          end: .bottomCenter,
-          colors: [AppColors.charcoal, AppColors.charcoalDark],
-        ),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(32),
-          bottomRight: Radius.circular(32),
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.xl,
-            AppSpacing.sm,
-            AppSpacing.xl,
-            AppSpacing.xxl,
-          ),
-          child: Column(
-            crossAxisAlignment: .start,
-            children: [
-              // Back button + mute toggle + settings (admin)
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(
-                      AppIcons.actionBack,
-                      color: AppColors.offWhite,
-                    ),
-                    onPressed: () => context.pop(),
-                  ),
-                  const Spacer(),
-                  // Mute (Phase 5.1) — visible to every member; mute is
-                  // a per-user choice so non-admins get it too.
-                  Consumer(
-                    builder: (_, ref, _) {
-                      final uid = ref.watch(currentUserIdProvider);
-                      if (uid == null) return const SizedBox.shrink();
-                      final asyncMute = ref.watch(
-                        eventMuteProvider((uid: uid, eventId: event.id)),
-                      );
-                      final mute = asyncMute.maybeWhen(
-                        data: (m) => m,
-                        orElse: () => null,
-                      );
-                      final isMuted =
-                          mute != null &&
-                          mute.isMutedAt(DateTime.now().toUtc());
-                      return IconButton(
-                        key: const Key('event.dashboard.muteIcon'),
-                        tooltip: isMuted
-                            ? 'Muted — tap to manage'
-                            : 'Mute event',
-                        icon: Icon(
-                          isMuted
-                              ? Icons.notifications_off_outlined
-                              : Icons.notifications_outlined,
-                          color: AppColors.offWhite,
-                        ),
-                        onPressed: () => MuteEventSheet.show(
-                          context: context,
-                          uid: uid,
-                          eventId: event.id,
-                        ),
-                      );
-                    },
-                  ),
-                  Consumer(
-                    builder: (_, ref, _) {
-                      final uid = ref.watch(currentUserIdProvider);
-                      if (uid == null || !event.canManage(uid)) {
-                        return const SizedBox.shrink();
-                      }
-                      return IconButton(
-                        key: const Key('event.dashboard.settingsIcon'),
-                        icon: const Icon(
-                          AppIcons.actionSettings,
-                          color: AppColors.offWhite,
-                        ),
-                        onPressed: () =>
-                            context.push('/dashboard/event/${event.id}/edit'),
-                      );
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-
-              // Event type badge, which newer events do not have.
-              if (event.typeLabel != null) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.xs,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.sage.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    event.typeLabel!,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: AppColors.sageLight,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-              ],
-
-              // Title
-              Text(
-                event.title,
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: AppColors.offWhite,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-
-              // Dates
-              if (dateLabel.isNotEmpty)
-                Row(
-                  spacing: AppSpacing.sm,
-                  children: [
-                    const Icon(
-                      AppIcons.calendar,
-                      size: AppSizes.iconXs,
-                      color: AppColors.sageLight,
-                    ),
-                    Flexible(
-                      child: Consumer(
-                        builder: (_, ref, _) {
-                          // Named only where the viewer's device differs.
-                          final note = zoneNoteFor(
-                            event.timeZone,
-                            ref.watch(deviceZoneNameProvider).value,
-                            at: DateTime.now(),
-                          );
-                          return Text(
-                            note == null ? dateLabel : '$dateLabel · $note',
-                            key: const Key('events.dashboard.dates'),
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: AppColors.sageLight),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-
-              // Status badge. Published is the normal state, so it has none.
-              if (event.status != EventStatus.published) ...[
-                const SizedBox(height: AppSpacing.md),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.xs,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.terracotta.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    eventStatusLabel(context.strings.dashboard, event.status),
-                    key: const Key('events.dashboard.status'),
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: AppColors.terracottaLight,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MembersPreview extends StatelessWidget {
-  const _MembersPreview({required this.label, this.onTap});
-
-  final String label;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.borderLg,
-        side: BorderSide(
-          color: AppColors.lightGrey.withValues(alpha: 0.7),
-          width: 0.5,
-        ),
-      ),
-      child: ListTile(
-        leading: const Icon(AppIcons.members, color: AppColors.sage),
-        title: Text(label),
-        trailing: Icon(
-          AppIcons.chevronRight,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-        onTap: onTap,
-        shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
-      ),
-    );
-  }
-}
-
-class _QuickLinkCard extends StatelessWidget {
-  const _QuickLinkCard({
+class _HubTile extends StatelessWidget {
+  const _HubTile({
     super.key,
     required this.icon,
     required this.label,
     required this.subtitle,
-    required this.color,
-    this.onTap,
+    required this.onTap,
   });
 
   final IconData icon;
   final String label;
   final String subtitle;
-  final Color color;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.borderLg,
-        side: BorderSide(
-          color: AppColors.lightGrey.withValues(alpha: 0.7),
-          width: 0.5,
-        ),
+    final cp = context.cp;
+    return CpCard(
+      onTap: onTap,
+      semanticLabel: '$label, $subtitle',
+      padding: EdgeInsets.symmetric(
+        horizontal: cp.space.md,
+        vertical: cp.space.md + 2,
       ),
-      child: ListTile(
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
+      child: Row(
+        spacing: cp.space.md - 2,
+        children: [
+          Container(
+            width: cp.sizes.iconTile,
+            height: cp.sizes.iconTile,
+            decoration: BoxDecoration(
+              color: cp.colors.accentSoft,
+              borderRadius: cp.radii.sm,
+            ),
+            child: Icon(icon, size: cp.sizes.iconMd, color: cp.colors.accent),
           ),
-          child: Icon(icon, color: color, size: 22),
-        ),
-        title: Text(label),
-        subtitle: Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
-        trailing: Icon(
-          AppIcons.chevronRight,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-        onTap: onTap,
-        shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: cp.type.titleSmall.copyWith(color: cp.colors.text),
+                ),
+                Text(
+                  subtitle,
+                  style: cp.type.labelSmall.copyWith(
+                    color: cp.colors.textMuted,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-/// Archive, Leave, Delete actions for the event dashboard.
+/// Editing, publishing a draft and inviting, for those who may.
+class _Manage extends ConsumerWidget {
+  const _Manage({required this.event});
+
+  final EventModel event;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cp = context.cp;
+    final strings = context.strings.eventHome;
+    final dashboard = context.strings.dashboard;
+    final uid = ref.watch(currentUserIdProvider);
+    if (uid == null) return const SizedBox.shrink();
+    Widget icon(IconData glyph) => Container(
+      width: cp.sizes.iconTile,
+      height: cp.sizes.iconTile,
+      decoration: BoxDecoration(
+        color: cp.colors.accentSoft,
+        borderRadius: cp.radii.sm,
+      ),
+      child: Icon(glyph, size: cp.sizes.iconMd, color: cp.colors.accent),
+    );
+    final rows = <Widget>[
+      if (event.canManage(uid))
+        CpListRow(
+          key: const Key('eventDashboard.editEvent.tile'),
+          leading: icon(CpIcons.actionEdit),
+          title: strings.editEvent,
+          subtitle: strings.editEventSubtitle,
+          onTap: () => context.push('/dashboard/event/${event.id}/edit'),
+        ),
+      // A draft is published before anyone is invited (Req 19).
+      if (event.status == EventStatus.draft && event.canManage(uid))
+        CpListRow(
+          key: const Key('events.dashboard.publish'),
+          leading: icon(CpIcons.memberAdd),
+          title: dashboard.publishEvent,
+          subtitle: dashboard.publishEventSubtitle,
+          onTap: () async {
+            final messenger = ScaffoldMessenger.of(context);
+            final result = await ref
+                .read(eventRepositoryProvider)
+                .setStatus(event.id, EventStatus.published);
+            if (result == EventWriteResult.failed) {
+              messenger.showSnackBar(
+                SnackBar(content: Text(dashboard.publishFailed)),
+              );
+            }
+          },
+        ),
+      // Inviting matches generateInviteCode: members.manage.
+      if (event.status != EventStatus.draft &&
+          event.isJoinable &&
+          event.can(uid, 'members.manage'))
+        CpListRow(
+          key: const Key('eventDashboard.inviteMembers.tile'),
+          leading: icon(CpIcons.memberAdd),
+          title: dashboard.inviteLabel(event.words.other('member')),
+          subtitle: strings.inviteSubtitle,
+          onTap: () => AddMemberSheet.show(
+            context: context,
+            eventId: event.id,
+            memberLabel: event.words.other('member'),
+            canChooseRole: event.can(uid, 'roles.manage'),
+          ),
+        ),
+    ];
+    if (rows.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: EdgeInsets.only(top: cp.space.xl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: cp.space.sm,
+        children: [
+          CpSectionHeader(title: strings.manageSection),
+          CpCard(child: CpRowGroup(children: rows)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Settings, archive, leave and delete.
 class _EventActions extends ConsumerStatefulWidget {
   const _EventActions({required this.event, required this.currentUserId});
 
@@ -716,11 +878,16 @@ class _EventActionsState extends ConsumerState<_EventActions> {
     return strings.leaveOneManagerLeftWarning(name);
   }
 
+  void _fail(String message) => ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text(message)));
+
   Future<void> _leaveEvent() async {
     final balance = await _outstandingBalance();
     if (!mounted) return;
     final managerWarning = await _managerWarning();
     if (!mounted) return;
+    final strings = context.strings.eventHome;
     final warning = balance == null
         ? null
         : context.strings.dashboard.leaveEventBalanceWarning(
@@ -728,46 +895,44 @@ class _EventActionsState extends ConsumerState<_EventActions> {
           );
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Leave Event?'),
-        content: Column(
-          mainAxisSize: .min,
-          crossAxisAlignment: .start,
-          spacing: AppSpacing.sm,
-          children: [
-            const Text(
-              'You will lose access to this event. '
-              'Your past messages and expenses will remain.',
+      builder: (ctx) {
+        final cp = ctx.cp;
+        Widget warn(String text, Key key) => Text(
+          text,
+          key: key,
+          style: cp.type.bodyMedium.copyWith(color: cp.colors.overdue),
+        );
+        return CpDialog(
+          title: strings.leaveTitle,
+          message: strings.leaveBody,
+          content: warning == null && managerWarning == null
+              ? null
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: cp.space.sm,
+                  children: [
+                    if (warning != null)
+                      warn(warning, const Key('event.leave.balanceWarning')),
+                    if (managerWarning != null)
+                      warn(
+                        managerWarning,
+                        const Key('event.leave.lastManagerWarning'),
+                      ),
+                  ],
+                ),
+          actions: [
+            CpButton.text(
+              label: strings.cancel,
+              onPressed: () => Navigator.pop(ctx, false),
             ),
-            if (warning != null)
-              Text(
-                warning,
-                key: const Key('event.leave.balanceWarning'),
-                style: TextStyle(color: Theme.of(ctx).colorScheme.error),
-              ),
-            if (managerWarning != null)
-              Text(
-                managerWarning,
-                key: const Key('event.leave.lastManagerWarning'),
-                style: TextStyle(color: Theme.of(ctx).colorScheme.error),
-              ),
+            CpButton.destructive(
+              key: const Key('event.leave.confirm'),
+              label: strings.leave,
+              onPressed: () => Navigator.pop(ctx, true),
+            ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            key: const Key('event.leave.confirm'),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              'Leave',
-              style: TextStyle(color: AppColors.terracotta),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
 
     if (confirmed != true || !mounted) return;
@@ -785,79 +950,66 @@ class _EventActionsState extends ConsumerState<_EventActions> {
     } catch (_) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to leave event'),
-            backgroundColor: AppColors.terracotta,
-          ),
-        );
+        _fail(strings.leaveFailed);
       }
     }
   }
 
+  Future<bool> _confirm({
+    required String title,
+    required String body,
+    required String action,
+    required bool destructive,
+  }) async {
+    final strings = context.strings.eventHome;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => CpDialog(
+        title: title,
+        message: body,
+        actions: [
+          CpButton.text(
+            label: strings.cancel,
+            onPressed: () => Navigator.pop(ctx, false),
+          ),
+          if (destructive)
+            CpButton.destructive(
+              label: action,
+              onPressed: () => Navigator.pop(ctx, true),
+            )
+          else
+            CpButton.text(
+              label: action,
+              onPressed: () => Navigator.pop(ctx, true),
+            ),
+        ],
+      ),
+    );
+    return confirmed == true;
+  }
+
   Future<void> _deleteEvent() async {
-    // Step 1: Warning
-    final step1 = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: const Text(
-          'Delete Event?',
-          style: TextStyle(color: AppColors.terracotta),
-        ),
-        content: const Text(
-          'This will permanently delete the event and all its data: '
-          'messages, expenses, tasks, and invite codes.\n\n'
-          'This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              'Continue',
-              style: TextStyle(color: AppColors.terracotta),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (step1 != true || !mounted) return;
-
-    // Step 2: Final confirmation
-    final step2 = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: const Text(
-          'Are you sure?',
-          style: TextStyle(color: AppColors.terracotta),
-        ),
-        content: const Text(
-          'All event data will be permanently erased for all members.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.terracotta,
-              foregroundColor: AppColors.white,
-            ),
-            child: const Text('Delete Forever'),
-          ),
-        ],
-      ),
-    );
-
-    if (step2 != true || !mounted) return;
+    final strings = context.strings.eventHome;
+    // A warning, then a final confirmation.
+    if (!await _confirm(
+          title: strings.deleteTitle,
+          body: strings.deleteBody,
+          action: strings.continueLabel,
+          destructive: false,
+        ) ||
+        !mounted) {
+      return;
+    }
+    if (!await _confirm(
+          title: strings.confirmTitle,
+          body: strings.confirmBody,
+          action: strings.deleteForever,
+          destructive: true,
+        ) ||
+        !mounted) {
+      return;
+    }
 
     setState(() => _isLoading = true);
     try {
@@ -867,12 +1019,7 @@ class _EventActionsState extends ConsumerState<_EventActions> {
     } catch (_) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to delete event'),
-            backgroundColor: AppColors.terracotta,
-          ),
-        );
+        _fail(strings.deleteFailed);
       }
     }
   }
@@ -881,154 +1028,73 @@ class _EventActionsState extends ConsumerState<_EventActions> {
   Widget build(BuildContext context) {
     // Kept listened to, so the leave dialog knows who else manages members.
     ref.watch(eventMembersProvider(widget.event.id));
+    final cp = context.cp;
+    final strings = context.strings.eventHome;
     if (_isLoading) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
-        child: Center(child: LoadingAnimation()),
-      );
+      return CpLoadingState(semanticLabel: strings.leaveEvent);
     }
 
     final uid = widget.currentUserId;
-    final isOwner = widget.event.isOwner(uid);
+    final event = widget.event;
+    final isOwner = event.isOwner(uid);
     // Deleting is the Owner's, through `event.transfer`.
-    final canDelete = widget.event.can(uid, 'event.transfer');
+    final canDelete = event.can(uid, 'event.transfer');
+    final archived = event.status == EventStatus.archived;
 
-    return Column(
-      crossAxisAlignment: .start,
-      spacing: AppSpacing.md,
-      children: [
-        if (widget.event.canManage(widget.currentUserId))
-          Card(
-            elevation: 0,
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            shape: RoundedRectangleBorder(
-              borderRadius: AppRadius.borderLg,
-              side: BorderSide(
-                color: AppColors.lightGrey.withValues(alpha: 0.7),
-                width: 0.5,
-              ),
-            ),
-            child: ListTile(
-              key: const Key('events.dashboard.settings'),
-              leading: const Icon(AppIcons.actionSettings),
-              title: Text(context.strings.dashboard.settingsTitle),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () =>
-                  context.push('/dashboard/event/${widget.event.id}/settings'),
-            ),
+    final rows = <Widget>[
+      if (event.canManage(uid))
+        CpListRow(
+          key: const Key('events.dashboard.settings'),
+          leading: Icon(CpIcons.actionSettings, color: cp.colors.textMuted),
+          title: context.strings.dashboard.settingsTitle,
+          onTap: () => context.push('/dashboard/event/${event.id}/settings'),
+        ),
+      if (event.canManage(uid))
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: cp.space.lg),
+          child: CpSwitchRow(
+            key: const Key('events.dashboard.archive'),
+            title: strings.archiveEvent,
+            help: archived ? strings.archived : strings.archiveHelp,
+            value: archived,
+            onChanged: (value) async {
+              final messenger = ScaffoldMessenger.of(context);
+              final updated = event.copyWith(
+                status: value
+                    ? EventStatus.archived
+                    : event.restoredStatus(DateTime.now()),
+              );
+              final ok = await ref
+                  .read(eventRepositoryProvider)
+                  .updateEvent(updated);
+              if (!ok) {
+                messenger.showSnackBar(
+                  SnackBar(content: Text(strings.archiveFailed)),
+                );
+              }
+            },
           ),
-
-        // Archive toggle (`event.manage`)
-        if (widget.event.canManage(uid))
-          Card(
-            elevation: 0,
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            shape: RoundedRectangleBorder(
-              borderRadius: AppRadius.borderLg,
-              side: BorderSide(
-                color: AppColors.lightGrey.withValues(alpha: 0.7),
-                width: 0.5,
-              ),
-            ),
-            child: Consumer(
-              builder: (_, ref, _) => SwitchListTile(
-                title: const Text('Archive Event'),
-                subtitle: Text(
-                  widget.event.status == EventStatus.archived
-                      ? 'Event is archived (read-only)'
-                      : 'Archive to make read-only',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                value: widget.event.status == EventStatus.archived,
-                onChanged: (archived) async {
-                  final updated = widget.event.copyWith(
-                    status: archived
-                        ? EventStatus.archived
-                        : widget.event.restoredStatus(DateTime.now()),
-                  );
-                  final ok = await ref
-                      .read(eventRepositoryProvider)
-                      .updateEvent(updated);
-                  if (!ok && context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Could not update archive status'),
-                        backgroundColor: AppColors.terracotta,
-                      ),
-                    );
-                  }
-                },
-                activeThumbColor: AppColors.sage,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: AppRadius.borderLg,
-                ),
-              ),
-            ),
+        ),
+      // Everyone but the Owner can leave.
+      if (!isOwner)
+        CpListRow(
+          key: const Key('event.action.leave'),
+          leading: Icon(CpIcons.actionLogout, color: cp.colors.textMuted),
+          title: strings.leaveEvent,
+          onTap: _leaveEvent,
+        ),
+      if (canDelete)
+        CpListRow(
+          key: const Key('event.action.delete'),
+          leading: Icon(
+            CpIcons.actionDeletePermanent,
+            color: cp.colors.overdue,
           ),
-
-        // Leave event (non-owner members)
-        if (!isOwner)
-          Card(
-            elevation: 0,
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            shape: RoundedRectangleBorder(
-              borderRadius: AppRadius.borderLg,
-              side: BorderSide(
-                color: AppColors.lightGrey.withValues(alpha: 0.7),
-                width: 0.5,
-              ),
-            ),
-            child: ListTile(
-              key: const Key('event.action.leave'),
-              leading: Icon(
-                AppIcons.actionLogout,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-              title: const Text('Leave Event'),
-              trailing: Icon(
-                AppIcons.chevronRight,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-              onTap: _leaveEvent,
-              shape: const RoundedRectangleBorder(
-                borderRadius: AppRadius.borderLg,
-              ),
-            ),
-          ),
-
-        // Delete event (owner only) — danger zone
-        if (canDelete) ...[
-          const SizedBox(height: AppSpacing.lg),
-          Card(
-            elevation: 0,
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            shape: RoundedRectangleBorder(
-              borderRadius: AppRadius.borderLg,
-              side: BorderSide(
-                color: AppColors.terracotta.withValues(alpha: 0.3),
-              ),
-            ),
-            child: ListTile(
-              leading: const Icon(
-                AppIcons.actionDeletePermanent,
-                color: AppColors.terracotta,
-              ),
-              title: const Text(
-                'Delete Event',
-                style: TextStyle(color: AppColors.terracotta),
-              ),
-              trailing: const Icon(
-                AppIcons.chevronRight,
-                color: AppColors.terracottaLight,
-              ),
-              onTap: _deleteEvent,
-              shape: const RoundedRectangleBorder(
-                borderRadius: AppRadius.borderLg,
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
+          title: strings.deleteEvent,
+          onTap: _deleteEvent,
+        ),
+    ];
+    if (rows.isEmpty) return const SizedBox.shrink();
+    return CpCard(child: CpRowGroup(children: rows));
   }
 }

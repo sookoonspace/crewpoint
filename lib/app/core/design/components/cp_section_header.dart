@@ -31,60 +31,69 @@ class CpSectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cp = context.cp;
-    return ConstrainedBox(
-      constraints: BoxConstraints(minHeight: cp.space.xxl),
-      child: Row(
-        spacing: cp.space.sm,
-        children: [
-          Expanded(
-            child: Semantics(
-              header: true,
-              child: Text(
-                title,
-                style: cp.type.titleLarge.copyWith(color: cp.colors.text),
+    return LayoutBuilder(
+      builder: (context, constraints) => ConstrainedBox(
+        constraints: BoxConstraints(minHeight: cp.space.xxl),
+        child: Row(
+          spacing: cp.space.sm,
+          children: [
+            Expanded(
+              child: Semantics(
+                header: true,
+                child: Text(
+                  title,
+                  style: cp.type.titleLarge.copyWith(color: cp.colors.text),
+                ),
               ),
             ),
-          ),
-          if (trailingText != null)
-            Text(
-              trailingText!,
-              style: cp.type.bodySmall.copyWith(color: cp.colors.textMuted),
-            ),
-          if (actionLabel != null)
-            Semantics(
-              button: true,
-              label: actionLabel,
-              child: InkWell(
-                key: actionKey,
-                onTap: onAction,
-                borderRadius: cp.radii.sm,
-                child: ExcludeSemantics(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: cp.sizes.tapMin),
-                    child: Padding(
-                      padding: EdgeInsets.only(left: cp.space.sm),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            actionLabel!,
-                            style: cp.type.labelLarge.copyWith(
-                              color: cp.colors.accent,
-                            ),
+            if (trailingText != null)
+              Text(
+                trailingText!,
+                style: cp.type.bodySmall.copyWith(color: cp.colors.textMuted),
+              ),
+            // The link takes at most half the row, so at large text sizes its
+            // label wraps instead of overflowing.
+            if (actionLabel != null)
+              ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: constraints.maxWidth / 2),
+                child: Semantics(
+                  button: true,
+                  label: actionLabel,
+                  child: InkWell(
+                    key: actionKey,
+                    onTap: onAction,
+                    borderRadius: cp.radii.sm,
+                    child: ExcludeSemantics(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(minHeight: cp.sizes.tapMin),
+                        child: Padding(
+                          padding: EdgeInsets.only(left: cp.space.sm),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  actionLabel!,
+                                  style: cp.type.labelLarge.copyWith(
+                                    color: cp.colors.accent,
+                                  ),
+                                ),
+                              ),
+                              Icon(
+                                CpIcons.chevronRight,
+                                size: cp.sizes.iconSm + 2,
+                                color: cp.colors.accent,
+                              ),
+                            ],
                           ),
-                          Icon(
-                            CpIcons.chevronRight,
-                            size: cp.sizes.iconSm + 2,
-                            color: cp.colors.accent,
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

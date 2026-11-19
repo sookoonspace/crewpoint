@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
 import 'package:crewpoint_app/app/core/widgets/event_tile.dart';
-import 'package:crewpoint_app/app/core/widgets/progress_ring.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
 void main() {
@@ -32,7 +32,7 @@ void main() {
     // Member count badge (3 ids → "3 members").
     expect(find.text('3 members'), findsOneWidget);
     // Progress ring with provided counts.
-    expect(find.byType(ProgressRing), findsOneWidget);
+    expect(find.byType(CpProgressRing), findsOneWidget);
     expect(find.text('3/6'), findsOneWidget);
   });
 

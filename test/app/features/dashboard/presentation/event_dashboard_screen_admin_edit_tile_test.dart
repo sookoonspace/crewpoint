@@ -11,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboard_screen.dart';
+import '../../../../harness/event_home_overrides.dart';
 
 const _ownerEvent = EventModel(
   id: 'evt-1',
@@ -26,7 +27,10 @@ Future<void> _pump(
 }) async {
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [currentUserIdProvider.overrideWith((ref) => currentUid)],
+      overrides: [
+        currentUserIdProvider.overrideWith((ref) => currentUid),
+        ...eventHomeOverrides(),
+      ],
       child: MaterialApp(home: EventDashboardScreen(event: event)),
     ),
   );
