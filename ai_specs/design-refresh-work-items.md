@@ -376,11 +376,11 @@ An optional cover photo per event, set from Event settings, shown as a banner on
 - [x] With no photo: a calm accent-coloured banner with the event's icon: the template's icon (a saved template uses its base template's), else `iconForEventType`, else a plain event icon. No stock photos, no per-template default photos.
 - [x] A Storage rules test built like `importRules.test.ts` runs for each of the twelve preset roles: everyone in the event reads; only `event.manage` holders upload, replace and delete; outsiders and signed-out users do nothing; a file of 5 MB or more, or a non-image, is refused. `roleMatrix.test.ts` is unchanged.
 - [x] App tests use a fake `IImageService` and cover set, replace, remove and the banner icon fallbacks.
-- [ ] `docs/ops/` records the one-time Storage CORS setting for dev, stg and prod, and it is checked on dev.
+- [x] `docs/ops/` records the one-time Storage CORS setting for dev, stg and prod, and it is checked on dev.
 - [x] CLAUDE.md's data model notes the `cover` field and the Storage path.
 - [x] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
 - [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, `npm run build` and `npm test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
-- [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
+- [x] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 
 #### Covers
 - User Stories: 8
@@ -413,7 +413,7 @@ The event list and the Event home in the new look, with the Event home as a dash
 - [x] Existing journey tests keep passing, with selectors changed only where a widget's key must change (Testing Strategy 8); every new interactive widget has a `domain.feature.action` key.
 - [x] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
 - [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
-- [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
+- [x] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 
 #### Covers
 - User Stories: 7, 9
@@ -437,13 +437,13 @@ The roster, group sheets and group picker in the new look, with People as list a
 - Approved People and People list-and-detail mockups.
 
 #### Acceptance criteria
-- [ ] People matches the approved mockups.
-- [ ] From 840 px, People uses the list-and-detail component: `people/:participantId` opens the roster with that person selected on the right; the empty panel shows the quiet prompt; narrowing turns it into a full page; switching with unsaved edits asks first.
-- [ ] Filters (group, answer), search, paging and the linked adult's "Your {group}" header keep working.
-- [ ] The screens use only design-system components and tokens (Req 14); their files are removed from the guard test's temporary list.
-- [ ] Existing journey tests keep passing, with selectors changed only where a widget's key must change (Testing Strategy 8); every new interactive widget has a `domain.feature.action` key.
-- [ ] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
-- [ ] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
+- [x] People matches the approved mockups.
+- [x] From 840 px, People uses the list-and-detail component: `people/:participantId` opens the roster with that person selected on the right; the empty panel shows the quiet prompt; narrowing turns it into a full page; switching with unsaved edits asks first.
+- [x] Filters (group, answer), search, paging and the linked adult's "Your {group}" header keep working.
+- [x] The screens use only design-system components and tokens (Req 14); their files are removed from the guard test's temporary list.
+- [x] Existing journey tests keep passing, with selectors changed only where a widget's key must change (Testing Strategy 8); every new interactive widget has a `domain.feature.action` key.
+- [x] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
+- [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
 - [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 
 #### Covers

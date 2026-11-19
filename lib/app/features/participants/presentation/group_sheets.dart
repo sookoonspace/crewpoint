@@ -3,8 +3,7 @@ import 'dart:async';
 import 'package:crewpoint_app/app/features/schedule/domain/models/session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/services/callable_errors.dart';
@@ -42,10 +41,8 @@ class GroupPickerSheet extends ConsumerStatefulWidget {
     required EventModel event,
     bool allowCreate = false,
     List<String>? onlyIds,
-  }) => showModalBottomSheet<GroupModel>(
+  }) => showCpSheet<GroupModel>(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
     builder: (_) => GroupPickerSheet(
       event: event,
       allowCreate: allowCreate,
@@ -141,171 +138,114 @@ class _GroupPickerSheetState extends ConsumerState<GroupPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
     final words = widget.event.words;
     final strings = context.strings.people;
-    return Padding(
-      padding: EdgeInsets.only(
-        left: AppSpacing.lg,
-        right: AppSpacing.lg,
-        top: AppSpacing.lg,
-        bottom: MediaQuery.viewInsetsOf(context).bottom + AppSpacing.lg,
-      ),
-      child: Column(
-        key: const Key('people.groupPicker'),
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: AppSpacing.sm,
-        children: [
-          TextField(
-            key: const Key('people.groupPicker.search'),
-            controller: _search,
-            onChanged: _onSearch,
-            autofocus: true,
-            decoration: InputDecoration(
-              prefixIcon: const Icon(AppIcons.actionSearch),
-              hintText: strings.groupSearchHint(words.other('group')),
-              border: const OutlineInputBorder(),
-            ),
-          ),
-          if (widget.allowCreate)
-            ListTile(
+    return Column(
+      key: const Key('people.groupPicker'),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: cp.space.md,
+      children: [
+        CpSearchField(
+          fieldKey: const Key('people.groupPicker.search'),
+          controller: _search,
+          onChanged: _onSearch,
+          autofocus: true,
+          hint: strings.groupSearchHint(words.other('group')),
+        ),
+        if (widget.allowCreate)
+          CpCard(
+            child: CpListRow(
               key: const Key('people.groupPicker.new'),
-              leading: _creating
-                  ? const SizedBox.square(
-                      dimension: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+              leading: Icon(
+                CpIcons.actionAdd,
+                size: cp.sizes.iconMd,
+                color: cp.colors.accent,
+              ),
+              title: strings.newGroup(words.one('group')),
+              trailing: _creating
+                  ? CpLoadingState(
+                      semanticLabel: strings.newGroup(words.one('group')),
                     )
-                  : const Icon(AppIcons.actionAdd),
-              title: Text(strings.newGroup(words.one('group'))),
+                  : null,
               onTap: _creating ? null : _create,
             ),
-          Flexible(
-            child: FutureBuilder<List<GroupModel>>(
-              future: _results,
-              builder: (context, snap) {
-                if (snap.hasError) {
-                  return LoadFailedView(
-                    onRetry: () => setState(() {
-                      _results = _load();
-                    }),
-                  );
-                }
-                if (!snap.hasData) {
-                  return const Padding(
-                    padding: EdgeInsets.all(AppSpacing.lg),
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
-                final groups = snap.data!;
-                if (groups.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    child: Text(
-                      strings.noGroupsFound(words.other('group')),
-                      key: const Key('people.groupPicker.none'),
-                      textAlign: TextAlign.center,
-                    ),
-                  );
-                }
-                return ListView(
-                  shrinkWrap: true,
-                  children: [
-                    for (final g in groups)
-                      ListTile(
-                        key: Key('people.groupPicker.${g.id}'),
-                        leading: const Icon(AppIcons.members),
-                        title: Text(g.name),
-                        onTap: () => Navigator.of(context).pop(g),
-                      ),
-                  ],
-                );
-              },
-            ),
           ),
-        ],
-      ),
+        FutureBuilder<List<GroupModel>>(
+          future: _results,
+          builder: (context, snap) {
+            if (snap.hasError) {
+              return LoadFailedView(
+                onRetry: () => setState(() {
+                  _results = _load();
+                }),
+              );
+            }
+            if (!snap.hasData) {
+              return CpLoadingState.rows(
+                semanticLabel: words.other('group'),
+                rows: 3,
+              );
+            }
+            final groups = snap.data!;
+            if (groups.isEmpty) {
+              return Text(
+                strings.noGroupsFound(words.other('group')),
+                key: const Key('people.groupPicker.none'),
+                textAlign: TextAlign.center,
+                style: cp.type.bodyMedium.copyWith(color: cp.colors.textMuted),
+              );
+            }
+            return CpCard(
+              child: CpRowGroup(
+                children: [
+                  for (final g in groups)
+                    CpListRow(
+                      key: Key('people.groupPicker.${g.id}'),
+                      leading: Icon(
+                        CpIcons.members,
+                        size: cp.sizes.iconMd,
+                        color: cp.colors.textMuted,
+                      ),
+                      title: g.name,
+                      onTap: () => Navigator.of(context).pop(g),
+                    ),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 }
 
+/// Asks for a group's name. The prompt owns its text controller, so it
+/// lives until the dialog has finished closing (#185).
 Future<String?> _askName(
   BuildContext context, {
   required String title,
   required String label,
   String initial = '',
-}) => showDialog<String>(
-  context: context,
-  builder: (_) => _NameDialog(title: title, label: label, initial: initial),
-);
-
-/// Owns its text controller, so the controller lives until the dialog has
-/// finished closing. Disposing it when `showDialog` returns crashed the app:
-/// the dialog still rebuilds during its exit, for example as the keyboard
-/// closes.
-class _NameDialog extends StatefulWidget {
-  const _NameDialog({
-    required this.title,
-    required this.label,
-    required this.initial,
-  });
-
-  final String title;
-  final String label;
-  final String initial;
-
-  @override
-  State<_NameDialog> createState() => _NameDialogState();
-}
-
-class _NameDialogState extends State<_NameDialog> {
-  late final TextEditingController _controller = TextEditingController(
-    text: widget.initial,
+}) {
+  final strings = context.strings.people;
+  return showCpTextPrompt(
+    context: context,
+    title: title,
+    label: label,
+    initial: initial,
+    confirmLabel: strings.save,
+    cancelLabel: context.strings.roles.cancel,
+    fieldKey: const Key('people.groupName'),
+    confirmKey: const Key('people.groupName.save'),
+    validator: (v) {
+      final name = v?.trim() ?? '';
+      if (name.isEmpty) return strings.nameRequired;
+      if (name.length > 120) return strings.nameTooLong(120);
+      return null;
+    },
   );
-  final _formKey = GlobalKey<FormState>();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final strings = context.strings.people;
-    return AlertDialog(
-      title: Text(widget.title),
-      content: Form(
-        key: _formKey,
-        child: TextFormField(
-          key: const Key('people.groupName'),
-          controller: _controller,
-          autofocus: true,
-          decoration: InputDecoration(labelText: widget.label),
-          validator: (v) {
-            final name = v?.trim() ?? '';
-            if (name.isEmpty) return strings.nameRequired;
-            if (name.length > 120) return strings.nameTooLong(120);
-            return null;
-          },
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(context.strings.roles.cancel),
-        ),
-        TextButton(
-          key: const Key('people.groupName.save'),
-          onPressed: () {
-            if (_formKey.currentState!.validate()) {
-              Navigator.of(context).pop(_controller.text.trim());
-            }
-          },
-          child: Text(strings.save),
-        ),
-      ],
-    );
-  }
 }
 
 /// What managing a group changed, for the roster to follow.
@@ -347,10 +287,9 @@ class GroupSheet extends ConsumerStatefulWidget {
     required EventModel event,
     required GroupModel group,
     bool manage = true,
-  }) => showModalBottomSheet<GroupSheetResult>(
+  }) => showCpSheet<GroupSheetResult>(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
+    title: group.name,
     builder: (_) => GroupSheet(event: event, group: group, manage: manage),
   );
 
@@ -497,7 +436,7 @@ class _GroupSheetState extends ConsumerState<GroupSheet> {
     } catch (_) {}
   }
 
-  List<Widget> _invitations(ThemeData theme) {
+  List<Widget> _invitations() {
     final strings = context.strings.agenda;
     final sessions = [
       for (final s
@@ -507,32 +446,29 @@ class _GroupSheetState extends ConsumerState<GroupSheet> {
     ]..sort((a, b) => a.startAt.compareTo(b.startAt));
     if (sessions.isEmpty) return const [];
     return [
-      const SizedBox(height: AppSpacing.md),
-      Text(strings.groupInvitations, style: theme.textTheme.titleSmall),
-      Text(strings.groupInvitationsHelp, style: theme.textTheme.bodySmall),
-      Wrap(
-        spacing: AppSpacing.sm,
-        runSpacing: AppSpacing.sm,
-        children: [
+      CpChoiceChips<String>(
+        label: strings.groupInvitations,
+        help: strings.groupInvitationsHelp,
+        multiple: true,
+        choices: [
           for (final s in sessions)
-            FilterChip(
-              key: Key('people.group.invite.${s.id}'),
-              label: Text(s.title),
-              selected: _invited.contains(s.id),
-              onSelected: _busy
-                  ? null
-                  : (on) => setState(
-                      () => on ? _invited.add(s.id) : _invited.remove(s.id),
-                    ),
-            ),
+            CpChoice(s.id, s.title, key: Key('people.group.invite.${s.id}')),
         ],
+        selected: _invited,
+        onChanged: _busy
+            ? null
+            : (ids) => setState(
+                () => _invited
+                  ..clear()
+                  ..addAll(ids),
+              ),
       ),
       Align(
-        alignment: Alignment.centerRight,
-        child: TextButton(
+        alignment: AlignmentDirectional.centerEnd,
+        child: CpButton.secondary(
           key: const Key('people.group.saveInvitations'),
+          label: context.strings.people.save,
           onPressed: _busy ? null : _saveInvitations,
-          child: Text(context.strings.people.save),
         ),
       ),
     ];
@@ -540,123 +476,128 @@ class _GroupSheetState extends ConsumerState<GroupSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
     final strings = context.strings.people;
     final words = widget.event.words;
-    final theme = Theme.of(context);
+    Widget heading(String title, String help) => Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: cp.space.xs,
+      children: [
+        Text(title, style: cp.type.titleSmall.copyWith(color: cp.colors.text)),
+        Text(
+          help,
+          style: cp.type.bodySmall.copyWith(color: cp.colors.textMuted),
+        ),
+      ],
+    );
     return PopScope(
       canPop: !_busy,
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: AppSpacing.lg,
-          right: AppSpacing.lg,
-          top: AppSpacing.lg,
-          bottom: MediaQuery.viewInsetsOf(context).bottom + AppSpacing.lg,
-        ),
-        child: ListView(
-          key: const Key('people.group'),
-          shrinkWrap: true,
-          children: [
-            if (!widget.manage)
-              Text(_group.name, style: theme.textTheme.titleMedium),
-            if (widget.manage)
-              CpButton.secondary(
-                key: const Key('people.group.addPeople'),
-                icon: CpIcons.memberAdd,
-                label: context.strings.groupEntry.addPeople(
-                  words.other('participant'),
-                ),
-                onPressed: _busy
-                    ? null
-                    : () => Navigator.of(
-                        context,
-                      ).pop(GroupSheetResult(group: _group, addPeople: true)),
-              ),
-            if (widget.manage)
-              CpButton.secondary(
-                key: const Key('people.group.editAnswers'),
-                icon: CpIcons.actionEdit,
-                label: context.strings.groupEntry.editAnswers,
-                onPressed: _busy
-                    ? null
-                    : () => Navigator.of(
-                        context,
-                      ).pop(GroupSheetResult(group: _group, editAnswers: true)),
-              ),
-            _GroupAnswers(event: widget.event, groupId: _group.id),
-            if (widget.manage) ...[
-              TextField(
-                key: const Key('people.group.name'),
-                controller: _name,
-                enabled: !_busy,
-                decoration: InputDecoration(
-                  labelText: strings.groupNameLabel(words.one('group')),
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  key: const Key('people.group.rename'),
-                  onPressed: _busy ? null : _rename,
-                  child: Text(strings.rename),
-                ),
-              ),
-              Text(strings.adultsHeading, style: theme.textTheme.titleSmall),
-              Text(
-                strings.adultsHelp(words.one('group')),
-                style: theme.textTheme.bodySmall,
-              ),
-              // Chosen by name search, so a large event never lists
-              // everyone (Req 43a).
-              ChosenPeopleList(
-                eventId: widget.event.id,
-                words: words,
-                keyPrefix: 'people.group.adult',
-                chosen: _adults,
-                enabled: !_busy,
-                emptyText: strings.noAdultsYet,
-                onChanged: (uids) => setState(
-                  () => _adults
-                    ..clear()
-                    ..addAll(uids),
-                ),
-              ),
-              if (widget.event.isModuleOn('schedule')) ..._invitations(theme),
-              OverflowBar(
-                alignment: MainAxisAlignment.spaceBetween,
-                overflowAlignment: OverflowBarAlignment.end,
-                children: [
-                  TextButton.icon(
-                    key: const Key('people.group.delete'),
-                    onPressed: _busy ? null : _delete,
-                    icon: const Icon(AppIcons.actionDelete),
-                    label: Text(context.strings.roles.delete),
-                    style: TextButton.styleFrom(
-                      foregroundColor: theme.colorScheme.error,
-                    ),
+      child: Column(
+        key: const Key('people.group'),
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: cp.space.lg,
+        children: [
+          if (widget.manage)
+            Wrap(
+              spacing: cp.space.sm,
+              runSpacing: cp.space.sm,
+              children: [
+                CpButton.secondary(
+                  key: const Key('people.group.addPeople'),
+                  icon: CpIcons.memberAdd,
+                  label: context.strings.groupEntry.addPeople(
+                    words.other('participant'),
                   ),
-                  FilledButton(
-                    key: const Key('people.group.saveAdults'),
-                    onPressed: _busy ? null : _saveAdults,
-                    child: Text(strings.save),
-                  ),
-                ],
-              ),
-            ],
+                  onPressed: _busy
+                      ? null
+                      : () => Navigator.of(
+                          context,
+                        ).pop(GroupSheetResult(group: _group, addPeople: true)),
+                ),
+                CpButton.secondary(
+                  key: const Key('people.group.editAnswers'),
+                  icon: CpIcons.actionEdit,
+                  label: context.strings.groupEntry.editAnswers,
+                  onPressed: _busy
+                      ? null
+                      : () => Navigator.of(context).pop(
+                          GroupSheetResult(group: _group, editAnswers: true),
+                        ),
+                ),
+              ],
+            ),
+          _GroupAnswers(event: widget.event, groupId: _group.id),
+          if (widget.manage) ...[
+            CpTextField(
+              fieldKey: const Key('people.group.name'),
+              controller: _name,
+              enabled: !_busy,
+              label: strings.groupNameLabel(words.one('group')),
+            ),
             Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
+              alignment: AlignmentDirectional.centerEnd,
+              child: CpButton.secondary(
+                key: const Key('people.group.rename'),
+                label: strings.rename,
+                onPressed: _busy ? null : _rename,
+              ),
+            ),
+            heading(
+              strings.adultsHeading,
+              strings.adultsHelp(words.one('group')),
+            ),
+            // Chosen by name search, so a large event never lists
+            // everyone (Req 43a).
+            ChosenPeopleList(
+              eventId: widget.event.id,
+              words: words,
+              keyPrefix: 'people.group.adult',
+              chosen: _adults,
+              enabled: !_busy,
+              emptyText: strings.noAdultsYet,
+              onChanged: (uids) => setState(
+                () => _adults
+                  ..clear()
+                  ..addAll(uids),
+              ),
+            ),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: CpButton(
+                key: const Key('people.group.saveAdults'),
+                label: strings.save,
+                busy: _busy,
+                onPressed: _saveAdults,
+              ),
+            ),
+            if (widget.event.isModuleOn('schedule')) ..._invitations(),
+          ],
+          OverflowBar(
+            alignment: MainAxisAlignment.spaceBetween,
+            overflowAlignment: OverflowBarAlignment.end,
+            spacing: cp.space.sm,
+            overflowSpacing: cp.space.sm,
+            children: [
+              if (widget.manage)
+                CpButton.text(
+                  key: const Key('people.group.delete'),
+                  icon: CpIcons.actionDelete,
+                  label: strings.deleteGroup(words.one('group')),
+                  onPressed: _busy ? null : _delete,
+                ),
+              CpButton.text(
                 key: const Key('people.group.close'),
+                label: context.strings.roles.cancel,
                 onPressed: _busy
                     ? null
                     : () => Navigator.of(
                         context,
                       ).pop(GroupSheetResult(group: _group)),
-                child: Text(context.strings.roles.cancel),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -685,8 +626,8 @@ class _GroupAnswersState extends ConsumerState<_GroupAnswers> {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
     final strings = context.strings.fields;
-    final theme = Theme.of(context);
     final event = widget.event;
     final me = ref.watch(currentUserIdProvider) ?? '';
     final own =
@@ -718,10 +659,7 @@ class _GroupAnswersState extends ConsumerState<_GroupAnswers> {
           }, onError: (_) {});
     }
     if (_standard == null || (readsPrivate && _private == null)) {
-      return const Padding(
-        padding: EdgeInsets.all(AppSpacing.lg),
-        child: Center(child: CircularProgressIndicator()),
-      );
+      return CpLoadingState(semanticLabel: strings.save);
     }
 
     Future<void> save() async {
@@ -753,7 +691,7 @@ class _GroupAnswersState extends ConsumerState<_GroupAnswers> {
       key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: AppSpacing.md,
+        spacing: cp.space.md,
         children: [
           for (final f in fields)
             FieldAnswerInput(
@@ -770,22 +708,17 @@ class _GroupAnswersState extends ConsumerState<_GroupAnswers> {
               }),
             ),
           if (_error != null)
-            Text(
-              _error!,
-              key: const Key('people.group.answersError'),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.error,
-              ),
-            ),
+            CpFieldError(_error!, key: const Key('people.group.answersError')),
           Align(
-            alignment: Alignment.centerRight,
-            child: FilledButton(
+            alignment: AlignmentDirectional.centerEnd,
+            child: CpButton(
               key: const Key('people.group.saveAnswers'),
-              onPressed: _busy ? null : save,
-              child: Text(strings.save),
+              label: strings.save,
+              busy: _busy,
+              onPressed: save,
             ),
           ),
-          const Divider(),
+          Divider(height: cp.space.lg, color: cp.colors.border),
         ],
       ),
     );

@@ -30,6 +30,7 @@ enum DesignGallerySection {
   buttons('Buttons'),
   fields('Fields'),
   choices('Choice chips and segmented choices'),
+  filters('Search and filters'),
   sheetsAndDialogs('Sheets and dialogs'),
   cover('Event cover');
 
@@ -120,6 +121,7 @@ class DesignGallery extends StatelessWidget {
     DesignGallerySection.buttons => const _Buttons(),
     DesignGallerySection.fields => const _Fields(),
     DesignGallerySection.choices => const _Choices(),
+    DesignGallerySection.filters => const _Filters(),
     DesignGallerySection.sheetsAndDialogs => const _SheetsAndDialogs(),
     DesignGallerySection.cover => const _Cover(),
   };
@@ -613,6 +615,41 @@ class _Choices extends StatelessWidget {
             ],
             selected: 'adult',
             onChanged: (_) {},
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Filters extends StatelessWidget {
+  const _Filters();
+
+  @override
+  Widget build(BuildContext context) {
+    final cp = context.cp;
+    return CpCard(
+      padding: EdgeInsets.all(cp.space.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: cp.space.md,
+        children: [
+          const CpSearchField(hint: 'Search people'),
+          Wrap(
+            spacing: cp.space.sm,
+            children: [
+              CpFilterChip(label: 'All', selected: true, onTap: () {}),
+              CpFilterChip(label: 'Group', menu: true, onTap: () {}),
+              CpFilterChip(
+                label: 'Mehta',
+                selected: true,
+                menu: true,
+                onTap: () {},
+                onClear: () {},
+                clearTooltip: 'Clear group',
+              ),
+              CpFilterChip(label: 'Diet', menu: true, onTap: () {}),
+            ],
           ),
         ],
       ),

@@ -128,7 +128,14 @@ void main() {
     final robot = await open(tester, extra: 60);
     expect(find.byKey(const Key('people.roster.online')), findsOneWidget);
     expect(find.byKey(const Key('people.tile.ana')), findsOneWidget);
-    expect(find.byKey(const Key('people.tile.ana.child')), findsOneWidget);
+    // A child says so in their row (Spec #186 People mockup).
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('people.tile.ana')),
+        matching: find.text('Shahs · Child'),
+      ),
+      findsOneWidget,
+    );
     // 63 people: the first page holds 50.
     expect(find.byKey(const Key('people.tile.x46')), findsOneWidget);
     expect(find.byKey(const Key('people.tile.x47')), findsNothing);

@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:crewpoint_app/app/core/design/layout/cp_list_detail.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/design/layout/cp_shell.dart';
 import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
@@ -370,17 +371,14 @@ GoRouter createRouter({
                               ),
                             ),
                           ),
+                          // From 840 px the roster with this person beside
+                          // it (Spec #186 Req 23); narrower, their page.
                           GoRoute(
                             path: ':participantId',
-                            builder: (_, state) => EventGuard(
+                            pageBuilder: (context, state) => participantPage(
+                              context,
+                              state,
                               eventId: _resolveEventId(state),
-                              child: (event) => ParticipantScreen(
-                                event: event,
-                                participantId:
-                                    state.pathParameters['participantId']!,
-                                initialGroupId:
-                                    state.uri.queryParameters['group'],
-                              ),
                             ),
                           ),
                         ],
@@ -602,6 +600,36 @@ GoRouter createRouter({
 /// propagate the parent path param into deeply nested route builders.
 /// Returns the empty string for a malformed URL — `EventGuard` then
 /// renders the fallback immediately.
+/// The page for `people/:participantId`: from 840 px the roster with that
+/// person beside it, and narrower their page alone (Spec #186 Req 23).
+/// Shared with test harnesses so they route the same way.
+Page<void> participantPage(
+  BuildContext context,
+  GoRouterState state, {
+  required String eventId,
+}) {
+  final id = state.pathParameters['participantId']!;
+  return cpListDetailPage(
+    context: context,
+    pageKey: state.pageKey,
+    splitKey: const ValueKey('people.split'),
+    child: EventGuard(
+      eventId: eventId,
+      child: (event) => RosterScreen(
+        event: event,
+        selectedId: id,
+        detail: ParticipantScreen(
+          // Another person is another form.
+          key: ValueKey('people.detail.$id'),
+          event: event,
+          participantId: id,
+          initialGroupId: state.uri.queryParameters['group'],
+        ),
+      ),
+    ),
+  );
+}
+
 String _resolveEventId(GoRouterState state) {
   final fromParam = state.pathParameters['eventId'];
   if (fromParam != null && fromParam.isNotEmpty) return fromParam;

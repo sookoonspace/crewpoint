@@ -1,6 +1,7 @@
 import 'package:crewpoint_app/app/features/schedule/presentation/attendance_section.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:crewpoint_app/app/core/design/layout/cp_list_detail.dart';
 import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/core/design/components/components.dart';
 import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
@@ -334,21 +335,25 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
           navigator.pop();
         }
       },
-      child: Scaffold(
-        appBar: CpTopBar(
-          title: _isNew
-              ? strings.newTitle(words.one('participant'))
-              : switch (_saved?.name) {
-                  null => words.one('participant'),
-                  '' => context.strings.links.unnamed,
-                  final name => name,
-                },
-          leadingTooltip: MaterialLocalizations.of(context).backButtonTooltip,
-          leadingKey: const Key('people.edit.back'),
-          onLeading: () => Navigator.of(context).maybePop(),
+      // Choosing another person beside the roster asks first (Req 23).
+      child: CpUnsavedChanges(
+        dirty: _dirty && !_busy,
+        child: Scaffold(
+          appBar: CpTopBar(
+            title: _isNew
+                ? strings.newTitle(words.one('participant'))
+                : switch (_saved?.name) {
+                    null => words.one('participant'),
+                    '' => context.strings.links.unnamed,
+                    final name => name,
+                  },
+            leadingTooltip: MaterialLocalizations.of(context).backButtonTooltip,
+            leadingKey: const Key('people.edit.back'),
+            onLeading: () => Navigator.of(context).maybePop(),
+          ),
+          body: body,
+          bottomNavigationBar: bottom,
         ),
-        body: body,
-        bottomNavigationBar: bottom,
       ),
     );
 

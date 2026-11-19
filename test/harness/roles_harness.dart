@@ -28,7 +28,7 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/expense_access
 import 'package:crewpoint_app/app/features/participants/presentation/fields_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/import_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/link_requests_screen.dart';
-import 'package:crewpoint_app/app/features/participants/presentation/participant_screen.dart';
+import 'package:crewpoint_app/app/core/router/app_router.dart' show participantPage;
 import 'package:crewpoint_app/app/features/participants/presentation/roster_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/member_management_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/crews_screen.dart';
@@ -243,14 +243,8 @@ class RolesHarness {
                   ),
                   GoRoute(
                     path: ':participantId',
-                    builder: (_, state) => EventGuard(
-                      eventId: eventId,
-                      child: (event) => ParticipantScreen(
-                        event: event,
-                        participantId: state.pathParameters['participantId']!,
-                        initialGroupId: state.uri.queryParameters['group'],
-                      ),
-                    ),
+                    pageBuilder: (context, state) =>
+                        participantPage(context, state, eventId: eventId),
                   ),
                 ],
               ),
