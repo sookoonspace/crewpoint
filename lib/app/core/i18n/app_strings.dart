@@ -2058,6 +2058,7 @@ abstract class PeopleStrings {
   String get hubSubtitle;
   String get onlineNote;
   String filterByGroup(String group);
+  String get all;
   String allGroups(String groups);
   String clearGroup(String group);
   String manageGroup(String group);
@@ -2099,6 +2100,7 @@ abstract class PeopleStrings {
   String adultsHelp(String group);
   String get noMembers;
   String deleteGroupTitle(String name);
+  String deleteGroup(String group);
   String deleteGroupBody(String group);
   String get groupSaved;
   String get groupDeleted;
@@ -2108,6 +2110,10 @@ abstract class PeopleStrings {
 class _EnglishPeopleStrings extends PeopleStrings {
   const _EnglishPeopleStrings();
 
+  @override
+  String deleteGroup(String group) => 'Delete ${group.toLowerCase()}';
+  @override
+  String get all => 'All';
   @override
   String get noAdultsYet => 'No linked adults yet.';
 

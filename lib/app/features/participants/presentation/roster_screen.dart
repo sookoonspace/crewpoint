@@ -3,10 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/core/design/components/components.dart';
 import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
+import 'package:crewpoint_app/app/core/design/layout/cp_list_detail.dart';
 import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
 import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
@@ -15,6 +14,7 @@ import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart';
 import 'package:crewpoint_app/app/features/participants/application/roster_controller.dart';
+import 'package:crewpoint_app/app/features/participants/application/roster_filters.dart';
 import 'package:crewpoint_app/app/features/participants/data/participant_repository.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/category.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
@@ -26,29 +26,61 @@ import 'package:crewpoint_app/app/features/participants/presentation/group_sheet
 /// pages through everyone, searching by name and filtering by group. A
 /// linked adult without it sees only their own groups. Anyone else sees a
 /// no-access message. The list is read online and never kept on the device.
+///
+/// From 840 px it is a list and detail (Spec #186 Req 23): the route
+/// `people/:participantId` builds this with [selectedId] and that person's
+/// record as [detail], beside the list. Narrower, the record is a page of
+/// its own.
 class RosterScreen extends ConsumerStatefulWidget {
-  const RosterScreen({super.key, required this.event});
+  const RosterScreen({
+    super.key,
+    required this.event,
+    this.selectedId,
+    this.detail,
+  });
 
   final EventModel event;
+
+  /// The person shown beside the list, from the route.
+  final String? selectedId;
+  final Widget? detail;
 
   @override
   ConsumerState<RosterScreen> createState() => _RosterScreenState();
 }
 
 class _RosterScreenState extends ConsumerState<RosterScreen> {
-  final _search = TextEditingController();
+  late final TextEditingController _search;
+  late final ScrollController _scroll;
   Timer? _debounce;
-  GroupModel? _group;
-  EventCategory? _category;
-
-  /// A field answer to filter by, such as Diet is Jain.
-  ({CustomField field, Object value})? _answer;
   RosterQuery? _started;
+
+  @override
+  void initState() {
+    super.initState();
+    _search = TextEditingController(
+      text: ref.read(rosterFiltersProvider(widget.event.id)).search,
+    );
+    _scroll = ScrollController(
+      initialScrollOffset: _filtersController.scrollOffset,
+    );
+    _scroll.addListener(() {
+      if (mounted && _scroll.hasClients) {
+        _filtersController.scrollOffset = _scroll.offset;
+      }
+    });
+  }
+
+  /// Read fresh each time, never in dispose: the provider is rebuilt when
+  /// no roster has watched it for a while.
+  RosterFiltersController get _filtersController =>
+      ref.read(rosterFiltersProvider(widget.event.id).notifier);
 
   @override
   void dispose() {
     _debounce?.cancel();
     _search.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
@@ -56,27 +88,33 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
       ref.read(rosterProvider(widget.event.id).notifier);
 
   /// Starts [query] once the frame is built, and again only when it changes.
+  /// A list built again for a chosen person keeps the pages already loaded.
   void _ensureStarted(RosterQuery query) {
     if (_started == query) return;
     _started = query;
+    final current = ref.read(rosterProvider(widget.event.id));
+    if (current.started && current.query == query) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) unawaited(_controller.start(query));
     });
   }
 
-  RosterQuery _query(List<String>? ownGroups) => RosterQuery(
-    search: _search.text,
-    groupId: ownGroups == null ? _group?.id : null,
-    categoryId: ownGroups == null ? _category?.id : null,
-    tag: ownGroups == null && _answer != null
-        ? filterTag(_answer!.field.id, _answer!.value)
+  RosterQuery _query(RosterFilters f, List<String>? ownGroups) => RosterQuery(
+    search: f.search,
+    groupId: ownGroups == null ? f.group?.id : null,
+    categoryId: ownGroups == null ? f.category?.id : null,
+    tag: ownGroups == null && f.answer != null
+        ? filterTag(f.answer!.field.id, f.answer!.value)
         : null,
     groupIds: ownGroups?.take(30).toList(),
   );
 
-  void _onSearch(String _) {
+  void _onSearch(String text) {
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 300), () => setState(() {}));
+    _debounce = Timer(
+      const Duration(milliseconds: 300),
+      () => _filtersController.setSearch(text),
+    );
   }
 
   Future<void> _pickGroup() async {
@@ -85,47 +123,79 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
       event: widget.event,
       allowCreate: false,
     );
-    if (picked != null && mounted) setState(() => _group = picked);
+    if (picked != null && mounted) _filtersController.setGroup(picked);
+  }
+
+  Future<void> _pickCategory(List<EventCategory> categories) async {
+    final picked = await showCpSheet<EventCategory>(
+      context: context,
+      title: context.strings.fields.filterByCategory(
+        widget.event.words.one('category'),
+      ),
+      builder: (sheet) => CpCard(
+        child: CpRowGroup(
+          children: [
+            for (final c in categories)
+              CpListRow(
+                key: Key('people.roster.category.${c.id}'),
+                title: c.name,
+                onTap: () => Navigator.of(sheet).pop(c),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked != null && mounted) _filtersController.setCategory(picked);
   }
 
   /// Picks a standard choice or yes/no field, then one of its answers.
   Future<void> _pickAnswer(List<CustomField> fields) async {
     final strings = context.strings.fields;
-    final picked =
-        await showModalBottomSheet<({CustomField field, Object value})>(
-          context: context,
-          isScrollControlled: true,
-          useSafeArea: true,
-          builder: (sheet) => ListView(
-            key: const Key('people.roster.answerPicker'),
-            shrinkWrap: true,
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            children: [
-              for (final f in fields) ...[
-                Text(f.label, style: Theme.of(sheet).textTheme.titleSmall),
-                Wrap(
-                  spacing: AppSpacing.sm,
-                  children: [
-                    for (final Object v
-                        in f.type == FieldType.yesNo
-                            ? const [true, false]
-                            : f.options)
-                      ActionChip(
-                        key: Key('people.roster.answer.${filterTag(f.id, v)}'),
-                        label: Text(
-                          v is bool ? (v ? strings.yes : strings.no) : '$v',
+    final picked = await showCpSheet<({CustomField field, Object value})>(
+      context: context,
+      title: strings.filterByField(widget.event.words.one('customField')),
+      builder: (sheet) {
+        final cp = sheet.cp;
+        return Column(
+          key: const Key('people.roster.answerPicker'),
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: cp.space.md,
+          children: [
+            for (final f in fields)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: cp.space.xs,
+                children: [
+                  Text(
+                    f.label,
+                    style: cp.type.titleSmall.copyWith(color: cp.colors.text),
+                  ),
+                  Wrap(
+                    spacing: cp.space.sm,
+                    children: [
+                      for (final Object v
+                          in f.type == FieldType.yesNo
+                              ? const [true, false]
+                              : f.options)
+                        CpFilterChip(
+                          key: Key(
+                            'people.roster.answer.${filterTag(f.id, v)}',
+                          ),
+                          label: v is bool
+                              ? (v ? strings.yes : strings.no)
+                              : '$v',
+                          onTap: () =>
+                              Navigator.of(sheet).pop((field: f, value: v)),
                         ),
-                        onPressed: () =>
-                            Navigator.of(sheet).pop((field: f, value: v)),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.md),
-              ],
-            ],
-          ),
+                    ],
+                  ),
+                ],
+              ),
+          ],
         );
-    if (picked != null && mounted) setState(() => _answer = picked);
+      },
+    );
+    if (picked != null && mounted) _filtersController.setAnswer(picked);
   }
 
   Future<void> _manageGroup(GroupModel group) async {
@@ -143,14 +213,15 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
       await _openGroupEntry(group: group, editing: true);
       return;
     }
-    setState(() {
-      _group = switch (result) {
-        GroupSheetResult(deleted: true) => null,
-        GroupSheetResult(:final group?) => group,
-        _ => _group,
-      };
-      _started = null;
-    });
+    switch (result) {
+      case GroupSheetResult(deleted: true):
+        _filtersController.setGroup(null);
+      case GroupSheetResult(:final group?):
+        _filtersController.setGroup(group);
+      default:
+    }
+    setState(() => _started = null);
+    unawaited(_controller.refresh());
   }
 
   /// The group screen (Spec #186 Req 26): a new group, or more people for
@@ -165,10 +236,9 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
       '${group != null && editing ? '&mode=edit' : ''}',
     );
     if (result == null || !mounted) return;
-    setState(() {
-      _group = result.group;
-      _started = null;
-    });
+    _filtersController.setGroup(result.group);
+    setState(() => _started = null);
+    unawaited(_controller.refresh());
   }
 
   /// "+" for someone who may add anyone: one person or a whole group.
@@ -205,69 +275,136 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     }
   }
 
-  void _open(String participantId) => context.push(
-    '/dashboard/event/${widget.event.id}/people/$participantId'
-    '${participantId == 'new' && _group != null ? '?group=${_group!.id}' : ''}',
-  );
+  /// Opens a person's record: beside the list from 840 px, so the route
+  /// changes in place; narrower, as a page of its own.
+  void _open(String participantId) {
+    final group = ref.read(rosterFiltersProvider(widget.event.id)).group;
+    final path =
+        '/dashboard/event/${widget.event.id}/people/$participantId'
+        '${participantId == 'new' && group != null ? '?group=${group.id}' : ''}';
+    if (CpListDetail.isSplit(context)) {
+      context.go(path);
+    } else {
+      context.push(path);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final event = widget.event;
     final words = event.words;
-    final strings = context.strings.people;
+    final detail = widget.detail;
+    // Keeps the filters while this list is up, even before it shows.
+    ref.watch(rosterFiltersProvider(event.id));
+    // Narrower than 840 px a chosen person is a page of their own.
+    if (detail != null && !CpListDetail.isSplit(context)) return detail;
+
     final me = ref.watch(currentUserIdProvider) ?? '';
     final browses = event.can(me, 'participants.read');
     final edits = event.can(me, 'participants.edit');
-
-    Widget scaffold(Widget body, {Widget? fab}) => Scaffold(
-      appBar: AppBar(
-        title: Text(words.other('participant')),
-        elevation: 0,
-        actions: [
-          if (event.can(me, 'participants.import'))
-            IconButton(
-              key: const Key('people.roster.import'),
-              tooltip: context.strings.imports.rosterAction,
-              icon: const Icon(AppIcons.importFile),
-              onPressed: () =>
-                  context.push('/dashboard/event/${event.id}/people/import'),
-            ),
-        ],
-      ),
-      floatingActionButton: fab,
-      body: body,
-    );
+    final roles = context.strings.roles;
 
     List<String>? ownGroups;
+    Widget? body;
     if (!browses) {
       final mine = ref.watch(myMemberProvider(event.id));
       if (!mine.hasValue && mine.isLoading) {
-        return scaffold(
-          const Center(
-            child: CircularProgressIndicator(key: Key('people.roster.loading')),
-          ),
+        body = KeyedSubtree(
+          key: const Key('people.roster.loading'),
+          child: CpLoadingState(semanticLabel: words.other('participant')),
         );
-      }
-      ownGroups = mine.value?.groupIds ?? const [];
-      final ownRecord = mine.value?.participantId;
-      if (ownGroups.isEmpty) {
-        // Linked without a group (Req 46): their own record, nobody else's.
-        return scaffold(
-          ownRecord == null
+      } else {
+        ownGroups = mine.value?.groupIds ?? const [];
+        final ownRecord = mine.value?.participantId;
+        if (ownGroups.isEmpty) {
+          // Linked without a group (Req 46): their own record, nobody
+          // else's.
+          body = ownRecord == null
               ? const NoAccessView()
               : _OwnRecord(
                   eventId: event.id,
                   participantId: ownRecord,
+                  selected: widget.selectedId == ownRecord,
                   onTap: () => _open(ownRecord),
-                ),
-        );
+                );
+        }
       }
     }
+    final canAdd =
+        body == null &&
+        (edits || ownGroups != null) &&
+        event.status != EventStatus.archived;
+
+    final list =
+        body ?? _list(context, ownGroups, browses: browses, edits: edits);
+    return Scaffold(
+      appBar: CpTopBar(
+        title: words.other('participant'),
+        leadingTooltip: MaterialLocalizations.of(context).backButtonTooltip,
+        leadingKey: const Key('people.roster.back'),
+        onLeading: () => context.canPop()
+            ? context.pop()
+            : context.go('/dashboard/event/${event.id}'),
+        actions: [
+          if (event.can(me, 'participants.import'))
+            CpTopBarAction(
+              key: const Key('people.roster.import'),
+              tooltip: context.strings.imports.rosterAction,
+              icon: CpIcons.importFile,
+              onPressed: () =>
+                  context.push('/dashboard/event/${event.id}/people/import'),
+            ),
+          if (canAdd)
+            CpTopBarAction(
+              key: const Key('people.roster.add'),
+              tooltip: context.strings.people.add(words.one('participant')),
+              icon: CpIcons.actionAdd,
+              primary: true,
+              // Anyone who may add anyone chooses a person or a whole group;
+              // a linked adult adds to their own group.
+              onPressed: edits ? _chooseAdd : () => _open('new'),
+            ),
+        ],
+      ),
+      body: CpListDetail(
+        list: list,
+        detail: detail,
+        placeholder: context.strings.nav.selectToSee(words.one('participant')),
+        unsavedText: CpUnsavedText(
+          title: roles.discardTitle,
+          body: roles.discardBody,
+          keep: roles.keepEditing,
+          discard: roles.discard,
+        ),
+      ),
+    );
+  }
+
+  Widget _list(
+    BuildContext context,
+    List<String>? ownGroups, {
+    required bool browses,
+    required bool edits,
+  }) {
+    final cp = context.cp;
+    final event = widget.event;
+    final words = event.words;
+    final strings = context.strings.people;
+    final fieldStrings = context.strings.fields;
+    final me = ref.watch(currentUserIdProvider) ?? '';
+    final filters = ref.watch(rosterFiltersProvider(event.id));
+    // The other copy of the list (beside a chosen person) may have searched.
+    ref.listen(rosterFiltersProvider(event.id).select((f) => f.search), (
+      _,
+      next,
+    ) {
+      if (_search.text != next) _search.text = next;
+    });
+
     final waiting = edits && event.can(me, 'participants.readPrivate')
         ? ref.watch(linkRequestsProvider(event.id)).value?.length ?? 0
         : 0;
-
-    final query = _query(ownGroups);
+    final query = _query(filters, ownGroups);
     _ensureStarted(query);
     final roster = ref.watch(rosterProvider(event.id));
     final categories = categoriesOf(event.settings);
@@ -278,7 +415,6 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
               const <CustomField>[])
         if (f.filters && f.scope == FieldScope.participant) f,
     ];
-    final fieldStrings = context.strings.fields;
     final ownGroupNames = ownGroups == null
         ? const <String, GroupModel>{}
         : ref
@@ -290,120 +426,102 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
                   )
                   .value ??
               const <String, GroupModel>{};
-    final canAdd =
-        (edits || ownGroups != null) && event.status != EventStatus.archived;
+    // The whole roster's size, only when nothing narrows it.
+    final total = browses && !filters.any
+        ? ref.watch(participantCountProvider(event.id)).value
+        : null;
+    final answer = filters.answer;
 
     final header = <Widget>[
-      if (waiting > 0)
-        Card(
-          key: const Key('people.roster.linkRequests'),
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(context.strings.links.waiting(waiting)),
-                Align(
-                  alignment: AlignmentDirectional.centerEnd,
-                  child: TextButton(
-                    key: const Key('people.roster.linkRequests.open'),
-                    onPressed: () => context.push(
-                      '/dashboard/event/${event.id}/people/links',
-                    ),
-                    child: Text(context.strings.links.openWaiting),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      TextField(
-        key: const Key('people.roster.search'),
+      CpSearchField(
+        fieldKey: const Key('people.roster.search'),
         controller: _search,
         onChanged: _onSearch,
-        textInputAction: TextInputAction.search,
-        decoration: InputDecoration(
-          prefixIcon: const Icon(AppIcons.actionSearch),
-          hintText: strings.searchHint(words.other('participant')),
-          border: const OutlineInputBorder(),
-        ),
+        hint: strings.searchHint(words.other('participant')),
       ),
       if (browses)
         Wrap(
-          spacing: AppSpacing.sm,
-          runSpacing: AppSpacing.sm,
+          spacing: cp.space.sm,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            if (_group == null)
-              OutlinedButton.icon(
+            CpFilterChip(
+              key: const Key('people.roster.all'),
+              label: strings.all,
+              selected:
+                  filters.group == null &&
+                  filters.category == null &&
+                  answer == null,
+              onTap: _filtersController.clear,
+            ),
+            if (filters.group == null)
+              CpFilterChip(
                 key: const Key('people.roster.groupFilter'),
-                onPressed: _pickGroup,
-                icon: const Icon(AppIcons.filter),
-                label: Text(strings.filterByGroup(words.one('group'))),
+                label: words.one('group'),
+                menu: true,
+                onTap: _pickGroup,
               )
-            else ...[
-              InputChip(
+            else
+              CpFilterChip(
                 key: const Key('people.roster.groupChip'),
-                label: Text(_group!.name),
-                onPressed: _pickGroup,
-                onDeleted: () => setState(() => _group = null),
-                deleteButtonTooltipMessage: strings.clearGroup(
-                  words.one('group'),
-                ),
+                label: filters.group!.name,
+                selected: true,
+                onTap: _pickGroup,
+                onClear: () => _filtersController.setGroup(null),
+                clearKey: const Key('people.roster.groupChip.clear'),
+                clearTooltip: strings.clearGroup(words.one('group')),
               ),
-              if (edits)
-                TextButton(
-                  key: const Key('people.roster.groupManage'),
-                  onPressed: () => _manageGroup(_group!),
-                  child: Text(strings.manageGroup(words.one('group'))),
-                ),
-            ],
             if (categories.isNotEmpty)
-              if (_category == null)
-                PopupMenuButton<EventCategory>(
+              if (filters.category == null)
+                CpFilterChip(
                   key: const Key('people.roster.categoryFilter'),
-                  tooltip: fieldStrings.filterByCategory(words.one('category')),
-                  onSelected: (c) => setState(() => _category = c),
-                  itemBuilder: (_) => [
-                    for (final c in categories)
-                      PopupMenuItem(
-                        key: Key('people.roster.category.${c.id}'),
-                        value: c,
-                        child: Text(c.name),
-                      ),
-                  ],
-                  child: Chip(
-                    avatar: const Icon(AppIcons.filter, size: 18),
-                    label: Text(
-                      fieldStrings.filterByCategory(words.one('category')),
-                    ),
-                  ),
+                  label: words.one('category'),
+                  menu: true,
+                  onTap: () => _pickCategory(categories),
                 )
               else
-                InputChip(
+                CpFilterChip(
                   key: const Key('people.roster.categoryChip'),
-                  label: Text(_category!.name),
-                  onDeleted: () => setState(() => _category = null),
+                  label: filters.category!.name,
+                  selected: true,
+                  onTap: () => _pickCategory(categories),
+                  onClear: () => _filtersController.setCategory(null),
+                  clearKey: const Key('people.roster.categoryChip.clear'),
+                  clearTooltip: fieldStrings.filterByCategory(
+                    words.one('category'),
+                  ),
                 ),
             if (filterFields.isNotEmpty)
-              if (_answer == null)
-                ActionChip(
+              if (answer == null)
+                CpFilterChip(
                   key: const Key('people.roster.fieldFilter'),
-                  avatar: const Icon(AppIcons.filter, size: 18),
-                  label: Text(
-                    fieldStrings.filterByField(words.one('customField')),
-                  ),
-                  onPressed: () => _pickAnswer(filterFields),
+                  label: words.one('customField'),
+                  menu: true,
+                  onTap: () => _pickAnswer(filterFields),
                 )
               else
-                InputChip(
+                CpFilterChip(
                   key: const Key('people.roster.fieldChip'),
-                  label: Text(
-                    '${_answer!.field.label}: ${_answer!.value is bool ? ((_answer!.value as bool) ? fieldStrings.yes : fieldStrings.no) : _answer!.value}',
+                  label:
+                      '${answer.field.label}: ${answer.value is bool ? ((answer.value as bool) ? fieldStrings.yes : fieldStrings.no) : answer.value}',
+                  selected: true,
+                  onTap: () => _pickAnswer(filterFields),
+                  onClear: () => _filtersController.setAnswer(null),
+                  clearKey: const Key('people.roster.fieldChip.clear'),
+                  clearTooltip: fieldStrings.filterByField(
+                    words.one('customField'),
                   ),
-                  onDeleted: () => setState(() => _answer = null),
                 ),
           ],
+        ),
+      if (filters.group != null && edits)
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: CpButton.text(
+            key: const Key('people.roster.groupManage'),
+            icon: CpIcons.actionSettings,
+            label: strings.manageGroup(words.one('group')),
+            onPressed: () => _manageGroup(filters.group!),
+          ),
         ),
       // A linked adult adds people to, and answers for, their own group
       // (Spec #186 Req 26), but never creates, renames or deletes one.
@@ -415,104 +533,117 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
           onAddPeople: () => _openGroupEntry(group: g),
           onEditAnswers: () => _openGroupEntry(group: g, editing: true),
         ),
-      Text(
-        strings.onlineNote,
-        key: const Key('people.roster.online'),
-        style: Theme.of(context).textTheme.bodySmall,
+      if (waiting > 0)
+        CpCard(
+          key: const Key('people.roster.linkRequests'),
+          child: CpListRow(
+            key: const Key('people.roster.linkRequests.open'),
+            leading: Icon(
+              CpIcons.statusDue,
+              size: cp.sizes.iconMd,
+              color: cp.colors.accent,
+            ),
+            title: context.strings.links.waiting(waiting),
+            onTap: () =>
+                context.push('/dashboard/event/${event.id}/people/links'),
+          ),
+        ),
+      CpSectionHeader(
+        title: total == null
+            ? words.other('participant')
+            : words.count('participant', total),
       ),
     ];
 
-    final Widget list;
+    final Widget results;
     if (!roster.started || (roster.loading && roster.items.isEmpty)) {
-      list = const Padding(
-        padding: EdgeInsets.all(AppSpacing.xl),
-        child: Center(
-          child: CircularProgressIndicator(key: Key('people.roster.loading')),
+      results = KeyedSubtree(
+        key: const Key('people.roster.loading'),
+        child: CpLoadingState.rows(
+          semanticLabel: words.other('participant'),
+          rows: 4,
         ),
       );
     } else if (roster.error != null && roster.items.isEmpty) {
-      list = _Failed(onRetry: _controller.loadMore);
+      results = _Failed(onRetry: _controller.loadMore);
     } else if (roster.items.isEmpty) {
-      list = Column(
+      results = KeyedSubtree(
         key: const Key('people.roster.empty'),
-        children: [
-          Text(
-            strings.emptyTitle(words.other('participant')),
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            strings.emptyHint(words.one('group')),
-            textAlign: TextAlign.center,
-          ),
-        ],
+        child: CpEmptyState(
+          icon: CpIcons.members,
+          title: strings.emptyTitle(words.other('participant')),
+          message: strings.emptyHint(words.one('group')),
+        ),
       );
     } else {
-      list = Column(
+      results = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: cp.space.md,
         children: [
-          for (final p in roster.items)
-            _PersonTile(
-              person: p,
-              groupName: [
-                if (p.groupId != null) ?roster.groups[p.groupId]?.name,
-                // The age band, never a birth date (Z-01).
-                if (p.categoryId != null) ?categoryNames[p.categoryId],
-              ].join(' · '),
-              onTap: () => _open(p.id),
+          CpCard(
+            child: CpRowGroup(
+              children: [
+                for (final p in roster.items)
+                  _PersonTile(
+                    person: p,
+                    selected: p.id == widget.selectedId,
+                    groupName: [
+                      if (p.groupId != null) ?roster.groups[p.groupId]?.name,
+                      if (p.isChild) strings.child,
+                      // The age band, never a birth date (Z-01).
+                      if (p.categoryId != null) ?categoryNames[p.categoryId],
+                    ].join(' · '),
+                    onTap: () => _open(p.id),
+                  ),
+              ],
             ),
+          ),
           if (roster.error != null)
             _Failed(onRetry: _controller.loadMore)
           else if (roster.hasMore)
-            Padding(
-              padding: const EdgeInsets.only(top: AppSpacing.md),
-              child: Center(
-                child: roster.loading
-                    ? const CircularProgressIndicator()
-                    : OutlinedButton(
-                        key: const Key('people.roster.more'),
-                        onPressed: _controller.loadMore,
-                        child: Text(strings.loadMore),
-                      ),
-              ),
+            Center(
+              child: roster.loading
+                  ? CpLoadingState(semanticLabel: strings.loadMore)
+                  : CpButton.text(
+                      key: const Key('people.roster.more'),
+                      label: strings.loadMore,
+                      onPressed: _controller.loadMore,
+                    ),
             ),
         ],
       );
     }
 
-    return scaffold(
-      RefreshIndicator(
-        onRefresh: _controller.refresh,
-        child: ListView(
-          key: const Key('people.roster.list'),
-          padding: EdgeInsets.fromLTRB(
-            Breakpoints.screenHorizontalPadding(context),
-            AppSpacing.lg,
-            Breakpoints.screenHorizontalPadding(context),
-            AppSpacing.xxxl + AppSpacing.xl,
-          ),
-          children: [
-            ContentMaxWidth(
-              maxWidth: 720,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                spacing: AppSpacing.md,
-                children: [...header, list],
-              ),
+    final split = CpListDetail.isSplit(context);
+    final side = split
+        ? cp.space.lg
+        : Breakpoints.screenHorizontalPadding(context);
+    return RefreshIndicator(
+      onRefresh: _controller.refresh,
+      child: ListView(
+        key: const Key('people.roster.list'),
+        controller: _scroll,
+        padding: EdgeInsets.fromLTRB(side, cp.space.sm, side, cp.space.xxl),
+        children: [
+          ContentMaxWidth(
+            maxWidth: split ? double.infinity : cp.sizes.phoneColumn,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: cp.space.md,
+              children: [
+                ...header,
+                results,
+                Text(
+                  strings.onlineNote,
+                  key: const Key('people.roster.online'),
+                  textAlign: TextAlign.center,
+                  style: cp.type.bodySmall.copyWith(color: cp.colors.textMuted),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-      fab: canAdd
-          ? FloatingActionButton.extended(
-              key: const Key('people.roster.add'),
-              // Anyone who may add anyone chooses a person or a whole group;
-              // a linked adult adds to their own group.
-              onPressed: edits ? _chooseAdd : () => _open('new'),
-              icon: const Icon(AppIcons.actionAdd),
-              label: Text(strings.add(words.one('participant'))),
-            )
-          : null,
     );
   }
 }
@@ -610,42 +741,32 @@ class _PersonTile extends StatelessWidget {
   const _PersonTile({
     required this.person,
     this.groupName,
+    this.selected = false,
     required this.onTap,
   });
 
   final ParticipantModel person;
   final String? groupName;
+  final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final strings = context.strings.people;
-    final theme = Theme.of(context);
-    return ListTile(
-      key: Key('people.tile.${person.id}'),
-      contentPadding: EdgeInsets.zero,
-      minVerticalPadding: AppSpacing.md,
-      leading: CircleAvatar(
-        backgroundColor: theme.colorScheme.secondaryContainer,
-        foregroundColor: theme.colorScheme.onSecondaryContainer,
-        child: Text(person.name.isEmpty ? '?' : person.name.characters.first),
+    // Left by a deleted account (Req 14a).
+    final name = person.name.isEmpty
+        ? context.strings.links.unnamed
+        : person.name;
+    return Builder(
+      // Its own context, inside the list and detail, so choosing another
+      // person asks first when the open record has unsaved edits.
+      builder: (row) => CpListRow(
+        key: Key('people.tile.${person.id}'),
+        leading: CpAvatar(name: person.name),
+        title: name,
+        subtitle: (groupName ?? '').isEmpty ? null : groupName,
+        selected: selected,
+        onTap: () => CpListDetail.select(row, onTap),
       ),
-      // Left by a deleted account (Req 14a).
-      title: Text(
-        person.name.isEmpty ? context.strings.links.unnamed : person.name,
-        style: person.name.isEmpty
-            ? TextStyle(color: theme.colorScheme.onSurfaceVariant)
-            : null,
-      ),
-      subtitle: (groupName ?? '').isEmpty ? null : Text(groupName!),
-      trailing: person.isChild
-          ? Chip(
-              key: Key('people.tile.${person.id}.child'),
-              label: Text(strings.child),
-              visualDensity: VisualDensity.compact,
-            )
-          : null,
-      onTap: onTap,
     );
   }
 }
@@ -655,45 +776,48 @@ class _OwnRecord extends ConsumerWidget {
   const _OwnRecord({
     required this.eventId,
     required this.participantId,
+    required this.selected,
     required this.onTap,
   });
 
   final String eventId;
   final String participantId;
+  final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final cp = context.cp;
     final key = (eventId: eventId, id: participantId);
     final person = ref.watch(participantProvider(key));
-    final padding = Breakpoints.screenHorizontalPadding(context);
+    final side = CpListDetail.isSplit(context)
+        ? cp.space.lg
+        : Breakpoints.screenHorizontalPadding(context);
     return ListView(
       key: const Key('people.roster.own'),
-      padding: EdgeInsets.fromLTRB(
-        padding,
-        AppSpacing.lg,
-        padding,
-        AppSpacing.lg,
-      ),
+      padding: EdgeInsets.fromLTRB(side, cp.space.lg, side, cp.space.lg),
       children: [
         ContentMaxWidth(
-          maxWidth: 720,
+          maxWidth: cp.sizes.phoneColumn,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            spacing: AppSpacing.md,
+            spacing: cp.space.md,
             children: [
-              Text(
-                context.strings.links.yourRecord,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+              CpSectionHeader(title: context.strings.links.yourRecord),
               if (person.hasError && !person.hasValue)
                 _Failed(onRetry: () => ref.invalidate(participantProvider(key)))
               else if (!person.hasValue)
-                const Center(child: CircularProgressIndicator())
+                CpLoadingState(semanticLabel: context.strings.links.yourRecord)
               else if (person.value == null)
                 const NoAccessView()
               else
-                _PersonTile(person: person.value!, onTap: onTap),
+                CpCard(
+                  child: _PersonTile(
+                    person: person.value!,
+                    selected: selected,
+                    onTap: onTap,
+                  ),
+                ),
             ],
           ),
         ),
@@ -710,24 +834,12 @@ class _Failed extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = context.strings.people;
-    final theme = Theme.of(context);
-    return Column(
+    return CpErrorState(
       key: const Key('people.roster.error'),
-      children: [
-        Text(
-          strings.loadFailed,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.error,
-          ),
-        ),
-        TextButton.icon(
-          key: const Key('people.roster.retry'),
-          onPressed: onRetry,
-          icon: const Icon(AppIcons.actionRetry),
-          label: Text(strings.retry),
-        ),
-      ],
+      title: strings.loadFailed,
+      retryLabel: strings.retry,
+      retryKey: const Key('people.roster.retry'),
+      onRetry: onRetry,
     );
   }
 }
