@@ -94,6 +94,15 @@ All components are in `lib/app/core/design/components/` (import `components.dart
 
 **`CpTopBar`** goes in `Scaffold.appBar`. It has back (or `CpIcons.actionClose` for a full-screen form) on the left, a title marked as a heading, and up to three `CpTopBarAction`s. Each action has a tooltip, which is also its screen reader label, and is at least 48 px. Mark the screen's main action `primary` to draw it as an accent circle; use one primary action per bar at most.
 
+### Event cover
+
+![Event cover](../../test/design/golden/goldens/cover-light.png)
+
+- **`CpCoverBanner`** shows an event's cover photo, cropped to fill, or without one a calm banner in the `banner` colour with the event's icon and an optional label (Spec #186 Req 44). It never shows stock or per-template photos.
+- **`CpCoverThumb`** is the same as a small square on a list card: the photo, or the icon on the accent tint.
+
+Screens use the app wrappers `EventCoverBanner` and `EventCoverThumb`, which read the photo and pick the icon.
+
 ### Buttons
 
 ![Buttons](../../test/design/golden/goldens/buttons-light.png)

@@ -122,7 +122,10 @@ export function getAdminApp(): App {
   if (getApps().length > 0 && getApps()[0]) {
     _adminApp = getApps()[0]!;
   } else {
-    _adminApp = initializeApp({projectId: CF_PROJECT_ID});
+    _adminApp = initializeApp({
+      projectId: CF_PROJECT_ID,
+      storageBucket: `${CF_PROJECT_ID}.appspot.com`,
+    });
   }
   return _adminApp;
 }

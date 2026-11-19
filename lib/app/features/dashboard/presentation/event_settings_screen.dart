@@ -1,4 +1,9 @@
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
+import 'package:crewpoint_app/app/features/dashboard/data/event_cover_service.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/event_cover.dart';
 import 'package:crewpoint_app/app/features/schedule/domain/models/attendance.dart';
 import 'package:crewpoint_app/app/features/schedule/domain/models/schedule.dart'
     show isWebLink;
@@ -410,6 +415,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
                       strings.settingsArchivedNotice,
                       key: const Key('events.settings.archivedNotice'),
                     ),
+                  if (!_archived) _CoverSection(event: event),
                   DropdownButtonFormField<EventStatus>(
                     key: const Key('events.settings.status'),
                     initialValue: _status,
@@ -1017,6 +1023,114 @@ class _SaveTemplateDialogState extends ConsumerState<_SaveTemplateDialog> {
           child: Text(strings.save),
         ),
       ],
+    );
+  }
+}
+
+/// "Cover photo" (Spec #186 Req 41): choose one from the phone or computer,
+/// replace it, or remove it. The screen is open only with `event.manage`.
+class _CoverSection extends ConsumerStatefulWidget {
+  const _CoverSection({required this.event});
+
+  final EventModel event;
+
+  @override
+  ConsumerState<_CoverSection> createState() => _CoverSectionState();
+}
+
+class _CoverSectionState extends ConsumerState<_CoverSection> {
+  bool _busy = false;
+
+  Future<void> _run(Future<String?> Function() action) async {
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _busy = true);
+    final message = await action();
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (message != null) {
+      messenger.showSnackBar(
+        SnackBar(
+          key: const Key('events.settings.cover.message'),
+          content: Text(message),
+        ),
+      );
+    }
+  }
+
+  Future<void> _choose() => _run(() async {
+    final strings = context.strings.cover;
+    final outcome = await ref
+        .read(eventCoverServiceProvider)
+        .choose(widget.event.id);
+    return switch (outcome) {
+      CoverOutcome.saved => strings.saved,
+      CoverOutcome.cancelled => null,
+      CoverOutcome.tooLarge => strings.tooLarge,
+      CoverOutcome.notAnImage => strings.notAnImage,
+      CoverOutcome.failed => strings.failed,
+    };
+  });
+
+  Future<void> _remove() => _run(() async {
+    final strings = context.strings.cover;
+    final ok = await ref
+        .read(eventCoverServiceProvider)
+        .remove(widget.event.id);
+    return ok ? strings.removed : strings.removeFailed;
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cp = context.cp;
+    final strings = context.strings.cover;
+    final hasCover = widget.event.cover != null;
+    return CpCard(
+      key: const Key('events.settings.cover'),
+      padding: EdgeInsets.all(cp.space.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: cp.space.md,
+        children: [
+          Semantics(
+            header: true,
+            child: Text(
+              strings.heading,
+              style: cp.type.titleLarge.copyWith(color: cp.colors.text),
+            ),
+          ),
+          Text(
+            strings.help,
+            style: cp.type.bodySmall.copyWith(color: cp.colors.textMuted),
+          ),
+          EventCoverBanner(event: widget.event),
+          if (!hasCover)
+            Text(
+              strings.none,
+              key: const Key('events.settings.cover.none'),
+              style: cp.type.bodySmall.copyWith(color: cp.colors.textMuted),
+            ),
+          Wrap(
+            spacing: cp.space.sm,
+            runSpacing: cp.space.sm,
+            children: [
+              CpButton.secondary(
+                key: const Key('events.settings.cover.choose'),
+                icon: CpIcons.photoLibrary,
+                label: hasCover ? strings.replace : strings.choose,
+                busy: _busy,
+                onPressed: _choose,
+              ),
+              if (hasCover)
+                CpButton.text(
+                  key: const Key('events.settings.cover.remove'),
+                  icon: CpIcons.actionDelete,
+                  label: strings.remove,
+                  onPressed: _busy ? null : _remove,
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

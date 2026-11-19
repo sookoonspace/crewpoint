@@ -101,6 +101,16 @@ class CpSizes extends ThemeExtension<CpSizes> {
   /// The list's width beside a detail panel.
   double get listPane => CpScale.listPane;
 
+  /// The cover banner's height on a phone, and from 840 px.
+  double get coverBanner => CpScale.cover156;
+  double get coverBannerWide => CpScale.cover180;
+
+  /// The event's icon on a banner without a photo.
+  double get coverIcon => CpScale.coverIcon56;
+
+  /// An event's thumbnail on its list card.
+  double get coverThumb => CpScale.avatar64;
+
   @override
   CpSizes copyWith() => this;
 

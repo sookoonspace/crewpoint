@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 #
-# Apply the Storage CORS allow-list (`infra/storage-cors.json`) to the
-# CrewPoint Firebase Storage bucket for a given flavor.
+# Apply the Storage CORS allow-list (`infra/storage-cors.<flavor>.json`) to
+# the CrewPoint Firebase Storage bucket for a given flavor. Each flavor
+# allows its own web origins, so the web app can read receipts, profile
+# pictures and event cover photos (Spec #186 Req 42).
 #
 # Idempotent: re-running with the same payload is safe and a no-op
-# beyond an API call. Re-run after editing `infra/storage-cors.json`
+# beyond an API call. Re-run after editing an `infra/storage-cors.*.json`
 # (e.g., when adding a new allowed subdomain) or after rotating a
 # bucket.
 #
@@ -26,18 +28,18 @@
 
 set -euo pipefail
 
-readonly CONFIG_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/infra/storage-cors.json"
-
-if [[ ! -f "$CONFIG_FILE" ]]; then
-  echo "error: $CONFIG_FILE not found" >&2
-  exit 1
-fi
+readonly INFRA_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/infra"
 
 apply_one() {
   local flavor="$1"
+  local config="$INFRA_DIR/storage-cors.${flavor}.json"
   local bucket="gs://crewpoint-${flavor}.firebasestorage.app"
-  echo "==> applying CORS to $bucket"
-  gsutil cors set "$CONFIG_FILE" "$bucket"
+  if [[ ! -f "$config" ]]; then
+    echo "error: $config not found" >&2
+    exit 1
+  fi
+  echo "==> applying $config to $bucket"
+  gsutil cors set "$config" "$bucket"
 }
 
 case "${1:-}" in

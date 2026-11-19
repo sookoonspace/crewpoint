@@ -271,6 +271,20 @@ class EventRepository {
     }),
   );
 
+  /// Records the event's cover photo at [path] (Spec #186 Req 41), with a
+  /// new time so every cached copy is replaced.
+  Future<void> setCover(String eventId, String path) =>
+      _eventsRef.doc(eventId).update({
+        'cover': {'path': path, 'updatedAt': FieldValue.serverTimestamp()},
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+  /// Removes the cover photo from the event; a missing field means none.
+  Future<void> clearCover(String eventId) => _eventsRef.doc(eventId).update({
+    'cover': FieldValue.delete(),
+    'updatedAt': FieldValue.serverTimestamp(),
+  });
+
   /// Changes status by hand. Times that have already passed then no longer
   /// move the event automatically.
   Future<EventWriteResult> setStatus(String eventId, EventStatus status) =>
@@ -372,6 +386,8 @@ class EventRepository {
               ? null
               : jsonEncode(event.myPermissions!.toList()),
         ),
+        coverPath: Value(event.cover?.path),
+        coverUpdatedAt: Value(event.cover?.updatedAt),
         createdAt: event.createdAt != null
             ? Value(event.createdAt!)
             : const Value.absent(),
@@ -414,7 +430,21 @@ class EventRepository {
     currency: (data['currency'] as String?) ?? 'USD',
     createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
     updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
+    cover: _parseCover(data['cover']),
   );
+
+  static EventCover? _parseCover(Object? raw) {
+    if (raw is! Map) return null;
+    final path = raw['path'];
+    final at = raw['updatedAt'];
+    if (path is! String || path.isEmpty) return null;
+    return EventCover(
+      path: path,
+      // A cover just written carries a pending server time; until it lands
+      // the moment of the change stands in.
+      updatedAt: at is Timestamp ? at.toDate().toUtc() : DateTime.now().toUtc(),
+    );
+  }
 
   EventModel _toDomain(Event row) => EventModel(
     id: row.id,
@@ -442,6 +472,12 @@ class EventRepository {
     currency: row.currency,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+    cover: row.coverPath == null || row.coverUpdatedAt == null
+        ? null
+        : EventCover(
+            path: row.coverPath!,
+            updatedAt: row.coverUpdatedAt!.toUtc(),
+          ),
     viewerId: row.viewerId,
     myRoleIds: row.myRoleIds == null
         ? null

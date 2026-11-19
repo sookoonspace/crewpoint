@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
 import 'package:crewpoint_app/app/core/widgets/event_tile.dart';
 import 'package:crewpoint_app/app/core/widgets/progress_ring.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
@@ -25,7 +26,7 @@ void main() {
     await pump(tester, EventTile(event: event, todo: 2, doing: 1, done: 3));
 
     // Icon derived from the display type.
-    expect(find.byIcon(Icons.luggage_outlined), findsOneWidget);
+    expect(find.byIcon(CpIcons.eventTrip), findsOneWidget);
     // Title.
     expect(find.text('Tahoe Ski Trip'), findsOneWidget);
     // Member count badge (3 ids → "3 members").

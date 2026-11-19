@@ -7,6 +7,7 @@ export 'package:crewpoint_app/app/core/design/components/cp_avatar.dart';
 export 'package:crewpoint_app/app/core/design/components/cp_button.dart';
 export 'package:crewpoint_app/app/core/design/components/cp_card.dart';
 export 'package:crewpoint_app/app/core/design/components/cp_choice.dart';
+export 'package:crewpoint_app/app/core/design/components/cp_cover.dart';
 export 'package:crewpoint_app/app/core/design/components/cp_feedback.dart';
 export 'package:crewpoint_app/app/core/design/components/cp_fields.dart';
 export 'package:crewpoint_app/app/core/design/components/cp_list_row.dart';

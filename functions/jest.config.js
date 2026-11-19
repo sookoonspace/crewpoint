@@ -3,6 +3,8 @@ module.exports = {
   testEnvironment: 'node',
   testMatch: ['<rootDir>/test/**/*.test.ts'],
   testTimeout: 30000,
+  // Gives the Admin SDK a default Storage bucket, as deployed functions have.
+  setupFiles: ['<rootDir>/test/env.ts'],
   transform: {
     '^.+\\.[tj]s$': ['ts-jest', {tsconfig: '<rootDir>/tsconfig.test.json'}],
   },

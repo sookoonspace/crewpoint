@@ -108,4 +108,33 @@ class FirebaseImageService implements IImageService {
       rethrow;
     }
   }
+
+  @override
+  Future<Uint8List?> downloadBytes(
+    String storagePath, {
+    int maxSize = 5 * 1024 * 1024,
+  }) async {
+    try {
+      return await _storage.ref().child(storagePath).getData(maxSize);
+    } on FirebaseException catch (e) {
+      if (e.code == 'object-not-found') return null;
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> deleteFromStorage(String storagePath) async {
+    try {
+      await _storage.ref().child(storagePath).delete();
+    } on FirebaseException catch (e) {
+      if (e.code == 'object-not-found') return;
+      log(
+        'Delete failed: $storagePath',
+        error: e,
+        stackTrace: StackTrace.current,
+        name: 'image',
+      );
+      rethrow;
+    }
+  }
 }

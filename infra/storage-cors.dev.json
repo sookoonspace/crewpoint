@@ -1,0 +1,8 @@
+[
+  {
+    "origin": ["https://crewpoint-dev.web.app", "https://crewpoint-dev.firebaseapp.com"],
+    "method": ["GET", "HEAD"],
+    "responseHeader": ["Content-Type", "Cache-Control", "Content-Length"],
+    "maxAgeSeconds": 3600
+  }
+]

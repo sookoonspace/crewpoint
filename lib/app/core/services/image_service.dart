@@ -55,4 +55,14 @@ abstract class IImageService {
     required String storagePath,
     required String contentType,
   });
+
+  /// The file at [storagePath], or null when there is none. Reads through
+  /// the SDK, so the signed-in user's access applies.
+  Future<Uint8List?> downloadBytes(
+    String storagePath, {
+    int maxSize = 5 * 1024 * 1024,
+  });
+
+  /// Deletes the file at [storagePath]; a missing file is not an error.
+  Future<void> deleteFromStorage(String storagePath);
 }

@@ -17,7 +17,11 @@ class EventTile extends StatelessWidget {
     required this.doing,
     required this.done,
     this.onTap,
+    this.leading,
   });
+
+  /// The event's cover thumbnail (Spec #186 Req 43); without one, its icon.
+  final Widget? leading;
 
   final EventModel event;
   final int todo;
@@ -45,11 +49,12 @@ class EventTile extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Icon(
-                iconForEventType(event.displayType),
-                size: AppSizes.emojiTile,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+              leading ??
+                  Icon(
+                    iconForEventType(event.displayType),
+                    size: AppSizes.emojiTile,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(

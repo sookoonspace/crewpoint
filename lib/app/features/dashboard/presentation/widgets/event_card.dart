@@ -2,6 +2,8 @@ import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/event_cover.dart';
 import 'package:crewpoint_app/app/core/widgets/event_tile.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/application/event_task_counts_provider.dart';
@@ -20,6 +22,8 @@ class EventCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final countsAsync = ref.watch(eventTaskCountsProvider(event.id));
+    // The cover photo, or the event's icon (Spec #186 Req 43, 44).
+    final thumb = EventCoverThumb(event: event, size: context.cp.sizes.tapMin);
     return countsAsync.when(
       data: (counts) => EventTile(
         event: event,
@@ -27,9 +31,16 @@ class EventCard extends ConsumerWidget {
         doing: counts.doing,
         done: counts.done,
         onTap: onTap,
+        leading: thumb,
       ),
-      loading: () =>
-          EventTile(event: event, todo: 0, doing: 0, done: 0, onTap: onTap),
+      loading: () => EventTile(
+        event: event,
+        todo: 0,
+        doing: 0,
+        done: 0,
+        onTap: onTap,
+        leading: thumb,
+      ),
       error: (error, stack) {
         developer.log(
           'eventTaskCountsProvider failed for event ${event.id}',
@@ -43,6 +54,7 @@ class EventCard extends ConsumerWidget {
           doing: 0,
           done: 0,
           onTap: onTap,
+          leading: thumb,
         );
       },
     );

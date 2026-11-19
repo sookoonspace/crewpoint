@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import '../../../harness/fake_member_calls.dart';
 import 'package:crewpoint_app/app/features/counts/domain/event_stats.dart';
@@ -7,6 +8,8 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart';
 import 'package:crewpoint_app/app/core/database/daos/events_dao.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
+import 'package:crewpoint_app/app/core/services/cover_cache.dart';
+import 'package:crewpoint_app/app/core/services/image_service.dart';
 import 'package:crewpoint_app/app/core/design/theme/cp_theme.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/dashboard/data/event_repository.dart';
@@ -20,6 +23,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../harness/fake_create_event.dart';
+import '../../../harness/fake_image_service.dart';
 
 const _event = EventModel(
   id: 'evt',
@@ -58,7 +62,8 @@ void main() {
     Stream<List<ExpenseModel>>? expenseStream,
     EventModel event = _event,
     ThemeData? theme,
-    Size size = const Size(1200, 2400),
+    // Tall enough for every section, the cover photo (Spec #186) included.
+    Size size = const Size(1200, 3000),
     double textScale = 1,
     List<Override> extra = const [],
   }) async {
@@ -321,6 +326,89 @@ void main() {
       await firestore.doc('events/evt').set({'title': 'Back'});
       await save(tester);
       expect((await stored())['capacity'], 600);
+    });
+  });
+
+  group('cover photo (Spec #186 Req 41-44)', () {
+    late FakeImageService images;
+
+    setUp(() => images = FakeImageService());
+
+    List<Override> coverFakes() => [
+      imageServiceProvider.overrideWithValue(images),
+      coverCacheProvider.overrideWithValue(MemoryCoverCache()),
+    ];
+
+    final withCover = EventModel(
+      id: 'evt',
+      title: 'Convention',
+      creatorId: 'owner',
+      adminIds: const ['owner', 'admin'],
+      memberIds: const ['owner', 'admin', 'member'],
+      cover: EventCover(
+        path: 'events/evt/cover.jpg',
+        updatedAt: DateTime.utc(2027, 1, 1),
+      ),
+    );
+
+    testWidgets('choosing a photo stores it as the cover', (tester) async {
+      await pump(tester, extra: coverFakes());
+      expect(find.byKey(const Key('cover.fallback')), findsOneWidget);
+      expect(find.byKey(_key('cover.none')), findsOneWidget);
+      expect(find.byKey(_key('cover.remove')), findsNothing);
+      images.next = PickedImage(
+        bytes: onePixelPng,
+        filename: 'p.png',
+        contentType: 'image/png',
+      );
+      await tester.tap(find.byKey(_key('cover.choose')));
+      await tester.pumpAndSettle();
+      expect(images.lastPick, (maxWidth: 1600, maxHeight: 1600, quality: 85));
+      expect(images.files.keys, ['events/evt/cover.jpg']);
+      final stored = (await firestore.doc('events/evt').get()).data()!;
+      expect((stored['cover'] as Map)['path'], 'events/evt/cover.jpg');
+      expect(find.text('Cover photo saved'), findsOneWidget);
+    });
+
+    testWidgets('a photo of 5 MB or more is refused with a reason', (
+      tester,
+    ) async {
+      await pump(tester, extra: coverFakes());
+      images.next = PickedImage(
+        bytes: Uint8List(5 * 1024 * 1024),
+        filename: 'big.jpg',
+        contentType: 'image/jpeg',
+      );
+      await tester.tap(find.byKey(_key('cover.choose')));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('That photo is 5 MB or more. Choose a smaller one.'),
+        findsOneWidget,
+      );
+      expect(images.files, isEmpty);
+    });
+
+    testWidgets('with a cover: it shows, and can be replaced or removed', (
+      tester,
+    ) async {
+      images.files['events/evt/cover.jpg'] = onePixelPng;
+      await firestore.doc('events/evt').update({
+        'cover': {
+          'path': 'events/evt/cover.jpg',
+          'updatedAt': DateTime.utc(2027, 1, 1),
+        },
+      });
+      await pump(tester, event: withCover, extra: coverFakes());
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('cover.photo')), findsOneWidget);
+      expect(find.text('Replace photo'), findsOneWidget);
+
+      await tester.tap(find.byKey(_key('cover.remove')));
+      await tester.pumpAndSettle();
+      expect(images.files, isEmpty);
+      final stored = (await firestore.doc('events/evt').get()).data()!;
+      expect(stored.containsKey('cover'), isFalse);
+      expect(find.text('Cover photo removed'), findsOneWidget);
     });
   });
 

@@ -67,6 +67,11 @@ abstract final class CpScale {
   static const double sidebar = 248;
   static const double listPane = 400;
 
+  /// The cover banner on an event's home, and its laptop height.
+  static const double cover156 = 156;
+  static const double cover180 = 180;
+  static const double coverIcon56 = 56;
+
   // ===== Type sizes =====
   static const double type11 = 11;
   static const double type12 = 12;

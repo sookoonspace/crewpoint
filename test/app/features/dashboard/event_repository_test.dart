@@ -456,6 +456,59 @@ void main() {
     });
   });
 
+  group('cover photo (Spec #186 Req 41-43)', () {
+    Future<EventModel> mirrored() async {
+      await seedMemberDocs(firestore);
+      final events = await repo
+          .watchEventsForUser('owner')
+          .firstWhere((list) => list.isNotEmpty);
+      repo.disposeMirror('owner');
+      return events.single;
+    }
+
+    test('an event without a cover has none', () async {
+      await firestore.doc('events/evt').set({
+        'title': 'Hall',
+        'creatorId': 'owner',
+        'memberIds': ['owner'],
+      });
+      expect((await mirrored()).cover, isNull);
+    });
+
+    test('the cover survives the Drift mirror', () async {
+      await firestore.doc('events/evt').set({
+        'title': 'Hall',
+        'creatorId': 'owner',
+        'memberIds': ['owner'],
+        'cover': {
+          'path': 'events/evt/cover.jpg',
+          'updatedAt': Timestamp.fromDate(DateTime.utc(2027, 1, 2, 3)),
+        },
+      });
+      final cover = (await mirrored()).cover!;
+      expect(cover.path, 'events/evt/cover.jpg');
+      expect(cover.updatedAt, DateTime.utc(2027, 1, 2, 3));
+    });
+
+    test('setCover stores the path and a fresh time; clearCover removes it',
+        () async {
+      await firestore.doc('events/evt').set({
+        'title': 'Hall',
+        'creatorId': 'owner',
+        'memberIds': ['owner'],
+      });
+      await repo.setCover('evt', 'events/evt/cover.jpg');
+      final stored = (await firestore.doc('events/evt').get()).data()!;
+      expect((stored['cover'] as Map)['path'], 'events/evt/cover.jpg');
+      expect((stored['cover'] as Map)['updatedAt'], isNotNull);
+
+      await repo.clearCover('evt');
+      final cleared = (await firestore.doc('events/evt').get()).data()!;
+      expect(cleared.containsKey('cover'), isFalse);
+      expect(cleared['title'], 'Hall');
+    });
+  });
+
   group('status (Req 19)', () {
     Future<void> seed(String status, {Timestamp? endDate}) =>
         firestore.doc('events/evt').set({
