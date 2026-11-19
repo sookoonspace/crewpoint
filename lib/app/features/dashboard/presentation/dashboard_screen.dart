@@ -3,18 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
-import 'package:crewpoint_app/app/core/widgets/empty_state_placeholder.dart';
-import 'package:crewpoint_app/app/core/widgets/screen_header.dart';
-import 'package:crewpoint_app/app/core/widgets/section_label.dart';
-import 'package:crewpoint_app/app/core/widgets/segmented_filter_bar.dart';
-import 'package:crewpoint_app/app/core/widgets/skeletons.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/greeting_first_name.dart';
 import 'package:crewpoint_app/app/features/profile/application/current_user_doc_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
@@ -46,6 +40,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
     final eventsAsync = ref.watch(dashboardEventsProvider);
     // Read the merged user doc; falls back to null on loading/error so the
     // greeting stays grammatical even when auth/Firestore aren't ready.
@@ -57,183 +52,171 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final now = clock.now();
     final firstName = greetingFirstName(displayName);
     final s = context.strings.dashboard;
-    // Greeting uses a Material wave icon rather than the 👋 emoji —
-    // some fonts (Poppins via GoogleFonts) and the iOS Simulator render
-    // the emoji as a "missing glyph" box.
+    final home = context.strings.eventHome;
     final greeting = '${_greetingPrefix(s, now)}, $firstName';
     final dateLine = DateFormat('EEEE, MMM d').format(now);
+    final padding = EdgeInsets.symmetric(horizontal: cp.space.lg);
+
+    Widget section(String title, List<EventModel> events) => Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: cp.space.sm,
+      children: [
+        CpSectionHeader(title: title, trailingText: '${events.length}'),
+        for (final event in events)
+          EventCard(
+            event: event,
+            onTap: () => context.push('/dashboard/event/${event.id}'),
+          ),
+      ],
+    );
+
+    final Widget body = eventsAsync.when(
+      loading: () => ListView(
+        key: const Key('dashboard.events.loading'),
+        padding: padding.copyWith(top: cp.space.lg),
+        children: [CpLoadingState.rows(semanticLabel: s.errorLoading, rows: 3)],
+      ),
+      error: (e, _) => CpErrorState(
+        title: s.errorLoading,
+        retryLabel: s.retryCta,
+        retryKey: const Key('dashboard.error.retry'),
+        onRetry: () => ref.invalidate(dashboardEventsProvider),
+      ),
+      data: (events) {
+        final shown = events
+            .where(
+              (e) => _filter == DashboardFilter.past
+                  ? _isPast(e, now)
+                  : !_isPast(e, now),
+            )
+            .toList();
+        if (shown.isEmpty) {
+          return SingleChildScrollView(
+            child: CpEmptyState(
+              icon: CpIcons.event,
+              title: s.noEventsTitle,
+              message: s.noEventsSubtitle,
+              actionLabel: s.joinWithCode,
+              actionKey: const Key('dashboard.empty.join'),
+              onAction: () => JoinEventSheet.show(context: context),
+            ),
+          );
+        }
+        // Upcoming groups what is on now, what is coming and drafts; past
+        // events are one list.
+        final sections = _filter == DashboardFilter.past
+            ? [(home.past, shown)]
+            : [
+                (
+                  home.happeningNow,
+                  [
+                    for (final e in shown)
+                      if (e.status == EventStatus.live) e,
+                  ],
+                ),
+                (
+                  home.upcoming,
+                  [
+                    for (final e in shown)
+                      if (e.status != EventStatus.live &&
+                          e.status != EventStatus.draft)
+                        e,
+                  ],
+                ),
+                (
+                  home.drafts,
+                  [
+                    for (final e in shown)
+                      if (e.status == EventStatus.draft) e,
+                  ],
+                ),
+              ];
+        return ListView(
+          key: const Key('dashboard.events.list'),
+          padding: padding.copyWith(top: cp.space.sm, bottom: cp.space.xxl),
+          children: [
+            for (final (title, list) in sections)
+              if (list.isNotEmpty)
+                Padding(
+                  padding: EdgeInsets.only(bottom: cp.space.xl),
+                  child: section(title, list),
+                ),
+          ],
+        );
+      },
+    );
 
     return Scaffold(
-      body: SafeArea(
-        bottom: false,
+      appBar: CpTopBar(
+        key: const Key('dashboard.header'),
+        actions: [
+          CpTopBarAction(
+            key: const Key('dashboard.header.joinEvent'),
+            icon: CpIcons.joinEvent,
+            tooltip: s.joinEventTooltip,
+            onPressed: () => JoinEventSheet.show(context: context),
+          ),
+          CpTopBarAction(
+            key: const Key('dashboard.action.createEvent'),
+            icon: CpIcons.actionAdd,
+            tooltip: home.createEvent,
+            primary: true,
+            onPressed: () => context.push('/dashboard/create'),
+          ),
+        ],
+      ),
+      body: ContentMaxWidth(
+        key: const Key('dashboard.body.clamped'),
+        maxWidth: cp.sizes.phoneColumn + 2 * cp.space.lg,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ScreenHeader(
-              key: const Key('dashboard.header'),
-              title: greeting,
-              subtitle: dateLine,
-              actions: [
-                IconButton(
-                  key: const Key('dashboard.header.joinEvent'),
-                  tooltip: s.joinEventTooltip,
-                  icon: const Icon(AppIcons.joinEvent),
-                  onPressed: () => JoinEventSheet.show(context: context),
-                ),
-              ],
-            ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.xl,
-                0,
-                AppSpacing.xl,
-                AppSpacing.md,
-              ),
-              child: SegmentedFilterBar<DashboardFilter>(
-                key: const Key('dashboard.filter'),
-                selected: _filter,
-                equalWidth: true,
-                segments: [
-                  SegmentedFilterSegment(
-                    value: DashboardFilter.upcoming,
-                    label: s.filterUpcoming,
-                    keyValue: const Key('dashboard.filter.upcoming'),
+              padding: padding,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: cp.space.xs,
+                children: [
+                  Semantics(
+                    header: true,
+                    child: Text(
+                      greeting,
+                      style: cp.type.headlineLarge.copyWith(
+                        color: cp.colors.text,
+                      ),
+                    ),
                   ),
-                  SegmentedFilterSegment(
-                    value: DashboardFilter.past,
-                    label: s.filterPast,
-                    keyValue: const Key('dashboard.filter.past'),
+                  Text(
+                    dateLine,
+                    style: cp.type.bodyMedium.copyWith(
+                      color: cp.colors.textMuted,
+                    ),
                   ),
                 ],
+              ),
+            ),
+            Padding(
+              padding: padding.copyWith(top: cp.space.lg, bottom: cp.space.md),
+              child: CpSegmented<DashboardFilter>(
+                key: const Key('dashboard.filter'),
+                semanticLabel: home.upcoming,
+                choices: [
+                  CpChoice(
+                    DashboardFilter.upcoming,
+                    s.filterUpcoming,
+                    key: const Key('dashboard.filter.upcoming'),
+                  ),
+                  CpChoice(
+                    DashboardFilter.past,
+                    s.filterPast,
+                    key: const Key('dashboard.filter.past'),
+                  ),
+                ],
+                selected: _filter,
                 onChanged: (v) => setState(() => _filter = v),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.xl,
-                vertical: AppSpacing.sm,
-              ),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  key: const Key('dashboard.action.createEvent'),
-                  onPressed: () => context.push('/dashboard/create'),
-                  icon: const Icon(AppIcons.actionAdd),
-                  label: Text(s.createEventCta),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.charcoal,
-                    foregroundColor: AppColors.white,
-                    minimumSize: const Size.fromHeight(48),
-                  ),
-                ),
-              ),
-            ),
-            Expanded(
-              child: ContentMaxWidth(
-                key: const Key('dashboard.body.clamped'),
-                maxWidth: 720,
-                child: eventsAsync.when(
-                  loading: () => ListView.separated(
-                    key: const Key('dashboard.events.loading'),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: Breakpoints.screenHorizontalPadding(context),
-                      vertical: AppSpacing.lg,
-                    ),
-                    itemCount: 3,
-                    separatorBuilder: (_, _) =>
-                        const SizedBox(height: AppSpacing.sm),
-                    itemBuilder: (_, _) => const EventTileSkeleton(),
-                  ),
-                  error: (e, _) => _ErrorState(
-                    onRetry: () => ref.invalidate(dashboardEventsProvider),
-                  ),
-                  data: (events) {
-                    final partitioned = events
-                        .where(
-                          (e) => _filter == DashboardFilter.past
-                              ? _isPast(e, now)
-                              : !_isPast(e, now),
-                        )
-                        .toList();
-                    if (partitioned.isEmpty) {
-                      return EmptyStatePlaceholder(
-                        title: s.noEventsTitle,
-                        subtitle: s.noEventsSubtitle,
-                        ctaLabel: s.joinWithCode,
-                        iconFallback: AppIcons.event,
-                        onCta: () => JoinEventSheet.show(context: context),
-                      );
-                    }
-                    return ListView.separated(
-                      key: const Key('dashboard.events.list'),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: Breakpoints.screenHorizontalPadding(
-                          context,
-                        ),
-                        vertical: AppSpacing.lg,
-                      ),
-                      itemCount: partitioned.length + 1,
-                      separatorBuilder: (_, _) =>
-                          const SizedBox(height: AppSpacing.sm),
-                      itemBuilder: (_, index) {
-                        if (index == 0) {
-                          final label = _filter == DashboardFilter.upcoming
-                              ? s.upcomingEventsHeader(partitioned.length)
-                              : s.pastEventsHeader(partitioned.length);
-                          return Padding(
-                            padding: const EdgeInsets.only(
-                              bottom: AppSpacing.sm,
-                            ),
-                            child: SectionLabel(label),
-                          );
-                        }
-                        final event = partitioned[index - 1];
-                        return EventCard(
-                          event: event,
-                          onTap: () =>
-                              context.push('/dashboard/event/${event.id}'),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorState extends StatelessWidget {
-  const _ErrorState({required this.onRetry});
-
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.strings.dashboard;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          spacing: AppSpacing.md,
-          children: [
-            Text(
-              s.errorLoading,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            OutlinedButton.icon(
-              key: const Key('dashboard.error.retry'),
-              onPressed: onRetry,
-              icon: const Icon(AppIcons.actionRetry),
-              label: Text(s.retryCta),
-            ),
+            Expanded(child: body),
           ],
         ),
       ),

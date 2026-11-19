@@ -4,8 +4,10 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboar
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../../harness/event_home_overrides.dart';
 
 /// Req 22 and 78b: the event screen has one entry per enabled module.
+
 void main() {
   Future<void> pump(
     WidgetTester tester, {
@@ -17,7 +19,10 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [currentUserIdProvider.overrideWithValue('member')],
+        overrides: [
+          currentUserIdProvider.overrideWithValue('member'),
+          ...eventHomeOverrides(),
+        ],
         child: MaterialApp(
           home: EventDashboardScreen(
             event: EventModel(

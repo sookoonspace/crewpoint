@@ -5,6 +5,7 @@ import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
+import '../../../harness/event_home_overrides.dart';
 
 void main() {
   const event = EventModel(
@@ -23,7 +24,10 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [currentUserIdProvider.overrideWithValue(uid)],
+        overrides: [
+          currentUserIdProvider.overrideWithValue(uid),
+          ...eventHomeOverrides(),
+        ],
         child: const MaterialApp(home: EventDashboardScreen(event: event)),
       ),
     );

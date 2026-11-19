@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
-import 'package:crewpoint_app/app/core/widgets/skeletons.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/event_card.dart';
@@ -99,9 +99,7 @@ void main() {
     expect(find.text('No events yet'), findsNothing);
   });
 
-  testWidgets('shows EventTile skeletons while events are loading', (
-    tester,
-  ) async {
+  testWidgets('shows a loading state while events are loading', (tester) async {
     final controller = StreamController<List<EventModel>>();
     addTearDown(controller.close);
 
@@ -115,7 +113,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.byType(EventTileSkeleton), findsAtLeastNWidgets(1));
+    expect(find.byType(CpLoadingState), findsOneWidget);
 
     // Resolve so the test exits cleanly. Empty list → EmptyStatePlaceholder
     // with looping lottie, so use bounded pumps instead of pumpAndSettle.

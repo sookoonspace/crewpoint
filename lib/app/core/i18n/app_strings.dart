@@ -46,6 +46,7 @@ abstract class AppStrings {
   PeopleStrings get people;
   GroupEntryStrings get groupEntry;
   CoverStrings get cover;
+  EventHomeStrings get eventHome;
   FieldStrings get fields;
   ImportStrings get imports;
   LinkStrings get links;
@@ -539,6 +540,8 @@ class _EnglishStrings extends AppStrings {
   GroupEntryStrings get groupEntry => const _EnglishGroupEntryStrings();
   @override
   CoverStrings get cover => const _EnglishCoverStrings();
+  @override
+  EventHomeStrings get eventHome => const _EnglishEventHomeStrings();
 
   @override
   FieldStrings get fields => const _EnglishFieldStrings();
@@ -1673,6 +1676,159 @@ class _EnglishRoleStrings extends RoleStrings {
       'After you leave, only ${name ?? 'one other person'} can invite and '
       'remove people. Give someone else that permission first, so there is '
       'always a backup.';
+}
+
+/// The event list and the Event home (Spec #186, #199).
+abstract class EventHomeStrings {
+  const EventHomeStrings();
+
+  String get happeningNow;
+  String get upcoming;
+  String get drafts;
+  String get past;
+  String get createEvent;
+  String get muted;
+  String get mute;
+  String get settings;
+  String get tasks;
+  String get budget;
+  String openCount(int count);
+  String tasksDone(int done, int total);
+  String expenseCount(int count);
+  String get noTasks;
+  String get upNext;
+  String get scheduleLink;
+  String get nothingNext;
+  String get openTasks;
+  String get allTasks;
+  String get noOpenTasks;
+  String get overdue;
+  String due(String day);
+  String get eventSection;
+  String get manageSection;
+  String get editEvent;
+  String get editEventSubtitle;
+  String get inviteSubtitle;
+  String get archiveEvent;
+  String get archived;
+  String get archiveHelp;
+  String get archiveFailed;
+  String get leaveEvent;
+  String get leaveTitle;
+  String get leaveBody;
+  String get leave;
+  String get cancel;
+  String get leaveFailed;
+  String get deleteEvent;
+  String get deleteTitle;
+  String get deleteBody;
+  String get continueLabel;
+  String get confirmTitle;
+  String get confirmBody;
+  String get deleteForever;
+  String get deleteFailed;
+}
+
+class _EnglishEventHomeStrings extends EventHomeStrings {
+  const _EnglishEventHomeStrings();
+
+  @override
+  String get happeningNow => 'Happening now';
+  @override
+  String get upcoming => 'Upcoming';
+  @override
+  String get drafts => 'Drafts';
+  @override
+  String get past => 'Past';
+  @override
+  String get createEvent => 'Create an event';
+  @override
+  String get muted => 'Muted — tap to manage';
+  @override
+  String get mute => 'Mute event';
+  @override
+  String get settings => 'Event settings';
+  @override
+  String get tasks => 'Tasks';
+  @override
+  String get budget => 'Budget';
+  @override
+  String openCount(int count) => '$count open';
+  @override
+  String tasksDone(int done, int total) => '$done of $total tasks done';
+  @override
+  String expenseCount(int count) =>
+      count == 1 ? '1 expense' : '$count expenses';
+  @override
+  String get noTasks => 'No tasks yet';
+  @override
+  String get upNext => 'Up next';
+  @override
+  String get scheduleLink => 'Schedule';
+  @override
+  String get nothingNext => 'Nothing else is on the schedule.';
+  @override
+  String get openTasks => 'Open tasks';
+  @override
+  String get allTasks => 'All tasks';
+  @override
+  String get noOpenTasks => 'No open tasks.';
+  @override
+  String get overdue => 'Overdue';
+  @override
+  String due(String day) => 'Due $day';
+  @override
+  String get eventSection => 'Event';
+  @override
+  String get manageSection => 'Manage';
+  @override
+  String get editEvent => 'Edit Event';
+  @override
+  String get editEventSubtitle => 'Update title, dates, or details';
+  @override
+  String get inviteSubtitle => 'Share a code to add people';
+  @override
+  String get archiveEvent => 'Archive Event';
+  @override
+  String get archived => 'Event is archived (read-only)';
+  @override
+  String get archiveHelp => 'Archive to make read-only';
+  @override
+  String get archiveFailed => 'Could not update archive status';
+  @override
+  String get leaveEvent => 'Leave Event';
+  @override
+  String get leaveTitle => 'Leave Event?';
+  @override
+  String get leaveBody =>
+      'You will lose access to this event. '
+      'Your past messages and expenses will remain.';
+  @override
+  String get leave => 'Leave';
+  @override
+  String get cancel => 'Cancel';
+  @override
+  String get leaveFailed => 'Failed to leave event';
+  @override
+  String get deleteEvent => 'Delete Event';
+  @override
+  String get deleteTitle => 'Delete Event?';
+  @override
+  String get deleteBody =>
+      'This will permanently delete the event and all its data: '
+      'messages, expenses, tasks, and invite codes.\n\n'
+      'This action cannot be undone.';
+  @override
+  String get continueLabel => 'Continue';
+  @override
+  String get confirmTitle => 'Are you sure?';
+  @override
+  String get confirmBody =>
+      'All event data will be permanently erased for all members.';
+  @override
+  String get deleteForever => 'Delete Forever';
+  @override
+  String get deleteFailed => 'Failed to delete event';
 }
 
 /// An event's cover photo (Spec #186 Req 41–44).

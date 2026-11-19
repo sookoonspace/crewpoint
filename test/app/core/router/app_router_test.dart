@@ -16,6 +16,7 @@ import 'package:crewpoint_app/app/features/tasks/presentation/event_task_detail_
 import 'package:crewpoint_app/app/features/tasks/presentation/event_tasks_page.dart';
 
 import '../../../app/features/auth/fake_auth_service.dart';
+import '../../../harness/event_home_overrides.dart';
 import '../../../harness/fake_member_calls.dart';
 
 Widget _wrapWithProviders(GoRouter router, {List<EventModel>? eventsForRoute}) {
@@ -27,10 +28,12 @@ Widget _wrapWithProviders(GoRouter router, {List<EventModel>? eventsForRoute}) {
           authRepository: AuthRepository(authService: fakeAuthService),
         ),
       ),
-      if (eventsForRoute != null)
+      if (eventsForRoute != null) ...[
         dashboardEventsProvider.overrideWith(
           (ref) => Stream.value(eventsForRoute),
         ),
+        ...eventHomeOverrides(),
+      ],
     ],
     child: MaterialApp.router(routerConfig: router),
   );
@@ -230,9 +233,7 @@ void main() {
           overrides: [
             authProvider.overrideWith(
               () => AuthNotifier(
-                authRepository: AuthRepository(
-                  authService: FakeAuthService(),
-                ),
+                authRepository: AuthRepository(authService: FakeAuthService()),
               ),
             ),
             memberCallsProvider.overrideWithValue(FakeMemberCalls()),
@@ -295,4 +296,3 @@ void main() {
     });
   });
 }
-
