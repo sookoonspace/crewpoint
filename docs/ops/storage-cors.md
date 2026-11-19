@@ -33,6 +33,6 @@ The script is idempotent.
 
 | Flavor | Applied | Checked | By |
 |---|---|---|---|
-| dev | not yet | not yet | |
+| dev | 2026-11-18 (`gsutil cors get` shows the allow-list) | 2026-11-18: a preflight from `https://crewpoint-dev.web.app` is allowed, and one from another origin is not. The in-app cover check (steps 2–4) waits for the #198 rules and functions to be deployed to dev. | Claude, approved by the owner |
 | stg | not yet (waits for stg) | | |
 | prod | not yet (waits for prod) | | |
