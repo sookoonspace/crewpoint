@@ -5,9 +5,10 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:yaml/yaml.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 
 /// Renders a bundled markdown document (Privacy Policy / Terms of
@@ -62,20 +63,29 @@ class _MarkdownRenderScreenState extends State<MarkdownRenderScreen> {
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not open ${widget.hostedUrl}')),
+        SnackBar(
+          content: Text(context.strings.privacy.couldNotOpen(widget.hostedUrl)),
+        ),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
+    final navigator = Navigator.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title), elevation: 0),
+      backgroundColor: cp.colors.background,
+      appBar: CpTopBar(
+        title: widget.title,
+        leadingTooltip: MaterialLocalizations.of(context).backButtonTooltip,
+        onLeading: navigator.canPop() ? () => navigator.maybePop() : null,
+      ),
       body: FutureBuilder<_MarkdownDoc?>(
         future: _doc,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
+            return CpLoadingState(semanticLabel: widget.title);
           }
           final doc = snap.data;
           if (doc == null) {
@@ -99,53 +109,73 @@ class _RenderedMarkdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final stamps = <Widget>[];
+    final cp = context.cp;
+    final s = context.strings.privacy;
     final effective = doc.frontmatter['effective_date'];
     final updated = doc.frontmatter['last_updated'];
-    if (effective != null) {
-      stamps.add(
-        _StampLine(
-          key: const Key('legal.stamp.effective'),
-          label: 'Effective',
-          value: effective,
-        ),
-      );
-    }
-    if (updated != null) {
-      stamps.add(
-        _StampLine(
-          key: const Key('legal.stamp.lastUpdated'),
-          label: 'Last updated',
-          value: updated,
-        ),
-      );
-    }
+    final theme = Theme.of(context);
 
-    return ContentMaxWidth(
-      key: const Key('markdown.body.clamped'),
-      maxWidth: 720,
-      child: ListView(
-        padding: EdgeInsets.fromLTRB(
-          Breakpoints.screenHorizontalPadding(context),
-          AppSpacing.md,
-          Breakpoints.screenHorizontalPadding(context),
-          AppSpacing.xxl,
-        ),
-        children: [
-          if (stamps.isNotEmpty) ...[
-            ...stamps,
-            const SizedBox(height: AppSpacing.lg),
-          ],
-          MarkdownBody(key: const Key('legal.markdown.body'), data: doc.body),
-          const SizedBox(height: AppSpacing.xl),
-          OutlinedButton.icon(
-            key: const Key('legal.viewHosted'),
-            onPressed: onLaunchHosted,
-            icon: const Icon(AppIcons.actionOpenInNew, size: 16),
-            label: const Text('View hosted version'),
-          ),
-        ],
+    return ListView(
+      padding: EdgeInsets.fromLTRB(
+        cp.space.lg,
+        cp.space.md,
+        cp.space.lg,
+        cp.space.xxl,
       ),
+      children: [
+        ContentMaxWidth(
+          key: const Key('markdown.body.clamped'),
+          maxWidth: cp.sizes.phoneColumn,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: cp.space.lg,
+            children: [
+              if (effective != null || updated != null)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: cp.space.xs,
+                  children: [
+                    if (effective != null)
+                      _StampLine(
+                        key: const Key('legal.stamp.effective'),
+                        label: s.effective,
+                        value: effective,
+                      ),
+                    if (updated != null)
+                      _StampLine(
+                        key: const Key('legal.stamp.lastUpdated'),
+                        label: s.lastUpdated,
+                        value: updated,
+                      ),
+                  ],
+                ),
+              MarkdownBody(
+                key: const Key('legal.markdown.body'),
+                data: doc.body,
+                styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+                  p: cp.type.bodyMedium.copyWith(color: cp.colors.text),
+                  h1: cp.type.headlineSmall.copyWith(color: cp.colors.text),
+                  h2: cp.type.titleLarge.copyWith(color: cp.colors.text),
+                  h3: cp.type.titleMedium.copyWith(color: cp.colors.text),
+                  listBullet: cp.type.bodyMedium.copyWith(
+                    color: cp.colors.text,
+                  ),
+                  a: cp.type.bodyMedium.copyWith(color: cp.colors.accent),
+                ),
+              ),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: CpButton.secondary(
+                  key: const Key('legal.viewHosted'),
+                  label: s.viewHosted,
+                  icon: CpIcons.actionOpenInNew,
+                  onPressed: onLaunchHosted,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -158,24 +188,19 @@ class _StampLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(
-              text: '$label: ',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            TextSpan(
-              text: value,
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-            ),
-          ],
-        ),
+    final cp = context.cp;
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: '$label: ',
+            style: cp.type.labelLarge.copyWith(color: cp.colors.textMuted),
+          ),
+          TextSpan(
+            text: value,
+            style: cp.type.bodyMedium.copyWith(color: cp.colors.text),
+          ),
+        ],
       ),
     );
   }
@@ -189,36 +214,35 @@ class _LoadFailure extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
+    final s = context.strings.privacy;
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
+      child: SingleChildScrollView(
+        padding: EdgeInsets.all(cp.space.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          spacing: cp.space.md,
           children: [
             Icon(
-              AppIcons.cloudOff,
-              size: 48,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              CpIcons.cloudOff,
+              size: cp.sizes.iconXl,
+              color: cp.colors.textMuted,
             ),
-            const SizedBox(height: AppSpacing.md),
-            const Text(
-              'Could not load this document right now.',
+            Text(
+              s.loadFailed,
               textAlign: TextAlign.center,
+              style: cp.type.bodyLarge.copyWith(color: cp.colors.text),
             ),
-            const SizedBox(height: AppSpacing.md),
-            OutlinedButton.icon(
+            CpButton.secondary(
               key: const Key('legal.fallback.viewOnline'),
+              label: s.viewOnline,
+              icon: CpIcons.actionOpenInNew,
               onPressed: onLaunch,
-              icon: const Icon(AppIcons.actionOpenInNew, size: 16),
-              label: const Text('View online'),
             ),
-            const SizedBox(height: AppSpacing.sm),
             Text(
               hostedUrl,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontSize: 12,
-              ),
+              textAlign: TextAlign.center,
+              style: cp.type.bodySmall.copyWith(color: cp.colors.textMuted),
             ),
           ],
         ),

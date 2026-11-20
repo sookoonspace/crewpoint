@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
-import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart';
 import 'package:crewpoint_app/app/features/participants/application/roster_controller.dart';
@@ -30,10 +29,7 @@ class FieldsScreen extends ConsumerWidget {
       words.other('customField'),
       words.other('category').toLowerCase(),
     );
-    Widget scaffold(Widget body) => Scaffold(
-      appBar: AppBar(title: Text(title), elevation: 0),
-      body: body,
-    );
+    Widget scaffold(Widget body) => AdminScaffold(title: title, body: body);
     if (!event.can(me, 'event.manage')) return scaffold(const NoAccessView());
 
     final fields = ref.watch(eventFieldsProvider(event.id));
@@ -46,124 +42,119 @@ class FieldsScreen extends ConsumerWidget {
     }
     if (!fields.hasValue) {
       return scaffold(
-        const Center(
-          child: CircularProgressIndicator(key: Key('fields.loading')),
+        CpLoadingState.rows(
+          key: const Key('fields.loading'),
+          semanticLabel: title,
         ),
       );
     }
+    final cp = context.cp;
     final list = fields.value!;
     final categories = categoriesOf(event.settings);
-    final theme = Theme.of(context);
     final archived = event.status == EventStatus.archived;
+    Widget icon(IconData data) =>
+        Icon(data, size: cp.sizes.iconMd, color: cp.colors.textMuted);
+    CpListRow empty(String text, Key key) =>
+        CpListRow(key: key, leading: icon(CpIcons.statusInfo), title: text);
 
     return scaffold(
-      ListView(
-        key: const Key('fields.body'),
-        padding: EdgeInsets.symmetric(
-          horizontal: Breakpoints.screenHorizontalPadding(context),
-          vertical: AppSpacing.lg,
-        ),
+      AdminList(
+        listKey: const Key('fields.body'),
         children: [
-          ContentMaxWidth(
-            maxWidth: 720,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              spacing: AppSpacing.sm,
-              children: [
-                Text(
-                  strings.fieldsHeading(words.other('customField')),
-                  style: theme.textTheme.titleMedium,
-                ),
-                if (list.isEmpty)
-                  Text(
-                    strings.fieldsEmpty(words.other('customField')),
-                    key: const Key('fields.empty'),
+          CpSectionHeader(
+            title: strings.fieldsHeading(words.other('customField')),
+            actionLabel: archived
+                ? null
+                : strings.addField(words.one('customField')),
+            actionKey: const Key('fields.add'),
+            onAction: archived
+                ? null
+                : () => FieldEditorSheet.show(
+                    context,
+                    event: event,
+                    nextOrder: list.isEmpty ? 0 : list.last.order + 1,
                   ),
-                for (final f in list)
-                  ListTile(
-                    key: Key('fields.tile.${f.id}'),
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(
-                      f.isPrivate ? AppIcons.lock : AppIcons.actionEdit,
-                    ),
-                    title: Text(f.label),
-                    subtitle: Text(
-                      strings.fieldSummary(
-                        f,
-                        words.one('participant'),
-                        words.one('group'),
-                      ),
-                    ),
-                    onTap: archived
-                        ? null
-                        : () => FieldEditorSheet.show(
-                            context,
-                            event: event,
-                            field: f,
-                            nextOrder: list.length,
-                          ),
-                  ),
-                if (!archived)
-                  OutlinedButton.icon(
-                    key: const Key('fields.add'),
-                    onPressed: () => FieldEditorSheet.show(
-                      context,
-                      event: event,
-                      nextOrder: list.isEmpty ? 0 : list.last.order + 1,
-                    ),
-                    icon: const Icon(AppIcons.actionAdd),
-                    label: Text(strings.addField(words.one('customField'))),
-                  ),
-                const Divider(height: AppSpacing.xxl),
-                Text(
-                  strings.categoriesHeading(words.other('category')),
-                  style: theme.textTheme.titleMedium,
-                ),
-                Text(
-                  strings.categoriesHelp(words.other('category')),
-                  style: theme.textTheme.bodySmall,
-                ),
-                if (categories.isEmpty)
-                  Text(
-                    strings.categoriesEmpty(words.other('category')),
-                    key: const Key('fields.categories.empty'),
-                  ),
-                for (final c in categories)
-                  ListTile(
-                    key: Key('fields.category.${c.id}'),
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(AppIcons.members),
-                    title: Text(c.name),
-                    subtitle: Text(strings.categorySummary(c)),
-                    onTap: archived
-                        ? null
-                        : () => CategoryEditorSheet.show(
-                            context,
-                            event: event,
-                            categories: categories,
-                            category: c,
-                          ),
-                  ),
-                if (!archived && categories.isEmpty)
-                  OutlinedButton(
-                    key: const Key('fields.category.preset'),
-                    onPressed: () => _savePreset(context, ref),
-                    child: Text(strings.childAdultPreset),
-                  ),
-                if (!archived)
-                  OutlinedButton.icon(
-                    key: const Key('fields.category.add'),
-                    onPressed: () => CategoryEditorSheet.show(
-                      context,
-                      event: event,
-                      categories: categories,
-                    ),
-                    icon: const Icon(AppIcons.actionAdd),
-                    label: Text(strings.addCategory(words.one('category'))),
-                  ),
-              ],
-            ),
           ),
+          CpCard(
+            child: list.isEmpty
+                ? empty(
+                    strings.fieldsEmpty(words.other('customField')),
+                    const Key('fields.empty'),
+                  )
+                : CpRowGroup(
+                    children: [
+                      for (final f in list)
+                        CpListRow(
+                          key: Key('fields.tile.${f.id}'),
+                          leading: icon(
+                            f.isPrivate ? CpIcons.lock : CpIcons.description,
+                          ),
+                          title: f.label,
+                          subtitle: strings.fieldSummary(
+                            f,
+                            words.one('participant'),
+                            words.one('group'),
+                          ),
+                          onTap: archived
+                              ? null
+                              : () => FieldEditorSheet.show(
+                                  context,
+                                  event: event,
+                                  field: f,
+                                  nextOrder: list.length,
+                                ),
+                        ),
+                    ],
+                  ),
+          ),
+          CpSectionHeader(
+            title: strings.categoriesHeading(words.other('category')),
+            actionLabel: archived
+                ? null
+                : strings.addCategory(words.one('category')),
+            actionKey: const Key('fields.category.add'),
+            onAction: archived
+                ? null
+                : () => CategoryEditorSheet.show(
+                    context,
+                    event: event,
+                    categories: categories,
+                  ),
+          ),
+          AdminNote(strings.categoriesHelp(words.other('category'))),
+          CpCard(
+            child: categories.isEmpty
+                ? empty(
+                    strings.categoriesEmpty(words.other('category')),
+                    const Key('fields.categories.empty'),
+                  )
+                : CpRowGroup(
+                    children: [
+                      for (final c in categories)
+                        CpListRow(
+                          key: Key('fields.category.${c.id}'),
+                          leading: icon(CpIcons.members),
+                          title: c.name,
+                          subtitle: strings.categorySummary(c),
+                          onTap: archived
+                              ? null
+                              : () => CategoryEditorSheet.show(
+                                  context,
+                                  event: event,
+                                  categories: categories,
+                                  category: c,
+                                ),
+                        ),
+                    ],
+                  ),
+          ),
+          if (!archived && categories.isEmpty)
+            CpButton.secondary(
+              key: const Key('fields.category.preset'),
+              label: strings.childAdultPreset,
+              expand: true,
+              onPressed: () => _savePreset(context, ref),
+            ),
         ],
       ),
     );
@@ -207,10 +198,11 @@ class FieldEditorSheet extends ConsumerStatefulWidget {
     required EventModel event,
     CustomField? field,
     int nextOrder = 0,
-  }) => showModalBottomSheet<void>(
+  }) => showCpSheet<void>(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
+    title:
+        field?.label ??
+        context.strings.fields.newField(event.words.one('customField')),
     builder: (_) =>
         FieldEditorSheet(event: event, field: field, nextOrder: nextOrder),
   );
@@ -317,175 +309,207 @@ class _FieldEditorSheetState extends ConsumerState<FieldEditorSheet> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Future<void> _pickType() async {
+    final cp = context.cp;
     final strings = context.strings.fields;
-    final words = widget.event.words;
-    final theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.only(
-        left: AppSpacing.lg,
-        right: AppSpacing.lg,
-        top: AppSpacing.lg,
-        bottom: MediaQuery.viewInsetsOf(context).bottom + AppSpacing.lg,
-      ),
-      child: Form(
-        key: _formKey,
-        child: ListView(
-          key: const Key('fields.editor'),
-          shrinkWrap: true,
+    final picked = await showCpSheet<FieldType>(
+      context: context,
+      title: strings.typeLabel,
+      builder: (sheet) => CpCard(
+        child: CpRowGroup(
           children: [
-            Text(
-              widget.field?.label ?? strings.newField(words.one('customField')),
-              style: theme.textTheme.titleMedium,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            TextFormField(
-              key: const Key('fields.editor.label'),
-              controller: _label,
-              enabled: !_busy,
-              decoration: InputDecoration(
-                labelText: strings.labelLabel,
-                border: const OutlineInputBorder(),
+            for (final t in FieldType.values)
+              CpListRow(
+                key: Key('fields.editor.type.${t.name}'),
+                title: strings.typeName(t),
+                selected: t == _type,
+                trailing: t == _type
+                    ? Icon(
+                        CpIcons.statusDone,
+                        size: cp.sizes.iconMd,
+                        color: cp.colors.accent,
+                      )
+                    : const SizedBox.shrink(),
+                onTap: () => Navigator.of(sheet).pop(t),
               ),
-              validator: (v) {
-                final label = v?.trim() ?? '';
-                if (label.isEmpty) return strings.labelRequired;
-                if (label.length > 80) {
-                  return context.strings.people.nameTooLong(80);
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: AppSpacing.md),
-            DropdownButtonFormField<FieldType>(
-              key: const Key('fields.editor.type'),
-              isExpanded: true,
-              initialValue: _type,
-              decoration: InputDecoration(
-                labelText: strings.typeLabel,
-                border: const OutlineInputBorder(),
-              ),
-              items: [
-                for (final t in FieldType.values)
-                  DropdownMenuItem(value: t, child: Text(strings.typeName(t))),
-              ],
-              onChanged: _busy ? null : (t) => setState(() => _type = t!),
-            ),
-            if (_hasOptions) ...[
-              const SizedBox(height: AppSpacing.md),
-              TextFormField(
-                key: const Key('fields.editor.options'),
-                controller: _options,
-                enabled: !_busy,
-                minLines: 3,
-                maxLines: 8,
-                decoration: InputDecoration(
-                  labelText: strings.optionsLabel,
-                  helperText: strings.optionsHelp,
-                  border: const OutlineInputBorder(),
-                ),
-                validator: (_) =>
-                    _optionList.isEmpty ? strings.optionsRequired : null,
-              ),
-            ],
-            SwitchListTile(
-              key: const Key('fields.editor.required'),
-              contentPadding: EdgeInsets.zero,
-              title: Text(strings.requiredLabel),
-              value: _required,
-              onChanged: _busy ? null : (on) => setState(() => _required = on),
-            ),
-            Text(
-              strings.scopeLabel(words.one('participant'), words.one('group')),
-              style: theme.textTheme.titleSmall,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            RadioGroup<FieldScope>(
-              groupValue: _scope,
-              onChanged: (v) {
-                if (v != null && !_busy) setState(() => _scope = v);
-              },
-              child: Column(
-                key: const Key('fields.editor.scope'),
-                children: [
-                  for (final sc in FieldScope.values)
-                    RadioListTile<FieldScope>(
-                      key: Key('fields.editor.scope.${sc.name}'),
-                      contentPadding: EdgeInsets.zero,
-                      value: sc,
-                      title: Text(
-                        strings.scopeName(
-                          sc,
-                          words.one('participant'),
-                          words.one('group'),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Text(strings.visibilityLabel, style: theme.textTheme.titleSmall),
-            RadioGroup<FieldVisibility>(
-              groupValue: _visibility,
-              onChanged: (v) {
-                if (v != null && !_busy) setState(() => _visibility = v);
-              },
-              child: Column(
-                children: [
-                  RadioListTile<FieldVisibility>(
-                    key: const Key('fields.editor.standard'),
-                    contentPadding: EdgeInsets.zero,
-                    value: FieldVisibility.standard,
-                    title: Text(strings.visibilityStandard),
-                    subtitle: Text(strings.visibilityStandardHelp),
-                  ),
-                  RadioListTile<FieldVisibility>(
-                    key: const Key('fields.editor.private'),
-                    contentPadding: EdgeInsets.zero,
-                    value: FieldVisibility.private,
-                    title: Text(strings.visibilityPrivate),
-                    subtitle: Text(strings.visibilityPrivateHelp),
-                  ),
-                ],
-              ),
-            ),
-            if (_error != null)
-              Text(
-                _error!,
-                key: const Key('fields.editor.error'),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.error,
-                ),
-              ),
-            const SizedBox(height: AppSpacing.md),
-            OverflowBar(
-              alignment: MainAxisAlignment.spaceBetween,
-              overflowAlignment: OverflowBarAlignment.end,
-              children: [
-                if (widget.field != null)
-                  TextButton.icon(
-                    key: const Key('fields.editor.delete'),
-                    onPressed: _busy ? null : _delete,
-                    icon: const Icon(AppIcons.actionDelete),
-                    label: Text(strings.delete),
-                    style: TextButton.styleFrom(
-                      foregroundColor: theme.colorScheme.error,
-                    ),
-                  )
-                else
-                  const SizedBox.shrink(),
-                FilledButton(
-                  key: const Key('fields.editor.save'),
-                  onPressed: _busy ? null : _save,
-                  child: Text(strings.save),
-                ),
-              ],
-            ),
           ],
         ),
       ),
+    );
+    if (picked != null && mounted) setState(() => _type = picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cp = context.cp;
+    final strings = context.strings.fields;
+    final words = widget.event.words;
+    final participant = words.one('participant');
+    final group = words.one('group');
+    return Form(
+      key: _formKey,
+      child: Column(
+        key: const Key('fields.editor'),
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: cp.space.lg,
+        children: [
+          CpTextField(
+            fieldKey: const Key('fields.editor.label'),
+            label: strings.labelLabel,
+            required: true,
+            controller: _label,
+            enabled: !_busy,
+            validator: (v) {
+              final label = v?.trim() ?? '';
+              if (label.isEmpty) return strings.labelRequired;
+              if (label.length > 80) {
+                return context.strings.people.nameTooLong(80);
+              }
+              return null;
+            },
+          ),
+          CpSelectField(
+            fieldKey: const Key('fields.editor.type'),
+            label: strings.typeLabel,
+            value: strings.typeName(_type),
+            onTap: _busy ? null : _pickType,
+          ),
+          if (_hasOptions)
+            CpTextField(
+              fieldKey: const Key('fields.editor.options'),
+              label: strings.optionsLabel,
+              help: strings.optionsHelp,
+              required: true,
+              controller: _options,
+              enabled: !_busy,
+              maxLines: 6,
+              keyboardType: TextInputType.multiline,
+              validator: (_) =>
+                  _optionList.isEmpty ? strings.optionsRequired : null,
+            ),
+          CpSwitchRow(
+            key: const Key('fields.editor.required'),
+            title: strings.requiredLabel,
+            value: _required,
+            onChanged: _busy ? null : (on) => setState(() => _required = on),
+          ),
+          CpChoiceChips<FieldScope>(
+            label: strings.scopeLabel(participant, group),
+            required: true,
+            choices: [
+              for (final sc in FieldScope.values)
+                CpChoice(
+                  sc,
+                  strings.scopeName(sc, participant, group),
+                  key: Key('fields.editor.scope.${sc.name}'),
+                ),
+            ],
+            selected: {_scope},
+            onChanged: _busy
+                ? null
+                : (picked) {
+                    if (picked.isNotEmpty) {
+                      setState(() => _scope = picked.first);
+                    }
+                  },
+          ),
+          CpField(
+            label: strings.visibilityLabel,
+            child: CpCard(
+              child: CpRowGroup(
+                children: [
+                  for (final (v, key, title, help) in [
+                    (
+                      FieldVisibility.standard,
+                      'fields.editor.standard',
+                      strings.visibilityStandard,
+                      strings.visibilityStandardHelp,
+                    ),
+                    (
+                      FieldVisibility.private,
+                      'fields.editor.private',
+                      strings.visibilityPrivate,
+                      strings.visibilityPrivateHelp,
+                    ),
+                  ])
+                    CpListRow(
+                      key: Key(key),
+                      title: title,
+                      subtitle: help,
+                      selected: _visibility == v,
+                      trailing: _visibility == v
+                          ? Icon(
+                              CpIcons.statusDone,
+                              size: cp.sizes.iconMd,
+                              color: cp.colors.accent,
+                            )
+                          : const SizedBox.shrink(),
+                      onTap: _busy
+                          ? null
+                          : () => setState(() => _visibility = v),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          if (_error != null)
+            CpFieldError(_error!, key: const Key('fields.editor.error')),
+          _EditorButtons(
+            deleteKey: const Key('fields.editor.delete'),
+            saveKey: const Key('fields.editor.save'),
+            busy: _busy,
+            onDelete: widget.field == null ? null : _delete,
+            onSave: _save,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// An editor's Delete, when there is something to delete, and Save.
+class _EditorButtons extends StatelessWidget {
+  const _EditorButtons({
+    required this.deleteKey,
+    required this.saveKey,
+    required this.busy,
+    required this.onDelete,
+    required this.onSave,
+  });
+
+  final Key deleteKey;
+  final Key saveKey;
+  final bool busy;
+  final VoidCallback? onDelete;
+  final VoidCallback onSave;
+
+  @override
+  Widget build(BuildContext context) {
+    final cp = context.cp;
+    final strings = context.strings.fields;
+    return Wrap(
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: cp.space.sm,
+      runSpacing: cp.space.sm,
+      children: [
+        if (onDelete != null)
+          CpButton.text(
+            key: deleteKey,
+            label: strings.delete,
+            icon: CpIcons.actionDelete,
+            onPressed: busy ? null : onDelete,
+          )
+        else
+          const SizedBox.shrink(),
+        CpButton(
+          key: saveKey,
+          label: strings.save,
+          busy: busy,
+          onPressed: onSave,
+        ),
+      ],
     );
   }
 }
@@ -508,10 +532,11 @@ class CategoryEditorSheet extends ConsumerStatefulWidget {
     required EventModel event,
     required List<EventCategory> categories,
     EventCategory? category,
-  }) => showModalBottomSheet<void>(
+  }) => showCpSheet<void>(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
+    title:
+        category?.name ??
+        context.strings.fields.addCategory(event.words.one('category')),
     builder: (_) => CategoryEditorSheet(
       event: event,
       categories: categories,
@@ -613,106 +638,72 @@ class _CategoryEditorSheetState extends ConsumerState<CategoryEditorSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
     final strings = context.strings.fields;
-    final theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.only(
-        left: AppSpacing.lg,
-        right: AppSpacing.lg,
-        top: AppSpacing.lg,
-        bottom: MediaQuery.viewInsetsOf(context).bottom + AppSpacing.lg,
-      ),
-      child: Form(
-        key: _formKey,
-        child: ListView(
-          key: const Key('fields.categoryEditor'),
-          shrinkWrap: true,
-          children: [
-            TextFormField(
-              key: const Key('fields.category.name'),
-              controller: _name,
-              enabled: !_busy,
-              decoration: InputDecoration(
-                labelText: strings.nameLabel,
-                border: const OutlineInputBorder(),
-              ),
-              validator: (v) => (v?.trim() ?? '').isEmpty
-                  ? context.strings.people.nameRequired
-                  : null,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Row(
-              spacing: AppSpacing.md,
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    key: const Key('fields.category.minAge'),
-                    controller: _min,
-                    enabled: !_busy,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: strings.minAgeLabel,
-                      border: const OutlineInputBorder(),
-                    ),
-                    validator: _validateAge,
-                  ),
-                ),
-                Expanded(
-                  child: TextFormField(
-                    key: const Key('fields.category.maxAge'),
-                    controller: _max,
-                    enabled: !_busy,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: strings.maxAgeLabel,
-                      border: const OutlineInputBorder(),
-                    ),
-                    validator: _validateAge,
-                  ),
-                ),
-              ],
-            ),
-            Text(strings.agesHelp, style: theme.textTheme.bodySmall),
-            SwitchListTile(
-              key: const Key('fields.category.child'),
-              contentPadding: EdgeInsets.zero,
-              title: Text(strings.childLabel),
-              value: _child,
-              onChanged: _busy ? null : (on) => setState(() => _child = on),
-            ),
-            if (_error != null)
-              Text(
-                _error!,
-                key: const Key('fields.category.error'),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.error,
+    return Form(
+      key: _formKey,
+      child: Column(
+        key: const Key('fields.categoryEditor'),
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: cp.space.lg,
+        children: [
+          CpTextField(
+            fieldKey: const Key('fields.category.name'),
+            label: strings.nameLabel,
+            required: true,
+            controller: _name,
+            enabled: !_busy,
+            validator: (v) => (v?.trim() ?? '').isEmpty
+                ? context.strings.people.nameRequired
+                : null,
+          ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: cp.space.md,
+            children: [
+              Expanded(
+                child: CpTextField(
+                  fieldKey: const Key('fields.category.minAge'),
+                  label: strings.minAgeLabel,
+                  controller: _min,
+                  enabled: !_busy,
+                  keyboardType: TextInputType.number,
+                  validator: _validateAge,
                 ),
               ),
-            OverflowBar(
-              alignment: MainAxisAlignment.spaceBetween,
-              overflowAlignment: OverflowBarAlignment.end,
-              children: [
-                if (widget.category != null)
-                  TextButton.icon(
-                    key: const Key('fields.category.delete'),
-                    onPressed: _busy ? null : _delete,
-                    icon: const Icon(AppIcons.actionDelete),
-                    label: Text(strings.delete),
-                    style: TextButton.styleFrom(
-                      foregroundColor: theme.colorScheme.error,
-                    ),
-                  )
-                else
-                  const SizedBox.shrink(),
-                FilledButton(
-                  key: const Key('fields.category.save'),
-                  onPressed: _busy ? null : _save,
-                  child: Text(strings.save),
+              Expanded(
+                child: CpTextField(
+                  fieldKey: const Key('fields.category.maxAge'),
+                  label: strings.maxAgeLabel,
+                  controller: _max,
+                  enabled: !_busy,
+                  keyboardType: TextInputType.number,
+                  validator: _validateAge,
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+          Text(
+            strings.agesHelp,
+            style: cp.type.bodySmall.copyWith(color: cp.colors.textMuted),
+          ),
+          CpSwitchRow(
+            key: const Key('fields.category.child'),
+            title: strings.childLabel,
+            value: _child,
+            onChanged: _busy ? null : (on) => setState(() => _child = on),
+          ),
+          if (_error != null)
+            CpFieldError(_error!, key: const Key('fields.category.error')),
+          _EditorButtons(
+            deleteKey: const Key('fields.category.delete'),
+            saveKey: const Key('fields.category.save'),
+            busy: _busy,
+            onDelete: widget.category == null ? null : _delete,
+            onSave: _save,
+          ),
+        ],
       ),
     );
   }

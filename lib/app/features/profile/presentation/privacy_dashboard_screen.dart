@@ -1,296 +1,160 @@
 import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/core/constants/app_assets.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_radius.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/env/app_flavor.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/markdown_render_screen.dart';
 
-/// Privacy-first dashboard showing what data we collect and why.
+/// What the app keeps about you and why, what it never keeps, the
+/// services it relies on, and the legal documents.
 class PrivacyDashboardScreen extends StatelessWidget {
   const PrivacyDashboardScreen({super.key});
 
-  static const _dataCollected = [
-    ('Display Name', 'How you appear to crew members', true),
-    ('Email', 'Contact for settlements, account recovery', true),
-    ('Profile Photo', 'Avatar in events, chat, expenses', false),
-    ('Payment Method', 'Show crew how to pay you (Venmo, Zelle, etc.)', false),
-    ('Payment Handle', 'Your @username or phone for chosen method', false),
-    ('Currency', 'Display formatting preference', false),
-    ('Usage Analytics', 'Anonymous app improvement data', false),
-  ];
-
-  static const _notCollected = [
-    'Phone number (unless you add it as payment handle)',
-    'Physical address, birthday, or demographics',
-    'Device identifiers or advertising IDs',
-    'Contacts or social graph',
-    'Location data',
-    'Browsing or usage history (unless opted in)',
-  ];
-
-  static const _dependencies = [
-    ('Firebase Auth', 'Authentication services'),
-    ('Cloud Firestore', 'Real-time database'),
-    ('Firebase Storage', 'Profile photo storage'),
-    ('Cloud Functions', 'Account deletion (server-side)'),
-    ('Google Sign-In', 'Social authentication'),
-    ('Sign in with Apple', 'Social authentication'),
-    ('Drift (SQLite)', 'Local offline database'),
-    ('Flutter Secure Storage', 'Encrypted token storage'),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Privacy Dashboard'),
-        elevation: 0,
-      ),
-      body: ContentMaxWidth(
-        key: const Key('privacyDashboard.body.clamped'),
-        maxWidth: 720,
-        child: ListView(
-          padding: EdgeInsets.symmetric(
-            horizontal: Breakpoints.screenHorizontalPadding(context),
-            vertical: AppSpacing.xl,
+    final cp = context.cp;
+    final s = context.strings.privacy;
+    final navigator = Navigator.of(context);
+
+    Icon icon(IconData data, {Color? color}) =>
+        Icon(data, size: cp.sizes.iconMd, color: color ?? cp.colors.textMuted);
+
+    void openDocument(String title, String asset, String path) =>
+        navigator.push<void>(
+          MaterialPageRoute<void>(
+            builder: (_) => MarkdownRenderScreen(
+              title: title,
+              assetPath: asset,
+              hostedUrl: '${AppFlavor.current.legalBaseUrl}/$path',
+            ),
           ),
-          children: [
-            // Data We Collect
-            const _SectionLabel(label: 'DATA WE COLLECT'),
-            const SizedBox(height: AppSpacing.sm),
-            _SectionCard(
+        );
+
+    return Scaffold(
+      backgroundColor: cp.colors.background,
+      appBar: CpTopBar(
+        title: s.title,
+        leadingTooltip: MaterialLocalizations.of(context).backButtonTooltip,
+        onLeading: navigator.canPop() ? () => navigator.maybePop() : null,
+      ),
+      body: ListView(
+        padding: EdgeInsets.fromLTRB(
+          cp.space.lg,
+          cp.space.sm,
+          cp.space.lg,
+          cp.space.xxl,
+        ),
+        children: [
+          ContentMaxWidth(
+            maxWidth: cp.sizes.phoneColumn,
+            child: Column(
+              key: const Key('privacyDashboard.body.clamped'),
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: cp.space.lg,
               children: [
-                for (var i = 0; i < _dataCollected.length; i++) ...[
-                  if (i > 0) const Divider(height: 1, indent: 56),
-                  _DataRow(
-                    field: _dataCollected[i].$1,
-                    purpose: _dataCollected[i].$2,
-                    isRequired: _dataCollected[i].$3,
-                  ),
-                ],
-              ],
-            ),
-
-            const SizedBox(height: AppSpacing.lg),
-
-            // Payment Info Note
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              decoration: BoxDecoration(
-                color: AppColors.sage.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-              ),
-              child: Row(
-                crossAxisAlignment: .start,
-                spacing: AppSpacing.md,
-                children: [
-                  const Icon(
-                    AppIcons.statusInfo,
-                    color: AppColors.sage,
-                    size: 20,
-                  ),
-                  Expanded(
-                    child: Text(
-                      'Your payment details (Venmo handle, etc.) are visible to other CrewPoint users to facilitate settlements.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.sageDark,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: AppSpacing.xl),
-
-            // What We Don't Collect
-            const _SectionLabel(label: 'WHAT WE DO NOT COLLECT'),
-            const SizedBox(height: AppSpacing.sm),
-            _SectionCard(
-              children: [
-                for (var i = 0; i < _notCollected.length; i++) ...[
-                  if (i > 0) const Divider(height: 1, indent: 56),
-                  ListTile(
-                    leading: Icon(
-                      AppIcons.blocked,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      size: 20,
-                    ),
-                    title: Text(
-                      _notCollected[i],
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    dense: true,
-                  ),
-                ],
-              ],
-            ),
-
-            const SizedBox(height: AppSpacing.xl),
-
-            // Third-Party Services
-            const _SectionLabel(label: 'THIRD-PARTY SERVICES'),
-            const SizedBox(height: AppSpacing.sm),
-            _SectionCard(
-              children: [
-                for (var i = 0; i < _dependencies.length; i++) ...[
-                  if (i > 0) const Divider(height: 1, indent: 56),
-                  ListTile(
-                    leading: Icon(
-                      AppIcons.extension,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      size: 20,
-                    ),
-                    title: Text(_dependencies[i].$1),
-                    subtitle: Text(
-                      _dependencies[i].$2,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    dense: true,
-                  ),
-                ],
-              ],
-            ),
-
-            const SizedBox(height: AppSpacing.xl),
-
-            // Legal Documents
-            const _SectionLabel(label: 'LEGAL DOCUMENTS'),
-            const SizedBox(height: AppSpacing.sm),
-            _SectionCard(
-              children: [
-                ListTile(
-                  key: const Key('privacyDashboard.legal.privacy'),
-                  leading: Icon(
-                    AppIcons.privacyPolicy,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  title: const Text('Privacy Policy'),
-                  trailing: Icon(
-                    AppIcons.chevronRight,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  onTap: () => Navigator.of(context).push<void>(
-                    MaterialPageRoute<void>(
-                      builder: (_) => MarkdownRenderScreen(
-                        title: 'Privacy Policy',
-                        assetPath: AppAssets.legalPrivacyPolicy,
-                        hostedUrl: '${AppFlavor.current.legalBaseUrl}/privacy',
-                      ),
-                    ),
+                CpSectionHeader(title: s.collectedHeading),
+                CpCard(
+                  child: CpRowGroup(
+                    children: [
+                      for (final item in s.collected)
+                        CpListRow(
+                          leading: item.required
+                              ? icon(
+                                  CpIcons.statusDone,
+                                  color: cp.colors.accent,
+                                )
+                              : icon(CpIcons.circleOutlined),
+                          title: item.field,
+                          subtitle: item.purpose,
+                          trailing: CpTag(
+                            label: item.required ? s.required : s.optional,
+                            tone: item.required
+                                ? CpTagTone.accent
+                                : CpTagTone.quiet,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-                const Divider(height: 1, indent: 56),
-                ListTile(
-                  key: const Key('privacyDashboard.legal.terms'),
-                  leading: Icon(
-                    AppIcons.terms,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                Container(
+                  padding: EdgeInsets.all(cp.space.lg),
+                  decoration: BoxDecoration(
+                    color: cp.colors.accentSoft,
+                    borderRadius: cp.radii.md,
                   ),
-                  title: const Text('Terms of Service'),
-                  trailing: Icon(
-                    AppIcons.chevronRight,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  onTap: () => Navigator.of(context).push<void>(
-                    MaterialPageRoute<void>(
-                      builder: (_) => MarkdownRenderScreen(
-                        title: 'Terms of Service',
-                        assetPath: AppAssets.legalTermsOfService,
-                        hostedUrl: '${AppFlavor.current.legalBaseUrl}/terms',
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: cp.space.md,
+                    children: [
+                      icon(CpIcons.statusInfo, color: cp.colors.accent),
+                      Expanded(
+                        child: Text(
+                          s.paymentNote,
+                          style: cp.type.bodyMedium.copyWith(
+                            color: cp.colors.text,
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
+                  ),
+                ),
+                CpSectionHeader(title: s.notCollectedHeading),
+                CpCard(
+                  child: CpRowGroup(
+                    children: [
+                      for (final item in s.notCollected)
+                        CpListRow(leading: icon(CpIcons.blocked), title: item),
+                    ],
+                  ),
+                ),
+                CpSectionHeader(title: s.servicesHeading),
+                CpCard(
+                  child: CpRowGroup(
+                    children: [
+                      for (final service in s.services)
+                        CpListRow(
+                          leading: icon(CpIcons.extension),
+                          title: service.name,
+                          subtitle: service.purpose,
+                        ),
+                    ],
+                  ),
+                ),
+                CpSectionHeader(title: s.legalHeading),
+                CpCard(
+                  child: CpRowGroup(
+                    children: [
+                      CpListRow(
+                        key: const Key('privacyDashboard.legal.privacy'),
+                        leading: icon(CpIcons.privacyPolicy),
+                        title: s.privacyPolicy,
+                        onTap: () => openDocument(
+                          s.privacyPolicy,
+                          AppAssets.legalPrivacyPolicy,
+                          'privacy',
+                        ),
+                      ),
+                      CpListRow(
+                        key: const Key('privacyDashboard.legal.terms'),
+                        leading: icon(CpIcons.terms),
+                        title: s.terms,
+                        onTap: () => openDocument(
+                          s.terms,
+                          AppAssets.legalTermsOfService,
+                          'terms',
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: AppSpacing.xl),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: AppSpacing.xs),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-          letterSpacing: 1.2,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.borderLg,
-        side: BorderSide(
-          color: AppColors.lightGrey.withValues(alpha: 0.7),
-          width: 0.5,
-        ),
-      ),
-      child: Column(mainAxisSize: .min, children: children),
-    );
-  }
-}
-
-class _DataRow extends StatelessWidget {
-  const _DataRow({
-    required this.field,
-    required this.purpose,
-    required this.isRequired,
-  });
-
-  final String field;
-  final String purpose;
-  final bool isRequired;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(
-        isRequired ? AppIcons.statusDone : AppIcons.circleOutlined,
-        color: isRequired ? AppColors.sage : AppColors.mediumGrey,
-        size: 20,
-      ),
-      title: Text(field),
-      subtitle: Text(purpose, style: Theme.of(context).textTheme.bodySmall),
-      trailing: isRequired
-          ? Text(
-              'Required',
-              style: Theme.of(
-                context,
-              ).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-            )
-          : Text('Optional', style: Theme.of(context).textTheme.labelSmall),
-      dense: true,
     );
   }
 }

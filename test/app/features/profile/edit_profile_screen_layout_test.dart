@@ -9,7 +9,6 @@ import 'package:crewpoint_app/app/features/profile/presentation/edit_profile_scr
 import '../auth/fake_auth_service.dart';
 
 const _bodyKey = Key('editProfile.body.clamped');
-const _shellKey = Key('form.card.shell');
 
 Future<void> _pumpAt(WidgetTester tester, Size size) async {
   tester.view.devicePixelRatio = 1.0;
@@ -34,29 +33,21 @@ Future<void> _pumpAt(WidgetTester tester, Size size) async {
 }
 
 void main() {
-  testWidgets(
-    'clamps body to <= 480 and shows the form card shell on desktop viewport',
-    (tester) async {
-      await _pumpAt(tester, const Size(1280, 800));
-      // The narrow form surfaces a benign Material DropdownButtonFormField
-      // internal Row overflow (~7 px) unrelated to the clamp; ignore.
-      tester.takeException();
-
-      final width = tester.getSize(find.byKey(_bodyKey)).width;
-      expect(width, lessThanOrEqualTo(480));
-      expect(find.byKey(_shellKey), findsOneWidget);
-    },
-  );
-
-  testWidgets('fills viewport and skips form card shell on phone viewport', (
+  testWidgets('keeps the form to the phone column on a wide screen', (
     tester,
   ) async {
+    await _pumpAt(tester, const Size(1280, 800));
+
+    final width = tester.getSize(find.byKey(_bodyKey)).width;
+    expect(width, lessThanOrEqualTo(600));
+    expect(find.byKey(const Key('profile.edit.save')), findsOneWidget);
+  });
+
+  testWidgets('fills the width on a phone', (tester) async {
     await _pumpAt(tester, const Size(375, 812));
-    tester.takeException();
 
     final width = tester.getSize(find.byKey(_bodyKey)).width;
     expect(width, greaterThan(300));
     expect(width, lessThanOrEqualTo(375));
-    expect(find.byKey(_shellKey), findsNothing);
   });
 }

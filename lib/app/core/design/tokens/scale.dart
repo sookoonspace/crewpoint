@@ -63,6 +63,9 @@ abstract final class CpScale {
   /// The widest a phone-style column grows before it is centred (L16).
   static const double phoneColumn = 600;
 
+  /// The sign-in column, narrower so its fields and buttons stay short.
+  static const double signIn480 = 480;
+
   /// The laptop sidebar, and the list beside a detail panel.
   static const double sidebar = 248;
   static const double listPane = 400;

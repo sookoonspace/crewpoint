@@ -1,12 +1,12 @@
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/services/callable_errors.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart'
-    show NoAccessView;
+    show AdminScaffold, NoAccessView;
 import 'package:crewpoint_app/app/core/services/file_export_service.dart';
 import 'package:crewpoint_app/app/features/counts/domain/count_export.dart';
 import 'package:crewpoint_app/app/features/counts/domain/event_stats.dart';
@@ -84,50 +84,52 @@ class _CountsScreenState extends ConsumerState<CountsScreen> {
     final readsPrivate = widget.event.can(me, 'participants.readPrivate');
     final readsRoster = widget.event.can(me, 'participants.read');
     var includePrivate = false;
-    final choice = await showModalBottomSheet<String>(
+    final choice = await showCpSheet<String>(
       context: context,
-      useSafeArea: true,
-      isScrollControlled: true,
+      title: strings.exportTitle,
       builder: (sheet) => StatefulBuilder(
-        builder: (sheet, setSheet) => ListView(
+        builder: (sheet, setSheet) => Column(
           key: const Key('counts.export.sheet'),
-          shrinkWrap: true,
-          padding: const EdgeInsets.all(AppSpacing.lg),
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: sheet.cp.space.lg,
           children: [
-            Text(
-              strings.exportTitle,
-              style: Theme.of(sheet).textTheme.titleMedium,
-            ),
-            SwitchListTile(
+            CpSwitchRow(
               key: const Key('counts.export.private'),
-              contentPadding: EdgeInsets.zero,
-              title: Text(strings.includePrivate),
-              subtitle: Text(strings.includePrivateHelp),
+              title: strings.includePrivate,
+              help: strings.includePrivateHelp,
               value: includePrivate,
               onChanged: (v) => setSheet(() => includePrivate = v),
             ),
-            ListTile(
-              key: const Key('counts.export.counts'),
-              leading: const Icon(AppIcons.members),
-              title: Text(strings.exportCounts),
-              onTap: () => Navigator.of(sheet).pop('counts'),
+            CpCard(
+              child: CpRowGroup(
+                children: [
+                  CpListRow(
+                    key: const Key('counts.export.counts'),
+                    leading: const _RowIcon(CpIcons.members),
+                    title: strings.exportCounts,
+                    onTap: () => Navigator.of(sheet).pop('counts'),
+                  ),
+                  if (readsRoster)
+                    CpListRow(
+                      key: const Key('counts.export.roster'),
+                      leading: const _RowIcon(CpIcons.member),
+                      title: strings.exportRoster,
+                      // The roster's private details need readPrivate.
+                      onTap: !includePrivate || readsPrivate
+                          ? () => Navigator.of(sheet).pop('roster')
+                          : null,
+                    ),
+                  if (freeze != null)
+                    CpListRow(
+                      key: const Key('counts.export.changes'),
+                      leading: const _RowIcon(CpIcons.actionSwap),
+                      title: strings.exportChanges,
+                      onTap: () => Navigator.of(sheet).pop('changes'),
+                    ),
+                ],
+              ),
             ),
-            if (readsRoster)
-              ListTile(
-                key: const Key('counts.export.roster'),
-                leading: const Icon(AppIcons.member),
-                title: Text(strings.exportRoster),
-                // The roster's private details need readPrivate.
-                enabled: !includePrivate || readsPrivate,
-                onTap: () => Navigator.of(sheet).pop('roster'),
-              ),
-            if (freeze != null)
-              ListTile(
-                key: const Key('counts.export.changes'),
-                leading: const Icon(AppIcons.actionSwap),
-                title: Text(strings.exportChanges),
-                onTap: () => Navigator.of(sheet).pop('changes'),
-              ),
           ],
         ),
       ),
@@ -247,117 +249,120 @@ class _CountsScreenState extends ConsumerState<CountsScreen> {
     final event = widget.event;
     final me = ref.watch(currentUserIdProvider) ?? '';
     if (!event.can(me, 'counts.read')) {
-      return Scaffold(appBar: AppBar(), body: const NoAccessView());
+      return AdminScaffold(title: strings.title, body: const NoAccessView());
     }
     final stats = ref.watch(eventStatsProvider(event.id));
 
     final Widget body = switch (stats) {
       AsyncValue(hasValue: true, :final value) =>
         value == null ? _notYet() : _counts(value),
-      AsyncValue(error: _?) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            spacing: AppSpacing.md,
-            children: [
-              Text(
-                strings.loadFailed,
-                key: const Key('counts.error'),
-                textAlign: TextAlign.center,
-              ),
-              FilledButton.icon(
-                key: const Key('counts.retry'),
-                onPressed: () => ref.invalidate(eventStatsProvider(event.id)),
-                icon: const Icon(AppIcons.actionRetry),
-                label: Text(strings.retry),
-              ),
-            ],
-          ),
-        ),
+      AsyncValue(error: _?) => CpErrorState(
+        key: const Key('counts.error'),
+        title: strings.loadFailed,
+        retryLabel: strings.retry,
+        retryKey: const Key('counts.retry'),
+        onRetry: () => ref.invalidate(eventStatsProvider(event.id)),
       ),
-      _ => const Center(
-        child: CircularProgressIndicator(key: Key('counts.loading')),
+      _ => CpLoadingState.rows(
+        key: const Key('counts.loading'),
+        semanticLabel: strings.title,
       ),
     };
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(strings.title),
-        elevation: 0,
-        actions: [
-          if (_exports && (stats.value != null))
-            IconButton(
-              key: const Key('counts.export'),
-              tooltip: strings.export,
-              icon: const Icon(AppIcons.actionShare),
-              onPressed: () => _export(
-                stats.value!,
-                _chosenFreeze(ref.read(countFreezesProvider(event.id)).value),
-              ),
+    return AdminScaffold(
+      title: strings.title,
+      actions: [
+        if (_exports && (stats.value != null))
+          CpTopBarAction(
+            key: const Key('counts.export'),
+            tooltip: strings.export,
+            icon: CpIcons.actionShare,
+            onPressed: () => _export(
+              stats.value!,
+              _chosenFreeze(ref.read(countFreezesProvider(event.id)).value),
             ),
-        ],
-      ),
-      body: ContentMaxWidth(maxWidth: 720, child: body),
+          ),
+      ],
+      body: body,
     );
   }
 
-  Widget _recalculateButton({required String label}) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    spacing: AppSpacing.sm,
-    children: [
-      FilledButton.tonalIcon(
-        key: const Key('counts.recalculate'),
-        style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-        onPressed: _busy ? null : _recalculate,
-        icon: _busy
-            ? const SizedBox.square(
-                dimension: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Icon(AppIcons.actionRetry),
-        label: Text(_busy ? context.strings.counts.recalculating : label),
+  /// The page's scrolling column, as on the other admin screens.
+  Widget _page({required Key key, required List<Widget> children}) {
+    final cp = context.cp;
+    return ListView(
+      key: key,
+      padding: EdgeInsets.fromLTRB(
+        cp.space.lg,
+        cp.space.sm,
+        cp.space.lg,
+        cp.space.xxl,
       ),
-      if (_error != null)
-        Text(
-          _error!,
-          key: const Key('counts.recalculateError'),
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.error,
+      children: [
+        ContentMaxWidth(
+          maxWidth: cp.sizes.phoneColumn,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: cp.space.lg,
+            children: children,
           ),
         ),
-    ],
+      ],
+    );
+  }
+
+  Widget _recalculateButton({required String label}) => CpButton.secondary(
+    key: const Key('counts.recalculate'),
+    label: _busy ? context.strings.counts.recalculating : label,
+    icon: CpIcons.actionRetry,
+    busy: _busy,
+    expand: true,
+    onPressed: _recalculate,
   );
 
+  Widget? _errorText() => _error == null
+      ? null
+      : CpFieldError(_error!, key: const Key('counts.recalculateError'));
+
   Widget _notYet() {
+    final cp = context.cp;
     final strings = context.strings.counts;
-    final theme = Theme.of(context);
-    return ListView(
+    return _page(
       key: const Key('counts.empty'),
-      padding: EdgeInsets.all(Breakpoints.screenHorizontalPadding(context)),
       children: [
-        const SizedBox(height: AppSpacing.xl),
-        Icon(
-          AppIcons.members,
-          size: 48,
-          color: theme.colorScheme.onSurfaceVariant,
+        CpCard(
+          padding: EdgeInsets.all(cp.space.xl),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: cp.space.md,
+            children: [
+              Icon(
+                CpIcons.counts,
+                size: cp.sizes.iconXl,
+                color: cp.colors.textMuted,
+              ),
+              Text(
+                strings.notYet,
+                textAlign: TextAlign.center,
+                style: cp.type.titleMedium.copyWith(color: cp.colors.text),
+              ),
+              Text(
+                strings.notYetHelp,
+                textAlign: TextAlign.center,
+                style: cp.type.bodyMedium.copyWith(color: cp.colors.textMuted),
+              ),
+              _recalculateButton(label: strings.countNow),
+              ?_errorText(),
+            ],
+          ),
         ),
-        const SizedBox(height: AppSpacing.md),
-        Text(
-          strings.notYet,
-          style: theme.textTheme.titleMedium,
-          textAlign: TextAlign.center,
-        ),
-        Text(strings.notYetHelp, textAlign: TextAlign.center),
-        const SizedBox(height: AppSpacing.lg),
-        _recalculateButton(label: strings.countNow),
       ],
     );
   }
 
   Widget _counts(EventStats stats) {
+    final cp = context.cp;
     final strings = context.strings.counts;
-    final theme = Theme.of(context);
     final event = widget.event;
     final categories = {
       for (final c in categoriesOf(event.settings)) c.id: c.name,
@@ -376,99 +381,121 @@ class _CountsScreenState extends ConsumerState<CountsScreen> {
           const <SessionModel>[],
     ]..sort((a, b) => a.startAt.compareTo(b.startAt));
     final updated = stats.updatedAt;
-    final padding = Breakpoints.screenHorizontalPadding(context);
+    final muted = cp.type.bodyMedium.copyWith(color: cp.colors.textMuted);
+    final counted = [
+      for (final s in sessions)
+        if (stats.sessions[s.id] case final tally?) (s, tally),
+    ];
 
-    return ListView(
+    return _page(
       key: const Key('counts.list'),
-      padding: EdgeInsets.fromLTRB(padding, AppSpacing.md, padding, 48),
       children: [
-        if (updated != null)
-          Text(
-            strings.updated(
-              DateFormat.MMMd().add_jm().format(updated.toLocal()),
-            ),
-            key: const Key('counts.updated'),
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        Text(strings.recalculateHelp, style: theme.textTheme.bodySmall),
-        const SizedBox(height: AppSpacing.sm),
-        _recalculateButton(label: strings.recalculate),
-        if (_exports)
-          Padding(
-            padding: const EdgeInsets.only(top: AppSpacing.sm),
-            child: OutlinedButton.icon(
-              key: const Key('counts.freeze'),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(48),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: cp.space.xs,
+          children: [
+            if (updated != null)
+              Text(
+                strings.updated(
+                  DateFormat.MMMd().add_jm().format(updated.toLocal()),
+                ),
+                key: const Key('counts.updated'),
+                style: cp.type.titleSmall.copyWith(color: cp.colors.text),
               ),
-              onPressed: _busy ? null : _freeze,
-              icon: const Icon(AppIcons.lock),
-              label: Text(strings.freeze),
-            ),
-          ),
-        ..._freezeSection(stats, fields, sessions),
-        const SizedBox(height: AppSpacing.lg),
-        Card(
+            Text(strings.recalculateHelp, style: muted),
+          ],
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: cp.space.sm,
+          children: [
+            _recalculateButton(label: strings.recalculate),
+            if (_exports)
+              CpButton.secondary(
+                key: const Key('counts.freeze'),
+                label: strings.freeze,
+                icon: CpIcons.lock,
+                expand: true,
+                onPressed: _busy ? null : _freeze,
+              ),
+            ?_errorText(),
+          ],
+        ),
+        ?_freezeCard(stats, fields, sessions),
+        CpCard(
           key: const Key('counts.event'),
-          margin: EdgeInsets.zero,
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              spacing: AppSpacing.sm,
+          padding: EdgeInsets.all(cp.space.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: cp.space.sm,
+            children: [
+              Semantics(
+                header: true,
+                child: Text(
+                  strings.wholeEvent,
+                  style: cp.type.titleMedium.copyWith(color: cp.colors.text),
+                ),
+              ),
+              Text(
+                '${strings.people(stats.event.total)} · '
+                '${strings.groups(stats.groups, event.words.other('group'))}',
+                key: const Key('counts.event.total'),
+                style: cp.type.headlineSmall.copyWith(color: cp.colors.text),
+              ),
+              ..._breakdown(stats.event, 'event', categories, fields),
+            ],
+          ),
+        ),
+        CpSectionHeader(title: strings.sessionsHeading),
+        if (stats.sessions.isEmpty)
+          Text(
+            strings.noSessions,
+            key: const Key('counts.sessions.none'),
+            style: muted,
+          ),
+        if (counted.isNotEmpty)
+          CpCard(
+            child: CpRowGroup(
               children: [
-                Semantics(
-                  header: true,
-                  child: Text(
-                    strings.wholeEvent,
-                    style: theme.textTheme.titleMedium,
+                for (final (s, tally) in counted)
+                  ExpansionTile(
+                    key: Key('counts.session.${s.id}'),
+                    // No extra lines above and below an opened session.
+                    shape: const Border(),
+                    collapsedShape: const Border(),
+                    tilePadding: EdgeInsets.symmetric(horizontal: cp.space.lg),
+                    title: Text(
+                      s.title,
+                      style: cp.type.titleSmall.copyWith(color: cp.colors.text),
+                    ),
+                    subtitle: Text(
+                      sessionTimeLabel(event, s, withDay: true),
+                      style: cp.type.bodySmall.copyWith(
+                        color: cp.colors.textMuted,
+                      ),
+                    ),
+                    trailing: Text(
+                      '${tally.total}',
+                      key: Key('counts.session.${s.id}.total'),
+                      style: cp.type.titleLarge.copyWith(color: cp.colors.text),
+                    ),
+                    childrenPadding: EdgeInsets.fromLTRB(
+                      cp.space.lg,
+                      0,
+                      cp.space.lg,
+                      cp.space.md,
+                    ),
+                    expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: _breakdown(
+                      tally,
+                      's.${s.id}',
+                      categories,
+                      fields,
+                    ),
                   ),
-                ),
-                Text(
-                  '${strings.people(stats.event.total)} · '
-                  '${strings.groups(stats.groups, event.words.other('group'))}',
-                  key: const Key('counts.event.total'),
-                  style: theme.textTheme.headlineSmall,
-                ),
-                ..._breakdown(stats.event, 'event', categories, fields),
               ],
             ),
           ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        Semantics(
-          header: true,
-          child: Text(
-            strings.sessionsHeading,
-            style: theme.textTheme.titleMedium,
-          ),
-        ),
-        if (stats.sessions.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-            child: Text(
-              strings.noSessions,
-              key: const Key('counts.sessions.none'),
-            ),
-          ),
-        for (final s in sessions)
-          if (stats.sessions[s.id] case final tally?)
-            ExpansionTile(
-              key: Key('counts.session.${s.id}'),
-              tilePadding: EdgeInsets.zero,
-              title: Text(s.title),
-              subtitle: Text(sessionTimeLabel(event, s, withDay: true)),
-              trailing: Text(
-                '${tally.total}',
-                key: Key('counts.session.${s.id}.total'),
-                style: theme.textTheme.titleLarge,
-              ),
-              childrenPadding: const EdgeInsets.only(bottom: AppSpacing.md),
-              expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
-              children: _breakdown(tally, 's.${s.id}', categories, fields),
-            ),
       ],
     );
   }
@@ -478,21 +505,56 @@ class _CountsScreenState extends ConsumerState<CountsScreen> {
     return freezes.where((f) => f.id == _freezeId).firstOrNull ?? freezes.first;
   }
 
+  /// Picks which freeze to compare with.
+  Future<void> _pickFreeze(
+    List<FrozenCounts> freezes,
+    FrozenCounts current,
+    String Function(FrozenCounts) label,
+  ) async {
+    final cp = context.cp;
+    final picked = await showCpSheet<String>(
+      context: context,
+      title: context.strings.counts.earlierFreezes,
+      builder: (sheet) => CpCard(
+        child: CpRowGroup(
+          children: [
+            for (final f in freezes)
+              CpListRow(
+                key: Key('counts.frozen.pick.${f.id}'),
+                title: label(f),
+                selected: f.id == current.id,
+                trailing: f.id == current.id
+                    ? Icon(
+                        CpIcons.statusDone,
+                        size: cp.sizes.iconMd,
+                        color: cp.colors.accent,
+                      )
+                    : const SizedBox.shrink(),
+                onTap: () => Navigator.of(sheet).pop(f.id),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked != null && mounted) setState(() => _freezeId = picked);
+  }
+
   /// The freeze to compare with and what changed since (Req 54).
-  List<Widget> _freezeSection(
+  Widget? _freezeCard(
     EventStats stats,
     List<CustomField> fields,
     List<SessionModel> sessions,
   ) {
+    final cp = context.cp;
     final strings = context.strings.counts;
-    final theme = Theme.of(context);
     final freezes =
         ref.watch(countFreezesProvider(widget.event.id)).value ?? const [];
     final freeze = _chosenFreeze(freezes);
-    if (freeze == null) return const [];
+    if (freeze == null) return null;
     String when(FrozenCounts f) => f.frozenAt == null
         ? ''
         : DateFormat.MMMd().add_jm().format(f.frozenAt!.toLocal());
+    String label(FrozenCounts f) => strings.frozenOn(when(f), f.label);
     final changes = countChanges(
       frozen: freeze.stats,
       current: stats,
@@ -502,61 +564,51 @@ class _CountsScreenState extends ConsumerState<CountsScreen> {
       includePrivate: true,
       labels: _labels(),
     );
-    return [
-      const SizedBox(height: AppSpacing.lg),
-      Card(
-        key: const Key('counts.frozen'),
-        margin: EdgeInsets.zero,
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            spacing: AppSpacing.sm,
-            children: [
-              if (freezes.length > 1)
-                DropdownButtonFormField<String>(
-                  key: const Key('counts.frozen.pick'),
-                  initialValue: freeze.id,
-                  isExpanded: true,
-                  decoration: InputDecoration(
-                    labelText: strings.earlierFreezes,
-                    border: const OutlineInputBorder(),
-                  ),
-                  items: [
-                    for (final f in freezes)
-                      DropdownMenuItem(
-                        value: f.id,
-                        child: Text(strings.frozenOn(when(f), f.label)),
-                      ),
-                  ],
-                  onChanged: (id) => setState(() => _freezeId = id),
-                )
-              else
-                Text(
-                  strings.frozenOn(when(freeze), freeze.label),
-                  key: const Key('counts.frozen.when'),
-                  style: theme.textTheme.titleSmall,
-                ),
-              Semantics(
-                header: true,
-                child: Text(
-                  strings.changesHeading,
-                  style: theme.textTheme.titleMedium,
-                ),
-              ),
-              if (changes.isEmpty)
-                Text(strings.noChanges, key: const Key('counts.changes.none'))
-              else
-                for (final (i, c) in changes.indexed)
-                  Text(
-                    '${c.where} · ${strings.change(c.what, c.before, c.after)}',
-                    key: Key('counts.changes.$i'),
-                  ),
-            ],
+    final body = cp.type.bodyMedium.copyWith(color: cp.colors.text);
+    return CpCard(
+      key: const Key('counts.frozen'),
+      padding: EdgeInsets.all(cp.space.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: cp.space.sm,
+        children: [
+          if (freezes.length > 1)
+            CpSelectField(
+              fieldKey: const Key('counts.frozen.pick'),
+              label: strings.earlierFreezes,
+              value: label(freeze),
+              leadingIcon: CpIcons.lock,
+              onTap: () => _pickFreeze(freezes, freeze, label),
+            )
+          else
+            Text(
+              label(freeze),
+              key: const Key('counts.frozen.when'),
+              style: cp.type.titleSmall.copyWith(color: cp.colors.text),
+            ),
+          Semantics(
+            header: true,
+            child: Text(
+              strings.changesHeading,
+              style: cp.type.titleMedium.copyWith(color: cp.colors.text),
+            ),
           ),
-        ),
+          if (changes.isEmpty)
+            Text(
+              strings.noChanges,
+              key: const Key('counts.changes.none'),
+              style: cp.type.bodyMedium.copyWith(color: cp.colors.textMuted),
+            )
+          else
+            for (final (i, c) in changes.indexed)
+              Text(
+                '${c.where} · ${strings.change(c.what, c.before, c.after)}',
+                key: Key('counts.changes.$i'),
+                style: body,
+              ),
+        ],
       ),
-    ];
+    );
   }
 
   /// Counts by category, then by each field, as rows of label and number.
@@ -566,17 +618,28 @@ class _CountsScreenState extends ConsumerState<CountsScreen> {
     Map<String, String> categories,
     List<CustomField> fields,
   ) {
+    final cp = context.cp;
     final strings = context.strings.counts;
-    final theme = Theme.of(context);
+    final heading = cp.type.labelLarge.copyWith(color: cp.colors.textMuted);
     Widget row(String label, int n, String key) => Semantics(
       label: '$label: $n',
       excludeSemantics: true,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
+        padding: EdgeInsets.symmetric(vertical: cp.space.xs / 2),
         child: Row(
+          spacing: cp.space.md,
           children: [
-            Expanded(child: Text(label)),
-            Text('$n', key: Key(key), style: theme.textTheme.titleSmall),
+            Expanded(
+              child: Text(
+                label,
+                style: cp.type.bodyMedium.copyWith(color: cp.colors.text),
+              ),
+            ),
+            Text(
+              '$n',
+              key: Key(key),
+              style: cp.type.titleSmall.copyWith(color: cp.colors.text),
+            ),
           ],
         ),
       ),
@@ -589,7 +652,10 @@ class _CountsScreenState extends ConsumerState<CountsScreen> {
 
     return [
       if (tally.byCategory.isNotEmpty) ...[
-        Text(strings.byCategory, style: theme.textTheme.labelLarge),
+        Padding(
+          padding: EdgeInsets.only(top: cp.space.sm),
+          child: Text(strings.byCategory, style: heading),
+        ),
         for (final e in tally.categoriesSorted)
           row(
             e.key == noAnswer ? strings.noCategory : categories[e.key] ?? e.key,
@@ -599,8 +665,10 @@ class _CountsScreenState extends ConsumerState<CountsScreen> {
       ],
       for (final f in fields)
         if (tally.byField[f.id]?.isNotEmpty ?? false) ...[
-          const SizedBox(height: AppSpacing.sm),
-          Text(f.label, style: theme.textTheme.labelLarge),
+          Padding(
+            padding: EdgeInsets.only(top: cp.space.sm),
+            child: Text(f.label, style: heading),
+          ),
           for (final e in tally.sorted(f.id))
             row(
               option(f, e.key),
@@ -609,6 +677,19 @@ class _CountsScreenState extends ConsumerState<CountsScreen> {
             ),
         ],
     ];
+  }
+}
+
+/// A row's icon in the export sheet.
+class _RowIcon extends StatelessWidget {
+  const _RowIcon(this.icon);
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final cp = context.cp;
+    return Icon(icon, size: cp.sizes.iconMd, color: cp.colors.textMuted);
   }
 }
 
@@ -633,36 +714,25 @@ class _FreezeDialogState extends State<_FreezeDialog> {
   @override
   Widget build(BuildContext context) {
     final strings = context.strings.counts;
-    return AlertDialog(
-      title: Text(strings.freezeTitle),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          spacing: AppSpacing.md,
-          children: [
-            Text(strings.freezeBody),
-            TextField(
-              key: const Key('counts.freeze.label'),
-              controller: _label,
-              maxLength: 80,
-              decoration: InputDecoration(
-                labelText: strings.freezeLabel,
-                border: const OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
+    return CpDialog(
+      title: strings.freezeTitle,
+      message: strings.freezeBody,
+      content: CpTextField(
+        fieldKey: const Key('counts.freeze.label'),
+        label: strings.freezeLabel,
+        controller: _label,
+        maxLength: 80,
       ),
       actions: [
-        TextButton(
+        CpButton.text(
           key: const Key('counts.freeze.cancel'),
+          label: strings.cancel,
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(strings.cancel),
         ),
-        FilledButton(
+        CpButton(
           key: const Key('counts.freeze.confirm'),
+          label: strings.freezeConfirm,
           onPressed: () => Navigator.of(context).pop(_label.text.trim()),
-          child: Text(strings.freezeConfirm),
         ),
       ],
     );

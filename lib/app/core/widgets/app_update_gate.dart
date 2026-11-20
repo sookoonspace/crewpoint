@@ -1,11 +1,10 @@
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/version/app_version_check.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
-import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -33,69 +32,77 @@ class AppUpdateScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final cp = context.cp;
     final strings = context.strings.update;
-    final theme = Theme.of(context);
     final isWeb = ref.watch(appPlatformProvider) == AppPlatform.web;
     final storeUrl = requirement.storeUrl;
 
     final Widget action;
     if (isWeb) {
-      action = PrimaryButton(
+      action = CpButton(
         key: const Key('app.update.reload'),
         label: strings.reload,
+        icon: CpIcons.actionRetry,
+        expand: true,
         onPressed: () => ref.read(pageReloaderProvider).reload(),
       );
     } else if (storeUrl != null) {
-      action = PrimaryButton(
+      action = CpButton(
         key: const Key('app.update.store'),
         label: strings.openStore,
+        icon: CpIcons.actionOpenInNew,
+        expand: true,
         onPressed: () => ref.read(urlLauncherProvider).launch(storeUrl),
       );
     } else {
       action = Text(
         strings.noStoreLink,
         textAlign: TextAlign.center,
-        style: theme.textTheme.bodyMedium,
+        style: cp.type.bodyMedium.copyWith(color: cp.colors.textMuted),
       );
     }
 
     return Scaffold(
       key: const Key('app.update.screen'),
+      backgroundColor: cp.colors.background,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(
-              horizontal: Breakpoints.screenHorizontalPadding(context),
-              vertical: AppSpacing.xl,
-            ),
+            padding: EdgeInsets.all(cp.space.xl),
             child: ContentMaxWidth(
-              maxWidth: Breakpoints.compactMax,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    AppIcons.appUpdate,
-                    size: 64,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  Semantics(
-                    header: true,
-                    child: Text(
-                      strings.title,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.headlineSmall,
+              maxWidth: cp.sizes.signInColumn,
+              child: CpCard(
+                padding: EdgeInsets.all(cp.space.xl),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  spacing: cp.space.lg,
+                  children: [
+                    Icon(
+                      CpIcons.appUpdate,
+                      size: cp.sizes.iconHero,
+                      color: cp.colors.accent,
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    strings.body,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyLarge,
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  action,
-                ],
+                    Semantics(
+                      header: true,
+                      child: Text(
+                        strings.title,
+                        textAlign: TextAlign.center,
+                        style: cp.type.headlineSmall.copyWith(
+                          color: cp.colors.text,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      strings.body,
+                      textAlign: TextAlign.center,
+                      style: cp.type.bodyLarge.copyWith(
+                        color: cp.colors.textMuted,
+                      ),
+                    ),
+                    action,
+                  ],
+                ),
               ),
             ),
           ),

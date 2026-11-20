@@ -538,6 +538,30 @@ void main() {
     });
   });
 
+  testWidgets('a save bar is only as tall as its button, at the end', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: CpTheme.light(),
+        home: Scaffold(
+          body: const SizedBox.shrink(),
+          bottomNavigationBar: CpSaveBar(
+            child: CpButton(
+              key: const Key('test.save'),
+              label: 'Save',
+              onPressed: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+    final bar = tester.getRect(find.byType(CpSaveBar));
+    final button = tester.getRect(find.byKey(const Key('test.save')));
+    expect(bar.height, lessThan(button.height * 2));
+    expect(button.right, greaterThan(bar.center.dx));
+  });
+
   group('showCpTextPrompt', () {
     Future<Future<String?>> pumpAndOpen(
       WidgetTester tester, {

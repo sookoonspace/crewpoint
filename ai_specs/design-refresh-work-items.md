@@ -620,7 +620,7 @@ Event settings, members, roles, crews, transfer, expense access and the invite s
 - [x] Existing journey tests keep passing, with selectors changed only where a widget's key must change (Testing Strategy 8); every new interactive widget has a `domain.feature.action` key.
 - [x] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
 - [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
-- [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
+- [x] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 
 #### Covers
 - User Stories: 9
@@ -642,12 +642,12 @@ Counts, fields, import and link requests; profile, notifications and privacy; on
 - `counts_screen.dart`, `fields_screen.dart`, `import_screen.dart`, `link_requests_screen.dart`; `profile_screen.dart`, `edit_profile_screen.dart`, `notification_settings_screen.dart`, `privacy_dashboard_screen.dart`, `markdown_render_screen.dart`; `onboarding_screen.dart`, `auth_gate_screen.dart`, `app_update_gate.dart`; `dev_tools_screen.dart`.
 
 #### Acceptance criteria
-- [ ] Every listed screen follows the design system and the Person form pattern for forms.
-- [ ] Permission gating, exports and the update gate are unchanged.
-- [ ] The screens use only design-system components and tokens (Req 14); their files are removed from the guard test's temporary list.
-- [ ] Existing journey tests keep passing, with selectors changed only where a widget's key must change (Testing Strategy 8); every new interactive widget has a `domain.feature.action` key.
-- [ ] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
-- [ ] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
+- [x] Every listed screen follows the design system and the Person form pattern for forms.
+- [x] Permission gating, exports and the update gate are unchanged.
+- [x] The screens use only design-system components and tokens (Req 14); their files are removed from the guard test's temporary list.
+- [x] Existing journey tests keep passing, with selectors changed only where a widget's key must change (Testing Strategy 8); every new interactive widget has a `domain.feature.action` key.
+- [x] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
+- [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
 - [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 
 #### Covers

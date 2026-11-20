@@ -3,9 +3,9 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:crewpoint_app/app/core/constants/app_radius.dart';
-import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 
@@ -20,14 +20,15 @@ class SocialAuthButtons extends ConsumerWidget {
         : 'assets/images/auth/Apple_logo_black.svg';
 
     return Column(
-      spacing: AppSpacing.md,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: context.cp.space.md,
       children: [
         _SocialButton(
           buttonKey: const Key('auth.button.google'),
           iconKey: const Key('auth.button.google.icon'),
           label: context.strings.auth.continueWithGoogle,
           svgAsset: 'assets/images/auth/google_logo.svg',
-          fallbackIcon: Icons.account_circle_outlined,
+          fallbackIcon: CpIcons.authGoogle,
           onPressed: () => ref.read(authProvider.notifier).signInWithGoogle(),
         ),
         _SocialButton(
@@ -35,7 +36,7 @@ class SocialAuthButtons extends ConsumerWidget {
           iconKey: const Key('auth.button.apple.icon'),
           label: context.strings.auth.continueWithApple,
           svgAsset: appleAsset,
-          fallbackIcon: Icons.apple,
+          fallbackIcon: CpIcons.authApple,
           onPressed: () => ref.read(authProvider.notifier).signInWithApple(),
         ),
       ],
@@ -62,34 +63,25 @@ class _SocialButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    final side = context.cp.sizes.iconMd;
+    return CpButton.secondary(
       key: buttonKey,
-      width: double.infinity,
-      height: 48,
-      child: OutlinedButton.icon(
-        onPressed: onPressed,
-        icon: SizedBox(
-          width: AppSizes.iconLg,
-          height: AppSizes.iconLg,
-          child: SvgPicture.asset(
-            svgAsset,
-            key: iconKey,
-            width: AppSizes.iconLg,
-            height: AppSizes.iconLg,
-            placeholderBuilder: (_) {
-              developer.log(
-                'Brand SVG failed to load: $svgAsset',
-                name: 'auth.brand',
-              );
-              return Icon(fallbackIcon, size: AppSizes.iconLg);
-            },
-          ),
-        ),
-        label: Text(label),
-        style: OutlinedButton.styleFrom(
-          shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
-        ),
+      label: label,
+      expand: true,
+      leading: SvgPicture.asset(
+        svgAsset,
+        key: iconKey,
+        width: side,
+        height: side,
+        placeholderBuilder: (_) {
+          developer.log(
+            'Brand SVG failed to load: $svgAsset',
+            name: 'auth.brand',
+          );
+          return Icon(fallbackIcon, size: side);
+        },
       ),
+      onPressed: onPressed,
     );
   }
 }

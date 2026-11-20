@@ -26,18 +26,21 @@ class CpButton extends StatelessWidget {
     required this.onPressed,
     this.variant = CpButtonVariant.primary,
     this.icon,
+    this.leading,
     this.busy = false,
     this.expand = false,
-  });
+  }) : assert(icon == null || leading == null, 'Give an icon or a leading.');
 
   const CpButton.secondary({
     super.key,
     required this.label,
     required this.onPressed,
     this.icon,
+    this.leading,
     this.busy = false,
     this.expand = false,
-  }) : variant = CpButtonVariant.secondary;
+  }) : assert(icon == null || leading == null, 'Give an icon or a leading.'),
+       variant = CpButtonVariant.secondary;
 
   const CpButton.text({
     super.key,
@@ -46,7 +49,8 @@ class CpButton extends StatelessWidget {
     this.icon,
     this.busy = false,
     this.expand = false,
-  }) : variant = CpButtonVariant.text;
+  }) : leading = null,
+       variant = CpButtonVariant.text;
 
   const CpButton.destructive({
     super.key,
@@ -55,12 +59,17 @@ class CpButton extends StatelessWidget {
     this.icon,
     this.busy = false,
     this.expand = false,
-  }) : variant = CpButtonVariant.destructive;
+  }) : leading = null,
+       variant = CpButtonVariant.destructive;
 
   final String label;
   final VoidCallback? onPressed;
   final CpButtonVariant variant;
   final IconData? icon;
+
+  /// A picture before the label in place of [icon], such as a brand's
+  /// logo, sized to the icon.
+  final Widget? leading;
 
   /// Working: shows a spinner and ignores taps.
   final bool busy;
@@ -112,7 +121,7 @@ class CpButton extends StatelessWidget {
       textStyle: WidgetStatePropertyAll(cp.type.labelLarge),
       elevation: const WidgetStatePropertyAll(0),
     );
-    final leading = busy
+    final lead = busy
         ? SizedBox.square(
             dimension: cp.sizes.iconMd - 2,
             child: CircularProgressIndicator(
@@ -120,6 +129,8 @@ class CpButton extends StatelessWidget {
               color: fg,
             ),
           )
+        : leading != null
+        ? SizedBox.square(dimension: cp.sizes.iconMd, child: leading)
         : icon == null
         ? null
         : Icon(icon, size: cp.sizes.iconMd);
@@ -131,7 +142,7 @@ class CpButton extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         spacing: cp.space.sm,
         children: [
-          ?leading,
+          ?lead,
           Flexible(child: Text(label, textAlign: TextAlign.center)),
         ],
       ),

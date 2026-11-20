@@ -3,25 +3,21 @@ import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_radius.dart';
-import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/env/app_flavor.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
-import 'package:crewpoint_app/app/core/widgets/network_image_with_placeholder.dart';
-import 'package:crewpoint_app/app/core/widgets/settings_row.dart';
-import 'package:crewpoint_app/app/core/widgets/stat_triplet.dart';
 import 'package:crewpoint_app/app/core/router/app_router.dart';
+import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/budget/application/global_balance_ledger_provider.dart';
 import 'package:crewpoint_app/app/features/profile/application/current_user_doc_provider.dart';
 import 'package:crewpoint_app/app/core/theme/theme_mode_provider.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/widgets/delete_account_dialog.dart';
+import 'package:crewpoint_app/app/features/profile/presentation/widgets/profile_photo.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/widgets/sign_out_sheet.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/widgets/theme_switcher_sheet.dart';
 import 'package:crewpoint_app/app/features/tasks/application/my_assigned_tasks_provider.dart';
@@ -39,6 +35,9 @@ String formatAmountsYouOwe(LedgerSummary ledger) {
   return owed.isEmpty ? r'$0' : owed.join(' + ');
 }
 
+/// The signed-in person's profile tab (Spec #186): who they are, their
+/// figures at a glance, settings, payment, then signing out and deleting
+/// the account.
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
@@ -61,160 +60,109 @@ class ProfileScreen extends ConsumerWidget {
         ? const AsyncValue<LedgerSummary>.loading()
         : ref.watch(globalBalanceLedgerProvider(uid));
 
-    String? eventsValue() => eventsAsync.maybeWhen(
-      data: (e) => e.length.toString(),
-      orElse: () => null,
-    );
-    String? tasksValue() => tasksAsync.maybeWhen(
-      data: (rows) => rows.length.toString(),
-      orElse: () => null,
-    );
-    String? owedValue() =>
-        ledgerAsync.maybeWhen(data: formatAmountsYouOwe, orElse: () => null);
+    // A dash while a figure is still loading.
+    const loading = '—';
+    final events = eventsAsync.value?.length.toString() ?? loading;
+    final tasks = tasksAsync.value?.length.toString() ?? loading;
+    final owed = ledgerAsync.hasValue
+        ? formatAmountsYouOwe(ledgerAsync.requireValue)
+        : loading;
 
+    final cp = context.cp;
     final s = context.strings.profile;
 
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(child: _HeroCard(user: user)),
-          SliverToBoxAdapter(
-            child: KeyedSubtree(
-              key: const Key('profile.statTriplet'),
-              child: StatTriplet(
-                cells: [
-                  StatCell(value: eventsValue(), label: s.statsEvents),
-                  StatCell(value: tasksValue(), label: s.statsTasks),
-                  StatCell(value: owedValue(), label: s.statsOwed),
-                ],
-              ),
-            ),
-          ),
-          SliverPadding(
-            padding: EdgeInsets.symmetric(
-              horizontal: Breakpoints.screenHorizontalPadding(context),
-            ),
-            sliver: SliverConstrainedCrossAxis(
-              maxExtent: 720,
-              // Box adapter wrapping a Column → entire body materialises
-              // eagerly. Profile is short (≤1200 px); the off-fold
-              // perf cost is negligible and existing widget tests that
-              // find Sign Out / Danger Zone / version footer by key
-              // without scrolling continue to pass after the StatTriplet
-              // was inserted above this sliver.
-              sliver: SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+      backgroundColor: cp.colors.background,
+      appBar: CpTopBar(title: s.heroTitle),
+      body: ListView(
+        padding: EdgeInsets.fromLTRB(
+          cp.space.lg,
+          cp.space.sm,
+          cp.space.lg,
+          cp.space.xxl,
+        ),
+        children: [
+          ContentMaxWidth(
+            maxWidth: cp.sizes.phoneColumn,
+            child: Column(
+              key: const Key('profile.body.clamped'),
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: cp.space.lg,
+              children: [
+                _PersonCard(user: user),
+                CpStatGrid(
+                  key: const Key('profile.statTriplet'),
                   children: [
-                    const SizedBox(
-                      key: Key('profile.body.clamped'),
-                      height: AppSpacing.lg,
+                    CpStatCard(
+                      icon: CpIcons.event,
+                      label: s.statsEvents,
+                      value: events,
                     ),
-
-                    // Settings
-                    _SectionHeader(label: s.settingsSection),
-                    const SizedBox(height: AppSpacing.sm),
-                    _SectionCard(
-                      children: [
-                        SettingsRow(
-                          key: const Key('profile.privacyDashboard.tile'),
-                          icon: AppIcons.privacy,
-                          title: s.privacyDashboard,
-                          onTap: () => context.push(AppRoutes.privacyDashboard),
-                        ),
-                        const Divider(
-                          height: 1,
-                          indent: AppSizes.settingsRowIndent,
-                        ),
-                        // Inline ListTile so the SettingsRow.trailing
-                        // extension can land in Phase 4 without blocking
-                        // this vertical slice.
-                        _ThemeRow(),
-                        const Divider(
-                          height: 1,
-                          indent: AppSizes.settingsRowIndent,
-                        ),
-                        SettingsRow(
-                          key: const Key('profile.notifications.tile'),
-                          icon: AppIcons.notifications,
-                          title: s.notifications,
-                          onTap: () =>
-                              context.push(AppRoutes.notificationSettings),
-                        ),
-                        // Dev-flavor only — diagnostic console for FCM
-                        // state, function calls, etc. Hidden on stg/prod
-                        // builds at compile time via `AppFlavor.current`.
-                        if (AppFlavor.current == AppFlavor.dev) ...[
-                          const Divider(
-                            height: 1,
-                            indent: AppSizes.settingsRowIndent,
-                          ),
-                          SettingsRow(
-                            key: const Key('profile.devTools.tile'),
-                            icon: Icons.build_circle_outlined,
-                            title: 'Dev tools',
-                            onTap: () => context.push(AppRoutes.devTools),
-                          ),
-                        ],
-                      ],
+                    CpStatCard(
+                      icon: CpIcons.tasks,
+                      label: s.statsTasks,
+                      value: tasks,
                     ),
-
-                    const SizedBox(height: AppSpacing.xl),
-
-                    // Payment
-                    _SectionHeader(label: s.paymentSection),
-                    const SizedBox(height: AppSpacing.sm),
-                    _PaymentCard(user: user),
-
-                    // Sign Out — promoted out of ACCOUNT section to read as
-                    // a clear destructive-but-recoverable action; sits above
-                    // the permanent Delete Account in Danger Zone.
-                    const SizedBox(height: AppSpacing.xl),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.xl,
-                      ),
-                      child: OutlinedButton.icon(
-                        key: const Key('profile.signOut.button'),
-                        onPressed: () => SignOutSheet.show(
-                          context: context,
-                          onSignOut: () =>
-                              ref.read(authProvider.notifier).signOut(),
-                        ),
-                        icon: const Icon(AppIcons.actionLogout),
-                        label: Text(s.signOut),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.terracotta,
-                          side: const BorderSide(
-                            color: AppColors.terracotta,
-                            width: 1.5,
-                          ),
-                          shape: const StadiumBorder(),
-                          minimumSize: const Size.fromHeight(48),
-                        ),
-                      ),
+                    CpStatCard(
+                      icon: CpIcons.budget,
+                      label: s.statsOwed,
+                      value: owed,
                     ),
-
-                    // Danger zone
-                    const SizedBox(height: AppSpacing.xxxl),
-                    _DangerCard(
-                      // The dialog owns the deletion flow end-to-end:
-                      // - Onboarding flag is preserved inside
-                      //   AccountDeletionService._clearLocalData (Phase 1).
-                      // - Navigation to /auth happens via the global
-                      //   GoRouter redirect when AuthNotifier flips to
-                      //   Unauthenticated after `auth.deleteUser` revokes
-                      //   the client token. Embracing the global redirect
-                      //   avoids racing it from inside the dialog.
-                      onTap: () => DeleteAccountDialog.show(context: context),
-                    ),
-
-                    const SizedBox(height: AppSpacing.xxl),
-                    const _AppVersion(),
-                    const SizedBox(height: AppSpacing.xl),
                   ],
                 ),
-              ),
+                CpSectionHeader(title: s.settingsSection),
+                CpCard(
+                  child: CpRowGroup(
+                    children: [
+                      CpListRow(
+                        key: const Key('profile.privacyDashboard.tile'),
+                        leading: const _RowIcon(CpIcons.privacy),
+                        title: s.privacyDashboard,
+                        onTap: () => context.push(AppRoutes.privacyDashboard),
+                      ),
+                      const _ThemeRow(),
+                      CpListRow(
+                        key: const Key('profile.notifications.tile'),
+                        leading: const _RowIcon(CpIcons.notifications),
+                        title: s.notifications,
+                        onTap: () =>
+                            context.push(AppRoutes.notificationSettings),
+                      ),
+                      // Dev flavor only: hidden on stg and prod builds.
+                      if (AppFlavor.current == AppFlavor.dev)
+                        CpListRow(
+                          key: const Key('profile.devTools.tile'),
+                          leading: const _RowIcon(CpIcons.devTools),
+                          title: s.devTools,
+                          onTap: () => context.push(AppRoutes.devTools),
+                        ),
+                    ],
+                  ),
+                ),
+                CpSectionHeader(title: s.paymentSection),
+                _PaymentCard(user: user),
+                SizedBox(height: cp.space.sm),
+                CpButton.secondary(
+                  key: const Key('profile.signOut.button'),
+                  label: s.signOut,
+                  icon: CpIcons.actionLogout,
+                  expand: true,
+                  onPressed: () => SignOutSheet.show(
+                    context: context,
+                    onSignOut: () => ref.read(authProvider.notifier).signOut(),
+                  ),
+                ),
+                // The dialog owns deletion end to end; the router's redirect
+                // moves to sign-in once the account is gone.
+                CpButton.destructive(
+                  key: const Key('profile.deleteAccount.button'),
+                  label: s.deleteAccount,
+                  icon: CpIcons.actionDeletePermanent,
+                  expand: true,
+                  onPressed: () => DeleteAccountDialog.show(context: context),
+                ),
+                const _AppVersion(),
+              ],
             ),
           ),
         ],
@@ -223,166 +171,88 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
-/// Gradient hero with soft avatar glow.
-class _HeroCard extends StatelessWidget {
-  const _HeroCard({this.user});
+/// A settings row's icon.
+class _RowIcon extends StatelessWidget {
+  const _RowIcon(this.icon);
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final cp = context.cp;
+    return Icon(icon, size: cp.sizes.iconMd, color: cp.colors.textMuted);
+  }
+}
+
+/// The person: photo or initials, name, email and Edit profile.
+class _PersonCard extends StatelessWidget {
+  const _PersonCard({this.user});
 
   final AppUser? user;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: .topCenter,
-          end: .bottomCenter,
-          colors: [AppColors.charcoal, AppColors.charcoalDark],
-        ),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(32),
-          bottomRight: Radius.circular(32),
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.xl,
-            AppSpacing.lg,
-            AppSpacing.xl,
-            AppSpacing.xxl,
-          ),
-          child: Column(
+    final cp = context.cp;
+    final s = context.strings.profile;
+    final name = user?.displayName ?? s.heroUserFallback;
+    final email = user?.email ?? '';
+    return CpCard(
+      padding: EdgeInsets.all(cp.space.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: cp.space.lg,
+        children: [
+          Row(
+            spacing: cp.space.lg,
             children: [
-              Row(
-                children: [
-                  Text(
-                    context.strings.profile.heroTitle,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleLarge?.copyWith(color: AppColors.offWhite),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.xxl),
-
-              // Avatar with soft sage glow
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.sage.withValues(alpha: 0.4),
-                      blurRadius: 12,
-                      spreadRadius: 2,
+              ProfilePhoto(url: user?.photoUrl, name: name),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: cp.space.xs,
+                  children: [
+                    Text(
+                      name,
+                      style: cp.type.titleLarge.copyWith(color: cp.colors.text),
                     ),
+                    if (email.isNotEmpty)
+                      Text(
+                        email,
+                        style: cp.type.bodyMedium.copyWith(
+                          color: cp.colors.textMuted,
+                        ),
+                      ),
                   ],
                 ),
-                child: NetworkImageWithPlaceholder.avatar(
-                  imageUrl: user?.photoUrl,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-
-              // Name
-              Text(
-                user?.displayName ?? context.strings.profile.heroUserFallback,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: AppColors.offWhite,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-
-              // Email
-              Text(
-                user?.email ?? '',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: AppColors.sageLight),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-
-              // Edit Profile — filled sage pill
-              ElevatedButton(
-                onPressed: () => context.push('/profile/edit'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.sage,
-                  foregroundColor: AppColors.white,
-                  shape: const StadiumBorder(),
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.xl,
-                    vertical: AppSpacing.md,
-                  ),
-                ),
-                child: Text(context.strings.profile.editProfileCta),
               ),
             ],
           ),
-        ),
+          CpButton.secondary(
+            key: const Key('profile.edit.open'),
+            label: s.editProfileCta,
+            icon: CpIcons.actionEdit,
+            expand: true,
+            onPressed: () => context.push('/profile/edit'),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: AppSpacing.xs),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-          letterSpacing: 1.2,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Card(
-      elevation: 0,
-      color: colors.surfaceContainerHighest,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.borderLg,
-        side: BorderSide(
-          color: colors.outline.withValues(alpha: 0.4),
-          width: 0.5,
-        ),
-      ),
-      child: Column(mainAxisSize: .min, children: children),
-    );
-  }
-}
-
-/// Shows payment method + handle, or "Add payment method" prompt.
+/// The payment method and handle, or a prompt to add one.
 class _PaymentCard extends StatelessWidget {
   const _PaymentCard({this.user});
 
   final AppUser? user;
 
   IconData _methodIcon(String? method) => switch (method) {
-    'venmo' => AppIcons.paymentVenmo,
-    'zelle' => AppIcons.paymentZelle,
-    'cashapp' => AppIcons.paymentCashApp,
-    'paypal' => AppIcons.paymentPayPal,
-    'cash' => AppIcons.paymentCash,
-    _ => AppIcons.paymentGeneric,
+    'venmo' => CpIcons.paymentVenmo,
+    'zelle' => CpIcons.paymentZelle,
+    'cashapp' => CpIcons.paymentCashApp,
+    'paypal' => CpIcons.paymentPayPal,
+    'cash' => CpIcons.paymentCash,
+    _ => CpIcons.paymentGeneric,
   };
 
   String _methodLabel(ProfileStrings s, String? method) => switch (method) {
@@ -397,90 +267,36 @@ class _PaymentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasPayment =
-        user?.paymentMethod != null && user!.paymentMethod!.isNotEmpty;
+    final cp = context.cp;
+    final method = user?.paymentMethod;
+    final hasPayment = method != null && method.isNotEmpty;
     final s = context.strings.profile;
-
-    final colors = Theme.of(context).colorScheme;
-    return Card(
-      elevation: 0,
-      color: colors.surfaceContainerHighest,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.borderLg,
-        side: BorderSide(
-          color: colors.outline.withValues(alpha: 0.4),
-          width: 0.5,
-        ),
-      ),
-      child: ListTile(
-        leading: Icon(
-          hasPayment
-              ? _methodIcon(user?.paymentMethod)
-              : AppIcons.actionAddCircle,
-          color: hasPayment ? colors.onSurfaceVariant : AppColors.sage,
-        ),
+    return CpCard(
+      child: CpListRow(
+        key: const Key('profile.payment.tile'),
+        leading: hasPayment
+            ? _RowIcon(_methodIcon(method))
+            : Icon(
+                CpIcons.actionAddCircle,
+                size: cp.sizes.iconMd,
+                color: cp.colors.accent,
+              ),
         title: hasPayment
-            ? Text(
-                '${_methodLabel(s, user?.paymentMethod)}: ${user?.paymentHandle ?? ''}',
-                style: TextStyle(color: colors.onSurface),
-              )
-            : Text(
-                s.addPaymentMethod,
-                style: const TextStyle(color: AppColors.sage),
-              ),
-        subtitle: hasPayment
-            ? null
-            : Text(
-                s.addPaymentMethodSubtitle,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
-              ),
-        trailing: Icon(AppIcons.chevronRight, color: colors.onSurfaceVariant),
+            ? '${_methodLabel(s, method)}: ${user?.paymentHandle ?? ''}'
+            : s.addPaymentMethod,
+        subtitle: hasPayment ? null : s.addPaymentMethodSubtitle,
         onTap: () => context.push('/profile/edit'),
-        shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
-      ),
-    );
-  }
-}
-
-class _DangerCard extends StatelessWidget {
-  const _DangerCard({this.onTap});
-
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.borderLg,
-        side: BorderSide(color: AppColors.terracotta.withValues(alpha: 0.3)),
-      ),
-      child: ListTile(
-        leading: const Icon(
-          AppIcons.actionDeletePermanent,
-          color: AppColors.terracotta,
-        ),
-        title: Text(
-          context.strings.profile.deleteAccount,
-          style: const TextStyle(color: AppColors.terracotta),
-        ),
-        trailing: const Icon(
-          AppIcons.chevronRight,
-          color: AppColors.terracottaLight,
-        ),
-        onTap: onTap,
-        shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
       ),
     );
   }
 }
 
 class _ThemeRow extends ConsumerWidget {
+  const _ThemeRow();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final cp = context.cp;
     final mode = ref.watch(themeModeProvider);
     final s = context.strings.profile;
     final label = switch (mode) {
@@ -488,26 +304,43 @@ class _ThemeRow extends ConsumerWidget {
       ThemeMode.light => s.themeModeLight,
       ThemeMode.dark => s.themeModeDark,
     };
-    final colors = Theme.of(context).colorScheme;
-    return SettingsRow(
-      key: const Key('profile.theme.row'),
-      icon: Icons.brightness_6_outlined,
-      title: s.themeRowTitle,
-      onTap: () => ThemeSwitcherSheet.show(context),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            key: const Key('profile.theme.row.trailing'),
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final scale = MediaQuery.textScalerOf(context).scale(1);
+        // With large text the choice goes under the title, so neither wraps
+        // mid-word.
+        if (constraints.maxWidth / scale < 260) {
+          return CpListRow(
+            key: const Key('profile.theme.row'),
+            leading: const _RowIcon(CpIcons.theme),
+            title: s.themeRowTitle,
+            subtitle: label,
+            onTap: () => ThemeSwitcherSheet.show(context),
+          );
+        }
+        return CpListRow(
+          key: const Key('profile.theme.row'),
+          leading: const _RowIcon(CpIcons.theme),
+          title: s.themeRowTitle,
+          onTap: () => ThemeSwitcherSheet.show(context),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: cp.space.xs,
+            children: [
+              Text(
+                label,
+                key: const Key('profile.theme.row.trailing'),
+                style: cp.type.bodyMedium.copyWith(color: cp.colors.textMuted),
+              ),
+              Icon(
+                CpIcons.chevronRight,
+                size: cp.sizes.iconMd,
+                color: cp.colors.textMuted,
+              ),
+            ],
           ),
-          const SizedBox(width: AppSpacing.xs),
-          Icon(AppIcons.chevronRight, color: colors.onSurfaceVariant),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -517,19 +350,19 @@ class _AppVersion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
     return FutureBuilder<PackageInfo>(
       future: PackageInfo.fromPlatform(),
       builder: (context, snapshot) {
         final version = snapshot.data?.version ?? '...';
         final buildNumber = snapshot.data?.buildNumber ?? '';
-        return Center(
-          child: Text(
-            context.strings.profile.appVersionLabel(
-              version: version,
-              build: buildNumber,
-            ),
-            style: Theme.of(context).textTheme.bodySmall,
+        return Text(
+          context.strings.profile.appVersionLabel(
+            version: version,
+            build: buildNumber,
           ),
+          textAlign: TextAlign.center,
+          style: cp.type.bodySmall.copyWith(color: cp.colors.textMuted),
         );
       },
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/design/components/cp_logo.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/features/auth/presentation/widgets/email_auth_form.dart';
 import 'package:crewpoint_app/app/features/auth/presentation/widgets/legal_footer.dart';
@@ -19,25 +20,30 @@ class AuthGateScreen extends ConsumerWidget {
     // The legal footer is rendered OUTSIDE the ConstrainedBox so it
     // spans the full viewport width — legal copy reads edge-to-edge —
     // but inside SafeArea so it clears the home indicator on iOS.
+    final cp = context.cp;
     return Scaffold(
+      backgroundColor: cp.colors.background,
       body: SafeArea(
         child: Column(
           children: [
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppSpacing.xl),
+                padding: EdgeInsets.all(cp.space.xl),
                 child: Center(
                   child: ConstrainedBox(
                     key: const Key('auth.gate.column'),
-                    constraints: const BoxConstraints(maxWidth: 480),
-                    child: const Column(
-                      spacing: AppSpacing.xl,
+                    constraints: BoxConstraints(
+                      maxWidth: cp.sizes.signInColumn,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      spacing: cp.space.xl,
                       children: [
-                        SizedBox(height: AppSpacing.xxxl),
-                        _Header(),
-                        SocialAuthButtons(),
-                        _Divider(),
-                        EmailAuthForm(),
+                        SizedBox(height: cp.space.xxl),
+                        const _Header(),
+                        const SocialAuthButtons(),
+                        const _Divider(),
+                        const EmailAuthForm(),
                       ],
                     ),
                   ),
@@ -57,16 +63,23 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
     return Column(
-      spacing: AppSpacing.sm,
+      spacing: cp.space.md,
       children: [
-        Text(
-          context.strings.auth.heroTitle,
-          style: Theme.of(context).textTheme.headlineLarge,
+        CpLogo(size: cp.sizes.iconHero),
+        Semantics(
+          header: true,
+          child: Text(
+            context.strings.auth.heroTitle,
+            textAlign: TextAlign.center,
+            style: cp.type.headlineLarge.copyWith(color: cp.colors.text),
+          ),
         ),
         Text(
           context.strings.auth.tagline,
-          style: Theme.of(context).textTheme.bodyMedium,
+          textAlign: TextAlign.center,
+          style: cp.type.bodyLarge.copyWith(color: cp.colors.textMuted),
         ),
       ],
     );
@@ -78,17 +91,27 @@ class _Divider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
+    final line = Expanded(
+      child: Divider(
+        height: cp.sizes.hairline,
+        thickness: cp.sizes.hairline,
+        color: cp.colors.border,
+      ),
+    );
     return Row(
+      spacing: cp.space.lg,
       children: [
-        const Expanded(child: Divider()),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        line,
+        Flexible(
+          flex: 3,
           child: Text(
             context.strings.auth.dividerLabel,
-            style: Theme.of(context).textTheme.bodySmall,
+            textAlign: TextAlign.center,
+            style: cp.type.bodySmall.copyWith(color: cp.colors.textMuted),
           ),
         ),
-        const Expanded(child: Divider()),
+        line,
       ],
     );
   }
