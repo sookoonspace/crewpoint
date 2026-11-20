@@ -63,6 +63,12 @@ abstract final class CpIcons {
   static const IconData actionSort = LucideIcons.arrowUpDown;
   static const IconData actionSwap = LucideIcons.arrowLeftRight;
   static const IconData actionMute = LucideIcons.bellOff;
+  static const IconData actionUnmute = LucideIcons.bellRing;
+
+  // Mute lengths.
+  static const IconData muteHour = LucideIcons.timer;
+  static const IconData muteNight = LucideIcons.moon;
+  static const IconData muteDay = LucideIcons.calendarDays;
   static const IconData chevronRight = LucideIcons.chevronRight;
   static const IconData chevronDown = LucideIcons.chevronDown;
   static const IconData check = LucideIcons.check;
@@ -112,6 +118,9 @@ abstract final class CpIcons {
   static const IconData eventBusy = LucideIcons.calendarX;
   static const IconData member = LucideIcons.user;
   static const IconData memberAdd = LucideIcons.userPlus;
+
+  /// Owning an event, such as an ownership offer.
+  static const IconData owner = LucideIcons.crown;
   static const IconData members = LucideIcons.users;
   static const IconData notifications = LucideIcons.bell;
   static const IconData privacy = LucideIcons.shieldCheck;

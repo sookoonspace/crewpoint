@@ -174,3 +174,11 @@ class CpColors extends ThemeExtension<CpColors> {
     );
   }
 }
+
+/// Colours that stay the same in light and dark, read directly.
+abstract final class CpFixedColors {
+  /// A QR code's modules and ground: dark on light in either theme, so it
+  /// scans.
+  static const Color qrInk = Color(CpPalette.qrInk);
+  static const Color qrPaper = Color(CpPalette.qrPaper);
+}

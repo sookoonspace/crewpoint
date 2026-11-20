@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/labels/label_resolver.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
@@ -44,6 +44,7 @@ class MemberPickerSheet extends ConsumerStatefulWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      showDragHandle: true,
       builder: (_) =>
           MemberPickerSheet(eventId: eventId, words: words, exclude: exclude),
     );
@@ -63,6 +64,7 @@ class MemberPickerSheet extends ConsumerStatefulWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      showDragHandle: true,
       builder: (_) => MemberPickerSheet(
         eventId: eventId,
         words: words,
@@ -148,11 +150,12 @@ class _MemberPickerSheetState extends ConsumerState<MemberPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
     final strings = context.strings.memberPicker;
     final words = widget.words;
-    final theme = Theme.of(context);
     final me = ref.watch(currentUserIdProvider);
     final hasMore = _last?.hasMore ?? false;
+    final muted = cp.type.bodyMedium.copyWith(color: cp.colors.textMuted);
 
     String label(AppUser person) {
       final name = person.displayName?.trim() ?? '';
@@ -164,23 +167,25 @@ class _MemberPickerSheetState extends ConsumerState<MemberPickerSheet> {
     if (_failed) {
       status = Column(
         key: const Key('members.picker.error'),
-        spacing: AppSpacing.sm,
+        spacing: cp.space.sm,
         children: [
-          Text(strings.loadFailed, textAlign: TextAlign.center),
-          TextButton.icon(
+          CpFieldError(strings.loadFailed),
+          CpButton.text(
             key: const Key('members.picker.retry'),
+            label: strings.retry,
             onPressed: () => _load(reset: _people.isEmpty),
-            icon: const Icon(AppIcons.actionRetry),
-            label: Text(strings.retry),
           ),
         ],
       );
     } else if (_loading) {
-      status = const Center(
-        key: Key('members.picker.loading'),
-        child: Padding(
-          padding: EdgeInsets.all(AppSpacing.md),
-          child: CircularProgressIndicator(),
+      status = Center(
+        key: const Key('members.picker.loading'),
+        child: SizedBox.square(
+          dimension: cp.sizes.iconLg,
+          child: CircularProgressIndicator(
+            strokeWidth: cp.sizes.hairline * 2,
+            color: cp.colors.accent,
+          ),
         ),
       );
     } else if (_people.isEmpty) {
@@ -190,14 +195,14 @@ class _MemberPickerSheetState extends ConsumerState<MemberPickerSheet> {
             : strings.noneFound(words.other('member')),
         key: const Key('members.picker.empty'),
         textAlign: TextAlign.center,
+        style: muted,
       );
     } else if (hasMore) {
       status = Center(
-        child: TextButton(
+        child: CpButton.text(
           key: const Key('members.picker.more'),
+          label: strings.showMore,
           onPressed: () => _load(reset: false),
-          style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-          child: Text(strings.showMore),
         ),
       );
     } else {
@@ -215,80 +220,87 @@ class _MemberPickerSheetState extends ConsumerState<MemberPickerSheet> {
           crossAxisAlignment: .stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                AppSpacing.lg,
-                AppSpacing.lg,
-                AppSpacing.sm,
+              padding: EdgeInsets.fromLTRB(
+                cp.space.lg,
+                0,
+                cp.space.lg,
+                cp.space.md,
               ),
-              child: Text(
-                widget.multi
-                    ? strings.chooseMany(words.other('member'))
-                    : strings.chooseOne(words.one('member')),
-                style: theme.textTheme.titleLarge,
+              child: Semantics(
+                header: true,
+                child: Text(
+                  widget.multi
+                      ? strings.chooseMany(words.other('member'))
+                      : strings.chooseOne(words.one('member')),
+                  style: cp.type.titleLarge.copyWith(color: cp.colors.text),
+                ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: TextField(
-                key: const Key('members.picker.search'),
+              padding: EdgeInsets.symmetric(horizontal: cp.space.lg),
+              child: CpSearchField(
+                fieldKey: const Key('members.picker.search'),
                 controller: _search,
+                hint: strings.search(words.other('member')),
                 onChanged: _onSearch,
-                textInputAction: TextInputAction.search,
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(AppIcons.actionSearch),
-                  hintText: strings.search(words.other('member')),
-                ),
               ),
             ),
             Flexible(
               child: ListView.builder(
                 key: const Key('members.picker.list'),
                 shrinkWrap: true,
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                padding: EdgeInsets.symmetric(vertical: cp.space.sm),
                 itemCount: _people.length + (status == null ? 0 : 1),
                 itemBuilder: (context, index) {
                   if (index == _people.length) {
                     return Padding(
-                      padding: const EdgeInsets.all(AppSpacing.md),
+                      padding: EdgeInsets.all(cp.space.md),
                       child: status,
                     );
                   }
                   final person = _people[index];
                   final key = Key('members.picker.row.${person.uid}');
                   if (!widget.multi) {
-                    return ListTile(
+                    return CpListRow(
                       key: key,
-                      minTileHeight: 48,
-                      leading: const Icon(AppIcons.navProfile),
-                      title: Text(label(person)),
+                      leading: CpAvatar(
+                        name: label(person),
+                        size: CpAvatarSize.small,
+                      ),
+                      title: label(person),
+                      trailing: const SizedBox.shrink(),
                       onTap: () => Navigator.of(context).pop(person),
                     );
                   }
-                  return CheckboxListTile(
+                  final on = _chosen.contains(person.uid);
+                  void toggle() => setState(
+                    () => on
+                        ? _chosen.remove(person.uid)
+                        : _chosen.add(person.uid),
+                  );
+                  return CpListRow(
                     key: key,
-                    value: _chosen.contains(person.uid),
-                    controlAffinity: ListTileControlAffinity.leading,
-                    title: Text(label(person)),
-                    onChanged: (on) => setState(
-                      () => on == true
-                          ? _chosen.add(person.uid)
-                          : _chosen.remove(person.uid),
+                    leading: Checkbox(
+                      value: on,
+                      activeColor: cp.colors.accent,
+                      onChanged: (_) => toggle(),
                     ),
+                    title: label(person),
+                    trailing: const SizedBox.shrink(),
+                    selected: on,
+                    onTap: toggle,
                   );
                 },
               ),
             ),
             if (widget.multi)
               Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: FilledButton(
+                padding: EdgeInsets.all(cp.space.lg),
+                child: CpButton(
                   key: const Key('members.picker.done'),
+                  label: strings.done(_chosen.length),
+                  expand: true,
                   onPressed: () => Navigator.of(context).pop(_chosen),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(48, 48),
-                  ),
-                  child: Text(strings.done(_chosen.length)),
                 ),
               ),
           ],

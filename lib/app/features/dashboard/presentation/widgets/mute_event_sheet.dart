@@ -1,9 +1,12 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_radius.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:intl/intl.dart';
+
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 
 /// Per-user, per-event mute picker. Surfaces 4 preset durations
@@ -25,20 +28,16 @@ class MuteEventSheet extends ConsumerWidget {
     required String uid,
     required String eventId,
   }) {
-    return showModalBottomSheet<void>(
+    return showCpSheet<void>(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppRadius.xxl),
-        ),
-      ),
       builder: (_) => MuteEventSheet(uid: uid, eventId: eventId),
     );
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final cp = context.cp;
+    final strings = context.strings.dashboard;
     final asyncMute = ref.watch(
       eventMuteProvider((uid: uid, eventId: eventId)),
     );
@@ -46,93 +45,91 @@ class MuteEventSheet extends ConsumerWidget {
     final isActive =
         activeMute != null && activeMute.isMutedAt(clock.now().toUtc());
 
-    final theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.xl,
-        AppSpacing.xl,
-        AppSpacing.xl,
-        MediaQuery.viewInsetsOf(context).bottom + AppSpacing.xl,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.lightGrey,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+    Widget option(
+      String key,
+      String label,
+      IconData icon,
+      VoidCallback onTap,
+    ) => CpListRow(
+      key: Key(key),
+      leading: Icon(icon, size: cp.sizes.iconMd, color: cp.colors.accent),
+      title: label,
+      trailing: const SizedBox.shrink(),
+      onTap: onTap,
+    );
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: cp.space.md,
+      children: [
+        Semantics(
+          header: true,
+          child: Text(
+            isActive ? strings.mutedTitle : strings.muteTitle,
+            style: cp.type.titleLarge.copyWith(color: cp.colors.text),
           ),
-          const SizedBox(height: AppSpacing.lg),
-          Text(
-            isActive ? 'Currently muted' : 'Mute event',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-            textAlign: TextAlign.center,
+        ),
+        Text(
+          isActive
+              ? strings.mutedUntil(
+                  DateFormat.yMMMd().add_jm().format(
+                    activeMute.mutedUntil.toLocal(),
+                  ),
+                )
+              : strings.muteHelp,
+          style: cp.type.bodyMedium.copyWith(color: cp.colors.textMuted),
+        ),
+        CpCard(
+          child: CpRowGroup(
+            children: isActive
+                ? [
+                    option(
+                      'muteSheet.unmute',
+                      strings.unmute,
+                      CpIcons.actionUnmute,
+                      () async {
+                        await ref
+                            .read(eventMuteRepositoryProvider)
+                            .unmuteEvent(uid: uid, eventId: eventId);
+                        if (context.mounted) Navigator.of(context).pop();
+                      },
+                    ),
+                  ]
+                : [
+                    option(
+                      'muteSheet.duration.1h',
+                      strings.muteHour,
+                      CpIcons.muteHour,
+                      () => _mute(context, ref, const Duration(hours: 1)),
+                    ),
+                    option(
+                      'muteSheet.duration.8h',
+                      strings.muteEightHours,
+                      CpIcons.muteNight,
+                      () => _mute(context, ref, const Duration(hours: 8)),
+                    ),
+                    option(
+                      'muteSheet.duration.1d',
+                      strings.muteDay,
+                      CpIcons.muteDay,
+                      () => _mute(context, ref, const Duration(days: 1)),
+                    ),
+                    option(
+                      'muteSheet.duration.untilUnmute',
+                      strings.muteUntilUnmute,
+                      CpIcons.actionMute,
+                      // 10 years is "forever" for practical purposes; the
+                      // server honours the timestamp literally and the user
+                      // can always open this sheet again to unmute. Keeps
+                      // the schema as a single `mutedUntil` field without a
+                      // separate "indefinite" sentinel.
+                      () => _mute(context, ref, const Duration(days: 365 * 10)),
+                    ),
+                  ],
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            isActive
-                ? 'Notifications for this event are paused until '
-                      '${_formatUntil(activeMute.mutedUntil)}.'
-                : 'Pause all notifications for this event for the selected '
-                      "window. You'll still see messages when you open "
-                      'the chat.',
-            style: theme.textTheme.bodyMedium,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          if (isActive)
-            _DurationButton(
-              keyId: 'muteSheet.unmute',
-              label: 'Unmute',
-              icon: Icons.notifications_active_outlined,
-              onTap: () async {
-                await ref
-                    .read(eventMuteRepositoryProvider)
-                    .unmuteEvent(uid: uid, eventId: eventId);
-                if (context.mounted) Navigator.of(context).pop();
-              },
-            )
-          else ...[
-            _DurationButton(
-              keyId: 'muteSheet.duration.1h',
-              label: '1 hour',
-              icon: Icons.timer_outlined,
-              onTap: () => _mute(context, ref, const Duration(hours: 1)),
-            ),
-            _DurationButton(
-              keyId: 'muteSheet.duration.8h',
-              label: '8 hours',
-              icon: Icons.bedtime_outlined,
-              onTap: () => _mute(context, ref, const Duration(hours: 8)),
-            ),
-            _DurationButton(
-              keyId: 'muteSheet.duration.1d',
-              label: '1 day',
-              icon: Icons.today_outlined,
-              onTap: () => _mute(context, ref, const Duration(days: 1)),
-            ),
-            _DurationButton(
-              keyId: 'muteSheet.duration.untilUnmute',
-              label: 'Until I unmute',
-              icon: Icons.notifications_off_outlined,
-              // 10 years is "forever" for practical purposes; the server
-              // honours the timestamp literally and the user can always
-              // open this sheet again to unmute. Keeps the schema as a
-              // single `mutedUntil` field without a separate "indefinite"
-              // sentinel.
-              onTap: () => _mute(context, ref, const Duration(days: 365 * 10)),
-            ),
-          ],
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -149,44 +146,5 @@ class MuteEventSheet extends ConsumerWidget {
           mutedUntil: clock.now().toUtc().add(duration),
         );
     if (context.mounted) Navigator.of(context).pop();
-  }
-
-  String _formatUntil(DateTime mutedUntil) {
-    final local = mutedUntil.toLocal();
-    final hh = local.hour.toString().padLeft(2, '0');
-    final mm = local.minute.toString().padLeft(2, '0');
-    return '$hh:$mm ${local.year}-${local.month.toString().padLeft(2, '0')}-'
-        '${local.day.toString().padLeft(2, '0')}';
-  }
-}
-
-class _DurationButton extends StatelessWidget {
-  const _DurationButton({
-    required this.keyId,
-    required this.label,
-    required this.icon,
-    required this.onTap,
-  });
-
-  final String keyId;
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: OutlinedButton.icon(
-        key: Key(keyId),
-        onPressed: onTap,
-        icon: Icon(icon),
-        label: Text(label),
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-          alignment: Alignment.centerLeft,
-        ),
-      ),
-    );
   }
 }

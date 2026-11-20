@@ -55,4 +55,9 @@ abstract final class CpPalette {
 
   /// Black at 50%: menus and sheets in dark mode. Dark cards have no shadow.
   static const int darkShadowRaised = 0x80000000;
+
+  // ===== Fixed in both themes =====
+  /// A QR code needs dark modules on a light ground to scan, in either theme.
+  static const int qrInk = 0xFF000000;
+  static const int qrPaper = 0xFFFFFFFF;
 }

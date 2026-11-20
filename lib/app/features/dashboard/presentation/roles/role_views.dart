@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
+import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 
 /// Shown in place of a screen the viewer has no permission for. Rules refuse
 /// the data anyway; this explains why there is nothing to see.
@@ -11,11 +14,11 @@ class NoAccessView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = context.strings.roles;
-    return _Message(
+    return CpEmptyState(
       key: const Key('roles.noAccess'),
-      icon: AppIcons.lock,
+      icon: CpIcons.lock,
       title: strings.noAccessTitle,
-      body: strings.noAccessBody,
+      message: strings.noAccessBody,
     );
   }
 }
@@ -29,16 +32,13 @@ class LoadFailedView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = context.strings.roles;
-    return _Message(
+    return CpErrorState(
       key: const Key('roles.loadFailed'),
-      icon: AppIcons.wifiOff,
+      icon: CpIcons.wifiOff,
       title: strings.loadFailed,
-      action: TextButton.icon(
-        key: const Key('roles.retry'),
-        onPressed: onRetry,
-        icon: const Icon(AppIcons.actionRetry),
-        label: Text(strings.retry),
-      ),
+      retryLabel: strings.retry,
+      retryKey: const Key('roles.retry'),
+      onRetry: onRetry,
     );
   }
 }
@@ -50,55 +50,141 @@ class GoneView extends StatelessWidget {
   final String message;
 
   @override
-  Widget build(BuildContext context) => _Message(
+  Widget build(BuildContext context) => CpEmptyState(
     key: const Key('roles.gone'),
-    icon: AppIcons.statusError,
+    icon: CpIcons.statusError,
     title: message,
   );
 }
 
-class _Message extends StatelessWidget {
-  const _Message({
+/// The admin screens' frame (Spec #186): the top bar with back, then
+/// [body] on the background colour.
+class AdminScaffold extends StatelessWidget {
+  const AdminScaffold({
     super.key,
-    required this.icon,
     required this.title,
-    this.body,
-    this.action,
+    required this.body,
+    this.actions = const [],
+    this.bottom,
+    this.onBack,
   });
 
-  final IconData icon;
   final String title;
-  final String? body;
-  final Widget? action;
+  final Widget body;
+  final List<CpTopBarAction> actions;
+
+  /// A save bar under the body, such as a form's Save.
+  final Widget? bottom;
+
+  /// Replaces the plain back, such as one that asks about unsaved changes.
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Column(
-          mainAxisSize: .min,
-          spacing: AppSpacing.md,
-          children: [
-            Icon(icon, size: 48, color: theme.colorScheme.onSurfaceVariant),
-            Text(
-              title,
-              style: theme.textTheme.titleMedium,
-              textAlign: TextAlign.center,
+    final cp = context.cp;
+    final navigator = Navigator.of(context);
+    return Scaffold(
+      backgroundColor: cp.colors.background,
+      appBar: CpTopBar(
+        title: title,
+        leadingTooltip: MaterialLocalizations.of(context).backButtonTooltip,
+        onLeading:
+            onBack ?? (navigator.canPop() ? () => navigator.maybePop() : null),
+        actions: actions,
+      ),
+      body: body,
+      bottomNavigationBar: bottom,
+    );
+  }
+}
+
+/// A scrolling admin page: [children] in the phone column with the
+/// standard gaps between them.
+class AdminList extends StatelessWidget {
+  const AdminList({super.key, required this.children, this.listKey});
+
+  final List<Widget> children;
+  final Key? listKey;
+
+  @override
+  Widget build(BuildContext context) {
+    final cp = context.cp;
+    return ListView(
+      key: listKey,
+      padding: EdgeInsets.fromLTRB(
+        cp.space.lg,
+        cp.space.sm,
+        cp.space.lg,
+        cp.space.xxl,
+      ),
+      children: [
+        ContentMaxWidth(
+          maxWidth: cp.sizes.phoneColumn,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: cp.space.lg,
+            children: children,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// A form's Save at the bottom of the screen, as on the Person form.
+class AdminSaveBar extends StatelessWidget {
+  const AdminSaveBar({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final cp = context.cp;
+    return Material(
+      color: cp.colors.surface,
+      child: SafeArea(
+        top: false,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: cp.colors.border)),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(cp.space.md),
+            // heightFactor 1: the bar is only as tall as its button.
+            child: Align(
+              alignment: AlignmentDirectional.centerEnd,
+              heightFactor: 1,
+              child: child,
             ),
-            if (body != null)
-              Text(
-                body!,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ?action,
-          ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+/// Muted help under a screen's title or above a section.
+class AdminNote extends StatelessWidget {
+  const AdminNote(this.text, {super.key, this.icon});
+
+  final String text;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final cp = context.cp;
+    final label = Text(
+      text,
+      style: cp.type.bodyMedium.copyWith(color: cp.colors.textMuted),
+    );
+    if (icon == null) return label;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: cp.space.sm,
+      children: [
+        Icon(icon, size: cp.sizes.iconMd, color: cp.colors.textMuted),
+        Expanded(child: label),
+      ],
     );
   }
 }
@@ -108,19 +194,19 @@ Future<bool> confirmDiscard(BuildContext context) async {
   final strings = context.strings.roles;
   final leave = await showDialog<bool>(
     context: context,
-    builder: (dialog) => AlertDialog(
-      title: Text(strings.discardTitle),
-      content: Text(strings.discardBody),
+    builder: (dialog) => CpDialog(
+      title: strings.discardTitle,
+      message: strings.discardBody,
       actions: [
-        TextButton(
+        CpButton.text(
           key: const Key('roles.discard.keep'),
+          label: strings.keepEditing,
           onPressed: () => Navigator.of(dialog).pop(false),
-          child: Text(strings.keepEditing),
         ),
-        TextButton(
+        CpButton.destructive(
           key: const Key('roles.discard.confirm'),
+          label: strings.discard,
           onPressed: () => Navigator.of(dialog).pop(true),
-          child: Text(strings.discard),
         ),
       ],
     ),
@@ -138,21 +224,18 @@ Future<bool> confirmAction(
 }) async {
   final confirmed = await showDialog<bool>(
     context: context,
-    builder: (dialog) => AlertDialog(
-      title: Text(title),
-      content: Text(body),
+    builder: (dialog) => CpDialog(
+      title: title,
+      message: body,
       actions: [
-        TextButton(
+        CpButton.text(
+          label: context.strings.roles.cancel,
           onPressed: () => Navigator.of(dialog).pop(false),
-          child: Text(context.strings.roles.cancel),
         ),
-        TextButton(
+        CpButton.destructive(
           key: confirmKey,
+          label: action,
           onPressed: () => Navigator.of(dialog).pop(true),
-          style: TextButton.styleFrom(
-            foregroundColor: Theme.of(dialog).colorScheme.error,
-          ),
-          child: Text(action),
         ),
       ],
     ),

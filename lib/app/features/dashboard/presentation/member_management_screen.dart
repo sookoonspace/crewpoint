@@ -1,25 +1,28 @@
+import 'dart:math' as math;
+
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
-import 'package:crewpoint_app/app/core/services/callable_errors.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_radius.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
-import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
-import 'package:crewpoint_app/app/features/chat/application/people_by_id_provider.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
+import 'package:crewpoint_app/app/core/services/callable_errors.dart';
+import 'package:crewpoint_app/app/features/chat/application/people_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/member.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/crews_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/roles_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
-import 'package:go_router/go_router.dart';
 
-/// Member management screen — shows members with roles, remove/promote actions.
+/// The event's members (Spec #186): links to roles, crews and transfer
+/// for those who may open them, then everyone in one card with their roles,
+/// and remove or make admin for those who may.
 class MemberManagementScreen extends ConsumerStatefulWidget {
   const MemberManagementScreen({
     super.key,
@@ -41,6 +44,8 @@ class _MemberManagementScreenState
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
+    final strings = context.strings.roles;
     final event = widget.event;
     final currentUserId = widget.currentUserId;
     // Each person's roles come from their member document, live. An event
@@ -70,100 +75,140 @@ class _MemberManagementScreenState
         members[uid]?.permissions.contains(permission) ??
         event.can(uid, permission);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('${event.words.other('member')} (${event.memberCount})'),
-        elevation: 0,
-        actions: [
-          if (event.isOwner(currentUserId))
-            IconButton(
-              key: const Key('members.transfer'),
-              tooltip: context.strings.transfer.title,
-              onPressed: () =>
-                  context.push('/dashboard/event/${event.id}/transfer'),
-              icon: const Icon(AppIcons.actionSwap),
-            ),
-          if (canViewCrews(event, currentUserId))
-            IconButton(
-              key: const Key('members.crews'),
-              tooltip: event.words.other('crew'),
-              onPressed: () =>
-                  context.push('/dashboard/event/${event.id}/crews'),
-              icon: const Icon(AppIcons.members),
-            ),
-          if (canViewRoles(event, currentUserId))
-            TextButton.icon(
-              key: const Key('members.roles'),
-              onPressed: () =>
-                  context.push('/dashboard/event/${event.id}/roles'),
-              icon: const Icon(AppIcons.shield),
-              label: Text(context.strings.roles.title),
-            ),
-        ],
-      ),
-      body: ContentMaxWidth(
-        key: const Key('memberManagement.body.clamped'),
-        maxWidth: 720,
-        child: ListView.builder(
-          padding: EdgeInsets.symmetric(
-            horizontal: Breakpoints.screenHorizontalPadding(context),
-            vertical: AppSpacing.xl,
-          ),
-          itemCount: event.memberIds.length,
-          itemBuilder: (context, index) {
-            final memberId = event.memberIds[index];
-            final roles = rolesOf(memberId);
-            final memberIsOwner = roles.contains('owner');
-            final memberIsAdmin = roles.contains('admin');
-            final canRemove = event.canRemoveMember(
-              actor: currentUserId,
-              target: memberId,
-              targetCan: (p) => memberCan(memberId, p),
-              targetIsOwner: memberIsOwner,
-            );
-            final isProcessing = _processingIds.contains(memberId);
-
-            // Each row reads its own name, so only the rows on screen
-            // load names (Req 43a).
-            return _MemberTile(
-              eventId: event.id,
-              memberId: memberId,
-              role: _roleLabel(roles, roleNames, event.words.one('member')),
-              onOpen: canOpenDetail || memberId == currentUserId
-                  ? () => context.push(
-                      '/dashboard/event/${event.id}/members/$memberId',
-                    )
-                  : null,
-              roleColor: memberIsOwner
-                  ? AppColors.sage
-                  : memberIsAdmin
-                  ? AppColors.info
-                  : AppColors.mediumGrey,
-              canRemove: canRemove,
-              canPromote:
-                  event.can(currentUserId, 'roles.manage') && !memberIsOwner,
-              isAdmin: memberIsAdmin,
-              isProcessing: isProcessing,
-              onRemove: () => _removeMember(memberId),
-              onToggleAdmin: () => _toggleAdmin(memberId, memberIsAdmin),
-            );
-          },
+    Widget link(Key key, IconData icon, String title, String route) =>
+        CpListRow(
+          key: key,
+          leading: Icon(icon, size: cp.sizes.iconMd, color: cp.colors.accent),
+          title: title,
+          onTap: () => context.push('/dashboard/event/${event.id}/$route'),
+        );
+    final links = [
+      if (canViewRoles(event, currentUserId))
+        link(
+          const Key('members.roles'),
+          CpIcons.shield,
+          strings.title,
+          'roles',
         ),
+      if (canViewCrews(event, currentUserId))
+        link(
+          const Key('members.crews'),
+          CpIcons.members,
+          event.words.other('crew'),
+          'crews',
+        ),
+      if (event.isOwner(currentUserId))
+        link(
+          const Key('members.transfer'),
+          CpIcons.actionSwap,
+          context.strings.transfer.title,
+          'transfer',
+        ),
+    ];
+
+    final ids = event.memberIds;
+    Widget row(int index) {
+      final memberId = ids[index];
+      final roles = rolesOf(memberId);
+      final memberIsOwner = roles.contains('owner');
+      final memberIsAdmin = roles.contains('admin');
+      // Each row reads its own name, so only the rows on screen load
+      // names (Req 43a).
+      return _MemberTile(
+        eventId: event.id,
+        memberId: memberId,
+        role: _roleLabel(roles, roleNames, event.words.one('member')),
+        isOwner: memberIsOwner,
+        onOpen: canOpenDetail || memberId == currentUserId
+            ? () =>
+                  context.push('/dashboard/event/${event.id}/members/$memberId')
+            : null,
+        canRemove: event.canRemoveMember(
+          actor: currentUserId,
+          target: memberId,
+          targetCan: (p) => memberCan(memberId, p),
+          targetIsOwner: memberIsOwner,
+        ),
+        canPromote: event.can(currentUserId, 'roles.manage') && !memberIsOwner,
+        isAdmin: memberIsAdmin,
+        isProcessing: _processingIds.contains(memberId),
+        onRemove: () => _removeMember(memberId),
+        onToggleAdmin: () => _toggleAdmin(memberId, memberIsAdmin),
+      );
+    }
+
+    return AdminScaffold(
+      title: strings.membersTitle(
+        event.words.other('member'),
+        event.memberCount,
       ),
-      floatingActionButton: event.can(currentUserId, 'members.manage')
-          ? FloatingActionButton(
-              key: const Key('members.invite'),
-              onPressed: () => AddMemberSheet.show(
-                memberLabel: event.words.other('member'),
-                context: context,
-                eventId: event.id,
-                canChooseRole: event.can(currentUserId, 'roles.manage'),
+      actions: [
+        if (event.can(currentUserId, 'members.manage'))
+          CpTopBarAction(
+            key: const Key('members.invite'),
+            icon: CpIcons.memberAdd,
+            tooltip: strings.inviteTooltip(event.words.other('member')),
+            primary: true,
+            onPressed: () => AddMemberSheet.show(
+              memberLabel: event.words.other('member'),
+              context: context,
+              eventId: event.id,
+              canChooseRole: event.can(currentUserId, 'roles.manage'),
+            ),
+          ),
+      ],
+      body: LayoutBuilder(
+        builder: (context, box) {
+          // The phone column, centred on a wide screen.
+          final side = math.max(
+            cp.space.lg,
+            (box.maxWidth - cp.sizes.phoneColumn) / 2,
+          );
+          final card = BoxDecoration(
+            color: cp.colors.surface,
+            borderRadius: cp.radii.md,
+            border: Border.all(
+              color: cp.colors.border,
+              width: cp.sizes.hairline,
+            ),
+            boxShadow: cp.shadows.card,
+          );
+          return CustomScrollView(
+            key: const Key('memberManagement.body.clamped'),
+            slivers: [
+              if (links.isNotEmpty)
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(side, cp.space.sm, side, 0),
+                  sliver: SliverToBoxAdapter(
+                    child: CpCard(child: CpRowGroup(children: links)),
+                  ),
+                ),
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(
+                  side,
+                  cp.space.lg,
+                  side,
+                  cp.space.xxl,
+                ),
+                // A lazy list in one card, so a large event builds only
+                // the rows on screen.
+                sliver: DecoratedSliver(
+                  decoration: card,
+                  sliver: SliverList.separated(
+                    itemCount: ids.length,
+                    itemBuilder: (_, i) => row(i),
+                    separatorBuilder: (_, _) => Divider(
+                      height: cp.sizes.hairline,
+                      thickness: cp.sizes.hairline,
+                      color: cp.colors.border,
+                    ),
+                  ),
+                ),
               ),
-              backgroundColor: AppColors.sage,
-              foregroundColor: AppColors.white,
-              child: const Icon(AppIcons.memberAdd),
-            )
-          : null,
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -178,28 +223,14 @@ class _MemberManagementScreenState
   }
 
   Future<void> _removeMember(String targetId) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Remove ${widget.event.words.one('member')}?'),
-        content: const Text(
-          'They will lose access to this event. '
-          'Their past messages and expenses will remain.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              'Remove',
-              style: TextStyle(color: AppColors.terracotta),
-            ),
-          ),
-        ],
-      ),
+    final strings = context.strings.roles;
+    final member = widget.event.words.one('member');
+    final confirmed = await confirmAction(
+      context,
+      title: strings.removeMemberTitle(member),
+      body: strings.removeMemberBody,
+      action: strings.remove,
+      confirmKey: Key('members.tile.$targetId.removeConfirm'),
     );
 
     if (confirmed != true || !mounted) return;
@@ -213,8 +244,11 @@ class _MemberManagementScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${widget.event.words.one('member')} removed'),
-            backgroundColor: AppColors.sage,
+            content: Text(
+              context.strings.roles.memberRemoved(
+                widget.event.words.one('member'),
+              ),
+            ),
           ),
         );
       }
@@ -227,10 +261,9 @@ class _MemberManagementScreenState
                 e,
                 stackTrace: st,
                 strings: context.strings.errors,
-                fallback: 'Failed to remove member',
+                fallback: context.strings.roles.removeFailed,
               ),
             ),
-            backgroundColor: AppColors.terracotta,
           ),
         );
       }
@@ -254,9 +287,10 @@ class _MemberManagementScreenState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              currentlyAdmin ? 'Demoted to member' : 'Promoted to admin',
+              currentlyAdmin
+                  ? context.strings.roles.demoted
+                  : context.strings.roles.promoted,
             ),
-            backgroundColor: AppColors.sage,
           ),
         );
       }
@@ -270,11 +304,10 @@ class _MemberManagementScreenState
                 stackTrace: st,
                 strings: context.strings.errors,
                 fallback: currentlyAdmin
-                    ? 'Failed to demote admin'
-                    : 'Failed to promote',
+                    ? context.strings.roles.demoteFailed
+                    : context.strings.roles.promoteFailed,
               ),
             ),
-            backgroundColor: AppColors.terracotta,
           ),
         );
       }
@@ -291,7 +324,7 @@ class _MemberTile extends ConsumerWidget {
     required this.eventId,
     required this.memberId,
     required this.role,
-    required this.roleColor,
+    required this.isOwner,
     required this.canRemove,
     required this.canPromote,
     required this.isAdmin,
@@ -304,7 +337,7 @@ class _MemberTile extends ConsumerWidget {
   final String eventId;
   final String memberId;
   final String role;
-  final Color roleColor;
+  final bool isOwner;
   final bool canRemove;
   final bool canPromote;
   final bool isAdmin;
@@ -317,32 +350,50 @@ class _MemberTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final cp = context.cp;
+    final strings = context.strings.roles;
     final name = ref
         .watch(eventProfileProvider((eventId: eventId, uid: memberId)))
         .value
         ?.displayName;
-    final displayName = name != null && name.isNotEmpty ? name : null;
-    final Widget? trailing;
+    final displayName = name != null && name.isNotEmpty
+        ? name
+        : (memberId.length > 8 ? '${memberId.substring(0, 8)}…' : memberId);
+    final Widget? menu;
     if (isProcessing) {
-      trailing = const SizedBox(
-        width: 24,
-        height: 24,
-        child: CircularProgressIndicator(strokeWidth: 2),
+      menu = Padding(
+        padding: EdgeInsets.all(cp.space.md),
+        child: SizedBox.square(
+          dimension: cp.sizes.iconLg,
+          child: CircularProgressIndicator(
+            strokeWidth: cp.sizes.hairline * 2,
+            color: cp.colors.accent,
+          ),
+        ),
       );
     } else if (canRemove || canPromote) {
-      trailing = PopupMenuButton<String>(
+      menu = PopupMenuButton<String>(
+        key: Key('members.tile.$memberId.menu'),
+        tooltip: strings.memberOptions,
+        icon: Icon(
+          CpIcons.actionMore,
+          size: cp.sizes.iconMd,
+          color: cp.colors.textMuted,
+        ),
         itemBuilder: (_) => [
           if (canPromote)
             PopupMenuItem(
+              key: Key('members.tile.$memberId.admin'),
               value: 'toggle_admin',
-              child: Text(isAdmin ? 'Remove Admin' : 'Make Admin'),
+              child: Text(isAdmin ? strings.removeAdmin : strings.makeAdmin),
             ),
           if (canRemove)
-            const PopupMenuItem(
+            PopupMenuItem(
+              key: Key('members.tile.$memberId.remove'),
               value: 'remove',
               child: Text(
-                'Remove',
-                style: TextStyle(color: AppColors.terracotta),
+                strings.remove,
+                style: cp.type.bodyLarge.copyWith(color: cp.colors.overdue),
               ),
             ),
         ],
@@ -352,42 +403,29 @@ class _MemberTile extends ConsumerWidget {
         },
       );
     } else {
-      trailing = null;
+      menu = null;
     }
 
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.borderLg,
-        side: BorderSide(
-          color: AppColors.lightGrey.withValues(alpha: 0.7),
-          width: 0.5,
-        ),
-      ),
-      child: ListTile(
-        key: Key('members.tile.$memberId'),
-        onTap: onOpen,
-        minTileHeight: 56,
-        leading: CircleAvatar(
-          backgroundColor: AppColors.sageLight.withValues(alpha: 0.3),
-          child: const Icon(AppIcons.navProfileFilled, color: AppColors.sage),
-        ),
-        title: Text(
-          displayName ??
-              (memberId.length > 8 ? '${memberId.substring(0, 8)}…' : memberId),
-        ),
-        subtitle: Text(
-          role,
-          style: TextStyle(
-            color: roleColor,
-            fontWeight: FontWeight.w600,
-            fontSize: 12,
+    return Row(
+      children: [
+        Expanded(
+          child: CpListRow(
+            key: Key('members.tile.$memberId'),
+            leading: CpAvatar(name: displayName),
+            title: displayName,
+            subtitle: role,
+            trailing: isOwner
+                ? Icon(
+                    CpIcons.owner,
+                    size: cp.sizes.iconMd,
+                    color: cp.colors.accent,
+                  )
+                : (menu == null ? null : const SizedBox.shrink()),
+            onTap: onOpen,
           ),
         ),
-        trailing: trailing,
-        shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
-      ),
+        ?menu,
+      ],
     );
   }
 }

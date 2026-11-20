@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_access.dart';
 
 import '../harness/roles_harness.dart';
@@ -68,7 +69,7 @@ void main() {
           .groupValue,
       ExpenseAccessMode.everyone,
     );
-    final include = tester.widget<SwitchListTile>(
+    final include = tester.widget<CpSwitchRow>(
       find.byKey(const Key('expenses.access.includeNonContributors')),
     );
     expect(include.value, isFalse);

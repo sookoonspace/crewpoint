@@ -13,18 +13,15 @@ import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 import 'package:crewpoint_app/app/core/format/event_time.dart';
 import 'package:crewpoint_app/app/core/labels/label_resolver.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
 import 'package:crewpoint_app/app/features/participants/application/roster_controller.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/services/callable_errors.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
-import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
 import 'package:crewpoint_app/app/features/dashboard/data/event_repository.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/create_event_screen.dart';
+import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/event_status_label.dart';
 
 /// Parses a positive whole number. Empty gives null, and anything else invalid
@@ -80,30 +77,17 @@ class EventSettingsScreen extends ConsumerWidget {
     final uid = ref.watch(currentUserIdProvider);
     final strings = context.strings.dashboard;
     if (uid == null || !event.canManage(uid)) {
-      return Scaffold(
-        appBar: AppBar(title: Text(strings.settingsTitle)),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              spacing: AppSpacing.lg,
-              children: [
-                Text(
-                  strings.settingsNoAccess,
-                  key: const Key('events.settings.noAccess'),
-                  textAlign: TextAlign.center,
-                ),
-                OutlinedButton(
-                  key: const Key('events.settings.back'),
-                  onPressed: () => context.canPop()
-                      ? context.pop()
-                      : context.go('/dashboard/event/${event.id}'),
-                  child: Text(strings.settingsBack),
-                ),
-              ],
-            ),
-          ),
+      return AdminScaffold(
+        title: strings.settingsTitle,
+        body: CpEmptyState(
+          key: const Key('events.settings.noAccess'),
+          icon: CpIcons.lock,
+          title: strings.settingsNoAccess,
+          actionLabel: strings.settingsBack,
+          actionKey: const Key('events.settings.back'),
+          onAction: () => context.canPop()
+              ? context.pop()
+              : context.go('/dashboard/event/${event.id}'),
         ),
       );
     }
@@ -242,7 +226,41 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
       context: context,
       builder: (_) => const _TimeZonePicker(),
     );
-    if (picked != null) _timeZone.text = picked;
+    if (picked != null) setState(() => _timeZone.text = picked);
+  }
+
+  /// A sheet of [choices] keyed `events.settings.$keyName.$id`, the current
+  /// one ticked; a choice with no tap is shown but cannot be picked.
+  Future<T?> _pick<T>({
+    required String title,
+    required String keyName,
+    required T current,
+    required List<(T value, String id, String label, bool enabled)> choices,
+  }) {
+    final cp = context.cp;
+    return showCpSheet<T>(
+      context: context,
+      title: title,
+      builder: (sheet) => CpCard(
+        child: CpRowGroup(
+          children: [
+            for (final (value, id, label, enabled) in choices)
+              CpListRow(
+                key: Key('events.settings.$keyName.$id'),
+                title: label,
+                trailing: value == current
+                    ? Icon(
+                        CpIcons.statusDone,
+                        size: cp.sizes.iconMd,
+                        color: cp.colors.accent,
+                      )
+                    : const SizedBox.shrink(),
+                onTap: enabled ? () => Navigator.of(sheet).pop(value) : null,
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   String? _validateCount(String? value) {
@@ -345,19 +363,19 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     final navigator = Navigator.of(context);
     final leave = await showDialog<bool>(
       context: context,
-      builder: (dialog) => AlertDialog(
-        title: Text(strings.settingsDiscardTitle),
-        content: Text(strings.settingsDiscardBody),
+      builder: (dialog) => CpDialog(
+        title: strings.settingsDiscardTitle,
+        message: strings.settingsDiscardBody,
         actions: [
-          TextButton(
+          CpButton.text(
             key: const Key('events.settings.keepEditing'),
+            label: strings.settingsKeepEditing,
             onPressed: () => Navigator.of(dialog).pop(false),
-            child: Text(strings.settingsKeepEditing),
           ),
-          TextButton(
+          CpButton.destructive(
             key: const Key('events.settings.discard'),
+            label: strings.settingsDiscard,
             onPressed: () => Navigator.of(dialog).pop(true),
-            child: Text(strings.settingsDiscard),
           ),
         ],
       ),
@@ -370,8 +388,8 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
     final strings = context.strings.dashboard;
-    final theme = Theme.of(context);
     final event = widget.event;
     final expenses = ref.watch(expenseListProvider(event.id));
     final hasMoney = expenses.value?.isNotEmpty ?? false;
@@ -388,93 +406,159 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
       ...CreateEventScreen.supportedCurrencies,
       event.currency,
     };
+    final canDraft = event.canBeDraft || event.status == EventStatus.draft;
+    final agenda = context.strings.agenda;
+
+    Widget card(List<Widget> children) => CpCard(
+      padding: EdgeInsets.all(cp.space.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: cp.space.lg,
+        children: children,
+      ),
+    );
+
+    Widget link({
+      required String key,
+      required IconData icon,
+      required String title,
+      required String subtitle,
+      required VoidCallback onTap,
+    }) => CpListRow(
+      key: Key('events.settings.$key'),
+      leading: Icon(icon, size: cp.sizes.iconMd, color: cp.colors.accent),
+      title: title,
+      subtitle: subtitle,
+      onTap: onTap,
+    );
 
     return PopScope(
       canPop: !_dirty,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _confirmLeave();
       },
-      child: Scaffold(
-        appBar: AppBar(title: Text(strings.settingsTitle), elevation: 0),
+      child: AdminScaffold(
+        title: strings.settingsTitle,
+        bottom: AdminSaveBar(
+          child: CpButton(
+            key: const Key('events.settings.save'),
+            label: strings.settingsSave,
+            busy: _saving,
+            onPressed: _save,
+          ),
+        ),
         body: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(
-            horizontal: Breakpoints.screenHorizontalPadding(context),
-            vertical: AppSpacing.xl,
+          padding: EdgeInsets.fromLTRB(
+            cp.space.lg,
+            cp.space.sm,
+            cp.space.lg,
+            cp.space.xxl,
           ),
           child: ContentMaxWidth(
             key: const Key('events.settings.body'),
-            maxWidth: 560,
+            maxWidth: cp.sizes.phoneColumn,
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                spacing: AppSpacing.lg,
+                spacing: cp.space.lg,
                 children: [
                   if (_archived)
-                    Text(
+                    AdminNote(
                       strings.settingsArchivedNotice,
                       key: const Key('events.settings.archivedNotice'),
+                      icon: CpIcons.lock,
                     ),
                   if (!_archived) _CoverSection(event: event),
-                  DropdownButtonFormField<EventStatus>(
-                    key: const Key('events.settings.status'),
-                    initialValue: _status,
-                    isExpanded: true,
-                    decoration: InputDecoration(
-                      labelText: strings.settingsStatus,
-                      helperText:
-                          event.canBeDraft || event.status == EventStatus.draft
+                  CpSectionHeader(title: strings.settingsEventHeading),
+                  card([
+                    CpSelectField(
+                      fieldKey: const Key('events.settings.status'),
+                      label: strings.settingsStatus,
+                      value: eventStatusLabel(strings, _status),
+                      help: canDraft
                           ? null
                           : strings.settingsStatusDraftUnavailable,
-                      helperMaxLines: 3,
-                      border: const OutlineInputBorder(),
+                      onTap: _saving
+                          ? null
+                          : () async {
+                              final picked = await _pick<EventStatus>(
+                                title: strings.settingsStatus,
+                                keyName: 'status',
+                                current: _status,
+                                choices: [
+                                  for (final status in EventStatus.values)
+                                    (
+                                      status,
+                                      status.name,
+                                      eventStatusLabel(strings, status),
+                                      status != EventStatus.draft || canDraft,
+                                    ),
+                                ],
+                              );
+                              if (picked != null && mounted) {
+                                setState(() {
+                                  _status = picked;
+                                  _dirty = true;
+                                });
+                              }
+                            },
                     ),
-                    items: [
-                      for (final status in EventStatus.values)
-                        DropdownMenuItem(
-                          value: status,
-                          enabled:
-                              status != EventStatus.draft ||
-                              event.canBeDraft ||
-                              event.status == EventStatus.draft,
-                          child: Text(eventStatusLabel(strings, status)),
-                        ),
-                    ],
-                    onChanged: _saving
-                        ? null
-                        : (value) {
-                            if (value == null) return;
-                            setState(() {
-                              _status = value;
-                              _dirty = true;
-                            });
-                          },
-                  ),
-                  TextFormField(
-                    key: const Key('events.settings.timeZone'),
-                    enabled: !_archived,
-                    controller: _timeZone,
-                    readOnly: true,
-                    onTap: _pickTimeZone,
-                    decoration: InputDecoration(
-                      labelText: strings.settingsTimeZone,
-                      helperText: strings.settingsTimeZoneHelp,
-                      helperMaxLines: 3,
-                      suffixIcon: const Icon(Icons.arrow_drop_down),
-                      border: const OutlineInputBorder(),
+                    CpSelectField(
+                      fieldKey: const Key('events.settings.timeZone'),
+                      label: strings.settingsTimeZone,
+                      value: _timeZone.text,
+                      help: strings.settingsTimeZoneHelp,
+                      leadingIcon: CpIcons.schedule,
+                      onTap: _archived ? null : _pickTimeZone,
                     ),
-                  ),
-                  Text(
-                    strings.settingsVenues,
-                    style: theme.textTheme.titleSmall,
-                  ),
+                    CpSelectField(
+                      fieldKey: const Key('events.settings.currency'),
+                      label: strings.settingsCurrency,
+                      value: _currency,
+                      help: hasMoney
+                          ? strings.settingsCurrencyLocked
+                          : strings.settingsCurrencyHelp,
+                      onTap: currencyEnabled
+                          ? () async {
+                              final picked = await _pick<String>(
+                                title: strings.settingsCurrency,
+                                keyName: 'currency',
+                                current: _currency,
+                                choices: [
+                                  for (final code in currencies)
+                                    (code, code, code, true),
+                                ],
+                              );
+                              if (picked != null && mounted) {
+                                setState(() {
+                                  _currency = picked;
+                                  _dirty = true;
+                                });
+                              }
+                            }
+                          : null,
+                    ),
+                    CpTextField(
+                      fieldKey: const Key('events.settings.languages'),
+                      label: strings.settingsLanguages,
+                      help: strings.settingsLanguagesHelp,
+                      enabled: !_archived,
+                      controller: _languages,
+                      validator: (value) {
+                        final codes = _parseLanguages(value ?? '');
+                        return codes.isNotEmpty &&
+                                codes.every(_languageCode.hasMatch)
+                            ? null
+                            : strings.settingsLanguagesInvalid;
+                      },
+                    ),
+                  ]),
+                  CpSectionHeader(title: strings.settingsVenues),
                   if (_venues.isEmpty)
-                    Text(
+                    AdminNote(
                       strings.settingsVenuesEmpty,
                       key: const Key('events.settings.venuesEmpty'),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
                     ),
                   for (final (index, venue) in _venues.indexed)
                     _VenueFields(
@@ -487,68 +571,26 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
                   if (!_archived)
                     Align(
                       alignment: AlignmentDirectional.centerStart,
-                      child: TextButton.icon(
+                      child: CpButton.secondary(
                         key: const Key('events.settings.venue.add'),
+                        icon: CpIcons.actionAdd,
+                        label: strings.settingsVenueAdd,
                         onPressed: _addVenue,
-                        icon: const Icon(Icons.add),
-                        label: Text(strings.settingsVenueAdd),
                       ),
                     ),
-                  DropdownButtonFormField<String>(
-                    key: const Key('events.settings.currency'),
-                    initialValue: _currency,
-                    isExpanded: true,
-                    decoration: InputDecoration(
-                      labelText: strings.settingsCurrency,
-                      helperText: hasMoney
-                          ? strings.settingsCurrencyLocked
-                          : strings.settingsCurrencyHelp,
-                      helperMaxLines: 3,
-                      border: const OutlineInputBorder(),
-                    ),
-                    items: [
-                      for (final code in currencies)
-                        DropdownMenuItem(value: code, child: Text(code)),
-                    ],
-                    onChanged: currencyEnabled
-                        ? (value) {
-                            if (value == null) return;
-                            setState(() {
-                              _currency = value;
-                              _dirty = true;
-                            });
-                          }
-                        : null,
-                  ),
-                  TextFormField(
-                    key: const Key('events.settings.languages'),
-                    enabled: !_archived,
-                    controller: _languages,
-                    decoration: InputDecoration(
-                      labelText: strings.settingsLanguages,
-                      helperText: strings.settingsLanguagesHelp,
-                      border: const OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      final codes = _parseLanguages(value ?? '');
-                      return codes.isNotEmpty &&
-                              codes.every(_languageCode.hasMatch)
-                          ? null
-                          : strings.settingsLanguagesInvalid;
-                    },
-                  ),
-                  TextFormField(
-                    key: const Key('events.settings.capacity'),
-                    enabled: !_archived,
-                    controller: _capacity,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: strings.settingsCapacity,
+                  CpSectionHeader(title: strings.settingsAttendanceHeading),
+                  card([
+                    CpTextField(
+                      fieldKey: const Key('events.settings.capacity'),
+                      label: strings.settingsCapacity,
+                      enabled: !_archived,
+                      controller: _capacity,
+                      keyboardType: TextInputType.number,
                       // Capacity counts everyone attending, with or without
-                      // an account (Req 18b).
-                      // From the counts when they exist (Req 52), so the
-                      // number matches the counts screen.
-                      helperText: strings.settingsCapacityCount(
+                      // an account (Req 18b). From the counts when they
+                      // exist (Req 52), so the number matches the counts
+                      // screen.
+                      help: strings.settingsCapacityCount(
                         (readsCounts
                                 ? ref
                                       .watch(eventStatsProvider(event.id))
@@ -562,173 +604,177 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
                             event.memberCount,
                         event.capacity,
                       ),
-                      border: const OutlineInputBorder(),
+                      validator: _validateCount,
                     ),
-                    validator: _validateCount,
-                  ),
-                  TextFormField(
-                    key: const Key('events.settings.memberLimit'),
-                    enabled: !_archived,
-                    controller: _memberLimit,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: strings.settingsMemberLimit,
-                      helperText: strings.settingsMemberLimitHelp,
-                      helperMaxLines: 3,
-                      border: const OutlineInputBorder(),
+                    CpTextField(
+                      fieldKey: const Key('events.settings.memberLimit'),
+                      label: strings.settingsMemberLimit,
+                      help: strings.settingsMemberLimitHelp,
+                      enabled: !_archived,
+                      controller: _memberLimit,
+                      keyboardType: TextInputType.number,
+                      validator: _validateCount,
                     ),
-                    validator: _validateCount,
-                  ),
-                  DropdownButtonFormField<AttendancePolicy>(
-                    key: const Key('events.settings.attendancePolicy'),
-                    initialValue: _policy,
-                    isExpanded: true,
-                    decoration: InputDecoration(
-                      labelText: context.strings.agenda.policyLabel,
-                      helperText: context.strings.agenda.policyHelp(
-                        _policy.name,
-                      ),
-                      helperMaxLines: 3,
-                      border: const OutlineInputBorder(),
-                    ),
-                    items: [
-                      for (final p in AttendancePolicy.values)
-                        DropdownMenuItem(
-                          value: p,
-                          child: Text(context.strings.agenda.policy(p.name)),
-                        ),
-                    ],
-                    onChanged: _archived || _saving
-                        ? null
-                        : (value) {
-                            if (value == null) return;
-                            setState(() {
-                              _policy = value;
-                              _dirty = true;
-                            });
-                          },
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        strings.settingsModules,
-                        style: theme.textTheme.titleSmall,
-                      ),
-                      Text(
-                        strings.settingsModulesHelp,
-                        style: theme.textTheme.bodySmall,
-                      ),
-                      for (final (module, label) in [
-                        ('chat', strings.moduleChat),
-                        ('budget', strings.moduleBudget),
-                        ('tasks', strings.moduleTasks),
-                        ('schedule', context.strings.schedule.title),
-                      ])
-                        SwitchListTile(
-                          key: Key('events.settings.module.$module'),
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(label),
-                          value: _modules[module]!,
-                          onChanged: _archived
-                              ? null
-                              : (on) => setState(() {
-                                  _modules[module] = on;
+                    CpSelectField(
+                      fieldKey: const Key('events.settings.attendancePolicy'),
+                      label: agenda.policyLabel,
+                      value: agenda.policy(_policy.name),
+                      help: agenda.policyHelp(_policy.name),
+                      onTap: _archived || _saving
+                          ? null
+                          : () async {
+                              final picked = await _pick<AttendancePolicy>(
+                                title: agenda.policyLabel,
+                                keyName: 'attendancePolicy',
+                                current: _policy,
+                                choices: [
+                                  for (final p in AttendancePolicy.values)
+                                    (p, p.name, agenda.policy(p.name), true),
+                                ],
+                              );
+                              if (picked != null && mounted) {
+                                setState(() {
+                                  _policy = picked;
                                   _dirty = true;
-                                }),
-                        ),
-                    ],
-                  ),
-                  ListTile(
-                    key: const Key('events.settings.setup'),
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(AppIcons.statusDoneOutline),
-                    title: Text(context.strings.templates.setupEntry),
-                    subtitle: Text(context.strings.templates.setupEntryHelp),
-                    trailing: const Icon(AppIcons.chevronRight),
-                    onTap: () => context.push(
-                      '/dashboard/event/${widget.event.id}/setup',
+                                });
+                              }
+                            },
+                    ),
+                  ]),
+                  CpSectionHeader(title: strings.settingsModules),
+                  AdminNote(strings.settingsModulesHelp),
+                  CpCard(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: cp.space.lg,
+                      vertical: cp.space.xs,
+                    ),
+                    child: Column(
+                      children: [
+                        for (final (module, label) in [
+                          ('chat', strings.moduleChat),
+                          ('budget', strings.moduleBudget),
+                          ('tasks', strings.moduleTasks),
+                          ('schedule', context.strings.schedule.title),
+                        ])
+                          CpSwitchRow(
+                            key: Key('events.settings.module.$module'),
+                            title: label,
+                            value: _modules[module]!,
+                            onChanged: _archived
+                                ? null
+                                : (on) => setState(() {
+                                    _modules[module] = on;
+                                    _dirty = true;
+                                  }),
+                          ),
+                      ],
                     ),
                   ),
-                  ListTile(
-                    key: const Key('events.settings.saveTemplate'),
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(AppIcons.actionCopy),
-                    title: Text(context.strings.templates.saveAsTemplate),
-                    subtitle: Text(
-                      context.strings.templates.saveAsTemplateHelp,
-                    ),
-                    onTap: () => showDialog<void>(
-                      context: context,
-                      builder: (_) => _SaveTemplateDialog(
-                        eventId: widget.event.id,
-                        initialName: widget.event.title,
-                      ),
-                    ),
-                  ),
-                  ListTile(
-                    key: const Key('events.settings.fields'),
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(AppIcons.actionEdit),
-                    title: Text(context.strings.fields.settingsEntry),
-                    subtitle: Text(context.strings.fields.settingsEntryHelp),
-                    trailing: const Icon(AppIcons.chevronRight),
-                    onTap: () => context.push(
-                      '/dashboard/event/${widget.event.id}/fields',
-                    ),
-                  ),
-                  ListTile(
-                    key: const Key('events.settings.expenseAccess'),
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(AppIcons.lock),
-                    title: Text(context.strings.expenseAccess.title),
-                    subtitle: Text(
-                      context.strings.expenseAccess.summary(
-                        widget.event.expenseAccess.mode,
-                        includesEveryone:
-                            widget.event.expenseAccess.includeNonContributors,
-                      ),
-                    ),
-                    trailing: const Icon(AppIcons.chevronRight),
-                    onTap: () => context.push(
-                      '/dashboard/event/${widget.event.id}/settings/expenses',
-                    ),
-                  ),
-                  ExpansionTile(
-                    key: const Key('events.settings.labels'),
-                    tilePadding: EdgeInsets.zero,
-                    title: Text(strings.settingsLabels),
-                    subtitle: Text(strings.settingsLabelsHelp),
-                    childrenPadding: const EdgeInsets.only(
-                      bottom: AppSpacing.md,
-                    ),
-                    children: [
-                      for (final concept in LabelDefaults.current.concepts)
-                        Padding(
-                          padding: const EdgeInsets.only(top: AppSpacing.md),
-                          child: _LabelFields(
-                            concept: concept,
-                            enabled: !_archived,
-                            one: _labels['$concept.one']!,
-                            other: _labels['$concept.other']!,
+                  CpSectionHeader(title: strings.settingsMoreHeading),
+                  CpCard(
+                    child: CpRowGroup(
+                      children: [
+                        link(
+                          key: 'setup',
+                          icon: CpIcons.statusDoneOutline,
+                          title: context.strings.templates.setupEntry,
+                          subtitle: context.strings.templates.setupEntryHelp,
+                          onTap: () => context.push(
+                            '/dashboard/event/${widget.event.id}/setup',
                           ),
                         ),
-                    ],
+                        link(
+                          key: 'saveTemplate',
+                          icon: CpIcons.actionCopy,
+                          title: context.strings.templates.saveAsTemplate,
+                          subtitle:
+                              context.strings.templates.saveAsTemplateHelp,
+                          onTap: () => showDialog<void>(
+                            context: context,
+                            builder: (_) => _SaveTemplateDialog(
+                              eventId: widget.event.id,
+                              initialName: widget.event.title,
+                            ),
+                          ),
+                        ),
+                        link(
+                          key: 'fields',
+                          icon: CpIcons.actionEdit,
+                          title: context.strings.fields.settingsEntry,
+                          subtitle: context.strings.fields.settingsEntryHelp,
+                          onTap: () => context.push(
+                            '/dashboard/event/${widget.event.id}/fields',
+                          ),
+                        ),
+                        link(
+                          key: 'expenseAccess',
+                          icon: CpIcons.lock,
+                          title: context.strings.expenseAccess.title,
+                          subtitle: context.strings.expenseAccess.summary(
+                            widget.event.expenseAccess.mode,
+                            includesEveryone: widget
+                                .event
+                                .expenseAccess
+                                .includeNonContributors,
+                          ),
+                          onTap: () => context.push(
+                            '/dashboard/event/${widget.event.id}/settings/expenses',
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  if (_error != null)
-                    Text(
-                      _error!,
-                      key: const Key('events.settings.error'),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.error,
+                  CpCard(
+                    child: Theme(
+                      // No lines above and below the open section.
+                      data: Theme.of(
+                        context,
+                      ).copyWith(dividerColor: cp.colors.surface),
+                      child: ExpansionTile(
+                        key: const Key('events.settings.labels'),
+                        tilePadding: EdgeInsets.symmetric(
+                          horizontal: cp.space.lg,
+                        ),
+                        iconColor: cp.colors.textMuted,
+                        collapsedIconColor: cp.colors.textMuted,
+                        title: Text(
+                          strings.settingsLabels,
+                          style: cp.type.titleSmall.copyWith(
+                            color: cp.colors.text,
+                          ),
+                        ),
+                        subtitle: Text(
+                          strings.settingsLabelsHelp,
+                          style: cp.type.bodySmall.copyWith(
+                            color: cp.colors.textMuted,
+                          ),
+                        ),
+                        childrenPadding: EdgeInsets.fromLTRB(
+                          cp.space.lg,
+                          0,
+                          cp.space.lg,
+                          cp.space.lg,
+                        ),
+                        children: [
+                          for (final concept in LabelDefaults.current.concepts)
+                            Padding(
+                              padding: EdgeInsets.only(top: cp.space.md),
+                              child: _LabelFields(
+                                concept: concept,
+                                enabled: !_archived,
+                                one: _labels['$concept.one']!,
+                                other: _labels['$concept.other']!,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                  PrimaryButton(
-                    key: const Key('events.settings.save'),
-                    label: strings.settingsSave,
-                    isLoading: _saving,
-                    onPressed: _save,
                   ),
+                  if (_error != null)
+                    KeyedSubtree(
+                      key: const Key('events.settings.error'),
+                      child: CpFieldError(_error!),
+                    ),
                 ],
               ),
             ),
@@ -751,37 +797,42 @@ class _TimeZonePickerState extends State<_TimeZonePicker> {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
     final strings = context.strings.dashboard;
     final query = _query.toLowerCase().replaceAll(' ', '_');
     final zones = allTimeZones
         .where((zone) => zone.toLowerCase().contains(query))
         .toList();
-    return AlertDialog(
-      title: Text(strings.settingsTimeZone),
+    return CpDialog(
+      title: strings.settingsTimeZone,
       content: SizedBox(
-        width: 420,
+        width: cp.sizes.listPane,
         height: MediaQuery.sizeOf(context).height * 0.6,
         child: Column(
-          spacing: AppSpacing.md,
+          spacing: cp.space.md,
           children: [
-            TextField(
-              key: const Key('events.settings.timeZone.search'),
+            CpSearchField(
+              fieldKey: const Key('events.settings.timeZone.search'),
+              hint: strings.settingsTimeZoneSearch,
               autofocus: true,
-              decoration: InputDecoration(
-                hintText: strings.settingsTimeZoneSearch,
-                prefixIcon: const Icon(Icons.search),
-                border: const OutlineInputBorder(),
-              ),
               onChanged: (value) => setState(() => _query = value),
             ),
             Expanded(
               child: zones.isEmpty
-                  ? Center(child: Text(strings.settingsTimeZoneNone))
+                  ? Center(
+                      child: Text(
+                        strings.settingsTimeZoneNone,
+                        style: cp.type.bodyMedium.copyWith(
+                          color: cp.colors.textMuted,
+                        ),
+                      ),
+                    )
                   : ListView.builder(
                       itemCount: zones.length,
-                      itemBuilder: (_, index) => ListTile(
+                      itemBuilder: (_, index) => CpListRow(
                         key: Key('events.settings.timeZone.${zones[index]}'),
-                        title: Text(zones[index]),
+                        title: zones[index],
+                        trailing: const SizedBox.shrink(),
                         onTap: () => Navigator.of(context).pop(zones[index]),
                       ),
                     ),
@@ -789,6 +840,7 @@ class _TimeZonePickerState extends State<_TimeZonePicker> {
           ],
         ),
       ),
+      actions: const [],
     );
   }
 }
@@ -808,30 +860,24 @@ class _LabelFields extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
     final strings = context.strings.dashboard;
     final defaults = LabelDefaults.current;
     return Column(
-      spacing: AppSpacing.sm,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: cp.space.sm,
       children: [
-        TextFormField(
-          key: Key('events.settings.label.$concept.one'),
+        CpTextField(
+          fieldKey: Key('events.settings.label.$concept.one'),
+          label: strings.settingsLabelOne(defaults.form(concept, 'one')),
           enabled: enabled,
           controller: one,
-          decoration: InputDecoration(
-            labelText: strings.settingsLabelOne(defaults.form(concept, 'one')),
-            border: const OutlineInputBorder(),
-          ),
         ),
-        TextFormField(
-          key: Key('events.settings.label.$concept.other'),
+        CpTextField(
+          fieldKey: Key('events.settings.label.$concept.other'),
+          label: strings.settingsLabelOther(defaults.form(concept, 'other')),
           enabled: enabled,
           controller: other,
-          decoration: InputDecoration(
-            labelText: strings.settingsLabelOther(
-              defaults.form(concept, 'other'),
-            ),
-            border: const OutlineInputBorder(),
-          ),
         ),
       ],
     );
@@ -854,76 +900,87 @@ class _VenueFields extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
     final strings = context.strings.dashboard;
     final schedule = context.strings.schedule;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: AppSpacing.sm,
-      children: [
-        Expanded(
-          child: Column(
-            spacing: AppSpacing.sm,
+    return CpCard(
+      padding: EdgeInsets.all(cp.space.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: cp.space.md,
+        children: [
+          Row(
             children: [
-              TextFormField(
-                key: Key('events.settings.venue.$index.name'),
-                enabled: enabled,
-                controller: venue.name,
-                decoration: InputDecoration(
-                  labelText: strings.settingsVenueName,
-                  border: const OutlineInputBorder(),
-                ),
-                validator: (value) => (value?.trim().isEmpty ?? true)
-                    ? strings.settingsVenueNameRequired
-                    : null,
+              Icon(
+                CpIcons.place,
+                size: cp.sizes.iconMd,
+                color: cp.colors.accent,
               ),
-              TextFormField(
-                key: Key('events.settings.venue.$index.address'),
-                enabled: enabled,
-                controller: venue.address,
-                decoration: InputDecoration(
-                  labelText: strings.settingsVenueAddress,
-                  helperText: schedule.venueAddressHelp,
-                  border: const OutlineInputBorder(),
+              SizedBox(width: cp.space.sm),
+              Expanded(
+                // Follows the name as it is typed.
+                child: ListenableBuilder(
+                  listenable: venue.name,
+                  builder: (context, _) => Text(
+                    venue.name.text.trim().isEmpty
+                        ? strings.settingsVenueName
+                        : venue.name.text.trim(),
+                    style: cp.type.titleSmall.copyWith(color: cp.colors.text),
+                  ),
                 ),
               ),
-              TextFormField(
-                key: Key('events.settings.venue.$index.mapUrl'),
-                enabled: enabled,
-                controller: venue.mapUrl,
-                keyboardType: TextInputType.url,
-                decoration: InputDecoration(
-                  labelText: schedule.venueMapLabel,
-                  border: const OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  final text = value?.trim() ?? '';
-                  return text.isEmpty || isWebLink(text)
-                      ? null
-                      : schedule.venueMapInvalid;
-                },
-              ),
-              TextFormField(
-                key: Key('events.settings.venue.$index.directions'),
-                enabled: enabled,
-                controller: venue.directions,
-                minLines: 1,
-                maxLines: 4,
-                maxLength: 500,
-                decoration: InputDecoration(
-                  labelText: schedule.venueDirectionsLabel,
-                  border: const OutlineInputBorder(),
+              IconButton(
+                key: Key('events.settings.venue.$index.remove'),
+                tooltip: strings.settingsVenueRemove,
+                onPressed: enabled ? onRemove : null,
+                icon: Icon(
+                  CpIcons.actionDelete,
+                  size: cp.sizes.iconMd,
+                  color: cp.colors.textMuted,
                 ),
               ),
             ],
           ),
-        ),
-        IconButton(
-          key: Key('events.settings.venue.$index.remove'),
-          tooltip: strings.settingsVenueRemove,
-          onPressed: enabled ? onRemove : null,
-          icon: const Icon(Icons.delete_outline),
-        ),
-      ],
+          CpTextField(
+            fieldKey: Key('events.settings.venue.$index.name'),
+            label: strings.settingsVenueName,
+            required: true,
+            enabled: enabled,
+            controller: venue.name,
+            validator: (value) => (value?.trim().isEmpty ?? true)
+                ? strings.settingsVenueNameRequired
+                : null,
+          ),
+          CpTextField(
+            fieldKey: Key('events.settings.venue.$index.address'),
+            label: strings.settingsVenueAddress,
+            help: schedule.venueAddressHelp,
+            enabled: enabled,
+            controller: venue.address,
+          ),
+          CpTextField(
+            fieldKey: Key('events.settings.venue.$index.mapUrl'),
+            label: schedule.venueMapLabel,
+            enabled: enabled,
+            controller: venue.mapUrl,
+            keyboardType: TextInputType.url,
+            validator: (value) {
+              final text = value?.trim() ?? '';
+              return text.isEmpty || isWebLink(text)
+                  ? null
+                  : schedule.venueMapInvalid;
+            },
+          ),
+          CpTextField(
+            fieldKey: Key('events.settings.venue.$index.directions'),
+            label: schedule.venueDirectionsLabel,
+            enabled: enabled,
+            controller: venue.directions,
+            maxLines: 4,
+            maxLength: 500,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -987,40 +1044,42 @@ class _SaveTemplateDialogState extends ConsumerState<_SaveTemplateDialog> {
   @override
   Widget build(BuildContext context) {
     final strings = context.strings.templates;
-    return AlertDialog(
-      title: Text(strings.saveAsTemplate),
+    return CpDialog(
+      title: strings.saveAsTemplate,
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          spacing: AppSpacing.md,
+          spacing: context.cp.space.md,
           children: [
-            Text(strings.saveAsTemplateHelp),
-            TextField(
-              key: const Key('events.settings.saveTemplate.name'),
+            Text(
+              strings.saveAsTemplateHelp,
+              style: context.cp.type.bodyMedium.copyWith(
+                color: context.cp.colors.textMuted,
+              ),
+            ),
+            CpTextField(
+              fieldKey: const Key('events.settings.saveTemplate.name'),
+              label: strings.saveAsTemplateName,
               controller: _name,
               enabled: !_busy,
               maxLength: 60,
-              decoration: InputDecoration(
-                labelText: strings.saveAsTemplateName,
-                errorText: _error,
-                errorMaxLines: 3,
-                border: const OutlineInputBorder(),
-              ),
+              error: _error,
             ),
           ],
         ),
       ),
       actions: [
-        TextButton(
+        CpButton.text(
           key: const Key('events.settings.saveTemplate.cancel'),
+          label: strings.cancel,
           onPressed: _busy ? null : () => Navigator.of(context).pop(),
-          child: Text(strings.cancel),
         ),
-        FilledButton(
+        CpButton(
           key: const Key('events.settings.saveTemplate.save'),
+          label: strings.save,
+          busy: _busy,
           onPressed: _busy ? null : _save,
-          child: Text(strings.save),
         ),
       ],
     );

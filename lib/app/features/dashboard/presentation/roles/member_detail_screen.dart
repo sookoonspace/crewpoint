@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/services/callable_errors.dart';
-import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/chat/application/people_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
@@ -131,7 +131,7 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
         : memberWord;
 
     final dirty = _picked != null;
-    Widget scaffold(Widget body) => PopScope(
+    Widget scaffold(Widget body, {Widget? bottom}) => PopScope(
       canPop: !dirty || _busy,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
@@ -141,10 +141,7 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
           navigator.pop();
         }
       },
-      child: Scaffold(
-        appBar: AppBar(title: Text(name), elevation: 0),
-        body: body,
-      ),
+      child: AdminScaffold(title: name, body: body, bottom: bottom),
     );
 
     if (!canManage && uid != me) return scaffold(const NoAccessView());
@@ -164,8 +161,9 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
     }
     if (!members.hasValue || !roles.hasValue) {
       return scaffold(
-        const Center(
-          child: CircularProgressIndicator(key: Key('roles.loading')),
+        CpLoadingState.rows(
+          key: const Key('roles.loading'),
+          semanticLabel: name,
         ),
       );
     }
@@ -198,120 +196,126 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
     String roleName(RoleDefinition role) =>
         role.id == 'participant' && !role.isEdited ? memberWord : role.name;
 
-    final theme = Theme.of(context);
+    final cp = context.cp;
+    final heldRoles = [
+      for (final role in allRoles)
+        if (current.contains(role.id)) role,
+    ];
     return scaffold(
-      ContentMaxWidth(
-        key: const Key('members.detail.body'),
-        maxWidth: 720,
-        child: ListView(
-          padding: EdgeInsets.symmetric(
-            horizontal: Breakpoints.screenHorizontalPadding(context),
-            vertical: AppSpacing.lg,
-          ),
-          children: [
-            Text(strings.rolesHeading, style: theme.textTheme.titleMedium),
-            const SizedBox(height: AppSpacing.sm),
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.sm,
-              children: [
-                for (final role in allRoles)
-                  if (canEditRoles && !role.isOwner)
-                    FilterChip(
-                      key: Key('members.detail.role.${role.id}'),
-                      label: Text(roleName(role)),
-                      selected: current.contains(role.id),
-                      onSelected: (on) => setState(() {
-                        final next = [
-                          for (final r in current)
-                            if (r != role.id) r,
-                          if (on) role.id,
-                        ];
-                        _picked = _sameRoles(next, saved) ? null : next;
-                      }),
-                    )
-                  else if (current.contains(role.id))
-                    Chip(
-                      key: Key('members.detail.role.${role.id}'),
-                      label: Text(roleName(role)),
-                    ),
-              ],
-            ),
-            if (isOwner)
-              Padding(
-                padding: const EdgeInsets.only(top: AppSpacing.sm),
-                child: Text(
-                  strings.ownerNote,
-                  style: theme.textTheme.bodySmall,
-                ),
-              ),
-            if (dirty) ...[
-              const SizedBox(height: AppSpacing.md),
-              if (current.isEmpty)
-                Text(
-                  strings.pickOneRole,
-                  key: const Key('members.detail.pickOne'),
-                  style: TextStyle(color: theme.colorScheme.error),
-                ),
-              FilledButton(
+      bottom: dirty
+          ? AdminSaveBar(
+              child: CpButton(
                 key: const Key('members.detail.save'),
+                label: strings.saveRoles,
+                busy: _busy,
                 onPressed: current.isEmpty || _busy
                     ? null
                     : () => _saveRoles(current),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
-                ),
-                child: Text(strings.saveRoles),
               ),
-            ],
-            if (crewNames.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.xl),
-              Text(
-                event.words.other('crew'),
-                style: theme.textTheme.titleMedium,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Wrap(
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
-                children: [
-                  for (final name in crewNames)
-                    Chip(
-                      key: Key('members.detail.crew.$name'),
-                      label: Text(name),
+            )
+          : null,
+      AdminList(
+        listKey: const Key('members.detail.body'),
+        children: [
+          CpCard(
+            child: CpListRow(
+              leading: CpAvatar(name: name),
+              title: name,
+              subtitle: heldRoles.map(roleName).join(', '),
+            ),
+          ),
+          if (canEditRoles)
+            CpChoiceChips<String>(
+              label: strings.rolesHeading,
+              multiple: true,
+              choices: [
+                for (final role in allRoles)
+                  if (!role.isOwner)
+                    CpChoice(
+                      role.id,
+                      roleName(role),
+                      key: Key('members.detail.role.${role.id}'),
                     ),
-                ],
-              ),
-            ],
-            const SizedBox(height: AppSpacing.xl),
-            Text(strings.grantsHeading, style: theme.textTheme.titleMedium),
-            const SizedBox(height: AppSpacing.sm),
-            if (grants.isEmpty)
-              Text(
-                strings.grantsNothing,
-                key: const Key('members.detail.grantsNothing'),
-              )
-            else
-              for (final p in grants)
-                Padding(
-                  key: Key('members.detail.grant.$p'),
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-                  child: Text('• ${strings.permission(p)}'),
-                ),
-            if (canRemove) ...[
-              const SizedBox(height: AppSpacing.xl),
-              OutlinedButton(
-                key: const Key('members.detail.remove'),
-                onPressed: _busy ? null : () => _remove(name),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: theme.colorScheme.error,
-                  minimumSize: const Size.fromHeight(48),
-                ),
-                child: Text(strings.remove),
-              ),
-            ],
+              ],
+              selected: current.toSet(),
+              onChanged: (picked) => setState(() {
+                // Keep the saved order, then add new picks in catalogue order.
+                final next = [
+                  for (final r in current)
+                    if (picked.contains(r)) r,
+                  for (final role in allRoles)
+                    if (picked.contains(role.id) && !current.contains(role.id))
+                      role.id,
+                ];
+                _picked = _sameRoles(next, saved) ? null : next;
+              }),
+            )
+          else ...[
+            CpSectionHeader(title: strings.rolesHeading),
+            Wrap(
+              spacing: cp.space.sm,
+              runSpacing: cp.space.sm,
+              children: [
+                for (final role in heldRoles)
+                  CpTag(
+                    key: Key('members.detail.role.${role.id}'),
+                    label: roleName(role),
+                  ),
+              ],
+            ),
           ],
-        ),
+          if (dirty && current.isEmpty)
+            KeyedSubtree(
+              key: const Key('members.detail.pickOne'),
+              child: CpFieldError(strings.pickOneRole),
+            ),
+          if (isOwner) AdminNote(strings.ownerNote, icon: CpIcons.statusInfo),
+          if (crewNames.isNotEmpty) ...[
+            CpSectionHeader(title: event.words.other('crew')),
+            Wrap(
+              spacing: cp.space.sm,
+              runSpacing: cp.space.sm,
+              children: [
+                for (final name in crewNames)
+                  CpTag(
+                    key: Key('members.detail.crew.$name'),
+                    label: name,
+                    tone: CpTagTone.quiet,
+                  ),
+              ],
+            ),
+          ],
+          CpSectionHeader(title: strings.grantsHeading),
+          CpCard(
+            child: grants.isEmpty
+                ? CpListRow(
+                    key: const Key('members.detail.grantsNothing'),
+                    title: strings.grantsNothing,
+                  )
+                : CpRowGroup(
+                    children: [
+                      for (final p in grants)
+                        CpListRow(
+                          key: Key('members.detail.grant.$p'),
+                          leading: Icon(
+                            CpIcons.check,
+                            size: cp.sizes.iconMd,
+                            color: cp.colors.accent,
+                          ),
+                          title: strings.permission(p),
+                        ),
+                    ],
+                  ),
+          ),
+          if (canRemove)
+            CpButton.destructive(
+              key: const Key('members.detail.remove'),
+              label: strings.remove,
+              icon: CpIcons.actionDelete,
+              expand: true,
+              onPressed: _busy ? null : () => _remove(name),
+            ),
+        ],
       ),
     );
   }

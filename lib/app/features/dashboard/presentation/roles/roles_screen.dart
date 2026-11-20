@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
+
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
-import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/member.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
@@ -37,36 +37,37 @@ class RolesScreen extends ConsumerWidget {
       final members =
           ref.watch(eventMembersProvider(event.id)).value ??
           const <MemberModel>[];
-      body = ref
-          .watch(eventRolesProvider(event.id))
-          .when(
-            loading: () => const Center(
-              child: CircularProgressIndicator(key: Key('roles.loading')),
-            ),
-            error: (_, _) => LoadFailedView(
-              onRetry: () => ref.invalidate(eventRolesProvider(event.id)),
-            ),
-            data: (roles) => _RoleList(
-              event: event,
-              roles: roles,
-              members: members,
-              canEdit: canEdit,
-            ),
-          );
+      body = switch (ref.watch(eventRolesProvider(event.id))) {
+        AsyncValue(:final value?) => _RoleList(
+          event: event,
+          roles: value,
+          members: members,
+          canEdit: canEdit,
+        ),
+        AsyncValue(error: != null) => LoadFailedView(
+          onRetry: () => ref.invalidate(eventRolesProvider(event.id)),
+        ),
+        _ => CpLoadingState.rows(
+          key: const Key('roles.loading'),
+          semanticLabel: strings.title,
+        ),
+      };
     }
 
-    return Scaffold(
-      appBar: AppBar(title: Text(strings.title), elevation: 0),
+    return AdminScaffold(
+      title: strings.title,
+      actions: [
+        if (canEdit)
+          CpTopBarAction(
+            key: const Key('roles.new'),
+            icon: CpIcons.actionAdd,
+            tooltip: strings.newRole,
+            primary: true,
+            onPressed: () =>
+                context.push('/dashboard/event/${event.id}/roles/new'),
+          ),
+      ],
       body: body,
-      floatingActionButton: canEdit
-          ? FloatingActionButton.extended(
-              key: const Key('roles.new'),
-              onPressed: () =>
-                  context.push('/dashboard/event/${event.id}/roles/new'),
-              icon: const Icon(AppIcons.actionAdd),
-              label: Text(strings.newRole),
-            )
-          : null,
     );
   }
 }
@@ -86,50 +87,44 @@ class _RoleList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
     final strings = context.strings.roles;
-    final theme = Theme.of(context);
     final presets = roles.where((r) => r.isPreset).toList();
     final custom = roles.where((r) => !r.isPreset).toList();
 
-    Widget heading(String text) => Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.lg, bottom: AppSpacing.sm),
-      child: Text(text, style: theme.textTheme.titleSmall),
-    );
-
-    return ContentMaxWidth(
-      key: const Key('roles.body'),
-      maxWidth: 720,
-      child: ListView(
-        padding: EdgeInsets.fromLTRB(
-          Breakpoints.screenHorizontalPadding(context),
-          AppSpacing.md,
-          Breakpoints.screenHorizontalPadding(context),
-          // Room for the button over the last tile.
-          AppSpacing.xxl * 3,
+    return AdminList(
+      listKey: const Key('roles.body'),
+      children: [
+        if (!canEdit)
+          AdminNote(
+            strings.readOnly,
+            key: const Key('roles.readOnly'),
+            icon: CpIcons.lock,
+          ),
+        CpSectionHeader(title: strings.presetsHeading),
+        CpCard(
+          child: CpRowGroup(
+            children: [for (final role in presets) _tile(context, role)],
+          ),
         ),
-        children: [
-          if (!canEdit)
-            Text(
-              strings.readOnly,
-              key: const Key('roles.readOnly'),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          heading(strings.presetsHeading),
-          for (final role in presets) _tile(context, role),
-          heading(strings.customHeading),
-          if (custom.isEmpty)
-            ListTile(
-              key: const Key('roles.empty'),
-              contentPadding: EdgeInsets.zero,
-              title: Text(strings.noCustomRoles),
-              subtitle: Text(strings.noCustomRolesHint),
-            )
-          else
-            for (final role in custom) _tile(context, role),
-        ],
-      ),
+        CpSectionHeader(title: strings.customHeading),
+        CpCard(
+          child: custom.isEmpty
+              ? CpListRow(
+                  key: const Key('roles.empty'),
+                  title: strings.noCustomRoles,
+                  subtitle: strings.noCustomRolesHint,
+                  leading: Icon(
+                    CpIcons.statusInfo,
+                    size: cp.sizes.iconMd,
+                    color: cp.colors.textMuted,
+                  ),
+                )
+              : CpRowGroup(
+                  children: [for (final role in custom) _tile(context, role)],
+                ),
+        ),
+      ],
     );
   }
 
@@ -139,24 +134,16 @@ class _RoleList extends StatelessWidget {
     final name = role.id == 'participant' && !role.isEdited
         ? event.words.one('member')
         : role.name;
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: ListTile(
-        key: Key('roles.tile.${role.id}'),
-        minTileHeight: 56,
-        title: Text(name),
-        subtitle: Text(
-          [
-            strings.permissionCount(role.permissions.length),
-            if (holders > 0) event.words.count('member', holders),
-            if (role.isEdited) strings.edited,
-          ].join(' · '),
-        ),
-        trailing: const Icon(AppIcons.chevronRight),
-        onTap: () =>
-            context.push('/dashboard/event/${event.id}/roles/${role.id}'),
-      ),
+    return CpListRow(
+      key: Key('roles.tile.${role.id}'),
+      title: name,
+      subtitle: [
+        strings.permissionCount(role.permissions.length),
+        if (holders > 0) event.words.count('member', holders),
+        if (role.isEdited) strings.edited,
+      ].join(' · '),
+      onTap: () =>
+          context.push('/dashboard/event/${event.id}/roles/${role.id}'),
     );
   }
 }

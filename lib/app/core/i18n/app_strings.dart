@@ -351,6 +351,32 @@ abstract class DashboardStrings {
   // Error state.
   String get errorLoading;
   String get retryCta;
+
+  // The join and mute sheets in the new look (Spec #186, #206).
+  String get joinSheetTitle;
+  String get joinSheetHelp;
+  String get joinCodeLabel;
+  String get joinCodeLength;
+  String get joined;
+  String get joinCodeInvalid;
+  String get joinAlreadyMember;
+  String get joinFull;
+  String get joinFailed;
+  String get joinOffline;
+  String get muteTitle;
+  String get mutedTitle;
+  String get muteHelp;
+  String mutedUntil(String when);
+  String get unmute;
+  String get muteHour;
+  String get muteEightHours;
+  String get muteDay;
+  String get muteUntilUnmute;
+
+  // Event settings section headings (Spec #186, #206).
+  String get settingsEventHeading;
+  String get settingsAttendanceHeading;
+  String get settingsMoreHeading;
 }
 
 /// User-facing strings for the cross-event Chat tab — the Global Inbox.
@@ -1234,6 +1260,56 @@ class _EnglishDashboardStrings extends DashboardStrings {
   const _EnglishDashboardStrings();
 
   @override
+  String get settingsEventHeading => 'Event';
+  @override
+  String get settingsAttendanceHeading => 'Attendance';
+  @override
+  String get settingsMoreHeading => 'More';
+
+  @override
+  String get joinSheetTitle => 'Join Event';
+  @override
+  String get joinSheetHelp =>
+      'Enter the 6-character code shared by the event organizer';
+  @override
+  String get joinCodeLabel => 'Join code';
+  @override
+  String get joinCodeLength => 'Please enter a 6-character code';
+  @override
+  String get joined => 'You joined the event!';
+  @override
+  String get joinCodeInvalid => 'This code is invalid or has expired.';
+  @override
+  String get joinAlreadyMember => "You're already a member of this event.";
+  @override
+  String get joinFull => 'This event is full.';
+  @override
+  String get joinFailed => 'Something went wrong. Please try again.';
+  @override
+  String get joinOffline => 'Network error. Check your connection.';
+  @override
+  String get muteTitle => 'Mute event';
+  @override
+  String get mutedTitle => 'Currently muted';
+  @override
+  String get muteHelp =>
+      'Pause all notifications for this event for the selected window. '
+      "You'll still see messages when you open the chat.";
+  @override
+  String mutedUntil(String when) =>
+      'Notifications for this event are paused until $when.';
+  @override
+  String get unmute => 'Unmute';
+  @override
+  String get muteHour => '1 hour';
+  @override
+  String get muteEightHours => '8 hours';
+  @override
+  String get muteDay => '1 day';
+  @override
+  String get muteUntilUnmute => 'Until I unmute';
+
+  @override
   String lostAccess(String eventTitle) =>
       'You no longer have access to $eventTitle.';
 
@@ -1984,10 +2060,51 @@ abstract class RoleStrings {
   /// [name] is the one person left who can invite and remove people, or null
   /// when unknown.
   String leaveOneManagerLeftWarning(String? name);
+
+  // The members list in the new look (Spec #186, #206).
+  String membersTitle(String members, int count);
+  String removeMemberTitle(String member);
+  String get removeMemberBody;
+  String memberRemoved(String member);
+  String get makeAdmin;
+  String get removeAdmin;
+  String get promoted;
+  String get demoted;
+  String get promoteFailed;
+  String get demoteFailed;
+  String get memberOptions;
+  String inviteTooltip(String members);
 }
 
 class _EnglishRoleStrings extends RoleStrings {
   const _EnglishRoleStrings();
+
+  @override
+  String membersTitle(String members, int count) => '$members ($count)';
+  @override
+  String removeMemberTitle(String member) => 'Remove $member?';
+  @override
+  String get removeMemberBody =>
+      'They will lose access to this event. '
+      'Their past messages and expenses will remain.';
+  @override
+  String memberRemoved(String member) => '$member removed';
+  @override
+  String get makeAdmin => 'Make Admin';
+  @override
+  String get removeAdmin => 'Remove Admin';
+  @override
+  String get promoted => 'Promoted to admin';
+  @override
+  String get demoted => 'Demoted to member';
+  @override
+  String get promoteFailed => 'Failed to promote';
+  @override
+  String get demoteFailed => 'Failed to demote admin';
+  @override
+  String get memberOptions => 'Options';
+  @override
+  String inviteTooltip(String members) => 'Invite $members';
 
   @override
   String get title => 'Roles';
@@ -3665,10 +3782,16 @@ abstract class MemberPickerStrings {
   String get splitUseEveryone;
   String splitMustChoose(int limit);
   String get splitNoneChosen;
+
+  /// The button that takes someone off a chosen list.
+  String removePerson(String name);
 }
 
 class _EnglishMemberPickerStrings extends MemberPickerStrings {
   const _EnglishMemberPickerStrings();
+
+  @override
+  String removePerson(String name) => 'Remove $name';
 
   @override
   String chooseOne(String member) => 'Choose a ${member.toLowerCase()}';

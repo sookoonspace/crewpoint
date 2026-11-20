@@ -78,6 +78,9 @@ abstract final class CpScale {
   // The widest a chat message grows, four fifths of the phone column.
   static const double bubble480 = 480;
 
+  // An invite's QR code, big enough to scan from another phone.
+  static const double qr200 = 200;
+
   // ===== Type sizes =====
   static const double type11 = 11;
   static const double type12 = 12;
