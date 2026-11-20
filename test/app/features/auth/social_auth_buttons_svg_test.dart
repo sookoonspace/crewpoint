@@ -82,7 +82,7 @@ void main() {
     },
   );
 
-  testWidgets('both buttons render at AppSizes.iconLg', (tester) async {
+  testWidgets('both buttons render', (tester) async {
     await _pumpAuthGate(tester, mode: Brightness.light);
     await tester.pump();
 

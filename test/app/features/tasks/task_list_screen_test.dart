@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/application/tasks_filter.dart';
 import 'package:crewpoint_app/app/features/tasks/domain/models/task.dart';
@@ -85,7 +85,7 @@ void main() {
       pump(groups: const [], filter: const TasksFilter()),
     );
 
-    expect(find.byIcon(AppIcons.navTasks), findsOneWidget);
+    expect(find.byIcon(CpIcons.navTasks), findsOneWidget);
     expect(find.byKey(const Key('emptyState.lottie')), findsNothing);
   });
 
@@ -100,7 +100,7 @@ void main() {
         pump(groups: const [], filter: const TasksFilter(onlyMine: true)),
       );
 
-      expect(find.byIcon(AppIcons.navTasks), findsOneWidget);
+      expect(find.byIcon(CpIcons.navTasks), findsOneWidget);
       expect(find.byKey(const Key('emptyState.lottie')), findsNothing);
     },
   );

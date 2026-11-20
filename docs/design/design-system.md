@@ -1,6 +1,6 @@
 # CrewPoint design system
 
-CrewPoint's look is **Slate and sage with Lucide icons**, chosen in Round 1 (Spec #186, ledger L22). The approved mockups are in [`mockups/`](mockups/README.md). The mockups are the agreed look until a screen is built; after that, the code is the source of truth.
+CrewPoint's look is **Slate and sage with Lucide icons**, chosen in Round 1 (Spec #186, ledger L22). The approved mockups are in [`mockups/`](mockups/README.md). Every mocked-up screen is now built, so **the code is the source of truth**; the mockups stay as the record of the agreed direction and are not updated (Req 19).
 
 Everything that sets the look lives in `lib/app/core/design/`. Screens take colours, type, spacing and visual widgets from it and never set their own. `test/design/design_guard_test.dart` enforces this (see [The guard](#the-guard)).
 
@@ -26,11 +26,14 @@ Padding(padding: EdgeInsets.all(cp.space.lg), child: ...);
 | Motion | `cp.motion` | `fast` 150 ms, `medium` 250 ms, `slow` 350 ms, and `curve`. Keep motion short and subtle. |
 | Shadows | `cp.shadows` | `card`, the faintest lift (none in dark mode), and `raised` for menus and sheets. |
 | Icons | `CpIcons.x` | Every glyph by its role, all Lucide. Constants, so `const Icon(CpIcons.actionAdd)` works. |
+| Fixed colours | `CpFixedColors.x` | The few colours that must not follow the theme, such as a QR code's ink and paper, which stay dark on light so the code scans. |
 
 The raw values sit in two files, so each change happens in one place:
 
-- `tokens/palette.dart` holds every colour, as ARGB integers, so the PDF theme (`pdf/cp_pdf_theme.dart`) reads the same values without Flutter.
+- `tokens/palette.dart` holds every colour, as ARGB integers, so the PDF theme reads the same values without Flutter.
 - `tokens/scale.dart` holds every number.
+
+Exported PDFs (the budget and task reports) take their colours and print sizes from `pdf/cp_pdf_theme.dart` (`CpPdfTheme.text`, `.accent`, `.pageMargin`, `.titleSize` and so on). It reads the light palette, since reports are printed on white, and stays free of Flutter so the builders remain pure Dart.
 
 `CpTheme.light()` and `CpTheme.dark()` build `ThemeData` from the tokens alone. A screen that still uses plain Material widgets therefore gets the same colours and fonts.
 
@@ -114,7 +117,9 @@ Screens use the app wrappers `EventCoverBanner` and `EventCoverThumb`, which rea
 - `CpButton.text`: a quiet action, such as Cancel.
 - `CpButton.destructive`: removes or ends something. Ask for confirmation first, in a `CpDialog`.
 
-Set `busy: true` while the action runs. The button shows a spinner, ignores taps and reads as unavailable, so a save never runs twice. A button with `onPressed: null` is disabled. `expand: true` fills the width, for example a save bar.
+Set `busy: true` while the action runs. The button shows a spinner, ignores taps and reads as unavailable, so a save never runs twice. A button with `onPressed: null` is disabled. `expand: true` fills the width. `icon` puts a glyph before the label; `leading` puts any small picture there instead, such as the Google or Apple logo on sign-in.
+
+**`CpSaveBar`** is a form's Save at the bottom of the screen, in `Scaffold.bottomNavigationBar`: the surface colour, a top border, and its button at the end, only as tall as the button.
 
 ### Fields
 
@@ -142,6 +147,13 @@ Every field has a label above it (with a red star when `required`; pass `require
 
 Both give a light selection tick on iOS and the platform's tap feedback on Android (Req 21).
 
+### Search and filters
+
+![Search and filters](../../test/design/golden/goldens/filters-light.png)
+
+- **`CpSearchField`** is the search box at the top of a list, such as "Search people". Its hint is also its label for screen readers. The caller owns the controller; `fieldKey` puts the test key on the input.
+- **`CpFilterChip`** is one filter above a list. Off, it is an outlined pill that opens a choice (`menu: true` adds the ⌄). On, it is filled and shows what was chosen, with a × to clear it when `onClear` is given.
+
 ### Sheets and dialogs
 
 ![Sheets and dialogs](../../test/design/golden/goldens/sheetsAndDialogs-light.png)
@@ -168,6 +180,17 @@ Layout lives in `lib/app/core/design/layout/` (Spec #186 Req 21–24). The same 
   - Rows choose through `CpListDetail.select(rowContext, () => context.go(...))`, using a context inside the layout.
   - A detail with unsaved edits wraps itself in `CpUnsavedChanges(dirty: …)`, so switching rows asks first.
 
+## Screen patterns
+
+These come from the built screens; follow them for anything new.
+
+- **A tab or page:** `Scaffold(backgroundColor: cp.colors.background, appBar: CpTopBar(...))`, then a `ListView` padded `lg` at the sides, `sm` on top and `xxl` at the bottom, holding a `ContentMaxWidth(maxWidth: cp.sizes.phoneColumn)` column with `lg` between sections. Sections are a `CpSectionHeader` and a `CpCard`.
+- **Forms (the Person form):** fields grouped in padded cards under section headers, the main action in a `CpSaveBar`, and destructive actions as a `CpButton.text` or `CpButton.destructive` at the end of the form. Errors show beside the field, and a save that failed shows a `CpFieldError` above the cards.
+- **Choosing one of a list:** a `CpSelectField` that opens `showCpSheet` with a card of `CpListRow`s, the chosen one `selected` with a `CpIcons.statusDone` tick and the others with `trailing: SizedBox.shrink()` to hide the chevron. Key each row `domain.feature.<field>.<id>`. Use this instead of a dropdown.
+- **Admin screens:** `AdminScaffold`, `AdminList`, `AdminSaveBar` and `AdminNote` in `dashboard/presentation/roles/role_views.dart` wrap the patterns above, with `NoAccessView`, `LoadFailedView` and `GoneView` for the states.
+- **Large text:** a row that puts text and a value side by side switches to stacking them when `constraints.maxWidth / textScale < 260`, so neither breaks mid-word.
+- **App widgets built from the system:** `lib/app/core/widgets/` keeps only widgets that join the design system to app data, such as `ContentMaxWidth`, `MoneyText`, `LastUpdatedNote`, `EventTile`, `ConversationTile` and the route guards. They take every value from the tokens.
+
 ## 200% text
 
 Every component lays out at 200% text without overflowing (the gallery's third variant):
@@ -187,9 +210,9 @@ Every component lays out at 200% text without overflowing (the gallery's third v
 - a bare non-zero number in `EdgeInsets`, `SizedBox`, `BorderRadius` or `Radius`
 - a plain Material `Card`, `ListTile`, chip, `ElevatedButton`, `FilledButton`, `OutlinedButton` or `TextButton`
 
-Layout widgets and calculated sizes (`maxWidth * 0.5`) are allowed. Screens that haven't moved to the design system yet sit in the test's `notYetMigrated` list. Each migration Work Item removes its files, and the test fails if a listed file already follows the rules.
+Layout widgets and calculated sizes (`maxWidth * 0.5`) are allowed. Every file follows these rules. A file may break one for good only through `listedExceptions` in `test/design/design_guard.dart`, with its reason; the list is empty today.
 
-The old `AppColors`, `AppSpacing`, `AppRadius`, `AppTypography`, `AppSizes`, `AppDurations` and `AppIcons` are deprecated forwarders to the tokens until #208 deletes them. Don't use them in new code.
+The old `AppColors`, `AppSpacing`, `AppRadius`, `AppTypography`, `AppSizes`, `AppDurations` and `AppIcons` are gone (#208). `lib/app/core/constants/` holds only `app_assets.dart`, the asset paths.
 
 ## Golden tests
 

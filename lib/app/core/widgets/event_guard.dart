@@ -4,10 +4,9 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
@@ -160,8 +159,9 @@ class _ProgressScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
+    return Scaffold(
+      backgroundColor: context.cp.colors.background,
+      body: CpLoadingState(semanticLabel: context.strings.nav.loading),
     );
   }
 }
@@ -189,42 +189,19 @@ class _EventNotFoundScreenState extends State<EventNotFoundScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final nav = context.strings.nav;
     return Scaffold(
+      backgroundColor: context.cp.colors.background,
       body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              spacing: AppSpacing.lg,
-              children: [
-                const Icon(
-                  AppIcons.eventBusy,
-                  size: AppSizes.iconHero,
-                  color: AppColors.sage,
-                ),
-                Text(
-                  "We couldn't find that event",
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                Text(
-                  'It may have been deleted, or you may not have access.',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                ElevatedButton.icon(
-                  key: const Key('event.notFound.back'),
-                  onPressed: () => context.go('/dashboard'),
-                  icon: const Icon(AppIcons.actionBack),
-                  label: const Text('Back to events'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.sage,
-                    foregroundColor: AppColors.white,
-                  ),
-                ),
-              ],
-            ),
+        child: SingleChildScrollView(
+          child: CpEmptyState(
+            key: const Key('event.notFound'),
+            icon: CpIcons.eventBusy,
+            title: nav.eventNotFoundTitle,
+            message: nav.eventNotFoundBody,
+            actionLabel: nav.backToEvents,
+            actionKey: const Key('event.notFound.back'),
+            onAction: () => context.go('/dashboard'),
           ),
         ),
       ),

@@ -46,7 +46,7 @@ Execute the V3 Enterprise Operations update. Introduces Fund Mode, Sub-Events, D
 
 ### Phase 6: White-Labeling & Enterprise Archive
 - **Goal**: Custom branding, Tax PDFs, and the accounting export.
-- [ ] `lib/app/features/budget/data/donation_receipt_pdf_builder.dart` — Pure builder. Injects `event.taxId`, overrides `AppColors` with `event.brandPrimaryColor` if present.
+- [ ] `lib/app/features/budget/data/donation_receipt_pdf_builder.dart` — Pure builder. Injects `event.taxId`, overrides `CpPdfTheme.accent` with `event.brandPrimaryColor` if present.
 - [ ] `functions/src/events/archiveEvent.ts` — Flips `isArchived`.
 - [ ] `functions/src/events/generateAccountingExport.ts` — Uses `archiver` or `jszip` in Node to bundle the CSV and Storage receipts. Returns a signed download URL.
 - [ ] Verify: `cd functions && npm run build` && `flutter analyze` && `flutter test`.

@@ -7,32 +7,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'design_guard.dart';
 
-/// Files that still break a rule because their screen has not moved to the
-/// design system yet (Technical Decision 3). Each migration Work Item removes
-/// its files; #208 empties the list. A file not listed here that breaks a
-/// rule fails the test, and so does a listed file that no longer breaks any.
-const notYetMigrated = <String>{
-  'lib/app/core/router/app_router.dart',
-  'lib/app/core/widgets/balance_tile.dart',
-  'lib/app/core/widgets/destructive_button.dart',
-  'lib/app/core/widgets/empty_state_placeholder.dart',
-  'lib/app/core/widgets/event_guard.dart',
-  'lib/app/core/widgets/form_card_shell.dart',
-  'lib/app/core/widgets/forms/app_date_field.dart',
-  'lib/app/core/widgets/forms/app_dropdown.dart',
-  'lib/app/core/widgets/forms/app_text_field.dart',
-  'lib/app/core/widgets/module_guard.dart',
-  'lib/app/core/widgets/network_image_with_placeholder.dart',
-  'lib/app/core/widgets/primary_button.dart',
-  'lib/app/core/widgets/reserved_checkmark_chip.dart',
-  'lib/app/core/widgets/segmented_filter_bar.dart',
-  'lib/app/core/widgets/settings_row.dart',
-  'lib/app/core/widgets/skeletons.dart',
-  'lib/app/core/widgets/stat_triplet.dart',
-  'lib/app/core/widgets/status_badge.dart',
-  'lib/main.dart',
-};
-
 void main() {
   group('findStyleHits', () {
     List<String> rules(String source) => [
@@ -93,35 +67,22 @@ void main() {
   });
 
   test('code outside the design system uses only design tokens', () {
-    final offenders = <String>[];
-    final cleanButListed = <String>[];
-    for (final file in guardedFiles()) {
-      final path = file.path;
-      if (listedExceptions.containsKey(path)) continue;
-      final hits = findStyleHits(path, file.readAsStringSync());
-      if (hits.isEmpty && notYetMigrated.contains(path)) {
-        cleanButListed.add(path);
-      } else if (hits.isNotEmpty && !notYetMigrated.contains(path)) {
-        offenders.addAll(hits.map((h) => h.toString()));
-      }
-    }
+    final offenders = [
+      for (final file in guardedFiles())
+        if (!listedExceptions.containsKey(file.path))
+          for (final hit in findStyleHits(file.path, file.readAsStringSync()))
+            hit.toString(),
+    ];
     expect(
       offenders,
       isEmpty,
       reason: 'Use the tokens and components in lib/app/core/design/ instead.',
     );
-    expect(
-      cleanButListed,
-      isEmpty,
-      reason:
-          'These files follow the rules now: remove them from '
-          'notYetMigrated.',
-    );
   });
 
-  test('every listed file still exists', () {
+  test('every listed exception still exists', () {
     expect([
-      for (final path in notYetMigrated)
+      for (final path in listedExceptions.keys)
         if (!File(path).existsSync()) path,
     ], isEmpty);
   });

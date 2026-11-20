@@ -3,8 +3,7 @@
 ///
 /// This is the one place such a number changes. Screens never read this
 /// file: they read [CpSpacing], [CpRadii], [CpSizes], [CpType] and
-/// [CpMotion] through the theme. The old `AppSpacing`, `AppRadius`,
-/// `AppSizes` and `AppDurations` forward here until they are deleted.
+/// [CpMotion] through the theme.
 abstract final class CpScale {
   // ===== Spacing =====
   static const double space4 = 4;

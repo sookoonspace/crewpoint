@@ -726,6 +726,23 @@ abstract class NavStrings {
   /// The empty detail panel of a list and detail layout (Spec #186
   /// Req 23); [thing] is the event's word, such as a participant.
   String selectToSee(String thing);
+
+  // A link to a page or event that is not there.
+  String get pageNotFoundTitle;
+  String get pageNotFoundBody;
+  String triedLocation(String location);
+  String get goHome;
+  String get eventNotFoundTitle;
+  String get eventNotFoundBody;
+  String get backToEvents;
+  String get eventSaveFailed;
+
+  /// Read by screen readers while a screen loads.
+  String get loading;
+
+  // A push notification shown while the app is open.
+  String get bannerView;
+  String get bannerDismiss;
 }
 
 abstract class ErrorStrings {
@@ -1562,6 +1579,40 @@ class _EnglishNavStrings extends NavStrings {
     final article = RegExp('^[aeiou]').hasMatch(word) ? 'an' : 'a';
     return 'Select $article $word to see details';
   }
+
+  @override
+  String get pageNotFoundTitle => 'Something went wrong';
+
+  @override
+  String get pageNotFoundBody => "We couldn't find that page.";
+
+  @override
+  String triedLocation(String location) => 'Tried: $location';
+
+  @override
+  String get goHome => 'Go home';
+
+  @override
+  String get eventNotFoundTitle => "We couldn't find that event";
+
+  @override
+  String get eventNotFoundBody =>
+      'It may have been deleted, or you may not have access.';
+
+  @override
+  String get backToEvents => 'Back to events';
+
+  @override
+  String get eventSaveFailed => 'Could not save event';
+
+  @override
+  String get loading => 'Loading';
+
+  @override
+  String get bannerView => 'View';
+
+  @override
+  String get bannerDismiss => 'Dismiss';
 }
 
 class _EnglishDashboardStrings extends DashboardStrings {
