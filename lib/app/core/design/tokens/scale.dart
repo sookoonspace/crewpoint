@@ -75,6 +75,9 @@ abstract final class CpScale {
   // A schedule row's time column.
   static const double time56 = 56;
 
+  // The widest a chat message grows, four fifths of the phone column.
+  static const double bubble480 = 480;
+
   // ===== Type sizes =====
   static const double type11 = 11;
   static const double type12 = 12;

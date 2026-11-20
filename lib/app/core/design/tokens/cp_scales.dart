@@ -114,6 +114,9 @@ class CpSizes extends ThemeExtension<CpSizes> {
   /// An event's thumbnail on its list card.
   double get coverThumb => CpScale.avatar64;
 
+  /// The widest a chat message grows.
+  double get bubbleMax => CpScale.bubble480;
+
   @override
   CpSizes copyWith() => this;
 

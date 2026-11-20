@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_radius.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 
 /// Bottom sheet asking the payer or payee to either confirm or dispute a
@@ -30,13 +31,9 @@ class DisputeSheet extends StatelessWidget {
     VoidCallback? onDispute,
     int? closedAfterDays,
   }) {
-    return showModalBottomSheet<void>(
+    return showCpSheet<void>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppRadius.xxl),
-        ),
-      ),
+      title: context.strings.chat.settlementLabel,
       builder: (_) => DisputeSheet(
         summary: summary,
         onDispute: onDispute,
@@ -47,76 +44,56 @@ class DisputeSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.xl,
-        AppSpacing.xl,
-        AppSpacing.xl,
-        MediaQuery.viewPaddingOf(context).bottom + AppSpacing.xl,
-      ),
-      child: Column(
-        mainAxisSize: .min,
-        spacing: AppSpacing.lg,
-        children: [
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.lightGrey,
-              borderRadius: BorderRadius.circular(2),
+    final cp = context.cp;
+    final strings = context.strings.chat;
+    final muted = cp.type.bodyMedium.copyWith(color: cp.colors.textMuted);
+    return Column(
+      mainAxisSize: .min,
+      crossAxisAlignment: .stretch,
+      spacing: cp.space.lg,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: cp.space.md,
+          children: [
+            Icon(
+              CpIcons.actionSwap,
+              size: cp.sizes.iconMd,
+              color: cp.colors.done,
             ),
-          ),
-          Text('Settlement', style: Theme.of(context).textTheme.titleLarge),
+            Expanded(
+              child: Text(
+                summary,
+                style: cp.type.bodyLarge.copyWith(color: cp.colors.text),
+              ),
+            ),
+          ],
+        ),
+        if (closedAfterDays == null)
+          Text(strings.disputeExplain, style: muted)
+        else
           Text(
-            summary,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+            strings.disputeWindowClosed(closedAfterDays!),
+            key: const Key('chat.dispute.closed'),
+            style: muted,
           ),
-          if (closedAfterDays == null)
-            Text(
-              'Disputing will remove this settlement and restore the balance.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontSize: 12,
-              ),
-            ),
-          FilledButton(
-            key: const Key('chat.dispute.cancel'),
-            onPressed: () => Navigator.of(context).pop(),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
-              backgroundColor: AppColors.sage,
-            ),
-            child: const Text('All good — keep it'),
+        CpButton(
+          key: const Key('chat.dispute.cancel'),
+          label: strings.disputeKeep,
+          expand: true,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        if (closedAfterDays == null)
+          CpButton.destructive(
+            key: const Key('chat.dispute.confirm'),
+            label: strings.disputeConfirm,
+            expand: true,
+            onPressed: () {
+              Navigator.of(context).pop();
+              onDispute?.call();
+            },
           ),
-          if (closedAfterDays != null)
-            Text(
-              context.strings.chat.disputeWindowClosed(closedAfterDays!),
-              key: const Key('chat.dispute.closed'),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            )
-          else
-            OutlinedButton(
-              key: const Key('chat.dispute.confirm'),
-              onPressed: () {
-                Navigator.of(context).pop();
-                onDispute?.call();
-              },
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(48),
-                foregroundColor: AppColors.terracotta,
-                side: const BorderSide(color: AppColors.terracotta),
-              ),
-              child: const Text('Dispute this settlement'),
-            ),
-        ],
-      ),
+      ],
     );
   }
 }

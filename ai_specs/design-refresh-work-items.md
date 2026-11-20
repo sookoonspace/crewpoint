@@ -564,7 +564,7 @@ The template picker, create and edit event forms, the setup checklist and the jo
 - [x] Existing journey tests keep passing, with selectors changed only where a widget's key must change (Testing Strategy 8); every new interactive widget has a `domain.feature.action` key.
 - [x] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
 - [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
-- [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
+- [x] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 
 #### Covers
 - User Stories: 9
@@ -586,12 +586,12 @@ The chat inbox and event chat in the new look, following the design system (no m
 - `chat_inbox_screen.dart`, `chat_screen.dart`, `event_chat_page.dart`, `lib/app/core/widgets/conversation_tile.dart`.
 
 #### Acceptance criteria
-- [ ] Chat follows the design system; urgent messages and settlement bubbles use status colour with an icon.
-- [ ] "Show earlier messages", the offline note and unread counts keep working.
-- [ ] The screens use only design-system components and tokens (Req 14); their files are removed from the guard test's temporary list.
-- [ ] Existing journey tests keep passing, with selectors changed only where a widget's key must change (Testing Strategy 8); every new interactive widget has a `domain.feature.action` key.
-- [ ] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
-- [ ] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
+- [x] Chat follows the design system; urgent messages and settlement bubbles use status colour with an icon.
+- [x] "Show earlier messages", the offline note and unread counts keep working.
+- [x] The screens use only design-system components and tokens (Req 14); their files are removed from the guard test's temporary list.
+- [x] Existing journey tests keep passing, with selectors changed only where a widget's key must change (Testing Strategy 8); every new interactive widget has a `domain.feature.action` key.
+- [x] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
+- [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
 - [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 
 #### Covers

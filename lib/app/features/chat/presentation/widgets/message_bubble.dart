@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
+
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
 
+/// One chat message (Spec #186). Your own messages sit on the right in the
+/// accent colour, other people's on the left with their name. An urgent
+/// message is red with its icon, and a settlement green with its icon, in
+/// the middle; tapping a settlement opens the dispute sheet.
 class MessageBubble extends StatelessWidget {
   const MessageBubble({
     super.key,
@@ -24,130 +27,85 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color background;
-    final Border? border;
-    // In light mode the settlement / high-priority bubbles use pale
-    // accent fills; in dark mode those pale fills collide with the
-    // light onSurface text, so swap to the theme's elevated surface and
-    // let the existing sage/terracotta BORDER carry the semantic signal.
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    if (_isSettlement) {
-      background = isDark
-          ? Theme.of(context).colorScheme.surfaceContainerHighest
-          : AppColors.cream;
-      border = Border.all(color: AppColors.sage, width: 1.5);
-    } else if (message.isHighPriority) {
-      background = isDark
-          ? Theme.of(context).colorScheme.surfaceContainerHighest
-          : AppColors.terracottaLight.withValues(alpha: 0.2);
-      border = Border.all(color: AppColors.terracotta, width: 1.5);
-    } else if (isCurrentUser) {
-      // sageDark, not sage — white text on sage (#6B9080) only hits
-      // a 3.5:1 contrast ratio, below WCAG AA's 4.5 threshold for body
-      // text. sageDark (#4A6B5A) clears at ~5.4:1.
-      background = AppColors.sageDark;
-      border = null;
-    } else {
-      // Theme-aware surface so the bubble darkens in dark mode (where
-      // onSurface = offWhite). Hard-coded lightGrey here paired with
-      // dark-mode onSurface = ~1.2:1 contrast — see the WCAG widget
-      // test in message_bubble_test.dart.
-      background = Theme.of(context).colorScheme.surfaceContainerHighest;
-      border = null;
-    }
+    final cp = context.cp;
+    final strings = context.strings.chat;
 
-    // Fixed cap, not LayoutBuilder. The chat thread itself is clamped to
-    // 720 by event_chat_page.dart; 540 = 75 % × 720 reproduces the old
-    // viewport-based 75 % rule under the new clamp without N rebuilds
-    // per resize on long threads. If the chat thread clamp ever moves,
-    // update this 540 in lockstep.
+    // Status colour only with its icon and words (Req 45).
+    final (Color background, Color? border, Color ink) = _isSettlement
+        ? (cp.colors.doneSoft, cp.colors.done, cp.colors.text)
+        : message.isHighPriority
+        ? (cp.colors.overdueSoft, cp.colors.overdue, cp.colors.text)
+        : isCurrentUser
+        ? (cp.colors.accent, null, cp.colors.onAccent)
+        : (cp.colors.surface, cp.colors.border, cp.colors.text);
+
+    final (IconData, String, Color)? status = _isSettlement
+        ? (CpIcons.actionSwap, strings.settlementLabel, cp.colors.done)
+        : message.isHighPriority
+        ? (CpIcons.statusUrgent, strings.urgentLabel, cp.colors.overdue)
+        : null;
+
+    // Your own corner and theirs stay square, pointing at who wrote it.
+    final round = cp.radii.lg.topLeft;
+    final tail = cp.radii.xs.topLeft;
+    final radius = _isSettlement
+        ? BorderRadius.all(round)
+        : BorderRadius.only(
+            topLeft: round,
+            topRight: round,
+            bottomLeft: isCurrentUser ? round : tail,
+            bottomRight: isCurrentUser ? tail : round,
+          );
+
     final bubble = Container(
       key: Key('chat.bubble.${message.id}'),
-      constraints: const BoxConstraints(maxWidth: 540),
-      margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
+      constraints: BoxConstraints(maxWidth: cp.sizes.bubbleMax),
+      margin: EdgeInsets.symmetric(vertical: cp.space.xs),
+      padding: EdgeInsets.symmetric(
+        horizontal: cp.space.md,
+        vertical: cp.space.sm,
       ),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(16),
-        border: border,
+        borderRadius: radius,
+        border: border == null
+            ? null
+            : Border.all(
+                color: border,
+                width: status == null
+                    ? cp.sizes.hairline
+                    : cp.sizes.hairline * 2,
+              ),
       ),
       child: Column(
-        crossAxisAlignment: .start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: cp.space.xs,
         children: [
           if (!_isSettlement && !isCurrentUser && message.senderName != null)
             Text(
               message.senderName!,
-              style: Theme.of(context).textTheme.labelSmall,
+              style: cp.type.labelMedium.copyWith(color: cp.colors.textMuted),
             ),
-          if (_isSettlement)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-              child: Row(
-                mainAxisSize: .min,
-                spacing: AppSpacing.xs,
-                children: [
-                  const Icon(
-                    AppIcons.actionSwap,
-                    size: AppSizes.iconXs,
-                    color: AppColors.sage,
+          if (status != null)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: cp.space.xs,
+              children: [
+                Icon(status.$1, size: cp.sizes.iconSm, color: status.$3),
+                Flexible(
+                  child: Text(
+                    status.$2,
+                    style: cp.type.labelMedium.copyWith(color: status.$3),
                   ),
-                  Text(
-                    'Settlement',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: AppColors.sage,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          if (message.isHighPriority)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-              child: Row(
-                mainAxisSize: .min,
-                spacing: AppSpacing.xs,
-                children: [
-                  const Icon(
-                    AppIcons.priorityHigh,
-                    size: AppSizes.iconXs,
-                    color: AppColors.terracotta,
-                  ),
-                  Text(
-                    'Critical Alert',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: AppColors.terracotta,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          Text(
-            message.text,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              // White text is only safe on the sageDark "own message"
-              // bubble. High-priority + settlement bubbles use pale
-              // backgrounds where white would be invisible, so fall
-              // through to the themed default (onSurface).
-              color: isCurrentUser && !message.isHighPriority && !_isSettlement
-                  ? AppColors.white
-                  : Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          if (isCurrentUser && message.urgentPushSkipped)
-            Padding(
-              padding: const EdgeInsets.only(top: AppSpacing.xs),
-              child: Text(
-                context.strings.chat.urgentLimitReached,
-                key: const Key('chat.message.urgentLimited'),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
                 ),
-              ),
+              ],
+            ),
+          Text(message.text, style: cp.type.bodyMedium.copyWith(color: ink)),
+          if (isCurrentUser && message.urgentPushSkipped)
+            Text(
+              strings.urgentLimitReached,
+              key: const Key('chat.message.urgentLimited'),
+              style: cp.type.bodySmall.copyWith(color: ink),
             ),
         ],
       ),
@@ -160,8 +118,19 @@ class MessageBubble extends StatelessWidget {
           : isCurrentUser
           ? Alignment.centerRight
           : Alignment.centerLeft,
-      child: _isSettlement
-          ? GestureDetector(onTap: onTapSettlement, child: bubble)
+      child: _isSettlement && onTapSettlement != null
+          ? Semantics(
+              button: true,
+              hint: strings.settlementTapHint,
+              child: Material(
+                type: MaterialType.transparency,
+                child: InkWell(
+                  borderRadius: radius,
+                  onTap: onTapSettlement,
+                  child: bubble,
+                ),
+              ),
+            )
           : bubble,
     );
   }

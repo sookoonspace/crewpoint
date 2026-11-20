@@ -99,9 +99,7 @@ void main() {
     expect(taps, 1);
   });
 
-  testWidgets('wraps content in a Card for the elevated-tile look', (
-    tester,
-  ) async {
+  testWidgets('the row is at least a tap target tall', (tester) async {
     await pump(
       tester,
       const ConversationTile(
@@ -112,11 +110,8 @@ void main() {
       ),
     );
     expect(
-      find.descendant(
-        of: find.byType(ConversationTile),
-        matching: find.byType(Card),
-      ),
-      findsOneWidget,
+      tester.getSize(find.byType(InkWell)).height,
+      greaterThanOrEqualTo(48),
     );
   });
 }

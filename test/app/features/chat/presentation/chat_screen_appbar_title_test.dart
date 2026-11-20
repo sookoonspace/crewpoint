@@ -6,6 +6,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
 import 'package:crewpoint_app/app/features/chat/presentation/chat_screen.dart';
 
 void main() {
@@ -24,12 +25,12 @@ void main() {
       );
 
       final inAppBar = find.descendant(
-        of: find.byType(AppBar),
+        of: find.byType(CpTopBar),
         matching: find.text('Weekend getaway'),
       );
       expect(inAppBar, findsOneWidget);
       expect(
-        find.descendant(of: find.byType(AppBar), matching: find.text('Chat')),
+        find.descendant(of: find.byType(CpTopBar), matching: find.text('Chat')),
         findsNothing,
       );
     },
@@ -44,48 +45,33 @@ void main() {
     );
 
     expect(
-      find.descendant(of: find.byType(AppBar), matching: find.text('Chat')),
+      find.descendant(of: find.byType(CpTopBar), matching: find.text('Chat')),
       findsOneWidget,
     );
   });
 
-  testWidgets(
-    'AppBar title wraps to 2 lines with a taller toolbar — same shape '
-    'as the Budget detail (2026-06-11 iPhone 12 mini QA)',
-    (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: ChatScreen(
-            messages: [],
-            currentUserId: 'u1',
-            appBarTitle: 'Weekend getaway',
-          ),
+  testWidgets('a long title fits the top bar on a 320 px phone', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ChatScreen(
+          messages: [],
+          currentUserId: 'u1',
+          appBarTitle: 'Weekend getaway with the whole crew at the lake house',
         ),
-      );
-
-      final titleText = tester.widget<Text>(
-        find.descendant(
-          of: find.byType(AppBar),
-          matching: find.text('Weekend getaway'),
-        ),
-      );
-      expect(titleText.maxLines, 2, reason: 'title must allow 2 lines');
-
-      final appBar = tester.widget<AppBar>(find.byType(AppBar));
-      expect(
-        appBar.toolbarHeight,
-        isNotNull,
-        reason:
-            'toolbarHeight must be set explicitly; Material defaults to '
-            '56 which clips the second line.',
-      );
-      expect(
-        appBar.toolbarHeight,
-        greaterThanOrEqualTo(72.0),
-        reason:
-            'toolbarHeight=${appBar.toolbarHeight} is too small — needs '
-            '>=72 to fit 2 lines of titleMedium.',
-      );
-    },
-  );
+      ),
+    );
+    expect(tester.takeException(), isNull);
+    expect(
+      find.descendant(
+        of: find.byType(CpTopBar),
+        matching: find.textContaining('Weekend getaway'),
+      ),
+      findsOneWidget,
+    );
+  });
 }

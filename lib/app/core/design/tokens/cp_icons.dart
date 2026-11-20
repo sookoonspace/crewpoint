@@ -142,6 +142,10 @@ abstract final class CpIcons {
   static const IconData blocked = LucideIcons.ban;
   static const IconData circleOutlined = LucideIcons.circle;
 
+  /// A choice among several, chosen or not.
+  static const IconData radioOn = LucideIcons.circleDot;
+  static const IconData radioOff = LucideIcons.circle;
+
   // ===== Decorative =====
   static const IconData wavingHand = LucideIcons.hand;
   static const IconData volunteerActivism = LucideIcons.handHeart;
