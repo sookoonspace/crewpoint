@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
 
 import '../harness/roles_harness.dart';
 import '../robots/roles_robot.dart';
@@ -102,7 +103,7 @@ void main() {
     expect(find.text('R Patel · home@x.test'), findsOneWidget);
     // Nothing is linked until someone is picked.
     final link = find.byKey(const Key('links.u1.link'));
-    expect(tester.widget<FilledButton>(link).onPressed, isNull);
+    expect(tester.widget<CpButton>(link).onPressed, isNull);
     await robot.tap(const Key('links.u1.pick.mira'));
     await robot.tap(const Key('links.u1.link'));
     expect(harness.calls.calls, contains('resolveLinkRequest:u1:mira'));

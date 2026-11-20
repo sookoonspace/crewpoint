@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
-import 'package:crewpoint_app/app/core/constants/app_assets.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_radius.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
 
-/// Sign-out confirmation bottom sheet with Lottie animation.
-///
-/// Colors resolve from `Theme.of(context).colorScheme` so the sheet
-/// renders correctly under either theme.
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
+
+/// Asks before signing out. The caller signs out through [onSignOut].
 class SignOutSheet extends StatelessWidget {
   const SignOutSheet({super.key, this.onSignOut});
 
@@ -18,109 +15,56 @@ class SignOutSheet extends StatelessWidget {
     required BuildContext context,
     VoidCallback? onSignOut,
   }) {
-    return showModalBottomSheet<void>(
+    return showCpSheet<void>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppRadius.xxl),
-        ),
-      ),
+      title: context.strings.profile.signOutTitle,
       builder: (_) => SignOutSheet(onSignOut: onSignOut),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.xl,
-        AppSpacing.xl,
-        AppSpacing.xl,
-        MediaQuery.viewPaddingOf(context).bottom + AppSpacing.xl,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: colors.outline,
-              borderRadius: BorderRadius.circular(2),
+    final cp = context.cp;
+    final s = context.strings.profile;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: cp.space.lg,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: cp.space.md,
+          children: [
+            Icon(
+              CpIcons.wavingHand,
+              size: cp.sizes.iconMd,
+              color: cp.colors.textMuted,
             ),
-          ),
-          const SizedBox(height: AppSpacing.xl),
-
-          Lottie.asset(
-            AppAssets.lottieSignOut,
-            width: 80,
-            height: 80,
-            errorBuilder: (_, _, _) =>
-                Icon(AppIcons.wavingHand, size: 48, color: colors.onSurface),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-
-          Text(
-            'Sign out of CrewPoint?',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: colors.onSurface,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'Your local data will be preserved for next time.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colors.onSurfaceVariant,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: AppSpacing.xl),
-
-          Row(
-            spacing: AppSpacing.md,
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: colors.onSurface,
-                    side: BorderSide(color: colors.outline),
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: AppRadius.borderLg,
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppSpacing.md,
-                    ),
-                  ),
-                  child: const Text('Cancel'),
-                ),
+            Expanded(
+              child: Text(
+                s.signOutBody,
+                style: cp.type.bodyMedium.copyWith(color: cp.colors.textMuted),
               ),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    onSignOut?.call();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colors.primary,
-                    foregroundColor: colors.onPrimary,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: AppRadius.borderLg,
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppSpacing.md,
-                    ),
-                  ),
-                  child: const Text('Sign Out'),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+            ),
+          ],
+        ),
+        CpButton(
+          key: const Key('profile.signOut.confirm'),
+          label: s.signOut,
+          icon: CpIcons.actionLogout,
+          expand: true,
+          onPressed: () {
+            Navigator.of(context).pop();
+            onSignOut?.call();
+          },
+        ),
+        CpButton.secondary(
+          key: const Key('profile.signOut.cancel'),
+          label: s.cancel,
+          expand: true,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ],
     );
   }
 }

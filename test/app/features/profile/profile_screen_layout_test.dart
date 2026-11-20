@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/auth/data/auth_repository.dart';
@@ -33,24 +34,14 @@ Future<void> _pumpAt(WidgetTester tester, Size size) async {
 }
 
 void main() {
-  testWidgets(
-    'clamps SliverList subtree to <= 720 while hero stays full-bleed at desktop',
-    (tester) async {
-      await _pumpAt(tester, const Size(1280, 800));
+  testWidgets('keeps the body to the phone column on a wide screen', (
+    tester,
+  ) async {
+    await _pumpAt(tester, const Size(1280, 800));
 
-      final clampedWidth = tester.getSize(find.byKey(_bodyKey)).width;
-      expect(clampedWidth, lessThanOrEqualTo(720));
-
-      // Hero spans full viewport width — sits OUTSIDE the sliver clamp.
-      final heroFinder = find.text('Profile');
-      final heroAncestor = find.ancestor(
-        of: heroFinder,
-        matching: find.byType(Container),
-      );
-      final heroWidth = tester.getSize(heroAncestor.first).width;
-      expect(heroWidth, equals(1280));
-    },
-  );
+    final clampedWidth = tester.getSize(find.byKey(_bodyKey)).width;
+    expect(clampedWidth, lessThanOrEqualTo(720));
+  });
 
   testWidgets('body fills viewport on phone width', (tester) async {
     await _pumpAt(tester, const Size(375, 812));
@@ -68,18 +59,17 @@ void main() {
       expect(find.text('ACCOUNT'), findsNothing);
     });
 
-    testWidgets('standalone OutlinedButton labeled "Sign Out" exists exactly '
-        'once', (tester) async {
+    testWidgets('a standalone button labeled "Sign Out" exists exactly once', (
+      tester,
+    ) async {
       await _pumpAt(tester, const Size(375, 812));
 
       final signOutButton = find.byKey(const Key('profile.signOut.button'));
       expect(signOutButton, findsOneWidget);
       expect(
         tester.widget(signOutButton),
-        isA<OutlinedButton>(),
-        reason:
-            'Sign Out is a destructive-action OutlinedButton, not a '
-            'ListTile-styled row.',
+        isA<CpButton>(),
+        reason: 'Sign Out is a button, not a settings row.',
       );
       // Label is reachable as a Text descendant of the button.
       expect(
@@ -88,14 +78,14 @@ void main() {
       );
     });
 
-    testWidgets('Sign Out button sits between PAYMENT section and Danger '
+    testWidgets('Sign Out button sits between Payment section and Danger '
         'Zone (visual order)', (tester) async {
       // Pump at a tall viewport so the lazy SliverList materialises every
       // descendant including the Danger Zone below the typical fold.
       await _pumpAt(tester, const Size(800, 2400));
       // Capture vertical center of each anchor widget by finding their
       // RenderBox positions.
-      final paymentY = tester.getCenter(find.text('PAYMENT')).dy;
+      final paymentY = tester.getCenter(find.text('Payment')).dy;
       final signOutY = tester
           .getCenter(find.byKey(const Key('profile.signOut.button')))
           .dy;
@@ -104,7 +94,7 @@ void main() {
       expect(
         signOutY,
         greaterThan(paymentY),
-        reason: 'Sign Out must render below the PAYMENT header.',
+        reason: 'Sign Out must render below the Payment header.',
       );
       expect(
         signOutY,

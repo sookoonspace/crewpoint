@@ -30,12 +30,11 @@ Future<void> _pumpForm(
 }
 
 Future<void> _attemptSignIn(WidgetTester tester) async {
-  final auth = AppStrings.fallbackEnglish.auth;
-  final emailField = find.widgetWithText(TextField, auth.emailHint);
-  final passwordField = find.widgetWithText(TextField, auth.passwordHint);
+  final emailField = find.byKey(const Key('auth.email.address'));
+  final passwordField = find.byKey(const Key('auth.email.password'));
   await tester.enterText(emailField, 'shared@example.com');
   await tester.enterText(passwordField, 'wrong-password-1234');
-  await tester.tap(find.widgetWithText(ElevatedButton, auth.signIn));
+  await tester.tap(find.byKey(const Key('auth.email.submit')));
   await tester.pump(); // start the future
   await tester.pump(); // settle the post-failure state transition
 }

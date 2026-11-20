@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart' show authProvider;
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
@@ -33,52 +34,66 @@ class EmailUnverifiedBanner extends ConsumerWidget {
     if (user.emailVerified) return const SizedBox.shrink();
     if (!user.isPasswordOnly) return const SizedBox.shrink();
 
-    return Container(
+    final cp = context.cp;
+    final auth = context.strings.auth;
+    return Material(
       key: _key,
-      width: double.infinity,
-      color: AppColors.terracottaLight,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
-        children: [
-          Icon(
-            AppIcons.emailUnread,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
+      color: cp.colors.accentSoft,
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: cp.space.lg,
+          vertical: cp.space.sm,
+        ),
+        child: Wrap(
+          alignment: WrapAlignment.end,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: cp.space.sm,
+          children: [
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: cp.space.md,
               children: [
-                Text(
-                  context.strings.auth.verifyBannerTitle,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontWeight: FontWeight.w600,
-                  ),
+                Icon(
+                  CpIcons.emailUnread,
+                  size: cp.sizes.iconMd,
+                  color: cp.colors.accent,
                 ),
-                Text(
-                  context.strings.auth.verifyBannerBody(user.email),
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontSize: 12,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: cp.space.xs / 2,
+                    children: [
+                      Text(
+                        auth.verifyBannerTitle,
+                        style: cp.type.titleSmall.copyWith(
+                          color: cp.colors.text,
+                        ),
+                      ),
+                      Text(
+                        auth.verifyBannerBody(user.email),
+                        style: cp.type.bodySmall.copyWith(
+                          color: cp.colors.text,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
-          TextButton(
-            key: const Key('auth.verifyBanner.resend'),
-            onPressed: () =>
-                ref.read(authProvider.notifier).resendVerificationEmail(),
-            child: Text(context.strings.auth.verifyBannerResend),
-          ),
-          TextButton(
-            key: const Key('auth.verifyBanner.refresh'),
-            onPressed: () =>
-                ref.read(authProvider.notifier).reloadCurrentUser(),
-            child: Text(context.strings.auth.verifyBannerRefresh),
-          ),
-        ],
+            CpButton.text(
+              key: const Key('auth.verifyBanner.resend'),
+              label: auth.verifyBannerResend,
+              onPressed: () =>
+                  ref.read(authProvider.notifier).resendVerificationEmail(),
+            ),
+            CpButton.text(
+              key: const Key('auth.verifyBanner.refresh'),
+              label: auth.verifyBannerRefresh,
+              onPressed: () =>
+                  ref.read(authProvider.notifier).reloadCurrentUser(),
+            ),
+          ],
+        ),
       ),
     );
   }

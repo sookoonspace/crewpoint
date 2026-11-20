@@ -10,13 +10,13 @@ import 'package:crewpoint_app/app/core/services/callable_errors.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/chosen_people_list.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart';
+import 'package:crewpoint_app/app/features/participants/presentation/widgets/answer_input.dart';
 import 'package:crewpoint_app/app/features/participants/application/roster_controller.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
 import 'package:crewpoint_app/app/core/design/components/components.dart';
 import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/group_draft.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/participant.dart';
-import 'package:crewpoint_app/app/features/participants/presentation/field_answer_input.dart';
 
 /// A new group's ID, picked once so a retry saves the same group.
 String newGroupId() => newRecordId();
@@ -617,11 +617,13 @@ class _GroupAnswers extends ConsumerStatefulWidget {
 }
 
 class _GroupAnswersState extends ConsumerState<_GroupAnswers> {
-  final _formKey = GlobalKey<FormState>();
   Map<String, Object?>? _standard;
   Map<String, Object?>? _private;
   bool _privateAsked = false;
   bool _busy = false;
+
+  /// Save was tried, so answers show what is wrong with them.
+  bool _tried = false;
   String? _error;
 
   @override
@@ -662,8 +664,12 @@ class _GroupAnswersState extends ConsumerState<_GroupAnswers> {
       return CpLoadingState(semanticLabel: strings.save);
     }
 
+    Object? answerOf(CustomField f) =>
+        (f.isPrivate ? _private : _standard)![f.id];
+
     Future<void> save() async {
-      if (!_formKey.currentState!.validate()) return;
+      setState(() => _tried = true);
+      if (fields.any((f) => checkAnswer(f, answerOf(f)) != null)) return;
       final messenger = ScaffoldMessenger.of(context);
       setState(() {
         _busy = true;
@@ -687,17 +693,18 @@ class _GroupAnswersState extends ConsumerState<_GroupAnswers> {
       }
     }
 
-    return Form(
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: cp.space.md,
-        children: [
-          for (final f in fields)
-            FieldAnswerInput(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: cp.space.md,
+      children: [
+        for (final f in fields)
+          IgnorePointer(
+            ignoring: _busy,
+            child: AnswerInput(
               field: f,
-              value: (f.isPrivate ? _private : _standard)![f.id],
-              enabled: !_busy,
+              keyPrefix: 'people',
+              value: answerOf(f),
+              showError: _tried,
               onChanged: (v) => setState(() {
                 final target = f.isPrivate ? _private! : _standard!;
                 if (v == null) {
@@ -707,20 +714,20 @@ class _GroupAnswersState extends ConsumerState<_GroupAnswers> {
                 }
               }),
             ),
-          if (_error != null)
-            CpFieldError(_error!, key: const Key('people.group.answersError')),
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: CpButton(
-              key: const Key('people.group.saveAnswers'),
-              label: strings.save,
-              busy: _busy,
-              onPressed: save,
-            ),
           ),
-          Divider(height: cp.space.lg, color: cp.colors.border),
-        ],
-      ),
+        if (_error != null)
+          CpFieldError(_error!, key: const Key('people.group.answersError')),
+        Align(
+          alignment: AlignmentDirectional.centerEnd,
+          child: CpButton(
+            key: const Key('people.group.saveAnswers'),
+            label: strings.save,
+            busy: _busy,
+            onPressed: save,
+          ),
+        ),
+        Divider(height: cp.space.lg, color: cp.colors.border),
+      ],
     );
   }
 }

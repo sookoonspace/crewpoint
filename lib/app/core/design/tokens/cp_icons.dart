@@ -125,6 +125,12 @@ abstract final class CpIcons {
   static const IconData notifications = LucideIcons.bell;
   static const IconData privacy = LucideIcons.shieldCheck;
   static const IconData privacyPolicy = LucideIcons.scrollText;
+
+  /// Light, dark or the device's appearance.
+  static const IconData theme = LucideIcons.sunMoon;
+
+  /// The dev flavor's diagnostic tools.
+  static const IconData devTools = LucideIcons.wrench;
   static const IconData terms = LucideIcons.fileText;
   static const IconData currency = LucideIcons.dollarSign;
   static const IconData joinEvent = LucideIcons.userRoundPlus;

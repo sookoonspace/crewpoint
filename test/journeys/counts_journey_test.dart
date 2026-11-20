@@ -172,8 +172,11 @@ void main() {
     );
     await robot.tap(const Key('counts.recalculate'));
     expect(
-      text(tester, 'counts.recalculateError'),
-      contains('needs a connection'),
+      find.descendant(
+        of: find.byKey(const Key('counts.recalculateError')),
+        matching: find.textContaining('needs a connection'),
+      ),
+      findsOneWidget,
     );
     robot.expectVisible(const Key('counts.event.total'));
     // Trying again works.

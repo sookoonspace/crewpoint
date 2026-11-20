@@ -56,6 +56,9 @@ abstract class AppStrings {
   AgendaStrings get agenda;
   CountsStrings get counts;
   TemplateStrings get templates;
+  PrivacyStrings get privacy;
+  OnboardingStrings get onboarding;
+  DevStrings get dev;
 
   /// Static English fallback. Used by service-layer code that has no
   /// `BuildContext` in scope (e.g. `firebaseAuthErrorMessage`). UI code
@@ -106,6 +109,9 @@ abstract class AuthStrings {
   String get legalFooterAnd; // e.g. " and "
   String get legalFooterPrivacyLink; // e.g. "Privacy Policy"
   String get legalFooterSuffix; // e.g. "."
+
+  /// Stands in for a sign-in provider the app has no name for.
+  String get existingProvider;
 }
 
 /// User-facing strings for the Tasks feature.
@@ -602,6 +608,85 @@ abstract class ProfileStrings {
   String get signOut;
   String get deleteAccount;
 
+  /// The dev flavor's diagnostic console.
+  String get devTools;
+
+  // Edit profile.
+  String get editTitle;
+  String get changePhoto;
+  String get photoGallery;
+  String get photoCamera;
+  String get nameLabel;
+  String get nameHint;
+  String get nameRequired;
+  String get paymentHeading;
+  String get paymentHelp;
+  String get paymentMethodLabel;
+  String get paymentMethodPlaceholder;
+  String get paymentHandleLabel;
+  String get paymentHandleHint;
+  String get settleHeading;
+  String get settleHelp;
+  String get venmoHandleLabel;
+  String get cashappHandleLabel;
+  String get handleInvalid;
+  String get save;
+  String get saved;
+  String get saveDenied;
+  String get saveOffline;
+  String get saveFailed;
+
+  // Notification settings.
+  String get signInRequired;
+  String get notifLoadFailed;
+  String get retry;
+  String get notifPush;
+  String get notifPushOn;
+  String get notifPushOff;
+  String get notifCategories;
+  String get notifUrgent;
+  String get notifUrgentHelp;
+  String get notifTasks;
+  String get notifTasksHelp;
+  String get notifPayments;
+  String get notifPaymentsHelp;
+  String get notifEvents;
+  String get notifEventsHelp;
+  String get notifQuiet;
+  String get notifQuietOff;
+  String notifQuietOn({
+    required String start,
+    required String end,
+    required String zone,
+  });
+  String get notifQuietStart;
+  String get notifQuietEnd;
+  String get notifDigest;
+  String get notifDigestHelp;
+  String get notifSaveFailed;
+
+  // Sign-out sheet.
+  String get signOutTitle;
+  String get signOutBody;
+  String get cancel;
+
+  // Delete-account dialog.
+  String get deleteTitle;
+  String get deleteConfirmTitle;
+  String get deleteContinue;
+  String get deleteForever;
+  String get deleteWarning;
+  String get deletePasswordPrompt;
+  String get deletePasswordLabel;
+  String get deleteReauthPrompt;
+  String get deleteReauthGoogle;
+  String get deleteReauthApple;
+  String get deleteUnknownProvider;
+  String get deleting;
+  String get deleteWrongPassword;
+  String get deleteAuthFailed;
+  String get deleteFailed;
+
   // Theme switcher (Settings row + sheet).
   String get themeRowTitle;
   String get themeModeSystem;
@@ -742,6 +827,15 @@ class _EnglishStrings extends AppStrings {
   CountsStrings get counts => const _EnglishCountsStrings();
   @override
   TemplateStrings get templates => const _EnglishTemplateStrings();
+
+  @override
+  PrivacyStrings get privacy => const _EnglishPrivacyStrings();
+
+  @override
+  OnboardingStrings get onboarding => const _EnglishOnboardingStrings();
+
+  @override
+  DevStrings get dev => const _EnglishDevStrings();
 }
 
 class _EnglishChatStrings extends ChatStrings {
@@ -1160,10 +1254,10 @@ class _EnglishProfileStrings extends ProfileStrings {
   String get statsOwed => 'Owed';
 
   @override
-  String get settingsSection => 'SETTINGS';
+  String get settingsSection => 'Settings';
 
   @override
-  String get paymentSection => 'PAYMENT';
+  String get paymentSection => 'Payment';
 
   @override
   String get notifications => 'Notifications';
@@ -1176,6 +1270,220 @@ class _EnglishProfileStrings extends ProfileStrings {
 
   @override
   String get deleteAccount => 'Delete Account';
+
+  @override
+  String get devTools => 'Dev tools';
+
+  @override
+  String get editTitle => 'Edit profile';
+
+  @override
+  String get changePhoto => 'Change photo';
+
+  @override
+  String get photoGallery => 'Choose from Gallery';
+
+  @override
+  String get photoCamera => 'Take a Photo';
+
+  @override
+  String get nameLabel => 'Display name';
+
+  @override
+  String get nameHint => 'How others see you';
+
+  @override
+  String get nameRequired => 'Please enter your name';
+
+  @override
+  String get paymentHeading => 'Payment info';
+
+  @override
+  String get paymentHelp => 'Optional. Helps your crew settle up with you.';
+
+  @override
+  String get paymentMethodLabel => 'Payment method';
+
+  @override
+  String get paymentMethodPlaceholder => 'Select payment method';
+
+  @override
+  String get paymentHandleLabel => 'Payment handle';
+
+  @override
+  String get paymentHandleHint => '@username, phone, or email';
+
+  @override
+  String get settleHeading => 'Settle handles';
+
+  @override
+  String get settleHelp =>
+      'Used by the Venmo and Cash App buttons when settling up in Budget.';
+
+  @override
+  String get venmoHandleLabel => 'Venmo handle';
+
+  @override
+  String get cashappHandleLabel => r'Cash App $cashtag';
+
+  @override
+  String get handleInvalid => 'Letters, numbers, _ or - only (≤30 chars)';
+
+  @override
+  String get save => 'Save changes';
+
+  @override
+  String get saved => 'Profile updated';
+
+  @override
+  String get saveDenied => 'Permission denied. Please try again.';
+
+  @override
+  String get saveOffline => 'Network error. Check your connection.';
+
+  @override
+  String get saveFailed => 'Failed to save profile. Please try again.';
+
+  @override
+  String get signInRequired => 'Sign in required';
+
+  @override
+  String get notifLoadFailed => 'Could not load notification settings';
+
+  @override
+  String get retry => 'Try again';
+
+  @override
+  String get notifPush => 'Push notifications';
+
+  @override
+  String get notifPushOn => 'Receive alerts on this device.';
+
+  @override
+  String get notifPushOff => 'All notifications are muted.';
+
+  @override
+  String get notifCategories => 'Categories';
+
+  @override
+  String get notifUrgent => 'Urgent chat alerts';
+
+  @override
+  String get notifUrgentHelp =>
+      'Critical messages in group chats. Enable to receive 🚨 alerts.';
+
+  @override
+  String get notifTasks => 'Task assignments';
+
+  @override
+  String get notifTasksHelp => 'When someone assigns a task to you.';
+
+  @override
+  String get notifPayments => 'Payments';
+
+  @override
+  String get notifPaymentsHelp => 'New expenses and settlement disputes.';
+
+  @override
+  String get notifEvents => 'Event updates';
+
+  @override
+  String get notifEventsHelp => 'When someone joins one of your events.';
+
+  @override
+  String get notifQuiet => 'Quiet hours';
+
+  @override
+  String get notifQuietOff => 'Suppress non-urgent push during a daily window.';
+
+  @override
+  String notifQuietOn({
+    required String start,
+    required String end,
+    required String zone,
+  }) => 'Muted $start – $end ($zone)';
+
+  @override
+  String get notifQuietStart => 'Start';
+
+  @override
+  String get notifQuietEnd => 'End';
+
+  @override
+  String get notifDigest => 'Daily digest';
+
+  @override
+  String get notifDigestHelp =>
+      'Morning summary of unread chat, pending tasks, and open '
+      'settlements. Sent at 9:00 in your timezone.';
+
+  @override
+  String get notifSaveFailed => 'Could not save — try again';
+
+  @override
+  String get signOutTitle => 'Sign out of CrewPoint?';
+
+  @override
+  String get signOutBody => 'Your local data will be preserved for next time.';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get deleteTitle => 'Delete Account?';
+
+  @override
+  String get deleteConfirmTitle => 'Confirm Deletion';
+
+  @override
+  String get deleteContinue => 'Continue';
+
+  @override
+  String get deleteForever => 'Delete Forever';
+
+  // Verbatim retention clause from docs/legal/privacy-policy.md (Account
+  // deletion section); change both together.
+  @override
+  String get deleteWarning =>
+      'Your solo events will be permanently deleted. In shared events, '
+      "your name and account ID will be replaced with 'deleted user' "
+      'so the historical record stays intact for the rest of your group. '
+      'This is irreversible. To request full erasure of an anonymized '
+      'record on a per-event basis, contact support after deletion.';
+
+  @override
+  String get deletePasswordPrompt => 'Enter your password to confirm deletion.';
+
+  @override
+  String get deletePasswordLabel => 'Password';
+
+  @override
+  String get deleteReauthPrompt =>
+      'To confirm account deletion, please re-authenticate '
+      'with your sign-in provider.';
+
+  @override
+  String get deleteReauthGoogle => 'Sign in with Google to confirm';
+
+  @override
+  String get deleteReauthApple => 'Sign in with Apple to confirm';
+
+  @override
+  String get deleteUnknownProvider =>
+      'Unable to determine your sign-in method. '
+      'Please sign out and sign in again.';
+
+  @override
+  String get deleting => 'Deleting your account...';
+
+  @override
+  String get deleteWrongPassword => 'Incorrect password. Please try again.';
+
+  @override
+  String get deleteAuthFailed => 'Authentication failed. Please try again.';
+
+  @override
+  String get deleteFailed => 'Account deletion failed. Please try again.';
 
   @override
   String get themeRowTitle => 'Theme';
@@ -1905,6 +2213,9 @@ class _EnglishAuthStrings extends AuthStrings {
 
   @override
   String get legalFooterSuffix => '.';
+
+  @override
+  String get existingProvider => 'your existing provider';
 }
 
 class _EnglishErrorStrings extends ErrorStrings {
@@ -4603,4 +4914,349 @@ class _EnglishTemplateStrings extends TemplateStrings {
   String get stepComplete => 'Done';
   @override
   String get stepToDo => 'Not yet';
+}
+
+/// One kind of data the app keeps, why, and whether it is required.
+typedef PrivacyDataItem = ({String field, String purpose, bool required});
+
+/// A service the app depends on, and what for.
+typedef PrivacyService = ({String name, String purpose});
+
+/// The Privacy dashboard and the legal documents it opens.
+abstract class PrivacyStrings {
+  const PrivacyStrings();
+
+  String get title;
+  String get collectedHeading;
+  List<PrivacyDataItem> get collected;
+  String get required;
+  String get optional;
+  String get paymentNote;
+  String get notCollectedHeading;
+  List<String> get notCollected;
+  String get servicesHeading;
+  List<PrivacyService> get services;
+  String get legalHeading;
+  String get privacyPolicy;
+  String get terms;
+
+  // A legal document.
+  String get effective;
+  String get lastUpdated;
+  String get viewHosted;
+  String get loadFailed;
+  String get viewOnline;
+  String couldNotOpen(String url);
+}
+
+class _EnglishPrivacyStrings extends PrivacyStrings {
+  const _EnglishPrivacyStrings();
+
+  @override
+  String get title => 'Privacy Dashboard';
+
+  @override
+  String get collectedHeading => 'Data we collect';
+
+  @override
+  List<PrivacyDataItem> get collected => const [
+    (
+      field: 'Display Name',
+      purpose: 'How you appear to crew members',
+      required: true,
+    ),
+    (
+      field: 'Email',
+      purpose: 'Contact for settlements, account recovery',
+      required: true,
+    ),
+    (
+      field: 'Profile Photo',
+      purpose: 'Avatar in events, chat, expenses',
+      required: false,
+    ),
+    (
+      field: 'Payment Method',
+      purpose: 'Show crew how to pay you (Venmo, Zelle, etc.)',
+      required: false,
+    ),
+    (
+      field: 'Payment Handle',
+      purpose: 'Your @username or phone for chosen method',
+      required: false,
+    ),
+    (
+      field: 'Currency',
+      purpose: 'Display formatting preference',
+      required: false,
+    ),
+    (
+      field: 'Usage Analytics',
+      purpose: 'Anonymous app improvement data',
+      required: false,
+    ),
+  ];
+
+  @override
+  String get required => 'Required';
+
+  @override
+  String get optional => 'Optional';
+
+  @override
+  String get paymentNote =>
+      'Your payment details (Venmo handle, etc.) are visible to other '
+      'CrewPoint users to facilitate settlements.';
+
+  @override
+  String get notCollectedHeading => 'What we do not collect';
+
+  @override
+  List<String> get notCollected => const [
+    'Phone number (unless you add it as payment handle)',
+    'Physical address, birthday, or demographics',
+    'Device identifiers or advertising IDs',
+    'Contacts or social graph',
+    'Location data',
+    'Browsing or usage history (unless opted in)',
+  ];
+
+  @override
+  String get servicesHeading => 'Third-party services';
+
+  @override
+  List<PrivacyService> get services => const [
+    (name: 'Firebase Auth', purpose: 'Authentication services'),
+    (name: 'Cloud Firestore', purpose: 'Real-time database'),
+    (name: 'Firebase Storage', purpose: 'Profile photo storage'),
+    (name: 'Cloud Functions', purpose: 'Account deletion (server-side)'),
+    (name: 'Google Sign-In', purpose: 'Social authentication'),
+    (name: 'Sign in with Apple', purpose: 'Social authentication'),
+    (name: 'Drift (SQLite)', purpose: 'Local offline database'),
+    (name: 'Flutter Secure Storage', purpose: 'Encrypted token storage'),
+  ];
+
+  @override
+  String get legalHeading => 'Legal documents';
+
+  @override
+  String get privacyPolicy => 'Privacy Policy';
+
+  @override
+  String get terms => 'Terms of Service';
+
+  @override
+  String get effective => 'Effective';
+
+  @override
+  String get lastUpdated => 'Last updated';
+
+  @override
+  String get viewHosted => 'View hosted version';
+
+  @override
+  String get loadFailed => 'Could not load this document right now.';
+
+  @override
+  String get viewOnline => 'View online';
+
+  @override
+  String couldNotOpen(String url) => 'Could not open $url';
+}
+
+/// The first-run pages before signing in.
+abstract class OnboardingStrings {
+  const OnboardingStrings();
+
+  String get appName;
+  String get tagline;
+  String get planTitle;
+  String get planBody;
+  String get syncTitle;
+  String get syncBody;
+  String get splitTitle;
+  String get splitBody;
+  String get privacyTitle;
+  String get privacyBody;
+  String get dataOptIn;
+  String get skip;
+  String get next;
+  String get start;
+
+  /// Read by screen readers on the page dots, such as "Page 2 of 5".
+  String page(int number, int count);
+}
+
+class _EnglishOnboardingStrings extends OnboardingStrings {
+  const _EnglishOnboardingStrings();
+
+  @override
+  String get appName => 'CrewPoint';
+
+  @override
+  String get tagline => 'Your crew, organized.';
+
+  @override
+  String get planTitle => 'Plan Events Together';
+
+  @override
+  String get planBody =>
+      'Assign roles, set dates, and track progress\u2014all in one place.';
+
+  @override
+  String get syncTitle => 'Stay in Sync';
+
+  @override
+  String get syncBody =>
+      'Real-time messaging with critical alerts when it matters most.';
+
+  @override
+  String get splitTitle => 'Split Costs Fairly';
+
+  @override
+  String get splitBody =>
+      'Track expenses, upload receipts, and see who owes what.';
+
+  @override
+  String get privacyTitle => 'Your Data, Your Rules';
+
+  @override
+  String get privacyBody =>
+      'We believe in transparency. You decide what to share.';
+
+  @override
+  String get dataOptIn => 'Allow anonymous usage data';
+
+  @override
+  String get skip => 'Skip';
+
+  @override
+  String get next => 'Continue';
+
+  @override
+  String get start => 'Get Started';
+
+  @override
+  String page(int number, int count) => 'Page $number of $count';
+}
+
+/// The dev flavor's diagnostic console. Only developers see it.
+abstract class DevStrings {
+  const DevStrings();
+
+  String get title;
+  String flavorLine(String flavor);
+  String get signInForDiagnostics;
+  String get crashHeading;
+  String get crashOff;
+  String get crashSend;
+  String get crashThrow;
+  String get crashNotSent;
+  String crashSent(String id);
+  String get fcmHeading;
+  String uidLine(String uid);
+  String get fcmRerun;
+  String get fcmReattach;
+  String get fcmAttached;
+  String get fcmNotAttached;
+  String get fcmAuthStatus;
+  String get fcmApnsToken;
+  String get fcmApnsMissing;
+  String get fcmLiveToken;
+  String get fcmStoredTokens;
+  String get fcmNoStoredTokens;
+  String fcmTokenCount(int count);
+  String fcmError(String error);
+  String get copyReport;
+  String get copied;
+  String get galleryTitle;
+  String get galleryHelp;
+}
+
+class _EnglishDevStrings extends DevStrings {
+  const _EnglishDevStrings();
+
+  @override
+  String get title => 'Dev Tools';
+
+  @override
+  String flavorLine(String flavor) => 'flavor: $flavor · build: debug-only';
+
+  @override
+  String get signInForDiagnostics =>
+      'Sign in to run diagnostics that need a uid '
+      '(FCM token registration, Firestore round-trip, etc).';
+
+  @override
+  String get crashHeading => 'Crash reporting';
+
+  @override
+  String get crashOff => 'Off: this build has no SENTRY_DSN.';
+
+  @override
+  String get crashSend => 'Send test report';
+
+  @override
+  String get crashThrow => 'Throw test error';
+
+  @override
+  String get crashNotSent => 'Not sent. Debug builds need SENTRY_DEBUG=true.';
+
+  @override
+  String crashSent(String id) => 'Sent as $id';
+
+  @override
+  String get fcmHeading => 'FCM diagnostic';
+
+  @override
+  String uidLine(String uid) => 'uid: $uid';
+
+  @override
+  String get fcmRerun => 'Re-run check';
+
+  @override
+  String get fcmReattach => 'Force re-attach';
+
+  @override
+  String get fcmAttached => 'attach() returned true — token written';
+
+  @override
+  String get fcmNotAttached =>
+      'attach() returned false — see diagnostics below';
+
+  @override
+  String get fcmAuthStatus => 'Auth status';
+
+  @override
+  String get fcmApnsToken => 'APNs token';
+
+  @override
+  String get fcmApnsMissing => '(null) — APNs not registered yet';
+
+  @override
+  String get fcmLiveToken => 'FCM token (live)';
+
+  @override
+  String get fcmStoredTokens => 'Firestore fcmTokens';
+
+  @override
+  String get fcmNoStoredTokens => '(empty array — token not yet written)';
+
+  @override
+  String fcmTokenCount(int count) => '$count token(s):';
+
+  @override
+  String fcmError(String error) => 'ERROR: $error';
+
+  @override
+  String get copyReport => 'Copy report';
+
+  @override
+  String get copied => 'Copied to clipboard';
+
+  @override
+  String get galleryTitle => 'Design gallery';
+
+  @override
+  String get galleryHelp => 'Every component in light, dark and 200% text';
 }

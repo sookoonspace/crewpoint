@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
-import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart';
 import 'package:crewpoint_app/app/features/participants/application/roster_controller.dart';
@@ -24,10 +24,8 @@ class LinkRequestsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = context.strings.links;
     final me = ref.watch(currentUserIdProvider) ?? '';
-    Widget scaffold(Widget body) => Scaffold(
-      appBar: AppBar(title: Text(strings.title), elevation: 0),
-      body: body,
-    );
+    Widget scaffold(Widget body) =>
+        AdminScaffold(title: strings.title, body: body);
     if (!event.can(me, 'participants.edit') ||
         !event.can(me, 'participants.readPrivate')) {
       return scaffold(const NoAccessView());
@@ -42,55 +40,42 @@ class LinkRequestsScreen extends ConsumerWidget {
     }
     if (!requests.hasValue) {
       return scaffold(
-        const Center(
-          child: CircularProgressIndicator(key: Key('links.loading')),
+        CpLoadingState.rows(
+          key: const Key('links.loading'),
+          semanticLabel: strings.title,
         ),
       );
     }
     final items = requests.value!;
-    final padding = Breakpoints.screenHorizontalPadding(context);
     return scaffold(
-      ListView(
-        key: const Key('links.list'),
-        padding: EdgeInsets.fromLTRB(
-          padding,
-          AppSpacing.lg,
-          padding,
-          AppSpacing.xxxl,
-        ),
+      AdminList(
+        listKey: const Key('links.list'),
         children: [
-          ContentMaxWidth(
-            maxWidth: 720,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              spacing: AppSpacing.md,
-              children: [
-                Text(strings.intro),
-                Text(
-                  strings.offline,
-                  key: const Key('links.online'),
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                if (items.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.all(AppSpacing.xl),
-                    child: Text(
-                      strings.empty,
-                      key: const Key('links.empty'),
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                  )
-                else
-                  for (final r in items)
-                    _RequestCard(
-                      key: Key('links.request.${r.uid}'),
-                      event: event,
-                      request: r,
-                    ),
-              ],
-            ),
+          AdminNote(strings.intro),
+          AdminNote(
+            strings.offline,
+            key: const Key('links.online'),
+            icon: CpIcons.wifiOff,
           ),
+          if (items.isEmpty)
+            CpCard(
+              child: CpListRow(
+                key: const Key('links.empty'),
+                leading: Icon(
+                  CpIcons.statusDoneOutline,
+                  size: context.cp.sizes.iconMd,
+                  color: context.cp.colors.textMuted,
+                ),
+                title: strings.empty,
+              ),
+            )
+          else
+            for (final r in items)
+              _RequestCard(
+                key: Key('links.request.${r.uid}'),
+                event: event,
+                request: r,
+              ),
         ],
       ),
     );
@@ -150,7 +135,6 @@ class _RequestCardState extends ConsumerState<_RequestCard> {
   @override
   Widget build(BuildContext context) {
     final strings = context.strings.links;
-    final theme = Theme.of(context);
     final r = widget.request;
     final id = r.uid;
     final people = ref.watch(
@@ -173,97 +157,119 @@ class _RequestCardState extends ConsumerState<_RequestCard> {
     ];
     final groupNames = groups.value ?? const {};
 
+    final cp = context.cp;
+    Widget option(String value, Key key, String title, {String? subtitle}) {
+      final chosen = _choice == value;
+      return CpListRow(
+        key: key,
+        title: title,
+        subtitle: subtitle,
+        selected: chosen,
+        trailing: chosen
+            ? Icon(
+                CpIcons.statusDone,
+                size: cp.sizes.iconMd,
+                color: cp.colors.accent,
+              )
+            : const SizedBox.shrink(),
+        onTap: _busy ? null : () => setState(() => _choice = value),
+      );
+    }
+
     final options = <Widget>[
       for (final p in adults)
-        RadioListTile<String>(
-          key: Key('links.$id.pick.${p.id}'),
-          value: 'p:${p.id}',
-          title: Text(p.name.isEmpty ? strings.unnamed : p.name),
-          subtitle: p.groupId == null
-              ? null
-              : Text(groupNames[p.groupId]?.name ?? ''),
-          contentPadding: EdgeInsets.zero,
+        option(
+          'p:${p.id}',
+          Key('links.$id.pick.${p.id}'),
+          p.name.isEmpty ? strings.unnamed : p.name,
+          subtitle: p.groupId == null ? null : groupNames[p.groupId]?.name,
         ),
       if (adults.isEmpty)
         for (final gid in r.groupIds)
-          RadioListTile<String>(
-            key: Key('links.$id.group.$gid'),
-            value: 'g:$gid',
-            title: Text(
-              strings.asAdultOf(
-                groupNames[gid]?.name ?? widget.event.words.one('group'),
-              ),
+          option(
+            'g:$gid',
+            Key('links.$id.group.$gid'),
+            strings.asAdultOf(
+              groupNames[gid]?.name ?? widget.event.words.one('group'),
             ),
-            contentPadding: EdgeInsets.zero,
           ),
     ];
+    final muted = cp.type.bodyMedium.copyWith(color: cp.colors.textMuted);
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          spacing: AppSpacing.sm,
-          children: [
-            Text(
-              strings.accountLine(r.name, r.email),
-              style: theme.textTheme.titleMedium,
-            ),
-            if (people.isLoading && !people.hasValue)
-              const LinearProgressIndicator()
-            else ...[
-              Text(
-                adults.isEmpty ? strings.onlyChildren : strings.pickRecord,
-                style: theme.textTheme.bodyMedium,
-              ),
-              for (final c in children)
-                Text(
-                  '${c.name} · ${strings.childTag}',
-                  key: Key('links.$id.child.${c.id}'),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+    return CpCard(
+      padding: EdgeInsets.all(cp.space.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: cp.space.md,
+        children: [
+          Row(
+            spacing: cp.space.md,
+            children: [
+              CpAvatar(name: r.name ?? r.email),
+              Expanded(
+                child: Text(
+                  strings.accountLine(r.name, r.email),
+                  style: cp.type.titleMedium.copyWith(color: cp.colors.text),
                 ),
-              RadioGroup<String>(
-                groupValue: _choice,
-                onChanged: (v) {
-                  if (!_busy) setState(() => _choice = v);
-                },
-                child: Column(children: options),
               ),
             ],
-            if (_failed)
-              Text(
-                strings.linkFailed,
-                key: Key('links.$id.error'),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.error,
+          ),
+          if (people.isLoading && !people.hasValue)
+            LinearProgressIndicator(color: cp.colors.accent)
+          else ...[
+            Text(
+              adults.isEmpty ? strings.onlyChildren : strings.pickRecord,
+              style: cp.type.bodyMedium.copyWith(color: cp.colors.text),
+            ),
+            if (children.isNotEmpty)
+              Wrap(
+                spacing: cp.space.sm,
+                runSpacing: cp.space.sm,
+                children: [
+                  for (final c in children)
+                    Text(
+                      '${c.name} · ${strings.childTag}',
+                      key: Key('links.$id.child.${c.id}'),
+                      style: muted,
+                    ),
+                ],
+              ),
+            if (options.isNotEmpty)
+              Semantics(
+                container: true,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: cp.colors.border),
+                    borderRadius: cp.radii.md,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: cp.radii.md,
+                    child: CpRowGroup(children: options),
+                  ),
                 ),
               ),
-            OverflowBar(
-              alignment: MainAxisAlignment.end,
-              spacing: AppSpacing.sm,
-              overflowSpacing: AppSpacing.sm,
-              children: [
-                TextButton(
-                  key: Key('links.$id.dismiss'),
-                  onPressed: _busy ? null : () => _resolve(dismiss: true),
-                  child: Text(strings.notAMatch),
-                ),
-                FilledButton(
-                  key: Key('links.$id.link'),
-                  onPressed: _busy || _choice == null ? null : _resolve,
-                  child: _busy
-                      ? const SizedBox.square(
-                          dimension: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(strings.link),
-                ),
-              ],
-            ),
           ],
-        ),
+          if (_failed)
+            CpFieldError(strings.linkFailed, key: Key('links.$id.error')),
+          Wrap(
+            alignment: WrapAlignment.end,
+            spacing: cp.space.sm,
+            runSpacing: cp.space.sm,
+            children: [
+              CpButton.text(
+                key: Key('links.$id.dismiss'),
+                label: strings.notAMatch,
+                onPressed: _busy ? null : () => _resolve(dismiss: true),
+              ),
+              CpButton(
+                key: Key('links.$id.link'),
+                label: strings.link,
+                busy: _busy,
+                onPressed: _choice == null ? null : _resolve,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

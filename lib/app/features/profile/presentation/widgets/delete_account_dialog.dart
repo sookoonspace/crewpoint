@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/services/account_deletion_service.dart';
-import 'package:crewpoint_app/app/core/widgets/custom_text_field.dart';
-import 'package:crewpoint_app/app/core/widgets/destructive_button.dart';
-import 'package:crewpoint_app/app/core/widgets/loading_animation.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 
 /// Multi-step account deletion dialog with dynamic re-authentication.
@@ -103,10 +101,11 @@ class _DeleteAccountDialogState extends ConsumerState<DeleteAccountDialog> {
     if (!mounted) return;
 
     if (!reAuthSuccess) {
+      final strings = context.strings.profile;
       setState(() {
         _errorMessage = provider == AuthProviderType.email
-            ? 'Incorrect password. Please try again.'
-            : 'Authentication failed. Please try again.';
+            ? strings.deleteWrongPassword
+            : strings.deleteAuthFailed;
       });
       return;
     }
@@ -137,13 +136,13 @@ class _DeleteAccountDialogState extends ConsumerState<DeleteAccountDialog> {
     // our own UI and return to the re-auth step.
     setState(() {
       _step = 1;
-      _errorMessage =
-          result.message ?? 'Account deletion failed. Please try again.';
+      _errorMessage = result.message ?? context.strings.profile.deleteFailed;
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final s = context.strings.profile;
     final stepBody = switch (_step) {
       0 => const _WarningStep(),
       1 => _ReAuthStep(
@@ -151,42 +150,37 @@ class _DeleteAccountDialogState extends ConsumerState<DeleteAccountDialog> {
         passwordController: _passwordController,
         errorMessage: _errorMessage,
       ),
-      2 => const _ProcessingStep(),
-      _ => const SizedBox.shrink(),
+      _ => const _ProcessingStep(),
     };
 
-    return AlertDialog(
-      title: _step == 2
-          ? null
-          : Text(
-              _step == 0 ? 'Delete Account?' : 'Confirm Deletion',
-              style: const TextStyle(color: AppColors.terracotta),
-            ),
+    return CpDialog(
+      title: switch (_step) {
+        0 => s.deleteTitle,
+        1 => s.deleteConfirmTitle,
+        _ => s.deleting,
+      },
       content: stepBody,
-      actions: _step == 2
-          ? null
-          : [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel'),
-              ),
-              if (_step == 0)
-                TextButton(
-                  onPressed: () => setState(() => _step = 1),
-                  child: const Text(
-                    'Continue',
-                    style: TextStyle(color: AppColors.terracotta),
-                  ),
-                )
-              else if (_step == 1)
-                SizedBox(
-                  width: 140,
-                  child: DestructiveButton(
-                    label: 'Delete Forever',
-                    onPressed: _onDeleteForever,
-                  ),
-                ),
-            ],
+      actions: [
+        if (_step < 2)
+          CpButton.text(
+            key: const Key('deleteAccount.dialog.cancel'),
+            label: s.cancel,
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        if (_step == 0)
+          CpButton.destructive(
+            key: const Key('deleteAccount.dialog.continue'),
+            label: s.deleteContinue,
+            onPressed: () => setState(() => _step = 1),
+          )
+        else if (_step == 1)
+          CpButton.destructive(
+            key: const Key('deleteAccount.dialog.confirm'),
+            label: s.deleteForever,
+            icon: CpIcons.actionDeletePermanent,
+            onPressed: _onDeleteForever,
+          ),
+      ],
     );
   }
 }
@@ -196,19 +190,24 @@ class _WarningStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Verbatim retention clause from docs/legal/privacy-policy.md
-    // (Account deletion section). Keeping the dialog and the policy
-    // in lock-step prevents UI/policy drift; counsel review of either
-    // side requires updating both.
-    return const KeyedSubtree(
-      key: Key('deleteAccount.dialog.warn'),
-      child: Text(
-        'Your solo events will be permanently deleted. In shared events, '
-        "your name and account ID will be replaced with 'deleted user' "
-        'so the historical record stays intact for the rest of your group. '
-        'This is irreversible. To request full erasure of an anonymized '
-        'record on a per-event basis, contact support after deletion.',
-      ),
+    final cp = context.cp;
+    return Row(
+      key: const Key('deleteAccount.dialog.warn'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: cp.space.md,
+      children: [
+        Icon(
+          CpIcons.statusUrgent,
+          size: cp.sizes.iconMd,
+          color: cp.colors.overdue,
+        ),
+        Expanded(
+          child: Text(
+            context.strings.profile.deleteWarning,
+            style: cp.type.bodyMedium.copyWith(color: cp.colors.text),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -226,43 +225,44 @@ class _ReAuthStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
+    final s = context.strings.profile;
+    final body = cp.type.bodyMedium.copyWith(color: cp.colors.text);
     return Column(
       key: const Key('deleteAccount.dialog.reauth'),
       mainAxisSize: MainAxisSize.min,
-      spacing: AppSpacing.lg,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: cp.space.lg,
       children: [
-        if (errorMessage != null)
-          Text(
-            errorMessage!,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppColors.terracotta),
-          ),
+        if (errorMessage != null) CpFieldError(errorMessage!),
         switch (provider) {
           AuthProviderType.email => Column(
             mainAxisSize: MainAxisSize.min,
-            spacing: AppSpacing.md,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: cp.space.md,
             children: [
-              const Text('Enter your password to confirm deletion.'),
-              CustomTextField(
-                hintText: 'Password',
+              Text(s.deletePasswordPrompt, style: body),
+              CpTextField(
+                fieldKey: const Key('deleteAccount.dialog.password'),
+                label: s.deletePasswordLabel,
                 controller: passwordController,
                 obscureText: true,
-                prefixIcon: const Icon(AppIcons.authPassword),
+                prefixIcon: CpIcons.authPassword,
+                autofillHints: const [AutofillHints.password],
               ),
             ],
           ),
-          AuthProviderType.google => const _ProviderReAuthPrompt(
-            icon: AppIcons.authGoogle,
-            label: 'Sign in with Google to confirm',
+          AuthProviderType.google => _ProviderReAuthPrompt(
+            icon: CpIcons.authGoogle,
+            label: s.deleteReauthGoogle,
           ),
-          AuthProviderType.apple => const _ProviderReAuthPrompt(
-            icon: AppIcons.authApple,
-            label: 'Sign in with Apple to confirm',
+          AuthProviderType.apple => _ProviderReAuthPrompt(
+            icon: CpIcons.authApple,
+            label: s.deleteReauthApple,
           ),
-          AuthProviderType.unknown => const Text(
-            'Unable to determine your sign-in method. '
-            'Please sign out and sign in again.',
+          AuthProviderType.unknown => Text(
+            s.deleteUnknownProvider,
+            style: body,
           ),
         },
       ],
@@ -278,19 +278,26 @@ class _ProviderReAuthPrompt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
     return Column(
       mainAxisSize: MainAxisSize.min,
-      spacing: AppSpacing.md,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: cp.space.md,
       children: [
-        const Text(
-          'To confirm account deletion, please re-authenticate '
-          'with your sign-in provider.',
+        Text(
+          context.strings.profile.deleteReauthPrompt,
+          style: cp.type.bodyMedium.copyWith(color: cp.colors.text),
         ),
         Row(
-          spacing: AppSpacing.sm,
+          spacing: cp.space.sm,
           children: [
-            Icon(icon, color: Theme.of(context).colorScheme.onSurface),
-            Text(label, style: Theme.of(context).textTheme.bodyMedium),
+            Icon(icon, size: cp.sizes.iconMd, color: cp.colors.text),
+            Expanded(
+              child: Text(
+                label,
+                style: cp.type.bodyMedium.copyWith(color: cp.colors.text),
+              ),
+            ),
           ],
         ),
       ],
@@ -303,13 +310,15 @@ class _ProcessingStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      key: Key('deleteAccount.dialog.processing'),
-      padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        spacing: AppSpacing.lg,
-        children: [LoadingAnimation(), Text('Deleting your account...')],
+    final cp = context.cp;
+    return Padding(
+      key: const Key('deleteAccount.dialog.processing'),
+      padding: EdgeInsets.symmetric(vertical: cp.space.xl),
+      child: Center(
+        child: CircularProgressIndicator(
+          color: cp.colors.accent,
+          semanticsLabel: context.strings.profile.deleting,
+        ),
       ),
     );
   }

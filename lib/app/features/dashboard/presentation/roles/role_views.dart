@@ -138,29 +138,7 @@ class AdminSaveBar extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
-    final cp = context.cp;
-    return Material(
-      color: cp.colors.surface,
-      child: SafeArea(
-        top: false,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            border: Border(top: BorderSide(color: cp.colors.border)),
-          ),
-          child: Padding(
-            padding: EdgeInsets.all(cp.space.md),
-            // heightFactor 1: the bar is only as tall as its button.
-            child: Align(
-              alignment: AlignmentDirectional.centerEnd,
-              heightFactor: 1,
-              child: child,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => CpSaveBar(child: child);
 }
 
 /// Muted help under a screen's title or above a section.

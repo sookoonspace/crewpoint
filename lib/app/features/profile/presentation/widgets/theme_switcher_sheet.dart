@@ -1,85 +1,64 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:crewpoint_app/app/core/constants/app_radius.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/theme/theme_mode_provider.dart';
 
-/// Bottom-sheet chooser for `ThemeMode`. Three options: System / Light / Dark.
-///
-/// All colors resolve from `Theme.of(context).colorScheme` so the sheet
-/// renders correctly under either theme. Modeled structurally on
-/// `SignOutSheet` but does NOT reuse its hardcoded color references.
+/// Chooses the app's appearance: the device's, light or dark. Choosing one
+/// applies it and closes the sheet.
 class ThemeSwitcherSheet extends ConsumerWidget {
   const ThemeSwitcherSheet({super.key});
 
   static Future<void> show(BuildContext context) {
-    return showModalBottomSheet<void>(
+    return showCpSheet<void>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppRadius.xxl),
-        ),
-      ),
+      title: context.strings.profile.themeRowTitle,
       builder: (_) => const ThemeSwitcherSheet(),
     );
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final cp = context.cp;
     final current = ref.watch(themeModeProvider);
     final s = context.strings.profile;
-    final colors = Theme.of(context).colorScheme;
 
-    void onChanged(ThemeMode? mode) {
-      if (mode == null) return;
-      ref.read(themeModeProvider.notifier).set(mode);
-      Navigator.of(context).pop();
+    Widget option(ThemeMode mode, String label, {String? help}) {
+      final chosen = mode == current;
+      return CpListRow(
+        key: Key('profile.theme.sheet.option.${mode.name}'),
+        title: label,
+        subtitle: help,
+        selected: chosen,
+        trailing: chosen
+            ? Icon(
+                CpIcons.statusDone,
+                size: cp.sizes.iconMd,
+                color: cp.colors.accent,
+              )
+            : const SizedBox.shrink(),
+        onTap: () {
+          ref.read(themeModeProvider.notifier).set(mode);
+          Navigator.of(context).pop();
+        },
+      );
     }
 
-    return Padding(
+    return CpCard(
       key: const Key('profile.theme.sheet'),
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.xl,
-        AppSpacing.lg,
-        MediaQuery.viewPaddingOf(context).bottom + AppSpacing.lg,
-      ),
-      child: RadioGroup<ThemeMode>(
-        groupValue: current,
-        onChanged: onChanged,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: AppSpacing.lg),
-              decoration: BoxDecoration(
-                color: colors.outline,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            RadioListTile<ThemeMode>(
-              key: const Key('profile.theme.sheet.option.system'),
-              value: ThemeMode.system,
-              title: Text(s.themeModeSystem),
-              subtitle: Text(s.themeModeSystemSubtitle),
-            ),
-            RadioListTile<ThemeMode>(
-              key: const Key('profile.theme.sheet.option.light'),
-              value: ThemeMode.light,
-              title: Text(s.themeModeLight),
-            ),
-            RadioListTile<ThemeMode>(
-              key: const Key('profile.theme.sheet.option.dark'),
-              value: ThemeMode.dark,
-              title: Text(s.themeModeDark),
-            ),
-          ],
-        ),
+      child: CpRowGroup(
+        children: [
+          option(
+            ThemeMode.system,
+            s.themeModeSystem,
+            help: s.themeModeSystemSubtitle,
+          ),
+          option(ThemeMode.light, s.themeModeLight),
+          option(ThemeMode.dark, s.themeModeDark),
+        ],
       ),
     );
   }

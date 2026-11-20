@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/services/device_timezone.dart';
 import 'package:crewpoint_app/app/core/services/fcm_gateway.dart';
@@ -164,7 +165,7 @@ void main() {
       );
 
       final tiles = tester
-          .widgetList<SwitchListTile>(find.byType(SwitchListTile))
+          .widgetList<CpSwitchRow>(find.byType(CpSwitchRow))
           .toList();
       // master + 4 categories + quiet-hours toggle + dailyDigest opt-in
       // (Phase 6.1). Phase 4 criticalOptIn tile withdrawn for V1/V2.
@@ -197,7 +198,7 @@ void main() {
       await _pumpScreen(tester, repo);
 
       final tiles = tester
-          .widgetList<SwitchListTile>(find.byType(SwitchListTile))
+          .widgetList<CpSwitchRow>(find.byType(CpSwitchRow))
           .toList();
       // Layout order: [master, urgentChat, taskUpdates, payments,
       // eventUpdates, quietHours, dailyDigest]. Every non-master tile
@@ -287,11 +288,8 @@ void main() {
         final repo = _InMemoryUserRepo();
         await _pumpScreen(tester, repo);
 
-        final tile = tester.widget<SwitchListTile>(
-          find.descendant(
-            of: find.byKey(const Key('notifSettings.quietHours.tile')),
-            matching: find.byType(SwitchListTile),
-          ),
+        final tile = tester.widget<CpSwitchRow>(
+          find.byKey(const Key('notifSettings.quietHours.tile')),
         );
         expect(tile.value, isFalse);
       },
@@ -396,11 +394,8 @@ void main() {
       final repo = _InMemoryUserRepo();
       await _pumpScreen(tester, repo);
 
-      final tile = tester.widget<SwitchListTile>(
-        find.descendant(
-          of: find.byKey(const Key('notifSettings.dailyDigest.tile')),
-          matching: find.byType(SwitchListTile),
-        ),
+      final tile = tester.widget<CpSwitchRow>(
+        find.byKey(const Key('notifSettings.dailyDigest.tile')),
       );
       expect(tile.value, isFalse);
     });

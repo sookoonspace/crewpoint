@@ -2,8 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/env/app_flavor.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 
@@ -28,9 +27,9 @@ class LegalFooter extends StatelessWidget {
     try {
       final ok = await urlLauncher(uri, mode: LaunchMode.externalApplication);
       if (!ok && context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Could not open $url')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.strings.privacy.couldNotOpen(url))),
+        );
       }
     } catch (e, st) {
       log(
@@ -44,19 +43,19 @@ class LegalFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
     final auth = context.strings.auth;
-    final base = Theme.of(
-      context,
-    ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant);
-    final linkStyle = base?.copyWith(
-      color: AppColors.sageDark,
+    final base = cp.type.bodySmall.copyWith(color: cp.colors.textMuted);
+    final linkStyle = base.copyWith(
+      color: cp.colors.accent,
       decoration: TextDecoration.underline,
+      decorationColor: cp.colors.accent,
     );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.md,
+      padding: EdgeInsets.symmetric(
+        horizontal: cp.space.lg,
+        vertical: cp.space.md,
       ),
       child: Text.rich(
         TextSpan(
@@ -68,7 +67,11 @@ class LegalFooter extends StatelessWidget {
               child: InkWell(
                 key: termsKey,
                 onTap: () => _open(context, '/terms'),
-                child: Text(auth.legalFooterTermsLink, style: linkStyle),
+                // The sentence around it already scales the link with the text
+                // size, so the link itself must not scale again.
+                child: MediaQuery.withNoTextScaling(
+                  child: Text(auth.legalFooterTermsLink, style: linkStyle),
+                ),
               ),
             ),
             TextSpan(text: auth.legalFooterAnd),
@@ -77,7 +80,11 @@ class LegalFooter extends StatelessWidget {
               child: InkWell(
                 key: privacyKey,
                 onTap: () => _open(context, '/privacy'),
-                child: Text(auth.legalFooterPrivacyLink, style: linkStyle),
+                // The sentence around it already scales the link with the text
+                // size, so the link itself must not scale again.
+                child: MediaQuery.withNoTextScaling(
+                  child: Text(auth.legalFooterPrivacyLink, style: linkStyle),
+                ),
               ),
             ),
             TextSpan(text: auth.legalFooterSuffix),

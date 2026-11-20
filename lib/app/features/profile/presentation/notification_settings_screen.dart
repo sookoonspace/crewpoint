@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
-import 'package:crewpoint_app/app/core/widgets/forms/app_switch_tile.dart';
 import 'package:crewpoint_app/app/features/profile/application/notification_prefs_provider.dart';
 import 'package:crewpoint_app/app/features/profile/domain/models/notification_prefs.dart';
 
@@ -20,11 +19,17 @@ class NotificationSettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final uid = ref.watch(currentUserIdProvider);
     final s = context.strings.profile;
+    final navigator = Navigator.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text(s.notifications), elevation: 0),
+      backgroundColor: context.cp.colors.background,
+      appBar: CpTopBar(
+        title: s.notifications,
+        leadingTooltip: MaterialLocalizations.of(context).backButtonTooltip,
+        onLeading: navigator.canPop() ? () => navigator.maybePop() : null,
+      ),
       body: uid == null
-          ? const Center(child: Text('Sign in required'))
+          ? CpEmptyState(icon: CpIcons.lock, title: s.signInRequired)
           : _Body(uid: uid),
     );
   }
@@ -37,27 +42,67 @@ class _Body extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncPrefs = ref.watch(notificationPrefsProvider(uid));
-    return ContentMaxWidth(
-      maxWidth: 720,
-      child: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(
-          horizontal: Breakpoints.screenHorizontalPadding(context),
-          vertical: AppSpacing.lg,
+    final cp = context.cp;
+    final s = context.strings.profile;
+    return switch (ref.watch(notificationPrefsProvider(uid))) {
+      AsyncValue(:final value?) => ListView(
+        padding: EdgeInsets.fromLTRB(
+          cp.space.lg,
+          cp.space.sm,
+          cp.space.lg,
+          cp.space.xxl,
         ),
-        child: asyncPrefs.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(
-            child: Text(
-              'Could not load notification settings',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+        children: [
+          ContentMaxWidth(
+            maxWidth: cp.sizes.phoneColumn,
+            child: _PrefsForm(uid: uid, prefs: value),
           ),
-          data: (prefs) => _PrefsForm(uid: uid, prefs: prefs),
-        ),
+        ],
+      ),
+      AsyncValue(error: != null) => CpErrorState(
+        key: const Key('notifSettings.error'),
+        title: s.notifLoadFailed,
+        retryLabel: s.retry,
+        retryKey: const Key('notifSettings.retry'),
+        onRetry: () => ref.invalidate(notificationPrefsProvider(uid)),
+      ),
+      _ => CpLoadingState.rows(
+        key: const Key('notifSettings.loading'),
+        semanticLabel: s.notifications,
+      ),
+    };
+  }
+}
+
+/// Switch rows in a card, padded so the switches line up with the card's
+/// other rows.
+class _SwitchCard extends StatelessWidget {
+  const _SwitchCard({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final cp = context.cp;
+    return CpCard(
+      padding: EdgeInsets.symmetric(
+        horizontal: cp.space.lg,
+        vertical: cp.space.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: cp.space.sm,
+        children: children,
       ),
     );
   }
+}
+
+void _showSaveError(BuildContext context) {
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(context.strings.profile.notifSaveFailed)),
+  );
 }
 
 class _PrefsForm extends ConsumerWidget {
@@ -68,80 +113,86 @@ class _PrefsForm extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final cp = context.cp;
+    final s = context.strings.profile;
     final controller = ref.read(notificationPrefsProvider(uid).notifier);
+    final on = prefs.pushEnabled;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: cp.space.lg,
       children: [
-        AppSwitchTile(
-          key: const Key('notifSettings.pushEnabled.tile'),
-          title: 'Push notifications',
-          subtitle: prefs.pushEnabled
-              ? 'Receive alerts on this device.'
-              : 'All notifications are muted.',
-          value: prefs.pushEnabled,
-          onChanged: (v) =>
-              _safeUpdate(context, () => controller.setPushEnabled(v)),
+        _SwitchCard(
+          children: [
+            CpSwitchRow(
+              key: const Key('notifSettings.pushEnabled.tile'),
+              title: s.notifPush,
+              help: on ? s.notifPushOn : s.notifPushOff,
+              value: on,
+              onChanged: (v) =>
+                  _safeUpdate(context, () => controller.setPushEnabled(v)),
+            ),
+          ],
         ),
-        const SizedBox(height: AppSpacing.lg),
-        Text(
-          'Categories',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            letterSpacing: 1.2,
-            fontWeight: FontWeight.w600,
-          ),
+        CpSectionHeader(title: s.notifCategories),
+        _SwitchCard(
+          children: [
+            CpSwitchRow(
+              key: const Key('notifSettings.urgentChat.tile'),
+              title: s.notifUrgent,
+              help: s.notifUrgentHelp,
+              value: prefs.urgentChat,
+              onChanged: on
+                  ? (v) =>
+                        _safeUpdate(context, () => controller.setUrgentChat(v))
+                  : null,
+            ),
+            CpSwitchRow(
+              key: const Key('notifSettings.taskUpdates.tile'),
+              title: s.notifTasks,
+              help: s.notifTasksHelp,
+              value: prefs.taskUpdates,
+              onChanged: on
+                  ? (v) =>
+                        _safeUpdate(context, () => controller.setTaskUpdates(v))
+                  : null,
+            ),
+            CpSwitchRow(
+              key: const Key('notifSettings.payments.tile'),
+              title: s.notifPayments,
+              help: s.notifPaymentsHelp,
+              value: prefs.payments,
+              onChanged: on
+                  ? (v) => _safeUpdate(context, () => controller.setPayments(v))
+                  : null,
+            ),
+            CpSwitchRow(
+              key: const Key('notifSettings.eventUpdates.tile'),
+              title: s.notifEvents,
+              help: s.notifEventsHelp,
+              value: prefs.eventUpdates,
+              onChanged: on
+                  ? (v) => _safeUpdate(
+                      context,
+                      () => controller.setEventUpdates(v),
+                    )
+                  : null,
+            ),
+          ],
         ),
-        const SizedBox(height: AppSpacing.sm),
-        AppSwitchTile(
-          key: const Key('notifSettings.urgentChat.tile'),
-          title: 'Urgent chat alerts',
-          subtitle:
-              'Critical messages in group chats. Enable to receive 🚨 alerts.',
-          value: prefs.urgentChat,
-          enabled: prefs.pushEnabled,
-          onChanged: (v) =>
-              _safeUpdate(context, () => controller.setUrgentChat(v)),
-        ),
-        AppSwitchTile(
-          key: const Key('notifSettings.taskUpdates.tile'),
-          title: 'Task assignments',
-          subtitle: 'When someone assigns a task to you.',
-          value: prefs.taskUpdates,
-          enabled: prefs.pushEnabled,
-          onChanged: (v) =>
-              _safeUpdate(context, () => controller.setTaskUpdates(v)),
-        ),
-        AppSwitchTile(
-          key: const Key('notifSettings.payments.tile'),
-          title: 'Payments',
-          subtitle: 'New expenses and settlement disputes.',
-          value: prefs.payments,
-          enabled: prefs.pushEnabled,
-          onChanged: (v) =>
-              _safeUpdate(context, () => controller.setPayments(v)),
-        ),
-        AppSwitchTile(
-          key: const Key('notifSettings.eventUpdates.tile'),
-          title: 'Event updates',
-          subtitle: 'When someone joins one of your events.',
-          value: prefs.eventUpdates,
-          enabled: prefs.pushEnabled,
-          onChanged: (v) =>
-              _safeUpdate(context, () => controller.setEventUpdates(v)),
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        _QuietHoursTile(uid: uid, prefs: prefs),
-        const SizedBox(height: AppSpacing.lg),
-        AppSwitchTile(
-          key: const Key('notifSettings.dailyDigest.tile'),
-          title: 'Daily digest',
-          subtitle:
-              'Morning summary of unread chat, pending tasks, and open '
-              'settlements. Sent at 9:00 in your timezone.',
-          value: prefs.dailyDigest,
-          enabled: prefs.pushEnabled,
-          onChanged: (v) =>
-              _safeUpdate(context, () => controller.setDailyDigest(v)),
+        _QuietHoursCard(uid: uid, prefs: prefs),
+        _SwitchCard(
+          children: [
+            CpSwitchRow(
+              key: const Key('notifSettings.dailyDigest.tile'),
+              title: s.notifDigest,
+              help: s.notifDigestHelp,
+              value: prefs.dailyDigest,
+              onChanged: on
+                  ? (v) =>
+                        _safeUpdate(context, () => controller.setDailyDigest(v))
+                  : null,
+            ),
+          ],
         ),
       ],
     );
@@ -155,25 +206,25 @@ class _PrefsForm extends ConsumerWidget {
       await update();
     } catch (_) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not save — try again'),
-          backgroundColor: AppColors.terracotta,
-        ),
-      );
+      _showSaveError(context);
     }
   }
+}
+
+String _formatMinute(int m) {
+  final h = (m ~/ 60).toString().padLeft(2, '0');
+  final mm = (m % 60).toString().padLeft(2, '0');
+  return '$h:$mm';
 }
 
 /// Phase 5 / 5.2 quiet-hours toggle. Enabling sets a default
 /// 22:00-07:00 window in the device's IANA timezone (resolved via
 /// `deviceTimezoneProvider` — native call to TimeZone.current on iOS /
 /// TimeZone.getDefault() on Android; falls back to `'UTC'` when the
-/// platform call fails). Phase 5.2 follow-up adds a custom-window
-/// picker; server-side enforcement already honours any window the user
-/// / picker writes.
-class _QuietHoursTile extends ConsumerWidget {
-  const _QuietHoursTile({required this.uid, required this.prefs});
+/// platform call fails). Server-side enforcement honours any window the
+/// user picks with the Start and End rows.
+class _QuietHoursCard extends ConsumerWidget {
+  const _QuietHoursCard({required this.uid, required this.prefs});
 
   final String uid;
   final NotificationPrefs prefs;
@@ -186,46 +237,52 @@ class _QuietHoursTile extends ConsumerWidget {
       prefs.quietHoursEnd != null &&
       prefs.timezone != null;
 
-  String _formatMinute(int m) {
-    final h = (m ~/ 60).toString().padLeft(2, '0');
-    final mm = (m % 60).toString().padLeft(2, '0');
-    return '$h:$mm';
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final cp = context.cp;
+    final s = context.strings.profile;
     final controller = ref.read(notificationPrefsProvider(uid).notifier);
-    final subtitle = _isEnabled
-        ? 'Muted ${_formatMinute(prefs.quietHoursStart!)}'
-              ' – ${_formatMinute(prefs.quietHoursEnd!)}'
-              ' (${prefs.timezone})'
-        : 'Suppress non-urgent push during a daily window.';
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        AppSwitchTile(
-          key: const Key('notifSettings.quietHours.tile'),
-          title: 'Quiet hours',
-          subtitle: subtitle,
-          value: _isEnabled,
-          enabled: prefs.pushEnabled,
-          onChanged: (v) => _safeToggle(context, ref, controller, enable: v),
-        ),
-        if (_isEnabled) ...[
-          _TimeRow(
-            keyId: 'notifSettings.quietHours.start',
-            label: 'Start',
-            minuteOfDay: prefs.quietHoursStart!,
-            onPicked: (m) => _safeSetStart(context, controller, m),
+    final help = _isEnabled
+        ? s.notifQuietOn(
+            start: _formatMinute(prefs.quietHoursStart!),
+            end: _formatMinute(prefs.quietHoursEnd!),
+            zone: prefs.timezone!,
+          )
+        : s.notifQuietOff;
+    return CpCard(
+      child: CpRowGroup(
+        children: [
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: cp.space.lg,
+              vertical: cp.space.sm,
+            ),
+            child: CpSwitchRow(
+              key: const Key('notifSettings.quietHours.tile'),
+              title: s.notifQuiet,
+              help: help,
+              value: _isEnabled,
+              onChanged: prefs.pushEnabled
+                  ? (v) => _safeToggle(context, ref, controller, enable: v)
+                  : null,
+            ),
           ),
-          _TimeRow(
-            keyId: 'notifSettings.quietHours.end',
-            label: 'End',
-            minuteOfDay: prefs.quietHoursEnd!,
-            onPicked: (m) => _safeSetEnd(context, controller, m),
-          ),
+          if (_isEnabled) ...[
+            _TimeRow(
+              keyId: 'notifSettings.quietHours.start',
+              label: s.notifQuietStart,
+              minuteOfDay: prefs.quietHoursStart!,
+              onPicked: (m) => _safeSetStart(context, controller, m),
+            ),
+            _TimeRow(
+              keyId: 'notifSettings.quietHours.end',
+              label: s.notifQuietEnd,
+              minuteOfDay: prefs.quietHoursEnd!,
+              onPicked: (m) => _safeSetEnd(context, controller, m),
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 
@@ -263,16 +320,6 @@ class _QuietHoursTile extends ConsumerWidget {
     }
   }
 
-  void _showSaveError(BuildContext context) {
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Could not save — try again'),
-        backgroundColor: AppColors.terracotta,
-      ),
-    );
-  }
-
   Future<void> _safeToggle(
     BuildContext context,
     WidgetRef ref,
@@ -296,22 +343,15 @@ class _QuietHoursTile extends ConsumerWidget {
       }
     } catch (_) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not save — try again'),
-          backgroundColor: AppColors.terracotta,
-        ),
-      );
+      _showSaveError(context);
     }
   }
 }
 
-/// One quiet-hours endpoint row — leading label + trailing "HH:MM"
-/// display. Tap opens Material's [showTimePicker]; the chosen
-/// [TimeOfDay] is converted to a minute-of-day int and handed to
-/// [onPicked]. The `showTimePicker` dialog itself is not exercised in
-/// widget tests (Material's input-mode keyboard interaction is brittle
-/// in the test harness); manual QA covers the dialog.
+/// One quiet-hours endpoint: its label and "HH:MM". Tapping opens
+/// Material's [showTimePicker], whose choice is handed to [onPicked] as a
+/// minute of the day. The picker itself is covered by manual QA, since its
+/// keyboard input mode is brittle in widget tests.
 class _TimeRow extends StatelessWidget {
   const _TimeRow({
     required this.keyId,
@@ -325,22 +365,15 @@ class _TimeRow extends StatelessWidget {
   final int minuteOfDay;
   final ValueChanged<int> onPicked;
 
-  String _format(int m) {
-    final h = (m ~/ 60).toString().padLeft(2, '0');
-    final mm = (m % 60).toString().padLeft(2, '0');
-    return '$h:$mm';
-  }
-
   @override
   Widget build(BuildContext context) {
-    return ListTile(
+    final cp = context.cp;
+    return CpListRow(
       key: Key(keyId),
-      title: Text(label),
+      title: label,
       trailing: Text(
-        _format(minuteOfDay),
-        style: Theme.of(
-          context,
-        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+        _formatMinute(minuteOfDay),
+        style: cp.type.titleMedium.copyWith(color: cp.colors.text),
       ),
       onTap: () async {
         final picked = await showTimePicker(

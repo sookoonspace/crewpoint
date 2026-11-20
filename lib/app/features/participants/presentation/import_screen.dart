@@ -3,14 +3,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/services/file_picker_service.dart';
-import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
-import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart';
 import 'package:crewpoint_app/app/features/participants/application/roster_controller.dart';
@@ -185,138 +183,142 @@ class _ImportScreenState extends ConsumerState<ImportScreen> {
           navigator.pop();
         }
       },
-      child: Scaffold(
-        appBar: AppBar(title: Text(title), elevation: 0),
-        body: body,
-      ),
+      child: AdminScaffold(title: title, body: body),
     );
 
     if (!event.can(me, 'participants.import')) {
       return scaffold(const NoAccessView());
     }
+    final cp = context.cp;
     final fields =
         ref.watch(eventFieldsProvider(event.id)).value ?? const <CustomField>[];
     final fieldsById = {for (final f in fields) f.id: f};
-    final theme = Theme.of(context);
+    final muted = cp.type.bodyMedium.copyWith(color: cp.colors.textMuted);
 
     final List<Widget> children;
     final jobId = _jobId;
     if (jobId != null) {
-      children = _jobView(jobId, strings, fieldsById, theme);
+      children = _jobView(jobId, strings, fieldsById);
     } else {
+      final preview = _preview;
       children = [
-        Text(strings.intro, style: theme.textTheme.bodyMedium),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: AppSpacing.sm,
-          children: [
-            const Icon(AppIcons.wifiOff, size: 20),
-            Expanded(
-              child: Text(
-                strings.needsConnection,
-                key: const Key('people.import.online'),
-                style: theme.textTheme.bodySmall,
-              ),
-            ),
-          ],
+        AdminNote(strings.intro),
+        AdminNote(
+          strings.needsConnection,
+          key: const Key('people.import.online'),
+          icon: CpIcons.wifiOff,
         ),
-        if (_preview == null) ..._recent(strings, theme),
-        OutlinedButton.icon(
+        if (preview == null) ..._recent(strings),
+        CpButton.secondary(
           key: const Key('people.import.pick'),
+          label: _file == null ? strings.pick : strings.pickAnother,
+          icon: CpIcons.importFile,
+          expand: true,
           onPressed: _busy ? null : () => _pick(fields),
-          icon: const Icon(AppIcons.importFile),
-          label: Text(_file == null ? strings.pick : strings.pickAnother),
         ),
-        if (_preview case final preview?) ...[
-          Text(
-            strings.fileSummary(_file!.name, preview.rowCount),
-            key: const Key('people.import.file'),
-            style: theme.textTheme.titleSmall,
+        if (preview != null) ...[
+          CpCard(
+            padding: EdgeInsets.all(cp.space.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: cp.space.lg,
+              children: [
+                Text(
+                  strings.fileSummary(_file!.name, preview.rowCount),
+                  key: const Key('people.import.file'),
+                  style: cp.type.titleSmall.copyWith(color: cp.colors.text),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  spacing: cp.space.xs,
+                  children: [
+                    Semantics(
+                      header: true,
+                      child: Text(
+                        strings.mappingHeading,
+                        style: cp.type.titleMedium.copyWith(
+                          color: cp.colors.text,
+                        ),
+                      ),
+                    ),
+                    Text(strings.mappingHelp, style: muted),
+                  ],
+                ),
+                for (var i = 0; i < preview.header.length; i++)
+                  _ColumnMapping(
+                    index: i,
+                    header: preview.header[i],
+                    sample: [
+                      for (final r in preview.rows)
+                        if (i < r.length && r[i].isNotEmpty) r[i],
+                    ].take(2).join(', '),
+                    value: _targets[i],
+                    fields: fields,
+                    enabled: !_busy,
+                    onChanged: (t) => setState(() {
+                      _targets = [
+                        for (var j = 0; j < _targets.length; j++)
+                          j == i
+                              ? t
+                              : (t != 'ignore' && _targets[j] == t
+                                    ? 'ignore'
+                                    : _targets[j]),
+                      ];
+                    }),
+                  ),
+                if (mappingProblem(_targets) != null)
+                  CpFieldError(
+                    strings.nameNotMapped,
+                    key: const Key('people.import.nameNotMapped'),
+                  ),
+              ],
+            ),
           ),
-          Text(strings.mappingHeading, style: theme.textTheme.titleMedium),
-          Text(strings.mappingHelp, style: theme.textTheme.bodySmall),
-          for (var i = 0; i < preview.header.length; i++)
-            _ColumnMapping(
-              index: i,
-              header: preview.header[i],
-              sample: [
-                for (final r in preview.rows)
-                  if (i < r.length && r[i].isNotEmpty) r[i],
-              ].take(2).join(', '),
-              value: _targets[i],
-              fields: fields,
-              enabled: !_busy,
-              onChanged: (t) => setState(() {
-                _targets = [
-                  for (var j = 0; j < _targets.length; j++)
-                    j == i
-                        ? t
-                        : (t != 'ignore' && _targets[j] == t
-                              ? 'ignore'
-                              : _targets[j]),
-                ];
-              }),
-            ),
-          if (mappingProblem(_targets) != null)
-            Text(
-              strings.nameNotMapped,
-              key: const Key('people.import.nameNotMapped'),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.error,
-              ),
-            ),
-          PrimaryButton(
+          CpButton(
             key: const Key('people.import.check'),
             label: strings.check,
-            isLoading: _busy,
+            busy: _busy,
+            expand: true,
             onPressed: mappingProblem(_targets) == null ? _check : null,
           ),
         ],
-        if (_error != null) _errorText(theme),
+        ?_errorText(),
       ];
     }
 
     return scaffold(
-      ListView(
-        key: const Key('people.import.body'),
-        padding: EdgeInsets.symmetric(
-          horizontal: Breakpoints.screenHorizontalPadding(context),
-          vertical: AppSpacing.lg,
-        ),
-        children: [
-          ContentMaxWidth(
-            maxWidth: 720,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              spacing: AppSpacing.md,
-              children: children,
-            ),
-          ),
-        ],
-      ),
+      AdminList(listKey: const Key('people.import.body'), children: children),
     );
   }
 
-  Widget _errorText(ThemeData theme) => Text(
-    _error!,
-    key: const Key('people.import.error'),
-    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.error),
-  );
+  Widget? _errorText() => _error == null
+      ? null
+      : CpFieldError(_error!, key: const Key('people.import.error'));
 
-  List<Widget> _recent(ImportStrings strings, ThemeData theme) {
+  List<Widget> _recent(ImportStrings strings) {
+    final cp = context.cp;
     final recent = ref.watch(recentImportsProvider(widget.event.id)).value;
     if (recent == null || recent.isEmpty) return const [];
     return [
-      Text(strings.recentHeading, style: theme.textTheme.titleSmall),
-      for (final job in recent)
-        ListTile(
-          key: Key('people.import.job.${job.id}'),
-          contentPadding: EdgeInsets.zero,
-          leading: const Icon(AppIcons.members),
-          title: Text(job.fileName),
-          subtitle: Text(strings.statusName(job.status.name)),
-          onTap: () => setState(() => _jobId = job.id),
+      CpSectionHeader(title: strings.recentHeading),
+      CpCard(
+        child: CpRowGroup(
+          children: [
+            for (final job in recent)
+              CpListRow(
+                key: Key('people.import.job.${job.id}'),
+                leading: Icon(
+                  CpIcons.importFile,
+                  size: cp.sizes.iconMd,
+                  color: cp.colors.textMuted,
+                ),
+                title: job.fileName,
+                subtitle: strings.statusName(job.status.name),
+                onTap: () => setState(() => _jobId = job.id),
+              ),
+          ],
         ),
+      ),
     ];
   }
 
@@ -324,8 +326,8 @@ class _ImportScreenState extends ConsumerState<ImportScreen> {
     String jobId,
     ImportStrings strings,
     Map<String, CustomField> fieldsById,
-    ThemeData theme,
   ) {
+    final cp = context.cp;
     final asyncJob = ref.watch(
       importJobProvider((eventId: widget.event.id, jobId: jobId)),
     );
@@ -341,18 +343,46 @@ class _ImportScreenState extends ConsumerState<ImportScreen> {
     final job = asyncJob.value;
     if (job == null) {
       return [
-        const Center(
-          child: CircularProgressIndicator(key: Key('people.import.loading')),
+        CpLoadingState(
+          key: const Key('people.import.loading'),
+          semanticLabel: strings.checking,
         ),
       ];
     }
     final words = widget.event.words;
     final report = job.report;
     final progress = job.progress;
-    final out = <Widget>[Text(job.fileName, style: theme.textTheme.titleSmall)];
+    final body = cp.type.bodyMedium.copyWith(color: cp.colors.text);
+    final muted = cp.type.bodyMedium.copyWith(color: cp.colors.textMuted);
+    final heading = cp.type.titleSmall.copyWith(color: cp.colors.text);
+    // What the server said about the file, in one card.
+    final card = <Widget>[
+      Row(
+        spacing: cp.space.sm,
+        children: [
+          Icon(
+            CpIcons.importFile,
+            size: cp.sizes.iconMd,
+            color: cp.colors.textMuted,
+          ),
+          Expanded(child: Text(job.fileName, style: heading)),
+        ],
+      ),
+    ];
+    final out = <Widget>[];
+    Widget wrap() => CpCard(
+      key: const Key('people.import.job'),
+      padding: EdgeInsets.all(cp.space.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: cp.space.md,
+        children: card,
+      ),
+    );
+
     if (job.isWorking) {
       final applying = job.mode == 'apply';
-      out.addAll([
+      card.addAll([
         Text(
           applying
               ? (progress == null
@@ -360,36 +390,42 @@ class _ImportScreenState extends ConsumerState<ImportScreen> {
                     : strings.progress(progress.processed, progress.total))
               : strings.checking,
           key: const Key('people.import.status'),
+          style: body,
         ),
-        LinearProgressIndicator(
-          key: const Key('people.import.progress'),
-          value: applying && progress != null && progress.total > 0
-              ? progress.processed / progress.total
-              : null,
-        ),
-        Text(strings.needsConnection, style: theme.textTheme.bodySmall),
-      ]);
-      return out;
-    }
-    if (job.status == ImportStatus.failed) {
-      out.addAll([
-        Text(
-          strings.failed(job.error),
-          key: const Key('people.import.failed'),
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.error,
+        ClipRRect(
+          borderRadius: cp.radii.sm,
+          child: LinearProgressIndicator(
+            key: const Key('people.import.progress'),
+            color: cp.colors.accent,
+            backgroundColor: cp.colors.accentSoft,
+            value: applying && progress != null && progress.total > 0
+                ? progress.processed / progress.total
+                : null,
           ),
         ),
-        OutlinedButton(
-          key: const Key('people.import.startOver'),
-          onPressed: _startOver,
-          child: Text(strings.startOver),
-        ),
+        AdminNote(strings.needsConnection, icon: CpIcons.wifiOff),
       ]);
-      return out;
+      return [wrap()];
+    }
+    if (job.status == ImportStatus.failed) {
+      card.add(
+        CpFieldError(
+          strings.failed(job.error),
+          key: const Key('people.import.failed'),
+        ),
+      );
+      return [
+        wrap(),
+        CpButton.secondary(
+          key: const Key('people.import.startOver'),
+          label: strings.startOver,
+          expand: true,
+          onPressed: _startOver,
+        ),
+      ];
     }
     if (report != null) {
-      out.add(
+      card.add(
         Text(
           job.status == ImportStatus.done
               ? strings.imported(report.creates, report.updates)
@@ -399,11 +435,11 @@ class _ImportScreenState extends ConsumerState<ImportScreen> {
                   report.errorCount,
                 ),
           key: const Key('people.import.summary'),
-          style: theme.textTheme.titleMedium,
+          style: cp.type.titleMedium.copyWith(color: cp.colors.text),
         ),
       );
       if (job.status == ImportStatus.checked) {
-        out.add(
+        card.add(
           Text(
             strings.willCreate(
               report.creates,
@@ -411,37 +447,46 @@ class _ImportScreenState extends ConsumerState<ImportScreen> {
               report.newGroups,
               words.other('group'),
             ),
+            style: body,
           ),
         );
       }
       for (final id in report.unmappedRequiredFields) {
-        out.add(
+        card.add(
           Text(
             strings.requiredNotMapped(fieldsById[id]?.label ?? id),
-            style: theme.textTheme.bodySmall,
+            style: muted,
           ),
         );
       }
+      out.add(wrap());
       if (report.errors.isNotEmpty) {
         out.addAll([
-          Text(strings.errorsHeading, style: theme.textTheme.titleSmall),
-          Column(
-            key: const Key('people.import.errors'),
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (final e in report.errors)
-                Text(
-                  strings.rowError(
-                    e.row,
-                    e.column,
-                    strings.problemName(e.problem),
+          CpSectionHeader(title: strings.errorsHeading),
+          CpCard(
+            padding: EdgeInsets.all(cp.space.lg),
+            child: Column(
+              key: const Key('people.import.errors'),
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: cp.space.sm,
+              children: [
+                for (final e in report.errors)
+                  CpFieldError(
+                    strings.rowError(
+                      e.row,
+                      e.column,
+                      strings.problemName(e.problem),
+                    ),
                   ),
-                ),
-              if (report.errorCount > report.errors.length)
-                Text(
-                  strings.moreErrors(report.errorCount - report.errors.length),
-                ),
-            ],
+                if (report.errorCount > report.errors.length)
+                  Text(
+                    strings.moreErrors(
+                      report.errorCount - report.errors.length,
+                    ),
+                    style: muted,
+                  ),
+              ],
+            ),
           ),
         ]);
       }
@@ -451,71 +496,87 @@ class _ImportScreenState extends ConsumerState<ImportScreen> {
             g,
       ];
       if (missing.isNotEmpty) {
+        final canChoose = !_busy && job.status == ImportStatus.done;
         out.addAll([
-          Text(
-            strings.missingHeading(words.other('group')),
-            style: theme.textTheme.titleSmall,
-          ),
-          Text(
-            strings.missingHelp(words.other('group')),
-            style: theme.textTheme.bodySmall,
-          ),
-          for (final g in missing)
-            CheckboxListTile(
-              key: Key('people.import.missing.${g.groupId}'),
-              contentPadding: EdgeInsets.zero,
-              controlAffinity: ListTileControlAffinity.leading,
-              title: Text(g.name),
-              subtitle: Text(strings.missingPeople(g.people)),
-              value: _toCancel.contains(g.groupId),
-              onChanged: _busy || job.status != ImportStatus.done
-                  ? null
-                  : (on) => setState(
-                      () => on!
-                          ? _toCancel.add(g.groupId!)
-                          : _toCancel.remove(g.groupId),
+          CpSectionHeader(title: strings.missingHeading(words.other('group'))),
+          AdminNote(strings.missingHelp(words.other('group'))),
+          CpCard(
+            child: CpRowGroup(
+              children: [
+                for (final g in missing)
+                  CpListRow(
+                    key: Key('people.import.missing.${g.groupId}'),
+                    leading: Checkbox(
+                      value: _toCancel.contains(g.groupId),
+                      activeColor: cp.colors.accent,
+                      onChanged: canChoose
+                          ? (on) => setState(
+                              () => on!
+                                  ? _toCancel.add(g.groupId!)
+                                  : _toCancel.remove(g.groupId),
+                            )
+                          : null,
                     ),
+                    title: g.name,
+                    subtitle: strings.missingPeople(g.people),
+                    trailing: const SizedBox.shrink(),
+                    onTap: canChoose
+                        ? () => setState(
+                            () => _toCancel.contains(g.groupId)
+                                ? _toCancel.remove(g.groupId)
+                                : _toCancel.add(g.groupId!),
+                          )
+                        : null,
+                  ),
+              ],
             ),
+          ),
           if (job.status == ImportStatus.done)
-            OutlinedButton(
+            CpButton.destructive(
               key: const Key('people.import.cancelMissing'),
+              label: strings.cancelMissing,
+              expand: true,
               onPressed: _busy || _toCancel.isEmpty
                   ? null
                   : () => _cancelMissing(job),
-              child: Text(strings.cancelMissing),
             ),
         ]);
       }
       if (job.status == ImportStatus.checked) {
         out.addAll([
-          Text(strings.applyHelp, style: theme.textTheme.bodySmall),
-          PrimaryButton(
+          AdminNote(strings.applyHelp),
+          CpButton(
             key: const Key('people.import.apply'),
             label: strings.apply,
-            isLoading: _busy,
+            busy: _busy,
+            expand: true,
             onPressed: report.valid > 0 ? () => _apply(job) : null,
           ),
         ]);
       }
+    } else {
+      out.add(wrap());
     }
-    if (_error != null) out.add(_errorText(theme));
+    if (_errorText() case final error?) out.add(error);
     out.add(
-      OverflowBar(
-        alignment: MainAxisAlignment.spaceBetween,
-        overflowAlignment: OverflowBarAlignment.end,
+      Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: cp.space.sm,
+        runSpacing: cp.space.sm,
         children: [
-          TextButton(
+          CpButton.text(
             key: const Key('people.import.startOver'),
+            label: strings.startOver,
             onPressed: _busy ? null : _startOver,
-            child: Text(strings.startOver),
           ),
           if (job.status == ImportStatus.done)
-            FilledButton(
+            CpButton(
               key: const Key('people.import.done'),
+              label: strings.done,
               onPressed: () => context.canPop()
                   ? context.pop()
                   : context.go('/dashboard/event/${widget.event.id}/people'),
-              child: Text(strings.done),
             ),
         ],
       ),
@@ -546,24 +607,48 @@ class _ColumnMapping extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
     final strings = context.strings.imports;
     String label(String fieldId) =>
         fields.where((f) => f.id == fieldId).firstOrNull?.label ?? fieldId;
     final options = [...importTargets, for (final f in fields) 'field:${f.id}'];
-    return DropdownButtonFormField<String>(
-      key: Key('people.import.map.$index'),
-      isExpanded: true,
-      initialValue: options.contains(value) ? value : 'ignore',
-      decoration: InputDecoration(
-        labelText: header.isEmpty ? '#${index + 1}' : header,
-        helperText: sample.isEmpty ? null : sample,
-        border: const OutlineInputBorder(),
-      ),
-      items: [
-        for (final t in options)
-          DropdownMenuItem(value: t, child: Text(strings.targetName(t, label))),
-      ],
-      onChanged: enabled ? (t) => onChanged(t!) : null,
+    final current = options.contains(value) ? value : 'ignore';
+    final name = header.isEmpty ? '#${index + 1}' : header;
+
+    Future<void> pick() async {
+      final picked = await showCpSheet<String>(
+        context: context,
+        title: name,
+        builder: (sheet) => CpCard(
+          child: CpRowGroup(
+            children: [
+              for (final t in options)
+                CpListRow(
+                  key: Key('people.import.map.$index.$t'),
+                  title: strings.targetName(t, label),
+                  selected: t == current,
+                  trailing: t == current
+                      ? Icon(
+                          CpIcons.statusDone,
+                          size: cp.sizes.iconMd,
+                          color: cp.colors.accent,
+                        )
+                      : const SizedBox.shrink(),
+                  onTap: () => Navigator.of(sheet).pop(t),
+                ),
+            ],
+          ),
+        ),
+      );
+      if (picked != null) onChanged(picked);
+    }
+
+    return CpSelectField(
+      fieldKey: Key('people.import.map.$index'),
+      label: name,
+      help: sample.isEmpty ? null : sample,
+      value: strings.targetName(current, label),
+      onTap: enabled ? pick : null,
     );
   }
 }

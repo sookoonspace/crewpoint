@@ -13,6 +13,7 @@ export 'package:crewpoint_app/app/core/design/components/cp_fields.dart';
 export 'package:crewpoint_app/app/core/design/components/cp_filters.dart';
 export 'package:crewpoint_app/app/core/design/components/cp_list_row.dart';
 export 'package:crewpoint_app/app/core/design/components/cp_progress_ring.dart';
+export 'package:crewpoint_app/app/core/design/components/cp_save_bar.dart';
 export 'package:crewpoint_app/app/core/design/components/cp_section_header.dart';
 export 'package:crewpoint_app/app/core/design/components/cp_sheet_dialog.dart';
 export 'package:crewpoint_app/app/core/design/components/cp_stat_card.dart';
