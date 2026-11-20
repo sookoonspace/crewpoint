@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/widgets/money_text.dart';
 
 void main() {
@@ -17,30 +16,13 @@ void main() {
     expect(find.text(r'$150.00'), findsOneWidget);
   });
 
-  testWidgets('owedToYou variant uses sageDark color', (tester) async {
-    await pump(
-      tester,
-      const MoneyText(
-        amount: 80.0,
-        currencyCode: 'USD',
-        sign: MoneySign.owedToYou,
-      ),
-    );
+  testWidgets('uses tabular digits', (tester) async {
+    await pump(tester, const MoneyText(amount: 80.0, currencyCode: 'USD'));
     final widget = tester.widget<Text>(find.text(r'$80.00'));
-    expect(widget.style?.color, AppColors.moneyOwedToYouFg);
-  });
-
-  testWidgets('youOwe variant uses terracottaDark color', (tester) async {
-    await pump(
-      tester,
-      const MoneyText(
-        amount: 45.0,
-        currencyCode: 'USD',
-        sign: MoneySign.youOwe,
-      ),
+    expect(
+      widget.style?.fontFeatures,
+      contains(const FontFeature.tabularFigures()),
     );
-    final widget = tester.widget<Text>(find.text(r'$45.00'));
-    expect(widget.style?.color, AppColors.moneyYouOweFg);
   });
 
   testWidgets('renders "\$—" when currencyCode is empty', (tester) async {

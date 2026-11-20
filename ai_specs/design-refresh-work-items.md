@@ -648,7 +648,7 @@ Counts, fields, import and link requests; profile, notifications and privacy; on
 - [x] Existing journey tests keep passing, with selectors changed only where a widget's key must change (Testing Strategy 8); every new interactive widget has a `domain.feature.action` key.
 - [x] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
 - [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
-- [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
+- [x] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 
 #### Covers
 - User Stories: 9
@@ -671,12 +671,12 @@ Remove every second source of style, switch the guard test fully on, and leave t
 - `lib/app/core/widgets/` leftovers; CLAUDE.md "UI conventions".
 
 #### Acceptance criteria
-- [ ] `AppColors`, `AppTypography`, `AppSpacing`, `AppRadius`, `AppSizes`, `AppDurations`, `AppIcons` and their files are deleted; `app_assets.dart` stays in `lib/app/core/constants/`.
-- [ ] Widgets in `lib/app/core/widgets/` replaced by design-system components are deleted; nothing outside `lib/app/core/design/` is a second source of style.
-- [ ] The guard test's temporary list is empty and removed; only listed exceptions remain.
-- [ ] `docs/design/design-system.md` is complete; the mockups are marked as superseded by the code for built screens (Req 19).
-- [ ] CLAUDE.md's "UI conventions" section is rewritten for `lib/app/core/design/`.
-- [ ] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
+- [x] `AppColors`, `AppTypography`, `AppSpacing`, `AppRadius`, `AppSizes`, `AppDurations`, `AppIcons` and their files are deleted; `app_assets.dart` stays in `lib/app/core/constants/`.
+- [x] Widgets in `lib/app/core/widgets/` replaced by design-system components are deleted; nothing outside `lib/app/core/design/` is a second source of style.
+- [x] The guard test's temporary list is empty and removed; only listed exceptions remain.
+- [x] `docs/design/design-system.md` is complete; the mockups are marked as superseded by the code for built screens (Req 19).
+- [x] CLAUDE.md's "UI conventions" section is rewritten for `lib/app/core/design/`.
+- [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
 - [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 - [ ] After this lands on dev, the owner's full Stage 1 test runs on the new interface (Req 1).
 

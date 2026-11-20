@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/tasks/application/my_assigned_tasks_provider.dart';
@@ -75,8 +75,8 @@ void main() {
       expect(find.text('Go to Home'), findsOneWidget);
       // Tasks empty state reads as "no tasks" via the tasks icon, not
       // the generic empty Lottie blob. Bypassed Lottie + matched
-      // iconFallback to AppIcons.navTasks for the 2026-06-08 UI fix.
-      expect(find.byIcon(AppIcons.navTasks), findsOneWidget);
+      // iconFallback to CpIcons.navTasks for the 2026-06-08 UI fix.
+      expect(find.byIcon(CpIcons.navTasks), findsOneWidget);
     },
   );
 

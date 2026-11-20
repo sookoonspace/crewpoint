@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
@@ -22,27 +24,22 @@ class ModuleGuard extends StatelessWidget {
   Widget build(BuildContext context) {
     if (event.isModuleOn(module)) return child;
     final strings = context.strings.dashboard;
+    final navigator = Navigator.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(event.title)),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            spacing: AppSpacing.lg,
-            children: [
-              Text(
-                strings.moduleOff,
-                key: const Key('events.module.off'),
-                textAlign: TextAlign.center,
-              ),
-              OutlinedButton(
-                key: const Key('events.module.back'),
-                onPressed: () => context.go('/dashboard/event/${event.id}'),
-                child: Text(strings.settingsBack),
-              ),
-            ],
-          ),
+      backgroundColor: context.cp.colors.background,
+      appBar: CpTopBar(
+        title: event.title,
+        leadingTooltip: MaterialLocalizations.of(context).backButtonTooltip,
+        onLeading: navigator.canPop() ? () => navigator.maybePop() : null,
+      ),
+      body: SingleChildScrollView(
+        child: CpEmptyState(
+          key: const Key('events.module.off'),
+          icon: CpIcons.hidden,
+          title: strings.moduleOff,
+          actionLabel: strings.settingsBack,
+          actionKey: const Key('events.module.back'),
+          onAction: () => context.go('/dashboard/event/${event.id}'),
         ),
       ),
     );

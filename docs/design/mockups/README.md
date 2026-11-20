@@ -2,7 +2,7 @@
 
 Static HTML screens exported to PNG for the Design refresh ([Spec #186](https://github.com/sookoonspace/crewpoint/issues/186)). Phone screens are 390 px wide, in light and dark. Each HTML file names its colour, type, spacing and radius values in a `:root` token block, so the chosen direction becomes the app's token file.
 
-The PNGs are the agreed look until a screen is built; after that the code is the source of truth (Spec Req 19).
+> **Superseded by the code.** Every screen here is now built (Spec #186, finished in #208), so the app and [`../design-system.md`](../design-system.md) are the source of truth. These files are kept as the record of the agreed direction and are not updated (Spec Req 19).
 
 ## Round 1 ([#189](https://github.com/sookoonspace/crewpoint/issues/189))
 
@@ -12,7 +12,7 @@ The Event home in three directions (Slate and sage, Ink and indigo, Warm neutral
 
 ## Round 2 ([#190](https://github.com/sookoonspace/crewpoint/issues/190))
 
-Slate and sage with Lucide, in light and dark: `round-2/<screen>-<mode>.{html,png}`. **Approved by the owner on 2026-11-18**: these are the agreed look until each screen is built (Spec Req 19).
+Slate and sage with Lucide, in light and dark: `round-2/<screen>-<mode>.{html,png}`. **Approved by the owner on 2026-11-18**; all of them are now built.
 
 | Screen | File |
 |---|---|

@@ -16,4 +16,21 @@ abstract final class CpPdfTheme {
   static const PdfColor surface = PdfColor.fromInt(CpPalette.lightSurface);
   static const PdfColor fill = PdfColor.fromInt(CpPalette.lightFill);
   static const PdfColor border = PdfColor.fromInt(CpPalette.lightBorder);
+
+  // Print sizes, in points.
+  static const double pageMargin = 32;
+  static const double gapLg = 16;
+  static const double gapMd = 12;
+  static const double gapSm = 8;
+  static const double gapXs = 4;
+
+  static const double titleSize = 24;
+  static const double headingSize = 14;
+  static const double subheadingSize = 12;
+  static const double smallSize = 10;
+  static const double footerSize = 9;
+
+  /// A receipt thumbnail, and the tiny caption on its placeholder.
+  static const double thumb = 40;
+  static const double thumbCaptionSize = 6;
 }

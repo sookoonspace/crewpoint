@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/design/theme/cp_theme.dart';
-import 'package:crewpoint_app/app/core/widgets/balance_tile.dart';
 import 'package:crewpoint_app/app/core/widgets/conversation_tile.dart';
 import 'package:crewpoint_app/app/core/widgets/event_tile.dart';
-import 'package:crewpoint_app/app/core/widgets/task_progress_summary.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 
 /// Smoke check: each headline design-system tile renders under
@@ -46,34 +44,6 @@ void main() {
         unreadCount: 4,
         isUrgent: true,
       ),
-    );
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('BalanceTile renders cleanly in dark theme', (tester) async {
-    await pumpDark(
-      tester,
-      const BalanceTile(owedToYou: 150.0, youOwe: 45.0, currencyCode: 'USD'),
-    );
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('BalanceTile all-settled state renders cleanly in dark theme', (
-    tester,
-  ) async {
-    await pumpDark(
-      tester,
-      const BalanceTile(owedToYou: 0, youOwe: 0, currencyCode: 'USD'),
-    );
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('TaskProgressSummary renders cleanly in dark theme', (
-    tester,
-  ) async {
-    await pumpDark(
-      tester,
-      const TaskProgressSummary(todo: 5, doing: 2, done: 3),
     );
     expect(tester.takeException(), isNull);
   });

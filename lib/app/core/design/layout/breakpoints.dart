@@ -14,8 +14,7 @@ abstract final class Breakpoints {
 
   /// Canonical screen-level outer horizontal padding. Returns 24 px at
   /// compact/medium viewports and 40 px at expanded+. Use this on every
-  /// routed page being wrapped in [ContentMaxWidth] regardless of which
-  /// existing AppSpacing token the page used before.
+  /// routed page wrapped in [ContentMaxWidth].
   static double screenHorizontalPadding(BuildContext context) =>
       MediaQuery.sizeOf(context).width >= mediumMax ? 40.0 : 24.0;
 }

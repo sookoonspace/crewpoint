@@ -14,10 +14,8 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/template_picke
 import 'package:crewpoint_app/app/features/schedule/presentation/agenda_screen.dart';
 import 'package:crewpoint_app/app/features/schedule/presentation/schedule_screen.dart';
 import 'package:crewpoint_app/app/features/schedule/presentation/session_screen.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/env/app_flavor.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/event_guard.dart';
@@ -730,53 +728,23 @@ class _RouterErrorScreen extends StatelessWidget {
       );
     }
 
+    final nav = context.strings.nav;
     return Scaffold(
+      backgroundColor: context.cp.colors.background,
       body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              spacing: AppSpacing.lg,
-              children: [
-                const Icon(
-                  AppIcons.errorCompass,
-                  size: AppSizes.iconHero,
-                  color: AppColors.sage,
-                ),
-                Text(
-                  'Something went wrong',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                Text(
-                  "We couldn't find that page.",
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                if (attemptedLocation != null) ...[
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    'Tried: $attemptedLocation',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontFamily: 'monospace',
-                    ),
-                  ),
-                ],
-                const SizedBox(height: AppSpacing.sm),
-                ElevatedButton.icon(
-                  key: const Key('router.error.goHome'),
-                  onPressed: () => context.go(AppRoutes.dashboard),
-                  icon: const Icon(AppIcons.homeOutlined),
-                  label: const Text('Go home'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.sage,
-                    foregroundColor: AppColors.white,
-                  ),
-                ),
-              ],
-            ),
+        child: SingleChildScrollView(
+          child: CpEmptyState(
+            key: const Key('router.error'),
+            icon: CpIcons.errorCompass,
+            title: nav.pageNotFoundTitle,
+            message: [
+              nav.pageNotFoundBody,
+              if (attemptedLocation case final tried?)
+                nav.triedLocation(tried),
+            ].join('\n'),
+            actionLabel: nav.goHome,
+            actionKey: const Key('router.error.goHome'),
+            onAction: () => context.go(AppRoutes.dashboard),
           ),
         ),
       ),
@@ -803,10 +771,7 @@ class _EditEventRouteScreen extends ConsumerWidget {
           context.pop();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Could not save event'),
-              backgroundColor: AppColors.terracotta,
-            ),
+            SnackBar(content: Text(context.strings.nav.eventSaveFailed)),
           );
         }
       },

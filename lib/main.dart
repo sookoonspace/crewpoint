@@ -25,7 +25,9 @@ import 'package:crewpoint_app/app/core/router/current_route_provider.dart';
 import 'package:crewpoint_app/app/core/services/fcm_handler.dart';
 import 'package:crewpoint_app/app/core/services/fcm_handler_bootstrap.dart';
 import 'package:crewpoint_app/app/core/services/firebase_service.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
 import 'package:crewpoint_app/app/core/design/theme/cp_theme.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/theme/theme_mode_provider.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/application/unread_badge_provider.dart';
@@ -314,21 +316,24 @@ class _MyAppState extends ConsumerState<MyApp> {
   }) {
     final messenger = _messengerKey.currentState;
     if (messenger == null) return;
+    final nav = context.strings.nav;
     messenger.clearMaterialBanners();
     messenger.showMaterialBanner(
       MaterialBanner(
         content: Text(body.isEmpty ? title : '$title — $body'),
         actions: [
-          TextButton(
+          CpButton.text(
+            key: const Key('app.banner.view'),
+            label: nav.bannerView,
             onPressed: () {
               messenger.hideCurrentMaterialBanner();
               _router.go(deepLink);
             },
-            child: const Text('View'),
           ),
-          TextButton(
+          CpButton.text(
+            key: const Key('app.banner.dismiss'),
+            label: nav.bannerDismiss,
             onPressed: messenger.hideCurrentMaterialBanner,
-            child: const Text('Dismiss'),
           ),
         ],
       ),
