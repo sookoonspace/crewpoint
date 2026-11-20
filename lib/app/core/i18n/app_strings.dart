@@ -398,6 +398,36 @@ abstract class ChatStrings {
 
   /// Shown instead of the dispute option once the window has closed.
   String disputeWindowClosed(int days);
+
+  // Chat in the new look (Spec #186, #205).
+  String get signInRequired;
+  String get retry;
+  String get send;
+  String get you;
+  String get timeNow;
+  String minutesAgo(int minutes);
+  String hoursAgo(int hours);
+  String get yesterday;
+  String daysAgo(int days);
+  String unreadCount(int count);
+
+  /// Above an urgent message, beside its icon.
+  String get urgentLabel;
+  String get urgentTitle;
+  List<String> get urgentPresets;
+  String get urgentCustomLabel;
+  String get urgentCustomHint;
+  String get urgentSend;
+
+  /// Above a settlement message, and the dispute sheet's title.
+  String get settlementLabel;
+  String get settlementFallback;
+  String get settlementTapHint;
+  String get disputeKeep;
+  String get disputeConfirm;
+  String get disputeExplain;
+  String get disputed;
+  String get disputeFailed;
 }
 
 /// User-facing strings for the cross-event Budget tab — the Financial Ledger.
@@ -746,7 +776,7 @@ class _EnglishChatStrings extends ChatStrings {
   String get sendFailedHint => 'Send failed — tap Send again to retry';
 
   @override
-  String get urgentBadge => 'URGENT';
+  String get urgentBadge => 'Urgent';
 
   @override
   String disputeWindowClosed(int days) =>
@@ -757,6 +787,63 @@ class _EnglishChatStrings extends ChatStrings {
   String get urgentLimitReached =>
       'Saved, but nobody was alerted: you have reached the limit for urgent '
       'messages. Try again later.';
+
+  @override
+  String get signInRequired => 'Sign in to read this chat';
+  @override
+  String get retry => 'Try again';
+  @override
+  String get send => 'Send';
+  @override
+  String get you => 'You';
+  @override
+  String get timeNow => 'now';
+  @override
+  String minutesAgo(int minutes) => '${minutes}m';
+  @override
+  String hoursAgo(int hours) => '${hours}h';
+  @override
+  String get yesterday => 'Yesterday';
+  @override
+  String daysAgo(int days) => '${days}d';
+  @override
+  String unreadCount(int count) => '$count unread';
+
+  @override
+  String get urgentLabel => 'Urgent';
+  @override
+  String get urgentTitle => 'Send an urgent alert';
+  @override
+  List<String> get urgentPresets => const [
+    'Emergency - Everyone stop and check in',
+    'Meeting point changed - Check details',
+    'Weather alert - Take shelter',
+    'Schedule changed - Check new times',
+  ];
+  @override
+  String get urgentCustomLabel => 'Or write your own';
+  @override
+  String get urgentCustomHint => 'Type an alert';
+  @override
+  String get urgentSend => 'Send alert';
+
+  @override
+  String get settlementLabel => 'Settlement';
+  @override
+  String get settlementFallback => 'Settlement record';
+  @override
+  String get settlementTapHint => 'Confirm or dispute';
+  @override
+  String get disputeKeep => 'All good, keep it';
+  @override
+  String get disputeConfirm => 'Dispute this settlement';
+  @override
+  String get disputeExplain =>
+      'Disputing removes this settlement and restores the balance.';
+  @override
+  String get disputed => 'Settlement disputed';
+  @override
+  String get disputeFailed => "Couldn't dispute the settlement. Try again.";
 }
 
 class _EnglishBudgetStrings extends BudgetStrings {

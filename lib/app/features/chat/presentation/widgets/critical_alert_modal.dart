@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/widgets/forms/app_text_field.dart';
-import 'package:crewpoint_app/app/core/widgets/destructive_button.dart';
 
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
+import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
+import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
+
+/// Sending an urgent message (Spec #186): a ready-made alert or your own
+/// words, then Send alert.
 class CriticalAlertModal extends StatefulWidget {
   const CriticalAlertModal({super.key, this.onSend});
 
@@ -15,9 +17,9 @@ class CriticalAlertModal extends StatefulWidget {
     required BuildContext context,
     ValueChanged<String>? onSend,
   }) {
-    return showModalBottomSheet<void>(
+    return showCpSheet<void>(
       context: context,
-      isScrollControlled: true,
+      title: context.strings.chat.urgentTitle,
       builder: (_) => CriticalAlertModal(onSend: onSend),
     );
   }
@@ -29,13 +31,6 @@ class CriticalAlertModal extends StatefulWidget {
 class _CriticalAlertModalState extends State<CriticalAlertModal> {
   final _customController = TextEditingController();
   String? _selectedAlert;
-
-  static const _predefinedAlerts = [
-    'Emergency - Everyone stop and check in',
-    'Meeting point changed - Check details',
-    'Weather alert - Take shelter',
-    'Schedule changed - Check new times',
-  ];
 
   @override
   void dispose() {
@@ -52,55 +47,55 @@ class _CriticalAlertModalState extends State<CriticalAlertModal> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: AppSpacing.xl,
-        right: AppSpacing.xl,
-        top: AppSpacing.xl,
-        bottom: MediaQuery.viewInsetsOf(context).bottom + AppSpacing.xl,
-      ),
-      child: Column(
-        mainAxisSize: .min,
-        crossAxisAlignment: .start,
-        spacing: AppSpacing.lg,
-        children: [
-          Row(
-            spacing: AppSpacing.sm,
+    final cp = context.cp;
+    final strings = context.strings.chat;
+    final presets = strings.urgentPresets;
+    return Column(
+      mainAxisSize: .min,
+      crossAxisAlignment: .stretch,
+      spacing: cp.space.lg,
+      children: [
+        CpCard(
+          child: CpRowGroup(
             children: [
-              const Icon(AppIcons.statusUrgent, color: AppColors.terracotta),
-              Text(
-                'Send Critical Alert',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+              for (final (i, text) in presets.indexed)
+                _AlertOption(
+                  key: Key('chat.urgent.preset.$i'),
+                  text: text,
+                  isSelected: _selectedAlert == text,
+                  onTap: () => setState(() {
+                    _selectedAlert = text;
+                    _customController.clear();
+                  }),
+                ),
             ],
           ),
-          ...List.generate(
-            _predefinedAlerts.length,
-            (index) => _AlertOption(
-              text: _predefinedAlerts[index],
-              isSelected: _selectedAlert == _predefinedAlerts[index],
-              onTap: () => setState(() {
-                _selectedAlert = _predefinedAlerts[index];
-                _customController.clear();
-              }),
-            ),
-          ),
-          AppTextField(
-            key: const Key('chat.urgent.custom'),
-            hintText: 'Or type a custom alert...',
-            controller: _customController,
-            maxLength: ChatMessageModel.maxTextLength,
-            onChanged: (_) => setState(() => _selectedAlert = null),
-          ),
-          DestructiveButton(label: 'Send Alert', onPressed: _send),
-        ],
-      ),
+        ),
+        CpTextField(
+          key: const Key('chat.urgent.custom'),
+          label: strings.urgentCustomLabel,
+          hint: strings.urgentCustomHint,
+          controller: _customController,
+          maxLines: 3,
+          maxLength: ChatMessageModel.maxTextLength,
+          onChanged: (_) => setState(() => _selectedAlert = null),
+        ),
+        CpButton.destructive(
+          key: const Key('chat.urgent.send'),
+          label: strings.urgentSend,
+          icon: CpIcons.statusUrgent,
+          expand: true,
+          onPressed: _send,
+        ),
+      ],
     );
   }
 }
 
+/// A ready-made alert, chosen like a radio button.
 class _AlertOption extends StatelessWidget {
   const _AlertOption({
+    super.key,
     required this.text,
     required this.isSelected,
     required this.onTap,
@@ -112,21 +107,40 @@ class _AlertOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.terracottaLight.withValues(alpha: 0.15)
-              : null,
-          border: Border.all(
-            color: isSelected ? AppColors.terracotta : AppColors.lightGrey,
+    final cp = context.cp;
+    return Semantics(
+      inMutuallyExclusiveGroup: true,
+      checked: isSelected,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: cp.sizes.tapMin),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: cp.space.lg,
+                vertical: cp.space.md,
+              ),
+              child: Row(
+                spacing: cp.space.md,
+                children: [
+                  Icon(
+                    isSelected ? CpIcons.radioOn : CpIcons.radioOff,
+                    size: cp.sizes.iconMd,
+                    color: isSelected ? cp.colors.accent : cp.colors.textMuted,
+                  ),
+                  Expanded(
+                    child: Text(
+                      text,
+                      style: cp.type.bodyMedium.copyWith(color: cp.colors.text),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-          borderRadius: BorderRadius.circular(8),
         ),
-        child: Text(text, style: Theme.of(context).textTheme.bodyMedium),
       ),
     );
   }

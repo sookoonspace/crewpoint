@@ -2,7 +2,9 @@ import 'package:clock/clock.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:crewpoint_app/app/core/widgets/last_updated_note.dart';
 import 'package:crewpoint_app/app/features/chat/data/chat_repository.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/features/chat/application/older_messages.dart';
 import 'package:crewpoint_app/app/features/chat/domain/chat_window.dart';
 import 'package:crewpoint_app/app/features/chat/application/global_inbox_provider.dart'
@@ -11,7 +13,6 @@ import 'package:flutter/material.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/core/services/callable_errors.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
@@ -105,7 +106,9 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
   }
 
   Future<void> _onDispute(ChatMessageModel m) async {
-    final summary = m.text.isEmpty ? 'Settlement record' : m.text;
+    final summary = m.text.isEmpty
+        ? context.strings.chat.settlementFallback
+        : m.text;
     final windowDays = await _disputeWindowDays();
     if (!mounted) return;
     final isOpen = isDisputeWindowOpen(
@@ -123,10 +126,7 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
           await dispute(eventId: widget.event.id, settlementId: m.id);
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Settlement disputed'),
-              backgroundColor: AppColors.sage,
-            ),
+            SnackBar(content: Text(context.strings.chat.disputed)),
           );
         } catch (e) {
           if (!mounted) return;
@@ -139,9 +139,8 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
               content: Text(
                 windowClosed
                     ? context.strings.chat.disputeWindowClosed(windowDays)
-                    : 'Could not dispute — try again',
+                    : context.strings.chat.disputeFailed,
               ),
-              backgroundColor: AppColors.terracotta,
             ),
           );
         }
@@ -154,16 +153,16 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
     final auth = ref.watch(authProvider);
     final uid = auth is Authenticated ? auth.user.uid : null;
     if (uid == null) {
-      return const Scaffold(body: Center(child: Text('Sign in required')));
+      return _frame(
+        CpEmptyState(
+          icon: CpIcons.lock,
+          title: context.strings.chat.signInRequired,
+        ),
+      );
     }
     // Reading chat needs `chat.send`, so a Vendor or Observer opening the
     // link sees why (Req 32).
-    if (!widget.event.readsChat(uid)) {
-      return Scaffold(
-        appBar: AppBar(title: Text(widget.event.title), elevation: 0),
-        body: const NoAccessView(),
-      );
-    }
+    if (!widget.event.readsChat(uid)) return _frame(const NoAccessView());
 
     final asyncMessages = ref.watch(chatMessagesProvider(widget.event.id));
     // Names of the people who wrote the loaded messages, read one by one,
@@ -218,28 +217,40 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
           _olderHeader(messages, latest.length, older, offline),
         );
       },
-      loading: () => Scaffold(
-        appBar: AppBar(
-          title: Text(widget.event.title, overflow: TextOverflow.ellipsis),
-          elevation: 0,
+      loading: () => _frame(
+        CpLoadingState.rows(
+          key: const Key('chat.loading'),
+          semanticLabel: widget.event.title,
         ),
-        body: const Center(child: CircularProgressIndicator()),
       ),
-      error: (e, _) => Scaffold(
-        appBar: AppBar(
-          title: Text(widget.event.title, overflow: TextOverflow.ellipsis),
-          elevation: 0,
-        ),
-        body: Center(
-          child: Text(
-            userMessageFor(
-              e,
-              strings: context.strings.errors,
-              fallback: context.strings.errors.genericFallback,
-            ),
+      error: (e, _) => _frame(
+        CpErrorState(
+          key: const Key('chat.error'),
+          title: userMessageFor(
+            e,
+            strings: context.strings.errors,
+            fallback: context.strings.errors.genericFallback,
           ),
+          retryLabel: context.strings.chat.retry,
+          retryKey: const Key('chat.retry'),
+          onRetry: () => ref.invalidate(chatMessagesProvider(widget.event.id)),
         ),
       ),
+    );
+  }
+
+  /// The event's title above [body], for the states before the chat shows.
+  Widget _frame(Widget body) {
+    final cp = context.cp;
+    final navigator = Navigator.of(context);
+    return Scaffold(
+      backgroundColor: cp.colors.background,
+      appBar: CpTopBar(
+        title: widget.event.title,
+        leadingTooltip: MaterialLocalizations.of(context).backButtonTooltip,
+        onLeading: navigator.canPop() ? () => navigator.maybePop() : null,
+      ),
+      body: body,
     );
   }
 
@@ -251,48 +262,76 @@ class _EventChatPageState extends ConsumerState<EventChatPage> {
     OlderMessages older,
     bool offline,
   ) {
+    final cp = context.cp;
     final strings = context.strings.chat;
     // Fewer than a page means the whole chat is already here.
     if (messages.isEmpty ||
         (latestCount < chatPageSize && older.messages.isEmpty)) {
       return null;
     }
+    final muted = cp.type.bodyMedium.copyWith(color: cp.colors.textMuted);
     final Widget child;
     if (!older.hasMore) {
-      child = Text(strings.olderNone, key: const Key('chat.older.none'));
+      child = Text(
+        strings.olderNone,
+        key: const Key('chat.older.none'),
+        textAlign: TextAlign.center,
+        style: muted,
+      );
     } else if (older.loading) {
-      child = const SizedBox.square(
-        key: Key('chat.older.loading'),
-        dimension: 24,
-        child: CircularProgressIndicator(strokeWidth: 2),
+      child = SizedBox.square(
+        key: const Key('chat.older.loading'),
+        dimension: cp.sizes.iconLg,
+        child: CircularProgressIndicator(
+          strokeWidth: cp.sizes.hairline * 2,
+          color: cp.colors.accent,
+        ),
       );
     } else if (offline) {
-      child = Text(
-        strings.olderNeedsConnection,
-        key: const Key('chat.older.offline'),
-        textAlign: TextAlign.center,
+      child = Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: cp.space.sm,
+        children: [
+          Icon(
+            CpIcons.cloudOff,
+            size: cp.sizes.iconMd,
+            color: cp.colors.textMuted,
+          ),
+          Flexible(
+            child: Text(
+              strings.olderNeedsConnection,
+              key: const Key('chat.older.offline'),
+              style: muted,
+            ),
+          ),
+        ],
       );
     } else if (older.failed) {
       child = Column(
+        spacing: cp.space.sm,
         children: [
-          Text(strings.olderFailed, key: const Key('chat.older.failed')),
-          TextButton(
+          Text(
+            strings.olderFailed,
+            key: const Key('chat.older.failed'),
+            textAlign: TextAlign.center,
+            style: muted,
+          ),
+          CpButton.text(
             key: const Key('chat.older.retry'),
+            label: strings.olderRetry,
             onPressed: () => _loadOlder(messages),
-            child: Text(strings.olderRetry),
           ),
         ],
       );
     } else {
-      child = TextButton(
+      child = CpButton.secondary(
         key: const Key('chat.older.load'),
-        style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+        label: strings.olderLoad,
         onPressed: () => _loadOlder(messages),
-        child: Text(strings.olderLoad),
       );
     }
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+      padding: EdgeInsets.symmetric(vertical: cp.space.md),
       child: Center(child: child),
     );
   }

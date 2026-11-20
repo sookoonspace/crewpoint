@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
+
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/chat/domain/models/chat_message.dart';
 import 'package:crewpoint_app/app/features/chat/presentation/widgets/critical_alert_modal.dart';
 import 'package:crewpoint_app/app/features/chat/presentation/widgets/message_bubble.dart';
 
+/// An event's chat (Spec #186): the messages, newest at the bottom, and a
+/// composer below them, or why nobody can send.
 class ChatScreen extends StatefulWidget {
   const ChatScreen({
     super.key,
@@ -32,10 +33,9 @@ class ChatScreen extends StatefulWidget {
   final String currentUserId;
   final Map<String, String> memberNames;
 
-  /// AppBar title — the parent (`EventChatPage`) wires the event
-  /// name through so users in multiple events can identify which
-  /// thread they're in. Falls back to the i18n default (`Chat`)
-  /// when unset.
+  /// The top bar's title — the parent (`EventChatPage`) passes the event's
+  /// name so people in several events know which chat they are in. Falls
+  /// back to "Chat".
   final String? appBarTitle;
   final bool isSending;
 
@@ -69,11 +69,11 @@ class _ChatScreenState extends State<ChatScreen> {
     final delta = widget.messages.length - _lastMessageCount;
     if (delta > 0 && _isNearBottom()) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scrollController.hasClients) {
+        if (_scrollController.hasClients && mounted) {
           _scrollController.animateTo(
             0,
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOut,
+            duration: context.cp.motion.fast,
+            curve: context.cp.motion.curve,
           );
         }
       });
@@ -84,7 +84,7 @@ class _ChatScreenState extends State<ChatScreen> {
   /// "At bottom" while `reverse: true` means offset is near zero.
   bool _isNearBottom() {
     if (!_scrollController.hasClients) return true;
-    return _scrollController.offset < 80;
+    return _scrollController.offset < context.cp.space.xxxl * 2;
   }
 
   @override
@@ -110,30 +110,21 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
     final s = context.strings.chat;
+    final navigator = Navigator.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          widget.appBarTitle ?? s.chatAppBarTitle,
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        // Matches BudgetScreen — kToolbarHeight (56) clips a 2-line
-        // titleMedium; +16 leaves breathing room for long event titles
-        // like "Weekend getaway" (2026-06-11 iPhone 12 mini QA).
-        toolbarHeight: kToolbarHeight + 16,
-        elevation: 0,
+      backgroundColor: cp.colors.background,
+      appBar: CpTopBar(
+        title: widget.appBarTitle ?? s.chatAppBarTitle,
+        leadingTooltip: MaterialLocalizations.of(context).backButtonTooltip,
+        onLeading: navigator.canPop() ? () => navigator.maybePop() : null,
         actions: [
           if (widget.onSendCriticalAlert != null)
-            IconButton(
+            CpTopBarAction(
               key: const Key('chat.urgent.open'),
-              icon: const Icon(
-                AppIcons.statusUrgent,
-                color: AppColors.terracotta,
-              ),
+              icon: CpIcons.statusUrgent,
+              tooltip: s.urgentTitle,
               onPressed: () => CriticalAlertModal.show(
                 context: context,
                 onSend: widget.onSendCriticalAlert,
@@ -143,29 +134,23 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
       body: ContentMaxWidth(
         key: const Key('eventChat.body.clamped'),
-        maxWidth: 720,
+        maxWidth: cp.sizes.phoneColumn,
         child: Column(
           children: [
             ?widget.banner,
             Expanded(
               child: widget.messages.isEmpty
-                  ? Center(
+                  ? CpEmptyState(
                       key: const Key('chat.list.empty'),
-                      child: Text(
-                        s.chatEmptyMessage,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
+                      icon: CpIcons.chat,
+                      title: s.chatEmptyMessage,
                     )
                   : ListView.builder(
                       key: const Key('chat.list'),
                       controller: _scrollController,
                       padding: EdgeInsets.symmetric(
-                        horizontal: Breakpoints.screenHorizontalPadding(
-                          context,
-                        ),
-                        vertical: AppSpacing.lg,
+                        horizontal: cp.space.lg,
+                        vertical: cp.space.lg,
                       ),
                       reverse: true,
                       itemCount:
@@ -207,17 +192,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
             ),
             if (widget.readOnly)
-              SafeArea(
-                top: false,
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  child: Text(
-                    s.readOnlyNotice,
-                    key: const Key('chat.composer.readOnly'),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              )
+              _ReadOnlyNotice(text: s.readOnlyNotice)
             else
               _MessageInput(
                 controller: _controller,
@@ -225,6 +200,47 @@ class _ChatScreenState extends State<ChatScreen> {
                 isSending: widget.isSending,
                 lastSendFailed: widget.lastSendFailed,
               ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// In place of the composer when nobody can send.
+class _ReadOnlyNotice extends StatelessWidget {
+  const _ReadOnlyNotice({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final cp = context.cp;
+    return SafeArea(
+      top: false,
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(cp.space.lg),
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(color: cp.colors.border, width: cp.sizes.hairline),
+          ),
+        ),
+        child: Row(
+          spacing: cp.space.sm,
+          children: [
+            Icon(
+              CpIcons.lock,
+              size: cp.sizes.iconMd,
+              color: cp.colors.textMuted,
+            ),
+            Expanded(
+              child: Text(
+                text,
+                key: const Key('chat.composer.readOnly'),
+                style: cp.type.bodyMedium.copyWith(color: cp.colors.textMuted),
+              ),
+            ),
           ],
         ),
       ),
@@ -247,52 +263,81 @@ class _MessageInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
     final s = context.strings.chat;
+    final pill = OutlineInputBorder(
+      borderRadius: cp.radii.xl,
+      borderSide: BorderSide(color: cp.colors.border, width: cp.sizes.hairline),
+    );
     return Container(
       padding: EdgeInsets.only(
-        left: AppSpacing.lg,
-        right: AppSpacing.sm,
-        top: AppSpacing.sm,
-        bottom: MediaQuery.viewPaddingOf(context).bottom + AppSpacing.sm,
+        left: cp.space.lg,
+        right: cp.space.sm,
+        top: cp.space.sm,
+        bottom: MediaQuery.viewPaddingOf(context).bottom + cp.space.sm,
       ),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: const Border(top: BorderSide(color: AppColors.lightGrey)),
+        color: cp.colors.surface,
+        border: Border(
+          top: BorderSide(color: cp.colors.border, width: cp.sizes.hairline),
+        ),
       ),
       child: Column(
         mainAxisSize: .min,
+        crossAxisAlignment: .stretch,
+        spacing: cp.space.xs,
         children: [
           if (lastSendFailed)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-              child: Row(
-                children: [
-                  const Icon(
-                    AppIcons.statusError,
-                    size: AppSizes.iconXs,
-                    color: AppColors.terracotta,
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
+            Row(
+              spacing: cp.space.xs,
+              children: [
+                Icon(
+                  CpIcons.statusError,
+                  size: cp.sizes.iconSm,
+                  color: cp.colors.overdue,
+                ),
+                Expanded(
+                  child: Text(
                     s.sendFailedHint,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: AppColors.terracotta,
+                    style: cp.type.labelMedium.copyWith(
+                      color: cp.colors.overdue,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           Row(
-            spacing: AppSpacing.sm,
+            spacing: cp.space.xs,
             children: [
               Expanded(
                 child: TextField(
                   key: const Key('chat.composer.input'),
                   controller: controller,
                   enabled: !isSending,
+                  minLines: 1,
+                  maxLines: 5,
+                  style: cp.type.bodyLarge.copyWith(color: cp.colors.text),
                   decoration: InputDecoration(
                     hintText: s.messageInputHint,
-                    border: InputBorder.none,
+                    hintStyle: cp.type.bodyLarge.copyWith(
+                      color: cp.colors.textMuted,
+                    ),
+                    filled: true,
+                    fillColor: cp.colors.background,
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: cp.space.lg,
+                      vertical: cp.space.md,
+                    ),
+                    border: pill,
+                    enabledBorder: pill,
+                    disabledBorder: pill,
+                    focusedBorder: pill.copyWith(
+                      borderSide: BorderSide(
+                        color: cp.colors.accent,
+                        width: cp.sizes.hairline * 2,
+                      ),
+                    ),
                   ),
                   inputFormatters: [
                     LengthLimitingTextInputFormatter(
@@ -305,14 +350,25 @@ class _MessageInput extends StatelessWidget {
               ),
               IconButton(
                 key: const Key('chat.composer.send'),
+                tooltip: s.send,
                 onPressed: isSending ? null : onSend,
+                constraints: BoxConstraints.tightFor(
+                  width: cp.sizes.tapMin,
+                  height: cp.sizes.tapMin,
+                ),
                 icon: isSending
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                    ? SizedBox.square(
+                        dimension: cp.sizes.iconMd,
+                        child: CircularProgressIndicator(
+                          strokeWidth: cp.sizes.hairline * 2,
+                          color: cp.colors.accent,
+                        ),
                       )
-                    : const Icon(AppIcons.actionSend, color: AppColors.sage),
+                    : Icon(
+                        CpIcons.actionSend,
+                        size: cp.sizes.iconLg,
+                        color: cp.colors.accent,
+                      ),
               ),
             ],
           ),
