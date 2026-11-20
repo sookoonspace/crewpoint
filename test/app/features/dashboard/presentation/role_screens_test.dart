@@ -8,6 +8,7 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
 
 import '../../../../harness/roles_harness.dart';
 import '../../../../robots/roles_robot.dart';
@@ -158,7 +159,7 @@ void main() {
       );
       expect(
         tester
-            .widget<CheckboxListTile>(
+            .widget<CpSwitchRow>(
               find.byKey(const Key('roles.editor.permission.tasks.manage')),
             )
             .value,
@@ -220,7 +221,7 @@ void main() {
     testWidgets('anyone can see their own roles, read-only', (tester) async {
       final (_, robot) = await open(tester, 'members/sam', signedInAs: 'sam');
       robot.expectVisible(const Key('members.detail.role.participant'));
-      expect(find.byType(FilterChip), findsNothing);
+      expect(find.byType(CpChoiceChips<String>), findsNothing);
       robot.expectHidden(const Key('members.detail.remove'));
       await robot.finish();
     });
@@ -239,7 +240,7 @@ void main() {
       robot.expectVisible(const Key('members.detail.pickOne'));
       expect(
         tester
-            .widget<FilledButton>(find.byKey(const Key('members.detail.save')))
+            .widget<CpButton>(find.byKey(const Key('members.detail.save')))
             .onPressed,
         isNull,
       );
@@ -256,12 +257,13 @@ void main() {
       await robot.saveRoles();
       robot.expectVisible(const Key('members.detail.save'));
       expect(
-        tester
-            .widget<FilterChip>(
-              find.byKey(const Key('members.detail.role.volunteer')),
-            )
-            .selected,
-        isTrue,
+        find.descendant(
+          of: find.byKey(const Key('members.detail.role.volunteer')),
+          matching: find.byWidgetPredicate(
+            (w) => w is Semantics && w.properties.selected == true,
+          ),
+        ),
+        findsOneWidget,
       );
       await robot.finish();
     });
@@ -275,7 +277,7 @@ void main() {
         signedInAs: 'ana',
         roles: withAdmin,
       );
-      expect(find.byType(FilterChip), findsNothing);
+      expect(find.byType(CpChoiceChips<String>), findsNothing);
       await robot.tap(const Key('members.detail.remove'));
       await robot.tap(const Key('members.detail.removeConfirm'));
       expect(harness.calls.calls, ['removeMember:sam']);
@@ -499,7 +501,7 @@ void main() {
       robot.expectText("Couldn't do that. Check your connection and try again.");
       expect(
         tester
-            .widget<FilledButton>(find.byKey(const Key('transfer.offer')))
+            .widget<CpButton>(find.byKey(const Key('transfer.offer')))
             .onPressed,
         isNotNull,
       );

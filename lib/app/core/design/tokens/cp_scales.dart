@@ -117,6 +117,9 @@ class CpSizes extends ThemeExtension<CpSizes> {
   /// The widest a chat message grows.
   double get bubbleMax => CpScale.bubble480;
 
+  /// An invite's QR code.
+  double get qrCode => CpScale.qr200;
+
   @override
   CpSizes copyWith() => this;
 

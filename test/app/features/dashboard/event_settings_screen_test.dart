@@ -20,6 +20,7 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../harness/fake_create_event.dart';
@@ -316,10 +317,7 @@ void main() {
       await save(tester);
       expect(find.byKey(_key('error')), findsOneWidget);
       expect(
-        tester
-            .widget<TextFormField>(find.byKey(_key('capacity')))
-            .controller!
-            .text,
+        tester.widget<TextField>(find.byKey(_key('capacity'))).controller!.text,
         '600',
       );
 
@@ -484,25 +482,25 @@ void main() {
           ExpenseModel(id: 'x', eventId: 'evt', payerId: 'owner', amount: 1),
         ],
       );
-      final field = tester.widget<DropdownButton<String>>(
-        find.descendant(
+      final field = tester.widget<CpSelectField>(
+        find.ancestor(
           of: find.byKey(_key('currency')),
-          matching: find.byType(DropdownButton<String>),
+          matching: find.byType(CpSelectField),
         ),
       );
-      expect(field.onChanged, isNull);
+      expect(field.onTap, isNull);
       expect(find.textContaining('currency cannot change'), findsOneWidget);
     });
 
     testWidgets('is disabled until the expenses are known', (tester) async {
       await pump(tester, expenseStream: const Stream.empty());
-      final field = tester.widget<DropdownButton<String>>(
-        find.descendant(
+      final field = tester.widget<CpSelectField>(
+        find.ancestor(
           of: find.byKey(_key('currency')),
-          matching: find.byType(DropdownButton<String>),
+          matching: find.byType(CpSelectField),
         ),
       );
-      expect(field.onChanged, isNull);
+      expect(field.onTap, isNull);
     });
 
     testWidgets('a server refusal saves nothing and explains', (tester) async {
@@ -553,13 +551,8 @@ void main() {
       expect(find.textContaining('cannot go back to draft'), findsOneWidget);
       await tester.tap(find.byKey(_key('status')));
       await tester.pumpAndSettle();
-      final draft = tester.widget<DropdownMenuItem<EventStatus>>(
-        find.ancestor(
-          of: find.text('Draft').last,
-          matching: find.byType(DropdownMenuItem<EventStatus>),
-        ),
-      );
-      expect(draft.enabled, isFalse);
+      final draft = tester.widget<CpListRow>(find.byKey(_key('status.draft')));
+      expect(draft.onTap, isNull);
     });
 
     testWidgets('an organizer-only event can go back to draft', (tester) async {
@@ -582,7 +575,7 @@ void main() {
       expect(find.byKey(_key('archivedNotice')), findsOneWidget);
       expect(find.byKey(_key('venue.add')), findsNothing);
       expect(
-        tester.widget<TextFormField>(find.byKey(_key('capacity'))).enabled,
+        tester.widget<TextField>(find.byKey(_key('capacity'))).enabled,
         isFalse,
       );
       await choose(tester, 'Published');
@@ -737,11 +730,11 @@ void main() {
         event: _event.copyWith(modules: const {'tasks': false}),
       );
       expect(
-        tester.widget<SwitchListTile>(find.byKey(_key('module.tasks'))).value,
+        tester.widget<CpSwitchRow>(find.byKey(_key('module.tasks'))).value,
         isFalse,
       );
       expect(
-        tester.widget<SwitchListTile>(find.byKey(_key('module.chat'))).value,
+        tester.widget<CpSwitchRow>(find.byKey(_key('module.chat'))).value,
         isTrue,
       );
     });

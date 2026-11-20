@@ -3,9 +3,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/services/callable_errors.dart';
@@ -204,29 +204,31 @@ class _RoleEditorScreenState extends ConsumerState<RoleEditorScreen> {
     final me = ref.watch(currentUserIdProvider) ?? '';
     final event = widget.event;
 
-    Widget scaffold(Widget body, {String? title, List<Widget>? actions}) =>
-        PopScope(
-          canPop: !_dirty || _busy,
-          onPopInvokedWithResult: (didPop, _) async {
-            if (didPop) return;
-            final navigator = Navigator.of(context);
-            if (await confirmDiscard(context) && mounted) {
-              setState(() {
-                _savedName = _name.text.trim();
-                _savedPermissions = {..._permissions};
-              });
-              navigator.pop();
-            }
-          },
-          child: Scaffold(
-            appBar: AppBar(
-              title: Text(title ?? strings.title),
-              elevation: 0,
-              actions: actions,
-            ),
-            body: body,
-          ),
-        );
+    Widget scaffold(
+      Widget body, {
+      String? title,
+      List<CpTopBarAction> actions = const [],
+      Widget? bottom,
+    }) => PopScope(
+      canPop: !_dirty || _busy,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final navigator = Navigator.of(context);
+        if (await confirmDiscard(context) && mounted) {
+          setState(() {
+            _savedName = _name.text.trim();
+            _savedPermissions = {..._permissions};
+          });
+          navigator.pop();
+        }
+      },
+      child: AdminScaffold(
+        title: title ?? strings.title,
+        actions: actions,
+        bottom: bottom,
+        body: body,
+      ),
+    );
 
     if (!canViewRoles(event, me)) return scaffold(const NoAccessView());
 
@@ -244,8 +246,9 @@ class _RoleEditorScreenState extends ConsumerState<RoleEditorScreen> {
       }
       if (!roles.hasValue) {
         return scaffold(
-          const Center(
-            child: CircularProgressIndicator(key: Key('roles.loading')),
+          CpLoadingState.rows(
+            key: const Key('roles.loading'),
+            semanticLabel: strings.title,
           ),
         );
       }
@@ -261,84 +264,86 @@ class _RoleEditorScreenState extends ConsumerState<RoleEditorScreen> {
         canEdit && role != null && (role.isEdited || !role.isPreset)
         ? role
         : null;
+    final cp = context.cp;
 
     return scaffold(
       title: _isNew ? strings.newRole : role!.name,
       actions: [
         if (removable != null)
-          IconButton(
+          CpTopBarAction(
             key: const Key('roles.editor.remove'),
             tooltip: removable.isPreset ? strings.reset : strings.delete,
-            onPressed: _busy ? null : () => _remove(removable),
-            icon: Icon(
-              removable.isPreset ? AppIcons.actionRetry : AppIcons.actionDelete,
-            ),
+            icon: removable.isPreset
+                ? CpIcons.actionRetry
+                : CpIcons.actionDelete,
+            onPressed: () {
+              if (!_busy) _remove(removable);
+            },
           ),
       ],
+      bottom: canEdit
+          ? AdminSaveBar(
+              child: CpButton(
+                key: const Key('roles.editor.save'),
+                label: strings.save,
+                busy: _busy,
+                onPressed: _busy || (!_dirty && !_isNew) ? null : _save,
+              ),
+            )
+          : null,
       Form(
         key: _formKey,
-        child: ContentMaxWidth(
+        // A scroll view, not a lazy list, so the name field stays built and
+        // is validated even when scrolled out of sight.
+        child: SingleChildScrollView(
           key: const Key('roles.editor.body'),
-          maxWidth: 720,
-          // A scroll view, not a lazy list, so the name field stays built and
-          // is validated even when scrolled out of sight.
-          child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(
-              horizontal: Breakpoints.screenHorizontalPadding(context),
-              vertical: AppSpacing.lg,
-            ),
+          padding: EdgeInsets.fromLTRB(
+            cp.space.lg,
+            cp.space.sm,
+            cp.space.lg,
+            cp.space.xxl,
+          ),
+          child: ContentMaxWidth(
+            maxWidth: cp.sizes.phoneColumn,
             child: Column(
               crossAxisAlignment: .stretch,
+              spacing: cp.space.lg,
               children: [
                 if (role?.isOwner ?? false)
-                  _Note(
-                    text: strings.ownerFixed,
+                  AdminNote(
+                    strings.ownerFixed,
                     key: const Key('roles.editor.ownerFixed'),
+                    icon: CpIcons.statusInfo,
                   )
                 else if (!canEdit)
-                  _Note(
-                    text: strings.readOnly,
+                  AdminNote(
+                    strings.readOnly,
                     key: const Key('roles.readOnly'),
+                    icon: CpIcons.lock,
                   ),
-                TextFormField(
-                  key: const Key('roles.editor.name'),
-                  controller: _name,
-                  onChanged: (_) => setState(() {}),
-                  enabled: canEdit && !_busy,
-                  maxLength: _maxName,
-                  textCapitalization: TextCapitalization.sentences,
-                  decoration: InputDecoration(labelText: strings.nameLabel),
-                  validator: (value) {
-                    final name = value?.trim() ?? '';
-                    if (name.isEmpty) return strings.nameRequired;
-                    if (name.length > _maxName) {
-                      return strings.nameTooLong(_maxName);
-                    }
-                    return null;
-                  },
+                CpCard(
+                  padding: EdgeInsets.all(cp.space.lg),
+                  child: CpTextField(
+                    fieldKey: const Key('roles.editor.name'),
+                    label: strings.nameLabel,
+                    required: true,
+                    controller: _name,
+                    onChanged: (_) => setState(() {}),
+                    enabled: canEdit && !_busy,
+                    maxLength: _maxName,
+                    validator: (value) {
+                      final name = value?.trim() ?? '';
+                      if (name.isEmpty) return strings.nameRequired;
+                      if (name.length > _maxName) {
+                        return strings.nameTooLong(_maxName);
+                      }
+                      return null;
+                    },
+                  ),
                 ),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  strings.permissionsHeading,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+                CpSectionHeader(title: strings.permissionsHeading),
                 for (final group in permissionGroups)
-                  ..._group(context, group, enabled: canEdit && !_busy),
-                const SizedBox(height: AppSpacing.lg),
-                if (canEdit)
-                  FilledButton(
-                    key: const Key('roles.editor.save'),
-                    onPressed: _busy || (!_dirty && !_isNew) ? null : _save,
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size.fromHeight(48),
-                    ),
-                    child: _busy
-                        ? const SizedBox.square(
-                            dimension: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(strings.save),
-                  ),
+                  ?_group(context, group, enabled: canEdit && !_busy),
               ],
             ),
           ),
@@ -347,71 +352,48 @@ class _RoleEditorScreenState extends ConsumerState<RoleEditorScreen> {
     );
   }
 
-  List<Widget> _group(
-    BuildContext context,
-    String group, {
-    required bool enabled,
-  }) {
+  /// One group of permissions as switches in a card, or null when the
+  /// catalogue has none in it.
+  Widget? _group(BuildContext context, String group, {required bool enabled}) {
+    final cp = context.cp;
     final strings = context.strings.roles;
     final inGroup = [
       for (final p in RoleCatalogue.current.permissions)
         if (permissionGroupOf(p) == group) p,
     ];
-    if (inGroup.isEmpty) return const [];
-    return [
-      Padding(
-        padding: const EdgeInsets.only(top: AppSpacing.md),
-        child: Text(
+    if (inGroup.isEmpty) return null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: cp.space.sm,
+      children: [
+        Text(
           strings.permissionGroup(group),
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: Theme.of(context).colorScheme.primary,
+          style: cp.type.labelLarge.copyWith(color: cp.colors.textMuted),
+        ),
+        CpCard(
+          padding: EdgeInsets.symmetric(
+            horizontal: cp.space.lg,
+            vertical: cp.space.xs,
+          ),
+          child: Column(
+            children: [
+              for (final p in inGroup)
+                CpSwitchRow(
+                  key: Key('roles.editor.permission.$p'),
+                  title: strings.permission(p),
+                  value: _permissions.contains(p),
+                  onChanged: enabled
+                      ? (on) => setState(() {
+                          _permissions = on
+                              ? {..._permissions, p}
+                              : ({..._permissions}..remove(p));
+                        })
+                      : null,
+                ),
+            ],
           ),
         ),
-      ),
-      for (final p in inGroup)
-        CheckboxListTile(
-          key: Key('roles.editor.permission.$p'),
-          contentPadding: EdgeInsets.zero,
-          value: _permissions.contains(p),
-          onChanged: enabled
-              ? (on) => setState(() {
-                  _permissions = on == true
-                      ? {..._permissions, p}
-                      : ({..._permissions}..remove(p));
-                })
-              : null,
-          title: Text(strings.permission(p)),
-          controlAffinity: ListTileControlAffinity.leading,
-        ),
-    ];
-  }
-}
-
-class _Note extends StatelessWidget {
-  const _Note({super.key, required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: Row(
-        crossAxisAlignment: .start,
-        spacing: AppSpacing.sm,
-        children: [
-          Icon(AppIcons.statusInfo, color: theme.colorScheme.onSurfaceVariant),
-          Expanded(
-            child: Text(
-              text,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-        ],
-      ),
+      ],
     );
   }
 }

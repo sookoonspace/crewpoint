@@ -1,24 +1,18 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
+
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_radius.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
 
 /// Bottom sheet for entering a 6-char join code to join an event.
 class JoinEventSheet extends StatefulWidget {
   const JoinEventSheet({super.key});
 
   static Future<void> show({required BuildContext context}) {
-    return showModalBottomSheet<void>(
+    return showCpSheet<void>(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppRadius.xxl),
-        ),
-      ),
+      title: context.strings.dashboard.joinSheetTitle,
       builder: (_) => const JoinEventSheet(),
     );
   }
@@ -39,9 +33,10 @@ class _JoinEventSheetState extends State<JoinEventSheet> {
   }
 
   Future<void> _join() async {
+    final strings = context.strings.dashboard;
     final code = _controller.text.trim().toUpperCase();
     if (code.length != 6) {
-      setState(() => _errorMessage = 'Please enter a 6-character code');
+      setState(() => _errorMessage = strings.joinCodeLength);
       return;
     }
 
@@ -50,30 +45,26 @@ class _JoinEventSheetState extends State<JoinEventSheet> {
       _errorMessage = null;
     });
 
-    final strings = context.strings.dashboard;
     try {
       final callable = FirebaseFunctions.instance.httpsCallable('joinEvent');
       await callable.call<Map<String, dynamic>>({'joinCode': code});
 
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('You joined the event!'),
-            backgroundColor: AppColors.sage,
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(strings.joined)));
       }
     } on FirebaseFunctionsException catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
           _errorMessage = switch (e.code) {
-            'not-found' => 'This code is invalid or has expired.',
-            'already-exists' => "You're already a member of this event.",
-            'resource-exhausted' => 'This event is full.',
+            'not-found' => strings.joinCodeInvalid,
+            'already-exists' => strings.joinAlreadyMember,
+            'resource-exhausted' => strings.joinFull,
             'failed-precondition' => strings.notOpenToJoin,
-            _ => 'Something went wrong. Please try again.',
+            _ => strings.joinFailed,
           };
         });
       }
@@ -81,7 +72,7 @@ class _JoinEventSheetState extends State<JoinEventSheet> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = 'Network error. Check your connection.';
+          _errorMessage = strings.joinOffline;
         });
       }
     }
@@ -89,83 +80,58 @@ class _JoinEventSheetState extends State<JoinEventSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.xl,
-        AppSpacing.xl,
-        AppSpacing.xl,
-        MediaQuery.viewInsetsOf(context).bottom + AppSpacing.xl,
-      ),
-      child: Column(
-        mainAxisSize: .min,
-        spacing: AppSpacing.lg,
-        children: [
-          // Drag handle
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.lightGrey,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
+    final cp = context.cp;
+    final strings = context.strings.dashboard;
+    return Column(
+      mainAxisSize: .min,
+      crossAxisAlignment: .stretch,
+      spacing: cp.space.lg,
+      children: [
+        Text(
+          strings.joinSheetHelp,
+          style: cp.type.bodyMedium.copyWith(color: cp.colors.textMuted),
+        ),
 
-          Text(
-            'Join Event',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
-          ),
-
-          Text(
-            'Enter the 6-character code shared by the event organizer',
-            style: Theme.of(context).textTheme.bodyMedium,
-            textAlign: TextAlign.center,
-          ),
-
-          // Code input
-          TextField(
+        // Code input: the theme's field look, with the code spaced out.
+        Semantics(
+          label: strings.joinCodeLabel,
+          child: TextField(
+            key: const Key('dashboard.join.code'),
             controller: _controller,
             enabled: !_isLoading,
             textAlign: TextAlign.center,
             textCapitalization: TextCapitalization.characters,
             maxLength: 6,
-            // Preserve the hero number-display look — letterSpacing 8 and
-            // bold weight — but inherit headlineMedium's brightness-aware
-            // color from the textTheme (no explicit color override).
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              letterSpacing: 8,
-              fontWeight: FontWeight.w700,
+            style: cp.type.headlineMedium.copyWith(
+              letterSpacing: cp.space.sm,
+              color: cp.colors.text,
             ),
-            // Drop the explicit fillColor / border overrides — let
-            // inputDecorationTheme provide them so dark mode swaps in
-            // surfaceDarkElevated automatically.
             decoration: InputDecoration(
               counterText: '',
               hintText: '------',
-              hintStyle: TextStyle(
-                letterSpacing: 8,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              hintStyle: cp.type.headlineMedium.copyWith(
+                letterSpacing: cp.space.sm,
+                color: cp.colors.textMuted,
               ),
             ),
+            onSubmitted: (_) => _join(),
+          ),
+        ),
+
+        if (_errorMessage != null)
+          KeyedSubtree(
+            key: const Key('dashboard.join.error'),
+            child: CpFieldError(_errorMessage!),
           ),
 
-          if (_errorMessage != null)
-            Text(
-              _errorMessage!,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.terracotta),
-              textAlign: TextAlign.center,
-            ),
-
-          PrimaryButton(
-            label: 'Join Event',
-            onPressed: _isLoading ? null : _join,
-            isLoading: _isLoading,
-          ),
-        ],
-      ),
+        CpButton(
+          key: const Key('dashboard.join.submit'),
+          label: strings.joinSheetTitle,
+          expand: true,
+          busy: _isLoading,
+          onPressed: _isLoading ? null : _join,
+        ),
+      ],
     );
   }
 }

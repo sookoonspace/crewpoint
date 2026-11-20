@@ -2,13 +2,12 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/services/callable_errors.dart';
-import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/chosen_people_list.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/crew.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
@@ -43,79 +42,49 @@ class CrewsScreen extends ConsumerWidget {
       final members =
           ref.watch(eventMembersProvider(event.id)).value ??
           const <MemberModel>[];
-      body = ref
-          .watch(eventCrewsProvider(event.id))
-          .when(
-            loading: () => const Center(
-              child: CircularProgressIndicator(key: Key('crews.loading')),
-            ),
-            error: (_, _) => LoadFailedView(
-              onRetry: () => ref.invalidate(eventCrewsProvider(event.id)),
-            ),
-            data: (crews) => crews.isEmpty
-                ? _Empty(event: event, canEdit: canEdit)
-                : _CrewList(
-                    event: event,
-                    crews: crews,
-                    members: members,
-                    canEdit: canEdit,
-                  ),
-          );
+      body = switch (ref.watch(eventCrewsProvider(event.id))) {
+        AsyncValue(:final value?) =>
+          value.isEmpty
+              ? CpEmptyState(
+                  key: const Key('crews.empty'),
+                  icon: CpIcons.members,
+                  title: strings.emptyTitle(event.words.other('crew')),
+                  message: canEdit ? strings.emptyHint : strings.readOnly,
+                  actionLabel: canEdit ? strings.newCrew(crewWord) : null,
+                  actionKey: const Key('crews.empty.add'),
+                  onAction: canEdit
+                      ? () => showCrewNameDialog(context, ref, event: event)
+                      : null,
+                )
+              : _CrewList(
+                  event: event,
+                  crews: value,
+                  members: members,
+                  canEdit: canEdit,
+                ),
+        AsyncValue(error: != null) => LoadFailedView(
+          onRetry: () => ref.invalidate(eventCrewsProvider(event.id)),
+        ),
+        _ => CpLoadingState.rows(
+          key: const Key('crews.loading'),
+          semanticLabel: event.words.other('crew'),
+        ),
+      };
     }
 
-    return Scaffold(
-      appBar: AppBar(title: Text(event.words.other('crew')), elevation: 0),
+    return AdminScaffold(
+      title: event.words.other('crew'),
+      actions: [
+        if (canEdit)
+          CpTopBarAction(
+            key: const Key('crews.new'),
+            icon: CpIcons.actionAdd,
+            tooltip: strings.newCrew(crewWord),
+            primary: true,
+            onPressed: () => showCrewNameDialog(context, ref, event: event),
+          ),
+      ],
       body: body,
-      floatingActionButton: canEdit
-          ? FloatingActionButton.extended(
-              key: const Key('crews.new'),
-              onPressed: () => showCrewNameDialog(context, ref, event: event),
-              icon: const Icon(AppIcons.actionAdd),
-              label: Text(strings.newCrew(crewWord)),
-            )
-          : null,
-    );
-  }
-}
-
-class _Empty extends StatelessWidget {
-  const _Empty({required this.event, required this.canEdit});
-
-  final EventModel event;
-  final bool canEdit;
-
-  @override
-  Widget build(BuildContext context) {
-    final strings = context.strings.crews;
-    final theme = Theme.of(context);
-    return Center(
-      key: const Key('crews.empty'),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Column(
-          mainAxisSize: .min,
-          spacing: AppSpacing.md,
-          children: [
-            Icon(
-              AppIcons.members,
-              size: 48,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            Text(
-              strings.emptyTitle(event.words.other('crew')),
-              style: theme.textTheme.titleMedium,
-              textAlign: TextAlign.center,
-            ),
-            Text(
-              canEdit ? strings.emptyHint : strings.readOnly,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -135,58 +104,57 @@ class _CrewList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final cp = context.cp;
     final strings = context.strings.crews;
-    final theme = Theme.of(context);
-    return ContentMaxWidth(
-      key: const Key('crews.body'),
-      maxWidth: 720,
-      child: ListView(
-        padding: EdgeInsets.fromLTRB(
-          Breakpoints.screenHorizontalPadding(context),
-          AppSpacing.md,
-          Breakpoints.screenHorizontalPadding(context),
-          AppSpacing.xxl * 3,
-        ),
-        children: [
-          if (!canEdit)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: Text(
-                strings.readOnly,
-                key: const Key('crews.readOnly'),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          for (final crew in crews)
-            Card(
-              elevation: 0,
-              color: theme.colorScheme.surfaceContainerHighest,
-              child: ListTile(
-                key: Key('crews.tile.${crew.id}'),
-                minTileHeight: 56,
-                title: Text(crew.name),
-                subtitle: Text(() {
-                  final count = members
-                      .where((m) => m.crewIds.contains(crew.id))
-                      .length;
-                  return count == 0
-                      ? strings.noMembers
-                      : event.words.count('member', count);
-                }()),
-                onTap: canEdit
-                    ? () => _CrewMembersSheet.show(
-                        context,
-                        event: event,
-                        crew: crew,
-                        members: members,
-                      )
-                    : null,
-                trailing: canEdit
-                    ? PopupMenuButton<String>(
+    return AdminList(
+      listKey: const Key('crews.body'),
+      children: [
+        if (!canEdit)
+          AdminNote(
+            strings.readOnly,
+            key: const Key('crews.readOnly'),
+            icon: CpIcons.lock,
+          ),
+        CpCard(
+          child: CpRowGroup(
+            children: [
+              for (final crew in crews)
+                Row(
+                  children: [
+                    Expanded(
+                      child: CpListRow(
+                        key: Key('crews.tile.${crew.id}'),
+                        title: crew.name,
+                        subtitle: () {
+                          final count = members
+                              .where((m) => m.crewIds.contains(crew.id))
+                              .length;
+                          return count == 0
+                              ? strings.noMembers
+                              : event.words.count('member', count);
+                        }(),
+                        // The menu sits beside the row, so it stays its own
+                        // button for screen readers.
+                        trailing: canEdit ? const SizedBox.shrink() : null,
+                        onTap: canEdit
+                            ? () => _CrewMembersSheet.show(
+                                context,
+                                event: event,
+                                crew: crew,
+                                members: members,
+                              )
+                            : null,
+                      ),
+                    ),
+                    if (canEdit)
+                      PopupMenuButton<String>(
                         key: Key('crews.tile.${crew.id}.menu'),
                         tooltip: strings.crewOptions,
+                        icon: Icon(
+                          CpIcons.actionMore,
+                          size: cp.sizes.iconMd,
+                          color: cp.colors.textMuted,
+                        ),
                         onSelected: (action) => action == 'rename'
                             ? showCrewNameDialog(
                                 context,
@@ -204,15 +172,19 @@ class _CrewList extends ConsumerWidget {
                           PopupMenuItem(
                             key: Key('crews.tile.${crew.id}.delete'),
                             value: 'delete',
-                            child: Text(strings.delete),
+                            child: Text(
+                              strings.delete,
+                              style: TextStyle(color: cp.colors.overdue),
+                            ),
                           ),
                         ],
-                      )
-                    : null,
-              ),
-            ),
-        ],
-      ),
+                      ),
+                  ],
+                ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -342,24 +314,22 @@ class _CrewNameDialogState extends ConsumerState<_CrewNameDialog> {
   Widget build(BuildContext context) {
     final strings = context.strings.crews;
     final crewWord = widget.event.words.one('crew');
-    return AlertDialog(
-      title: Text(
-        widget.crew == null ? strings.newCrew(crewWord) : strings.rename,
-      ),
+    return CpDialog(
+      title: widget.crew == null ? strings.newCrew(crewWord) : strings.rename,
       content: Form(
         key: _formKey,
         child: Column(
           mainAxisSize: .min,
           crossAxisAlignment: .stretch,
+          spacing: context.cp.space.sm,
           children: [
-            TextFormField(
-              key: const Key('crews.name'),
+            CpTextField(
+              fieldKey: const Key('crews.name'),
+              label: strings.nameLabel,
               controller: _name,
               autofocus: true,
               enabled: !_busy,
               maxLength: _maxName,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: InputDecoration(labelText: strings.nameLabel),
               validator: (value) {
                 final name = value?.trim() ?? '';
                 if (name.isEmpty) return strings.nameRequired;
@@ -368,26 +338,26 @@ class _CrewNameDialogState extends ConsumerState<_CrewNameDialog> {
                 }
                 return null;
               },
-              onFieldSubmitted: (_) => _save(),
+              onSubmitted: (_) => _save(),
             ),
             if (_error != null)
-              Text(
-                _error!,
+              KeyedSubtree(
                 key: const Key('crews.nameError'),
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
+                child: CpFieldError(_error!),
               ),
           ],
         ),
       ),
       actions: [
-        TextButton(
+        CpButton.text(
+          label: strings.cancel,
           onPressed: _busy ? null : () => Navigator.of(context).pop(),
-          child: Text(strings.cancel),
         ),
-        FilledButton(
+        CpButton(
           key: const Key('crews.nameSave'),
+          label: widget.crew == null ? strings.create : strings.save,
+          busy: _busy,
           onPressed: _busy ? null : _save,
-          child: Text(widget.crew == null ? strings.create : strings.save),
         ),
       ],
     );
@@ -482,6 +452,7 @@ class _CrewMembersSheetState extends ConsumerState<_CrewMembersSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
     final strings = context.strings.crews;
     return PopScope(
       canPop: !_dirty || _busy,
@@ -498,18 +469,19 @@ class _CrewMembersSheetState extends ConsumerState<_CrewMembersSheet> {
             crossAxisAlignment: .stretch,
             children: [
               Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Text(
-                  strings.membersTitle(widget.crew.name),
-                  style: Theme.of(context).textTheme.titleLarge,
+                padding: EdgeInsets.all(cp.space.lg),
+                child: Semantics(
+                  header: true,
+                  child: Text(
+                    strings.membersTitle(widget.crew.name),
+                    style: cp.type.titleLarge.copyWith(color: cp.colors.text),
+                  ),
                 ),
               ),
               Flexible(
                 child: SingleChildScrollView(
                   key: const Key('crews.members.list'),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.lg,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: cp.space.lg),
                   // Chosen by name search, so a large event never lists
                   // everyone (Req 43a).
                   child: ChosenPeopleList(
@@ -524,32 +496,29 @@ class _CrewMembersSheetState extends ConsumerState<_CrewMembersSheet> {
               ),
               if (_error != null)
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.lg,
-                  ),
-                  child: Text(
-                    _error!,
+                  padding: EdgeInsets.symmetric(horizontal: cp.space.lg),
+                  child: KeyedSubtree(
                     key: const Key('crews.members.error'),
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
+                    child: CpFieldError(_error!),
                   ),
                 ),
               Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  spacing: AppSpacing.sm,
+                padding: EdgeInsets.all(cp.space.lg),
+                child: Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: cp.space.sm,
+                  runSpacing: cp.space.sm,
                   children: [
-                    TextButton(
+                    CpButton.text(
                       key: const Key('crews.members.cancel'),
+                      label: strings.cancel,
                       onPressed: _busy ? null : _close,
-                      child: Text(strings.cancel),
                     ),
-                    FilledButton(
+                    CpButton(
                       key: const Key('crews.members.save'),
+                      label: strings.save,
+                      busy: _busy,
                       onPressed: _busy || !_dirty ? null : _save,
-                      child: Text(strings.save),
                     ),
                   ],
                 ),

@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/services/callable_errors.dart';
-import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/chat/application/people_by_id_provider.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/member_picker_sheet.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
@@ -122,66 +121,58 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
         onRetry: () => ref.invalidate(ownershipOfferProvider(event.id)),
       );
     } else if (!offerAsync.hasValue) {
-      body = const Center(
-        child: CircularProgressIndicator(key: Key('transfer.loading')),
+      body = CpLoadingState.rows(
+        key: const Key('transfer.loading'),
+        semanticLabel: strings.title,
       );
     } else if (!canSee) {
       body = const NoAccessView();
     } else {
-      body = ContentMaxWidth(
-        key: const Key('transfer.body'),
-        maxWidth: 720,
-        child: ListView(
-          padding: EdgeInsets.symmetric(
-            horizontal: Breakpoints.screenHorizontalPadding(context),
-            vertical: AppSpacing.lg,
-          ),
-          children: [
-            Text(
-              strings.currentOwner(nameOf(ownerId)),
+      body = AdminList(
+        listKey: const Key('transfer.body'),
+        children: [
+          CpCard(
+            child: CpListRow(
               key: const Key('transfer.owner'),
-              style: Theme.of(context).textTheme.titleMedium,
+              leading: CpAvatar(name: nameOf(ownerId)),
+              title: strings.currentOwner(nameOf(ownerId)),
             ),
-            const SizedBox(height: AppSpacing.lg),
-            if (offeredToMe && offer != null)
-              _OfferToMe(
-                from: nameOf(offer.from),
-                busy: _busy,
-                onAccept: () => _run(
-                  () => ref
-                      .read(memberCallsProvider)
-                      .acceptOwnership(eventId: event.id),
-                  strings.accepted,
-                ),
-                onDecline: () => _run(
-                  () => ref
-                      .read(memberCallsProvider)
-                      .cancelOwnershipOffer(eventId: event.id),
-                  strings.declined,
-                ),
-              )
-            else if (offer != null)
-              _Waiting(
-                name: nameOf(offer.to),
-                canWithdraw: isOwner && !_busy,
-                onWithdraw: () => _run(
-                  () => ref
-                      .read(memberCallsProvider)
-                      .cancelOwnershipOffer(eventId: event.id),
-                  strings.withdrawn,
-                ),
-              )
-            else if (isOwner)
-              ..._picker(context, me, nameOf),
-          ],
-        ),
+          ),
+          if (offeredToMe && offer != null)
+            _OfferToMe(
+              from: nameOf(offer.from),
+              busy: _busy,
+              onAccept: () => _run(
+                () => ref
+                    .read(memberCallsProvider)
+                    .acceptOwnership(eventId: event.id),
+                strings.accepted,
+              ),
+              onDecline: () => _run(
+                () => ref
+                    .read(memberCallsProvider)
+                    .cancelOwnershipOffer(eventId: event.id),
+                strings.declined,
+              ),
+            )
+          else if (offer != null)
+            _Waiting(
+              name: nameOf(offer.to),
+              canWithdraw: isOwner && !_busy,
+              onWithdraw: () => _run(
+                () => ref
+                    .read(memberCallsProvider)
+                    .cancelOwnershipOffer(eventId: event.id),
+                strings.withdrawn,
+              ),
+            )
+          else if (isOwner)
+            ..._picker(context, me, nameOf),
+        ],
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(title: Text(strings.title), elevation: 0),
-      body: body,
-    );
+    return AdminScaffold(title: strings.title, body: body);
   }
 
   List<Widget> _picker(
@@ -195,26 +186,37 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
         if (uid != me) uid,
     ];
     if (others.isEmpty) {
-      return [Text(strings.noOneElse, key: const Key('transfer.empty'))];
+      return [
+        AdminNote(
+          strings.noOneElse,
+          key: const Key('transfer.empty'),
+          icon: CpIcons.statusInfo,
+        ),
+      ];
     }
     final picked = _picked;
+    final cp = context.cp;
     return [
-      Text(strings.pickHeading, style: Theme.of(context).textTheme.titleSmall),
-      const SizedBox(height: AppSpacing.xs),
-      Text(strings.pickHint, style: Theme.of(context).textTheme.bodySmall),
+      CpSectionHeader(title: strings.pickHeading),
+      AdminNote(strings.pickHint),
       // Chosen by name search, so a large event never lists everyone
       // (Req 43a).
       if (picked != null)
-        ListTile(
-          key: const Key('transfer.picked'),
-          contentPadding: EdgeInsets.zero,
-          leading: const Icon(AppIcons.navProfile),
-          title: Text(nameOf(picked)),
+        CpCard(
+          child: CpListRow(
+            key: const Key('transfer.picked'),
+            leading: CpAvatar(name: nameOf(picked)),
+            title: nameOf(picked),
+          ),
         ),
       Align(
         alignment: AlignmentDirectional.centerStart,
-        child: TextButton.icon(
+        child: CpButton.secondary(
           key: const Key('transfer.choose'),
+          icon: CpIcons.memberAdd,
+          label: context.strings.memberPicker.chooseOne(
+            widget.event.words.one('member'),
+          ),
           onPressed: _busy
               ? null
               : () async {
@@ -230,23 +232,17 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
                     _pickedName = person.displayName;
                   });
                 },
-          style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-          icon: const Icon(AppIcons.memberAdd),
-          label: Text(
-            context.strings.memberPicker.chooseOne(
-              widget.event.words.one('member'),
-            ),
-          ),
         ),
       ),
-      const SizedBox(height: AppSpacing.md),
-      FilledButton(
+      SizedBox(height: cp.space.xs),
+      CpButton(
         key: const Key('transfer.offer'),
+        label: strings.offer,
+        expand: true,
+        busy: _busy,
         onPressed: picked == null || _busy
             ? null
             : () => _offer(picked, nameOf(picked)),
-        style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-        child: Text(strings.offer),
       ),
     ];
   }
@@ -267,54 +263,58 @@ class _OfferToMe extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
     final strings = context.strings.transfer;
-    final theme = Theme.of(context);
-    return Card(
+    return Container(
       key: const Key('transfer.offerToMe'),
-      elevation: 0,
-      color: theme.colorScheme.secondaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: .stretch,
-          spacing: AppSpacing.md,
-          children: [
-            Text(
-              strings.offerToYou(from),
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.onSecondaryContainer,
+      padding: EdgeInsets.all(cp.space.lg),
+      decoration: BoxDecoration(
+        color: cp.colors.accentSoft,
+        borderRadius: cp.radii.md,
+      ),
+      child: Column(
+        crossAxisAlignment: .stretch,
+        spacing: cp.space.md,
+        children: [
+          Row(
+            spacing: cp.space.sm,
+            children: [
+              Icon(
+                CpIcons.owner,
+                size: cp.sizes.iconMd,
+                color: cp.colors.accent,
               ),
-            ),
-            Text(
-              strings.offerToYouBody(from),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSecondaryContainer,
+              Expanded(
+                child: Text(
+                  strings.offerToYou(from),
+                  style: cp.type.titleMedium.copyWith(color: cp.colors.text),
+                ),
               ),
-            ),
-            Wrap(
-              alignment: WrapAlignment.end,
-              spacing: AppSpacing.sm,
-              children: [
-                OutlinedButton(
-                  key: const Key('transfer.decline'),
-                  onPressed: busy ? null : onDecline,
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(88, 48),
-                  ),
-                  child: Text(strings.decline),
-                ),
-                FilledButton(
-                  key: const Key('transfer.accept'),
-                  onPressed: busy ? null : onAccept,
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(88, 48),
-                  ),
-                  child: Text(strings.accept),
-                ),
-              ],
-            ),
-          ],
-        ),
+            ],
+          ),
+          Text(
+            strings.offerToYouBody(from),
+            style: cp.type.bodyMedium.copyWith(color: cp.colors.text),
+          ),
+          Wrap(
+            alignment: WrapAlignment.end,
+            spacing: cp.space.sm,
+            runSpacing: cp.space.sm,
+            children: [
+              CpButton.secondary(
+                key: const Key('transfer.decline'),
+                label: strings.decline,
+                onPressed: busy ? null : onDecline,
+              ),
+              CpButton(
+                key: const Key('transfer.accept'),
+                label: strings.accept,
+                busy: busy,
+                onPressed: busy ? null : onAccept,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -333,21 +333,20 @@ class _Waiting extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
     final strings = context.strings.transfer;
     return Column(
       key: const Key('transfer.waiting'),
       crossAxisAlignment: .stretch,
-      spacing: AppSpacing.md,
+      spacing: cp.space.md,
       children: [
-        Text(strings.waiting(name)),
+        AdminNote(strings.waiting(name), icon: CpIcons.statusDue),
         if (canWithdraw)
-          OutlinedButton(
+          CpButton.secondary(
             key: const Key('transfer.withdraw'),
+            label: strings.withdraw,
+            expand: true,
             onPressed: onWithdraw,
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
-            ),
-            child: Text(strings.withdraw),
           ),
       ],
     );

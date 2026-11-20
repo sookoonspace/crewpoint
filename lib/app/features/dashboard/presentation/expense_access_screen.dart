@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/services/callable_errors.dart';
-import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
-import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_access.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/member.dart';
@@ -74,20 +73,20 @@ class _ExpenseAccessScreenState extends ConsumerState<ExpenseAccessScreen> {
     if (losing > 0) {
       final go = await showDialog<bool>(
         context: context,
-        builder: (dialog) => AlertDialog(
+        builder: (dialog) => CpDialog(
           key: const Key('expenses.access.narrowWarning'),
-          title: Text(strings.narrowTitle),
-          content: Text(strings.narrowBody(losing)),
+          title: strings.narrowTitle,
+          message: strings.narrowBody(losing),
           actions: [
-            TextButton(
+            CpButton.text(
               key: const Key('expenses.access.narrowCancel'),
+              label: context.strings.roles.cancel,
               onPressed: () => Navigator.of(dialog).pop(false),
-              child: Text(context.strings.roles.cancel),
             ),
-            TextButton(
+            CpButton.destructive(
               key: const Key('expenses.access.narrowConfirm'),
+              label: strings.narrowConfirm,
               onPressed: () => Navigator.of(dialog).pop(true),
-              child: Text(strings.narrowConfirm),
             ),
           ],
         ),
@@ -137,7 +136,7 @@ class _ExpenseAccessScreenState extends ConsumerState<ExpenseAccessScreen> {
     final me = ref.watch(currentUserIdProvider) ?? '';
     final event = widget.event;
 
-    Widget scaffold(Widget body) => PopScope(
+    Widget scaffold(Widget body, {Widget? bottom}) => PopScope(
       canPop: !_dirty || _busy,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
@@ -151,10 +150,7 @@ class _ExpenseAccessScreenState extends ConsumerState<ExpenseAccessScreen> {
           }
         }
       },
-      child: Scaffold(
-        appBar: AppBar(title: Text(strings.title), elevation: 0),
-        body: body,
-      ),
+      child: AdminScaffold(title: strings.title, body: body, bottom: bottom),
     );
 
     if (!event.can(me, 'event.manage')) return scaffold(const NoAccessView());
@@ -174,8 +170,9 @@ class _ExpenseAccessScreenState extends ConsumerState<ExpenseAccessScreen> {
     }
     if (!members.hasValue || !roles.hasValue) {
       return scaffold(
-        const Center(
-          child: CircularProgressIndicator(key: Key('expenses.access.loading')),
+        CpLoadingState.rows(
+          key: const Key('expenses.access.loading'),
+          semanticLabel: strings.title,
         ),
       );
     }
@@ -198,140 +195,213 @@ class _ExpenseAccessScreenState extends ConsumerState<ExpenseAccessScreen> {
         _choice.roleIds.isEmpty &&
         _choice.uids.isEmpty;
     final enabled = !_busy;
-    final theme = Theme.of(context);
+    final cp = context.cp;
 
-    RadioListTile<ExpenseAccessMode> option(
-      ExpenseAccessMode mode,
-      String title,
-      String help,
-    ) => RadioListTile<ExpenseAccessMode>(
-      key: Key('expenses.access.option.${mode.name}'),
-      contentPadding: EdgeInsets.zero,
-      value: mode,
-      enabled: enabled,
-      title: Text(title),
-      subtitle: Text(help),
+    void pick(ExpenseAccessMode? m) {
+      if (m == null || !enabled) return;
+      setState(
+        () => _choice = ExpenseAccess(
+          mode: m,
+          roleIds: _choice.roleIds,
+          uids: _choice.uids,
+        ),
+      );
+    }
+
+    Widget option(ExpenseAccessMode mode, String title, String help) =>
+        _AccessOption(
+          key: Key('expenses.access.option.${mode.name}'),
+          mode: mode,
+          title: title,
+          help: help,
+          enabled: enabled,
+          onTap: () => pick(mode),
+        );
+
+    Widget switches(List<Widget> rows) => CpCard(
+      padding: EdgeInsets.symmetric(
+        horizontal: cp.space.lg,
+        vertical: cp.space.xs,
+      ),
+      child: Column(children: rows),
     );
 
     return scaffold(
-      SingleChildScrollView(
-        key: const Key('expenses.access.body'),
-        padding: EdgeInsets.symmetric(
-          horizontal: Breakpoints.screenHorizontalPadding(context),
-          vertical: AppSpacing.lg,
+      bottom: AdminSaveBar(
+        child: CpButton(
+          key: const Key('expenses.access.save'),
+          label: strings.save,
+          busy: _busy,
+          onPressed: _dirty && !_busy
+              ? () => _save(memberList, roleList)
+              : null,
         ),
-        child: ContentMaxWidth(
-          maxWidth: 560,
-          child: RadioGroup<ExpenseAccessMode>(
-            key: const Key('expenses.access.options'),
-            groupValue: _choice.mode,
-            onChanged: (m) {
-              if (m == null || !enabled) return;
-              setState(
-                () => _choice = ExpenseAccess(
-                  mode: m,
-                  roleIds: _choice.roleIds,
-                  uids: _choice.uids,
-                ),
-              );
-            },
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              spacing: AppSpacing.sm,
-              children: [
-                Text(strings.intro, style: theme.textTheme.bodyMedium),
-                option(
-                  ExpenseAccessMode.everyone,
-                  strings.everyone,
-                  strings.everyoneHelp,
-                ),
-                if (_choice.mode == ExpenseAccessMode.everyone)
-                  Padding(
-                    padding: const EdgeInsets.only(left: AppSpacing.xl),
-                    child: SwitchListTile(
-                      key: const Key('expenses.access.includeNonContributors'),
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        strings.includeNonContributors(
-                          roleName('observer', 'Observers'),
-                          roleName('vendor', 'Vendors'),
-                        ),
-                      ),
-                      value: _choice.includeNonContributors,
-                      onChanged: enabled
-                          ? (on) => setState(
-                              () => _choice = ExpenseAccess.everyone(
-                                includeNonContributors: on,
-                              ),
-                            )
-                          : null,
-                    ),
+      ),
+      RadioGroup<ExpenseAccessMode>(
+        key: const Key('expenses.access.options'),
+        groupValue: _choice.mode,
+        onChanged: pick,
+        child: AdminList(
+          listKey: const Key('expenses.access.body'),
+          children: [
+            AdminNote(strings.intro),
+            CpCard(
+              child: CpRowGroup(
+                children: [
+                  option(
+                    ExpenseAccessMode.everyone,
+                    strings.everyone,
+                    strings.everyoneHelp,
                   ),
-                option(
-                  ExpenseAccessMode.involved,
-                  strings.involved,
-                  strings.involvedHelp,
+                  option(
+                    ExpenseAccessMode.involved,
+                    strings.involved,
+                    strings.involvedHelp,
+                  ),
+                  option(
+                    ExpenseAccessMode.selected,
+                    strings.selected,
+                    strings.selectedHelp,
+                  ),
+                ],
+              ),
+            ),
+            if (_choice.mode == ExpenseAccessMode.everyone)
+              switches([
+                CpSwitchRow(
+                  key: const Key('expenses.access.includeNonContributors'),
+                  title: strings.includeNonContributors(
+                    roleName('observer', 'Observers'),
+                    roleName('vendor', 'Vendors'),
+                  ),
+                  value: _choice.includeNonContributors,
+                  onChanged: enabled
+                      ? (on) => setState(
+                          () => _choice = ExpenseAccess.everyone(
+                            includeNonContributors: on,
+                          ),
+                        )
+                      : null,
                 ),
-                option(
-                  ExpenseAccessMode.selected,
-                  strings.selected,
-                  strings.selectedHelp,
+              ]),
+            if (_choice.mode == ExpenseAccessMode.selected) ...[
+              if (nobody)
+                AdminNote(
+                  strings.nobodyNote,
+                  key: const Key('expenses.access.nobody'),
+                  icon: CpIcons.statusInfo,
                 ),
-                if (_choice.mode == ExpenseAccessMode.selected) ...[
-                  if (nobody)
-                    Text(
-                      strings.nobodyNote,
-                      key: const Key('expenses.access.nobody'),
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  Text(strings.rolesHeading, style: theme.textTheme.titleSmall),
-                  if (pickableRoles.isEmpty) Text(strings.nothingToPick),
+              CpSectionHeader(title: strings.rolesHeading),
+              if (pickableRoles.isEmpty)
+                AdminNote(strings.nothingToPick)
+              else
+                switches([
                   for (final role in pickableRoles)
-                    CheckboxListTile(
+                    CpSwitchRow(
                       key: Key('expenses.access.role.${role.id}'),
-                      contentPadding: EdgeInsets.zero,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      title: Text(role.name),
+                      title: role.name,
                       value: _choice.roleIds.contains(role.id),
                       onChanged: enabled
-                          ? (on) => _toggle(_choice.roleIds, role.id, on!, true)
+                          ? (on) => _toggle(_choice.roleIds, role.id, on, true)
                           : null,
                     ),
-                  Text(
-                    strings.peopleHeading,
-                    style: theme.textTheme.titleSmall,
-                  ),
-                  // Chosen by name search, so a large event never lists
-                  // everyone (Req 43a).
-                  ChosenPeopleList(
-                    eventId: event.id,
-                    words: event.words,
-                    keyPrefix: 'expenses.access.person',
-                    chosen: _choice.uids.toSet(),
-                    exclude: readsAll,
+                ]),
+              CpSectionHeader(title: strings.peopleHeading),
+              // Chosen by name search, so a large event never lists
+              // everyone (Req 43a).
+              ChosenPeopleList(
+                eventId: event.id,
+                words: event.words,
+                keyPrefix: 'expenses.access.person',
+                chosen: _choice.uids.toSet(),
+                exclude: readsAll,
+                enabled: enabled,
+                onChanged: (uids) => setState(
+                  () => _choice = _choice.copyWith(uids: uids.toList()..sort()),
+                ),
+              ),
+            ],
+            if (_error != null)
+              KeyedSubtree(
+                key: const Key('expenses.access.error'),
+                child: CpFieldError(_error!),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One choice of who sees expenses: a radio, its name and what it means.
+/// The radio follows the [RadioGroup] above it.
+class _AccessOption extends StatelessWidget {
+  const _AccessOption({
+    super.key,
+    required this.mode,
+    required this.title,
+    required this.help,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final ExpenseAccessMode mode;
+  final String title;
+  final String help;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final cp = context.cp;
+    return MergeSemantics(
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: enabled ? onTap : null,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: cp.sizes.rowMinHeight),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: cp.space.sm,
+                vertical: cp.space.sm,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Radio<ExpenseAccessMode>(
+                    value: mode,
                     enabled: enabled,
-                    onChanged: (uids) => setState(
-                      () => _choice = _choice.copyWith(
-                        uids: uids.toList()..sort(),
+                    activeColor: cp.colors.accent,
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        top: cp.space.md,
+                        right: cp.space.sm,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        spacing: cp.space.xs / 2,
+                        children: [
+                          Text(
+                            title,
+                            style: cp.type.titleSmall.copyWith(
+                              color: cp.colors.text,
+                            ),
+                          ),
+                          Text(
+                            help,
+                            style: cp.type.bodySmall.copyWith(
+                              color: cp.colors.textMuted,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ],
-                if (_error != null)
-                  Text(
-                    _error!,
-                    key: const Key('expenses.access.error'),
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.error,
-                    ),
-                  ),
-                PrimaryButton(
-                  key: const Key('expenses.access.save'),
-                  label: strings.save,
-                  isLoading: _busy,
-                  onPressed: _dirty ? () => _save(memberList, roleList) : null,
-                ),
-              ],
+              ),
             ),
           ),
         ),
