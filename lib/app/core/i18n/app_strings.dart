@@ -4209,6 +4209,20 @@ abstract class TemplateStrings {
   String get create;
   String get createFailed;
   String get signInRequired;
+  String get currencyHelp;
+
+  /// A saved template's subtitle, naming the template it started from.
+  String basedOn(String template);
+
+  // Editing an event (Spec #186).
+  String get editTitle;
+  String get endDate;
+  String get endBeforeStart;
+  String get clearDate;
+  String get archivedLabel;
+  String get archivedOn;
+  String get archivedOff;
+  String get saveChanges;
 
   // Saved templates (Req 65).
   String get systemHeading;
@@ -4288,6 +4302,27 @@ class _EnglishTemplateStrings extends TemplateStrings {
   String get createFailed => "Couldn't create the event. Try again.";
   @override
   String get signInRequired => 'Sign in to create an event.';
+  @override
+  String get currencyHelp =>
+      'Can be changed in settings until money is recorded.';
+  @override
+  String basedOn(String template) => 'Based on $template';
+  @override
+  String get editTitle => 'Edit event';
+  @override
+  String get endDate => 'End date';
+  @override
+  String get endBeforeStart => 'End date must be on or after start date';
+  @override
+  String get clearDate => 'Clear date';
+  @override
+  String get archivedLabel => 'Archived';
+  @override
+  String get archivedOn => 'Event is read-only';
+  @override
+  String get archivedOff => 'Active';
+  @override
+  String get saveChanges => 'Save changes';
 
   @override
   String get systemHeading => 'Templates';
