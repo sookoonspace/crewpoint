@@ -3,16 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/router/app_router.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/dashboard/data/member_calls.dart';
 
-/// Where an invite link or QR code lands (Req 47, route `/join/:code`). A
+/// Where an invite link or QR code lands (Req 47, route `/join/:code`;
+/// Spec #186). A
 /// signed-out person signs in first and comes back here. It shows the event
 /// and the role the invite carries, explains when the event is a draft,
 /// ended or full, and joins with one tap. Joining needs a connection.
@@ -99,37 +100,30 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
     final strings = context.strings.invites;
-    final theme = Theme.of(context);
-    final padding = Breakpoints.screenHorizontalPadding(context);
 
     final Widget body;
     if (_loading) {
-      body = Column(
+      body = CpLoadingState(
         key: const Key('join.loading'),
-        spacing: AppSpacing.md,
-        children: [
-          const CircularProgressIndicator(),
-          Text(strings.joinLoading),
-        ],
+        semanticLabel: strings.joinLoading,
+        label: strings.joinLoading,
       );
     } else if (_problem == _Problem.notFound) {
-      body = _Message(
+      body = CpEmptyState(
         key: const Key('join.notFound'),
-        icon: AppIcons.statusError,
-        text: strings.notFound,
+        icon: CpIcons.statusError,
+        title: strings.notFound,
       );
     } else if (_preview == null) {
-      body = _Message(
+      body = CpErrorState(
         key: const Key('join.error'),
-        icon: AppIcons.wifiOff,
-        text: strings.joinFailed,
-        action: TextButton.icon(
-          key: const Key('join.retry'),
-          onPressed: _load,
-          icon: const Icon(AppIcons.actionRetry),
-          label: Text(strings.retry),
-        ),
+        icon: CpIcons.wifiOff,
+        title: strings.joinFailed,
+        retryLabel: strings.retry,
+        retryKey: const Key('join.retry'),
+        onRetry: _load,
       );
     } else {
       final p = _preview!;
@@ -143,133 +137,151 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
           : null;
       body = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: AppSpacing.md,
+        spacing: cp.space.lg,
         children: [
-          Text(
-            p.title,
-            key: const Key('join.title'),
-            style: theme.textTheme.headlineSmall,
-            textAlign: TextAlign.center,
+          CpCard(
+            padding: EdgeInsets.all(cp.space.xl),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: cp.space.sm,
+              children: [
+                Container(
+                  width: cp.sizes.iconTile,
+                  height: cp.sizes.iconTile,
+                  decoration: BoxDecoration(
+                    color: cp.colors.accentSoft,
+                    borderRadius: cp.radii.sm,
+                  ),
+                  child: Icon(
+                    CpIcons.joinEvent,
+                    size: cp.sizes.iconMd,
+                    color: cp.colors.accent,
+                  ),
+                ),
+                Text(
+                  p.title,
+                  key: const Key('join.title'),
+                  style: cp.type.headlineSmall.copyWith(color: cp.colors.text),
+                ),
+                if (start != null)
+                  Text(
+                    strings.startsOn(
+                      p.dateOnly
+                          ? DateFormat.yMMMMEEEEd().format(
+                              DateTime(start.year, start.month, start.day),
+                            )
+                          : DateFormat.yMMMMEEEEd().add_jm().format(
+                              start.toLocal(),
+                            ),
+                    ),
+                    style: cp.type.bodyMedium.copyWith(
+                      color: cp.colors.textMuted,
+                    ),
+                  ),
+                if (!p.alreadyMember)
+                  Text(
+                    strings.joinAs(p.roleName),
+                    key: const Key('join.role'),
+                    style: cp.type.bodyLarge.copyWith(color: cp.colors.text),
+                  ),
+              ],
+            ),
           ),
-          if (start != null)
-            Text(
-              strings.startsOn(
-                p.dateOnly
-                    ? DateFormat.yMMMMEEEEd().format(
-                        DateTime(start.year, start.month, start.day),
-                      )
-                    : DateFormat.yMMMMEEEEd().add_jm().format(start.toLocal()),
-              ),
-              textAlign: TextAlign.center,
-            ),
-          if (!p.alreadyMember)
-            Text(
-              strings.joinAs(p.roleName),
-              key: const Key('join.role'),
-              textAlign: TextAlign.center,
-            ),
+          // Why joining is not offered: an icon with the words, never
+          // colour alone.
           if (notice != null)
-            Text(
-              notice,
+            Container(
               key: const Key('join.notice'),
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: p.alreadyMember
-                    ? theme.colorScheme.onSurface
-                    : theme.colorScheme.error,
+              padding: EdgeInsets.all(cp.space.md),
+              decoration: BoxDecoration(
+                color: cp.colors.accentSoft,
+                borderRadius: cp.radii.md,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: cp.space.sm,
+                children: [
+                  Icon(
+                    p.alreadyMember ? CpIcons.statusDone : CpIcons.statusInfo,
+                    size: cp.sizes.iconMd,
+                    color: cp.colors.accent,
+                  ),
+                  Expanded(
+                    child: Text(
+                      notice,
+                      style: cp.type.bodyMedium.copyWith(color: cp.colors.text),
+                    ),
+                  ),
+                ],
               ),
             ),
           if (_problem == _Problem.joinFailed)
-            Text(
-              strings.joinFailed,
-              key: const Key('join.failed'),
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.error,
+            Container(
+              padding: EdgeInsets.all(cp.space.md),
+              decoration: BoxDecoration(
+                color: cp.colors.overdueSoft,
+                borderRadius: cp.radii.md,
+              ),
+              child: CpFieldError(
+                strings.joinFailed,
+                key: const Key('join.failed'),
               ),
             ),
           if (p.alreadyMember)
-            FilledButton(
+            CpButton(
               key: const Key('join.open'),
+              label: strings.openEvent,
+              expand: true,
               onPressed: () => _openEvent(p.eventId),
-              style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
-              child: Text(strings.openEvent),
             )
           else if (notice == null)
-            FilledButton(
+            CpButton(
               key: const Key('join.submit'),
-              onPressed: _joining ? null : _join,
-              style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
-              child: _joining
-                  ? const SizedBox.square(
-                      dimension: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(strings.joinButton),
+              label: strings.joinButton,
+              expand: true,
+              busy: _joining,
+              onPressed: _join,
             ),
         ],
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(strings.joinTitle), elevation: 0),
+      backgroundColor: cp.colors.background,
+      appBar: CpTopBar(title: strings.joinTitle),
       body: ListView(
         padding: EdgeInsets.fromLTRB(
-          padding,
-          AppSpacing.xl,
-          padding,
-          AppSpacing.xl,
+          cp.space.lg,
+          cp.space.sm,
+          cp.space.lg,
+          cp.space.xxl,
         ),
         children: [
           ContentMaxWidth(
-            maxWidth: 560,
+            maxWidth: cp.sizes.phoneColumn,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              spacing: AppSpacing.lg,
+              spacing: cp.space.lg,
               children: [
                 body,
                 Text(
                   strings.joinNeedsConnection,
                   key: const Key('join.online'),
                   textAlign: TextAlign.center,
-                  style: theme.textTheme.bodySmall,
+                  style: cp.type.bodySmall.copyWith(color: cp.colors.textMuted),
                 ),
-                TextButton(
-                  key: const Key('join.back'),
-                  onPressed: () => context.go(AppRoutes.dashboard),
-                  child: Text(strings.backToEvents),
+                Center(
+                  child: CpButton.text(
+                    key: const Key('join.back'),
+                    label: strings.backToEvents,
+                    onPressed: () => context.go(AppRoutes.dashboard),
+                  ),
                 ),
               ],
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _Message extends StatelessWidget {
-  const _Message({
-    super.key,
-    required this.icon,
-    required this.text,
-    this.action,
-  });
-
-  final IconData icon;
-  final String text;
-  final Widget? action;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
-      spacing: AppSpacing.md,
-      children: [
-        Icon(icon, size: 48, color: theme.colorScheme.onSurfaceVariant),
-        Text(text, textAlign: TextAlign.center),
-        ?action,
-      ],
     );
   }
 }

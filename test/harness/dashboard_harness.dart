@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/core/database/app_database.dart';
+import 'package:crewpoint_app/app/core/design/theme/cp_theme.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/services/device_timezone.dart';
 import 'package:crewpoint_app/app/core/widgets/event_guard.dart';
@@ -44,16 +45,21 @@ class _UnusedAuthRepository implements AuthRepository {
 /// - a minimal `GoRouter` covering `/dashboard` + `/dashboard/create`,
 /// - `_StubAuthNotifier` so the dashboard renders signed-in state.
 class DashboardJourneyHarness {
-  DashboardJourneyHarness({required this.currentUser})
-    : firestore = FakeFirebaseFirestore(),
-      database = AppDatabase(NativeDatabase.memory());
+  DashboardJourneyHarness({
+    required this.currentUser,
+    this.initialLocation = '/dashboard',
+  }) : firestore = FakeFirebaseFirestore(),
+       database = AppDatabase(NativeDatabase.memory());
 
   final AppUser currentUser;
+
+  /// Where the app opens, such as `/dashboard/create`.
+  final String initialLocation;
   final FakeFirebaseFirestore firestore;
   final AppDatabase database;
 
   late final GoRouter _router = GoRouter(
-    initialLocation: '/dashboard',
+    initialLocation: initialLocation,
     routes: [
       GoRoute(
         path: '/dashboard',
@@ -121,7 +127,8 @@ class DashboardJourneyHarness {
     ],
   );
 
-  Widget buildApp() {
+  /// With [themeMode], the app uses the design system's themes in that mode.
+  Widget buildApp({ThemeMode? themeMode}) {
     return ProviderScope(
       overrides: [
         databaseProvider.overrideWithValue(database),
@@ -136,7 +143,12 @@ class DashboardJourneyHarness {
         ),
         authProvider.overrideWith(() => _StubAuthNotifier(currentUser)),
       ],
-      child: MaterialApp.router(routerConfig: _router),
+      child: MaterialApp.router(
+        routerConfig: _router,
+        theme: themeMode == null ? null : CpTheme.light(),
+        darkTheme: themeMode == null ? null : CpTheme.dark(),
+        themeMode: themeMode ?? ThemeMode.system,
+      ),
     );
   }
 }

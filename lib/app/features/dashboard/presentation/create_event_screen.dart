@@ -2,26 +2,25 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import 'package:crewpoint_app/app/core/format/event_time.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_sizes.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
-import 'package:crewpoint_app/app/core/design/layout/breakpoints.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/services/callable_errors.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
-import 'package:crewpoint_app/app/core/widgets/custom_text_field.dart';
-import 'package:crewpoint_app/app/core/widgets/form_card_shell.dart';
-import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
 import 'package:crewpoint_app/app/features/dashboard/data/event_repository.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event_template.dart';
 import 'package:go_router/go_router.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_member_sheet.dart';
 
+/// The event form (Req 63; Spec #186), in the Person form's pattern: cards
+/// of fields and Create in a bar at the bottom. Fast-path templates need
+/// only a title; the date and the rest are optional.
 class CreateEventScreen extends ConsumerStatefulWidget {
   const CreateEventScreen({
     super.key,
@@ -203,185 +202,172 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     }
   }
 
+  Future<void> _pickCurrency() async {
+    final cp = context.cp;
+    final picked = await showCpSheet<String>(
+      context: context,
+      title: context.strings.templates.currency,
+      builder: (sheet) => CpCard(
+        child: CpRowGroup(
+          children: [
+            for (final code in CreateEventScreen.supportedCurrencies)
+              CpListRow(
+                key: Key('events.create.currency.$code'),
+                title: code,
+                trailing: code == _currency
+                    ? Icon(
+                        CpIcons.statusDone,
+                        size: cp.sizes.iconMd,
+                        color: cp.colors.accent,
+                      )
+                    : const SizedBox.shrink(),
+                onTap: () => Navigator.of(sheet).pop(code),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked != null && mounted) setState(() => _currency = picked);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          context.strings.templates.formTitle(
-            _template?.name(Localizations.localeOf(context).languageCode) ?? '',
-          ),
-        ),
-        elevation: 0,
+    final cp = context.cp;
+    final strings = context.strings.templates;
+    final navigator = Navigator.of(context);
+
+    Widget card(List<Widget> children) => CpCard(
+      padding: EdgeInsets.all(cp.space.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: cp.space.lg,
+        children: children,
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(
-          horizontal: Breakpoints.screenHorizontalPadding(context),
-          vertical: AppSpacing.xl,
-        ),
-        child: ContentMaxWidth(
-          key: const Key('createEvent.body.clamped'),
-          maxWidth: 480,
-          child: FormCardShell(
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                spacing: AppSpacing.lg,
-                children: [
-                  const SizedBox(height: AppSpacing.sm),
+    );
 
-                  // Title
-                  Text(
-                    context.strings.templates.titleLabel,
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  CustomTextField(
-                    key: const Key('createEvent.title'),
-                    hintText: context.strings.templates.titleHint,
-                    controller: _titleController,
-                    prefixIcon: const Icon(AppIcons.event),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return context.strings.templates.titleRequired;
-                      }
-                      if (value.length > 200) {
-                        return context.strings.templates.titleTooLong;
-                      }
-                      return null;
-                    },
-                  ),
+    final body = Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: cp.space.lg,
+        children: [
+          card([
+            CpTextField(
+              key: const Key('createEvent.title'),
+              label: strings.titleLabel,
+              hint: strings.titleHint,
+              controller: _titleController,
+              required: true,
+              requiredLabel: context.strings.groupEntry.required,
+              enabled: !_isSubmitting,
+              textInputAction: TextInputAction.next,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return strings.titleRequired;
+                }
+                if (value.length > 200) return strings.titleTooLong;
+                return null;
+              },
+            ),
+            CpSelectField(
+              fieldKey: const Key('createEvent.date'),
+              label: strings.startDate,
+              leadingIcon: CpIcons.calendar,
+              value: _startDate == null
+                  ? null
+                  : DateFormat.yMMMMEEEEd().format(_startDate!),
+              placeholder: strings.dateOptional,
+              onTap: _isSubmitting ? null : _pickDate,
+              onClear: _isSubmitting
+                  ? null
+                  : () => setState(() => _startDate = null),
+              clearLabel: strings.clearDate,
+              clearKey: const Key('createEvent.date.clear'),
+            ),
+          ]),
+          card([
+            CpTextField(
+              key: const Key('createEvent.description'),
+              label: strings.descriptionLabel,
+              hint: strings.descriptionHint,
+              controller: _descriptionController,
+              enabled: !_isSubmitting,
+              maxLines: 3,
+            ),
+            CpSelectField(
+              fieldKey: const Key('events.create.currency'),
+              label: strings.currency,
+              leadingIcon: CpIcons.currency,
+              value: _currency,
+              help: strings.currencyHelp,
+              onTap: _isSubmitting ? null : _pickCurrency,
+            ),
+          ]),
+          if (_errorMessage != null)
+            Container(
+              key: const Key('createEvent.error'),
+              padding: EdgeInsets.all(cp.space.md),
+              decoration: BoxDecoration(
+                color: cp.colors.overdueSoft,
+                borderRadius: cp.radii.md,
+              ),
+              child: CpFieldError(_errorMessage!),
+            ),
+        ],
+      ),
+    );
 
-                  // Description
-                  Text(
-                    context.strings.templates.descriptionLabel,
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  CustomTextField(
-                    key: const Key('createEvent.description'),
-                    hintText: context.strings.templates.descriptionHint,
-                    controller: _descriptionController,
-                    maxLines: 3,
-                    prefixIcon: const Icon(AppIcons.markdown),
-                  ),
-
-                  // Start Date (optional)
-                  ListTile(
-                    key: const Key('createEvent.date'),
-                    leading: Icon(
-                      AppIcons.calendar,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    title: Text(context.strings.templates.startDate),
-                    subtitle: Text(
-                      _startDate != null
-                          ? _startDate.toString().split(' ')[0]
-                          : context.strings.templates.dateOptional,
-                      style: TextStyle(
-                        color: _startDate != null
-                            ? Theme.of(context).colorScheme.onSurface
-                            : Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    trailing: _startDate != null
-                        ? IconButton(
-                            icon: const Icon(AppIcons.actionClear, size: 18),
-                            onPressed: _isSubmitting
-                                ? null
-                                : () => setState(() => _startDate = null),
-                          )
-                        : null,
-                    onTap: _isSubmitting ? null : _pickDate,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(
-                        color: Theme.of(context).colorScheme.outline,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: AppSpacing.md),
-
-                  // Currency (immutable after creation)
-                  Text(
-                    context.strings.templates.currency,
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  DropdownButtonFormField<String>(
-                    key: const Key('events.create.currency'),
-                    initialValue: _currency,
-                    decoration: const InputDecoration(
-                      prefixIcon: Icon(AppIcons.currency),
-                      border: OutlineInputBorder(),
-                      helperText:
-                          'Can be changed in settings until money is recorded.',
-                    ),
-                    items: [
-                      for (final code in CreateEventScreen.supportedCurrencies)
-                        DropdownMenuItem(value: code, child: Text(code)),
-                    ],
-                    onChanged: _isSubmitting
-                        ? null
-                        : (value) {
-                            if (value != null) {
-                              setState(() => _currency = value);
-                            }
-                          },
-                  ),
-
-                  if (_errorMessage != null) ...[
-                    const SizedBox(height: AppSpacing.sm),
-                    Container(
-                      key: const Key('createEvent.error'),
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      decoration: BoxDecoration(
-                        color: AppColors.terracotta.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.terracotta),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            AppIcons.statusError,
-                            color: AppColors.terracotta,
-                            size: AppSizes.iconMd,
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            child: Text(
-                              _errorMessage!,
-                              style: const TextStyle(
-                                color: AppColors.terracotta,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-
-                  const SizedBox(height: AppSpacing.md),
-
-                  PrimaryButton(
-                    key: const Key('createEvent.submit'),
-                    label: _needsConnection
-                        ? context.strings.dashboard.createEventRetry
-                        : context.strings.templates.create,
-                    onPressed: _isSubmitting ? null : _submit,
-                    isLoading: _isSubmitting,
-                  ),
-                ],
+    final saveBar = Material(
+      color: cp.colors.surface,
+      child: SafeArea(
+        top: false,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: cp.colors.border)),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(cp.space.md),
+            // heightFactor 1: the bar is only as tall as its button.
+            child: Align(
+              alignment: AlignmentDirectional.centerEnd,
+              heightFactor: 1,
+              child: CpButton(
+                key: const Key('createEvent.submit'),
+                label: _needsConnection
+                    ? context.strings.dashboard.createEventRetry
+                    : strings.create,
+                busy: _isSubmitting,
+                onPressed: _submit,
               ),
             ),
           ),
         ),
       ),
+    );
+
+    return Scaffold(
+      backgroundColor: cp.colors.background,
+      appBar: CpTopBar(
+        title: strings.formTitle(
+          _template?.name(Localizations.localeOf(context).languageCode) ?? '',
+        ),
+        leadingTooltip: MaterialLocalizations.of(context).backButtonTooltip,
+        onLeading: navigator.canPop() ? () => navigator.maybePop() : null,
+      ),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          cp.space.lg,
+          cp.space.sm,
+          cp.space.lg,
+          cp.space.xxl,
+        ),
+        child: ContentMaxWidth(
+          key: const Key('createEvent.body.clamped'),
+          maxWidth: cp.sizes.phoneColumn,
+          child: body,
+        ),
+      ),
+      bottomNavigationBar: saveBar,
     );
   }
 }
