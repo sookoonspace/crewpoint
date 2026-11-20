@@ -73,11 +73,6 @@ const notYetMigrated = <String>{
   'lib/app/features/profile/presentation/widgets/delete_account_dialog.dart',
   'lib/app/features/profile/presentation/widgets/sign_out_sheet.dart',
   'lib/app/features/profile/presentation/widgets/theme_switcher_sheet.dart',
-  'lib/app/features/schedule/presentation/agenda_screen.dart',
-  'lib/app/features/schedule/presentation/schedule_screen.dart',
-  'lib/app/features/schedule/presentation/session_screen.dart',
-  'lib/app/features/schedule/presentation/session_tile.dart',
-  'lib/app/features/schedule/presentation/venue_card.dart',
   'lib/main.dart',
 };
 
