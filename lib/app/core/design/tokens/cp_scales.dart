@@ -108,6 +108,9 @@ class CpSizes extends ThemeExtension<CpSizes> {
   /// The event's icon on a banner without a photo.
   double get coverIcon => CpScale.coverIcon56;
 
+  /// A schedule row's start time, beside its title.
+  double get timeColumn => CpScale.time56;
+
   /// An event's thumbnail on its list card.
   double get coverThumb => CpScale.avatar64;
 

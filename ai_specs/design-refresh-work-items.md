@@ -507,7 +507,7 @@ The event budget page, ledger, global Budget tab and expense form in the new loo
 - [x] Existing journey tests keep passing, with selectors changed only where a widget's key must change (Testing Strategy 8); every new interactive widget has a `domain.feature.action` key.
 - [x] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
 - [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
-- [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
+- [x] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 
 #### Covers
 - User Stories: 7, 9
@@ -530,12 +530,12 @@ The schedule (by day and by venue), the agenda and the session screen in the new
 - Approved Schedule (day) mockup; form pattern from the Person form.
 
 #### Acceptance criteria
-- [ ] Schedule matches the approved mockup; the session form follows the Person form pattern.
-- [ ] Agenda, venue view, hidden drafts for `schedule.edit` and the offline "Last updated" note keep working.
-- [ ] The screens use only design-system components and tokens (Req 14); their files are removed from the guard test's temporary list.
-- [ ] Existing journey tests keep passing, with selectors changed only where a widget's key must change (Testing Strategy 8); every new interactive widget has a `domain.feature.action` key.
-- [ ] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
-- [ ] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
+- [x] Schedule matches the approved mockup; the session form follows the Person form pattern.
+- [x] Agenda, venue view, hidden drafts for `schedule.edit` and the offline "Last updated" note keep working.
+- [x] The screens use only design-system components and tokens (Req 14); their files are removed from the guard test's temporary list.
+- [x] Existing journey tests keep passing, with selectors changed only where a widget's key must change (Testing Strategy 8); every new interactive widget has a `domain.feature.action` key.
+- [x] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
+- [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
 - [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 
 #### Covers

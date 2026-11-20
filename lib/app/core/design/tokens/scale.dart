@@ -72,6 +72,9 @@ abstract final class CpScale {
   static const double cover180 = 180;
   static const double coverIcon56 = 56;
 
+  // A schedule row's time column.
+  static const double time56 = 56;
+
   // ===== Type sizes =====
   static const double type11 = 11;
   static const double type12 = 12;

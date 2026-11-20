@@ -3645,6 +3645,9 @@ abstract class ScheduleStrings {
   String get hubSubtitle;
   String get byDay;
   String get byVenue;
+
+  /// Above By day and By venue at large text sizes.
+  String get viewLabel;
   String add(String session);
   String noneYet(String sessions);
   String get noneYetEditorHint;
@@ -3655,6 +3658,15 @@ abstract class ScheduleStrings {
   String get addressTba;
   String get noVenue;
   String get hidden;
+
+  /// The tag on a hidden session in the list.
+  String get hiddenDraft;
+
+  /// The tag on a session open to everyone.
+  String get everyone;
+
+  /// A day's button above the list, read aloud, such as "Go to Saturday, July 17".
+  String goToDay(String day);
   String get openMap;
   String get directions;
   String capacity(int count);
@@ -3723,6 +3735,8 @@ class _EnglishScheduleStrings extends ScheduleStrings {
   @override
   String get byVenue => 'By venue';
   @override
+  String get viewLabel => 'Show';
+  @override
   String add(String session) => 'Add ${session.toLowerCase()}';
   @override
   String noneYet(String sessions) => 'No ${sessions.toLowerCase()} yet.';
@@ -3743,6 +3757,12 @@ class _EnglishScheduleStrings extends ScheduleStrings {
   String get noVenue => 'No venue set';
   @override
   String get hidden => 'Hidden';
+  @override
+  String get hiddenDraft => 'Hidden draft';
+  @override
+  String get everyone => 'Everyone';
+  @override
+  String goToDay(String day) => 'Go to $day';
   @override
   String get openMap => 'Open map';
   @override
