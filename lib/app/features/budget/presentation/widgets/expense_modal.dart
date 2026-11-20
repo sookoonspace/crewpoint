@@ -2,18 +2,18 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/layout/cp_list_detail.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/labels/label_resolver.dart';
 import 'package:crewpoint_app/app/core/services/image_service.dart';
-import 'package:crewpoint_app/app/core/widgets/custom_text_field.dart';
-import 'package:crewpoint_app/app/core/widgets/primary_button.dart';
+import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/large_event.dart';
 import 'package:crewpoint_app/app/features/budget/domain/repositories/i_expense_repository.dart';
-import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/member_picker_sheet.dart';
 
 /// Submit signature: receives the expense model AND the picked receipt
@@ -31,6 +31,11 @@ typedef ExpenseSubmit =
 /// Async receipt picker callback — returns null if the user cancels.
 typedef ReceiptPicker = Future<PickedImage?> Function();
 
+/// The expense form (Spec #186), in the Person form's pattern: a top bar
+/// with close, cards of fields, and save in a bar at the bottom. It opens
+/// as its own page ([show]), or in place beside the Budget list with
+/// [onCancel], where choosing another expense with unsaved edits asks
+/// first (Req 23).
 class ExpenseModal extends StatefulWidget {
   const ExpenseModal({
     super.key,
@@ -44,6 +49,7 @@ class ExpenseModal extends StatefulWidget {
     this.initial,
     this.onPickReceipt,
     this.onSubmit,
+    this.onCancel,
   });
 
   final String eventId;
@@ -62,6 +68,10 @@ class ExpenseModal extends StatefulWidget {
   final ExpenseModel? initial;
   final ReceiptPicker? onPickReceipt;
   final ExpenseSubmit? onSubmit;
+
+  /// Closes a form shown in place rather than as its own page; also
+  /// called once it saves.
+  final VoidCallback? onCancel;
 
   /// Validates amount-string then bounds. Returns null if valid; else error msg.
   static String? validateAmountInput(
@@ -102,18 +112,19 @@ class ExpenseModal extends StatefulWidget {
     ReceiptPicker? onPickReceipt,
     ExpenseSubmit? onSubmit,
   }) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => ExpenseModal(
-        eventId: eventId,
-        payerId: payerId,
-        memberIds: memberIds,
-        words: words,
-        currencySymbol: currencySymbol,
-        initial: initial,
-        onPickReceipt: onPickReceipt,
-        onSubmit: onSubmit,
+    return Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => ExpenseModal(
+          eventId: eventId,
+          payerId: payerId,
+          memberIds: memberIds,
+          words: words,
+          currencySymbol: currencySymbol,
+          initial: initial,
+          onPickReceipt: onPickReceipt,
+          onSubmit: onSubmit,
+        ),
       ),
     );
   }
@@ -206,9 +217,42 @@ class _ExpenseModalState extends State<ExpenseModal> {
     });
   }
 
-  Future<void> _confirmLeave() async {
+  /// Leaves, asking first when something changed.
+  Future<void> _leave() async {
     final navigator = Navigator.of(context);
-    if (await confirmDiscard(context)) navigator.pop();
+    if (_changed && !_saving) {
+      final roles = context.strings.roles;
+      final leave = await showDialog<bool>(
+        context: context,
+        builder: (dialog) => CpDialog(
+          title: roles.discardTitle,
+          message: roles.discardBody,
+          actions: [
+            CpButton.text(
+              key: const Key('budget.expense.discard.keep'),
+              label: roles.keepEditing,
+              onPressed: () => Navigator.of(dialog).pop(false),
+            ),
+            CpButton.destructive(
+              key: const Key('budget.expense.discard.confirm'),
+              label: roles.discard,
+              onPressed: () => Navigator.of(dialog).pop(true),
+            ),
+          ],
+        ),
+      );
+      if (leave != true || !mounted) return;
+    }
+    _close(navigator);
+  }
+
+  void _close(NavigatorState navigator) {
+    final cancel = widget.onCancel;
+    if (cancel != null) {
+      cancel();
+    } else {
+      navigator.pop();
+    }
   }
 
   @override
@@ -258,7 +302,7 @@ class _ExpenseModalState extends State<ExpenseModal> {
 
     final onSubmit = widget.onSubmit;
     if (onSubmit == null) {
-      Navigator.of(context).pop();
+      _close(Navigator.of(context));
       return;
     }
 
@@ -275,7 +319,8 @@ class _ExpenseModalState extends State<ExpenseModal> {
     }
     if (!mounted) return;
     if (result == ExpenseSaveResult.saved) {
-      Navigator.of(context).pop();
+      _changed = false;
+      _close(Navigator.of(context));
       return;
     }
     setState(() {
@@ -286,6 +331,7 @@ class _ExpenseModalState extends State<ExpenseModal> {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
     final amount = double.tryParse(_amountController.text.trim()) ?? 0;
     final splitCount = _splitters.length;
     final pickerStrings = context.strings.memberPicker;
@@ -293,123 +339,183 @@ class _ExpenseModalState extends State<ExpenseModal> {
     final splitAmount = splitCount > 0 ? amount / splitCount : 0.0;
     final canPickReceipt = widget.onPickReceipt != null;
     final strings = context.strings.budget;
+    final symbol = widget.currencySymbol;
 
-    return PopScope(
-      canPop: !_changed || _saving,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _confirmLeave();
-      },
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: AppSpacing.xl,
-          right: AppSpacing.xl,
-          top: AppSpacing.xl,
-          bottom: MediaQuery.viewInsetsOf(context).bottom + AppSpacing.xl,
-        ),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: .min,
-            crossAxisAlignment: .start,
-            spacing: AppSpacing.lg,
-            children: [
-              Text(
-                _isEdit ? 'Edit Expense' : 'Add Expense',
-                style: Theme.of(context).textTheme.titleLarge,
+    Widget card(List<Widget> children) => CpCard(
+      padding: EdgeInsets.all(cp.space.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: cp.space.lg,
+        children: children,
+      ),
+    );
+
+    final body = Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: cp.space.lg,
+        children: [
+          card([
+            CpTextField(
+              key: const Key('budget.expense.amount'),
+              label: '${strings.amountLabel} ($symbol)',
+              controller: _amountController,
+              required: true,
+              requiredLabel: context.strings.groupEntry.required,
+              enabled: !_saving,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
               ),
-              CustomTextField(
-                key: const Key('budget.expense.amount'),
-                hintText: 'Amount (${widget.currencySymbol})',
-                controller: _amountController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                prefixIcon: const Icon(AppIcons.currency),
-                onChanged: (_) => setState(() => _changed = true),
-                validator: (value) => ExpenseModal.validateAmountInput(
-                  value,
-                  minAmount: widget.minAmount,
-                  maxAmount: widget.maxAmount,
-                ),
+              prefixIcon: CpIcons.currency,
+              textInputAction: TextInputAction.next,
+              onChanged: (_) => setState(() => _changed = true),
+              validator: (value) => ExpenseModal.validateAmountInput(
+                value,
+                minAmount: widget.minAmount,
+                maxAmount: widget.maxAmount,
               ),
-              CustomTextField(
-                hintText: 'Description (optional)',
-                controller: _descriptionController,
-                prefixIcon: const Icon(AppIcons.description),
-                onChanged: (_) => _changed = true,
-              ),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Donate this cost',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ),
-                  Switch(
-                    value: _isDonation,
-                    onChanged: (value) => setState(() {
+            ),
+            CpTextField(
+              key: const Key('budget.expense.description'),
+              label: strings.descriptionLabel,
+              hint: strings.descriptionHint,
+              controller: _descriptionController,
+              enabled: !_saving,
+              onChanged: (_) => setState(() => _changed = true),
+            ),
+            CpSwitchRow(
+              key: const Key('budget.expense.donate'),
+              title: strings.donateLabel,
+              help: strings.donateHelp,
+              value: _isDonation,
+              onChanged: _saving
+                  ? null
+                  : (value) => setState(() {
                       _isDonation = value;
                       _changed = true;
                     }),
-                    activeThumbColor: AppColors.sage,
-                  ),
-                ],
+            ),
+          ]),
+          CpSectionHeader(title: pickerStrings.splitHeading),
+          card([
+            _SplitSection(
+              summary: chosen == null
+                  ? pickerStrings.splitEveryone(widget.memberIds.length)
+                  : pickerStrings.splitChosen(chosen.length),
+              mustChoose:
+                  chosen != null &&
+                      chosen.isEmpty &&
+                      splitNeedsChoosing(widget.memberIds.length)
+                  ? pickerStrings.splitMustChoose(largeEventMembers)
+                  : null,
+              error: _splitError ? pickerStrings.splitNoneChosen : null,
+              chooseLabel: pickerStrings.choosePeople,
+              everyoneLabel: chosen == null
+                  ? null
+                  : pickerStrings.splitUseEveryone,
+              onChoose: _saving ? null : _choosePeople,
+              onEveryone: () => setState(() {
+                _chosen = null;
+                _changed = true;
+                _splitError = false;
+              }),
+            ),
+            if (amount > 0)
+              Text(
+                strings.perPerson(
+                  '$symbol${splitAmount.toStringAsFixed(2)}',
+                  splitCount,
+                ),
+                key: const Key('budget.expense.split.perPerson'),
+                style: cp.type.bodySmall.copyWith(color: cp.colors.textMuted),
               ),
-              _SplitSection(
-                heading: pickerStrings.splitHeading,
-                summary: chosen == null
-                    ? pickerStrings.splitEveryone(widget.memberIds.length)
-                    : pickerStrings.splitChosen(chosen.length),
-                mustChoose:
-                    chosen != null &&
-                        chosen.isEmpty &&
-                        splitNeedsChoosing(widget.memberIds.length)
-                    ? pickerStrings.splitMustChoose(largeEventMembers)
-                    : null,
-                error: _splitError ? pickerStrings.splitNoneChosen : null,
-                chooseLabel: pickerStrings.choosePeople,
-                everyoneLabel: chosen == null
-                    ? null
-                    : pickerStrings.splitUseEveryone,
-                onChoose: _saving ? null : _choosePeople,
-                onEveryone: () => setState(() {
-                  _chosen = null;
-                  _changed = true;
-                  _splitError = false;
-                }),
+          ]),
+          if (canPickReceipt)
+            card([
+              _ReceiptRow(
+                receipt: _pickedReceipt,
+                onPick: _pickReceipt,
+                onClear: () => setState(() => _pickedReceipt = null),
               ),
-              if (canPickReceipt)
-                _ReceiptRow(
-                  receipt: _pickedReceipt,
-                  onPick: _pickReceipt,
-                  onClear: () => setState(() => _pickedReceipt = null),
-                ),
-              if (amount > 0)
-                Text(
-                  'Split: ${widget.currencySymbol}${splitAmount.toStringAsFixed(2)} per person ($splitCount people)',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              if (_failure != null)
-                Text(
-                  _failure == ExpenseSaveResult.needsConnection
-                      ? strings.expenseNeedsConnection
-                      : strings.expenseSaveRejected,
-                  key: const Key('budget.expense.error'),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
-                  ),
-                ),
-              PrimaryButton(
+            ]),
+          if (_failure != null)
+            Container(
+              padding: EdgeInsets.all(cp.space.md),
+              decoration: BoxDecoration(
+                color: cp.colors.overdueSoft,
+                borderRadius: cp.radii.md,
+              ),
+              child: CpFieldError(
+                _failure == ExpenseSaveResult.needsConnection
+                    ? strings.expenseNeedsConnection
+                    : strings.expenseSaveRejected,
+                key: const Key('budget.expense.error'),
+              ),
+            ),
+        ],
+      ),
+    );
+
+    final saveBar = Material(
+      color: cp.colors.surface,
+      child: SafeArea(
+        top: false,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: cp.colors.border)),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(cp.space.md),
+            // heightFactor 1: the bar is only as tall as its button.
+            child: Align(
+              alignment: AlignmentDirectional.centerEnd,
+              heightFactor: 1,
+              child: CpButton(
                 key: const Key('budget.expense.save'),
                 label: _failure == ExpenseSaveResult.needsConnection
                     ? strings.expenseRetry
-                    : (_isEdit ? 'Save changes' : 'Add Expense'),
-                isLoading: _saving,
+                    : (_isEdit
+                          ? strings.saveChangesCta
+                          : strings.addExpenseCta),
+                busy: _saving,
                 onPressed: _submit,
               ),
-            ],
+            ),
           ),
+        ),
+      ),
+    );
+
+    return PopScope(
+      // A form in place never pops its page; one of its own asks first.
+      canPop: widget.onCancel == null && (!_changed || _saving),
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _leave();
+      },
+      child: CpUnsavedChanges(
+        dirty: _changed && !_saving,
+        child: Scaffold(
+          backgroundColor: cp.colors.background,
+          appBar: CpTopBar(
+            title: _isEdit ? strings.editExpenseTitle : strings.addExpenseTitle,
+            leadingIcon: CpIcons.actionClose,
+            leadingKey: const Key('budget.expense.close'),
+            leadingTooltip: MaterialLocalizations.of(
+              context,
+            ).closeButtonTooltip,
+            onLeading: _leave,
+          ),
+          body: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+              cp.space.lg,
+              cp.space.sm,
+              cp.space.lg,
+              cp.space.xxl,
+            ),
+            child: ContentMaxWidth(maxWidth: cp.sizes.phoneColumn, child: body),
+          ),
+          bottomNavigationBar: saveBar,
         ),
       ),
     );
@@ -419,7 +525,6 @@ class _ExpenseModalState extends State<ExpenseModal> {
 /// Who shares the cost: everyone, or the people chosen in the picker.
 class _SplitSection extends StatelessWidget {
   const _SplitSection({
-    required this.heading,
     required this.summary,
     required this.chooseLabel,
     required this.onChoose,
@@ -429,7 +534,6 @@ class _SplitSection extends StatelessWidget {
     this.error,
   });
 
-  final String heading;
   final String summary;
   final String chooseLabel;
   final String? everyoneLabel;
@@ -440,44 +544,40 @@ class _SplitSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final cp = context.cp;
     return Column(
       key: const Key('budget.expense.split'),
-      crossAxisAlignment: .start,
-      spacing: AppSpacing.xs,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: cp.space.sm,
       children: [
-        Text(heading, style: theme.textTheme.titleSmall),
-        Text(summary, key: const Key('budget.expense.split.summary')),
+        Text(
+          summary,
+          key: const Key('budget.expense.split.summary'),
+          style: cp.type.bodyMedium.copyWith(color: cp.colors.text),
+        ),
         if (mustChoose != null)
           Text(
             mustChoose!,
             key: const Key('budget.expense.split.mustChoose'),
-            style: theme.textTheme.bodySmall,
+            style: cp.type.bodySmall.copyWith(color: cp.colors.textMuted),
           ),
         if (error != null)
-          Text(
-            error!,
-            key: const Key('budget.expense.split.error'),
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.error,
-            ),
-          ),
+          CpFieldError(error!, key: const Key('budget.expense.split.error')),
         Wrap(
-          spacing: AppSpacing.sm,
+          spacing: cp.space.sm,
+          runSpacing: cp.space.sm,
           children: [
-            OutlinedButton.icon(
+            CpButton.secondary(
               key: const Key('budget.expense.split.choose'),
+              label: chooseLabel,
+              icon: CpIcons.members,
               onPressed: onChoose,
-              icon: const Icon(AppIcons.members),
-              label: Text(chooseLabel),
-              style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48)),
             ),
             if (everyoneLabel != null)
-              TextButton(
+              CpButton.text(
                 key: const Key('budget.expense.split.everyone'),
+                label: everyoneLabel!,
                 onPressed: onEveryone,
-                style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-                child: Text(everyoneLabel!),
               ),
           ],
         ),
@@ -499,40 +599,57 @@ class _ReceiptRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
+    final s = context.strings.budget;
     final r = receipt;
     if (r == null) {
-      return OutlinedButton.icon(
-        key: const Key('budget.expense.receipt.add'),
-        onPressed: onPick,
-        icon: const Icon(AppIcons.camera),
-        label: const Text('Add receipt'),
+      return Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: CpButton.secondary(
+          key: const Key('budget.expense.receipt.add'),
+          label: s.addReceipt,
+          icon: CpIcons.camera,
+          onPressed: onPick,
+        ),
       );
     }
 
+    final side = cp.sizes.iconTile + cp.space.lg;
     return Row(
       key: const Key('budget.expense.receipt.preview'),
-      spacing: AppSpacing.md,
+      spacing: cp.space.md,
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: cp.radii.sm,
           child: Image.memory(
             r.bytes,
-            width: 56,
-            height: 56,
+            width: side,
+            height: side,
             fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => Container(
-              width: 56,
-              height: 56,
-              color: AppColors.lightGrey,
-              child: const Icon(AppIcons.imageBroken),
+            errorBuilder: (_, _, _) => SizedBox.square(
+              dimension: side,
+              child: ColoredBox(
+                color: cp.colors.fill,
+                child: Icon(CpIcons.imageBroken, color: cp.colors.textMuted),
+              ),
             ),
           ),
         ),
-        const Expanded(child: Text('Receipt attached')),
+        Expanded(
+          child: Text(
+            s.receiptAttached,
+            style: cp.type.bodyMedium.copyWith(color: cp.colors.text),
+          ),
+        ),
         IconButton(
           key: const Key('budget.expense.receipt.clear'),
+          tooltip: s.removeReceipt,
           onPressed: onClear,
-          icon: const Icon(AppIcons.actionClose),
+          icon: Icon(
+            CpIcons.actionClose,
+            size: cp.sizes.iconMd,
+            color: cp.colors.textMuted,
+          ),
         ),
       ],
     );

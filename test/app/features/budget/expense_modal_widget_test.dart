@@ -68,6 +68,9 @@ void main() {
         find.byKey(const Key('budget.expense.receipt.add')),
         findsOneWidget,
       );
+      await tester.ensureVisible(
+        find.byKey(const Key('budget.expense.receipt.add')),
+      );
       await tester.tap(find.byKey(const Key('budget.expense.receipt.add')));
       await tester.pump();
 
@@ -106,6 +109,9 @@ void main() {
     await tester.enterText(
       find.byKey(const Key('budget.expense.amount')),
       '12.34',
+    );
+    await tester.ensureVisible(
+      find.byKey(const Key('budget.expense.receipt.add')),
     );
     await tester.tap(find.byKey(const Key('budget.expense.receipt.add')));
     await tester.pump();

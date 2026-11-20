@@ -28,10 +28,13 @@ class MoneyText extends StatelessWidget {
     MoneySign.neutral => Theme.of(context).colorScheme.onSurface,
   };
 
-  String _format() {
+  /// [amount] as this widget shows it, for labels such as a status chip.
+  static String format(double amount, String currencyCode) {
     if (currencyCode.isEmpty) return r'$—';
     return NumberFormat.simpleCurrency(name: currencyCode).format(amount);
   }
+
+  String _format() => format(amount, currencyCode);
 
   @override
   Widget build(BuildContext context) {

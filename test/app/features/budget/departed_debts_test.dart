@@ -88,7 +88,12 @@ Future<void> _pumpPage(
 
 Future<void> _tapSettle(WidgetTester tester) async {
   final settle = find.byKey(const Key('budget.settle.me'));
-  await tester.ensureVisible(settle);
+  // The list builds rows as they scroll in.
+  await tester.scrollUntilVisible(
+    settle,
+    200,
+    scrollable: find.byType(Scrollable).first,
+  );
   await tester.tap(settle);
   await tester.pumpAndSettle();
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:crewpoint_app/app/core/design/components/components.dart';
 import 'package:crewpoint_app/app/features/budget/application/global_balance_ledger_provider.dart';
 import 'package:crewpoint_app/app/features/budget/data/member_name_resolver.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
@@ -78,28 +79,8 @@ void main() {
     expect(find.text('Donated'), findsNothing);
   });
 
-  testWidgets('wraps content in a Card for the elevated-tile look', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: RecentExpenseTile(row: _row, currentUserId: 'me', onTap: () {}),
-        ),
-      ),
-    );
-
-    expect(
-      find.descendant(
-        of: find.byType(RecentExpenseTile),
-        matching: find.byType(Card),
-      ),
-      findsOneWidget,
-    );
-  });
-
   testWidgets(
-    'renders payerName (other user); avatar shows display-name initial',
+    'renders payerName (other user); avatar shows the display-name initials',
     (tester) async {
       const otherPayer = ExpenseModel(
         id: 'exp-2',
@@ -127,9 +108,8 @@ void main() {
       // Description fallback uses payerName, never payerId.
       expect(find.text('Alex Chen paid'), findsOneWidget);
       expect(find.textContaining('alex'), findsNothing);
-      final avatarText =
-          tester.widget<CircleAvatar>(find.byType(CircleAvatar)).child! as Text;
-      expect(avatarText.data, 'A');
+      expect(tester.widget<CpAvatar>(find.byType(CpAvatar)).name, 'Alex Chen');
+      expect(find.text('AC'), findsOneWidget);
     },
   );
 
@@ -161,9 +141,7 @@ void main() {
       await tester.pump();
       expect(find.text('$kRemovedMemberPlaceholder paid'), findsOneWidget);
       expect(find.textContaining('ghost-uid'), findsNothing);
-      final avatarText =
-          tester.widget<CircleAvatar>(find.byType(CircleAvatar)).child! as Text;
-      expect(avatarText.data, '?');
+      expect(tester.widget<CpAvatar>(find.byType(CpAvatar)).name, '?');
     },
   );
 }

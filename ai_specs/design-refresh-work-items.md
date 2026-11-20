@@ -475,7 +475,7 @@ Task list, detail and forms, and My tasks, in the new look, with Tasks as list a
 - [x] Existing journey tests keep passing, with selectors changed only where a widget's key must change (Testing Strategy 8); every new interactive widget has a `domain.feature.action` key.
 - [x] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
 - [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
-- [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
+- [x] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 
 #### Covers
 - User Stories: 7, 9
@@ -499,14 +499,14 @@ The event budget page, ledger, global Budget tab and expense form in the new loo
 - Approved Budget mockup; form pattern from the Person form.
 
 #### Acceptance criteria
-- [ ] Budget matches the approved mockup; the expense form follows the Person form pattern.
-- [ ] From 840 px, the summary and settle-up stay above the expense list, and an expense opens on the right, with the expense route selecting the row, the quiet empty prompt, full page below 840 px, and a prompt before switching with unsaved edits.
-- [ ] Limited readers (no `money.read` / `expenses.readAll`) still see only their balance from `myBalanceProvider`.
-- [ ] Paid shows green with an icon, owed or due amber, overdue red.
-- [ ] The screens use only design-system components and tokens (Req 14); their files are removed from the guard test's temporary list.
-- [ ] Existing journey tests keep passing, with selectors changed only where a widget's key must change (Testing Strategy 8); every new interactive widget has a `domain.feature.action` key.
-- [ ] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
-- [ ] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
+- [x] Budget matches the approved mockup; the expense form follows the Person form pattern.
+- [x] From 840 px, the summary and settle-up stay above the expense list, and an expense opens on the right, with the expense route selecting the row, the quiet empty prompt, full page below 840 px, and a prompt before switching with unsaved edits.
+- [x] Limited readers (no `money.read` / `expenses.readAll`) still see only their balance from `myBalanceProvider`.
+- [x] Paid shows green with an icon, owed or due amber, overdue red.
+- [x] The screens use only design-system components and tokens (Req 14); their files are removed from the guard test's temporary list.
+- [x] Existing journey tests keep passing, with selectors changed only where a widget's key must change (Testing Strategy 8); every new interactive widget has a `domain.feature.action` key.
+- [x] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
+- [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
 - [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 
 #### Covers

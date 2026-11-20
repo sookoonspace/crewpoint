@@ -165,17 +165,20 @@ void main() {
   testWidgets('leaving with unsaved changes asks first', (tester) async {
     await pump(tester, memberIds: members(3));
     await enterAmount(tester, '12');
-    await tester.tapAt(const Offset(10, 10));
+    await tester.tap(find.byKey(const Key('budget.expense.close')));
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('roles.discard.keep')), findsOneWidget);
+    expect(
+      find.byKey(const Key('budget.expense.discard.keep')),
+      findsOneWidget,
+    );
 
-    await tester.tap(find.byKey(const Key('roles.discard.keep')));
+    await tester.tap(find.byKey(const Key('budget.expense.discard.keep')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('budget.expense.amount')), findsOneWidget);
 
-    await tester.tapAt(const Offset(10, 10));
+    await tester.tap(find.byKey(const Key('budget.expense.close')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('roles.discard.confirm')));
+    await tester.tap(find.byKey(const Key('budget.expense.discard.confirm')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('budget.expense.amount')), findsNothing);
     expect(saved, isEmpty);

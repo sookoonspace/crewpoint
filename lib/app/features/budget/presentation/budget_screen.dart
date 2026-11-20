@@ -1,16 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:crewpoint_app/app/core/constants/app_colors.dart';
-import 'package:crewpoint_app/app/core/constants/app_icons.dart';
-import 'package:crewpoint_app/app/core/constants/app_radius.dart';
-import 'package:crewpoint_app/app/core/constants/app_spacing.dart';
+
+import 'package:crewpoint_app/app/core/design/components/components.dart';
+import 'package:crewpoint_app/app/core/design/layout/cp_list_detail.dart';
+import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
-import 'package:crewpoint_app/app/features/budget/domain/models/large_event.dart';
-import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
+import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/budget/data/member_name_resolver.dart';
+import 'package:crewpoint_app/app/features/budget/domain/models/balance_ledger.dart';
+import 'package:crewpoint_app/app/features/budget/domain/models/budget_summary.dart';
 import 'package:crewpoint_app/app/features/budget/domain/models/expense.dart';
+import 'package:crewpoint_app/app/features/budget/domain/models/large_event.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/expense_tile.dart';
 import 'package:crewpoint_app/app/features/budget/presentation/widgets/settle_sheet.dart';
 
+/// The event's Budget (Spec #186): what was spent, your balance with Settle
+/// up, everyone's balances, who pays whom, then the expenses. From 840 px
+/// the chosen expense ([detail]) sits beside the list ([CpListDetail]);
+/// narrower the list shows alone.
+///
+/// Pure presentation: the parent (`EventBudgetPage`) reads names and
+/// balances, and saves.
 class BudgetScreen extends StatelessWidget {
   const BudgetScreen({
     super.key,
@@ -22,12 +32,16 @@ class BudgetScreen extends StatelessWidget {
     this.memberNames = const {},
     this.appBarTitle,
     this.onAddExpense,
-    this.onEditExpense,
-    this.onDeleteExpense,
+    this.onOpenExpense,
     this.onRecordPayment,
     this.onExportPdf,
     this.onExportCsv,
+    this.onBack,
     this.ledger,
+    this.selectedId,
+    this.detail,
+    this.scrollController,
+    this.inZone,
   });
 
   /// Balances to show instead of working them out from [expenses], for
@@ -42,42 +56,94 @@ class BudgetScreen extends StatelessWidget {
   final String currentUserId;
   final String currency;
 
-  /// False once the event is archived.
+  /// False once the event is archived, or for Observers and Vendors.
   final bool canAddExpense;
   final Map<String, String> memberNames;
 
-  /// AppBar title — the parent (`EventBudgetPage`) wires the event
-  /// name through so users in multiple events know which ledger
-  /// they're looking at. Falls back to "Budget" when not supplied so
-  /// callers that have not been migrated keep their old chrome.
+  /// The top bar's title: the event's name, so someone in several events
+  /// knows which budget this is. "Budget" when not given.
   final String? appBarTitle;
   final VoidCallback? onAddExpense;
 
-  /// Per-tile callbacks. When null, the overflow menu hides that action.
-  /// Parent (`EventBudgetPage`) computes RBAC.
-  final void Function(ExpenseModel expense)? onEditExpense;
-  final void Function(ExpenseModel expense)? onDeleteExpense;
-
+  /// Opens an expense (beside the list from 840 px).
+  final ValueChanged<ExpenseModel>? onOpenExpense;
   final void Function(Settlement settlement)? onRecordPayment;
   final VoidCallback? onExportPdf;
   final VoidCallback? onExportCsv;
+  final VoidCallback? onBack;
 
-  String _currencySymbol(String code) => switch (code) {
-    'USD' || 'CAD' || 'AUD' => '\$',
-    'EUR' => '€',
-    'GBP' => '£',
-    'JPY' => '¥',
-    'INR' => '₹',
-    _ => '\$',
-  };
+  /// The expense open beside the list, from the route.
+  final String? selectedId;
+  final Widget? detail;
+  final ScrollController? scrollController;
+
+  /// Turns a time into the event's zone for dates.
+  final DateTime Function(DateTime)? inZone;
+
+  String _nameOf(String uid) => memberIds.contains(uid)
+      ? (memberNames[uid] ?? uid)
+      : resolveMemberName(uid: uid, memberNames: memberNames);
+
+  void _settle(BuildContext context, Settlement settlement, String symbol) {
+    final record = onRecordPayment;
+    if (record != null) {
+      record(settlement);
+      return;
+    }
+    // Screens without the pay flow still show what to pay.
+    SettleSheet.show(
+      context: context,
+      settlement: settlement,
+      currencySymbol: symbol,
+      fromName: memberNames[settlement.fromUserId],
+      toName: memberNames[settlement.toUserId],
+    );
+  }
+
+  Future<void> _export(BuildContext context) async {
+    final s = context.strings.budget;
+    final pick = await showCpSheet<String>(
+      context: context,
+      title: s.exportTooltip,
+      builder: (sheet) => CpCard(
+        child: CpRowGroup(
+          children: [
+            if (onExportPdf != null)
+              CpListRow(
+                key: const Key('budget.export.pdf'),
+                title: s.exportPdf,
+                trailing: const SizedBox(),
+                onTap: () => Navigator.of(sheet).pop('pdf'),
+              ),
+            if (onExportCsv != null)
+              CpListRow(
+                key: const Key('budget.export.csv'),
+                title: s.exportCsv,
+                trailing: const SizedBox(),
+                onTap: () => Navigator.of(sheet).pop('csv'),
+              ),
+          ],
+        ),
+      ),
+    );
+    switch (pick) {
+      case 'pdf':
+        onExportPdf?.call();
+      case 'csv':
+        onExportCsv?.call();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final cp = context.cp;
+    final s = context.strings.budget;
+    final roles = context.strings.roles;
     final ledger =
         this.ledger ??
         BalanceLedger.calculate(expenses: expenses, memberIds: memberIds);
-    final regularExpenses = expenses.where((e) => !e.isPayment).toList();
-    final symbol = _currencySymbol(currency);
+    final symbol = currencySymbolFor(currency);
+    String money(double amount) => '$symbol${amount.toStringAsFixed(2)}';
     // Past 50 members, only you and the largest balances and transfers
     // show, so a large event stays quick (Req 43a).
     final shownBalances = shownBalanceUids(
@@ -91,263 +157,274 @@ class BudgetScreen extends StatelessWidget {
       memberCount: memberIds.length,
     );
     final trimmed = splitNeedsChoosing(memberIds.length);
+    final shared = memberIds.length > 1;
+    final regularCount = expenses.where((e) => !e.isPayment).length;
+    final balances = [
+      for (final e in ledger.netBalances.entries)
+        if (shownBalances.contains(e.key)) e,
+    ]..sort((a, b) => b.value.abs().compareTo(a.value.abs()));
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          appBarTitle ?? 'Budget',
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
+    final list = ListView(
+      key: const Key('budget.list'),
+      controller: scrollController,
+      padding: EdgeInsets.fromLTRB(
+        cp.space.lg,
+        cp.space.sm,
+        cp.space.lg,
+        cp.space.xxl,
+      ),
+      children: [
+        _SpentCard(
+          total: money(ledger.totalExpenses),
+          count: s.expenseCount(regularCount),
         ),
-        // kToolbarHeight=56 clips a 2-line titleMedium; +16 leaves
-        // breathing room (72 ≈ 24 px line × 2 + AppBar vertical insets).
-        toolbarHeight: kToolbarHeight + 16,
-        elevation: 0,
-        actions: [
-          if (onExportPdf != null || onExportCsv != null)
-            PopupMenuButton<String>(
-              key: const Key('budget.export.menu'),
-              icon: const Icon(AppIcons.actionShare),
-              tooltip: 'Export',
-              onSelected: (value) {
-                switch (value) {
-                  case 'pdf':
-                    onExportPdf?.call();
-                  case 'csv':
-                    onExportCsv?.call();
-                }
-              },
-              itemBuilder: (_) => [
-                if (onExportPdf != null)
-                  const PopupMenuItem(
-                    key: Key('budget.export.pdf'),
-                    value: 'pdf',
-                    child: Text('Export PDF'),
-                  ),
-                if (onExportCsv != null)
-                  const PopupMenuItem(
-                    key: Key('budget.export.csv'),
-                    value: 'csv',
-                    child: Text('Export CSV'),
+        if (shared) ...[
+          SizedBox(height: cp.space.md),
+          _YourBalanceCard(
+            summary: myBalanceSummary(ledger, currentUserId),
+            nameOf: _nameOf,
+            money: money,
+            onSettle: (settlement) => _settle(context, settlement, symbol),
+          ),
+        ],
+        if (shared && balances.isNotEmpty) ...[
+          SizedBox(height: cp.space.lg),
+          CpSectionHeader(
+            title: s.balancesHeading,
+            trailingText: '${balances.length}',
+          ),
+          SizedBox(height: cp.space.sm),
+          if (trimmed) ...[
+            Text(
+              s.largestShown(largeEventTopBalances),
+              key: const Key('budget.balances.trimmed'),
+              style: cp.type.bodySmall.copyWith(color: cp.colors.textMuted),
+            ),
+            SizedBox(height: cp.space.sm),
+          ],
+          CpCard(
+            child: CpRowGroup(
+              children: [
+                for (final entry in balances)
+                  _BalanceRow(
+                    key: Key('budget.balance.${entry.key}'),
+                    name: _nameOf(entry.key),
+                    balance: entry.value,
+                    amount: money(entry.value.abs()),
                   ),
               ],
             ),
+          ),
         ],
-      ),
-      body: ListView(
-        // Bottom = FAB diameter (56) + endFloat margin (16) + breathing
-        // room (16) = 88 px so the last expense row's overflow menu
-        // sits ≥ 16 px above the FAB top (2026-06-11 iPhone 12 mini QA).
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          AppSpacing.lg,
-          AppSpacing.lg,
-          AppSpacing.xxxl + AppSpacing.xl + AppSpacing.lg,
+        if (settlements.isNotEmpty) ...[
+          SizedBox(height: cp.space.lg),
+          CpSectionHeader(title: s.settleUpHeading),
+          SizedBox(height: cp.space.sm),
+          CpCard(
+            child: CpRowGroup(
+              children: [
+                for (final settlement in settlements)
+                  CpListRow(
+                    title: s.pays(
+                      _nameOf(settlement.fromUserId),
+                      _nameOf(settlement.toUserId),
+                    ),
+                    subtitle: money(settlement.amount),
+                    trailing: CpButton.text(
+                      key: Key('budget.settle.${settlement.toUserId}'),
+                      label: s.settle,
+                      onPressed: () => _settle(context, settlement, symbol),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+        SizedBox(height: cp.space.lg),
+        CpSectionHeader(
+          title: s.expensesHeading,
+          trailingText: expenses.isEmpty ? null : '${expenses.length}',
         ),
-        children: [
-          // Total summary
-          _TotalCard(total: ledger.totalExpenses, symbol: symbol),
-          const SizedBox(height: AppSpacing.xl),
-
-          // Balances
-          if (memberIds.length > 1 && ledger.netBalances.isNotEmpty) ...[
-            const _SectionLabel(label: 'BALANCES'),
-            const SizedBox(height: AppSpacing.sm),
-            if (trimmed) ...[
-              Text(
-                context.strings.budget.largestShown(largeEventTopBalances),
-                key: const Key('budget.balances.trimmed'),
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-            ],
-            _BalancesCard(
-              balances: {
-                for (final e in ledger.netBalances.entries)
-                  if (shownBalances.contains(e.key)) e.key: e.value,
-              },
-              memberNames: memberNames,
-              memberIds: memberIds,
-              symbol: symbol,
+        SizedBox(height: cp.space.sm),
+        if (expenses.isEmpty)
+          CpEmptyState(
+            key: const Key('budget.expenses.empty'),
+            icon: CpIcons.receipt,
+            title: s.noExpenses,
+            message: canAddExpense ? s.noExpensesHelp : null,
+          )
+        else
+          CpCard(
+            child: CpRowGroup(
+              children: [
+                for (final e in expenses)
+                  Builder(
+                    builder: (row) => ExpenseTile(
+                      expense: e,
+                      currencySymbol: symbol,
+                      payerName: _nameOf(e.payerId),
+                      payeeName: e.isPayment && e.splits.isNotEmpty
+                          ? (e.splits.first.userId == currentUserId
+                                ? s.you
+                                : _nameOf(e.splits.first.userId))
+                          : null,
+                      mine: e.payerId == currentUserId,
+                      selected: e.id == selectedId,
+                      inZone: inZone,
+                      // Asks first when the open expense has unsaved edits.
+                      onTap: onOpenExpense == null
+                          ? null
+                          : () => CpListDetail.select(
+                              row,
+                              () => onOpenExpense!(e),
+                            ),
+                    ),
+                  ),
+              ],
             ),
-            const SizedBox(height: AppSpacing.xl),
-          ],
+          ),
+      ],
+    );
 
-          // Settle Up
-          if (settlements.isNotEmpty) ...[
-            const _SectionLabel(label: 'SETTLE UP'),
-            const SizedBox(height: AppSpacing.sm),
-            _SettleUpCard(
-              settlements: settlements,
-              memberNames: memberNames,
-              memberIds: memberIds,
-              symbol: symbol,
-              onSettle: (settlement) {
-                if (onRecordPayment != null) {
-                  onRecordPayment!(settlement);
-                } else {
-                  // Fallback for screens that don't wire onRecordPayment.
-                  // EventBudgetPage supplies it with the full pay flow.
-                  SettleSheet.show(
-                    context: context,
-                    settlement: settlement,
-                    currencySymbol: symbol,
-                    fromName: memberNames[settlement.fromUserId],
-                    toName: memberNames[settlement.toUserId],
-                  );
-                }
-              },
+    return Scaffold(
+      backgroundColor: cp.colors.background,
+      appBar: CpTopBar(
+        title: appBarTitle ?? s.title,
+        leadingKey: const Key('budget.back'),
+        leadingTooltip: MaterialLocalizations.of(context).backButtonTooltip,
+        onLeading: onBack,
+        actions: [
+          if (onExportPdf != null || onExportCsv != null)
+            CpTopBarAction(
+              key: const Key('budget.export.menu'),
+              icon: CpIcons.actionShare,
+              tooltip: s.exportTooltip,
+              onPressed: () => _export(context),
             ),
-            const SizedBox(height: AppSpacing.xl),
-          ],
-
-          // Expenses list
-          const _SectionLabel(label: 'EXPENSES'),
-          const SizedBox(height: AppSpacing.sm),
-          if (regularExpenses.isEmpty)
-            const _EmptyExpenses()
-          else
-            ...regularExpenses.map(
-              (e) => ExpenseTile(
-                expense: e,
-                currencySymbol: symbol,
-                onEdit: onEditExpense == null
-                    ? null
-                    : () => onEditExpense!.call(e),
-                onDelete: onDeleteExpense == null
-                    ? null
-                    : () => onDeleteExpense!.call(e),
-              ),
-            ),
-        ],
-      ),
-      floatingActionButton: canAddExpense
-          ? FloatingActionButton(
+          if (canAddExpense)
+            CpTopBarAction(
               key: const Key('budget.expense.create'),
-              onPressed: onAddExpense,
-              backgroundColor: AppColors.sage,
-              foregroundColor: AppColors.white,
-              child: const Icon(AppIcons.actionAdd),
-            )
-          : null,
+              icon: CpIcons.actionAdd,
+              tooltip: s.addExpenseTitle,
+              primary: true,
+              onPressed: onAddExpense ?? () {},
+            ),
+        ],
+      ),
+      body: CpListDetail(
+        list: ContentMaxWidth(maxWidth: cp.sizes.phoneColumn, child: list),
+        detail: detail,
+        placeholder: context.strings.nav.selectToSee(s.expenseWord),
+        unsavedText: CpUnsavedText(
+          title: roles.discardTitle,
+          body: roles.discardBody,
+          keep: roles.keepEditing,
+          discard: roles.discard,
+        ),
+      ),
     );
   }
 }
 
-class _TotalCard extends StatelessWidget {
-  const _TotalCard({required this.total, required this.symbol});
+/// "Spent $4,320" and how many expenses.
+class _SpentCard extends StatelessWidget {
+  const _SpentCard({required this.total, required this.count});
 
-  final double total;
-  final String symbol;
+  final String total;
+  final String count;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.borderLg,
-        side: BorderSide(
-          color: AppColors.lightGrey.withValues(alpha: 0.7),
-          width: 0.5,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Column(
-          children: [
-            Text(
-              'Total Expenses',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+    final cp = context.cp;
+    return CpCard(
+      key: const Key('budget.total'),
+      padding: EdgeInsets.all(cp.space.xl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: cp.space.xs,
+        children: [
+          Text(
+            context.strings.budget.spentLabel.toUpperCase(),
+            style: cp.type.labelMedium.copyWith(color: cp.colors.textMuted),
+          ),
+          Text(
+            total,
+            style: cp.type.displaySmall.copyWith(
+              color: cp.colors.text,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              '$symbol${total.toStringAsFixed(2)}',
-              style: Theme.of(
-                context,
-              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700),
-            ),
-          ],
-        ),
+          ),
+          Text(
+            count,
+            style: cp.type.bodySmall.copyWith(color: cp.colors.textMuted),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: AppSpacing.xs),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-          letterSpacing: 1.2,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-}
-
-/// A person's name, or the label for someone who has left the event, so a debt
-/// stays visible without ever showing a raw ID.
-String _nameOf(
-  String uid,
-  Map<String, String> memberNames,
-  List<String> memberIds,
-) => memberIds.contains(uid)
-    ? (memberNames[uid] ?? uid)
-    : resolveMemberName(uid: uid, memberNames: memberNames);
-
-class _BalancesCard extends StatelessWidget {
-  const _BalancesCard({
-    required this.balances,
-    required this.memberNames,
-    required this.memberIds,
-    required this.symbol,
+/// Your balance: "You are owed $120", who owes you or whom you owe, and
+/// Settle up when you owe someone.
+class _YourBalanceCard extends StatelessWidget {
+  const _YourBalanceCard({
+    required this.summary,
+    required this.nameOf,
+    required this.money,
+    required this.onSettle,
   });
 
-  final Map<String, double> balances;
-  final Map<String, String> memberNames;
-  final List<String> memberIds;
-  final String symbol;
+  final ({double net, List<Settlement> owedToMe, List<Settlement> iOwe})
+  summary;
+  final String Function(String uid) nameOf;
+  final String Function(double amount) money;
+  final ValueChanged<Settlement> onSettle;
 
   @override
   Widget build(BuildContext context) {
-    final entries = balances.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.borderLg,
-        side: BorderSide(
-          color: AppColors.lightGrey.withValues(alpha: 0.7),
-          width: 0.5,
-        ),
-      ),
+    final cp = context.cp;
+    final s = context.strings.budget;
+    final net = summary.net;
+    final headline = net > 0.005
+        ? s.youAreOwed(money(net))
+        : net < -0.005
+        ? s.youOwe(money(-net))
+        : s.allSettled;
+    final who = [
+      for (final x in summary.owedToMe.take(2))
+        s.owesYou(nameOf(x.fromUserId), money(x.amount)),
+      for (final x in summary.iOwe.take(2))
+        s.youOweName(nameOf(x.toUserId), money(x.amount)),
+    ].join(' · ');
+    return CpCard(
+      key: const Key('budget.yourBalance'),
+      padding: EdgeInsets.all(cp.space.xl),
       child: Column(
-        mainAxisSize: .min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: cp.space.sm,
         children: [
-          for (var i = 0; i < entries.length; i++) ...[
-            if (i > 0) const Divider(height: 1, indent: 16, endIndent: 16),
-            _BalanceRow(
-              key: Key('budget.balance.${entries[i].key}'),
-              name: _nameOf(entries[i].key, memberNames, memberIds),
-              balance: entries[i].value,
-              symbol: symbol,
+          Text(
+            s.yourBalanceLabel.toUpperCase(),
+            style: cp.type.labelMedium.copyWith(color: cp.colors.textMuted),
+          ),
+          Text(
+            headline,
+            key: const Key('budget.yourBalance.headline'),
+            style: cp.type.headlineSmall.copyWith(color: cp.colors.text),
+          ),
+          if (who.isNotEmpty)
+            Text(
+              who,
+              style: cp.type.bodyMedium.copyWith(color: cp.colors.textMuted),
+            ),
+          if (summary.iOwe.isNotEmpty) ...[
+            SizedBox(height: cp.space.xs),
+            CpButton(
+              key: const Key('budget.yourBalance.settle'),
+              label: s.settleUp,
+              icon: CpIcons.actionSwap,
+              expand: true,
+              onPressed: () => onSettle(summary.iOwe.first),
             ),
           ],
         ],
@@ -356,178 +433,85 @@ class _BalancesCard extends StatelessWidget {
   }
 }
 
+/// One person's balance: what they are owed plainly, what they owe as an
+/// amber chip, settled as a green one, each with its icon (Req 10).
 class _BalanceRow extends StatelessWidget {
   const _BalanceRow({
     super.key,
     required this.name,
     required this.balance,
-    required this.symbol,
+    required this.amount,
   });
 
   final String name;
   final double balance;
-  final String symbol;
+  final String amount;
 
   @override
   Widget build(BuildContext context) {
-    final isPositive = balance > 0.01;
-    final isNegative = balance < -0.01;
-    final color = isPositive
-        ? AppColors.sage
-        : isNegative
-        ? AppColors.terracotta
-        : AppColors.darkGrey;
-    final prefix = isPositive ? '+' : '';
-    final label = isPositive
-        ? 'is owed'
-        : isNegative
-        ? 'owes'
-        : 'settled';
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.md,
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: .start,
-              children: [
-                Text(name, style: Theme.of(context).textTheme.bodyMedium),
-                Text(label, style: Theme.of(context).textTheme.bodySmall),
-              ],
+    final cp = context.cp;
+    final s = context.strings.budget;
+    final owed = balance > 0.005;
+    final owes = balance < -0.005;
+    final value = owes
+        ? CpStatusChip(status: CpStatus.due, label: amount)
+        : owed
+        ? Text(
+            amount,
+            style: cp.type.titleSmall.copyWith(
+              color: cp.colors.text,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
-          ),
-          Text(
-            '$prefix$symbol${balance.abs().toStringAsFixed(2)}',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SettleUpCard extends StatelessWidget {
-  const _SettleUpCard({
-    required this.settlements,
-    required this.memberNames,
-    required this.memberIds,
-    required this.symbol,
-    required this.onSettle,
-  });
-
-  final List<Settlement> settlements;
-  final Map<String, String> memberNames;
-  final List<String> memberIds;
-  final String symbol;
-  final ValueChanged<Settlement> onSettle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.borderLg,
-        side: BorderSide(
-          color: AppColors.lightGrey.withValues(alpha: 0.7),
-          width: 0.5,
+          )
+        : CpStatusChip(status: CpStatus.done, label: s.settled);
+    final scale = MediaQuery.textScalerOf(context).scale(1);
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: cp.sizes.rowMinHeight),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: cp.space.lg,
+          vertical: cp.space.md,
         ),
-      ),
-      child: Column(
-        mainAxisSize: .min,
-        children: [
-          for (var i = 0; i < settlements.length; i++) ...[
-            if (i > 0) const Divider(height: 1, indent: 16, endIndent: 16),
-            _SettlementRow(
-              settlement: settlements[i],
-              fromName: _nameOf(
-                settlements[i].fromUserId,
-                memberNames,
-                memberIds,
-              ),
-              toName: _nameOf(settlements[i].toUserId, memberNames, memberIds),
-              symbol: symbol,
-              onSettle: () => onSettle(settlements[i]),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _SettlementRow extends StatelessWidget {
-  const _SettlementRow({
-    required this.settlement,
-    required this.fromName,
-    required this.toName,
-    required this.symbol,
-    required this.onSettle,
-  });
-
-  final Settlement settlement;
-  final String fromName;
-  final String toName;
-  final String symbol;
-  final VoidCallback onSettle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.sm,
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: .start,
-              children: [
-                Text(
-                  '$fromName pays $toName',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                Text(
-                  '$symbol${settlement.amount.toStringAsFixed(2)}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.terracotta,
-                    fontWeight: FontWeight.w600,
+        // At large text on a narrow row the amount goes under the name, so
+        // no word breaks mid-way (Req 45).
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final stacked = constraints.maxWidth / scale < 260;
+            return MergeSemantics(
+              child: Row(
+                spacing: cp.space.md,
+                children: [
+                  if (!stacked) CpAvatar(name: name),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      spacing: cp.space.xs / 2,
+                      children: [
+                        Text(
+                          name,
+                          style: cp.type.titleSmall.copyWith(
+                            color: cp.colors.text,
+                          ),
+                        ),
+                        Text(
+                          owed
+                              ? s.isOwed
+                              : owes
+                              ? s.owes
+                              : s.settled,
+                          style: cp.type.bodySmall.copyWith(
+                            color: cp.colors.textMuted,
+                          ),
+                        ),
+                        if (stacked) value,
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          TextButton(
-            key: Key('budget.settle.${settlement.toUserId}'),
-            onPressed: onSettle,
-            style: TextButton.styleFrom(foregroundColor: AppColors.sage),
-            child: const Text('Settle'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EmptyExpenses extends StatelessWidget {
-  const _EmptyExpenses();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
-      child: Center(
-        child: Text(
-          'No expenses yet',
-          style: Theme.of(context).textTheme.bodyMedium,
+                  if (!stacked) value,
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
