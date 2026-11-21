@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Builds docs/testing/CONVENTION_TEST_REPORT_v3.md from the scenario records.
+"""Builds docs/testing/CONVENTION_TEST_REPORT_v4.md from the scenario records.
 
 Usage: generate_report.py <flutter-json-results> <jest-json-results>
 
@@ -24,18 +24,18 @@ from collections import Counter, OrderedDict
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from check_finished import ids_in, read_flutter, read_jest  # noqa: E402
 
-DOC = 'docs/testing/CREWPOINT_CONVENTION_TEST_v3.md'
+DOC = 'docs/testing/CREWPOINT_CONVENTION_TEST_v4.md'
 RECORD = 'test_acceptance/fixtures/scenarios.json'
 FINISHED = 'test_acceptance/finished_scenarios.json'
-OUT = 'docs/testing/CONVENTION_TEST_REPORT_v3.md'
-RUN_DATE = 'Nov 17, 2026'
+OUT = 'docs/testing/CONVENTION_TEST_REPORT_v4.md'
+RUN_DATE = 'Nov 20, 2026'
 
-PS, PA, FA, NB, PL, NR = 'PASS', 'PARTIAL', 'FAIL', 'NOT BUILT', 'PLATFORM', 'NOT RUN'
-ST = [PS, PA, FA, NB, PL, NR]
+PS, PA, FA, NB, PL, NR, BL = 'PASS', 'PARTIAL', 'FAIL', 'NOT BUILT', 'PLATFORM', 'NOT RUN', 'BLOCKED'
+ST = [PS, PA, FA, NB, PL, NR, BL]
 
 doc = open(DOC, encoding='utf-8').read()
 titles = OrderedDict()
-for m in re.finditer(r'^- \*\*([A-Z]-\d\d)\*\* (.+)$', doc, re.M):
+for m in re.finditer(r'^- \*\*([A-Z]{1,2}-\d\d)\*\* (.+)$', doc, re.M):
     titles[m[1]] = m[2]
 for m in re.finditer(r'^\| \*\*(N-\d\d)\*\* \| ([^|]+) \|', doc, re.M):
     titles[m[1]] = m[2].strip()
@@ -47,24 +47,43 @@ unknown = {s['status'] for s in record.values()} - set(ST)
 assert not unknown, f'unknown statuses: {unknown}'
 
 P = {}
-for raw, pri in [
-    ('H-05 H-06 Z-01 Z-02 Z-03 Z-04 Z-05 Z-06 D-15 O-01 O-03 O-04 A-03 C-06', 'P0'),
-    ('H-01 H-02 H-03 H-04 H-07 O-02 O-05 S-01 S-02 S-08 U-01 U-02 U-03 U-04 N-16 N-17 N-18 N-19 N-20', 'P1'),
-    ('S-03 S-04 S-05 S-06 S-07 O-06 O-07 O-08 U-05 N-07 N-08 N-09 N-10 N-11 N-12 N-13 N-14 N-21 N-22 N-23 N-00', 'P2'),
-    ('Z-07', 'P3'),
-]:
-    for i in raw.split():
-        P[i] = pri
+
+
+def expand(spec):
+    """'A, B-01…B-13, N-24' → every ID it names, against the spec's list."""
+    out = []
+    for token in spec.replace(',', ' ').split():
+        m = re.fullmatch(r'([A-Z]{1,2})-(\d\d)…[A-Z]{1,2}-(\d\d)', token)
+        if m:
+            out += [f'{m[1]}-{n:02}' for n in range(int(m[2]), int(m[3]) + 1)]
+        elif re.fullmatch(r'[A-Z]{1,2}', token):
+            out += [i for i in titles if prefix(i) == token]
+        else:
+            out.append(token)
+    return out
+
+
+def prefix(i):
+    return i.split('-')[0]
+
+
+# §8 of the spec: priorities by the real calendar.
+section8 = doc[doc.index('**Priorities by the real calendar:**'):]
+for pri in ['P0', 'P1', 'P2', 'P3']:
+    line = re.search(rf'\*\*{pri} [^*]*:\*\* ([^\n]+)', section8)[1]
+    for i in expand(line):
+        P.setdefault(i, pri)
 
 
 def priority(i):
-    if i in P:
-        return P[i]
-    return {'A': 'P1', 'X': 'P1', 'J': 'P2', 'V': 'P2', 'R': 'P2', 'K': 'P3'}.get(i[0], 'P0')
+    return P.get(i, 'P1')
 
 
 # The later stage that owns an open scenario, from ai_specs/event-platform-plan.md.
-STAGE_BY_PREFIX = {'B': 2, 'C': 2, 'D': 2, 'N': 3, 'J': 5, 'V': 5, 'R': 5, 'K': 6}
+STAGE_BY_PREFIX = {
+    'B': 2, 'C': 2, 'D': 2, 'BG': 2, 'RF': 2, 'N': 3, 'W': 4, 'J': 5, 'V': 5, 'R': 5,
+    'HL': 5, 'AL': 5, 'K': 6,
+}
 STAGE_BY_ID = {
     'A-03': 3, 'A-04': 2, 'H-03': 6, 'H-04': 6, 'X-04': 2, 'S-03': 3, 'S-04': 5, 'S-05': 5,
     'S-06': 5, 'U-03': 3, 'O-04': 3, 'O-05': 7, 'O-07': 7, 'Z-03': 2, 'Z-05': 3, 'Z-06': 2,
@@ -76,7 +95,7 @@ def stage(i, row):
     if row['status'] == PS:
         return '·'
     m = re.search(r'Stage (\d)', row['gap'])
-    n = int(m[1]) if m else STAGE_BY_ID.get(i, STAGE_BY_PREFIX.get(i[0]))
+    n = int(m[1]) if m else STAGE_BY_ID.get(i, STAGE_BY_PREFIX.get(prefix(i)))
     return f'Stage {n}' if n else '·'
 
 
@@ -117,11 +136,13 @@ sha = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], capture_output=Tru
 
 SEC = OrderedDict([
     ('A', 'Event setup'), ('L', 'Login'), ('B', 'Registration'), ('C', 'Fees and payments'),
-    ('D', 'Sponsorships'), ('H', 'Committee'), ('V', 'Volunteers'), ('J', 'Event days'),
-    ('K', 'After the event'), ('X', 'Tool integration'), ('S', 'Scale'), ('R', 'Safety'),
-    ('Z', 'Privacy'), ('O', 'Operations'), ('U', 'Accessibility'), ('N', 'Notifications'),
+    ('D', 'Sponsorships'), ('BG', 'Budget and sponsorship list'), ('H', 'Committee'),
+    ('V', 'Volunteers'), ('W', 'Waterpark day'), ('RF', 'Raffle'), ('HL', 'Paid helpers'),
+    ('AL', 'Alcohol (21+)'), ('J', 'Event days'), ('K', 'After the event'),
+    ('X', 'Roster import'), ('S', 'Scale'), ('R', 'Safety'), ('Z', 'Privacy'),
+    ('O', 'Operations'), ('U', 'Accessibility'), ('N', 'Notifications'),
 ])
-counts = {k: Counter(r['status'] for i, r in record.items() if i[0] == k) for k in SEC}
+counts = {k: Counter(r['status'] for i, r in record.items() if prefix(i) == k) for k in SEC}
 
 
 def cell(s):
@@ -130,8 +151,8 @@ def cell(s):
 
 o = []
 w = o.append
-w('# Derod Gaam Convention 2027: Test Report (v3)\n')
-w(f'**Test spec:** [`CREWPOINT_CONVENTION_TEST_v3.md`](CREWPOINT_CONVENTION_TEST_v3.md) · **Run:** {RUN_DATE}, at the end of Stage 1, on `main` at `{sha}` · **First run:** Nov 3, 2026\n')
+w('# Derod Gaam Convention 2027: Test Report (v4)\n')
+w(f'**Test spec:** [`CREWPOINT_CONVENTION_TEST_v4.md`](CREWPOINT_CONVENTION_TEST_v4.md) · **Run:** {RUN_DATE}, at the end of Stage 1, on `main` at `{sha}` · **First run:** Nov 3, 2026\n')
 w(f'**Result: Stage 1, the platform foundation, is complete, but CrewPoint cannot run this event yet.** Registration and payments arrive in Stage 2, email and Gujarati in Stage 3, and event-day check-in in Stage 5. Of {len(titles)} scenarios, {overall[PS]} pass, {overall[PA]} are partial, {overall[FA]} fails, {overall[NB]} are not built, {overall[PL]} are platform requirements for later stages, and {overall[NR]} need a person or outside access. On Nov 3, 2 passed.\n')
 w('**What Stage 1 changed for this event:**\n')
 w('- **Permissions:** twelve preset roles plus custom ones, checked in the rules and on the server, with money kept from everyone who should not see it (H-01, H-05, H-06, H-07).')
@@ -192,11 +213,12 @@ for i, t in titles.items():
 w('\n## 4. Priorities by the real calendar\n')
 w('**P0: before announcing registration (Nov–Dec 2026)**\n')
 w('- **Legal:** lawyer approval of the privacy policy, then Stage 1 to prod (Z-01, Z-04), the nonprofit\'s legal name, EIN and receipt wording (D-15, Z-06), and the waiver (Z-03).')
-w('- **Registration route:** Stage 2, or a bought tool brought in through the roster import (L6). Either way, the fee rules come first: hybrid family fee (C-01), per-person meal choices and arrival times (B-01, B-03).')
+w('- **Registration route:** Stage 2, or a bought tool brought in through the roster import (L6). Either way, the fee rules come first: $150 per adult (C-01), per-person meal choices, the waterpark choice and arrival times (B-01, B-03, W-01).')
 w('- **Email domain** (O-04).\n')
 w('**P1: sponsorship and hotel push (Jan–Jun 2027)**\n')
 w('- Stage 2: registration, payments, receipts, contributions and one-time code sign-in (B, C, D, L-03…L-07).')
-w('- Stage 3: email, scheduled messages that wait out quiet hours, Gujarati and Unicode PDFs (N, J-09, A-03, U-03).')
+w('- Stage 2: the sponsorship list and budget lines the asks come from, and the raffle (BG, D, RF).')
+w('- Stage 3: email, scheduled messages, Gujarati and Unicode PDFs (N, J-09, A-03, U-03).')
 w('- App store approval (O-05), and accessibility on every screen (U-01…U-04).\n')
 w('**P2: final week and event days (Jul 2027)**\n')
 w('- Stage 5: passes, check-in, offline writes, volunteers, live updates and safety (J, V, R, S-05, S-06).')
@@ -209,7 +231,8 @@ for n, (title, body) in enumerate([
     ('Prod is still on the code from before Stage 1', 'Every Stage 1 change waits for the lawyer\'s approval of the privacy policy, and runs only on dev (Req 39).'),
     ('No email', 'Web-only families depend on it. It needs an authenticated domain, unsubscribe and bounce handling (N, O-04, Z-05). Stage 3.'),
     ('No Gujarati', 'Strings, a language setting, translated templates and a PDF font that supports Gujarati, with a human translator (A-03, J-09, U-03, N-21). Stage 3.'),
-    ('Messages are dropped, not delayed, and mute blocks urgent alerts', 'Quiet hours drop a message instead of sending it at 7:00am, and a muted event blocks a lost-child alert (N-10, N-14). Stage 3\'s scheduled queue must fix both.'),
+    ('A muted event blocks urgent alerts', 'A muted event blocks a lost-child alert (N-14). Stage 3\'s message queue must let emergencies through.'),
+    ('No raffle, waterpark planning or paid helpers', 'Raffle sales and draws (RF), shuttle runs and the package cost (W), and helper shifts and pay (HL) are all new in v4, in Stages 2, 4 and 5.'),
     ('No event-day flow', 'Passes, a scanner, the limited name search, offline writes with a clear conflict rule, volunteers and live updates (J, V). This is the largest single build, in Stage 5.'),
     ('No safety features', 'Incident reports, medical and allergy flags, and lost-child handling (R). Stage 5.'),
     ('The expense PDF stops at 200 expenses', 'The CSV is complete, but the PDF is not, and there is no full export (K-03). Stage 6.'),
@@ -217,8 +240,9 @@ for n, (title, body) in enumerate([
     w(f'{n}. **{title}.** {body}')
 w('\n## 6. Testability gaps\n')
 for g in [
-    '**No clock seam in the push and scheduled jobs.** `sendCategorizedPush`, `onTaskDueScheduled` and `onDigestSummary` call `new Date()` directly, so the N-10 test fakes `Date` in Jest. Stage 3\'s scheduled messages should take a clock, as counts already do.',
+    '**No clock seam in the push and scheduled jobs.** `sendCategorizedPush`, `onTaskDueScheduled` and `onDigestSummary` call `new Date()` directly, so the quiet-hours test fakes `Date` in Jest. Stage 3\'s scheduled messages should take a clock, as counts already do.',
     '**No email or SMS transport to mock.** N-00 can only prove safety for push.',
+    '**No seeded random source.** Raffle draws (RF-06) need one before they can be tested.',
     '**Pushes have no recipient-level result.** `sendCategorizedPush` returns only counts, so recipient assertions inspect the mock.',
     '**Real delivery.** APNs and FCM delivery need real devices.',
     '**Not checked: store listings and the venue network** (O-05, O-07).',
@@ -227,7 +251,8 @@ for g in [
 w('\n## 7. Assumptions\n')
 w('| Assumption | What the app does now | Recommendation |\n|---|---|---|')
 for a, b, c in [
-    ('A 1-adult family pays $300', 'No fee logic. Stage 2', 'Confirm'),
+    ('Sponsorship asks round on cost × 1.10 (under $1,000 → next $100)', 'No asks yet. Stage 2', 'Check against the workbook (BG-03)'),
+    ('Photography & video takes one sponsor only', 'Not built', 'Confirm'),
     ('Age is computed on Jul 16, 2027', 'Age bands come from the private birth date, on the event\'s first day', 'Keep'),
     ('Registration is built, with a bought tool as a stopgap (L6)', 'The roster import is ready for a tool\'s export', 'Decide by December'),
     ('Sign-in with Google, then email code, is one account (L-06)', 'No email code yet. Stage 2', 'Keep'),
@@ -239,9 +264,6 @@ for a, b, c in [
     ('Walk-ins past capacity need admin override', 'Capacity is a setting, compared with the counts', 'Confirm the real hall limit with the hotel'),
     ('Paid families are not re-billed after a fee change', 'Not built', 'Keep'),
     ('Pay-at-check-in families get no unpaid reminder', 'Not built', 'Keep, with one reminder in N-07'),
-    ('Web-only users get no session reminders', 'No email at all', 'Keep; email every 15 minutes would be noise'),
-    ('Quiet hours are 9:00pm–7:00am, deferred not dropped', 'User-set window; **drops** messages', 'Keep; requires a build'),
-    ('Event time applies to quiet hours Jul 16–19', 'Events have a time zone, but quiet hours use the profile\'s', 'Keep; requires a build'),
     ('Pledge reminders stop at event start', 'Not built', 'Confirm'),
     ('Event-day messages reach each family member with a login', 'Not built', 'Keep'),
     ('Shift reminders the day before at 6:00pm, and 30 minutes before', 'Not built', 'Keep'),
@@ -249,7 +271,7 @@ for a, b, c in [
     ('Lost-child alerts re-send after 2 minutes with no acknowledgement', 'Not built', 'Confirm with whoever runs safety'),
 ]:
     w(f'| {a} | {b} | {c} |')
-w('\n**Owner input still needed:** nonprofit legal name and EIN, refund policy (C-13), who absorbs card fees (C-20), waiver text (Z-03), whether to adopt SMS for emergencies (N-14).\n')
+w('\n**Owner input still needed:** nonprofit legal name and EIN, refund policy (C-13), who absorbs card fees (C-20), waiver text (Z-03, W-05), whether to adopt SMS for emergencies (N-14), the budget workbook (BG-03) and the raffle prize count (§3).\n')
 w('## How to re-run\n')
 w('Keep each scenario\'s status and gap in `test_acceptance/fixtures/scenarios.json` as work lands, then:\n')
 w('```bash\nflutter test test_acceptance/ --reporter json > flutter.json\n(cd functions && firebase emulators:exec --project demo-crewpoint --only firestore,auth \\\n  "npx jest --runInBand --config jest.acceptance.config.js --json --outputFile=../jest.json")\npython3 test_acceptance/generate_report.py flutter.json jest.json\n```')

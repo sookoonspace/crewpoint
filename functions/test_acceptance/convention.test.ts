@@ -66,7 +66,10 @@ describe('notifications', () => {
     expect(mockSendEach).toHaveBeenCalledTimes(1);
   });
 
-  test('N-10 quiet-hours window is right per recipient zone', () => {
+  // N-10 is retired for the convention, which has no quiet hours (v4 §7).
+  // Quiet hours stay a personal setting on the platform, so these keep
+  // checking it, under no scenario ID.
+  test('personal quiet-hours window is right per recipient zone', () => {
     const at = new Date('2027-06-04T01:00:00Z'); // Jun 3, 8:00pm Central
     const q = (timezone: string) => isWithinQuietHours({...QUIET, timezone}, at);
     expect(q('Europe/London')).toBe(true); // 2:00am
@@ -75,7 +78,7 @@ describe('notifications', () => {
     expect(q('America/Chicago')).toBe(false); // 8:00pm
   });
 
-  test('N-10 a quiet-hours message is deferred to 7:00am, not dropped', async () => {
+  test('a message in personal quiet hours is deferred to 7:00am, not dropped (Stage 3)', async () => {
     await user('f5', {...QUIET, timezone: 'Europe/London'});
     const db = getAdminDb();
     const before = (await db.listCollections()).map((c) => c.id);

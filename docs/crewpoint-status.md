@@ -187,6 +187,6 @@ The main direction is settled, and the remaining decisions don't block Stage 1.
 
 - Stage 1 spec: [issue #44](https://github.com/sookoonspace/crewpoint/issues/44), with a local copy at `ai_specs/stage-1-platform-foundation-spec.md`
 - Full plan: `ai_specs/event-platform-plan.md`
-- Convention test report: `docs/testing/CONVENTION_TEST_REPORT_v3.md`
+- Convention test report: `docs/testing/CONVENTION_TEST_REPORT_v4.md`
 - Backups and alerts: `docs/ops/backups-and-alerts.md`
 - Required before prod: `ai_specs/todo.md`

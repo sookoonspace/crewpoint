@@ -45,7 +45,7 @@ void main() {
   });
 
   test('the convention fixture is the existing one', () {
-    expect(manifest['convention'], 'derod_convention_2027_v3.json');
+    expect(manifest['convention'], 'derod_convention_2027_v4.json');
   });
 
   for (final entry in manifest.entries.where((e) => e.key != 'convention')) {

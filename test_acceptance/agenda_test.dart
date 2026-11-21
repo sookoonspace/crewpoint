@@ -8,15 +8,16 @@ import 'package:crewpoint_app/app/features/schedule/domain/models/attendance.dar
 import 'package:crewpoint_app/app/features/schedule/domain/models/session.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// #82 (Req 50, 51): personal agendas for the convention's families F1–F7,
-/// from arrival to departure, with Ramesh and Kamla's lunch opt-outs and the
+/// #82 (Req 50, 51): personal agendas for the convention's families from
+/// the v4 seed, from arrival to departure, with Saturday split between the
+/// waterpark (by sign-up) and the hotel, Jaya's breakfast opt-out, and the
 /// kids activity by sign-up for children only.
 void main() {
   const zone = 'America/Chicago';
   final fixture =
       jsonDecode(
             File(
-              'test_acceptance/fixtures/derod_convention_2027_v3.json',
+              'test_acceptance/fixtures/derod_convention_2027_v4.json',
             ).readAsStringSync(),
           )
           as Map<String, dynamic>;
@@ -24,23 +25,48 @@ void main() {
   DateTime at(int day, int hour, [int minute = 0]) =>
       eventLocalToUtc(2027, 7, day, zone, hour: hour, minute: minute);
 
-  // §1's schedule. K1 is by sign-up, for children.
+  // §1's schedule, without the shuttle runs (Stage 4). The pool party and
+  // the park meal are by sign-up; waterpark people opt out of the hotel
+  // lunch. K1 is by sign-up, for children.
   final sessions = [
     SessionModel(id: 'M1', title: 'Welcome Dinner', startAt: at(16, 19)),
     SessionModel(id: 'P1', title: 'Karaoke & Garba', startAt: at(16, 21)),
     SessionModel(id: 'M2', title: 'Breakfast', startAt: at(17, 8)),
-    SessionModel(id: 'M3', title: 'Lunch', startAt: at(17, 12, 30)),
+    SessionModel(
+      id: 'B1',
+      title: 'Bhajan',
+      startAt: at(17, 10),
+      endAt: at(17, 16),
+    ),
+    SessionModel(
+      id: 'W1',
+      title: 'Pool Party',
+      startAt: at(17, 10, 30),
+      endAt: at(17, 13),
+      attendance: AttendancePolicy.bySession,
+    ),
+    SessionModel(
+      id: 'M3P',
+      title: 'Lunch at the park',
+      startAt: at(17, 12, 30),
+      attendance: AttendancePolicy.bySession,
+    ),
+    SessionModel(
+      id: 'M3H',
+      title: 'Lunch at the hotel',
+      startAt: at(17, 12, 30),
+    ),
+    SessionModel(id: 'B2', title: 'Bhajan & Prasad', startAt: at(17, 16)),
     SessionModel(
       id: 'K1',
       title: 'Kids activities',
-      startAt: at(17, 13, 30),
-      endAt: at(17, 15),
+      startAt: at(17, 17),
+      endAt: at(17, 18, 30),
       attendance: AttendancePolicy.bySession,
       eligibility: const SessionEligibility(categoryIds: ['child']),
     ),
-    SessionModel(id: 'P2', title: 'Bhajan & Prasad', startAt: at(17, 16)),
     SessionModel(id: 'M4', title: 'Dinner', startAt: at(17, 19)),
-    SessionModel(id: 'P3', title: 'Karaoke & Garba', startAt: at(17, 21)),
+    SessionModel(id: 'P2', title: 'Garba & Karaoke', startAt: at(17, 21)),
     SessionModel(id: 'M5', title: 'Breakfast', startAt: at(18, 8)),
     SessionModel(id: 'M6', title: 'Lunch', startAt: at(18, 12, 30)),
     SessionModel(
@@ -53,25 +79,20 @@ void main() {
   final byId = {for (final s in sessions) s.id: s};
 
   /// The family's people, as records: the arrival from the fixture, a
-  /// departure just after their last meal, opt-outs, and K1 sign-ups.
+  /// departure just after their last meal, opt-outs and sign-ups.
   List<ParticipantModel> family(String id) {
     final f = (fixture['families'] as List<dynamic>)
         .cast<Map<String, dynamic>>()
         .firstWhere((f) => f['id'] == id);
-    final arrive = f['arrive'] as String;
-    final arrival = arrive.contains('T')
-        ? () {
-            final local = DateTime.parse(arrive);
-            return eventLocalToUtc(
-              local.year,
-              local.month,
-              local.day,
-              zone,
-              hour: local.hour,
-              minute: local.minute,
-            );
-          }()
-        : null;
+    final local = DateTime.parse(f['arrive'] as String);
+    final arrival = eventLocalToUtc(
+      local.year,
+      local.month,
+      local.day,
+      zone,
+      hour: local.hour,
+      minute: local.minute,
+    );
     final lastMeal = byId[f['lastMeal'] as String]!;
     final departure = lastMeal.startAt.add(const Duration(minutes: 1));
     return [
@@ -87,8 +108,14 @@ void main() {
           categoryId: (p['age'] as int) < 18 ? 'child' : 'adult',
           arrivalAt: arrival,
           departureAt: departure,
-          optOuts: [...?(p['optOut'] as List<dynamic>?)?.cast<String>()],
-          signUps: [if (p['kidsAct'] == true) 'K1'],
+          optOuts: [
+            ...?(p['optOut'] as List<dynamic>?)?.cast<String>(),
+            if (p['wp'] == true) 'M3H',
+          ],
+          signUps: [
+            if (p['wp'] == true) ...['W1', 'M3P'],
+            if (p['kidsAct'] == true) 'K1',
+          ],
         ),
     ];
   }
@@ -104,28 +131,28 @@ void main() {
 
   test('J-06 F4 arrives Sat 11am and sees nothing before', () {
     final agenda = agendaOf(family('F4'));
-    expect(agenda.first, 'M3');
-    expect(agenda, isNot(contains('M1')));
-    expect(agenda, isNot(contains('P1')));
-    expect(agenda, isNot(contains('M2')));
+    expect(agenda.first, 'M3H');
+    for (final id in ['M1', 'P1', 'M2', 'B1']) {
+      expect(agenda, isNot(contains(id)), reason: id);
+    }
     expect(agenda, contains('M8'));
   });
 
-  test("J-06 F3's elders don't see Saturday lunch", () {
+  test("J-06 F3's elders get the hotel lunch, not the park meal", () {
     final people = family('F3');
     for (final name in ['Ramesh', 'Kamla']) {
-      expect(
-        agendaOf([people.firstWhere((p) => p.name == name)]),
-        isNot(contains('M3')),
-        reason: name,
-      );
+      final agenda = agendaOf([people.firstWhere((p) => p.name == name)]);
+      expect(agenda, contains('M3H'), reason: name);
+      expect(agenda, isNot(contains('M3P')), reason: name);
+      expect(agenda, isNot(contains('W1')), reason: name);
     }
-    // The rest of the family still has lunch.
-    expect(agendaOf(people), contains('M3'));
+    final kunal = agendaOf([people.firstWhere((p) => p.name == 'Kunal')]);
+    expect(kunal, containsAll(['W1', 'M3P']));
+    expect(kunal, isNot(contains('M3H')));
   });
 
   test('J-06 the kids activity shows only for families with sign-ups', () {
-    for (final id in ['F1', 'F3', 'F5', 'F7']) {
+    for (final id in ['F1', 'F3', 'F5', 'F7', 'F11']) {
       expect(agendaOf(family(id)), contains('K1'), reason: id);
     }
     for (final id in ['F2', 'F4', 'F6']) {
@@ -145,15 +172,17 @@ void main() {
     expect(agendaOf(family('F2')), contains('M8'));
   });
 
-  test('J-05 now and next during Saturday lunch', () {
-    final agenda = buildAgenda(
-      policy: AttendancePolicy.arrivalToDeparture,
-      sessions: sessions,
-      people: family('F3'),
+  test('J-05 now and next during the hotel lunch', () {
+    final r = nowAndNext(
+      buildAgenda(
+        policy: AttendancePolicy.arrivalToDeparture,
+        sessions: sessions,
+        people: family('F4'),
+      ),
+      at(17, 12, 45),
     );
-    final r = nowAndNext(agenda, at(17, 12, 45));
-    expect([for (final e in r.now) e.session.id], ['M3']);
-    expect(r.next?.session.id, 'K1');
+    expect([for (final e in r.now) e.session.id], ['M3H']);
+    expect(r.next?.session.id, 'B2');
   });
 
   test('J-05 for someone without the kids activity, next skips it', () {
@@ -163,8 +192,8 @@ void main() {
         sessions: sessions,
         people: family('F4'),
       ),
-      at(17, 12, 45),
+      at(17, 16, 30),
     );
-    expect(r.next?.session.id, 'P2');
+    expect(r.next?.session.id, 'M4');
   });
 }

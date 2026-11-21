@@ -126,7 +126,7 @@ void main() {
       final hits = [
         for (final f in [
           ..._sources(),
-          File('test_acceptance/fixtures/derod_convention_2027_v3.json'),
+          File('test_acceptance/fixtures/derod_convention_2027_v4.json'),
         ])
           if (f.readAsStringSync().contains('ડેરોડ')) f.path,
       ];

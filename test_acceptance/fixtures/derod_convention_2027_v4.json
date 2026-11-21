@@ -1,0 +1,885 @@
+{
+ "event": {
+  "name": "Derod Gaam Convention 2027",
+  "nameGu": "દેરોદ ગામ સંમેલન ૨૦૨૭",
+  "start": "2027-07-16",
+  "end": "2027-07-19",
+  "tz": "America/Chicago",
+  "currency": "USD",
+  "capacity": 400
+ },
+ "meals": [
+  "M1",
+  "M2",
+  "M3P",
+  "M3H",
+  "M4",
+  "M5",
+  "M6",
+  "M7",
+  "M8"
+ ],
+ "families": [
+  {
+   "id": "F1",
+   "surname": "Patel",
+   "city": "Dallas TX",
+   "lang": "en",
+   "channel": "app",
+   "tz": "America/Chicago",
+   "directory": true,
+   "drives": true,
+   "waiver": true,
+   "arrive": "2027-07-16T17:00",
+   "lastMeal": "M7",
+   "hotel": null,
+   "payment": {
+    "method": "card",
+    "status": "paid",
+    "amount": 300
+   },
+   "registered": "2026-11-15",
+   "people": [
+    {
+     "name": "Amit",
+     "age": 45,
+     "diet": "V",
+     "shirt": "L",
+     "wp": true,
+     "contact": true
+    },
+    {
+     "name": "Nisha",
+     "age": 42,
+     "diet": "V",
+     "shirt": "M",
+     "wp": true
+    },
+    {
+     "name": "Riya",
+     "age": 10,
+     "diet": "V",
+     "shirt": "YM",
+     "wp": true,
+     "kidsAct": true
+    },
+    {
+     "name": "Dev",
+     "age": 6,
+     "diet": "V",
+     "shirt": "YS",
+     "wp": true,
+     "kidsAct": true
+    }
+   ]
+  },
+  {
+   "id": "F2",
+   "surname": "Bhakta",
+   "city": "Chicago IL",
+   "lang": "en",
+   "channel": "app",
+   "tz": "America/Chicago",
+   "directory": true,
+   "drives": false,
+   "waiver": true,
+   "arrive": "2027-07-16T15:00",
+   "lastMeal": "M8",
+   "hotel": {
+    "rooms": 1,
+    "nights": 3,
+    "firstNight": "2027-07-16",
+    "confirmation": "HP123456"
+   },
+   "payment": {
+    "method": "zelle",
+    "status": "pending",
+    "amount": 300
+   },
+   "registered": "2026-11-18",
+   "people": [
+    {
+     "name": "Raj",
+     "age": 38,
+     "diet": "V",
+     "shirt": "L",
+     "wp": true,
+     "contact": true
+    },
+    {
+     "name": "Priya",
+     "age": 36,
+     "diet": "V",
+     "shirt": "S",
+     "wp": true
+    },
+    {
+     "name": "Kiaan",
+     "age": 3,
+     "diet": "V",
+     "shirt": "2T",
+     "wp": true
+    }
+   ]
+  },
+  {
+   "id": "F3",
+   "surname": "Desai",
+   "city": "Edison NJ",
+   "lang": "gu",
+   "channel": "app",
+   "tz": "America/New_York",
+   "directory": true,
+   "drives": false,
+   "waiver": true,
+   "arrive": "2027-07-16T14:00",
+   "lastMeal": "M8",
+   "hotel": {
+    "rooms": 2,
+    "nights": 3,
+    "firstNight": "2027-07-16",
+    "confirmation": null
+   },
+   "payment": {
+    "method": null,
+    "status": "unpaid",
+    "amount": 0
+   },
+   "registered": "2026-11-20",
+   "people": [
+    {
+     "name": "Kunal",
+     "age": 44,
+     "diet": "V",
+     "shirt": "L",
+     "wp": true,
+     "contact": true
+    },
+    {
+     "name": "Meera",
+     "age": 41,
+     "diet": "V",
+     "shirt": "M",
+     "wp": true
+    },
+    {
+     "name": "Ramesh",
+     "age": 72,
+     "diet": "J",
+     "shirt": "L",
+     "wp": false
+    },
+    {
+     "name": "Kamla",
+     "age": 70,
+     "diet": "J",
+     "shirt": "M",
+     "wp": false
+    },
+    {
+     "name": "Neel",
+     "age": 17,
+     "diet": "V",
+     "shirt": "M",
+     "wp": true,
+     "born": "2009-07-17"
+    },
+    {
+     "name": "Asha",
+     "age": 8,
+     "diet": "V",
+     "shirt": "YS",
+     "wp": true,
+     "kidsAct": true
+    },
+    {
+     "name": "Om",
+     "age": 4,
+     "diet": "V",
+     "shirt": "4T",
+     "wp": true,
+     "kidsAct": true
+    }
+   ]
+  },
+  {
+   "id": "F4",
+   "surname": "Mistry",
+   "city": "Houston TX",
+   "lang": "gu",
+   "channel": "web",
+   "tz": "America/Chicago",
+   "directory": false,
+   "drives": true,
+   "waiver": false,
+   "arrive": "2027-07-17T11:00",
+   "firstMeal": "M3P",
+   "lastMeal": "M8",
+   "hotel": {
+    "rooms": 1,
+    "nights": 2,
+    "firstNight": "2027-07-17",
+    "confirmation": "HP223344"
+   },
+   "payment": {
+    "method": "check",
+    "status": "paid",
+    "amount": 150,
+    "reference": "1043"
+   },
+   "registered": "2026-12-08",
+   "people": [
+    {
+     "name": "Savita",
+     "age": 74,
+     "diet": "V",
+     "shirt": "M",
+     "wp": false,
+     "contact": true
+    }
+   ]
+  },
+  {
+   "id": "F5",
+   "surname": "Chauhan",
+   "city": "London UK",
+   "lang": "en",
+   "channel": "app",
+   "tz": "Europe/London",
+   "directory": true,
+   "drives": false,
+   "waiver": false,
+   "arrive": "2027-07-16T13:00",
+   "lastMeal": "M8",
+   "hotel": {
+    "rooms": 1,
+    "nights": 5,
+    "firstNight": "2027-07-14",
+    "confirmation": "HP334455"
+   },
+   "payment": {
+    "method": "card",
+    "status": "paid",
+    "amount": 450
+   },
+   "registered": "2026-12-12",
+   "people": [
+    {
+     "name": "Vikram",
+     "age": 47,
+     "diet": "N",
+     "shirt": "XL",
+     "wp": true,
+     "contact": true
+    },
+    {
+     "name": "Anjali",
+     "age": 45,
+     "diet": "N",
+     "shirt": "M",
+     "wp": true
+    },
+    {
+     "name": "Rohan",
+     "age": 18,
+     "diet": "N",
+     "shirt": "L",
+     "wp": true
+    },
+    {
+     "name": "Tara",
+     "age": 14,
+     "diet": "N",
+     "shirt": "S",
+     "wp": true
+    },
+    {
+     "name": "Kabir",
+     "age": 9,
+     "diet": "N",
+     "shirt": "YM",
+     "wp": true,
+     "kidsAct": true
+    }
+   ]
+  },
+  {
+   "id": "F6",
+   "surname": "Patel",
+   "city": "Toronto ON",
+   "lang": "en",
+   "channel": "app",
+   "tz": "America/Toronto",
+   "directory": false,
+   "drives": false,
+   "waiver": true,
+   "arrive": "2027-07-16T16:00",
+   "lastMeal": "M8",
+   "hotel": {
+    "rooms": 1,
+    "nights": 3,
+    "firstNight": "2027-07-16",
+    "confirmation": null,
+    "confirmationLater": "HP445566",
+    "confirmedOn": "2027-06-10"
+   },
+   "payment": {
+    "method": "atCheckIn",
+    "status": "due",
+    "amount": 0
+   },
+   "registered": "2027-01-05",
+   "people": [
+    {
+     "name": "Hemant",
+     "age": 52,
+     "diet": "V",
+     "shirt": "L",
+     "wp": false,
+     "contact": true
+    },
+    {
+     "name": "Jaya",
+     "age": 50,
+     "diet": "N",
+     "shirt": "M",
+     "wp": true,
+     "optOut": [
+      "M2"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "F7",
+   "surname": "Bhakta",
+   "city": "Dallas TX",
+   "lang": "gu",
+   "channel": "app",
+   "tz": "America/Chicago",
+   "directory": false,
+   "drives": true,
+   "waiver": true,
+   "arrive": "2027-07-16T17:00",
+   "lastMeal": "M7",
+   "hotel": null,
+   "payment": {
+    "method": "cash",
+    "status": "paid",
+    "amount": 300
+   },
+   "registered": "2026-11-30",
+   "people": [
+    {
+     "name": "Mahesh",
+     "age": 50,
+     "diet": "V",
+     "shirt": "XL",
+     "wp": false,
+     "contact": true
+    },
+    {
+     "name": "Leela",
+     "age": 48,
+     "diet": "V",
+     "shirt": "M",
+     "wp": true
+    },
+    {
+     "name": "Sonal",
+     "age": 11,
+     "diet": "V",
+     "shirt": "YL",
+     "wp": true,
+     "kidsAct": true
+    },
+    {
+     "name": "Jay",
+     "age": 5,
+     "diet": "V",
+     "shirt": "YS",
+     "wp": true,
+     "kidsAct": true
+    }
+   ]
+  },
+  {
+   "id": "F11",
+   "surname": "Rana",
+   "city": "Phoenix AZ",
+   "lang": "en",
+   "channel": "app",
+   "tz": "America/Phoenix",
+   "directory": true,
+   "drives": false,
+   "waiver": true,
+   "arrive": "2027-07-16T15:00",
+   "lastMeal": "M8",
+   "hotel": {
+    "rooms": 1,
+    "nights": 3,
+    "firstNight": "2027-07-16",
+    "confirmation": "HP556677"
+   },
+   "payment": {
+    "method": "card",
+    "status": "paid",
+    "amount": 150
+   },
+   "registered": "2027-01-08",
+   "people": [
+    {
+     "name": "Kavita",
+     "age": 38,
+     "diet": "V",
+     "shirt": "M",
+     "wp": true,
+     "contact": true
+    },
+    {
+     "name": "Ishan",
+     "age": 13,
+     "diet": "V",
+     "shirt": "YL",
+     "wp": true
+    },
+    {
+     "name": "Mira",
+     "age": 7,
+     "diet": "V",
+     "shirt": "YS",
+     "wp": true,
+     "kidsAct": true
+    }
+   ]
+  }
+ ],
+ "otherFamilies": [
+  {
+   "id": "F8",
+   "surname": "Shah",
+   "city": "Atlanta GA",
+   "cancelledOn": "2027-03-01",
+   "refund": 300,
+   "adults": 2,
+   "people": [
+    {
+     "name": "Adult 1",
+     "age": 40,
+     "diet": "V",
+     "shirt": "L",
+     "wp": false
+    },
+    {
+     "name": "Adult 2",
+     "age": 38,
+     "diet": "V",
+     "shirt": "M",
+     "wp": false
+    }
+   ]
+  },
+  {
+   "id": "F9",
+   "surname": "Joshi",
+   "city": "Austin TX",
+   "walkIn": true,
+   "registeredAt": "2027-07-17T16:00",
+   "firstMeal": "M4",
+   "lastMeal": "M7",
+   "payment": {
+    "method": "cash",
+    "status": "paid",
+    "amount": 300
+   },
+   "people": [
+    {
+     "name": "Sanjay",
+     "age": 35,
+     "diet": "V",
+     "shirt": "L",
+     "wp": false
+    },
+    {
+     "name": "Ritu",
+     "age": 33,
+     "diet": "V",
+     "shirt": "M",
+     "wp": false
+    },
+    {
+     "name": "Aarav",
+     "age": 7,
+     "diet": "V",
+     "shirt": "YS",
+     "wp": false
+    }
+   ]
+  },
+  {
+   "id": "F10",
+   "surname": "Desai",
+   "city": "Houston TX",
+   "duplicateOf": "F3",
+   "registered": "2027-01-20",
+   "people": [
+    {
+     "name": "Ramesh",
+     "age": 72,
+     "diet": "J",
+     "shirt": "L",
+     "wp": false
+    },
+    {
+     "name": "Kamla",
+     "age": 70,
+     "diet": "J",
+     "shirt": "M",
+     "wp": false
+    }
+   ]
+  }
+ ],
+ "sponsorItems": [
+  {
+   "name": "Welcome Dinner",
+   "ask": 9000,
+   "include": true,
+   "status": "open",
+   "shareable": true
+  },
+  {
+   "name": "Breakfast – Sat",
+   "ask": 4500,
+   "include": true,
+   "status": "open",
+   "shareable": true
+  },
+  {
+   "name": "Breakfast – Sun",
+   "ask": 4500,
+   "include": true,
+   "status": "open",
+   "shareable": true
+  },
+  {
+   "name": "Breakfast – Mon",
+   "ask": 4500,
+   "include": true,
+   "status": "open",
+   "shareable": true
+  },
+  {
+   "name": "Lunch – Sat (hotel group)",
+   "ask": 3000,
+   "include": true,
+   "status": "open",
+   "shareable": true
+  },
+  {
+   "name": "Dinner – Sat",
+   "ask": 8000,
+   "include": true,
+   "status": "open",
+   "shareable": true
+  },
+  {
+   "name": "Lunch – Sun",
+   "ask": 7000,
+   "include": true,
+   "status": "open",
+   "shareable": true
+  },
+  {
+   "name": "Gala Night Dinner",
+   "ask": 11000,
+   "include": true,
+   "status": "sponsored",
+   "shareable": true
+  },
+  {
+   "name": "Chai & coffee",
+   "ask": 2000,
+   "include": true,
+   "status": "open",
+   "shareable": true
+  },
+  {
+   "name": "Bhajan prasad",
+   "ask": 700,
+   "include": true,
+   "status": "open",
+   "shareable": true
+  },
+  {
+   "name": "Bottled water",
+   "ask": 900,
+   "include": true,
+   "status": "open",
+   "shareable": true
+  },
+  {
+   "name": "Soda & juice",
+   "ask": 1500,
+   "include": true,
+   "status": "open",
+   "shareable": true
+  },
+  {
+   "name": "Paper products",
+   "ask": 6000,
+   "include": true,
+   "status": "open",
+   "shareable": true
+  },
+  {
+   "name": "Alcohol",
+   "ask": 6000,
+   "include": true,
+   "status": "open",
+   "shareable": true
+  },
+  {
+   "name": "Entertainment – 3 nights",
+   "ask": 7000,
+   "include": true,
+   "status": "open",
+   "shareable": true
+  },
+  {
+   "name": "Gala decoration",
+   "ask": 2500,
+   "include": true,
+   "status": "open",
+   "shareable": true
+  },
+  {
+   "name": "Photography & video",
+   "ask": 2500,
+   "include": true,
+   "status": "open",
+   "shareable": false
+  },
+  {
+   "name": "Bhajan group",
+   "ask": 600,
+   "include": true,
+   "status": "open",
+   "shareable": true
+  },
+  {
+   "name": "Kids activities",
+   "ask": 700,
+   "include": true,
+   "status": "open",
+   "shareable": true
+  },
+  {
+   "name": "Raffle prizes",
+   "ask": 3500,
+   "include": true,
+   "status": "open",
+   "shareable": true
+  },
+  {
+   "name": "Pool Party",
+   "ask": 10500,
+   "include": true,
+   "status": "open",
+   "shareable": true
+  },
+  {
+   "name": "Shuttle",
+   "ask": 2000,
+   "include": true,
+   "status": "open",
+   "shareable": true
+  },
+  {
+   "name": "T-shirts",
+   "ask": 4000,
+   "include": true,
+   "status": "open",
+   "shareable": true
+  }
+ ],
+ "tiers": {
+  "Platinum": 3001,
+  "Gold": 1001,
+  "Silver": 501
+ },
+ "pledges": [
+  {
+   "sponsor": "F1",
+   "name": "Patel (Dallas)",
+   "type": "Silver",
+   "amount": 501,
+   "item": "Bottled water",
+   "received": true,
+   "method": "card",
+   "recognition": "yes"
+  },
+  {
+   "sponsor": "F7",
+   "name": "Bhakta (Dallas)",
+   "type": "Platinum",
+   "amount": 3001,
+   "item": "Lunch – Sun",
+   "received": true,
+   "method": "cash",
+   "recognition": "yes"
+  },
+  {
+   "sponsor": "F2",
+   "name": "Bhakta (Chicago)",
+   "type": "Pledge",
+   "amount": 1999,
+   "item": "Lunch – Sun",
+   "received": false,
+   "method": "zelle",
+   "pledgedOn": "2027-03-01",
+   "recognition": "yes"
+  },
+  {
+   "sponsor": "Patel Travels",
+   "name": "Patel Travels",
+   "type": "Pledge",
+   "amount": 2000,
+   "item": "Lunch – Sun",
+   "received": true,
+   "method": "check",
+   "recognition": "yes",
+   "business": true
+  },
+  {
+   "sponsor": "F6",
+   "name": "Patel (Toronto)",
+   "type": "Gold",
+   "amount": 1001,
+   "item": null,
+   "received": true,
+   "pledgedOn": "2027-01-15",
+   "receivedOn": "2027-03-20",
+   "recognition": "no"
+  },
+  {
+   "sponsor": "Pre-arranged",
+   "name": "An anonymous family",
+   "type": "Item",
+   "amount": 11000,
+   "item": "Gala Night Dinner",
+   "received": true,
+   "recognition": "anonymous"
+  }
+ ],
+ "inKind": [
+  {
+   "sponsor": "Patel Travels",
+   "value": 500,
+   "prize": "Airline gift card",
+   "recognition": "yes"
+  },
+  {
+   "sponsor": "F2",
+   "value": 450,
+   "prize": "Dyson vacuum",
+   "recognition": "yes"
+  }
+ ],
+ "raffle": {
+  "single": 10,
+  "bundle": {
+   "tickets": 6,
+   "price": 50
+  },
+  "prizes": {
+   "fri": 22,
+   "sat": 8,
+   "sun": 3,
+   "kids": 6
+  },
+  "sales": [
+   {
+    "buyer": "F1 Amit",
+    "channel": "app",
+    "tickets": 6,
+    "drawing": "sun",
+    "paid": 50,
+    "method": "card"
+   },
+   {
+    "buyer": "F5 Vikram",
+    "channel": "app",
+    "tickets": 12,
+    "drawing": "sun",
+    "paid": 100,
+    "method": "card"
+   },
+   {
+    "buyer": "F5 Vikram",
+    "channel": "app",
+    "tickets": 2,
+    "drawing": "sat",
+    "paid": 20,
+    "method": "card"
+   },
+   {
+    "buyer": "F3 Kunal",
+    "channel": "app",
+    "tickets": 6,
+    "drawing": "fri",
+    "paid": 50,
+    "method": "zelle"
+   },
+   {
+    "buyer": "V3 paper",
+    "channel": "paper",
+    "tickets": 65,
+    "drawing": "fri",
+    "paid": 550,
+    "method": "cash"
+   },
+   {
+    "buyer": "F7 Leela",
+    "channel": "paper",
+    "tickets": 6,
+    "drawing": "sat",
+    "paid": 50,
+    "method": "cash"
+   }
+  ]
+ },
+ "waterpark": {
+  "base": 8500,
+  "included": 250,
+  "extraPerGuest": 30.99,
+  "taxPct": 8.25,
+  "alertAt": 225
+ },
+ "shuttle": {
+  "runs": 2,
+  "seatsPerRun": 15
+ },
+ "helpers": {
+  "perMeal": 10,
+  "meals": 8,
+  "hours": 4,
+  "rate": 20,
+  "logged": {
+   "M1": {
+    "H1": 4.0,
+    "H2": 4.0,
+    "H3": 3.5
+   }
+  }
+ },
+ "hotel": {
+  "rate": 99,
+  "taxPct": 14.98,
+  "cutoff": "2027-07-03"
+ },
+ "fees": {
+  "perAdult": 150,
+  "adultAge": 18
+ }
+}

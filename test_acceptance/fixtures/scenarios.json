@@ -8,31 +8,38 @@
  },
  {
   "id": "A-02",
-  "title": "Schedule from §1 incl. programs and kids activity; M3/K1 flagged outdoor; M8 \"location TBD\"; placeholder times editable.",
+  "title": "Full schedule from §1, including the two-location Saturday lunch, shuttle runs, the bhajan day program, the kids drawing and three raffle drawings; M8 \"location TBD\"; placeholder times editable.",
   "status": "PASS",
   "gap": "Built in #81: sessions over several days with type, tags, venue, placeholder times to be confirmed, and a location to be announced.",
   "tested": true
  },
  {
   "id": "A-03",
-  "title": "Bilingual event name/description; Gujarati uses **દેરોદ**. Add a test that fails if **ડેરોડ** appears anywhere in Gujarati strings, templates, or seed text.",
+  "title": "Bilingual event name/description; Gujarati uses **દેરોદ**. A test fails if **ડેરોડ** appears anywhere in Gujarati strings, templates or seed text.",
   "status": "PARTIAL",
   "gap": "Spelling guard added and passing, but the app has no Gujarati content to guard.",
   "tested": true
  },
  {
   "id": "A-04",
-  "title": "Donation item list from §1 loaded, incl. a closed item (Gala Dinner) and an item with no amount (Bhajan Prasad).",
+  "title": "Sponsorship list from §3 loaded, including an already-sponsored item (Gala Night Dinner).",
   "status": "NOT BUILT",
   "gap": "No donation item model. Contributions arrive in Stage 2.",
   "tested": false
  },
  {
   "id": "A-05",
-  "title": "Map/directions entries: hotel address, Garland Hall, picnic park (TBD), parking.",
+  "title": "Map/directions entries: hotel, Garland Hall, Hawaiian Waters, shuttle pickup point, parking.",
   "status": "PASS",
   "gap": "Built in #81: venues hold an address (or to be announced), a map link and directions, listed by venue on the schedule.",
   "tested": true
+ },
+ {
+  "id": "A-06",
+  "title": "Hawaiian Waters package configured: $8,500, 250 included, $30.99 extra, 8.25% tax.",
+  "status": "NOT BUILT",
+  "gap": "No package or pricing model for an offsite program. Stage 4 (planning).",
+  "tested": false
  },
  {
   "id": "L-01",
@@ -64,14 +71,14 @@
  },
  {
   "id": "L-05",
-  "title": "Family contact invites a family member; invitee gets access to **that family only**.",
+  "title": "Family contact invites a family member; the invitee gets access to **that family only**.",
   "status": "PLATFORM",
   "gap": "Platform requirement for Stage 2 (one-time code sign-in and RSVP links), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "L-06",
-  "title": "Same person signs in with Google, later with email code using the same email → same account, not a duplicate `[ASSUMPTION]`.",
+  "title": "Same person signs in with Google, later with an email code using the same email → same account, not a duplicate `[ASSUMPTION]`.",
   "status": "PLATFORM",
   "gap": "Platform requirement for Stage 2 (one-time code sign-in and RSVP links), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
@@ -85,7 +92,7 @@
  },
  {
   "id": "B-01",
-  "title": "Contact registers whole family with every per-person field: name, age (or date of birth), diet V/J/N, Derod relation, T-shirt size, arrival date/time, departure date, kids activity (shown only for under-18), per-meal attendance.",
+  "title": "Contact registers the whole family with every per-person field: name, date of birth/age, diet V/J/N, Derod relation, T-shirt size, arrival/departure, kids activities (under 18 only), meal-by-meal attendance, **waterpark vs. hotel on Saturday**.",
   "status": "PLATFORM",
   "gap": "Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
@@ -99,35 +106,35 @@
  },
  {
   "id": "B-03",
-  "title": "Per-meal, per-person opt-out (Jaya M2; Ramesh & Kamla M3).",
+  "title": "Per-meal, per-person opt-out (Jaya M2).",
   "status": "PLATFORM",
   "gap": "Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "B-04",
-  "title": "Headcounts, diet totals, kids activity count, T-shirt report match §4.",
+  "title": "Headcount, diet, kids activities, 21+ counts and T-shirt report match §4.",
   "status": "PASS",
-  "gap": "Built in #83: counts on the server give 7 groups, 16 adults, 10 children, 26 people, 18/2/6 by diet, 7 kids activity sign-ups and a T-shirt report summing to 26 after import and cancelling F8.",
+  "gap": "Built in #83: counts on the server give 8 groups, 17 adults, 12 children, 29 people, 21/2/6 by diet, 8 kids activity sign-ups and a T-shirt report summing to 29 after import and cancelling F8. The 21+ count is AL-01 (Stage 5).",
   "tested": true
  },
  {
   "id": "B-05",
-  "title": "Per-meal counts match §4 table, by diet.",
+  "title": "Per-meal counts match §4, by diet, including the **Saturday lunch at each location**.",
   "status": "PASS",
-  "gap": "Built in #83: per-session counts by diet match the §4 table for M1–M8, from arrivals, departures and opt-outs.",
+  "gap": "Built in #83: per-session counts by diet, with Saturday lunch as two sessions, the park meal by waterpark sign-up and the hotel lunch for everyone else.",
   "tested": true
  },
  {
   "id": "B-06",
-  "title": "Family member (Meera) edits registration → counts update; audit shows who changed what.",
+  "title": "Family member (Meera) edits the registration → counts update; audit shows who changed what.",
   "status": "PLATFORM",
   "gap": "Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "B-07",
-  "title": "Hotel section: intent (rooms, nights), confirmation number field; booking link + code shown after registration only.",
+  "title": "Hotel section: intent (rooms, nights), confirmation number; booking link + code shown after registration only.",
   "status": "PLATFORM",
   "gap": "Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
@@ -141,21 +148,21 @@
  },
  {
   "id": "B-09",
-  "title": "Registration form fully usable in Gujarati.",
+  "title": "Registration fully usable in Gujarati.",
   "status": "PLATFORM",
   "gap": "Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "B-10",
-  "title": "Export registrations + per-meal diet counts to CSV/Excel for the caterer.",
+  "title": "Export for the caterer: registrations and per-meal, per-location counts by diet (CSV/Excel).",
   "status": "PASS",
   "gap": "Built in #84: counts export to CSV per session by category and field, and the roster exports through exportRoster; private fields only when chosen.",
   "tested": true
  },
  {
   "id": "B-11",
-  "title": "Duplicate handling: system flags F10 as a likely duplicate; committee merges into F3; counts go from the before-merge values to the §4 values; F3's fee stays $600; the merge is logged; F10's contact loses access.",
+  "title": "Duplicate handling: F10's Ramesh & Kamla flagged against F3; committee merges into F3; counts go from the before-merge values to the §4 values; F3's fee stays $600; the merge is logged; F10's contact loses access.",
   "status": "PLATFORM",
   "gap": "Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
@@ -189,8 +196,15 @@
   "tested": false
  },
  {
+  "id": "B-16",
+  "title": "Cancelled F8 is excluded from every count, list, drawing and reminder.",
+  "status": "PLATFORM",
+  "gap": "Counts already leave out a family cancelled on re-import (X-03). Registrations arrive in Stage 2, drawings in the raffle slice and reminders in Stage 3.",
+  "tested": false
+ },
+ {
   "id": "C-01",
-  "title": "Hybrid fee calculation for every family matches §4 (incl. F4 single adult, F5 three adults, Neel/Rohan age boundary).",
+  "title": "$150-per-adult rule for every family matches §4 (F4 and F11 $150, F5 $450, Neel/Rohan age boundary).",
   "status": "PLATFORM",
   "gap": "Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
@@ -218,28 +232,28 @@
  },
  {
   "id": "C-05",
-  "title": "Pay at check-in: F6 shows \"$300 due at check-in\"; volunteer at desk records card/cash; totals after event match §4.",
+  "title": "Pay at check-in: F6 shows \"$300 due at check-in\"; a volunteer at the desk records card/cash; totals after the event match §4.",
   "status": "PLATFORM",
   "gap": "Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "C-06",
-  "title": "F8 cancels after paying → refund $300 (sandbox) or credit; removed from all counts and totals; cancellation record kept.",
+  "title": "F8 cancels after paying → $300 refund (sandbox) or credit; removed from all counts and totals; cancellation record kept.",
   "status": "PLATFORM",
   "gap": "Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "C-07",
-  "title": "Receipts name the nonprofit and payment method.",
+  "title": "Receipts name the organization and the payment method.",
   "status": "PLATFORM",
   "gap": "Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "C-08",
-  "title": "Fee settings changeable by admin (family fee, extra-adult fee, kid age) and totals recalculate. Families already paid are not re-billed unless finance chooses to `[ASSUMPTION]`.",
+  "title": "Admin changes the fee per adult or the kid age cutoff → totals recalculate. Families already paid are not re-billed unless finance chooses to `[ASSUMPTION]`.",
   "status": "PLATFORM",
   "gap": "Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
@@ -274,7 +288,7 @@
  },
  {
   "id": "C-13",
-  "title": "Refund window: the cancellation deadline and refund percentage are settings. `[OWNER INPUT]` for the policy.",
+  "title": "Refund window: the cancellation deadline and refund percentage are settings `[OWNER INPUT]` for the policy.",
   "status": "PLATFORM",
   "gap": "Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
@@ -330,21 +344,21 @@
  },
  {
   "id": "D-01",
-  "title": "Family picks an open item to sponsor and pledges an amount.",
+  "title": "A family picks an open item to sponsor and pledges an amount. Families see only Include = Yes items, never costs or off-list items.",
   "status": "PLATFORM",
   "gap": "Platform requirement for Stage 2 (contributions and receipts), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "D-02",
-  "title": "Several families share one item; % pledged and % received shown (Sun Lunch: 100% / 60%).",
+  "title": "Several sponsors share one item; % pledged and % received shown (Lunch – Sun: 100% / 71%).",
   "status": "PLATFORM",
   "gap": "Platform requirement for Stage 2 (contributions and receipts), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "D-03",
-  "title": "Fully pledged and closed items can't be picked (Sun Lunch after F2, Gala Dinner).",
+  "title": "Fully pledged and already-sponsored items can't be picked (Lunch – Sun after F2, Gala Night Dinner).",
   "status": "PLATFORM",
   "gap": "Platform requirement for Stage 2 (contributions and receipts), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
@@ -365,14 +379,14 @@
  },
  {
   "id": "D-06",
-  "title": "Public thank-you list: names only, recognition opt-in respected, no amounts.",
+  "title": "Public thank-you list matches §4: names only, recognition opt-in respected, an anonymous option, no amounts.",
   "status": "PLATFORM",
   "gap": "Platform requirement for Stage 2 (contributions and receipts), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "D-07",
-  "title": "Business/vendor sponsor (non-family) can be added by finance.",
+  "title": "A business sponsor (Patel Travels) can be added by finance.",
   "status": "PLATFORM",
   "gap": "Platform requirement for Stage 2 (contributions and receipts), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
@@ -386,42 +400,42 @@
  },
  {
   "id": "D-09",
-  "title": "F2 cancels the pledge → Sun Lunch reopens with $1,999 remaining; the reminder stops.",
+  "title": "F2 cancels the pledge → Lunch – Sun reopens with $1,999 remaining; the reminder stops.",
   "status": "PLATFORM",
   "gap": "Platform requirement for Stage 2 (contributions and receipts), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "D-10",
-  "title": "F2 pays $1,000 of $1,999 → received $4,001; reminders continue for $999.",
+  "title": "F2 pays $1,000 of $1,999 → Lunch – Sun received $6,001; reminders continue for $999.",
   "status": "PLATFORM",
   "gap": "Platform requirement for Stage 2 (contributions and receipts), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "D-11",
-  "title": "A pledge above the remaining amount is rejected, or offered the remainder.",
+  "title": "A pledge above the remaining amount is rejected, or offered the remainder (Bottled water: $399 left).",
   "status": "PLATFORM",
   "gap": "Platform requirement for Stage 2 (contributions and receipts), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "D-12",
-  "title": "Two families pledge the last $1,999 at the same moment → one succeeds, the other is told.",
+  "title": "Two sponsors pledge the last $1,999 at the same moment → one succeeds, the other is told.",
   "status": "PLATFORM",
   "gap": "Platform requirement for Stage 2 (contributions and receipts), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "D-13",
-  "title": "Non-shareable items (Gala music/DJ, Photography & video) accept one sponsor for the full amount only.",
+  "title": "A non-shareable item (Photography & video) accepts one sponsor for the full amount only.",
   "status": "PLATFORM",
   "gap": "Platform requirement for Stage 2 (contributions and receipts), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
  },
  {
   "id": "D-14",
-  "title": "Bhajan Prasad gets an amount later → existing pledges count toward it.",
+  "title": "An item added without an amount yet shows \"amount to be announced\" and accepts pledges; when an amount is set, existing pledges count toward it `[TEST VALUE]` item.",
   "status": "PLATFORM",
   "gap": "Platform requirement for Stage 2 (contributions and receipts), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
@@ -434,8 +448,71 @@
   "tested": false
  },
  {
+  "id": "D-16",
+  "title": "In-kind donations are kept separate from cash, with value, donor and use (raffle prizes): $950 in §4.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (contributions).",
+  "tested": false
+ },
+ {
+  "id": "BG-01",
+  "title": "Budget lines by type: per person, per adult, fixed, hotel (× 23% service × 8.25% tax), package (base + extras × price × tax). Each estimate rounded to the nearest $100.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (contributions: budget lines and the sponsorship list).",
+  "tested": false
+ },
+ {
+  "id": "BG-02",
+  "title": "Two planning headcounts (375, 400) side by side, plus **live** totals at the registered headcount.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (contributions: budget lines and the sponsorship list).",
+  "tested": false
+ },
+ {
+  "id": "BG-03",
+  "title": "**Parity with the workbook fixture:** every line, subtotal and total at 375 and 400 matches `Derod_Gaam_2027_Budget_Estimate.xlsx` to the dollar (totals in §4).",
+  "status": "BLOCKED",
+  "gap": "Needs the budget workbook at test_acceptance/fixtures/Derod_Gaam_2027_Budget_Estimate.xlsx, and budget lines (Stage 2, contributions).",
+  "tested": false
+ },
+ {
+  "id": "BG-04",
+  "title": "Changing any input (e.g., gala plate price, waterpark share, helper rate) updates every dependent line and total; no total can be typed over.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (contributions: budget lines and the sponsorship list).",
+  "tested": false
+ },
+ {
+  "id": "BG-05",
+  "title": "Actuals entry per line with variance; contingency 10%.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (contributions: budget lines and the sponsorship list).",
+  "tested": false
+ },
+ {
+  "id": "BG-06",
+  "title": "Sponsorship list: Include Yes/No per item; ask = cost × 1.10 rounded up per §1; asks match §4.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (contributions: budget lines and the sponsorship list).",
+  "tested": false
+ },
+ {
+  "id": "BG-07",
+  "title": "Summary: 23 items, $101,900 ask, $88,600 listed cost, $30,900 paid by fees, $40,800 registration, $9,900 left over; flipping Alcohol to No updates all five.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (contributions: budget lines and the sponsorship list).",
+  "tested": false
+ },
+ {
+  "id": "BG-08",
+  "title": "Budget and sponsorship amounts visible to admin and finance only (UI and API).",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (contributions: budget lines and the sponsorship list).",
+  "tested": false
+ },
+ {
   "id": "H-01",
-  "title": "Committee sub-teams (food, hotel, program, finance, picnic, registration); members assigned.",
+  "title": "Committee sub-teams (food, hotel, program, finance, waterpark, registration); members assigned.",
   "status": "PASS",
   "gap": "Built in #65 and #67: committee roles such as Finance and Crew lead, custom roles, and a Roles screen to assign them.",
   "tested": true
@@ -449,21 +526,21 @@
  },
  {
   "id": "H-03",
-  "title": "Vendors (caterer, DJ, decorator, photographer, hotel bar) with contacts, contract file, deadlines; amounts visible to admin/finance only.",
+  "title": "Vendors (caterer, DJ, decorator, photographer, Hawaiian Waters, shuttle company, hotel) with contacts, contract files and deadlines; amounts visible to admin/finance only.",
   "status": "NOT BUILT",
   "gap": "No vendor model, contracts or deadlines.",
   "tested": false
  },
  {
   "id": "H-04",
-  "title": "Budget: estimate vs actual per line; visible to admin/finance only.",
+  "title": "Budget: estimate vs actual per line; visible to admin/finance only. Detailed in BG-01…BG-08.",
   "status": "NOT BUILT",
   "gap": "Task budget figures are private to `budget.read` (#71). No budget lines or actuals (Stage 6).",
   "tested": false
  },
  {
   "id": "H-05",
-  "title": "Permissions matrix from §2 — one test per role per restricted screen/API (UI **and** backend rules). Especially: committee member cannot read any money field via the API; volunteer sees only the balance of the family being checked in.",
+  "title": "Permissions matrix from §2 — one test per role per restricted screen/API (UI **and** backend rules). Especially: a committee member cannot read any money field via the API; a volunteer sees only the balance of the family being checked in.",
   "status": "PASS",
   "gap": "Every preset role is checked against every restricted path in the rules (functions/test/roleMatrix.test.ts, #70, #95), and outsiders, committee members, volunteers and other groups are kept from money, budgets and private profiles (#65–#73). Tests: `H-05`.",
   "tested": true
@@ -498,7 +575,7 @@
  },
  {
   "id": "V-03",
-  "title": "Meal-line counter: tap to count plates served by diet (V/J/N) per meal; totals visible to food team.",
+  "title": "Meal-line counter: tap to count plates served by diet (V/J/N) per meal **and location**; totals visible to the food team.",
   "status": "NOT BUILT",
   "gap": "No shifts, scanner, counter or issue reports.",
   "tested": false
@@ -511,6 +588,209 @@
   "tested": false
  },
  {
+  "id": "V-05",
+  "title": "Paper raffle sales log (see RF-03).",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (raffle).",
+  "tested": false
+ },
+ {
+  "id": "W-01",
+  "title": "Per-person sign-up (waterpark vs. hotel); totals 24 / 5.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (registration choices).",
+  "tested": false
+ },
+ {
+  "id": "W-02",
+  "title": "Package cost recalculates: 24 → $9,201.25; 260 synthetic → $9,536.72; exactly 250 → $9,201.25.",
+  "status": "NOT BUILT",
+  "gap": "No package cost model. Stage 4 (planning).",
+  "tested": false
+ },
+ {
+  "id": "W-03",
+  "title": "Committee alerts at 225 and above 250.",
+  "status": "NOT BUILT",
+  "gap": "No capacity alerts on a sign-up. Stage 4 (planning), with messages from Stage 3.",
+  "tested": false
+ },
+ {
+  "id": "W-04",
+  "title": "Shuttle assignment: 17 riders, 15 seats per run, families together, no overbooking, drivers excluded; manual move between runs allowed if seats are free.",
+  "status": "NOT BUILT",
+  "gap": "No transport runs or seat assignment. Stage 4 (planning, alongside seating).",
+  "tested": false
+ },
+ {
+  "id": "W-05",
+  "title": "Liability waiver: the family contact accepts for each member going (parent/guardian for minors); waiver text versioned; timestamp and signer stored.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (waivers at sign-up).",
+  "tested": false
+ },
+ {
+  "id": "W-06",
+  "title": "Missing-waiver list shows F5; the boarding check at the shuttle flags F5 until signed.",
+  "status": "NOT BUILT",
+  "gap": "No waiver records or boarding check. Stage 5 (event day).",
+  "tested": false
+ },
+ {
+  "id": "W-07",
+  "title": "Park meal count goes to Hawaiian Waters; hotel lunch count goes to the caterer; each person counted at exactly one location.",
+  "status": "PLATFORM",
+  "gap": "Counts per session already split the lunch by location (B-05). Sending each count to its supplier is Stage 4.",
+  "tested": false
+ },
+ {
+  "id": "W-08",
+  "title": "Personal agenda: waterpark people see S1/S2, W1, R1/R2 and the park meal; hotel people see B1 and the hotel lunch.",
+  "status": "PLATFORM",
+  "gap": "Personal agendas already follow sign-ups (J-06). The shuttle runs on them arrive with Stage 4.",
+  "tested": false
+ },
+ {
+  "id": "W-09",
+  "title": "Bhajan day program visible to all; it isn't a sign-up (no headcount needed).",
+  "status": "PLATFORM",
+  "gap": "Sessions for everyone already exist (#81). Checked with the waterpark build in Stage 4.",
+  "tested": false
+ },
+ {
+  "id": "RF-01",
+  "title": "Raffle configured: prices $10 / 6 for $50, organization name shown on tickets and receipts, drawings Fri night, Sat night, Sun Gala, Kids (Sat).",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (raffle).",
+  "tested": false
+ },
+ {
+  "id": "RF-02",
+  "title": "In-app purchase (card, Zelle) assigns unique ticket numbers to the chosen drawing; the receipt lists the numbers.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (raffle).",
+  "tested": false
+ },
+ {
+  "id": "RF-03",
+  "title": "A volunteer logs paper sales (ticket number ranges, payment method, drawing); ranges can't overlap or repeat.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (raffle).",
+  "tested": false
+ },
+ {
+  "id": "RF-04",
+  "title": "Totals match §4: $820 by method; 97 tickets; 71 / 8 / 18 per drawing.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (raffle).",
+  "tested": false
+ },
+ {
+  "id": "RF-05",
+  "title": "Prize list with purchased/donated, donor and value; **cash prizes rejected**, gift cards accepted; in-kind value $950.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (raffle).",
+  "tested": false
+ },
+ {
+  "id": "RF-06",
+  "title": "Draw (seeded RNG): winners only from that drawing's tickets; a ticket can't win twice in one drawing; every draw logged (who ran it, time, seed, ticket, prize).",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (raffle).",
+  "tested": false
+ },
+ {
+  "id": "RF-07",
+  "title": "Warning when prizes ≥ tickets (Sat night: 8 and 8).",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (raffle).",
+  "tested": false
+ },
+ {
+  "id": "RF-08",
+  "title": "Winner notified (push + email, in their language); an email-only winner like F4 gets email.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (raffle).",
+  "tested": false
+ },
+ {
+  "id": "RF-09",
+  "title": "Unclaimed: the Sun Gala grand-prize winner (F5) doesn't claim by **Mon Jul 19, 11:00am** → redraw from the Sun Gala pool; committee notified; the original winner marked \"unclaimed\".",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (raffle).",
+  "tested": false
+ },
+ {
+  "id": "RF-10",
+  "title": "Kids drawing: automatic free entries for every registered child under 18 (12, then 13 after the walk-in); no tickets sold; Rohan excluded, Neel included.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (raffle).",
+  "tested": false
+ },
+ {
+  "id": "RF-11",
+  "title": "Raffle sales flow into budget income; purchased prize cost flows into budget cost.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (raffle).",
+  "tested": false
+ },
+ {
+  "id": "RF-12",
+  "title": "Committee can run draws; volunteers can log sales but not draw; only finance sees raffle cash totals.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (raffle).",
+  "tested": false
+ },
+ {
+  "id": "HL-01",
+  "title": "Helper role: 10 slots per meal × 8 meals = 80 shifts.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 5 (volunteers and helpers).",
+  "tested": false
+ },
+ {
+  "id": "HL-02",
+  "title": "Clock in/out; logged M1 hours give $230 (H1 $80, H2 $80, H3 $70).",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 5 (volunteers and helpers).",
+  "tested": false
+ },
+ {
+  "id": "HL-03",
+  "title": "Finance pay report by helper and meal; the total feeds the budget \"actual\".",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 6 (organizer finance).",
+  "tested": false
+ },
+ {
+  "id": "HL-04",
+  "title": "Helpers see only their own shifts; no access to registrations or money.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 5 (volunteers and helpers).",
+  "tested": false
+ },
+ {
+  "id": "HL-05",
+  "title": "Unfilled slots per meal shown to the food team.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 5 (volunteers and helpers).",
+  "tested": false
+ },
+ {
+  "id": "AL-01",
+  "title": "The check-in list shows a 21+ flag per person: 16 before the walk-in, 18 after.",
+  "status": "NOT BUILT",
+  "gap": "No check-in list. Stage 5; ages from birth dates already exist (#76).",
+  "tested": false
+ },
+ {
+  "id": "AL-02",
+  "title": "Rohan (18) and all kids not flagged; age computed on the event date.",
+  "status": "NOT BUILT",
+  "gap": "No 21+ flag. Stage 5; ages are counted on the event date (#76).",
+  "tested": false
+ },
+ {
   "id": "J-01",
   "title": "QR code per family (in app and in email); scanning checks in the family and lets the volunteer tick which members are present (F4 alone on Sat; F9 walk-in gets a QR at the desk).",
   "status": "NOT BUILT",
@@ -519,21 +799,21 @@
  },
  {
   "id": "J-02",
-  "title": "QR contains a token only — no names, phone, or email encoded.",
+  "title": "QR contains a token only — no names, phone or email encoded.",
   "status": "NOT BUILT",
   "gap": "Check-in, passes, live updates and the directory arrive in Stage 5. The schedule, personal agenda and offline reads already exist (#81, #82, Req 74).",
   "tested": false
  },
  {
   "id": "J-03",
-  "title": "Walk-in: committee registers F9 at the door, takes $300 cash, prints/shows QR; counts update for M4–M7.",
+  "title": "Walk-in: committee registers F9 at the door, takes $300 cash, shows a QR; counts and the kids drawing update.",
   "status": "NOT BUILT",
   "gap": "Check-in, passes, live updates and the directory arrive in Stage 5. The schedule, personal agenda and offline reads already exist (#81, #82, Req 74).",
   "tested": false
  },
  {
   "id": "J-04",
-  "title": "Offline: check-in and meal counts work with no network; queue syncs later; same family scanned on two offline devices → **one** check-in after sync; meal counts from two devices **sum** correctly.",
+  "title": "Offline: check-in, meal counts and paper raffle logs work with no network; the queue syncs later; the same family scanned on two offline devices → **one** check-in after sync; meal counts from two devices **sum** correctly; ticket ranges still can't collide.",
   "status": "NOT BUILT",
   "gap": "Check-in, passes, live updates and the directory arrive in Stage 5. The schedule, personal agenda and offline reads already exist (#81, #82, Req 74).",
   "tested": false
@@ -547,14 +827,14 @@
  },
  {
   "id": "J-06",
-  "title": "Personal agenda per family/person (F4 sees nothing before Sat 11am; F3 elders don't see Sat lunch; kids activity shows only for families with sign-ups).",
+  "title": "Personal agenda per family/person (F4 sees nothing before Sat 11am; F3's elders get the hotel lunch, not the park meal; kids activities show only for families with sign-ups).",
   "status": "PASS",
   "gap": "Built in #82: agendas follow the event's attendance policy, each session's rule, and stored opt-outs, sign-ups and invitations.",
   "tested": true
  },
  {
   "id": "J-07",
-  "title": "Live update: a **committee member** (not admin) changes M3 location to \"Garland Hall (indoors)\" → schedule updates for everyone; volunteer and family accounts cannot do this.",
+  "title": "Live update by a **committee member** (not admin): \"Waterpark return moved to 2:00pm\" → only waterpark people notified; shuttle times update. Volunteer and family accounts cannot send updates.",
   "status": "NOT BUILT",
   "gap": "Check-in, passes, live updates and the directory arrive in Stage 5. The schedule, personal agenda and offline reads already exist (#81, #82, Req 74).",
   "tested": false
@@ -624,14 +904,14 @@
  },
  {
   "id": "K-01",
-  "title": "Final reconciliation for finance: fees + sponsorship received vs actual spend.",
+  "title": "Final reconciliation for finance: fees + sponsorship + raffle vs actual spend, including helper pay and the waterpark invoice (§4).",
   "status": "NOT BUILT",
   "gap": "No reconciliation or sponsor messaging.",
   "tested": false
  },
  {
   "id": "K-02",
-  "title": "Bulk thank-you to sponsors with receipts.",
+  "title": "Bulk thank-you messages and receipts to sponsors and in-kind donors.",
   "status": "NOT BUILT",
   "gap": "No reconciliation or sponsor messaging.",
   "tested": false
@@ -642,6 +922,13 @@
   "status": "PARTIAL",
   "gap": "Every CSV cell is neutralised (#55, #84), but the expense PDF still stops at 200 expenses, and there is no full export (Stage 6).",
   "tested": true
+ },
+ {
+  "id": "K-04",
+  "title": "Raffle report: every drawing, winner, claimed/unclaimed, redraws.",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 2 (raffle).",
+  "tested": false
  },
  {
   "id": "X-01",
@@ -764,14 +1051,14 @@
  },
  {
   "id": "R-03",
-  "title": "Medical emergency issue category: alerts admins and committee at once, bypassing quiet hours.",
+  "title": "Medical emergency issue category: alerts admins and committee at once.",
   "status": "NOT BUILT",
   "gap": "No safety features or fields.",
   "tested": false
  },
  {
   "id": "R-04",
-  "title": "Weather or outdoor change: moving M3/K1 indoors reaches everyone, including those who opted out of the meal.",
+  "title": "Weather or outdoor change: moving the waterpark program or the park meal reaches everyone affected, including those who opted out of the meal.",
   "status": "NOT BUILT",
   "gap": "No safety features or fields.",
   "tested": false
@@ -806,7 +1093,7 @@
  },
  {
   "id": "Z-03",
-  "title": "Liability waiver accepted at registration and recorded `[OWNER INPUT]`.",
+  "title": "Liability waiver accepted at registration and recorded `[OWNER INPUT]` for the text. The waterpark waiver is W-05.",
   "status": "PLATFORM",
   "gap": "Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6).",
   "tested": false
@@ -883,7 +1170,7 @@
  },
  {
   "id": "O-07",
-  "title": "Venue network test at the Hyatt: Wi-Fi and cell coverage in Garland Hall and at the picnic park.",
+  "title": "Venue network test: Wi-Fi and cell coverage in Garland Hall and at Hawaiian Waters.",
   "status": "NOT RUN",
   "gap": "Needs store console access or a visit to the venue.",
   "tested": false
@@ -997,14 +1284,7 @@
   "id": "N-09",
   "title": "15-minute session reminder",
   "status": "NOT BUILT",
-  "gap": "Reminders exist for tasks only. Quiet hours also use the profile time zone, so F5's 6:45pm reminder would be dropped.",
-  "tested": true
- },
- {
-  "id": "N-10",
-  "title": "Quiet hours by recipient zone",
-  "status": "PARTIAL",
-  "gap": "The quiet-hours window is right for each time zone, but a blocked message is dropped rather than sent at 7:00am.",
+  "gap": "Reminders exist for tasks only, and there is no email, so web-only F4 gets nothing. Stage 3.",
   "tested": true
  },
  {
@@ -1023,7 +1303,7 @@
  },
  {
   "id": "N-13",
-  "title": "Volunteer shift reminder",
+  "title": "Helper & volunteer shift reminder",
   "status": "NOT BUILT",
   "gap": "No email, segments, scheduled messages, history or de-duplication.",
   "tested": false
@@ -1096,6 +1376,69 @@
   "title": "Finance: unpaid check-in",
   "status": "NOT BUILT",
   "gap": "No email, segments, scheduled messages, history or de-duplication.",
+  "tested": false
+ },
+ {
+  "id": "N-24",
+  "title": "Time-zone delivery",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 3 (scheduled messages and email).",
+  "tested": false
+ },
+ {
+  "id": "N-25",
+  "title": "Item fully pledged",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 3 (scheduled messages and email).",
+  "tested": false
+ },
+ {
+  "id": "N-26",
+  "title": "Waterpark sign-up confirmation",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 3 (scheduled messages and email).",
+  "tested": false
+ },
+ {
+  "id": "N-27",
+  "title": "Waiver missing",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 3 (scheduled messages and email).",
+  "tested": false
+ },
+ {
+  "id": "N-28",
+  "title": "Waterpark capacity",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 3 (scheduled messages and email).",
+  "tested": false
+ },
+ {
+  "id": "N-29",
+  "title": "Shuttle reminder",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 3 (scheduled messages and email).",
+  "tested": false
+ },
+ {
+  "id": "N-30",
+  "title": "Raffle purchase receipt",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 3 (scheduled messages and email).",
+  "tested": false
+ },
+ {
+  "id": "N-31",
+  "title": "Drawing starting soon",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 3 (scheduled messages and email).",
+  "tested": false
+ },
+ {
+  "id": "N-32",
+  "title": "Raffle winner / unclaimed / redraw",
+  "status": "PLATFORM",
+  "gap": "Platform requirement for Stage 3 (scheduled messages and email).",
   "tested": false
  }
 ]

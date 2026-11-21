@@ -12,7 +12,7 @@ import 'package:drift/native.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// #81 (Req 48, 49): the convention's schedule from §1 of the v3 test, its
+/// #81 (Req 48, 49): the convention's schedule from §1 of the v4 test, its
 /// venues and directions, and a multi-day schedule of blocks.
 void main() {
   late FakeFirebaseFirestore firestore;
@@ -35,10 +35,16 @@ void main() {
     name: 'Garland Hall',
     address: '5101 N George Bush Hwy, Garland, TX 75040',
   );
-  const park = EventVenue(
-    id: 'park',
-    name: 'Picnic park',
-    directions: 'Location may change. Follow the signs on the day.',
+  const waterpark = EventVenue(
+    id: 'waterpark',
+    name: 'Hawaiian Waters Garland',
+    address: '4550 N Garland Ave, Garland, TX 75040',
+  );
+  const pickup = EventVenue(
+    id: 'pickup',
+    name: 'Shuttle pickup',
+    address: '5101 N George Bush Hwy, Garland, TX 75040',
+    directions: 'Hotel lobby, by the front doors.',
   );
   const hotel = EventVenue(
     id: 'hotel',
@@ -57,7 +63,7 @@ void main() {
     title: 'Convention 2027',
     creatorId: 'admin',
     timeZone: 'America/Chicago',
-    venues: [hotel, hall, park, parking],
+    venues: [hotel, hall, waterpark, pickup, parking],
   );
 
   /// Saves a session at [hour]:[minute] on July [day] in Chicago.
@@ -104,125 +110,194 @@ void main() {
       .watchSessions(eventId, withHidden: true)
       .firstWhere((l) => l.length == count);
 
-  test(
-    'A-02 the §1 schedule, with programs, the kids activity, outdoor '
-    'lunch, a location to be announced and editable placeholder times',
-    () async {
-      final ids = <String, String>{};
-      Future<void> row(
-        String code,
-        String title,
-        int day,
-        int hour, {
-        int minute = 0,
-        String type = 'Meal',
-        String? venueId = 'hall',
-        List<String> tags = const [],
-        bool locationTba = false,
-        SessionEligibility eligibility = const SessionEligibility(),
-      }) async => ids[code] = await add(
-        convention,
-        title,
-        day,
-        hour,
-        minute: minute,
-        type: type,
-        venueId: venueId,
-        tags: tags,
-        locationTba: locationTba,
-        eligibility: eligibility,
-      );
+  test('A-02 the §1 schedule, with the two-location Saturday lunch, shuttle '
+      'runs, the bhajan day program, the raffle drawings, a location to be '
+      'announced and editable placeholder times', () async {
+    final ids = <String, String>{};
+    Future<void> row(
+      String code,
+      String title,
+      int day,
+      int hour, {
+      int minute = 0,
+      String type = 'Meal',
+      String? venueId = 'hall',
+      List<String> tags = const [],
+      bool locationTba = false,
+      SessionEligibility eligibility = const SessionEligibility(),
+    }) async => ids[code] = await add(
+      convention,
+      title,
+      day,
+      hour,
+      minute: minute,
+      type: type,
+      venueId: venueId,
+      tags: tags,
+      locationTba: locationTba,
+      eligibility: eligibility,
+    );
 
-      await row('M1', 'Welcome Dinner', 16, 19);
-      await row('P1', 'Karaoke & Garba', 16, 21, type: 'Program');
-      await row('M2', 'Breakfast', 17, 8);
-      await row(
-        'M3',
-        'Lunch',
-        17,
-        12,
-        minute: 30,
-        venueId: 'park',
-        tags: ['outdoor'],
-      );
-      await row(
-        'K1',
-        'Kids activities',
-        17,
-        13,
-        minute: 30,
-        type: 'Kids program',
-        venueId: 'park',
-        tags: ['outdoor'],
-        eligibility: const SessionEligibility(categoryIds: ['child']),
-      );
-      await row('P2', 'Bhajan & Prasad', 17, 16, type: 'Program');
-      await row('M4', 'Dinner', 17, 19);
-      await row('P3', 'Karaoke & Garba', 17, 21, type: 'Program');
-      await row('M5', 'Breakfast', 18, 8);
-      await row('M6', 'Lunch', 18, 12, minute: 30);
-      await row('M7', 'Gala Night Dinner + DJ', 18, 19);
-      await row(
-        'M8',
-        'Farewell Breakfast',
-        19,
-        8,
-        venueId: null,
-        locationTba: true,
-      );
+    await row('M1', 'Welcome Dinner', 16, 19);
+    await row(
+      'P1',
+      'Karaoke & Garba + Raffle drawing',
+      16,
+      21,
+      type: 'Program',
+      tags: ['drawing'],
+    );
+    await row('M2', 'Breakfast', 17, 8);
+    await row(
+      'S1',
+      'Shuttle to waterpark – Run 1',
+      17,
+      9,
+      minute: 30,
+      type: 'Shuttle',
+      venueId: 'pickup',
+    );
+    await row(
+      'S2',
+      'Shuttle to waterpark – Run 2',
+      17,
+      10,
+      type: 'Shuttle',
+      venueId: 'pickup',
+    );
+    await row('B1', 'Bhajan (day program)', 17, 10, type: 'Program');
+    await row(
+      'W1',
+      'Pool Party',
+      17,
+      10,
+      minute: 30,
+      type: 'Program',
+      venueId: 'waterpark',
+    );
+    await row(
+      'M3P',
+      'Lunch – park meal',
+      17,
+      12,
+      minute: 30,
+      venueId: 'waterpark',
+    );
+    await row('M3H', 'Lunch – hotel', 17, 12, minute: 30);
+    await row(
+      'R1',
+      'Shuttle back – Run 1',
+      17,
+      13,
+      minute: 15,
+      type: 'Shuttle',
+      venueId: 'waterpark',
+    );
+    await row(
+      'R2',
+      'Shuttle back – Run 2',
+      17,
+      13,
+      minute: 45,
+      type: 'Shuttle',
+      venueId: 'waterpark',
+    );
+    await row('B2', 'Bhajan & Prasad', 17, 16, type: 'Program');
+    await row(
+      'K1',
+      'Kids activities + Kids raffle drawing',
+      17,
+      17,
+      type: 'Kids program',
+      tags: ['drawing'],
+      eligibility: const SessionEligibility(categoryIds: ['child']),
+    );
+    await row('M4', 'Dinner', 17, 19);
+    await row(
+      'P2',
+      'Garba & Karaoke + Raffle drawing',
+      17,
+      21,
+      type: 'Program',
+      tags: ['drawing'],
+    );
+    await row('M5', 'Breakfast', 18, 8);
+    await row('M6', 'Lunch', 18, 12, minute: 30);
+    await row(
+      'M7',
+      'Gala Night Dinner + DJ + Grand raffle drawing',
+      18,
+      19,
+      tags: ['drawing'],
+    );
+    await row(
+      'M8',
+      'Farewell Breakfast',
+      19,
+      8,
+      venueId: null,
+      locationTba: true,
+    );
 
-      final all = await loaded('conv', 12);
-      SessionModel byCode(String code) =>
-          all.firstWhere((s) => s.id == ids[code]);
+    final all = await loaded('conv', 19);
+    SessionModel byCode(String code) =>
+        all.firstWhere((s) => s.id == ids[code]);
 
-      // Four days, Friday to Monday, in the event's own zone.
-      final days = byDay(convention, all);
-      expect([for (final d in days) d.day.day], [16, 17, 18, 19]);
-      expect([for (final d in days) d.sessions.length], [2, 6, 3, 1]);
-      // Programs and the kids activity are on the schedule by type.
-      expect(typeSuggestions(all), ['Kids program', 'Meal', 'Program']);
-      expect(byCode('K1').eligibility.admits(categoryId: 'child'), isTrue);
-      expect(byCode('K1').eligibility.admits(categoryId: 'adult'), isFalse);
-      // M3 and K1 are flagged outdoor.
-      expect(
-        [
-          for (final s in all)
-            if (s.tags.contains('outdoor')) s.title,
-        ]..sort(),
-        ['Kids activities', 'Lunch'],
-      );
-      // M8's location is to be announced.
-      expect(byCode('M8').locationTba, isTrue);
-      expect(venueOf(convention, byCode('M8')), isNull);
-      // Every time is a placeholder until the program is final.
-      expect(all.every((s) => s.timeTbc), isTrue);
+    // Four days, Friday to Monday, in the event's own zone.
+    final days = byDay(convention, all);
+    expect([for (final d in days) d.day.day], [16, 17, 18, 19]);
+    expect([for (final d in days) d.sessions.length], [2, 13, 3, 1]);
+    // Programs, shuttles and the kids activity are on the schedule by type.
+    expect(typeSuggestions(all), [
+      'Kids program',
+      'Meal',
+      'Program',
+      'Shuttle',
+    ]);
+    expect(byCode('K1').eligibility.admits(categoryId: 'child'), isTrue);
+    expect(byCode('K1').eligibility.admits(categoryId: 'adult'), isFalse);
+    // Saturday lunch is served at the same time in two places.
+    expect(byCode('M3P').startAt, byCode('M3H').startAt);
+    expect(venueOf(convention, byCode('M3P'))?.id, 'waterpark');
+    expect(venueOf(convention, byCode('M3H'))?.id, 'hall');
+    // Three raffle drawings and the kids drawing.
+    expect(
+      [
+        for (final s in all)
+          if (s.tags.contains('drawing'))
+            ids.entries.firstWhere((e) => e.value == s.id).key,
+      ]..sort(),
+      ['K1', 'M7', 'P1', 'P2'],
+    );
+    // M8's location is to be announced.
+    expect(byCode('M8').locationTba, isTrue);
+    expect(venueOf(convention, byCode('M8')), isNull);
+    // Every time is a placeholder until the program is final.
+    expect(all.every((s) => s.timeTbc), isTrue);
 
-      // The program is final: M3 moves to 1 pm and is confirmed.
-      await sessions.save(
-        'conv',
-        SessionModel(
-          id: ids['M3']!,
-          title: 'Lunch',
-          startAt: eventLocalToUtc(2027, 7, 17, 'America/Chicago', hour: 13),
-          venueId: 'park',
-          type: 'Meal',
-          tags: const ['outdoor'],
-        ),
-        uid: 'admin',
-      );
-      final m3 =
-          (await firestore.doc('events/conv/sessions/${ids['M3']}').get())
-              .data()!;
-      expect(
-        (m3['startAt'] as Timestamp).toDate().toUtc(),
-        DateTime.utc(2027, 7, 17, 18),
-      );
-      expect(m3['timeTbc'], isFalse);
-    },
-  );
+    // The program is final: the park meal moves to 1 pm and is confirmed.
+    await sessions.save(
+      'conv',
+      SessionModel(
+        id: ids['M3P']!,
+        title: 'Lunch – park meal',
+        startAt: eventLocalToUtc(2027, 7, 17, 'America/Chicago', hour: 13),
+        venueId: 'waterpark',
+        type: 'Meal',
+      ),
+      uid: 'admin',
+    );
+    final m3 = (await firestore.doc('events/conv/sessions/${ids['M3P']}').get())
+        .data()!;
+    expect(
+      (m3['startAt'] as Timestamp).toDate().toUtc(),
+      DateTime.utc(2027, 7, 17, 18),
+    );
+    expect(m3['timeTbc'], isFalse);
+  });
 
-  test('A-05 map and directions entries for the hotel, Garland Hall, the '
-      'picnic park (to be announced) and parking', () async {
+  test('A-05 map and directions entries for the hotel, Garland Hall, '
+      'Hawaiian Waters, the shuttle pickup point and parking', () async {
     final repo = EventRepository(
       eventsDao: EventsDao(db),
       firestore: firestore,
@@ -237,27 +312,25 @@ void main() {
               as List<dynamic>))
         EventVenue.fromMap((v as Map).cast<String, dynamic>()),
     ];
-    expect(stored, [hotel, hall, park, parking]);
+    expect(stored, [hotel, hall, waterpark, pickup, parking]);
 
-    // Hotel and hall open a map search for their address.
-    for (final v in [stored[0], stored[1]]) {
+    // The hotel, hall and waterpark open a map search for their address.
+    for (final v in [stored[0], stored[1], stored[2]]) {
       expect(mapLinkFor(v)!.queryParameters['query'], v.address);
     }
-    // The picnic park is to be announced, with directions and no map yet.
-    expect(stored[2].addressTba, isTrue);
-    expect(mapLinkFor(stored[2]), isNull);
-    expect(stored[2].directions, isNotEmpty);
+    // The shuttle pickup point says where in the hotel to wait.
+    expect(stored[3].directions, 'Hotel lobby, by the front doors.');
     // Parking uses the organizer's own map link, with directions.
     expect(
-      mapLinkFor(stored[3]).toString(),
+      mapLinkFor(stored[4]).toString(),
       'https://maps.example.com/hyatt-parking',
     );
-    expect(stored[3].directions, 'Free parking behind the conference center.');
+    expect(stored[4].directions, 'Free parking behind the conference center.');
 
     // By venue, every entry is listed, even with no sessions there.
     expect(
       [for (final g in byVenue(convention, const [])) g.venue?.id],
-      ['hotel', 'hall', 'park', 'parking'],
+      ['hotel', 'hall', 'waterpark', 'pickup', 'parking'],
     );
   });
 
