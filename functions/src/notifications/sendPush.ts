@@ -24,7 +24,8 @@ export type NotificationCategory =
   | "settlement_disputed"
   | "member_joined"
   | "task_due"
-  | "digest";
+  | "digest"
+  | "registration";
 
 interface CategoryConfig {
   /** Field on `notificationPrefs` that gates this category. */
@@ -99,6 +100,13 @@ const CATEGORY_CONFIG: Record<NotificationCategory, CategoryConfig> = {
     prefKey: "dailyDigest",
     androidChannelId: "crewpoint_digest",
     iosThreadId: "digest",
+  },
+  // Spec #233 Req 54: pushes sent alongside registration emails, on the
+  // event-updates channel the app already declares.
+  registration: {
+    prefKey: "eventUpdates",
+    androidChannelId: "crewpoint_events",
+    iosThreadId: "events",
   },
 };
 

@@ -109,6 +109,9 @@ async function seed(
     await setDoc(doc(db, `${E}/chatSummary/current`), {count: 1});
     await setDoc(doc(db, `${E}/settingsLog/l1`), {setting: 'expenseAccess', by: 'owner'});
     await setDoc(doc(db, `${E}/ownership/offer`), {toUid: 'coOwner', fromUid: 'owner'});
+    // Spec #233: the email outbox and server-only settings.
+    await setDoc(doc(db, 'mailOutbox/m1'), {to: 'a@b.co', status: 'sent'});
+    await setDoc(doc(db, 'serverConfig/mail'), {deliveryEnabled: true, allowedRecipients: []});
   });
 }
 
@@ -262,6 +265,14 @@ describe.each(ROLES)('%s', (role) => {
       getDoc(doc(as(role), `${E}/linkRequests/stranger`)));
     await assertFails(setDoc(doc(as(role), `${E}/linkRequests/${role}`), {email: 'x@y.z', status: 'open'}));
     await assertFails(getDoc(doc(as(role), `${E}/participantKeys/kid`)));
+  });
+
+  test('email outbox and mail settings: no client access (Spec #233 Req 51, 51a)', async () => {
+    await assertFails(getDoc(doc(as(role), 'mailOutbox/m1')));
+    await assertFails(setDoc(doc(as(role), 'mailOutbox/m2'), {to: 'x@y.z', template: 'deliveryCheck', status: 'queued'}));
+    await assertFails(updateDoc(doc(as(role), 'mailOutbox/m1'), {status: 'queued'}));
+    await assertFails(getDoc(doc(as(role), 'serverConfig/mail')));
+    await assertFails(setDoc(doc(as(role), 'serverConfig/mail'), {allowedRecipients: [`${role}@x.y`]}));
   });
 
   test('chat summary: read with chat.send, written only by the server (Req 57a)', async () => {

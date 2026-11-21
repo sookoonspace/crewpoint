@@ -717,6 +717,18 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Server-only settings, such as mail delivery and the dev allowed list
+    // (Spec #233 Req 51a).
+    match /serverConfig/{name} {
+      allow read, write: if false;
+    }
+
+    // The email outbox and its delivery log (Spec #233 Req 51). Only server
+    // code adds and updates messages.
+    match /mailOutbox/{messageId} {
+      allow read, write: if false;
+    }
+
     // Users collection
     //
     // Only the owner reads `users/{uid}` (Req 37). Other people see a name and
