@@ -9,7 +9,7 @@ class ConventionSeed {
   factory ConventionSeed.load() => ConventionSeed(
     jsonDecode(
           File(
-            'test_acceptance/fixtures/derod_convention_2027_v3.json',
+            'test_acceptance/fixtures/derod_convention_2027_v4.json',
           ).readAsStringSync(),
         )
         as Map<String, dynamic>,
@@ -29,14 +29,11 @@ class ConventionSeed {
       (family['people'] as List).cast<Map<String, dynamic>>();
 }
 
-/// Oracle for the hybrid fee rule in §1. Lives in the tests because the app
-/// has no fee logic to call.
-int familyFee(Map<String, dynamic> family) {
-  final adults = ConventionSeed.people(
-    family,
-  ).where((p) => (p['age'] as int) >= 18).length;
-  return 300 + (adults > 2 ? (adults - 2) * 150 : 0);
-}
+/// Oracle for the fee rule in §1: $150 per adult (18+), children free. Lives
+/// in the tests because the app has no fee logic to call.
+int familyFee(Map<String, dynamic> family) =>
+    150 *
+    ConventionSeed.people(family).where((p) => (p['age'] as int) >= 18).length;
 
 /// Deterministic scale fixture from §3: 108 families, 400 people.
 List<List<int>> scaleFamilies() {

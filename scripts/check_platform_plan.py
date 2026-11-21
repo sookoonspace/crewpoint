@@ -4,24 +4,17 @@
 Sources: the convention spec, docs/guide/GAPS.md, and sections 6 and 7 of the plan.
 """
 import re
-import subprocess
 import sys
 from collections import Counter
 
 PLAN = 'ai_specs/event-platform-plan.md'
-SPEC = 'docs/testing/CREWPOINT_CONVENTION_TEST_v3.md'
+SPEC = 'docs/testing/CREWPOINT_CONVENTION_TEST_v4.md'
 
 plan = open(PLAN, encoding='utf-8').read()
-try:
-    spec = open(SPEC, encoding='utf-8').read()
-except FileNotFoundError:
-    # The spec is on an unmerged branch until PR #42 lands.
-    spec = subprocess.check_output(
-        ['git', 'show', f'origin/test/derod-convention-v2:{SPEC}'], text=True
-    )
+spec = open(SPEC, encoding='utf-8').read()
 gaps = open('docs/guide/GAPS.md', encoding='utf-8').read()
 
-want = set(re.findall(r'^- \*\*([A-Z]-\d\d)\*\* ', spec, re.M))
+want = set(re.findall(r'^- \*\*([A-Z]{1,2}-\d\d)\*\* ', spec, re.M))
 want |= set(re.findall(r'^\| \*\*(N-\d\d)\*\* \|', spec, re.M))
 want |= set(re.findall(r'^### (GAP-[A-Z]+-\d+) ', gaps, re.M))
 want |= set(re.findall(r'^- \*\*((?:GE|PA|WE|SP|FND)-\d\d)\*\* ', plan, re.M))
@@ -35,7 +28,7 @@ for name, ids in re.findall(
 ):
     expanded = []
     for token in ids.split(', '):
-        m = re.fullmatch(r'([A-Z])-(\d\d)…[A-Z]-(\d\d)', token)
+        m = re.fullmatch(r'([A-Z]{1,2})-(\d\d)…[A-Z]{1,2}-(\d\d)', token)
         if m:
             expanded += [
                 f'{m[1]}-{n:02}' for n in range(int(m[2]), int(m[3]) + 1)

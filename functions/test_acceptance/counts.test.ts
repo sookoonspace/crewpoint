@@ -1,8 +1,10 @@
 /* eslint-disable */
-// Acceptance tests for counts (#83, Req 52a). F1–F8 are imported from the
-// convention fixture, F8 is cancelled through re-import, and F10 is absent
-// because merging is Stage 2. Stays and opt-outs are set as an organizer
-// would, and the §1 schedule is added. Then the counts must match §4.
+// Acceptance tests for counts (#83, Req 52a). The v4 families and F8 are
+// imported from the convention fixture, F8 is cancelled through re-import,
+// and F10 is absent because merging is Stage 2. Stays, opt-outs and sign-ups
+// (the waterpark and the kids activity) are set as an organizer would, and
+// the §1 meals are added, with Saturday lunch at the park or the hotel. Then
+// the counts must match §4.
 import * as fs from 'fs';
 import * as path from 'path';
 import {Timestamp} from 'firebase-admin/firestore';
@@ -21,18 +23,16 @@ const {parseCsv} = require('../src/imports/csv');
 const E = 'derod';
 const db = () => getAdminDb();
 const fixture = JSON.parse(fs.readFileSync(
-  path.join(__dirname, '..', '..', 'test_acceptance', 'fixtures', 'derod_convention_2027_v3.json'), 'utf8'));
+  path.join(__dirname, '..', '..', 'test_acceptance', 'fixtures', 'derod_convention_2027_v4.json'), 'utf8'));
 
 const TARGETS = ['externalId', 'group', 'name', 'age', 'field:diet', 'field:kids', 'field:shirt'];
 const DIET: Record<string, string> = {V: 'Veg', J: 'Jain', N: 'Non-veg'};
 
-type Person = {name: string; age: number; diet: string; shirt?: string; kidsAct?: boolean; optOut?: string[]};
+type Person = {name: string; age: number; diet: string; shirt?: string; wp?: boolean; kidsAct?: boolean; optOut?: string[]};
 type Family = {id: string; surname: string; arrive: string; lastMeal: string; people: Person[]};
 const families: Family[] = fixture.families;
-// F8 cancelled before the event; only its two adults are known.
-const f8 = {id: 'F8', surname: 'Shah', people: [
-  {name: 'Adult 1', age: 40, diet: 'V'}, {name: 'Adult 2', age: 38, diet: 'V'},
-] as Person[]};
+// F8 cancelled before the event.
+const f8: Family = fixture.otherFamilies.find((f: Family) => f.id === 'F8');
 
 function exportCsv(withF8: boolean): string {
   const lines = ['Registration ID,Family,Full name,Age,Diet,Kids activity,Shirt'];
@@ -54,10 +54,12 @@ async function run(id: string, csv: string) {
 const chicago = (day: number, hour: number, minute = 0) =>
   Timestamp.fromDate(new Date(Date.UTC(2027, 6, day, hour + 5, minute)));
 
+// Saturday lunch is two sessions: the park meal by waterpark sign-up, and the
+// hotel lunch, which waterpark people opt out of.
 const SCHEDULE: [string, number, number, number, string?][] = [
-  ['M1', 16, 19, 0], ['P1', 16, 21, 0], ['M2', 17, 8, 0], ['M3', 17, 12, 30],
-  ['K1', 17, 13, 30, 'bySession'], ['P2', 17, 16, 0], ['M4', 17, 19, 0], ['P3', 17, 21, 0],
-  ['M5', 18, 8, 0], ['M6', 18, 12, 30], ['M7', 18, 19, 0], ['M8', 19, 8, 0],
+  ['M1', 16, 19, 0], ['P1', 16, 21, 0], ['M2', 17, 8, 0], ['M3P', 17, 12, 30, 'bySession'],
+  ['M3H', 17, 12, 30], ['B2', 17, 16, 0], ['K1', 17, 17, 0, 'bySession'], ['M4', 17, 19, 0],
+  ['P2', 17, 21, 0], ['M5', 18, 8, 0], ['M6', 18, 12, 30], ['M7', 18, 19, 0], ['M8', 19, 8, 0],
 ];
 
 let stats: any;
@@ -76,7 +78,7 @@ beforeAll(async () => {
   const fields: [string, string, string[]][] = [
     ['diet', 'singleChoice', ['Veg', 'Jain', 'Non-veg']],
     ['kids', 'yesNo', []],
-    ['shirt', 'singleChoice', ['2T', 'YS', 'YM', 'S', 'M', 'L']],
+    ['shirt', 'singleChoice', ['2T', '4T', 'YS', 'YM', 'YL', 'S', 'M', 'L', 'XL']],
   ];
   for (const [id, type, options] of fields) {
     await db().doc(`events/${E}/fields/${id}`).set({label: id, type, options, required: false, scope: 'participant', visibility: 'standard', order: 0});
@@ -98,14 +100,15 @@ beforeAll(async () => {
   // Stays, opt-outs and sign-ups, as an organizer records them.
   const start = new Map(SCHEDULE.map(([id, d, h, m]) => [id, chicago(d, h, m)]));
   for (const f of families) {
-    const arrive = f.arrive.includes('T') ? chicago(17, Number(f.arrive.slice(11, 13))) : null;
+    const arrive = chicago(Number(f.arrive.slice(8, 10)), Number(f.arrive.slice(11, 13)), Number(f.arrive.slice(14, 16)));
     // They leave after their last meal, before the next one.
     const departure = Timestamp.fromMillis(start.get(f.lastMeal)!.toMillis() + 60_000);
     for (const [i, p] of f.people.entries()) {
       const ref = (await db().collection(`events/${E}/participants`).where('externalId', '==', `${f.id}-${i}`).get()).docs[0].ref;
       await ref.update({
         arrivalAt: arrive, departureAt: departure,
-        optOuts: p.optOut ?? [], signUps: p.kidsAct ? ['K1'] : [],
+        optOuts: [...(p.optOut ?? []), ...(p.wp ? ['M3H'] : [])],
+        signUps: [...(p.wp ? ['M3P'] : []), ...(p.kidsAct ? ['K1'] : [])],
       });
     }
   }
@@ -115,31 +118,31 @@ beforeAll(async () => {
 afterAll(() => ftest.cleanup());
 
 describe('counts', () => {
-  test('B-04 headcount: 7 groups, 16 adults, 10 children, 26 people', () => {
-    expect(stats.event.total).toBe(26);
-    expect(stats.event.groups).toBe(7);
-    expect(stats.event.byCategory).toEqual({adult: 16, child: 10});
+  test('B-04 headcount: 8 groups, 17 adults, 12 children, 29 people', () => {
+    expect(stats.event.total).toBe(29);
+    expect(stats.event.groups).toBe(8);
+    expect(stats.event.byCategory).toEqual({adult: 17, child: 12});
   });
 
-  test('B-04 diet totals: 18 veg, 2 Jain, 6 non-veg', () => {
-    expect(stats.event.byField.diet).toEqual({Veg: 18, Jain: 2, 'Non-veg': 6});
+  test('B-04 diet totals: 21 veg, 2 Jain, 6 non-veg', () => {
+    expect(stats.event.byField.diet).toEqual({Veg: 21, Jain: 2, 'Non-veg': 6});
   });
 
-  test('B-04 kids activity: 7 sign-ups', () => {
-    expect(stats.sessions.K1.total).toBe(7);
-    expect(stats.event.byField.kids.yes).toBe(7);
+  test('B-04 kids activity: 8 sign-ups', () => {
+    expect(stats.sessions.K1.total).toBe(8);
+    expect(stats.event.byField.kids.yes).toBe(8);
   });
 
-  test('B-04 the T-shirt report has one count per size, summing to 26', () => {
+  test('B-04 the T-shirt report has one count per size, summing to 29', () => {
     const sizes = stats.event.byField.shirt as Record<string, number>;
-    expect(Object.values(sizes).reduce((a, b) => a + b, 0)).toBe(26);
+    expect(Object.values(sizes).reduce((a, b) => a + b, 0)).toBe(29);
     for (const size of Object.keys(sizes)) expect(sizes[size]).toBeGreaterThan(0);
   });
 
-  test('B-05 per-meal counts match §4, by diet', () => {
+  test('B-05 per-meal counts match §4, by diet, with Saturday lunch at each location', () => {
     const table: Record<string, [number, number, number, number]> = {
-      M1: [25, 17, 2, 6], M2: [24, 17, 2, 5], M3: [24, 18, 0, 6], M4: [26, 18, 2, 6],
-      M5: [26, 18, 2, 6], M6: [26, 18, 2, 6], M7: [26, 18, 2, 6], M8: [18, 10, 2, 6],
+      M1: [28, 20, 2, 6], M2: [27, 20, 2, 5], M3P: [24, 18, 0, 6], M3H: [5, 3, 2, 0],
+      M4: [29, 21, 2, 6], M5: [29, 21, 2, 6], M6: [29, 21, 2, 6], M7: [29, 21, 2, 6], M8: [21, 13, 2, 6],
     };
     for (const [meal, [total, veg, jain, nonVeg]] of Object.entries(table)) {
       const s = stats.sessions[meal];
@@ -154,12 +157,12 @@ describe('export and freeze', () => {
 
   test('B-10 the registrations export for the caterer, one row per person, with diet', async () => {
     const {csv, rows} = await call(exportRoster, {});
-    expect(rows).toBe(26);
+    expect(rows).toBe(29);
     const table = parseCsv(csv);
     const diet = table[0].indexOf('diet');
     const byDiet: Record<string, number> = {};
     for (const row of table.slice(1)) byDiet[row[diet]] = (byDiet[row[diet]] ?? 0) + 1;
-    expect(byDiet).toEqual({Veg: 18, Jain: 2, 'Non-veg': 6});
+    expect(byDiet).toEqual({Veg: 21, Jain: 2, 'Non-veg': 6});
     // F8 was cancelled, so nobody from it is exported.
     expect(csv).not.toContain('Adult 1');
   });
@@ -172,8 +175,8 @@ describe('export and freeze', () => {
     await recalculateEvent(db(), E, new Date('2027-07-12T12:00:00Z'));
     const frozen = (await db().doc(`events/${E}/countFreezes/${freezeId}`).get()).data()!;
     const live = (await db().doc(`events/${E}/stats/current`).get()).data()!;
-    expect(frozen.sessions.M2.total).toBe(24);
-    expect(live.sessions.M2.total).toBe(25);
+    expect(frozen.sessions.M2.total).toBe(27);
+    expect(live.sessions.M2.total).toBe(28);
     expect(frozen.sessions.M2.byField.diet['Non-veg']).toBe(5);
     expect(live.sessions.M2.byField.diet['Non-veg']).toBe(6);
   });

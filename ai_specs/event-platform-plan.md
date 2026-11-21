@@ -201,10 +201,12 @@ The slices are in dependency order, and each one ships working software.
 - **Receipts:** organizer name and tax ID, wording per organizer type, nonprofit donation wording.
 - **Contributions:** goals, shared funding, tiers, pledge and pay later, public recognition opt-in, plus gifts and sign-up lists.
 - **Consent:** waivers, photo consent, and SMS and email consent.
+- **Budget lines and the sponsorship list** (moved forward from Stage 6): line types, planning headcounts, actuals, Include Yes/No and asks worked out from cost, because a sponsorship drive needs them before the event (BG).
+- **Raffle:** ticket sales in the app and on paper, prizes, seeded draws, redraws for unclaimed prizes, and automatic entries for children (RF).
 
 **Exit criteria:** every event type can run a real sign-up in test mode, and a real small event pilot runs on it end to end.
 
-**Covers:** A-04, B-01, B-02, B-03, B-06, B-07, B-08, B-11, B-12, B-13, B-15, C-01…C-20, D-01…D-15, L-03…L-07, X-04, X-07, Z-02, Z-03, Z-06, WE-01, WE-02, WE-03, WE-04, WE-05, PA-02, PA-03, GAP-ANY-02, GAP-ANY-03, GAP-WED-13, GAP-WED-15
+**Covers:** A-04, B-01, B-02, B-03, B-06, B-07, B-08, B-11, B-12, B-13, B-15, B-16, C-01…C-20, D-01…D-16, BG-01…BG-08, H-04, RF-01…RF-12, V-05, W-01, W-05, K-04, L-03…L-07, X-04, X-07, Z-02, Z-03, Z-06, WE-01, WE-02, WE-03, WE-04, WE-05, PA-02, PA-03, GAP-ANY-02, GAP-ANY-03, GAP-WED-13, GAP-WED-15
 
 ---
 
@@ -222,7 +224,7 @@ The slices are in dependency order, and each one ships working software.
 
 **Exit criteria:** all N scenarios pass with a mock transport under a fake clock. Real sends work on dev in both languages, and alerts reach both inboxes.
 
-**Covers:** A-03, B-09, J-09, N-00, N-01, N-02, N-03, N-04, N-05, N-06, N-07, N-08, N-09, N-10, N-11, N-12, N-13, N-15, N-16, N-17, N-18, N-19, N-20, N-21, N-22, O-04, S-03, S-04, U-03, Z-05, GAP-ANY-28
+**Covers:** A-03, B-09, J-09, N-00, N-01, N-02, N-03, N-04, N-05, N-06, N-07, N-08, N-09, N-11, N-12, N-13, N-15, N-16, N-17, N-18, N-19, N-20, N-21, N-22, N-24…N-32, O-04, S-03, S-04, U-03, Z-05, GAP-ANY-28
 
 ---
 
@@ -235,11 +237,12 @@ The slices are in dependency order, and each one ships working software.
 - **Golf:** tee times, pairings, handicaps, hole sponsors, scorecards.
 - **Viewing:** spectator and sponsor access, and team channels.
 - **Seating:** tables, assignment, printable charts.
+- **Transport and offsite programs:** runs with seats, groups kept together, package pricing with included guests and extras, capacity alerts (W).
 - **Planning:** agenda grid, Kanban, recurring tasks, dependencies, task attachments, task templates.
 
 **Exit criteria:** a full cricket tournament and golf outing run through fixtures to final results in the acceptance suite and in a real pilot, and a wedding seating chart prints correctly.
 
-**Covers:** SP-01, SP-02, SP-03, SP-04, SP-05, SP-06, SP-07, SP-08, SP-09, SP-10, WE-06, GAP-CRK-04, GAP-ANY-05, GAP-ANY-06, GAP-ANY-07, GAP-ANY-08, GAP-CRK-10, GAP-CON-11
+**Covers:** A-06, W-02, W-03, W-04, W-07, W-08, W-09, SP-01, SP-02, SP-03, SP-04, SP-05, SP-06, SP-07, SP-08, SP-09, SP-10, WE-06, GAP-CRK-04, GAP-ANY-05, GAP-ANY-06, GAP-ANY-07, GAP-ANY-08, GAP-CRK-10, GAP-CON-11
 
 ---
 
@@ -250,14 +253,15 @@ The slices are in dependency order, and each one ships working software.
 - **Prototype first:** scanner and offline sync on real phones at a real venue, before the full build.
 - **Check-in:** pass tokens that hold no personal data, scanner, limited name look-up, partial arrival, walk-ins, cancelled pass rejection, policy settings for unpaid check-in with notifications.
 - **Offline:** queue with a clear conflict rule, multi-device sync, long-lived device sign-in, revocation, offline writes generally.
-- **Volunteers:** shifts, reminders, counters with any categories, not only diets.
+- **Volunteers and paid helpers:** shifts, reminders, clock in and out, counters with any categories, not only diets (HL).
+- **Age flags at check-in,** such as 21+ wristbands, from birth dates on the event date (AL). Waiver checks at boarding (W-06).
 - **Live updates:** permissioned schedule changes that reach everyone.
 - **Incidents and safety:** configurable categories and routing, acknowledgement and re-alert, bypass of mute for emergencies. Allergies, emergency contacts, guardian sign-in and out.
 - **Directory,** printed fallback rosters.
 
 **Exit criteria:** check-in rush and counter load tests pass at each size tier, and two offline devices sync correctly, proven at a real venue.
 
-**Covers:** J-01, J-02, J-03, J-04, J-07, J-08, J-10, J-11, J-12, J-13, J-14, J-15, J-16, N-14, N-23, R-01, R-02, R-03, R-04, R-05, R-06, S-05, S-06, V-01, V-02, V-03, V-04, GAP-ANY-34
+**Covers:** J-01, J-02, J-03, J-04, J-07, J-08, J-10, J-11, J-12, J-13, J-14, J-15, J-16, N-14, N-23, R-01, R-02, R-03, R-04, R-05, R-06, S-05, S-06, V-01, V-02, V-03, V-04, W-06, HL-01, HL-02, HL-04, HL-05, AL-01, AL-02, GAP-ANY-34
 
 ---
 
@@ -265,12 +269,12 @@ The slices are in dependency order, and each one ships working software.
 
 **Outcome:** organizers can manage suppliers and budgets, close the books and hand over to next time.
 
-- Vendors, contracts, deadlines, budget lines, expense categories.
+- Vendors, contracts, deadlines, expense categories, and helper pay reports (budget lines moved to Stage 2).
 - Unequal splits in Shared expenses.
 - Reconciliation, bulk thank-yous, full export, branded reports, scheduled exports, attendance and completion reports.
 - Retention rules, and duplicate-event for next year.
 
-**Covers:** H-03, H-04, K-01, K-02, K-03, Z-07, GAP-ANY-18, GAP-WED-40, GAP-CON-37, GAP-ANY-38, GAP-ANY-39
+**Covers:** H-03, HL-03, K-01, K-02, K-03, Z-07, GAP-ANY-18, GAP-WED-40, GAP-CON-37, GAP-ANY-38, GAP-ANY-39
 
 ---
 
@@ -408,7 +412,7 @@ Stage 1 is deliberately complete, and it is large. Roughly, it is 9–12 weeks o
 
 Every item from these sources must appear in exactly one stage:
 
-- `docs/testing/CREWPOINT_CONVENTION_TEST_v3.md`: all scenarios
+- `docs/testing/CREWPOINT_CONVENTION_TEST_v4.md`: all scenarios
 - `docs/guide/GAPS.md`: all gaps
 - Sections 6 and 7 of this plan
 
