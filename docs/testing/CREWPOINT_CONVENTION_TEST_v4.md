@@ -34,6 +34,7 @@ Every expected number below was computed from the seed in §3, and `test_accepta
 |---|---|
 | Event | Derod Gaam Convention 2027 (4th convention; the last was ~13 years ago, in Houston), hosted by the Derod families of Dallas. Open to all Derod families (USA, Canada, UK) |
 | Expected attendance | **350–400 people** |
+| Registration opens | **February 2027**, in CrewPoint. The convention is the platform's first large real-world pilot, after CrewPoint has been tested on smaller real events of other types |
 | Host | Registered nonprofit. Legal name and EIN `[OWNER INPUT]` |
 | Dates | Fri Jul 16 – Mon Jul 19, 2027 · `America/Chicago` |
 | Venue | Hyatt Place Dallas/Garland/Richardson & Firewheel Conference Center, 5101 N George Bush Hwy, Garland, TX 75040 · Garland Hall (rounds, 400), contracted Jul 16–18 |
@@ -562,7 +563,7 @@ These IDs are not reused.
    |---|---|---|---|---|---|---|
 
 4. **Priorities by the real calendar:**
-   - **P0 – before opening registration and the sponsorship drive:** A, L, B-01…B-13, B-16, C-01…C-04, C-06, C-07, D-01…D-08, D-15, D-16, BG-06…BG-08, H-05, H-06, Z-01…Z-06, O-01, O-03, O-04, N-00…N-06, N-21, N-24
+   - **P0 – before opening registration and the sponsorship drive (Feb 2027):** A, L, B-01…B-13, B-16, C-01…C-04, C-06, C-07, D-01…D-08, D-15, D-16, BG-06…BG-08, H-05, H-06, Z-01…Z-06, O-01, O-03, O-04, N-00…N-06, N-21, N-24
    - **P1 – spring 2027 (sponsorship, hotel, budget):** BG-01…BG-05, C-08…C-20, D-09…D-14, H-01…H-04, H-07, W-01…W-03, W-05, RF-01…RF-05, X, S-01, S-02, S-08, U-01…U-04, O-02, O-05, B-15, N-15…N-20, N-25, N-26, N-28
    - **P2 – final weeks + event days (Jul 2027):** W-04, W-06…W-09, RF-06…RF-12, HL, AL, J, V, R, C-05, B-14, S-03…S-07, O-06…O-08, U-05, N-07…N-14, N-22, N-23, N-27, N-29…N-32
    - **P3 – after the event:** K, Z-07
