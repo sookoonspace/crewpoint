@@ -1,0 +1,7 @@
+{
+  "deliveryCheck": {
+    "subject": "CrewPoint ઇમેઇલ તપાસ",
+    "text": "નમસ્તે {{name}},\n\nઆ CrewPoint તરફથી એક પરીક્ષણ ઇમેઇલ છે, જે તપાસવા માટે મોકલ્યો છે કે ઇમેઇલ તમને અને તમારા {{word.group.one.lower}}ને મળે છે. તમારે કંઈ કરવાની જરૂર નથી.\n\nCrewPoint",
+    "push": "CrewPoint તરફથી એક પરીક્ષણ ઇમેઇલ આવી રહ્યો છે."
+  }
+}

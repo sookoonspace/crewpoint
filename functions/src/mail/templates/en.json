@@ -1,0 +1,7 @@
+{
+  "deliveryCheck": {
+    "subject": "CrewPoint email check",
+    "text": "Hello {{name}},\n\nThis is a test email from CrewPoint, sent to check that email reaches you and your {{word.group.one.lower}}. You don't need to do anything.\n\nCrewPoint",
+    "push": "A test email from CrewPoint is on its way."
+  }
+}

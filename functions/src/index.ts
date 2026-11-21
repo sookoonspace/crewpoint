@@ -48,3 +48,4 @@ export {
 } from "./counts/functions";
 export {exportRoster, freezeCounts} from "./counts/exportAndFreeze";
 export {onChatMessageWritten} from "./chat/summary";
+export {onMailQueued} from "./mail/send";
