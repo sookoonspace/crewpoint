@@ -152,7 +152,7 @@ The first set of design-system components, a dev-only Design gallery showing the
 - [x] Gallery golden tests run in light, dark and 200% text under a new `design` tag that CI runs on every PR; the goldens are generated on Linux by a script or CI job, not on a Mac. The `screenshots` tag stays manual.
 - [x] `docs/design/design-system.md` explains the tokens and when to use each component, with pictures from the gallery.
 - [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
-- [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
+- [x] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 
 #### Covers
 - User Stories: 3, 9
@@ -184,7 +184,7 @@ The design system's buttons, form fields, sheet and dialog, ready for the group 
 - [x] Each component has widget tests, gallery entries in light, dark and 200% text, `design` goldens and a section in `docs/design/design-system.md`.
 - [x] Components are plain widgets with no Riverpod or Firebase imports.
 - [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
-- [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
+- [x] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 
 #### Covers
 - User Stories: 3
@@ -221,7 +221,7 @@ The app shell and a route-driven list-and-detail layout in the design system, so
 - [x] Widget tests at 375, 744 and 1280 px cover each of the above.
 - [x] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
 - [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
-- [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
+- [x] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 
 #### Covers
 - User Stories: 7
@@ -272,7 +272,7 @@ One screen where an organizer creates a group, or adds people to an existing gro
 - [x] Keys follow `domain.feature.action`, for example `people.groupEntry.addPerson`, `people.groupEntry.person.{index}.copy`, `people.groupEntry.save`.
 - [x] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
 - [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, and `npm test` passes if rules tests are touched, using seams and fakes only; no test initialises Firebase or touches a real project.
-- [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
+- [x] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 
 #### Covers
 - User Stories: 4, 5
@@ -307,7 +307,7 @@ A group's linked adult can add people to their own group and change their group'
 - [x] Robot journeys cover: a linked adult adding to their own group and not seeing "Add {group}"; a linked adult changing answers; an organizer changing answers from the group sheet.
 - [x] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
 - [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
-- [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
+- [x] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 
 #### Covers
 - User Stories: 6
@@ -339,7 +339,7 @@ The single-person form, kept for quick edits and single additions, rebuilt from 
 - [x] Existing journey tests keep passing, with selectors changed only where a widget's key must change (Testing Strategy 8); every new interactive widget has a `domain.feature.action` key.
 - [x] Quality floor (Req 45, 46): tap targets at least 48 px, text at 200% without clipping, dark mode works, status shows icon and colour together, all text through `context.strings`, general concepts through `event.words`, naming guardrail passes.
 - [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
-- [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
+- [x] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
 
 #### Covers
 - Requirements: 8, 14, 40, 45, 46
@@ -677,8 +677,8 @@ Remove every second source of style, switch the guard test fully on, and leave t
 - [x] `docs/design/design-system.md` is complete; the mockups are marked as superseded by the code for built screens (Req 19).
 - [x] CLAUDE.md's "UI conventions" section is rewritten for `lib/app/core/design/`.
 - [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass, using seams and fakes only; no test initialises Firebase or touches a real project.
-- [ ] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
-- [ ] After this lands on dev, the owner's full Stage 1 test runs on the new interface (Req 1).
+- [x] Merges after CI; reaches dev only with the owner's approval for that deploy. Stg and prod wait (Spec Req 3).
+- [x] After this lands on dev, the owner's full Stage 1 test runs on the new interface (Req 1).
 
 #### Covers
 - User Stories: 3, 9

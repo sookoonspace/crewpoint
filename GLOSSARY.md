@@ -12,7 +12,12 @@ CrewPoint serves any event type and size, so code uses only these general terms.
 - **Category:** A pricing or eligibility class.
 - **Session:** Anything on the schedule.
 - **Crew:** A working sub-team.
-- **Registration:** A group's sign-up.
+- **Registration:** A group's own sign-up for an event, with its status and answers. Someone signing up alone is a group of one. RSVP and entry are names for it, not separate concepts.
+- **Waitlist:** Groups waiting for places, in order.
+- **Personal link:** A link that opens one group's invitation without an account.
+- **Linked adult:** An adult with an account who manages a group's people.
+- **Event page:** The public page anyone with the event's link can open.
+- **Waiver:** Text a person must accept, with a version.
 - **Custom field:** A question the organizer defines.
 - **Pass:** A token that proves entry.
 - **Charge:** What is owed.
@@ -38,6 +43,7 @@ These words appear only in template data and labels, never in code.
 | **Session** | Meal, program | Match | Tee time, round | Mehndi, ceremony | The party |
 | **Crew** | Food team | Ground staff | Rules committee | Catering | Helpers |
 | **Registration** | Registration | Team entry | Entry | RSVP | RSVP |
+| **Waiver** | Waiver | Player waiver | Liability release | Usually off | Usually off |
 | **Custom field** | Diet, T-shirt | Batting role | Handicap | Meal choice, side | Bringing what? |
 | **Pass** | Family QR | Team QR | Player QR | Guest QR | Usually off |
 | **Charge / Payment** | Family fee | Team fee | Entry, cart | Usually off | Usually off |
