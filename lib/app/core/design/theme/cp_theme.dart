@@ -72,6 +72,7 @@ abstract final class CpTheme {
       brightness: brightness,
       colorScheme: scheme,
       fontFamily: CpType.textFont,
+      fontFamilyFallback: CpType.scriptFallback,
       textTheme: textTheme,
       extensions: cpExtensions(brightness),
       scaffoldBackgroundColor: c.background,

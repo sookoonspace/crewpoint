@@ -1,0 +1,9 @@
+# Flutter gen-l10n (Spec #233 Req 55). English is the template; keys missing
+# from Gujarati must be listed in lib/l10n/english_only.json with a reason.
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+output-dir: lib/l10n/gen
+nullable-getter: false
+untranslated-messages-file: build/untranslated_messages.json

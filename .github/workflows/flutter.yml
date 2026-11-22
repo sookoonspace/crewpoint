@@ -60,6 +60,12 @@ jobs:
       - name: Naming guardrail
         run: flutter test test_acceptance/naming_guardrail_test.dart
 
+      # English user-facing strings (Spec #233 Testing Strategy 8); the
+      # files and allowed words are in cspell.json. Gujarati is checked by
+      # test/i18n/gujarati_spelling_test.dart in the Test step.
+      - name: Spell check English strings
+        run: npx --yes cspell@8.19.4 --no-progress
+
       - name: Analyze
         run: flutter analyze
 

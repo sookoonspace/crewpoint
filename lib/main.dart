@@ -12,6 +12,10 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:crewpoint_app/app/core/i18n/app_language.dart';
+import 'package:crewpoint_app/app/core/i18n/app_language_rebuilder.dart';
+import 'package:crewpoint_app/app/core/i18n/script_fonts.dart';
+import 'package:crewpoint_app/l10n/gen/app_localizations.dart';
 import 'package:crewpoint_app/app/core/widgets/app_update_gate.dart';
 import 'package:crewpoint_app/app/core/format/event_time.dart';
 import 'package:crewpoint_app/app/core/labels/label_resolver.dart';
@@ -183,6 +187,12 @@ class _MyAppState extends ConsumerState<MyApp> {
     Future.microtask(
       () => ref.read(onboardingProvider.notifier).checkOnboardingStatus(),
     );
+    // A Gujarati choice kept on the device loads the font at once (Req 59).
+    Future.microtask(() {
+      if (ref.read(appLanguageProvider) == AppLanguage.gu) {
+        ref.read(gujaratiFontProvider.notifier).ensureLoaded();
+      }
+    });
 
     _routerRefresh = _RouterRefresh();
     _router = createRouter(
@@ -343,6 +353,16 @@ class _MyAppState extends ConsumerState<MyApp> {
   /// Attaches the FCM token when [authProvider] transitions to
   /// [Authenticated] for a previously unattached uid; detaches on sign-out
   /// or uid change. Called from `ref.listen` in [build].
+  /// Saves a language chosen before sign-in to the account, or adopts the
+  /// account's saved language on this device (Spec #233 Req 56).
+  void _syncLanguageForAuth(AuthState? previous, AuthState next) {
+    String? uidOf(AuthState? state) =>
+        state is Authenticated ? state.user.uid : null;
+    final uid = uidOf(next);
+    if (uid == uidOf(previous)) return;
+    ref.read(appLanguageProvider.notifier).accountChanged(uid);
+  }
+
   void _syncFcmForAuth(AuthState? previous, AuthState next) {
     final nextUid = switch (next) {
       Authenticated(:final user) => user.uid,
@@ -400,12 +420,19 @@ class _MyAppState extends ConsumerState<MyApp> {
     ref.listen<AuthState>(authProvider, (previous, next) {
       _routerRefresh.refresh();
       _syncFcmForAuth(previous, next);
+      _syncLanguageForAuth(previous, next);
+    });
+    ref.listen<AppLanguage>(appLanguageProvider, (_, next) {
+      if (next == AppLanguage.gu) {
+        ref.read(gujaratiFontProvider.notifier).ensureLoaded();
+      }
     });
     ref.listen<bool>(onboardingProvider, (_, _) => _routerRefresh.refresh());
 
     // Theme rebuilds happen via MaterialApp — NOT through _RouterRefresh.
     // The router instance is intentionally preserved across theme flips.
     final themeMode = ref.watch(themeModeProvider);
+    final language = ref.watch(appLanguageProvider);
 
     return MaterialApp.router(
       title: 'CrewPoint',
@@ -413,10 +440,15 @@ class _MyAppState extends ConsumerState<MyApp> {
       theme: CpTheme.light(),
       darkTheme: CpTheme.dark(),
       themeMode: themeMode,
+      locale: language.locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
       routerConfig: _router,
       // The update gate sits above the router so it never rebuilds it.
-      builder: (context, child) =>
-          AppUpdateGate(child: child ?? const SizedBox.shrink()),
+      builder: (context, child) => AppLanguageRebuilder(
+        locale: language.locale,
+        child: AppUpdateGate(child: child ?? const SizedBox.shrink()),
+      ),
     );
   }
 }

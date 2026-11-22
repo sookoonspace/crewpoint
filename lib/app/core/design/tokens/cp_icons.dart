@@ -129,6 +129,9 @@ abstract final class CpIcons {
   /// Light, dark or the device's appearance.
   static const IconData theme = LucideIcons.sunMoon;
 
+  /// The app's language.
+  static const IconData language = LucideIcons.languages;
+
   /// The dev flavor's diagnostic tools.
   static const IconData devTools = LucideIcons.wrench;
   static const IconData terms = LucideIcons.fileText;

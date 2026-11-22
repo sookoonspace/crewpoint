@@ -1,0 +1,449 @@
+{
+  "_comment": "Approved Gujarati spellings (Spec #233 Req 59a). Read by test/i18n/gujarati_spelling_test.dart. 'wrong' spellings may appear nowhere checked; 'match' says when a Gujarati string must use the approved spelling: 'exact' when its English is exactly the term, 'word' when its English contains the term as a word. Every spelling is a draft until the owner's review on the release checklist (Req 59b).",
+  "reviewed": false,
+  "terms": [
+    {
+      "group": "Actions and screens",
+      "en": "Register",
+      "gu": "નોંધણી કરો",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Actions and screens",
+      "en": "Registration",
+      "gu": "નોંધણી",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Actions and screens",
+      "en": "Submit",
+      "gu": "સબમિટ કરો",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Actions and screens",
+      "en": "Save",
+      "gu": "સાચવો",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Actions and screens",
+      "en": "Cancel",
+      "gu": "રદ કરો",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Actions and screens",
+      "en": "Edit",
+      "gu": "ફેરફાર કરો",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Actions and screens",
+      "en": "Back",
+      "gu": "પાછા",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Actions and screens",
+      "en": "Next",
+      "gu": "આગળ",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Actions and screens",
+      "en": "Review",
+      "gu": "સમીક્ષા",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Actions and screens",
+      "en": "Confirm",
+      "gu": "ખાતરી કરો",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Actions and screens",
+      "en": "Sign in",
+      "gu": "સાઇન ઇન કરો",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Actions and screens",
+      "en": "Language",
+      "gu": "ભાષા",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Statuses",
+      "en": "Draft",
+      "gu": "ડ્રાફ્ટ",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Statuses",
+      "en": "Submitted",
+      "gu": "સબમિટ થયું",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Statuses",
+      "en": "Pending review",
+      "gu": "સમીક્ષા બાકી",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Statuses",
+      "en": "Waitlisted",
+      "gu": "રાહ યાદીમાં",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Statuses",
+      "en": "Cancelled",
+      "gu": "રદ થયું",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Answers",
+      "en": "Yes",
+      "gu": "હા",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Answers",
+      "en": "No",
+      "gu": "ના",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Answers",
+      "en": "Maybe",
+      "gu": "કદાચ",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Days",
+      "en": "Monday",
+      "gu": "સોમવાર",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Days",
+      "en": "Tuesday",
+      "gu": "મંગળવાર",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Days",
+      "en": "Wednesday",
+      "gu": "બુધવાર",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Days",
+      "en": "Thursday",
+      "gu": "ગુરુવાર",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Days",
+      "en": "Friday",
+      "gu": "શુક્રવાર",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Days",
+      "en": "Saturday",
+      "gu": "શનિવાર",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Days",
+      "en": "Sunday",
+      "gu": "રવિવાર",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Months",
+      "en": "January",
+      "gu": "જાન્યુઆરી",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Months",
+      "en": "February",
+      "gu": "ફેબ્રુઆરી",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Months",
+      "en": "March",
+      "gu": "માર્ચ",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Months",
+      "en": "April",
+      "gu": "એપ્રિલ",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Months",
+      "en": "May",
+      "gu": "મે",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Months",
+      "en": "June",
+      "gu": "જૂન",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Months",
+      "en": "July",
+      "gu": "જુલાઈ",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Months",
+      "en": "August",
+      "gu": "ઑગસ્ટ",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Months",
+      "en": "September",
+      "gu": "સપ્ટેમ્બર",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Months",
+      "en": "October",
+      "gu": "ઑક્ટોબર",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Months",
+      "en": "November",
+      "gu": "નવેમ્બર",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Months",
+      "en": "December",
+      "gu": "ડિસેમ્બર",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Glossary terms",
+      "en": "Event",
+      "gu": "કાર્યક્રમ",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Glossary terms",
+      "en": "Organizer",
+      "gu": "આયોજક",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Glossary terms",
+      "en": "Member",
+      "gu": "સભ્ય",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Glossary terms",
+      "en": "Participant",
+      "gu": "સહભાગી",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Glossary terms",
+      "en": "Group",
+      "gu": "જૂથ",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Glossary terms",
+      "en": "Category",
+      "gu": "શ્રેણી",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Glossary terms",
+      "en": "Session",
+      "gu": "સત્ર",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Glossary terms",
+      "en": "Crew",
+      "gu": "ટીમ",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Glossary terms",
+      "en": "Custom field",
+      "gu": "પ્રશ્ન",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Glossary terms",
+      "en": "Pass",
+      "gu": "પાસ",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Glossary terms",
+      "en": "Charge",
+      "gu": "ચાર્જ",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Glossary terms",
+      "en": "Payment",
+      "gu": "ચુકવણી",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Glossary terms",
+      "en": "Contribution",
+      "gu": "યોગદાન",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Glossary terms",
+      "en": "Goal",
+      "gu": "લક્ષ્ય",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Glossary terms",
+      "en": "Update",
+      "gu": "અપડેટ",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Glossary terms",
+      "en": "Incident",
+      "gu": "ઘટના",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Glossary terms",
+      "en": "Audience",
+      "gu": "પ્રાપ્તકર્તાઓ",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Glossary terms",
+      "en": "Waitlist",
+      "gu": "રાહ યાદી",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Glossary terms",
+      "en": "Personal link",
+      "gu": "વ્યક્તિગત લિંક",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Glossary terms",
+      "en": "Linked adult",
+      "gu": "જોડાયેલ પુખ્ત",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Glossary terms",
+      "en": "Event page",
+      "gu": "કાર્યક્રમ પેજ",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Glossary terms",
+      "en": "Waiver",
+      "gu": "સંમતિપત્ર",
+      "wrong": [],
+      "match": "exact"
+    },
+    {
+      "group": "Convention's own names",
+      "en": "Derod",
+      "gu": "દેરોદ",
+      "wrong": [
+        "ડેરોડ"
+      ],
+      "match": "word"
+    },
+    {
+      "group": "Convention's own names",
+      "en": "Gaam",
+      "gu": "ગામ",
+      "wrong": [],
+      "match": "word"
+    }
+  ]
+}

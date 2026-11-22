@@ -1,0 +1,4 @@
+{
+  "_comment": "ARB keys that may stay English in Gujarati, each with a reason (Spec #233 Req 55). A key missing from app_gu.arb and not listed here fails test/i18n/arb_completeness_test.dart.",
+  "keys": {}
+}

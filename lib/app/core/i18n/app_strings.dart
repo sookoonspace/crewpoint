@@ -1,32 +1,22 @@
 import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_access.dart';
 import 'package:flutter/widgets.dart';
+import 'package:crewpoint_app/l10n/gen/app_localizations.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/category.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
 
 /// User-facing string surface for CrewPoint.
 ///
-/// Today: a single hand-written English impl (`_EnglishStrings`).
-/// Tomorrow (when `flutter_localizations` + ARB are wired): swap the
-/// body of `StringsX.strings` to return an adapter over the generated
-/// `AppLocalizations` class — every call site stays identical.
+/// `context.strings` returns the strings for the app's language (English or
+/// Gujarati, Spec #233 Req 55). Groups move to the gen-l10n ARB files
+/// (`lib/l10n/app_en.arb`, `app_gu.arb`) as they are translated: an
+/// ARB-backed group reads `AppLocalizations`, and every other group is still
+/// the hand-written English below, which is what Gujarati shows until that
+/// group is translated (Req 57). Call sites never change.
 ///
-/// Migration path:
-/// ```dart
-/// // today
-/// extension StringsX on BuildContext {
-///   AppStrings get strings => const _EnglishStrings();
-/// }
-///
-/// // tomorrow (one file's body changes; UI files do not)
-/// extension StringsX on BuildContext {
-///   AppStrings get strings =>
-///       _AppLocalizationsAdapter(AppLocalizations.of(this)!);
-/// }
-/// ```
-///
-/// ARB-key naming convention: field names on the sub-objects map 1:1
-/// to flat ARB keys via the future adapter (`auth.signIn` →
-/// `_l.authSignIn`, `errors.popupBlocked` → `_l.errorsPopupBlocked`).
+/// To translate a group: add its keys to both ARB files, implement the group
+/// over `AppLocalizations` (as `_ArbLanguageStrings` does), and return it
+/// from `_EnglishStrings` and `_LocalizedStrings`. A key that may stay
+/// English goes in `lib/l10n/english_only.json` with a reason.
 abstract class AppStrings {
   const AppStrings();
 
@@ -59,6 +49,7 @@ abstract class AppStrings {
   PrivacyStrings get privacy;
   OnboardingStrings get onboarding;
   DevStrings get dev;
+  LanguageStrings get language;
 
   /// Static English fallback. Used by service-layer code that has no
   /// `BuildContext` in scope (e.g. `firebaseAuthErrorMessage`). UI code
@@ -767,11 +758,68 @@ abstract class ErrorStrings {
 /// migration replaces ONLY this getter's body — call sites stay
 /// identical.
 extension StringsX on BuildContext {
-  AppStrings get strings => AppStrings.fallbackEnglish;
+  /// The strings for the nearest `Localizations` (the app's language), or
+  /// English where there is none, such as a bare widget test.
+  ///
+  /// This reads the language without subscribing to it, so it is safe from
+  /// `initState` and before an `await`, as many screens use it.
+  /// `AppLanguageRebuilder` rebuilds the whole tree when the language
+  /// changes, so every screen still shows the new language.
+  AppStrings get strings {
+    final locale = findAncestorWidgetOfExactType<Localizations>()?.locale;
+    if (locale == null || !AppLocalizations.delegate.isSupported(locale)) {
+      return AppStrings.fallbackEnglish;
+    }
+    return _byLanguage[locale.languageCode] ??= _LocalizedStrings(
+      lookupAppLocalizations(locale),
+    );
+  }
+}
+
+final _byLanguage = <String, AppStrings>{};
+
+/// The app's strings in one language: ARB-backed groups from [_l], every
+/// other group in English.
+class _LocalizedStrings extends _EnglishStrings {
+  _LocalizedStrings(this._l);
+
+  final AppLocalizations _l;
+
+  @override
+  LanguageStrings get language => _ArbLanguageStrings(_l);
+}
+
+/// The language choice (Req 56).
+abstract class LanguageStrings {
+  const LanguageStrings();
+
+  String get title;
+  String get hint;
+  String get english;
+  String get gujarati;
+}
+
+class _ArbLanguageStrings extends LanguageStrings {
+  const _ArbLanguageStrings(this._l);
+
+  final AppLocalizations _l;
+
+  @override
+  String get title => _l.languageTitle;
+  @override
+  String get hint => _l.languageHint;
+  @override
+  String get english => _l.languageEnglish;
+  @override
+  String get gujarati => _l.languageGujarati;
 }
 
 class _EnglishStrings extends AppStrings {
   const _EnglishStrings();
+
+  @override
+  LanguageStrings get language =>
+      _ArbLanguageStrings(lookupAppLocalizations(const Locale('en')));
 
   @override
   AuthStrings get auth => const _EnglishAuthStrings();

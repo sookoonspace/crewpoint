@@ -16,6 +16,7 @@ import 'package:crewpoint_app/app/features/auth/domain/models/app_user.dart';
 import 'package:crewpoint_app/app/features/budget/application/global_balance_ledger_provider.dart';
 import 'package:crewpoint_app/app/features/profile/application/current_user_doc_provider.dart';
 import 'package:crewpoint_app/app/core/theme/theme_mode_provider.dart';
+import 'package:crewpoint_app/app/core/widgets/language_switch.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/widgets/delete_account_dialog.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/widgets/profile_photo.dart';
 import 'package:crewpoint_app/app/features/profile/presentation/widgets/sign_out_sheet.dart';
@@ -121,6 +122,7 @@ class ProfileScreen extends ConsumerWidget {
                         onTap: () => context.push(AppRoutes.privacyDashboard),
                       ),
                       const _ThemeRow(),
+                      const _LanguageRow(),
                       CpListRow(
                         key: const Key('profile.notifications.tile'),
                         leading: const _RowIcon(CpIcons.notifications),
@@ -341,6 +343,39 @@ class _ThemeRow extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// English or ગુજરાતી (Spec #233 Req 56), the choice under its title so it
+/// fits at 320 px with large text.
+class _LanguageRow extends StatelessWidget {
+  const _LanguageRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final cp = context.cp;
+    final s = context.strings.language;
+    return Padding(
+      key: const Key('profile.language.row'),
+      padding: EdgeInsets.symmetric(
+        horizontal: cp.space.lg,
+        vertical: cp.space.md,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: cp.space.sm,
+        children: [
+          Row(
+            spacing: cp.space.md,
+            children: [
+              const _RowIcon(CpIcons.language),
+              Expanded(child: Text(s.title, style: cp.type.bodyLarge)),
+            ],
+          ),
+          const LanguageSwitch(keyPrefix: 'profile.language'),
+        ],
+      ),
     );
   }
 }
