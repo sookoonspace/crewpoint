@@ -3,11 +3,12 @@
  * Firestore, so it is unit-tested and shared by the dry run and the apply.
  * Source-agnostic (L6): any export works once its columns are mapped.
  */
+import {normalisePhone, PhoneCountry} from "../participants/phone";
 
 /** What a column is mapped to. `field:<id>` is a custom field. */
 export type Target =
   | "ignore" | "name" | "group" | "externalId" | "birthDate" | "age"
-  | "isChild" | "category" | "email" | `field:${string}`;
+  | "isChild" | "category" | "email" | "phone" | `field:${string}`;
 
 export interface FieldDef {
   id: string;
@@ -50,10 +51,12 @@ export interface ImportContext {
   existingGroups: {id: string; name: string}[];
   /** Scrambles an import ID the way unnamed entries keep it. */
   externalIdKey?: (externalId: string) => string;
+  /** How a phone number without a prefix is read; the US when missing. */
+  phoneCountry?: PhoneCountry;
 }
 
 export type Problem =
-  | "required" | "unknownAge" | "duplicateEmail" | "badEmail" | "notAnOption"
+  | "required" | "unknownAge" | "duplicateEmail" | "badEmail" | "badPhone" | "notAnOption"
   | "wrongType" | "tooLong" | "duplicateRow" | "unknownCategory";
 
 export interface RowError {
@@ -75,6 +78,8 @@ export interface PlannedPerson {
   isChild?: boolean;
   categoryId?: string | null;
   email?: string | null;
+  /** E.164 (Spec #233 Req 13). A household may share one, as with email. */
+  phone?: string | null;
   standard: Record<string, unknown>;
   private: Record<string, unknown>;
   groupStandard: Record<string, unknown>;
@@ -284,6 +289,14 @@ export function planImport(rows: string[][], targets: Target[], ctx: ImportConte
       } else {
         person.email = null;
       }
+    }
+
+    const phoneColumn = columnOf("phone");
+    if (phoneColumn >= 0) {
+      const typed = cell(phoneColumn);
+      const phone = typed ? normalisePhone(typed, ctx.phoneCountry ?? "US") : null;
+      if (typed && !phone) fail(phoneColumn, "badPhone");
+      person.phone = phone;
     }
 
     targets.forEach((target, column) => {

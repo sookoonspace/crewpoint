@@ -4,15 +4,20 @@ import {requireString, withStructuredLogs} from "../utils/logging";
 import {expenseAccessOf} from "../events/expenseAccess";
 import {memberDoc, memberRef, readEventRoles, readPermissions, rebuildMember} from "../events/members";
 import {legacyRoleIds} from "../events/permissions";
-import {Candidate, decideLink} from "./linking";
-import {emailMatchKey} from "./matchKeys";
+import {decideLinks, MatchRecord} from "./linking";
+import {emailMatchKey, phoneMatchKey} from "./matchKeys";
+import {normalisePhone} from "./phone";
 
 const db = () => getFirestore();
 
-/** Who is being linked: a signed-in account and its verified email. */
+/**
+ * Who is being linked: a signed-in account with its verified email, its
+ * verified phone in E.164 (Spec #233 Req 13), or both.
+ */
 interface Account {
   uid: string;
-  email: string;
+  email: string | null;
+  phone: string | null;
   name: string | null;
 }
 
@@ -27,7 +32,7 @@ type Refusal = "gone" | "closed" | "draft" | "full" | "taken" | "child";
  * in it keeps their roles. Their access grows by their own group only.
  *
  * An unnamed entry left by a deleted account (Req 14a) takes the account's
- * name and email back, and its match key goes.
+ * name, email and phone back, and its match key goes.
  */
 export async function linkInEvent(
   eventId: string,
@@ -108,8 +113,11 @@ export async function linkInEvent(
           update.name = account.name;
           update.sortName = account.name.toLowerCase();
         }
-        tx.set(personRef.collection("private").doc("details"),
-          {email: account.email, updatedAt: now}, {merge: true});
+        tx.set(personRef.collection("private").doc("details"), {
+          ...(account.email ? {email: account.email} : {}),
+          ...(account.phone ? {phone: account.phone} : {}),
+          updatedAt: now,
+        }, {merge: true});
       }
       tx.update(personRef, update);
       tx.delete(keyRef!);
@@ -139,7 +147,8 @@ async function askOrganizer(
     tx.set(ref, {
       uid: account.uid,
       name: account.name,
-      email: account.email,
+      email: account.email ?? "",
+      phone: account.phone,
       participantIds: [...participantIds].sort(),
       groupIds: [...groupIds].sort(),
       status: "open",
@@ -158,45 +167,71 @@ function detailsPath(path: string): [string, string] | null {
 }
 
 /**
- * Links [uid] wherever their verified [email] matches (Req 46). Matches come
- * from the email in participants' private details, and from the match keys
- * of unnamed entries a deleted account left behind (Req 14a).
+ * Links [uid] wherever their verified email or phone matches (Req 46, Spec
+ * #233 Req 13). Matches come from the email and phone in participants'
+ * private details, and from the match keys of unnamed entries a deleted
+ * account left behind (Req 14a).
  */
 export async function linkAccount(
   uid: string,
-  email: string,
+  verified: {email: string | null; phone: string | null},
   tokenName: string | null
 ): Promise<{linked: string[]; asked: string[]}> {
-  const key = await emailMatchKey(email);
-  const [byEmail, byKey, user] = await Promise.all([
-    db().collectionGroup("private").where("email", "==", email).get(),
-    db().collectionGroup("participantKeys").where("emailKey", "==", key).get(),
+  const {email, phone} = verified;
+  const [emailKey, phoneKey] = await Promise.all([
+    email ? emailMatchKey(email) : null,
+    phone ? phoneMatchKey(phone) : null,
+  ]);
+  const none = Promise.resolve(null);
+  const [byEmail, byPhone, byEmailKey, byPhoneKey, user] = await Promise.all([
+    email ? db().collectionGroup("private").where("email", "==", email).get() : none,
+    phone ? db().collectionGroup("private").where("phone", "==", phone).get() : none,
+    emailKey ? db().collectionGroup("participantKeys").where("emailKey", "==", emailKey).get() : none,
+    phoneKey ? db().collectionGroup("participantKeys").where("phoneKey", "==", phoneKey).get() : none,
     db().collection("users").doc(uid).get(),
   ]);
-  const found = new Map<string, Set<string>>();
-  const add = (eventId: string, participantId: string) =>
-    found.set(eventId, (found.get(eventId) ?? new Set()).add(participantId));
-  byEmail.docs.forEach((d) => {
-    const at = detailsPath(d.ref.path);
-    if (at) add(...at);
-  });
-  byKey.docs.forEach((d) => add(d.ref.parent.parent!.id, d.id));
+  // What each matched record carries, by event and participant.
+  const found = new Map<string, Map<string, FirebaseFirestore.DocumentData>>();
+  const add = (eventId: string, participantId: string, data: FirebaseFirestore.DocumentData) => {
+    const people = found.get(eventId) ?? new Map<string, FirebaseFirestore.DocumentData>();
+    people.set(participantId, {...people.get(participantId), ...data});
+    found.set(eventId, people);
+  };
+  for (const snap of [byEmail, byPhone]) {
+    snap?.docs.forEach((d) => {
+      const at = detailsPath(d.ref.path);
+      if (at) add(...at, {email: d.data().email ?? null, phone: d.data().phone ?? null});
+    });
+  }
+  for (const snap of [byEmailKey, byPhoneKey]) {
+    snap?.docs.forEach((d) => add(d.ref.parent.parent!.id, d.id,
+      {emailKey: d.data().emailKey ?? null, phoneKey: d.data().phoneKey ?? null}));
+  }
+
+  const records: MatchRecord[] = [];
+  for (const [eventId, people] of found) {
+    const ref = db().collection("events").doc(eventId).collection("participants");
+    const docs = await db().getAll(...[...people.keys()].map((id) => ref.doc(id)));
+    for (const d of docs) {
+      if (!d.exists) continue;
+      records.push({
+        ...people.get(d.id),
+        eventId,
+        participantId: d.id,
+        groupId: d.data()!.groupId ?? null,
+        isChild: d.data()!.isChild === true,
+        linkedUid: d.data()!.uid ?? null,
+        status: d.data()!.status ?? "active",
+      });
+    }
+  }
 
   const displayName = (user.data()?.displayName as string | undefined)?.trim();
-  const account: Account = {uid, email, name: displayName || tokenName || null};
+  const account: Account = {uid, email, phone, name: displayName || tokenName || null};
   const linked: string[] = [];
   const asked: string[] = [];
-  for (const [eventId, ids] of found) {
-    const people = db().collection("events").doc(eventId).collection("participants");
-    const docs = await db().getAll(...[...ids].map((id) => people.doc(id)));
-    const candidates: Candidate[] = docs.filter((d) => d.exists).map((d) => ({
-      participantId: d.id,
-      groupId: d.data()!.groupId ?? null,
-      isChild: d.data()!.isChild === true,
-      linkedUid: d.data()!.uid ?? null,
-      status: d.data()!.status ?? "active",
-    }));
-    const decision = decideLink(candidates, uid);
+  const decisions = decideLinks(records, {email, phone, emailKey, phoneKey}, uid);
+  for (const [eventId, decision] of Object.entries(decisions)) {
     if (decision.kind === "link") {
       if ((await linkInEvent(eventId, account, {participantId: decision.participantId})) === null) {
         linked.push(eventId);
@@ -212,8 +247,10 @@ export async function linkAccount(
 
 /**
  * linkMyParticipants — the app calls this once a signed-in person's email is
- * verified (Req 46, X-05, L-01, L-02). Verification is not enforced at sign-up,
- * so an unverified email links nothing. Safe to repeat.
+ * verified, or they signed in with a phone code (Req 46, X-05, L-01, L-02,
+ * Spec #233 Req 13). Verification is not enforced at sign-up, so an
+ * unverified email links nothing. Firebase sets `phone_number` only once the
+ * SMS code is entered, in E.164. Safe to repeat.
  */
 export const linkMyParticipants = onCall({timeoutSeconds: 60}, async (request) => {
   if (!request.auth) {
@@ -221,12 +258,16 @@ export const linkMyParticipants = onCall({timeoutSeconds: 60}, async (request) =
   }
   const uid = request.auth.uid;
   const token = request.auth.token ?? {};
-  const email = String(token.email ?? "").trim().toLowerCase();
-  if (!email || token.email_verified !== true) {
+  const typed = String(token.email ?? "").trim().toLowerCase();
+  const email = typed && token.email_verified === true ? typed : null;
+  const phone = typeof token.phone_number === "string" ?
+    normalisePhone(token.phone_number, "US") :
+    null;
+  if (!email && !phone) {
     return {linked: [], asked: [], unverified: true};
   }
   return withStructuredLogs({op: "linkMyParticipants", uid, args: {}}, () =>
-    linkAccount(uid, email, typeof token.name === "string" ? token.name : null));
+    linkAccount(uid, {email, phone}, typeof token.name === "string" ? token.name : null));
 });
 
 /**
@@ -280,7 +321,7 @@ export const resolveLinkRequest = onCall({timeoutSeconds: 30}, async (request) =
       }
       const refused = await linkInEvent(
         eventId,
-        {uid, email: pending.email, name: pending.name ?? null},
+        {uid, email: pending.email || null, phone: pending.phone ?? null, name: pending.name ?? null},
         participantId ? {participantId} : {groupId: groupId!}
       );
       if (refused === "child") {

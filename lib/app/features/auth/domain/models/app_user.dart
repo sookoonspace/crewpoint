@@ -13,6 +13,7 @@ class AppUser {
     this.currency = 'USD',
     this.emailVerified = false,
     this.providerIds = const [],
+    this.phoneNumber,
   });
 
   final String uid;
@@ -28,6 +29,10 @@ class AppUser {
 
   /// True iff Firebase considers this user's email verified.
   final bool emailVerified;
+
+  /// The account's phone number in E.164. Firebase sets it only once the
+  /// SMS code is entered, so it is always verified (Spec #233 Req 13).
+  final String? phoneNumber;
 
   /// Firebase provider IDs attached to this user (`password`, `apple.com`,
   /// `google.com`, ...).

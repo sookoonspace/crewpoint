@@ -2928,6 +2928,9 @@ abstract class GroupEntryStrings {
   String get nameLabel;
   String get emailLabel;
   String get emailHelp;
+  String get phoneLabel;
+  String get phoneHelp;
+  String get phoneInvalid;
   String get birthDateLabel;
   String birthDateHelp(String? band);
   String get clearBirthDate;
@@ -2995,6 +2998,16 @@ class _EnglishGroupEntryStrings extends GroupEntryStrings {
   @override
   String get emailHelp =>
       'Links their account when they sign in with this email.';
+  @override
+  String get phoneLabel => 'Phone (private)';
+  @override
+  String get phoneHelp =>
+      'Links their account when they sign in with this number. '
+      'Add the country code for a number outside this event\'s country.';
+  @override
+  String get phoneInvalid =>
+      'Enter the whole number, with the area code, such as (214) 555-0100 '
+      'or +44 7700 900123.';
   @override
   String get birthDateLabel => 'Birth date (private)';
   @override
@@ -3351,6 +3364,7 @@ class _EnglishImportStrings extends ImportStrings {
         'isChild' => 'Child (yes or no)',
         'category' => 'Category',
         'email' => 'Email (private)',
+        'phone' => 'Phone (private)',
         _ when target.startsWith('field:') => fieldLabel(target.substring(6)),
         _ => target,
       };
@@ -3396,6 +3410,7 @@ class _EnglishImportStrings extends ImportStrings {
     'unknownAge' => 'not a date or age we can read',
     'duplicateEmail' => 'the same email as an earlier row',
     'badEmail' => 'not an email address',
+    'badPhone' => 'not a whole phone number',
     'notAnOption' => 'not one of the choices',
     'wrongType' => 'not the right kind of answer',
     'tooLong' => 'too long',
@@ -3945,7 +3960,7 @@ abstract class LinkStrings {
   String get loadFailed;
   String get retry;
   String get offline;
-  String accountLine(String? name, String email);
+  String accountLine(String? name, String contact);
   String get pickRecord;
   String asAdultOf(String group);
   String get onlyChildren;
@@ -3992,8 +4007,8 @@ class _EnglishLinkStrings extends LinkStrings {
   @override
   String get offline => 'Linking needs a connection.';
   @override
-  String accountLine(String? name, String email) =>
-      name == null || name.isEmpty ? email : '$name · $email';
+  String accountLine(String? name, String contact) =>
+      name == null || name.isEmpty ? contact : '$name · $contact';
   @override
   String get pickRecord => 'Who is this?';
   @override

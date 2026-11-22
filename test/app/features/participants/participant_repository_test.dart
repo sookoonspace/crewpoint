@@ -179,15 +179,17 @@ void main() {
     });
     await firestore.doc('events/$e/participants/p1/private/details').set({
       'email': 'ravi@x.test',
+      'phone': '+12145550100',
       'fields': {'allergy': 'Nuts', 'old': 'x'},
     });
-    // The screen saves what it read, email included.
+    // The screen saves what it read, email and phone included.
     final read = await repo.readPrivate(e, 'p1');
     await repo.save(
       person,
       privateDetails: ParticipantPrivate(
         birthDate: '1984-02-01',
         email: read?.email,
+        phone: read?.phone,
         fields: const {'allergy': 'None'},
       ),
     );
@@ -195,6 +197,7 @@ void main() {
         (await firestore.doc('events/$e/participants/p1/private/details').get())
             .data()!;
     expect(details['email'], 'ravi@x.test');
+    expect(details['phone'], '+12145550100');
     expect(details['birthDate'], '1984-02-01');
     expect(details['fields'], {'allergy': 'None'});
   });

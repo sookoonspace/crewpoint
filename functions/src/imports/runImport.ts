@@ -5,6 +5,7 @@ import {
   CategoryDef, FieldDef, ExistingPerson, Plan, Target, filterTagsFor, normalise, planImport,
 } from "./plan";
 import {externalIdKeyer} from "../participants/matchKeys";
+import {countryForTimeZone} from "../participants/phone";
 
 const db = () => getFirestore();
 
@@ -105,6 +106,7 @@ export async function runImportJob({
         externalIdKey: idKeys.get(d.id) ?? null,
       }) as ExistingPerson),
       externalIdKey: keyOf,
+      phoneCountry: countryForTimeZone(eventData.timeZone),
       existingGroups: groupsSnap.docs.map((d) => ({id: d.id, name: d.data().name ?? ""})),
     });
 
@@ -189,6 +191,7 @@ async function apply(
       const privateData: Record<string, unknown> = {};
       if (person.birthDate !== undefined) privateData.birthDate = person.birthDate;
       if (person.email !== undefined) privateData.email = person.email;
+      if (person.phone !== undefined) privateData.phone = person.phone;
       if (Object.keys(person.private).length > 0) privateData.fields = person.private;
       if (Object.keys(privateData).length > 0) {
         batch.set(ref.collection("private").doc("details"), {...privateData, updatedAt: now}, {merge: true});

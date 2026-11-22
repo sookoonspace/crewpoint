@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/category.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/group_draft.dart';
+import 'package:crewpoint_app/app/features/participants/domain/models/phone.dart';
 
 void main() {
   var counter = 0;
@@ -407,6 +408,82 @@ void main() {
       expect(records.first.private!.email, 'neha@example.com');
       expect(records.last.private!.email, 'imported@example.com');
       expect(records.last.private!.birthDate, '2018-03-14');
+    });
+  });
+
+  group('phone numbers (Spec #233 Req 13, #237)', () {
+    final start = DateTime.utc(2027, 7, 9);
+    GroupDraft draftWith(List<PersonDraft> people) =>
+        GroupDraft(groupId: 'g1', isNewGroup: false, people: people);
+    List<PersonRecord> records(GroupDraft d, PhoneCountry country) => d.records(
+      eventId: 'e1',
+      createdBy: 'owner',
+      categories: const [],
+      eventStart: start,
+      phoneCountry: country,
+    );
+
+    test("an adult's number is kept in E.164, read in the event's country", () {
+      final d = draftWith(const [
+        PersonDraft(id: 'a', name: 'Neha', phone: '(214) 555-0100'),
+        PersonDraft(id: 'b', name: 'Ravi', phone: '+44 7700 900123'),
+      ]);
+      expect(
+        [for (final r in records(d, PhoneCountry.us)) r.private!.phone],
+        ['+12145550100', '+447700900123'],
+      );
+      final uk = draftWith(const [
+        PersonDraft(id: 'a', name: 'Neha', phone: '07700 900123'),
+      ]);
+      expect(
+        records(uk, PhoneCountry.gb).single.private!.phone,
+        '+447700900123',
+      );
+    });
+
+    test('a new child keeps no number, and an empty one is none', () {
+      final d = draftWith(const [
+        PersonDraft(
+          id: 'a',
+          name: 'Kabir',
+          isChild: true,
+          phone: '214 555 0100',
+        ),
+        PersonDraft(id: 'b', name: 'Neha', phone: '  '),
+      ]);
+      expect(
+        [for (final r in records(d, PhoneCountry.us)) r.private],
+        [null, null],
+      );
+    });
+
+    test('a number that is not whole stops the save, on that person only', () {
+      final d = draftWith(const [
+        PersonDraft(id: 'a', name: 'Neha', phone: '555-0100'),
+        PersonDraft(id: 'b', name: 'Ravi', phone: '214 555 0100'),
+        PersonDraft(id: 'c', name: 'Kabir', isChild: true, phone: '555'),
+      ]);
+      final check = d.check(
+        const [],
+        readsPrivate: false,
+        phoneCountry: PhoneCountry.us,
+      );
+      expect(check.people['a']!.phoneInvalid, isTrue);
+      expect(check.people['a']!.ok, isFalse);
+      expect(check.people['b']!.ok, isTrue);
+      // A child's card shows no phone, so what was typed is not checked.
+      expect(check.people['c']!.ok, isTrue);
+      expect(check.ok, isFalse);
+    });
+
+    test('a changed number counts as a change', () {
+      const saved = PersonDraft(id: 'a', name: 'Neha', phone: '+12145550100');
+      final edited = PersonDraft.existing(
+        saved,
+      ).copyWith(phone: '+12145550199');
+      expect(PersonDraft.existing(saved).isChanged, isFalse);
+      expect(edited.isChanged, isTrue);
+      expect(const PersonDraft(id: 'x', phone: '1').isEmpty, isFalse);
     });
   });
 }

@@ -176,4 +176,15 @@ describe('private details (Z-01)', () => {
     await assertFails(setDoc(details('parent'), {birthDate: 20200502}));
     await assertFails(setDoc(details('parent'), {notes: 'x'}));
   });
+
+  test('Spec #233 Req 13 a phone number is kept only in E.164', async () => {
+    await assertSucceeds(setDoc(details('parent'), {phone: '+12145550100'}));
+    await assertSucceeds(setDoc(details('parent'), {phone: '+447700900123', email: 'a@x.test'}));
+    await assertSucceeds(setDoc(details('parent'), {phone: null}));
+    await assertFails(setDoc(details('parent'), {phone: '(214) 555-0100'}));
+    await assertFails(setDoc(details('parent'), {phone: '2145550100'}));
+    await assertFails(setDoc(details('parent'), {phone: '+0123456789'}));
+    await assertFails(setDoc(details('parent'), {phone: 12145550100}));
+    await assertFails(setDoc(details('other'), {phone: '+12145550100'}));
+  });
 });

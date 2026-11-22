@@ -176,6 +176,7 @@ class FirebaseAuthService implements IAuthService {
     photoUrl: user.photoURL,
     emailVerified: user.emailVerified,
     providerIds: user.providerData.map((p) => p.providerId).toList(),
+    phoneNumber: user.phoneNumber,
   );
 
   String _mapFirebaseError(String code) => firebaseAuthErrorMessage(code);

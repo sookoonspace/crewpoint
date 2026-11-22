@@ -5,6 +5,7 @@ import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/category.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/group_draft.dart';
+import 'package:crewpoint_app/app/features/participants/domain/models/phone.dart';
 
 /// Which group screen: a new group, or adding to [groupId].
 @immutable
@@ -165,7 +166,8 @@ class GroupEntryController extends Notifier<GroupEntryState> {
 
   /// The fields and visibility of the last save, to keep [GroupEntryState.check]
   /// current as the draft changes.
-  ({List<CustomField> fields, bool readsPrivate})? _checking;
+  ({List<CustomField> fields, bool readsPrivate, PhoneCountry phoneCountry})?
+  _checking;
 
   void edit(GroupDraft Function(GroupDraft draft) change) {
     final before = state.draft;
@@ -179,7 +181,11 @@ class GroupEntryController extends Notifier<GroupEntryState> {
       done: done,
       check: checking == null
           ? null
-          : draft.check(checking.fields, readsPrivate: checking.readsPrivate),
+          : draft.check(
+              checking.fields,
+              readsPrivate: checking.readsPrivate,
+              phoneCountry: checking.phoneCountry,
+            ),
     );
   }
 
@@ -211,10 +217,19 @@ class GroupEntryController extends Notifier<GroupEntryState> {
     required String? createdBy,
     required List<EventCategory> categories,
     required DateTime eventStart,
+    required PhoneCountry phoneCountry,
   }) async {
     if (state.saving) return GroupSaveOutcome.busy;
-    _checking = (fields: fields, readsPrivate: readsPrivate);
-    final check = state.draft.check(fields, readsPrivate: readsPrivate);
+    _checking = (
+      fields: fields,
+      readsPrivate: readsPrivate,
+      phoneCountry: phoneCountry,
+    );
+    final check = state.draft.check(
+      fields,
+      readsPrivate: readsPrivate,
+      phoneCountry: phoneCountry,
+    );
     state = state.copyWith(check: check);
     if (!check.ok) return GroupSaveOutcome.incomplete;
     state = state.copyWith(saving: true);
@@ -225,6 +240,7 @@ class GroupEntryController extends Notifier<GroupEntryState> {
         createdBy: createdBy,
         categories: categories,
         eventStart: eventStart,
+        phoneCountry: phoneCountry,
       );
     } finally {
       if (ref.mounted) state = state.copyWith(saving: false);
@@ -237,6 +253,7 @@ class GroupEntryController extends Notifier<GroupEntryState> {
     required String? createdBy,
     required List<EventCategory> categories,
     required DateTime eventStart,
+    required PhoneCountry phoneCountry,
   }) async {
     if (!await ref.read(connectivityProvider).isOnline()) {
       return GroupSaveOutcome.offline;
@@ -274,6 +291,7 @@ class GroupEntryController extends Notifier<GroupEntryState> {
           createdBy: createdBy,
           categories: categories,
           eventStart: eventStart,
+          phoneCountry: phoneCountry,
         ),
         definitions: fields,
       ),

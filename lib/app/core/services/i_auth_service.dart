@@ -53,12 +53,17 @@ class AuthUser {
     this.photoUrl,
     this.emailVerified = false,
     this.providerIds = const [],
+    this.phoneNumber,
   });
 
   final String uid;
   final String email;
   final String? displayName;
   final String? photoUrl;
+
+  /// The account's phone number in E.164. Firebase sets it only once the
+  /// SMS code is entered, so it is always verified (Spec #233 Req 13).
+  final String? phoneNumber;
 
   /// True iff Firebase considers this user's email verified.
   /// OAuth providers (Google, Apple, etc.) issue verified-email tokens;

@@ -32,11 +32,14 @@ AppUser _user(
   String uid, {
   bool verified = true,
   List<String> providers = const ['password'],
+  String? phone,
+  String? email,
 }) => AppUser(
   uid: uid,
-  email: '$uid@x.test',
+  email: email ?? '$uid@x.test',
   emailVerified: verified,
   providerIds: providers,
+  phoneNumber: phone,
 );
 
 void main() {
@@ -77,6 +80,25 @@ void main() {
       await settle();
       expect(calls.calls, isEmpty);
       auth.set(Authenticated(_user('ravi', providers: const ['apple.com'])));
+      await settle();
+      expect(calls.calls, ['linkMyParticipants']);
+    },
+  );
+
+  test(
+    'Spec #233 Req 13 signing in with a phone code links by the number',
+    () async {
+      start(
+        Authenticated(
+          _user(
+            'ravi',
+            email: '',
+            verified: false,
+            providers: const ['phone'],
+            phone: '+12145550100',
+          ),
+        ),
+      );
       await settle();
       expect(calls.calls, ['linkMyParticipants']);
     },

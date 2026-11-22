@@ -4,7 +4,7 @@ import {getFirestore} from "firebase-admin/firestore";
 /**
  * One-way match keys for unnamed entries (Req 14a, decided in #78). When a
  * linked account is deleted, its record in an event that has not ended keeps
- * scrambled forms of the email and import ID in
+ * scrambled forms of the email, phone and import ID in
  * `events/{id}/participantKeys/{participantId}`, which no client can read.
  * A new account with the same verified email links back to it, and a
  * re-import with the same ID refills it, so nobody is counted twice. The
@@ -38,6 +38,11 @@ async function secret(): Promise<string> {
 /** The same in every event, so linking can look across events. */
 export async function emailMatchKey(email: string): Promise<string> {
   return keyWith(await secret(), "email", email);
+}
+
+/** An E.164 phone number, the same in every event (Spec #233 Req 13). */
+export async function phoneMatchKey(phone: string): Promise<string> {
+  return keyWith(await secret(), "phone", phone);
 }
 
 /** Import IDs only mean something within one event. */

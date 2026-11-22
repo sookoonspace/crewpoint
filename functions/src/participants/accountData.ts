@@ -1,7 +1,7 @@
 import {FieldValue, getFirestore, Timestamp} from "firebase-admin/firestore";
 import {BatchOperation, commitInChunks} from "../utils/batch";
 import {mapLegacyStatus} from "../events/eventStatus";
-import {emailMatchKey, externalIdMatchKey} from "./matchKeys";
+import {emailMatchKey, externalIdMatchKey, phoneMatchKey} from "./matchKeys";
 
 const db = () => getFirestore();
 
@@ -25,7 +25,7 @@ function hasEnded(event: FirebaseFirestore.DocumentData | undefined): boolean {
  * 2. Records linked to them become unnamed entries: age band, status, group
  *    and choice answers stay, so counts do not change, while the name, import
  *    ID, answers and private details go. In an event that has not ended, a
- *    server-only match key of the email and import ID is kept, so a new
+ *    server-only match key of the email, phone and import ID is kept, so a new
  *    account or a re-import finds the entry again instead of adding a second.
  * 3. Their link requests and any member documents left go.
  */
@@ -64,6 +64,8 @@ export async function removeParticipantData(uid: string): Promise<void> {
       const email = details.data()?.email;
       const keys: Record<string, string> = {};
       if (typeof email === "string" && email) keys.emailKey = await emailMatchKey(email);
+      const phone = details.data()?.phone;
+      if (typeof phone === "string" && phone) keys.phoneKey = await phoneMatchKey(phone);
       if (typeof data.externalId === "string" && data.externalId) {
         keys.externalIdKey = await externalIdMatchKey(eventRef.id, data.externalId);
       }

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/category.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/participant.dart';
+import 'package:crewpoint_app/app/features/participants/domain/models/phone.dart';
 
 /// A new document ID, picked before saving so a retry writes the same
 /// document again instead of a second one.
@@ -25,6 +26,7 @@ class PersonDraft {
     this.isChild = false,
     this.birthDate,
     this.email = '',
+    this.phone = '',
     this.answers = const {},
     this.privateAnswers = const {},
     this.original,
@@ -37,6 +39,7 @@ class PersonDraft {
     isChild: loaded.isChild,
     birthDate: loaded.birthDate,
     email: loaded.email,
+    phone: loaded.phone,
     answers: loaded.answers,
     privateAnswers: loaded.privateAnswers,
     original: loaded,
@@ -52,6 +55,10 @@ class PersonDraft {
 
   /// An adult's email, kept in private details for account linking.
   final String email;
+
+  /// An adult's phone number as typed; saved in E.164 for account linking
+  /// (Spec #233 Req 13).
+  final String phone;
 
   /// Standard custom field answers, by field ID.
   final Map<String, Object?> answers;
@@ -72,6 +79,7 @@ class PersonDraft {
         o.isChild != isChild ||
         o.birthDate != birthDate ||
         o.email != email ||
+        o.phone != phone ||
         !mapEquals(o.answers, answers) ||
         !mapEquals(o.privateAnswers, privateAnswers);
   }
@@ -82,6 +90,7 @@ class PersonDraft {
     String? birthDate,
     bool clearBirthDate = false,
     String? email,
+    String? phone,
     Map<String, Object?>? answers,
     Map<String, Object?>? privateAnswers,
   }) => PersonDraft(
@@ -90,6 +99,7 @@ class PersonDraft {
     isChild: isChild ?? this.isChild,
     birthDate: clearBirthDate ? null : (birthDate ?? this.birthDate),
     email: email ?? this.email,
+    phone: phone ?? this.phone,
     answers: answers ?? this.answers,
     privateAnswers: privateAnswers ?? this.privateAnswers,
     original: original,
@@ -100,6 +110,7 @@ class PersonDraft {
       name.trim().isEmpty &&
       birthDate == null &&
       email.trim().isEmpty &&
+      phone.trim().isEmpty &&
       answers.isEmpty &&
       privateAnswers.isEmpty;
 }
@@ -205,18 +216,24 @@ class GroupDraft {
   }
 
   /// The participants to write, worked out as the person form does: an
-  /// adult keeps only an email, a child only a birth date, which sets their
-  /// category by the event's age rules, counted on [eventStart] (Req 28).
+  /// adult keeps only an email and phone, a child only a birth date, which
+  /// sets their category by the event's age rules, counted on [eventStart]
+  /// (Req 28). A phone typed without a prefix is read in [phoneCountry].
   /// Filter tags are worked out when saving, from the field definitions.
   List<PersonRecord> records({
     required String eventId,
     required String? createdBy,
     required List<EventCategory> categories,
     required DateTime eventStart,
+    PhoneCountry phoneCountry = PhoneCountry.us,
   }) => [
     for (final p in toSave)
-      _record(p, eventId, createdBy, categories, eventStart),
+      _record(p, eventId, createdBy, categories, eventStart, phoneCountry),
   ];
+
+  /// Whether [p]'s card shows a phone: adults, and anyone already saved, so
+  /// a loaded number is never lost.
+  static bool _keepsContact(PersonDraft p) => !p.isChild || p.isExisting;
 
   PersonRecord _record(
     PersonDraft p,
@@ -224,15 +241,18 @@ class GroupDraft {
     String? createdBy,
     List<EventCategory> categories,
     DateTime eventStart,
+    PhoneCountry phoneCountry,
   ) {
     // Someone new keeps only what their card shows: a child's birth date
     // or an adult's email. Someone edited keeps what was loaded too, so a
     // hidden birth date or imported email is never lost.
     final birthDate = p.isChild || p.isExisting ? p.birthDate : null;
     final trimmed = p.email.trim();
-    final email = trimmed.isEmpty || (p.isChild && !p.isExisting)
+    final email = trimmed.isEmpty || !_keepsContact(p) ? null : trimmed;
+    final typedPhone = p.phone.trim();
+    final phone = typedPhone.isEmpty || !_keepsContact(p)
         ? null
-        : trimmed;
+        : normalisePhone(typedPhone, phoneCountry);
     final derived = categoryFor(birthDate, eventStart, categories);
     final person = ParticipantModel(
       id: p.id,
@@ -247,7 +267,10 @@ class GroupDraft {
     final privateFields = {...p.privateAnswers}
       ..removeWhere((_, v) => v == null);
     final hasPrivate =
-        birthDate != null || email != null || privateFields.isNotEmpty;
+        birthDate != null ||
+        email != null ||
+        phone != null ||
+        privateFields.isNotEmpty;
     return PersonRecord(
       existing: p.isExisting,
       person,
@@ -255,6 +278,7 @@ class GroupDraft {
           ? ParticipantPrivate(
               birthDate: birthDate,
               email: email,
+              phone: phone,
               fields: privateFields,
             )
           : null,
@@ -262,12 +286,13 @@ class GroupDraft {
   }
 
   /// What stops a save: a missing group name, no named person, a person
-  /// without a name, and required answers left out (Req 29, 31). Only
-  /// questions the viewer can see are checked, private ones with
-  /// [readsPrivate].
+  /// without a name, a phone number that is not whole (Spec #233 Req 13),
+  /// and required answers left out (Req 29, 31). Only questions the viewer
+  /// can see are checked, private ones with [readsPrivate].
   GroupDraftCheck check(
     List<CustomField> fields, {
     required bool readsPrivate,
+    PhoneCountry phoneCountry = PhoneCountry.us,
   }) {
     Set<String> problems(
       FieldScope scope,
@@ -292,6 +317,10 @@ class GroupDraft {
         for (final p in toSave)
           p.id: PersonCheck(
             nameMissing: p.name.trim().isEmpty,
+            phoneInvalid:
+                _keepsContact(p) &&
+                p.phone.trim().isNotEmpty &&
+                normalisePhone(p.phone, phoneCountry) == null,
             missing: problems(
               FieldScope.participant,
               p.answers,
@@ -319,14 +348,21 @@ class PersonRecord {
 /// What one person still needs before saving.
 @immutable
 class PersonCheck {
-  const PersonCheck({this.nameMissing = false, this.missing = const {}});
+  const PersonCheck({
+    this.nameMissing = false,
+    this.phoneInvalid = false,
+    this.missing = const {},
+  });
 
   final bool nameMissing;
+
+  /// A phone number was typed that is not a whole number.
+  final bool phoneInvalid;
 
   /// Field IDs whose answers are missing or not allowed.
   final Set<String> missing;
 
-  bool get ok => !nameMissing && missing.isEmpty;
+  bool get ok => !nameMissing && !phoneInvalid && missing.isEmpty;
 }
 
 /// What a [GroupDraft] still needs before saving.

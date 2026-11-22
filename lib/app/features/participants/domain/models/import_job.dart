@@ -13,8 +13,9 @@ class ImportRowError {
   final int row;
   final String column;
 
-  /// `required`, `unknownAge`, `duplicateEmail`, `badEmail`, `notAnOption`,
-  /// `wrongType`, `tooLong`, `duplicateRow` or `unknownCategory`.
+  /// `required`, `unknownAge`, `duplicateEmail`, `badEmail`, `badPhone`,
+  /// `notAnOption`, `wrongType`, `tooLong`, `duplicateRow` or
+  /// `unknownCategory`.
   final String problem;
 }
 

@@ -11,10 +11,10 @@ import 'package:crewpoint_app/app/features/participants/application/roster_contr
 import 'package:crewpoint_app/app/features/participants/domain/models/link_request.dart';
 
 /// Accounts waiting to be linked (Req 46, route `people/links`). Their
-/// verified email matched more than one adult, or only children, so an
-/// organizer picks who they are, or says it is not a match. Needs
+/// verified email or phone matched more than one adult, or only children,
+/// so an organizer picks who they are, or says it is not a match. Needs
 /// `participants.edit` and `participants.readPrivate`, because each request
-/// shows an email.
+/// shows an email or phone.
 class LinkRequestsScreen extends ConsumerWidget {
   const LinkRequestsScreen({super.key, required this.event});
 
@@ -205,10 +205,10 @@ class _RequestCardState extends ConsumerState<_RequestCard> {
           Row(
             spacing: cp.space.md,
             children: [
-              CpAvatar(name: r.name ?? r.email),
+              CpAvatar(name: r.name ?? r.contact),
               Expanded(
                 child: Text(
-                  strings.accountLine(r.name, r.email),
+                  strings.accountLine(r.name, r.contact),
                   style: cp.type.titleMedium.copyWith(color: cp.colors.text),
                 ),
               ),
