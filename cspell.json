@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
+  "version": "0.2",
+  "language": "en",
+  "description": "Spell check of English user-facing strings (Spec #233 Testing Strategy 8). Gujarati is checked by test/i18n/gujarati_spelling_test.dart.",
+  "files": [
+    "lib/app/core/i18n/app_strings.dart",
+    "lib/l10n/app_en.arb",
+    "functions/src/mail/templates/en.json",
+    "functions/src/shared/label_defaults.json",
+    "assets/templates/*.json"
+  ],
+  "ignoreRegExpList": [
+    "[\\u0A80-\\u0AFF]+"
+  ],
+  "words": [
+    "aeiou",
+    "cashapp",
+    "cashtag",
+    "checkin",
+    "crewpoint",
+    "notif",
+    "Rebuilder",
+    "uids",
+    "venmo",
+    "Zelle"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "@@locale": "en",
+  "languageTitle": "Language",
+  "@languageTitle": {"description": "Heading of the language choice."},
+  "languageHint": "Screens and emails use this language.",
+  "@languageHint": {"description": "Explains what the language choice changes."},
+  "languageEnglish": "English",
+  "@languageEnglish": {"description": "The English option, always written in English."},
+  "languageGujarati": "ગુજરાતી",
+  "@languageGujarati": {"description": "The Gujarati option, always written in Gujarati."}
+}

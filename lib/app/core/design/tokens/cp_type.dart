@@ -37,11 +37,24 @@ class CpType extends ThemeExtension<CpType> {
   /// Headings, stats and large numbers.
   static const String displayFont = 'InterDisplay';
 
+  /// Gujarati script (Noto Sans Gujarati), loaded at runtime only when
+  /// Gujarati is needed (Spec #233 Req 59). Until it loads, text falls back
+  /// to the platform's own fonts.
+  static const String gujaratiFont = 'NotoSansGujarati';
+
+  /// Just the letters of "ગુજરાતી", bundled so the language switch shows it
+  /// without the full Gujarati font.
+  static const String gujaratiLabelFont = 'GujaratiLabel';
+
+  /// Fonts tried for characters Inter lacks.
+  static const List<String> scriptFallback = [gujaratiFont, gujaratiLabelFont];
+
   static const _tabular = [FontFeature.tabularFigures()];
 
   static const standard = CpType(
     displayLarge: TextStyle(
       fontFamily: displayFont,
+      fontFamilyFallback: scriptFallback,
       fontWeight: FontWeight.w700,
       height: 1.15,
       letterSpacing: -0.4,
@@ -49,6 +62,7 @@ class CpType extends ThemeExtension<CpType> {
     ),
     displayMedium: TextStyle(
       fontFamily: displayFont,
+      fontFamilyFallback: scriptFallback,
       fontWeight: FontWeight.w700,
       height: 1.15,
       letterSpacing: -0.3,
@@ -56,6 +70,7 @@ class CpType extends ThemeExtension<CpType> {
     ),
     displaySmall: TextStyle(
       fontFamily: displayFont,
+      fontFamilyFallback: scriptFallback,
       fontWeight: FontWeight.w600,
       height: 1.2,
       letterSpacing: -0.3,
@@ -64,6 +79,7 @@ class CpType extends ThemeExtension<CpType> {
     // The page title in the mockups.
     headlineLarge: TextStyle(
       fontFamily: displayFont,
+      fontFamilyFallback: scriptFallback,
       fontWeight: FontWeight.w600,
       height: 1.2,
       letterSpacing: -0.3,
@@ -71,6 +87,7 @@ class CpType extends ThemeExtension<CpType> {
     ),
     headlineMedium: TextStyle(
       fontFamily: displayFont,
+      fontFamilyFallback: scriptFallback,
       fontWeight: FontWeight.w600,
       height: 1.2,
       letterSpacing: -0.2,
@@ -78,6 +95,7 @@ class CpType extends ThemeExtension<CpType> {
     ),
     headlineSmall: TextStyle(
       fontFamily: displayFont,
+      fontFamilyFallback: scriptFallback,
       fontWeight: FontWeight.w600,
       height: 1.2,
       letterSpacing: -0.2,
@@ -86,6 +104,7 @@ class CpType extends ThemeExtension<CpType> {
     // Section headings and top bar titles.
     titleLarge: TextStyle(
       fontFamily: displayFont,
+      fontFamilyFallback: scriptFallback,
       fontWeight: FontWeight.w600,
       height: 1.2,
       letterSpacing: -0.1,
@@ -94,24 +113,28 @@ class CpType extends ThemeExtension<CpType> {
     // Row titles.
     titleMedium: TextStyle(
       fontFamily: textFont,
+      fontFamilyFallback: scriptFallback,
       fontWeight: FontWeight.w500,
       height: 1.4,
       fontSize: CpScale.type16,
     ),
     titleSmall: TextStyle(
       fontFamily: textFont,
+      fontFamilyFallback: scriptFallback,
       fontWeight: FontWeight.w500,
       height: 1.4,
       fontSize: CpScale.type15,
     ),
     bodyLarge: TextStyle(
       fontFamily: textFont,
+      fontFamilyFallback: scriptFallback,
       fontWeight: FontWeight.w400,
       height: 1.4,
       fontSize: CpScale.type16,
     ),
     bodyMedium: TextStyle(
       fontFamily: textFont,
+      fontFamilyFallback: scriptFallback,
       fontWeight: FontWeight.w400,
       height: 1.4,
       fontSize: CpScale.type15,
@@ -119,6 +142,7 @@ class CpType extends ThemeExtension<CpType> {
     // Row subtitles and help text.
     bodySmall: TextStyle(
       fontFamily: textFont,
+      fontFamilyFallback: scriptFallback,
       fontWeight: FontWeight.w400,
       height: 1.4,
       fontSize: CpScale.type13,
@@ -126,6 +150,7 @@ class CpType extends ThemeExtension<CpType> {
     // Buttons.
     labelLarge: TextStyle(
       fontFamily: textFont,
+      fontFamilyFallback: scriptFallback,
       fontWeight: FontWeight.w600,
       height: 1.3,
       fontSize: CpScale.type15,
@@ -133,12 +158,14 @@ class CpType extends ThemeExtension<CpType> {
     // Chips and field labels.
     labelMedium: TextStyle(
       fontFamily: textFont,
+      fontFamilyFallback: scriptFallback,
       fontWeight: FontWeight.w600,
       height: 1.3,
       fontSize: CpScale.type13,
     ),
     labelSmall: TextStyle(
       fontFamily: textFont,
+      fontFamilyFallback: scriptFallback,
       fontWeight: FontWeight.w500,
       height: 1.3,
       fontSize: CpScale.type12,
@@ -146,6 +173,7 @@ class CpType extends ThemeExtension<CpType> {
     // Stat card values: digits keep their width as they change.
     stat: TextStyle(
       fontFamily: displayFont,
+      fontFamilyFallback: scriptFallback,
       fontWeight: FontWeight.w600,
       height: 1.2,
       fontSize: CpScale.type22,
@@ -154,6 +182,7 @@ class CpType extends ThemeExtension<CpType> {
     // Large money and balance figures.
     number: TextStyle(
       fontFamily: displayFont,
+      fontFamilyFallback: scriptFallback,
       fontWeight: FontWeight.w600,
       height: 1.2,
       fontSize: CpScale.type28,

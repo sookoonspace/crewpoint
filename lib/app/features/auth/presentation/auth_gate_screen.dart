@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crewpoint_app/app/core/widgets/language_switch.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crewpoint_app/app/core/design/components/cp_logo.dart';
 import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
@@ -38,12 +39,15 @@ class AuthGateScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       spacing: cp.space.xl,
-                      children: [
-                        SizedBox(height: cp.space.xxl),
-                        const _Header(),
-                        const SocialAuthButtons(),
-                        const _Divider(),
-                        const EmailAuthForm(),
+                      children: const [
+                        // Before signing in (Spec #233 Req 56).
+                        Center(
+                          child: LanguageSwitch(keyPrefix: 'auth.language'),
+                        ),
+                        _Header(),
+                        SocialAuthButtons(),
+                        _Divider(),
+                        EmailAuthForm(),
                       ],
                     ),
                   ),
