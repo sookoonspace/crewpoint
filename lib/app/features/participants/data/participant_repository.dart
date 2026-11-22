@@ -193,9 +193,10 @@ class ParticipantRepository {
     if (privateDetails != null) {
       batch.set(_private(person.eventId, person.id), {
         'birthDate': privateDetails.birthDate,
-        // Kept from what was read, because linking an account reads it
-        // (Req 46).
+        // Kept from what was read, because linking an account reads them
+        // (Req 46, Spec #233 Req 13).
         'email': ?privateDetails.email,
+        'phone': ?privateDetails.phone,
         'fields': privateDetails.fields,
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -253,6 +254,7 @@ class ParticipantRepository {
         batch.set(_private(eventId, person.id), {
           'birthDate': private.birthDate,
           'email': ?private.email,
+          'phone': ?private.phone,
           'fields': private.fields,
           'updatedAt': FieldValue.serverTimestamp(),
         });

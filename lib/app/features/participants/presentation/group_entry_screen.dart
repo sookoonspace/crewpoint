@@ -19,6 +19,7 @@ import 'package:crewpoint_app/app/features/participants/domain/models/group_draf
 import 'package:crewpoint_app/app/features/participants/domain/models/participant.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/widgets/answer_input.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/widgets/person_card.dart';
+import 'package:crewpoint_app/app/features/participants/domain/models/phone.dart';
 
 /// What the group screen saved, for People to show it (Req 35).
 class GroupEntryResult {
@@ -165,6 +166,7 @@ class _GroupEntryScreenState extends ConsumerState<GroupEntryScreen> {
               isChild: p.isChild,
               birthDate: private?.birthDate,
               email: private?.email ?? '',
+              phone: private?.phone ?? '',
               answers: p.fields,
               privateAnswers: private?.fields ?? const {},
             );
@@ -215,6 +217,7 @@ class _GroupEntryScreenState extends ConsumerState<GroupEntryScreen> {
       createdBy: ref.read(currentUserIdProvider),
       categories: categoriesOf(event.settings),
       eventStart: event.displayStart ?? DateTime.now(),
+      phoneCountry: countryForTimeZone(event.timeZone),
     );
     if (!mounted) return;
     final state = ref.read(groupEntryProvider(_args));

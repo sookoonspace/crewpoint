@@ -14,7 +14,7 @@ const firebaseFunctionsTest = require('firebase-functions-test');
 const ftest = firebaseFunctionsTest();
 getAdminApp();
 const {linkMyParticipants, resolveLinkRequest} = require('../../src/participants/linkParticipants');
-const {emailMatchKey} = require('../../src/participants/matchKeys');
+const {emailMatchKey, phoneMatchKey} = require('../../src/participants/matchKeys');
 /* eslint-enable @typescript-eslint/no-var-requires */
 
 const E = 'conv';
@@ -173,6 +173,78 @@ describe('linkMyParticipants', () => {
 
   test('needs a signed-in caller', async () => {
     await expect(ftest.wrap(linkMyParticipants)({data: {}})).rejects.toEqual(rejected('unauthenticated'));
+  });
+});
+
+async function phonePerson(id: string, name: string, phone: string, over: object = {}, details: object = {}) {
+  await person(id, name, null, over);
+  await db().doc(`events/${E}/participants/${id}/private/details`).set({phone, ...details});
+}
+
+const signInByPhone = (uid: string, phone: string, extra: object = {}) =>
+  ftest.wrap(linkMyParticipants)({auth: {uid, token: {phone_number: phone, ...extra}}, data: {}});
+
+describe('linkMyParticipants by phone (Spec #233 Req 13, #237)', () => {
+  test('a verified phone links the one adult with that number, never a child', async () => {
+    await phonePerson('ravi', 'Ravi Patel', '+12145550100');
+    await phonePerson('kid', 'Asha Patel', '+12145550100', {isChild: true});
+    await expect(signInByPhone('u1', '+12145550100')).resolves.toEqual({linked: [E], asked: []});
+    expect((await get(`events/${E}/participants/ravi`))!.uid).toBe('u1');
+    expect((await get(`events/${E}/participants/kid`))!.uid).toBeUndefined();
+    expect((await get(`events/${E}/members/u1`))!.participantId).toBe('ravi');
+  });
+
+  test('two adults with the number go to an organizer, showing the phone', async () => {
+    await phonePerson('ravi', 'Ravi Patel', '+12145550100');
+    await phonePerson('mira', 'Mira Patel', '+12145550100');
+    await expect(signInByPhone('u1', '+12145550100')).resolves.toEqual({linked: [], asked: [E]});
+    expect(await get(`events/${E}/linkRequests/u1`)).toEqual(expect.objectContaining({
+      email: '', phone: '+12145550100', participantIds: ['mira', 'ravi'], status: 'open',
+    }));
+  });
+
+  test('an email match and a phone match on two adults are two adults', async () => {
+    await person('ravi', 'Ravi Patel', 'ravi@x.test');
+    await phonePerson('mira', 'Mira Patel', '+12145550100');
+    await expect(signInByPhone('u1', '+12145550100', {email: 'ravi@x.test', email_verified: true}))
+      .resolves.toEqual({linked: [], asked: [E]});
+  });
+
+  test('an unverified email with a verified phone links by the phone only', async () => {
+    await person('ravi', 'Ravi Patel', 'ravi@x.test');
+    await phonePerson('mira', 'Mira Patel', '+12145550100');
+    await expect(signInByPhone('u1', '+12145550100', {email: 'ravi@x.test', email_verified: false}))
+      .resolves.toEqual({linked: [E], asked: []});
+    expect((await get(`events/${E}/participants/mira`))!.uid).toBe('u1');
+    expect((await get(`events/${E}/participants/ravi`))!.uid).toBeUndefined();
+  });
+
+  test('a number stored another way does not match', async () => {
+    await phonePerson('ravi', 'Ravi Patel', '(214) 555-0100');
+    await expect(signInByPhone('u1', '+12145550100')).resolves.toEqual({linked: [], asked: []});
+  });
+
+  test('a deleted account\'s number links back to its unnamed entry, with the number restored', async () => {
+    await person('anon', '', null, {anonymised: true, sortName: ''});
+    await db().doc(`events/${E}/participantKeys/anon`).set({phoneKey: await phoneMatchKey('+12145550100')});
+    await db().doc('users/u2').set({displayName: 'Ravi Patel'});
+    await expect(signInByPhone('u2', '+12145550100')).resolves.toEqual({linked: [E], asked: []});
+    const details = (await get(`events/${E}/participants/anon/private/details`))!;
+    expect(details.phone).toBe('+12145550100');
+    expect(details.email).toBeUndefined();
+  });
+
+  test('an organizer settles a phone request', async () => {
+    await phonePerson('ravi', 'Ravi Patel', '+12145550100');
+    await phonePerson('mira', 'Mira Patel', '+12145550100');
+    await signInByPhone('u1', '+12145550100');
+    await resolve('owner', {uid: 'u1', participantId: 'mira'});
+    expect((await get(`events/${E}/participants/mira`))!.uid).toBe('u1');
+  });
+
+  test('no verified email and no phone links nothing', async () => {
+    await expect(ftest.wrap(linkMyParticipants)({auth: {uid: 'u1', token: {}}, data: {}}))
+      .resolves.toEqual({linked: [], asked: [], unverified: true});
   });
 });
 

@@ -218,6 +218,35 @@ void main() {
     await robot.finish();
   });
 
+  testWidgets('Spec #233 Req 13 a phone is checked on its card, then saved '
+      'in E.164', (tester) async {
+    final robot = await open(tester);
+    await robot.openNewGroup();
+    await robot.nameGroup('Mehta');
+    await robot.namePerson(0, 'Neha Mehta');
+    await robot.answer(0, 'diet', 'Veg');
+    await robot.phonePerson(0, '555-0100');
+    await robot.save();
+    expect(
+      find.textContaining('Enter the whole number, with the area code'),
+      findsOneWidget,
+    );
+    expect(harness.calls.calls, isEmpty);
+
+    await robot.phonePerson(0, '214.555.0100');
+    // Fixing it clears the error before the next save.
+    expect(
+      find.textContaining('Enter the whole number, with the area code'),
+      findsNothing,
+    );
+    await robot.save();
+    await robot.finishTransition();
+    final neha = (await peopleIn(newGroupId()!)).single;
+    expect(neha, isNot(contains('phone')));
+    expect((await privateOf(neha['id'] as String))!['phone'], '+12145550100');
+    await robot.finish();
+  });
+
   testWidgets("adds people to an existing group from the group's sheet", (
     tester,
   ) async {

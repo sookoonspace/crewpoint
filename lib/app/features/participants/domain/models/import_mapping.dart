@@ -93,6 +93,7 @@ const importTargets = [
   'isChild',
   'category',
   'email',
+  'phone',
 ];
 
 String _norm(String s) =>
@@ -112,6 +113,15 @@ const _guesses = <String, List<String>>{
   'birthDate': ['date of birth', 'birth date', 'birthdate', 'dob', 'born'],
   'age': ['age'],
   'email': ['email', 'e mail', 'email address'],
+  'phone': [
+    'phone',
+    'phone number',
+    'mobile',
+    'mobile number',
+    'cell',
+    'cell phone',
+    'telephone',
+  ],
   'category': ['category', 'type'],
   'isChild': ['child', 'is child', 'kid'],
 };

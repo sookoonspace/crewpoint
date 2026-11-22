@@ -34,6 +34,7 @@ class AuthRepository implements IAuthRepository {
     photoUrl: user.photoUrl,
     emailVerified: user.emailVerified,
     providerIds: user.providerIds,
+    phoneNumber: user.phoneNumber,
   );
 
   @override

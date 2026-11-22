@@ -10,7 +10,8 @@ import 'package:crewpoint_app/app/features/participants/domain/models/group_draf
 import 'package:crewpoint_app/app/features/participants/presentation/widgets/answer_input.dart';
 
 /// One person on the group screen (Spec #186 Req 28): name, adult or child,
-/// a child's birth date or an adult's email, and their answers inline.
+/// a child's birth date or an adult's email and phone, and their answers
+/// inline.
 ///
 /// A plain widget over a [PersonDraft], so Stage 2's registration form can
 /// reuse it (Req 38). It owns its text controllers, which live as long as
@@ -64,11 +65,15 @@ class _PersonCardState extends State<PersonCard> {
   late final TextEditingController _email = TextEditingController(
     text: widget.person.email,
   );
+  late final TextEditingController _phone = TextEditingController(
+    text: widget.person.phone,
+  );
 
   @override
   void dispose() {
     _name.dispose();
     _email.dispose();
+    _phone.dispose();
     super.dispose();
   }
 
@@ -188,7 +193,7 @@ class _PersonCardState extends State<PersonCard> {
                     : _person.copyWith(birthDate: _isoDate(d)),
               ),
             )
-          else
+          else ...[
             CpTextField(
               label: strings.emailLabel,
               labelIcon: CpIcons.lock,
@@ -199,6 +204,20 @@ class _PersonCardState extends State<PersonCard> {
               autofillHints: const [AutofillHints.email],
               onChanged: (v) => _change(_person.copyWith(email: v.trim())),
             ),
+            CpTextField(
+              label: strings.phoneLabel,
+              labelIcon: CpIcons.lock,
+              fieldKey: Key('$prefix.phone'),
+              controller: _phone,
+              help: strings.phoneHelp,
+              error: (check?.phoneInvalid ?? false)
+                  ? strings.phoneInvalid
+                  : null,
+              keyboardType: TextInputType.phone,
+              autofillHints: const [AutofillHints.telephoneNumber],
+              onChanged: (v) => _change(_person.copyWith(phone: v)),
+            ),
+          ],
           for (final field in widget.fields)
             AnswerInput(
               key: Key('$prefix.question.${field.id}'),

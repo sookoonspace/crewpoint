@@ -214,3 +214,20 @@ describe('the file is kept for 7 days at most (Req 44a)', () => {
     expect(importFileExpired(new Date('2027-07-13T01:00:00Z'), now)).toBe(false);
   });
 });
+
+describe('phone numbers (Spec #233 Req 13, #237)', () => {
+  const text = ['Name,Family,Diet,Phone', 'Ravi,Patel,Jain,07700 900123', 'Ila,Joshi,Veg,'].join('\n');
+  const targets = ['name', 'group', 'field:diet', 'phone'];
+
+  test('are kept privately in E.164, read in the event\'s country', async () => {
+    await db().doc(`events/${E}`).update({timeZone: 'Europe/London'});
+    await queue(text, {mode: 'apply', targets});
+    expect((await job()).status).toBe('done');
+    const byName = Object.fromEntries((await people()).map((p) => [p.name, p]));
+    expect(byName.Ravi).not.toHaveProperty('phone');
+    const details = async (id: unknown) =>
+      (await db().doc(`events/${E}/participants/${id}/private/details`).get()).data();
+    expect((await details(byName.Ravi.id))?.phone).toBe('+447700900123');
+    expect((await details(byName.Ila.id))?.phone).toBeNull();
+  });
+});

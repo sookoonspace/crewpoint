@@ -32,6 +32,9 @@ class GroupEntryRobot extends RolesRobot {
   Future<void> emailPerson(int index, String email) =>
       type(Key(person(index, 'email')), email);
 
+  Future<void> phonePerson(int index, String phone) =>
+      type(Key(person(index, 'phone')), phone);
+
   Future<void> markChild(int index) => tap(Key(person(index, 'child')));
 
   /// Picks [option] for a person's [fieldId] question.

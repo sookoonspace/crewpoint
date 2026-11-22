@@ -8,6 +8,7 @@ import 'package:crewpoint_app/app/features/participants/application/group_entry_
 import 'package:crewpoint_app/app/features/participants/data/participant_repository.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/group_draft.dart';
+import 'package:crewpoint_app/app/features/participants/domain/models/phone.dart';
 
 import '../../../../harness/fake_member_calls.dart';
 
@@ -115,6 +116,7 @@ void main() {
     createdBy: 'owner',
     categories: const [],
     eventStart: DateTime.utc(2027, 7, 9),
+    phoneCountry: PhoneCountry.us,
   );
 
   test('offline, nothing is sent and the draft stays', () async {
@@ -250,6 +252,7 @@ void main() {
       createdBy: 'owner',
       categories: const [],
       eventStart: DateTime.utc(2027, 7, 9),
+      phoneCountry: PhoneCountry.us,
     );
 
     void addRavi() => existingController().edit(
@@ -373,6 +376,7 @@ void main() {
           createdBy: 'parent',
           categories: const [],
           eventStart: DateTime.utc(2027, 7, 9),
+          phoneCountry: PhoneCountry.us,
         );
 
     test('opens with no blank cards, then the people loaded', () {
@@ -444,5 +448,63 @@ void main() {
       expect(private['email'], 'ravi@example.com');
       expect(private['fields'], {'allergies': 'None'});
     });
+    test(
+      'Spec #233 Req 13 a phone is saved in E.164, read in the event\'s country',
+      () async {
+        container.listen(groupEntryProvider(editing), (_, _) {});
+        editor().loadPeople([ravi]);
+        editor().edit(
+          (d) => GroupDraft(
+            groupId: d.groupId,
+            isNewGroup: false,
+            editing: true,
+            people: [d.people.single.copyWith(phone: '07700 900123')],
+          ),
+        );
+        expect(
+          await editor().save(
+            fields: const [arriving],
+            readsPrivate: true,
+            createdBy: 'parent',
+            categories: const [],
+            eventStart: DateTime.utc(2027, 7, 9),
+            phoneCountry: PhoneCountry.gb,
+          ),
+          GroupSaveOutcome.saved,
+        );
+        final private =
+            (await firestore
+                    .doc('events/e1/participants/ravi/private/details')
+                    .get())
+                .data()!;
+        expect(private['phone'], '+447700900123');
+        expect(private['email'], 'ravi@example.com');
+      },
+    );
+
+    test(
+      'a number that is not whole stops the save, writing nothing',
+      () async {
+        container.listen(groupEntryProvider(editing), (_, _) {});
+        editor().loadPeople([ravi]);
+        editor().edit(
+          (d) => GroupDraft(
+            groupId: d.groupId,
+            isNewGroup: false,
+            editing: true,
+            people: [d.people.single.copyWith(phone: '555-0100')],
+          ),
+        );
+        expect(await saveEdits(), GroupSaveOutcome.incomplete);
+        final state = container.read(groupEntryProvider(editing));
+        expect(state.check!.people['ravi']!.phoneInvalid, isTrue);
+        final private =
+            (await firestore
+                    .doc('events/e1/participants/ravi/private/details')
+                    .get())
+                .data()!;
+        expect(private.containsKey('phone'), isFalse);
+      },
+    );
   });
 }

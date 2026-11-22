@@ -1,0 +1,127 @@
+{
+  "_comment": "Spec #233 Req 13 (#237): which records a signed-in account links to, by verified email or verified phone, under the Stage 1 rules (#78): exactly one adult links; two or more adults, or only children, ask an organizer; never a child, never by name. Records hold what private details or match keys carry; a record with phoneEntered is stored the way the app and imports store it, through normalisePhone in phoneCountry. Run by functions/test/participants/linkingCases.test.ts.",
+  "cases": [
+    {
+      "name": "one adult with the verified phone links",
+      "identity": {"phone": "+12145550100"},
+      "records": [
+        {"eventId": "e1", "participantId": "ravi", "phone": "+12145550100"}
+      ],
+      "expected": {"e1": {"kind": "link", "participantId": "ravi"}}
+    },
+    {
+      "name": "a household sharing the parent's phone: the one adult links, never a child",
+      "identity": {"phone": "+12145550100"},
+      "records": [
+        {"eventId": "e1", "participantId": "ravi", "phone": "+12145550100"},
+        {"eventId": "e1", "participantId": "kid1", "isChild": true, "phone": "+12145550100"},
+        {"eventId": "e1", "participantId": "kid2", "isChild": true, "phone": "+12145550100"}
+      ],
+      "expected": {"e1": {"kind": "link", "participantId": "ravi"}}
+    },
+    {
+      "name": "two adults with the phone ask an organizer",
+      "identity": {"phone": "+12145550100"},
+      "records": [
+        {"eventId": "e1", "participantId": "ravi", "phone": "+12145550100"},
+        {"eventId": "e1", "participantId": "mira", "phone": "+12145550100"}
+      ],
+      "expected": {"e1": {"kind": "ask", "participantIds": ["ravi", "mira"], "groupIds": ["g1"]}}
+    },
+    {
+      "name": "only children with the phone ask an organizer",
+      "identity": {"phone": "+12145550100"},
+      "records": [
+        {"eventId": "e1", "participantId": "kid", "isChild": true, "groupId": "g2", "phone": "+12145550100"}
+      ],
+      "expected": {"e1": {"kind": "ask", "participantIds": ["kid"], "groupIds": ["g2"]}}
+    },
+    {
+      "name": "the email matches one adult and the phone another: two adults, so an organizer decides",
+      "identity": {"email": "ravi@example.com", "phone": "+12145550100"},
+      "records": [
+        {"eventId": "e1", "participantId": "ravi", "email": "ravi@example.com"},
+        {"eventId": "e1", "participantId": "mira", "phone": "+12145550100"}
+      ],
+      "expected": {"e1": {"kind": "ask", "participantIds": ["ravi", "mira"], "groupIds": ["g1"]}}
+    },
+    {
+      "name": "the email and the phone on the same adult count once",
+      "identity": {"email": "ravi@example.com", "phone": "+12145550100"},
+      "records": [
+        {"eventId": "e1", "participantId": "ravi", "email": "ravi@example.com", "phone": "+12145550100"}
+      ],
+      "expected": {"e1": {"kind": "link", "participantId": "ravi"}}
+    },
+    {
+      "name": "the email in one event and the phone in another link in both",
+      "identity": {"email": "ravi@example.com", "phone": "+12145550100"},
+      "records": [
+        {"eventId": "e1", "participantId": "ravi", "email": "ravi@example.com"},
+        {"eventId": "e2", "participantId": "r2", "phone": "+12145550100"}
+      ],
+      "expected": {
+        "e1": {"kind": "link", "participantId": "ravi"},
+        "e2": {"kind": "link", "participantId": "r2"}
+      }
+    },
+    {
+      "name": "a deleted account's number links back through its match key",
+      "identity": {"phone": "+12145550100", "phoneKey": "k-phone"},
+      "records": [
+        {"eventId": "e1", "participantId": "unnamed", "phoneKey": "k-phone"}
+      ],
+      "expected": {"e1": {"kind": "link", "participantId": "unnamed"}}
+    },
+    {
+      "name": "a number entered with punctuation is stored in E.164 and matches",
+      "identity": {"phone": "+12145550100"},
+      "records": [
+        {"eventId": "e1", "participantId": "ravi", "phoneEntered": "(214) 555-0100", "phoneCountry": "US"}
+      ],
+      "expected": {"e1": {"kind": "link", "participantId": "ravi"}}
+    },
+    {
+      "name": "a UK number entered nationally matches the account's +44 number",
+      "identity": {"phone": "+447700900123"},
+      "records": [
+        {"eventId": "e1", "participantId": "ravi", "phoneEntered": "07700 900123", "phoneCountry": "GB"}
+      ],
+      "expected": {"e1": {"kind": "link", "participantId": "ravi"}}
+    },
+    {
+      "name": "a number too short to be whole is never stored, so it never matches",
+      "identity": {"phone": "+12145550100"},
+      "records": [
+        {"eventId": "e1", "participantId": "ravi", "phoneEntered": "555-0100", "phoneCountry": "US"}
+      ],
+      "expected": {}
+    },
+    {
+      "name": "a phone-only account never matches records without a phone",
+      "identity": {"phone": "+12145550100"},
+      "records": [
+        {"eventId": "e1", "participantId": "ravi", "email": "ravi@example.com"},
+        {"eventId": "e1", "participantId": "mira"}
+      ],
+      "expected": {}
+    },
+    {
+      "name": "an email-only account never matches by phone",
+      "identity": {"email": "ravi@example.com"},
+      "records": [
+        {"eventId": "e1", "participantId": "mira", "phone": "+12145550100"}
+      ],
+      "expected": {}
+    },
+    {
+      "name": "a record linked to someone else, or cancelled, is never taken",
+      "identity": {"phone": "+12145550100"},
+      "records": [
+        {"eventId": "e1", "participantId": "ravi", "phone": "+12145550100", "linkedUid": "other"},
+        {"eventId": "e1", "participantId": "mira", "phone": "+12145550100", "status": "cancelled"}
+      ],
+      "expected": {"e1": {"kind": "none"}}
+    }
+  ]
+}

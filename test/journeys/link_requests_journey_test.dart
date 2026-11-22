@@ -127,6 +127,18 @@ void main() {
     await robot.finish();
   });
 
+  testWidgets('Spec #233 Req 13 an account signed in by phone shows its '
+      'number', (tester) async {
+    final robot = await open(tester, location: '$base/people/links');
+    await harness.firestore.doc('$e/linkRequests/u2').update({
+      'email': '',
+      'phone': '+12145550100',
+    });
+    await robot.settle();
+    expect(find.text('+12145550100'), findsOneWidget);
+    await robot.finish();
+  });
+
   testWidgets('not a match', (tester) async {
     final robot = await open(tester, location: '$base/people/links');
     await robot.tap(const Key('links.u2.dismiss'));

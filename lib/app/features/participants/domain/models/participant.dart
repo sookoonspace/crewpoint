@@ -200,6 +200,7 @@ class ParticipantPrivate {
   const ParticipantPrivate({
     this.birthDate,
     this.email,
+    this.phone,
     this.fields = const {},
   });
 
@@ -207,6 +208,7 @@ class ParticipantPrivate {
       ParticipantPrivate(
         birthDate: data['birthDate'] as String?,
         email: data['email'] as String?,
+        phone: data['phone'] as String?,
         fields: _answers(data['fields']),
       );
 
@@ -217,6 +219,10 @@ class ParticipantPrivate {
   /// edited in the app, but kept when the details are saved.
   final String? email;
 
+  /// E.164 (Spec #233 Req 13), which linking an account matches on, as it
+  /// does the email.
+  final String? phone;
+
   /// Private custom field answers, by field ID (Req 41).
   final Map<String, Object?> fields;
 
@@ -225,6 +231,7 @@ class ParticipantPrivate {
       other is ParticipantPrivate &&
       other.birthDate == birthDate &&
       other.email == email &&
+      other.phone == phone &&
       mapEquals(other.fields, fields);
 
   @override

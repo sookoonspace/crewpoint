@@ -40,6 +40,7 @@ final currentUserDocProvider = StreamProvider<AppUser?>((ref) {
       currency: (data['currency'] as String?) ?? 'USD',
       emailVerified: authUser.emailVerified,
       providerIds: authUser.providerIds,
+      phoneNumber: authUser.phoneNumber,
     );
   });
 });

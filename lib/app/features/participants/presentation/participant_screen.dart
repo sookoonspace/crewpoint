@@ -17,6 +17,7 @@ import 'package:crewpoint_app/app/features/participants/domain/models/custom_fie
 import 'package:crewpoint_app/app/features/participants/domain/models/participant.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/widgets/answer_input.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/group_sheets.dart';
+import 'package:crewpoint_app/app/features/participants/domain/models/phone.dart';
 
 /// The route ID that opens the screen on a new participant.
 const newParticipantId = 'new';
@@ -56,6 +57,9 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
 
   /// An imported email, kept when the private details are saved (Req 46).
   String? _privateEmail;
+
+  /// An adult's phone number as typed, saved in E.164 (Spec #233 Req 13).
+  final _phone = TextEditingController();
 
   /// Whether the private part (birth date and private answers) changed.
   bool _birthDateChanged = false;
@@ -135,6 +139,7 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
   @override
   void dispose() {
     _name.dispose();
+    _phone.dispose();
     super.dispose();
   }
 
@@ -220,6 +225,15 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
         f,
   ].length;
 
+  PhoneCountry get _phoneCountry => countryForTimeZone(widget.event.timeZone);
+
+  /// What goes in private details: E.164, or nothing when the field is
+  /// empty. The field's check stops a save with a number that is not whole.
+  String? get _savedPhone {
+    final typed = _phone.text.trim();
+    return typed.isEmpty ? null : normalisePhone(typed, _phoneCountry);
+  }
+
   Future<void> _save() async {
     final nameOk = _formKey.currentState!.validate();
     setState(() => _tried = true);
@@ -245,6 +259,7 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
                 ? ParticipantPrivate(
                     birthDate: _birthDate,
                     email: _privateEmail,
+                    phone: _savedPhone,
                     fields: _privateAnswers,
                   )
                 : null,
@@ -410,6 +425,7 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
         _privateLoaded = true;
         _birthDate = private.value?.birthDate;
         _privateEmail = private.value?.email;
+        _phone.text = private.value?.phone ?? '';
         _privateAnswers = {...?private.value?.fields};
       }
     }
@@ -555,8 +571,13 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
       ),
     );
 
+    final adult = !(_derived?.isChild ?? _isChild);
+    final showsPhone = adult && (editsPrivate || _phone.text.isNotEmpty);
     final privateSection =
-        editsPrivate || _birthDate != null || privateFields.isNotEmpty
+        editsPrivate ||
+            _birthDate != null ||
+            _phone.text.isNotEmpty ||
+            privateFields.isNotEmpty
         ? Container(
             key: const Key('people.edit.private'),
             padding: EdgeInsets.all(cp.space.lg),
@@ -613,6 +634,24 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
                     format: (d) =>
                         MaterialLocalizations.of(context).formatShortDate(d),
                     onChanged: _setBirthDate,
+                  ),
+                if (showsPhone)
+                  CpTextField(
+                    label: context.strings.groupEntry.phoneLabel,
+                    fieldKey: const Key('people.edit.phone'),
+                    controller: _phone,
+                    enabled: editsPrivate && !_busy,
+                    help: context.strings.groupEntry.phoneHelp,
+                    keyboardType: TextInputType.phone,
+                    autofillHints: const [AutofillHints.telephoneNumber],
+                    onChanged: (_) => setState(() => _birthDateChanged = true),
+                    validator: (v) {
+                      final typed = v?.trim() ?? '';
+                      return typed.isEmpty ||
+                              normalisePhone(typed, _phoneCountry) != null
+                          ? null
+                          : context.strings.groupEntry.phoneInvalid;
+                    },
                   ),
                 for (final f in privateFields) answer(f),
               ],

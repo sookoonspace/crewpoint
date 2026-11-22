@@ -7,10 +7,10 @@ import 'package:crewpoint_app/app/features/dashboard/data/member_calls.dart';
 
 /// Links the signed-in account to its own participant records (Req 46,
 /// X-05, L-01, L-02). Once someone is signed in with a verified email, by
-/// Google, Apple or a verified password, it asks the server once per account
-/// per session; an unverified email waits until the person verifies it. The
-/// server decides what links. Holds the last result, so the shell can say
-/// what was linked.
+/// Google, Apple or a verified password, or with a phone code (Spec #233
+/// Req 13), it asks the server once per account per session; an unverified
+/// email waits until the person verifies it. The server decides what links.
+/// Holds the last result, so the shell can say what was linked.
 class AccountLinker extends Notifier<LinkResult?> {
   final _asked = <String>{};
 
@@ -25,8 +25,11 @@ class AccountLinker extends Notifier<LinkResult?> {
   }
 
   Future<void> _check(AuthState auth) async {
-    if (auth is! Authenticated || !auth.user.emailVerified) return;
-    final uid = auth.user.uid;
+    if (auth is! Authenticated) return;
+    final user = auth.user;
+    // Firebase sets a phone number only once its code is entered.
+    if (!user.emailVerified && (user.phoneNumber ?? '').isEmpty) return;
+    final uid = user.uid;
     if (!_asked.add(uid)) return;
     try {
       state = await ref.read(memberCallsProvider).linkMyParticipants();

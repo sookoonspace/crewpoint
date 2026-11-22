@@ -185,3 +185,43 @@ describe('re-import (X-02, X-03)', () => {
     expect(plan.missingGroups.map((g) => g.groupId)).toEqual(['gS']);
   });
 });
+
+describe('phone numbers (Spec #233 Req 13, #237)', () => {
+  const phoneTargets: Target[] = ['name', 'group', 'phone'];
+  const rows = (...r: string[][]) => [['Name', 'Family', 'Phone'], ...r];
+
+  test('a number is kept in E.164, read in the event\'s country without a prefix', () => {
+    const plan = planImport(rows(
+      ['Ravi', 'Patel', '(214) 555-0100'],
+      ['Mira', 'Shah', '+44 7700 900123'],
+      ['Asha', 'Shah', ''],
+    ), phoneTargets, context({phoneCountry: 'US'}));
+    expect(plan.errors).toEqual([]);
+    expect(plan.people.map((p) => p.phone)).toEqual(['+12145550100', '+447700900123', null]);
+  });
+
+  test('a UK event reads a national number as +44', () => {
+    const plan = planImport(rows(['Ravi', 'Patel', '07700 900123']), phoneTargets,
+      context({phoneCountry: 'GB'}));
+    expect(plan.people[0].phone).toBe('+447700900123');
+  });
+
+  test('a number that is not whole is a problem on its row', () => {
+    const plan = planImport(rows(['Ravi', 'Patel', '555-0100'], ['Mira', 'Shah', '214 555 0100']),
+      phoneTargets, context());
+    expect(plan.errors).toEqual([{row: 2, column: 'Phone', problem: 'badPhone'}]);
+    expect(plan.people.map((p) => p.name)).toEqual(['Mira']);
+  });
+
+  test('a household may share one number, as with email', () => {
+    const plan = planImport(rows(['Ravi', 'Patel', '214 555 0100'], ['Asha', 'Patel', '214 555 0100']),
+      phoneTargets, context());
+    expect(plan.errors).toEqual([]);
+    expect(plan.people).toHaveLength(2);
+  });
+
+  test('without a phone column, phone is left as it is', () => {
+    const plan = planImport([['Name'], ['Ravi']], ['name'], context());
+    expect(plan.people[0]).not.toHaveProperty('phone');
+  });
+});

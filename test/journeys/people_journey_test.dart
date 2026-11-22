@@ -197,6 +197,39 @@ void main() {
     await robot.finish();
   });
 
+  testWidgets('Spec #233 Req 13 an adult\'s phone is checked, then saved in '
+      'E.164', (tester) async {
+    final robot = await open(tester, location: '$people/raj');
+    final phone = find.byKey(const Key('people.edit.phone'));
+    await robot.reveal(phone);
+    await tester.enterText(phone, '555-0100');
+    await robot.tap(const Key('people.edit.save'));
+    expect(
+      find.textContaining('Enter the whole number, with the area code'),
+      findsOneWidget,
+    );
+    expect(
+      (await harness.firestore.doc('$e/participants/raj/private/details').get())
+          .exists,
+      isFalse,
+    );
+
+    await robot.reveal(phone);
+    await tester.enterText(phone, '(214) 555-0100');
+    await robot.tap(const Key('people.edit.save'));
+    final private = await harness.firestore
+        .doc('$e/participants/raj/private/details')
+        .get();
+    expect(private.data()?['phone'], '+12145550100');
+    await robot.finish();
+  });
+
+  testWidgets('a child has no phone field', (tester) async {
+    final robot = await open(tester, location: '$people/ana');
+    expect(find.byKey(const Key('people.edit.phone')), findsNothing);
+    await robot.finish();
+  });
+
   testWidgets('PA-05 someone with no account is added, with no group', (
     tester,
   ) async {

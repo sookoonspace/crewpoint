@@ -53,6 +53,14 @@ void main() {
       expect(guess('Is child'), 'isChild');
     });
 
+    test('recognises phone columns (Spec #233 Req 13)', () {
+      expect(guess('Phone'), 'phone');
+      expect(guess('Mobile'), 'phone');
+      expect(guess('Cell phone'), 'phone');
+      expect(guess('Phone number'), 'phone');
+      expect(importTargets, contains('phone'));
+    });
+
     test("uses the event's own word for a group", () {
       expect(
         guessTarget(

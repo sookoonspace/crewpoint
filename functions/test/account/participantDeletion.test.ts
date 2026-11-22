@@ -18,7 +18,7 @@ const ftest = firebaseFunctionsTest();
 getAdminApp();
 const {deleteUserAccount} = require('../../src/account/deleteUserAccount');
 const {linkMyParticipants} = require('../../src/participants/linkParticipants');
-const {emailMatchKey, externalIdMatchKey} = require('../../src/participants/matchKeys');
+const {emailMatchKey, externalIdMatchKey, phoneMatchKey} = require('../../src/participants/matchKeys');
 /* eslint-enable @typescript-eslint/no-var-requires */
 
 const db = () => getAdminDb();
@@ -148,5 +148,21 @@ describe('deleting a linked account', () => {
     expect(back.anonymised).toBeUndefined();
     const all = await db().collection(`${UPCOMING}/participants`).where('categoryId', '==', 'adult').get();
     expect(all.size).toBe(1);
+  });
+
+  test('Spec #233 Req 13 a phone number keeps its own match key, and a phone sign-in links back', async () => {
+    await seed(UPCOMING, 'published');
+    await db().doc(`${UPCOMING}/participants/pRavi/private/details`).update({phone: '+12145550100'});
+    await remove('ravi');
+    expect((await read(`${UPCOMING}/participantKeys/pRavi`))!.phoneKey)
+      .toBe(await phoneMatchKey('+12145550100'));
+    await account('ravi3');
+    await expect(ftest.wrap(linkMyParticipants)({
+      auth: {uid: 'ravi3', token: {phone_number: '+12145550100'}}, data: {},
+    })).resolves.toEqual({linked: [UPCOMING.split('/')[1]], asked: []});
+    const back = (await read(`${UPCOMING}/participants/pRavi`))!;
+    expect(back).toEqual(expect.objectContaining({uid: 'ravi3', name: 'Ravi Patel'}));
+    expect((await read(`${UPCOMING}/participants/pRavi/private/details`))!.phone).toBe('+12145550100');
+    expect(await read(`${UPCOMING}/participantKeys/pRavi`)).toBeUndefined();
   });
 });
