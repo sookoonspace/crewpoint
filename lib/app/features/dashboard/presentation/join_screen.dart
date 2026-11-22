@@ -16,7 +16,8 @@ import 'package:crewpoint_app/app/features/dashboard/data/member_calls.dart';
 /// Spec #186). A
 /// signed-out person signs in first and comes back here. It shows the event
 /// and the role the invite carries, explains when the event is a draft,
-/// ended or full, and joins with one tap. Joining needs a connection.
+/// ended or full, or the link was used, turned off or expired (#238), and
+/// joins with one tap. Joining needs a connection.
 class JoinScreen extends ConsumerStatefulWidget {
   const JoinScreen({super.key, required this.code});
 
@@ -31,6 +32,9 @@ enum _Problem { notFound, offline, joinFailed }
 class _JoinScreenState extends ConsumerState<JoinScreen> {
   InvitePreview? _preview;
   _Problem? _problem;
+
+  /// Why a known link cannot be used (`used`, `off`, `expired`; #238).
+  String? _unusable;
   bool _loading = true;
   bool _joining = false;
 
@@ -52,11 +56,12 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
       if (mounted) setState(() => _preview = preview);
     } on FirebaseFunctionsException catch (e) {
       if (mounted) {
-        setState(
-          () => _problem = e.code == 'not-found' || e.code == 'invalid-argument'
+        setState(() {
+          _unusable = unusableInviteReason(e);
+          _problem = e.code == 'not-found' || e.code == 'invalid-argument'
               ? _Problem.notFound
-              : _Problem.offline,
-        );
+              : _Problem.offline;
+        });
       }
     } catch (_) {
       if (mounted) setState(() => _problem = _Problem.offline);
@@ -114,7 +119,7 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
       body = CpEmptyState(
         key: const Key('join.notFound'),
         icon: CpIcons.statusError,
-        title: strings.notFound,
+        title: strings.unusable(_unusable),
       );
     } else if (_preview == null) {
       body = CpErrorState(

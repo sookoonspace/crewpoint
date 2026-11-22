@@ -2,12 +2,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:crewpoint_app/app/features/dashboard/data/member_calls.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_access.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/invite.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
 
 /// Stands in for the member and role callables. With a [firestore], it writes
 /// what the server would: member documents with their permissions worked out
 /// from roles, role documents, and the arrays. Server-side checks are covered
-/// by `functions/test/events/roles.test.ts` and `inviteRoles.test.ts`.
+/// by `functions/test/events/roles.test.ts`, `inviteRoles.test.ts` and
+/// `inviteLinks.test.ts`.
 class FakeMemberCalls implements MemberCalls {
   FakeMemberCalls({this.firestore, this.code = 'ABC234'});
 
@@ -34,8 +36,6 @@ class FakeMemberCalls implements MemberCalls {
   /// What [exportRoster] answers.
   String rosterCsv = 'Name\r\n';
 
-  String _inviteRole = 'participant';
-  int _rotations = 0;
 
   void _maybeFail() {
     final error = failNext;
@@ -269,33 +269,96 @@ class FakeMemberCalls implements MemberCalls {
     await _recalculateHolders(eventId, roleId);
   }
 
+  /// The event's invite links, newest first, as `listInviteLinks` keeps
+  /// them. The first one made has [code]; later ones end in their number.
+  final inviteLinks = <InviteLink>[];
+
+  /// The expiry a link made without one gets, standing in for the server's
+  /// template default.
+  DateTime inviteExpiresAt = DateTime(2027, 7, 16);
+
   @override
-  Future<InviteCode> generateInviteCode({
+  Future<List<InviteLink>> listInviteLinks(String eventId) async {
+    calls.add('listInviteLinks');
+    _maybeFail();
+    return List.of(inviteLinks);
+  }
+
+  @override
+  Future<InviteLink> createInviteLink({
     required String eventId,
-    String? roleId,
-    bool rotate = false,
+    required String roleId,
     DateTime? expiresAt,
+    bool singleUse = false,
   }) async {
     calls.add(
-      'generateInviteCode:${roleId ?? '-'}:$rotate'
+      'createInviteLink:$roleId:$singleUse'
       '${expiresAt == null ? '' : ':${expiresAt.toIso8601String()}'}',
     );
     _maybeFail();
-    if (roleId != null && roleId != _inviteRole) {
-      _inviteRole = roleId;
-      _rotations++;
+    final n = inviteLinks.length;
+    final link = InviteLink(
+      code: n == 0 ? code : '${code.substring(0, 5)}$n',
+      roleId: roleId,
+      expiresAt: expiresAt ?? inviteExpiresAt,
+      singleUse: singleUse,
+      createdAt: DateTime.now(),
+    );
+    inviteLinks.insert(0, link);
+    return link;
+  }
+
+  InviteLink _replaceLink(String code, InviteLink Function(InviteLink) change) {
+    final i = inviteLinks.indexWhere((l) => l.code == code);
+    if (i < 0) {
+      throw FirebaseFunctionsException(code: 'not-found', message: 'No link');
     }
-    if (rotate) _rotations++;
-    if (expiresAt != null) inviteExpiresAt = expiresAt;
-    return (
-      code: _rotations == 0 ? code : '${code.substring(0, 5)}$_rotations',
-      roleId: _inviteRole,
-      expiresAt: inviteExpiresAt,
+    return inviteLinks[i] = change(inviteLinks[i]);
+  }
+
+  @override
+  Future<InviteLink> setInviteLinkExpiry({
+    required String eventId,
+    required String code,
+    required DateTime expiresAt,
+  }) async {
+    calls.add('setInviteLinkExpiry:$code:${expiresAt.toIso8601String()}');
+    _maybeFail();
+    return _replaceLink(
+      code,
+      (l) => InviteLink(
+        code: l.code,
+        roleId: l.roleId,
+        expiresAt: expiresAt,
+        singleUse: l.singleUse,
+        uses: l.uses,
+        usedAt: l.usedAt,
+        createdAt: l.createdAt,
+      ),
     );
   }
 
-  /// When the invite expires, as the server last said.
-  DateTime? inviteExpiresAt = DateTime(2027, 7, 16);
+  @override
+  Future<InviteLink> turnOffInviteLink({
+    required String eventId,
+    required String code,
+  }) async {
+    calls.add('turnOffInviteLink:$code');
+    _maybeFail();
+    return _replaceLink(
+      code,
+      (l) => InviteLink(
+        code: l.code,
+        roleId: l.roleId,
+        expiresAt: l.expiresAt,
+        singleUse: l.singleUse,
+        uses: l.uses,
+        usedAt: l.usedAt,
+        createdAt: l.createdAt,
+        turnedOffAt: DateTime.now(),
+      ),
+    );
+  }
 
   /// What [previewInvite] answers, by code. Any other code is not found.
   final previews = <String, InvitePreview>{};

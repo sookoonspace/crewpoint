@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/invite.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
 import 'package:share_plus/share_plus.dart';
@@ -16,10 +17,12 @@ import 'package:crewpoint_app/app/core/design/tokens/cp_colors.dart';
 import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
 import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
 
-/// Bottom sheet showing the event's one active invite (Req 31, 47): a link
-/// and QR code that open `/join/:code`, the code itself, the role it carries
-/// and when it expires, which the organizer can change (Req 56). The invite
-/// is made on the server by `generateInviteCode`, through
+/// Bottom sheet listing the event's member invite links (Req 47, 56;
+/// Spec #233 Req 15, #238). Each link carries a role, an expiry and,
+/// optionally, works for one join only; each shows its state, with copy,
+/// share, QR code, a new expiry and turn off. "New link" makes another.
+/// An event with no links yet gets a Participant link on opening, so
+/// inviting stays one tap. The links live on the server, through
 /// [memberCallsProvider].
 class AddMemberSheet extends ConsumerStatefulWidget {
   const AddMemberSheet({
@@ -34,8 +37,8 @@ class AddMemberSheet extends ConsumerStatefulWidget {
   /// This event's word for members. Null uses the default.
   final String? memberLabel;
 
-  /// Whether the viewer holds `roles.manage`, and so may pick the role the
-  /// invite carries. Everyone else invites Participants.
+  /// Whether the viewer holds `roles.manage`, and so may make links into
+  /// any role. Everyone else makes Participant links.
   final bool canChooseRole;
 
   static Future<void> show({
@@ -61,95 +64,144 @@ class AddMemberSheet extends ConsumerStatefulWidget {
   ConsumerState<AddMemberSheet> createState() => _AddMemberSheetState();
 }
 
+/// What the new link form asks for. A null [expiresAt] is the event's
+/// usual expiry, which the server works out.
+typedef _NewLink = ({String roleId, DateTime? expiresAt, bool singleUse});
+
 class _AddMemberSheetState extends ConsumerState<AddMemberSheet> {
-  String? _code;
-  String? _roleId;
-  DateTime? _expiresAt;
+  List<InviteLink> _links = const [];
   bool _isLoading = true;
   String? _errorMessage;
 
-  /// What the last failed call asked for, so retrying asks again.
-  ({String? roleId, bool rotate, DateTime? expiresAt})? _lastAsk;
+  /// The link being changed, or `new` while one is made.
+  String? _busy;
 
   @override
   void initState() {
     super.initState();
-    // Without `roles.manage`, the invite is always for Participants. With it,
-    // opening the sheet keeps whatever role the active invite carries.
-    _generateCode(roleId: widget.canChooseRole ? null : 'participant');
+    _load();
   }
 
-  /// Gets the active invite, replacing it when [roleId] differs from its role
-  /// or [rotate] is set. [expiresAt] changes when it expires, keeping it.
-  Future<void> _generateCode({
-    String? roleId,
-    bool rotate = false,
-    DateTime? expiresAt,
-  }) async {
-    _lastAsk = (roleId: roleId, rotate: rotate, expiresAt: expiresAt);
+  String _messageFor(Object e) {
+    final strings = context.strings;
+    if (e is FirebaseFunctionsException) {
+      log('Invite links failed: ${e.code}', error: e, name: 'invite');
+      return switch (e.code) {
+        'permission-denied' => strings.invites.permissionDenied,
+        'not-found' => strings.invites.eventGone,
+        'failed-precondition' => strings.dashboard.notOpenToInvites,
+        'unavailable' || 'deadline-exceeded' => strings.invites.offline,
+        _ => strings.invites.failed,
+      };
+    }
+    // Includes a sheet built without a provider scope, and no connection.
+    log('Invite links error', error: e, name: 'invite');
+    return strings.invites.offline;
+  }
+
+  /// Lists the links; with none yet, makes a Participant link.
+  Future<void> _load() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
-
-    final strings = context.strings;
     try {
-      final invite = await ref
-          .read(memberCallsProvider)
-          .generateInviteCode(
+      final calls = ref.read(memberCallsProvider);
+      var links = await calls.listInviteLinks(widget.eventId);
+      if (links.isEmpty) {
+        links = [
+          await calls.createInviteLink(
             eventId: widget.eventId,
-            roleId: roleId ?? _roleId,
-            rotate: rotate,
-            expiresAt: expiresAt,
-          );
-
-      if (mounted) {
-        setState(() {
-          _code = invite.code;
-          _roleId = invite.roleId;
-          _expiresAt = invite.expiresAt;
-          _isLoading = false;
-        });
+            roleId: 'participant',
+          ),
+        ];
       }
-    } on FirebaseFunctionsException catch (e) {
-      log('Generate invite code failed: ${e.code}', error: e, name: 'invite');
       if (mounted) {
         setState(() {
+          _links = links;
           _isLoading = false;
-          _errorMessage = switch (e.code) {
-            'permission-denied' => strings.invites.permissionDenied,
-            'not-found' => strings.invites.eventGone,
-            'failed-precondition' => strings.dashboard.notOpenToInvites,
-            'unavailable' || 'deadline-exceeded' => strings.invites.offline,
-            _ => strings.invites.failed,
-          };
         });
       }
     } catch (e) {
-      log('Generate invite code error', error: e, name: 'invite');
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = strings.invites.offline;
+          _errorMessage = _messageFor(e);
         });
       }
     }
   }
 
-  void _retry() {
-    final ask = _lastAsk;
-    _generateCode(
-      roleId: ask?.roleId,
-      rotate: ask?.rotate ?? false,
-      expiresAt: ask?.expiresAt,
+  /// Runs [change] on one link, showing a failure without losing the list.
+  Future<void> _change(
+    String busy,
+    Future<InviteLink> Function() change, {
+    String? done,
+  }) async {
+    setState(() => _busy = busy);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final link = await change();
+      if (!mounted) return;
+      setState(() {
+        final i = _links.indexWhere((l) => l.code == link.code);
+        _links = i < 0
+            ? [link, ..._links]
+            : [..._links.take(i), link, ..._links.skip(i + 1)];
+      });
+      if (done != null) messenger.showSnackBar(SnackBar(content: Text(done)));
+    } catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(SnackBar(content: Text(_messageFor(e))));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = null);
+    }
+  }
+
+  List<RoleDefinition> get _roles => [
+    for (final role
+        in ref.watch(eventRolesProvider(widget.eventId)).value ??
+            const <RoleDefinition>[])
+      if (!role.isOwner) role,
+  ];
+
+  String _roleName(String roleId) =>
+      _roles.where((r) => r.id == roleId).firstOrNull?.name ??
+      RoleCatalogue.current.presets
+          .where((r) => r.id == roleId)
+          .firstOrNull
+          ?.name ??
+      roleId;
+
+  Future<void> _newLink() async {
+    final event = ref.read(eventByIdProvider(widget.eventId));
+    final picked = await showCpSheet<_NewLink>(
+      context: context,
+      title: context.strings.invites.newLinkTitle,
+      builder: (_) => _NewLinkForm(
+        roles: widget.canChooseRole
+            ? _roles
+            : _roles.where((r) => r.id == 'participant').toList(),
+        event: event,
+      ),
+    );
+    if (picked == null || !mounted) return;
+    await _change(
+      'new',
+      () => ref
+          .read(memberCallsProvider)
+          .createInviteLink(
+            eventId: widget.eventId,
+            roleId: picked.roleId,
+            expiresAt: picked.expiresAt,
+            singleUse: picked.singleUse,
+          ),
     );
   }
 
-  String get _link => inviteLink(_code!);
-
-  void _copyLink() {
-    if (_code == null) return;
-    Clipboard.setData(ClipboardData(text: _link));
+  void _copy(InviteLink link) {
+    Clipboard.setData(ClipboardData(text: inviteLink(link.code)));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(context.strings.invites.copied),
@@ -158,149 +210,74 @@ class _AddMemberSheetState extends ConsumerState<AddMemberSheet> {
     );
   }
 
-  Future<void> _share() async {
-    if (_code == null) return;
+  Future<void> _share(InviteLink link) async {
     final title = ref.read(eventByIdProvider(widget.eventId))?.title ?? '';
     await SharePlus.instance.share(
       ShareParams(
-        text: context.strings.invites.shareText(title, _link, _code!),
+        text: context.strings.invites.shareText(
+          title,
+          inviteLink(link.code),
+          link.code,
+        ),
       ),
     );
   }
 
-  Future<void> _changeExpiry(Object choice) async {
-    final now = DateTime.now();
-    DateTime? at;
-    if (choice is InviteExpiry) {
-      at = inviteExpiryFor(
-        choice,
-        ref.read(eventByIdProvider(widget.eventId)),
-        now,
-      );
-    } else {
-      final picked = await showDatePicker(
-        context: context,
-        initialDate: _expiresAt?.toLocal() ?? now,
-        firstDate: now,
-        lastDate: now.add(const Duration(days: maxInviteDays - 1)),
-      );
-      if (picked != null) at = expiryOnDate(picked, now);
-    }
-    if (at != null && mounted) _generateCode(expiresAt: at);
-  }
+  Future<void> _showQr(InviteLink link) => showCpSheet<void>(
+    context: context,
+    title: _roleName(link.roleId),
+    builder: (_) => _QrCode(url: inviteLink(link.code)),
+  );
 
-  /// The role the invite carries. Changing it replaces the code.
-  Widget _rolePicker(BuildContext context) {
-    final cp = context.cp;
-    final strings = context.strings.roles;
-    final roles = [
-      for (final role
-          in ref.watch(eventRolesProvider(widget.eventId)).value ??
-              const <RoleDefinition>[])
-        if (!role.isOwner) role,
-    ];
-    final current = _roleId ?? 'participant';
-    final currentRole = roles.where((r) => r.id == current).firstOrNull;
-    return CpSelectField(
-      fieldKey: const Key('dashboard.invite.role'),
-      label: strings.inviteRoleLabel,
-      value: currentRole?.name,
-      help: strings.inviteRoleHint,
-      leadingIcon: CpIcons.shield,
-      onTap: () async {
-        final picked = await showCpSheet<String>(
-          context: context,
-          title: strings.inviteRoleLabel,
-          builder: (sheet) => CpCard(
-            child: CpRowGroup(
-              children: [
-                for (final role in roles)
-                  CpListRow(
-                    key: Key('dashboard.invite.role.${role.id}'),
-                    title: role.name,
-                    trailing: role.id == current
-                        ? Icon(
-                            CpIcons.statusDone,
-                            size: cp.sizes.iconMd,
-                            color: cp.colors.accent,
-                          )
-                        : const SizedBox.shrink(),
-                    onTap: () => Navigator.of(sheet).pop(role.id),
-                  ),
-              ],
-            ),
+  Future<void> _changeExpiry(InviteLink link, Object choice) async {
+    final at = await _pickExpiry(
+      context,
+      choice,
+      ref.read(eventByIdProvider(widget.eventId)),
+      link.expiresAt,
+    );
+    if (at == null || !mounted) return;
+    await _change(
+      link.code,
+      () => ref
+          .read(memberCallsProvider)
+          .setInviteLinkExpiry(
+            eventId: widget.eventId,
+            code: link.code,
+            expiresAt: at,
           ),
-        );
-        if (picked != null && picked != _roleId && mounted) {
-          _generateCode(roleId: picked);
-        }
-      },
     );
   }
 
-  Widget _expiry(BuildContext context) {
-    final cp = context.cp;
+  Future<void> _turnOff(InviteLink link) async {
     final strings = context.strings.invites;
-    final event = ref.watch(eventByIdProvider(widget.eventId));
-    final expires = _expiresAt;
-    return Wrap(
-      alignment: WrapAlignment.center,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: cp.space.sm,
-      children: [
-        if (expires != null)
-          Text(
-            strings.expires(
-              DateFormat.yMMMd().add_jm().format(expires.toLocal()),
-            ),
-            key: const Key('dashboard.invite.expires'),
-            textAlign: TextAlign.center,
-            style: cp.type.bodyMedium.copyWith(color: cp.colors.text),
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialog) => CpDialog(
+        title: strings.turnOffTitle,
+        message: strings.turnOffMessage,
+        actions: [
+          CpButton.text(
+            key: const Key('dashboard.invite.turnOff.cancel'),
+            label: strings.cancel,
+            onPressed: () => Navigator.of(dialog).pop(false),
           ),
-        PopupMenuButton<Object>(
-          key: const Key('dashboard.invite.expiry'),
-          tooltip: strings.changeExpiry,
-          onSelected: _changeExpiry,
-          itemBuilder: (_) => [
-            for (final choice in inviteExpiryChoices(event, DateTime.now()))
-              PopupMenuItem(
-                key: Key('dashboard.invite.expiry.${choice.name}'),
-                value: choice,
-                child: Text(strings.expiryChoice(choice.name)),
-              ),
-            PopupMenuItem(
-              key: const Key('dashboard.invite.expiry.date'),
-              value: 'date',
-              child: Text(strings.pickDate),
-            ),
-          ],
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: cp.sizes.tapMin),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: cp.space.sm),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                spacing: cp.space.xs,
-                children: [
-                  Icon(
-                    CpIcons.calendar,
-                    size: cp.sizes.iconSm,
-                    color: cp.colors.accent,
-                  ),
-                  Flexible(
-                    child: Text(
-                      strings.changeExpiry,
-                      style: cp.type.labelLarge.copyWith(
-                        color: cp.colors.accent,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          CpButton.destructive(
+            key: const Key('dashboard.invite.turnOff.confirm'),
+            label: strings.turnOff,
+            icon: CpIcons.inviteOff,
+            onPressed: () => Navigator.of(dialog).pop(true),
           ),
-        ),
-      ],
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await _change(
+      link.code,
+      () => ref
+          .read(memberCallsProvider)
+          .turnOffInviteLink(eventId: widget.eventId, code: link.code),
+      done: strings.turnedOff,
     );
   }
 
@@ -309,6 +286,7 @@ class _AddMemberSheetState extends ConsumerState<AddMemberSheet> {
     final cp = context.cp;
     final strings = context.strings.invites;
     final muted = cp.type.bodyMedium.copyWith(color: cp.colors.textMuted);
+    final now = DateTime.now();
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
         cp.space.lg,
@@ -334,8 +312,8 @@ class _AddMemberSheetState extends ConsumerState<AddMemberSheet> {
           if (_isLoading)
             CpLoadingState(
               key: const Key('dashboard.invite.loading'),
-              semanticLabel: strings.generating,
-              label: strings.generating,
+              semanticLabel: strings.loading,
+              label: strings.loading,
             )
           else if (_errorMessage != null)
             Column(
@@ -356,129 +334,495 @@ class _AddMemberSheetState extends ConsumerState<AddMemberSheet> {
                   key: const Key('dashboard.invite.retry'),
                   label: strings.retry,
                   icon: CpIcons.actionRetry,
-                  onPressed: _retry,
+                  onPressed: _load,
                 ),
               ],
             )
-          else if (_code != null) ...[
-            if (widget.canChooseRole) _rolePicker(context),
+          else ...[
             Text(strings.shareHint, style: muted, textAlign: TextAlign.center),
-
-            // A QR code needs dark modules on a light ground to scan, in
-            // either theme, so these two colours are fixed on purpose.
-            Center(
-              child: Container(
-                key: const Key('dashboard.invite.qr'),
-                padding: EdgeInsets.all(cp.space.md),
-                decoration: BoxDecoration(
-                  color: CpFixedColors.qrPaper,
-                  borderRadius: cp.radii.lg,
-                  border: Border.all(
-                    color: cp.colors.border,
-                    width: cp.sizes.hairline,
-                  ),
-                ),
-                child: ref
-                    .watch(qrRendererProvider)
-                    .render(
-                      _link,
-                      size: cp.sizes.qrCode,
-                      foreground: CpFixedColors.qrInk,
-                      background: CpFixedColors.qrPaper,
-                      semanticLabel: strings.qrLabel(_link),
-                    ),
+            CpButton(
+              key: const Key('dashboard.invite.new'),
+              label: strings.newLink,
+              icon: CpIcons.actionAdd,
+              busy: _busy == 'new',
+              onPressed: _busy == null ? _newLink : null,
+            ),
+            if (_links.isEmpty)
+              Text(
+                strings.noLinks,
+                key: const Key('dashboard.invite.empty'),
+                style: muted,
+                textAlign: TextAlign.center,
               ),
-            ),
-
-            CpCard(
-              padding: EdgeInsets.all(cp.space.lg),
-              child: Column(
-                spacing: cp.space.sm,
-                children: [
-                  Text(
-                    strings.linkLabel,
-                    style: cp.type.labelLarge.copyWith(
-                      color: cp.colors.textMuted,
-                    ),
-                  ),
-                  SelectableText(
-                    _link,
-                    key: const Key('dashboard.invite.link'),
-                    textAlign: TextAlign.center,
-                    style: cp.type.bodyMedium.copyWith(color: cp.colors.text),
-                  ),
-                  SizedBox(height: cp.space.xs),
-                  Text(
-                    strings.codeLabel,
-                    style: cp.type.labelLarge.copyWith(
-                      color: cp.colors.textMuted,
-                    ),
-                  ),
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: cp.space.xl,
-                      vertical: cp.space.md,
-                    ),
-                    decoration: BoxDecoration(
-                      color: cp.colors.fill,
-                      borderRadius: cp.radii.lg,
-                    ),
-                    child: Text(
-                      _code!,
-                      key: const Key('dashboard.invite.code'),
-                      style: cp.type.headlineMedium.copyWith(
-                        letterSpacing: cp.space.sm,
-                        color: cp.colors.text,
-                      ),
-                    ),
-                  ),
-                ],
+            for (final link in usableFirst(_links, now))
+              _LinkCard(
+                key: Key('dashboard.invite.${link.code}'),
+                link: link,
+                roleName: _roleName(link.roleId),
+                now: now,
+                expiryChoices: inviteExpiryChoices(
+                  ref.watch(eventByIdProvider(widget.eventId)),
+                  now,
+                ),
+                busy: _busy == link.code,
+                onCopy: () => _copy(link),
+                onShare: () => _share(link),
+                onQr: () => _showQr(link),
+                onExpiry: (choice) => _changeExpiry(link, choice),
+                onTurnOff: () => _turnOff(link),
               ),
-            ),
-
-            _expiry(context),
-
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: cp.space.md,
-              runSpacing: cp.space.sm,
-              children: [
-                CpButton.secondary(
-                  key: const Key('dashboard.invite.copy'),
-                  label: strings.copyLink,
-                  icon: CpIcons.actionCopy,
-                  onPressed: _copyLink,
-                ),
-                CpButton(
-                  key: const Key('dashboard.invite.share'),
-                  label: strings.share,
-                  icon: CpIcons.actionShare,
-                  onPressed: _share,
-                ),
-              ],
-            ),
-
-            // Replaces the link and keeps the role and expiry, for one that
-            // was shared too widely.
-            Column(
-              spacing: cp.space.xs,
-              children: [
-                CpButton.text(
-                  key: const Key('dashboard.invite.rotate'),
-                  label: strings.rotate,
-                  icon: CpIcons.actionRetry,
-                  onPressed: () => _generateCode(rotate: true),
-                ),
-                Text(
-                  strings.rotateHint,
-                  style: cp.type.bodySmall.copyWith(color: cp.colors.textMuted),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
           ],
         ],
       ),
+    );
+  }
+}
+
+/// The date an expiry choice ends on: a preset, or a day picked from a
+/// calendar starting at [current]. Null when nothing was picked.
+Future<DateTime?> _pickExpiry(
+  BuildContext context,
+  Object choice,
+  EventModel? event,
+  DateTime? current,
+) async {
+  final now = DateTime.now();
+  if (choice is InviteExpiry) return inviteExpiryFor(choice, event, now);
+  final picked = await showDatePicker(
+    context: context,
+    initialDate: current != null && current.isAfter(now)
+        ? current.toLocal()
+        : now,
+    firstDate: now,
+    lastDate: now.add(const Duration(days: maxInviteDays - 1)),
+  );
+  return picked == null ? null : expiryOnDate(picked, now);
+}
+
+String _when(DateTime at) => DateFormat.yMMMd().add_jm().format(at.toLocal());
+
+/// One invite link: its role and state, the link and code, its expiry,
+/// whether it is single use and how often it was used, and, while it works,
+/// its actions. Keys start `dashboard.invite.<code>`.
+class _LinkCard extends StatelessWidget {
+  const _LinkCard({
+    super.key,
+    required this.link,
+    required this.roleName,
+    required this.now,
+    required this.expiryChoices,
+    required this.busy,
+    required this.onCopy,
+    required this.onShare,
+    required this.onQr,
+    required this.onExpiry,
+    required this.onTurnOff,
+  });
+
+  final InviteLink link;
+  final String roleName;
+  final DateTime now;
+  final List<InviteExpiry> expiryChoices;
+  final bool busy;
+  final VoidCallback onCopy;
+  final VoidCallback onShare;
+  final VoidCallback onQr;
+  final ValueChanged<Object> onExpiry;
+  final VoidCallback onTurnOff;
+
+  @override
+  Widget build(BuildContext context) {
+    final cp = context.cp;
+    final strings = context.strings.invites;
+    final state = link.stateAt(now);
+    final active = state == InviteLinkState.active;
+    final k = 'dashboard.invite.${link.code}';
+    final muted = cp.type.bodySmall.copyWith(color: cp.colors.textMuted);
+    final expires = link.expiresAt;
+    final String? expiryLine = switch (state) {
+      InviteLinkState.active =>
+        expires == null ? strings.noExpiry : strings.expires(_when(expires)),
+      InviteLinkState.expired when expires != null => strings.expiredOn(
+        _when(expires),
+      ),
+      _ => null,
+    };
+    return CpCard(
+      padding: EdgeInsets.all(cp.space.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: cp.space.sm,
+        children: [
+          Wrap(
+            spacing: cp.space.sm,
+            runSpacing: cp.space.xs,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text(
+                roleName,
+                key: Key('$k.role'),
+                style: cp.type.titleMedium.copyWith(color: cp.colors.text),
+              ),
+              CpTag(
+                key: Key('$k.state'),
+                label: strings.state(state.name),
+                tone: active ? CpTagTone.accent : CpTagTone.quiet,
+                icon: switch (state) {
+                  InviteLinkState.active => CpIcons.statusDone,
+                  InviteLinkState.used => CpIcons.inviteUsed,
+                  InviteLinkState.expired => CpIcons.statusDue,
+                  InviteLinkState.off => CpIcons.inviteOff,
+                },
+              ),
+            ],
+          ),
+          if (active) ...[
+            Text(
+              strings.linkLabel,
+              style: cp.type.labelLarge.copyWith(color: cp.colors.textMuted),
+            ),
+            SelectableText(
+              inviteLink(link.code),
+              key: Key('$k.link'),
+              style: cp.type.bodyMedium.copyWith(color: cp.colors.text),
+            ),
+            Text(
+              strings.codeLabel,
+              style: cp.type.labelLarge.copyWith(color: cp.colors.textMuted),
+            ),
+          ],
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: cp.space.lg,
+              vertical: cp.space.sm,
+            ),
+            decoration: BoxDecoration(
+              color: cp.colors.fill,
+              borderRadius: cp.radii.lg,
+            ),
+            child: Text(
+              link.code,
+              key: Key('$k.code'),
+              style: (active ? cp.type.headlineMedium : cp.type.titleMedium)
+                  .copyWith(
+                    letterSpacing: cp.space.sm,
+                    color: active ? cp.colors.text : cp.colors.textMuted,
+                  ),
+            ),
+          ),
+          if (expiryLine != null)
+            Text(expiryLine, key: Key('$k.expires'), style: muted),
+          Text(
+            link.singleUse ? strings.singleUse : strings.manyUse,
+            key: Key('$k.use'),
+            style: muted,
+          ),
+          Text(strings.uses(link.uses), key: Key('$k.uses'), style: muted),
+          if (active)
+            Wrap(
+              spacing: cp.space.sm,
+              runSpacing: cp.space.sm,
+              children: [
+                CpButton.secondary(
+                  key: Key('$k.copy'),
+                  label: strings.copyLink,
+                  icon: CpIcons.actionCopy,
+                  onPressed: onCopy,
+                ),
+                CpButton.secondary(
+                  key: Key('$k.share'),
+                  label: strings.share,
+                  icon: CpIcons.actionShare,
+                  onPressed: onShare,
+                ),
+                CpButton.text(
+                  key: Key('$k.qr'),
+                  label: strings.showQr,
+                  icon: CpIcons.inviteQr,
+                  onPressed: onQr,
+                ),
+                _ExpiryMenu(
+                  key: Key('$k.expiry'),
+                  menuKey: '$k.expiry',
+                  choices: expiryChoices,
+                  onSelected: onExpiry,
+                  enabled: !busy,
+                ),
+                CpButton.text(
+                  key: Key('$k.turnOff'),
+                  label: strings.turnOff,
+                  icon: CpIcons.inviteOff,
+                  busy: busy,
+                  onPressed: busy ? null : onTurnOff,
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// "Change expiry": the presets that apply, then a date of one's own.
+class _ExpiryMenu extends StatelessWidget {
+  const _ExpiryMenu({
+    super.key,
+    required this.menuKey,
+    required this.choices,
+    required this.onSelected,
+    required this.enabled,
+  });
+
+  final String menuKey;
+  final List<InviteExpiry> choices;
+  final ValueChanged<Object> onSelected;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final cp = context.cp;
+    final strings = context.strings.invites;
+    return PopupMenuButton<Object>(
+      tooltip: strings.changeExpiry,
+      enabled: enabled,
+      onSelected: onSelected,
+      itemBuilder: (_) => [
+        for (final choice in choices)
+          PopupMenuItem(
+            key: Key('$menuKey.${choice.name}'),
+            value: choice,
+            child: Text(strings.expiryChoice(choice.name)),
+          ),
+        PopupMenuItem(
+          key: Key('$menuKey.date'),
+          value: 'date',
+          child: Text(strings.pickDate),
+        ),
+      ],
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: cp.sizes.tapMin),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: cp.space.sm),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: cp.space.xs,
+            children: [
+              Icon(
+                CpIcons.calendar,
+                size: cp.sizes.iconSm,
+                color: cp.colors.accent,
+              ),
+              Flexible(
+                child: Text(
+                  strings.changeExpiry,
+                  style: cp.type.labelLarge.copyWith(color: cp.colors.accent),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A link's QR code. It needs dark modules on a light ground to scan in
+/// either theme, so these two colours are fixed on purpose.
+class _QrCode extends ConsumerWidget {
+  const _QrCode({required this.url});
+
+  final String url;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cp = context.cp;
+    return Column(
+      spacing: cp.space.md,
+      children: [
+        Center(
+          child: Container(
+            key: const Key('dashboard.invite.qr'),
+            padding: EdgeInsets.all(cp.space.md),
+            decoration: BoxDecoration(
+              color: CpFixedColors.qrPaper,
+              borderRadius: cp.radii.lg,
+              border: Border.all(
+                color: cp.colors.border,
+                width: cp.sizes.hairline,
+              ),
+            ),
+            child: ref
+                .watch(qrRendererProvider)
+                .render(
+                  url,
+                  size: cp.sizes.qrCode,
+                  foreground: CpFixedColors.qrInk,
+                  background: CpFixedColors.qrPaper,
+                  semanticLabel: context.strings.invites.qrLabel(url),
+                ),
+          ),
+        ),
+        SelectableText(
+          url,
+          textAlign: TextAlign.center,
+          style: cp.type.bodyMedium.copyWith(color: cp.colors.text),
+        ),
+      ],
+    );
+  }
+}
+
+/// The new link form: the role (one choice for someone without
+/// `roles.manage`), the expiry, and single use. Pops a [_NewLink].
+class _NewLinkForm extends StatefulWidget {
+  const _NewLinkForm({required this.roles, required this.event});
+
+  final List<RoleDefinition> roles;
+  final EventModel? event;
+
+  @override
+  State<_NewLinkForm> createState() => _NewLinkFormState();
+}
+
+class _NewLinkFormState extends State<_NewLinkForm> {
+  String _roleId = 'participant';
+
+  /// Null is the event's usual expiry.
+  DateTime? _expiresAt;
+  String? _expiryLabel;
+  bool _singleUse = false;
+
+  RoleDefinition? get _role =>
+      widget.roles.where((r) => r.id == _roleId).firstOrNull;
+
+  Future<void> _pickRole() async {
+    final cp = context.cp;
+    final picked = await showCpSheet<String>(
+      context: context,
+      title: context.strings.roles.inviteRoleLabel,
+      builder: (sheet) => CpCard(
+        child: CpRowGroup(
+          children: [
+            for (final role in widget.roles)
+              CpListRow(
+                key: Key('dashboard.invite.role.${role.id}'),
+                title: role.name,
+                trailing: role.id == _roleId
+                    ? Icon(
+                        CpIcons.statusDone,
+                        size: cp.sizes.iconMd,
+                        color: cp.colors.accent,
+                      )
+                    : const SizedBox.shrink(),
+                onTap: () => Navigator.of(sheet).pop(role.id),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked != null && mounted) setState(() => _roleId = picked);
+  }
+
+  Future<void> _pickExpiryChoice() async {
+    final strings = context.strings.invites;
+    final now = DateTime.now();
+    final picked = await showCpSheet<Object>(
+      context: context,
+      title: strings.expiryLabel,
+      builder: (sheet) => CpCard(
+        child: CpRowGroup(
+          children: [
+            CpListRow(
+              key: const Key('dashboard.invite.new.expiry.default'),
+              title: strings.expiryDefault,
+              onTap: () => Navigator.of(sheet).pop('default'),
+            ),
+            for (final choice in inviteExpiryChoices(widget.event, now))
+              CpListRow(
+                key: Key('dashboard.invite.new.expiry.${choice.name}'),
+                title: strings.expiryChoice(choice.name),
+                onTap: () => Navigator.of(sheet).pop(choice),
+              ),
+            CpListRow(
+              key: const Key('dashboard.invite.new.expiry.date'),
+              title: strings.pickDate,
+              onTap: () => Navigator.of(sheet).pop('date'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    if (picked == 'default') {
+      setState(() {
+        _expiresAt = null;
+        _expiryLabel = null;
+      });
+      return;
+    }
+    final at = await _pickExpiry(context, picked, widget.event, _expiresAt);
+    if (at == null || !mounted) return;
+    setState(() {
+      _expiresAt = at;
+      _expiryLabel = picked is InviteExpiry
+          ? strings.expiryChoice(picked.name)
+          : _when(at);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cp = context.cp;
+    final strings = context.strings.invites;
+    final roleStrings = context.strings.roles;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: cp.space.lg,
+      children: [
+        CpCard(
+          padding: EdgeInsets.all(cp.space.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: cp.space.md,
+            children: [
+              if (widget.roles.length > 1)
+                CpSelectField(
+                  fieldKey: const Key('dashboard.invite.new.role'),
+                  label: roleStrings.inviteRoleLabel,
+                  value: _role?.name,
+                  help: roleStrings.inviteRoleHint,
+                  leadingIcon: CpIcons.shield,
+                  onTap: _pickRole,
+                ),
+              CpSelectField(
+                fieldKey: const Key('dashboard.invite.new.expiry'),
+                label: strings.expiryLabel,
+                value: _expiryLabel ?? strings.expiryDefault,
+                leadingIcon: CpIcons.calendar,
+                onTap: _pickExpiryChoice,
+              ),
+              CpSwitchRow(
+                switchKey: const Key('dashboard.invite.new.singleUse'),
+                title: strings.singleUse,
+                help: strings.singleUseHelp,
+                value: _singleUse,
+                onChanged: (v) => setState(() => _singleUse = v),
+              ),
+            ],
+          ),
+        ),
+        CpButton(
+          key: const Key('dashboard.invite.new.create'),
+          label: strings.create,
+          icon: CpIcons.actionAdd,
+          expand: true,
+          onPressed: () => Navigator.of(context).pop<_NewLink>((
+            roleId: _roleId,
+            expiresAt: _expiresAt,
+            singleUse: _singleUse,
+          )),
+        ),
+      ],
     );
   }
 }

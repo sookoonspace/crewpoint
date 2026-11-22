@@ -76,7 +76,8 @@ describe('the expiry (Req 56)', () => {
     const rotated = await invite({rotate: true});
     expect(rotated.code).not.toBe(first.code);
     expect(rotated).toEqual(expect.objectContaining({roleId: 'volunteer', expiresAt: closes}));
-    expect(await stored(first.code)).toBeUndefined();
+    // Turned off, not deleted (#238), so it stays listed.
+    expect((await stored(first.code))!.turnedOffAt).toBeDefined();
   });
 
   test('a new role replaces the link and keeps the expiry', async () => {

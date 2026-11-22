@@ -787,6 +787,9 @@ class _LocalizedStrings extends _EnglishStrings {
 
   @override
   LanguageStrings get language => _ArbLanguageStrings(_l);
+
+  @override
+  InviteStrings get invites => _ArbInviteStrings(_l);
 }
 
 /// The language choice (Req 56).
@@ -880,7 +883,8 @@ class _EnglishStrings extends AppStrings {
   LinkStrings get links => const _EnglishLinkStrings();
 
   @override
-  InviteStrings get invites => const _EnglishInviteStrings();
+  InviteStrings get invites =>
+      _ArbInviteStrings(lookupAppLocalizations(const Locale('en')));
 
   @override
   MemberPickerStrings get memberPicker => const _EnglishMemberPickerStrings();
@@ -4043,32 +4047,49 @@ class _EnglishLinkStrings extends LinkStrings {
   String get yourRecord => 'Your record';
 }
 
-/// The invite link and QR code (Req 47, 56), and `/join/:code`.
+/// Member invite links and their QR codes (Req 47, 56; Spec #233 Req 15,
+/// #238), and `/join/:code`. Translated: read from the ARB files.
 abstract class InviteStrings {
   const InviteStrings();
 
-  String get generating;
+  String get loading;
   String get offline;
   String get permissionDenied;
   String get eventGone;
   String get failed;
   String get retry;
   String get shareHint;
+  String get newLink;
+  String get noLinks;
   String get linkLabel;
   String get codeLabel;
   String qrLabel(String link);
+  String get showQr;
   String expires(String when);
+  String expiredOn(String when);
+  String get noExpiry;
   String get changeExpiry;
-  String expiryChoice(String choice);
+  String get expiryDefault;
   String get pickDate;
   String get copyLink;
   String get copied;
   String get share;
   String shareText(String title, String link, String code);
-  String get rotate;
-  String get rotateHint;
-
-  // `/join/:code`
+  String get singleUse;
+  String get singleUseHelp;
+  String get manyUse;
+  String uses(int count);
+  String get turnOff;
+  String get turnOffTitle;
+  String get turnOffMessage;
+  String get cancel;
+  String get turnedOff;
+  String get newLinkTitle;
+  String get expiryLabel;
+  String get create;
+  String get linkUsed;
+  String get linkOff;
+  String get linkExpired;
   String get joinTitle;
   String get joinNeedsConnection;
   String get joinLoading;
@@ -4084,98 +4105,150 @@ abstract class InviteStrings {
   String get openEvent;
   String get joinFailed;
   String get backToEvents;
+
+  /// An expiry choice by its `InviteExpiry` name.
+  String expiryChoice(String choice);
+
+  /// A link's state by its `InviteLinkState` name.
+  String state(String state);
+
+  /// Why a link cannot be used, by the server's reason (`used`, `off`,
+  /// `expired`), or [notFound] for anything else.
+  String unusable(String? reason) => switch (reason) {
+    'used' => linkUsed,
+    'off' => linkOff,
+    'expired' => linkExpired,
+    _ => notFound,
+  };
 }
 
-class _EnglishInviteStrings extends InviteStrings {
-  const _EnglishInviteStrings();
+class _ArbInviteStrings extends InviteStrings {
+  const _ArbInviteStrings(this._l);
+
+  final AppLocalizations _l;
 
   @override
-  String get generating => 'Getting the invite…';
+  String get loading => _l.inviteLoading;
   @override
-  String get offline => 'Invites need a connection. Check it and try again.';
+  String get offline => _l.inviteOffline;
   @override
-  String get permissionDenied =>
-      'Only people who manage members can invite others.';
+  String get permissionDenied => _l.invitePermissionDenied;
   @override
-  String get eventGone => 'This event no longer exists.';
+  String get eventGone => _l.inviteEventGone;
   @override
-  String get failed => "Couldn't get the invite. Please try again.";
+  String get failed => _l.inviteFailed;
   @override
-  String get retry => 'Try again';
+  String get retry => _l.inviteRetry;
   @override
-  String get shareHint =>
-      'Share the link or QR code. Anyone with it can join until it expires.';
+  String get shareHint => _l.inviteShareHint;
   @override
-  String get linkLabel => 'Invite link';
+  String get newLink => _l.inviteNewLink;
   @override
-  String get codeLabel => 'Or enter this code in the app';
+  String get noLinks => _l.inviteNoLinks;
   @override
-  String qrLabel(String link) => 'QR code for $link';
+  String get linkLabel => _l.inviteLinkLabel;
   @override
-  String expires(String when) => 'Expires $when';
+  String get codeLabel => _l.inviteCodeLabel;
   @override
-  String get changeExpiry => 'Change expiry';
+  String qrLabel(String link) => _l.inviteQrLabel(link);
+  @override
+  String get showQr => _l.inviteShowQr;
+  @override
+  String expires(String when) => _l.inviteExpires(when);
+  @override
+  String expiredOn(String when) => _l.inviteExpiredOn(when);
+  @override
+  String get noExpiry => _l.inviteNoExpiry;
+  @override
+  String get changeExpiry => _l.inviteChangeExpiry;
+  @override
+  String get expiryDefault => _l.inviteExpiryDefault;
+  @override
+  String get pickDate => _l.invitePickDate;
+  @override
+  String get copyLink => _l.inviteCopyLink;
+  @override
+  String get copied => _l.inviteCopied;
+  @override
+  String get share => _l.inviteShare;
+  @override
+  String shareText(String title, String link, String code) => _l.inviteShareText(title, link, code);
+  @override
+  String get singleUse => _l.inviteSingleUse;
+  @override
+  String get singleUseHelp => _l.inviteSingleUseHelp;
+  @override
+  String get manyUse => _l.inviteManyUse;
+  @override
+  String uses(int count) => _l.inviteUses(count);
+  @override
+  String get turnOff => _l.inviteTurnOff;
+  @override
+  String get turnOffTitle => _l.inviteTurnOffTitle;
+  @override
+  String get turnOffMessage => _l.inviteTurnOffMessage;
+  @override
+  String get cancel => _l.inviteCancel;
+  @override
+  String get turnedOff => _l.inviteTurnedOff;
+  @override
+  String get newLinkTitle => _l.inviteNewLinkTitle;
+  @override
+  String get expiryLabel => _l.inviteExpiryLabel;
+  @override
+  String get create => _l.inviteCreate;
+  @override
+  String get linkUsed => _l.inviteLinkUsed;
+  @override
+  String get linkOff => _l.inviteLinkOff;
+  @override
+  String get linkExpired => _l.inviteLinkExpired;
+  @override
+  String get joinTitle => _l.inviteJoinTitle;
+  @override
+  String get joinNeedsConnection => _l.inviteJoinNeedsConnection;
+  @override
+  String get joinLoading => _l.inviteJoinLoading;
+  @override
+  String joinAs(String role) => _l.inviteJoinAs(role);
+  @override
+  String startsOn(String date) => _l.inviteStartsOn(date);
+  @override
+  String get joinButton => _l.inviteJoinButton;
+  @override
+  String get joined => _l.inviteJoined;
+  @override
+  String get notFound => _l.inviteNotFound;
+  @override
+  String get notOpenDraft => _l.inviteNotOpenDraft;
+  @override
+  String get notOpenEnded => _l.inviteNotOpenEnded;
+  @override
+  String get full => _l.inviteFull;
+  @override
+  String get alreadyMember => _l.inviteAlreadyMember;
+  @override
+  String get openEvent => _l.inviteOpenEvent;
+  @override
+  String get joinFailed => _l.inviteJoinFailed;
+  @override
+  String get backToEvents => _l.inviteBackToEvents;
   @override
   String expiryChoice(String choice) => switch (choice) {
-    'day' => '24 hours',
-    'week' => '7 days',
-    'month' => '30 days',
-    'eventStart' => 'Until the event starts',
-    'eventEnd' => 'Until the event ends',
+    'day' => _l.inviteExpiryDay,
+    'week' => _l.inviteExpiryWeek,
+    'month' => _l.inviteExpiryMonth,
+    'eventStart' => _l.inviteExpiryEventStart,
+    'eventEnd' => _l.inviteExpiryEventEnd,
     _ => choice,
   };
   @override
-  String get pickDate => 'Pick a date…';
-  @override
-  String get copyLink => 'Copy link';
-  @override
-  String get copied => 'Link copied';
-  @override
-  String get share => 'Share';
-  @override
-  String shareText(String title, String link, String code) =>
-      'Join $title on CrewPoint: $link (or enter code $code in the app)';
-  @override
-  String get rotate => 'Replace link';
-  @override
-  String get rotateHint =>
-      'The old link and code stop working, for one that was shared too widely.';
-
-  @override
-  String get joinTitle => 'Join an event';
-  @override
-  String get joinNeedsConnection => 'Joining needs a connection.';
-  @override
-  String get joinLoading => 'Checking the invite…';
-  @override
-  String joinAs(String role) => "You'll join as $role.";
-  @override
-  String startsOn(String date) => 'Starts $date';
-  @override
-  String get joinButton => 'Join';
-  @override
-  String get joined => 'You joined the event!';
-  @override
-  String get notFound =>
-      'This invite is invalid or has expired. Ask the organizer for a new link.';
-  @override
-  String get notOpenDraft =>
-      "This event isn't open to joining yet. The organizer still needs to "
-      'publish it. Try the link again later.';
-  @override
-  String get notOpenEnded =>
-      'This event has ended, so it is closed to joining.';
-  @override
-  String get full => 'This event is full. Ask the organizer about a place.';
-  @override
-  String get alreadyMember => "You're already in this event.";
-  @override
-  String get openEvent => 'Open the event';
-  @override
-  String get joinFailed =>
-      "Couldn't join. Check your connection and try again.";
-  @override
-  String get backToEvents => 'Go to my events';
+  String state(String state) => switch (state) {
+    'used' => _l.inviteStateUsed,
+    'expired' => _l.inviteStateExpired,
+    'off' => _l.inviteStateOff,
+    _ => _l.inviteStateActive,
+  };
 }
 
 /// The paged member picker, task assignee and expense split (Req 43a).

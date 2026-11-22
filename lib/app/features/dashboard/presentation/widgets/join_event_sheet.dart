@@ -1,4 +1,5 @@
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:crewpoint_app/app/features/dashboard/data/member_calls.dart';
 import 'package:flutter/material.dart';
 
 import 'package:crewpoint_app/app/core/design/components/components.dart';
@@ -60,6 +61,8 @@ class _JoinEventSheetState extends State<JoinEventSheet> {
         setState(() {
           _isLoading = false;
           _errorMessage = switch (e.code) {
+            'not-found' when unusableInviteReason(e) != null =>
+              context.strings.invites.unusable(unusableInviteReason(e)),
             'not-found' => strings.joinCodeInvalid,
             'already-exists' => strings.joinAlreadyMember,
             'resource-exhausted' => strings.joinFull,

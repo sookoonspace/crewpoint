@@ -5,21 +5,10 @@ import {requireString, withStructuredLogs} from "../utils/logging";
 import {assertOpenToJoin} from "./eventStatus";
 
 import {readEventRoles, readPermissions} from "./members";
-import {PRESET_ROLES} from "./permissions";
 import {checkInviteExpiry, defaultInviteExpiry} from "./inviteExpiry";
+import {checkInviteRole, pickFreshCode} from "./inviteLinks";
+import {inviteState} from "./inviteState";
 const db = getFirestore();
-
-// Characters: A-Z minus ambiguous (O, I, L) + 2-9.
-const CHARSET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-const CODE_LENGTH = 6;
-
-function generateCode(): string {
-  let code = "";
-  for (let i = 0; i < CODE_LENGTH; i++) {
-    code += CHARSET[Math.floor(Math.random() * CHARSET.length)];
-  }
-  return code;
-}
 
 /** The role an invite carries. Invites from before roles mean Participant. */
 export function inviteRoleId(invite: FirebaseFirestore.DocumentData): string {
@@ -27,28 +16,28 @@ export function inviteRoleId(invite: FirebaseFirestore.DocumentData): string {
 }
 
 /**
- * generateInviteCode — returns the event's one active invite (Req 31, L19),
- * which carries a role applied on join.
+ * generateInviteCode — the newest usable invite link, for apps from before
+ * #238, which showed one invite per event (Req 31). Current apps use
+ * `createInviteLink`, `updateInviteLink` and `listInviteLinks`, and this
+ * never deletes or changes the event's other links.
  *
  * - Caller needs `members.manage`. An invite into any role other than
  *   Participant also needs `roles.manage`, because joining with it assigns
  *   that role. Nobody can invite into Owner.
- * - **No `roleId`:** returns the active invite with its role, or a new
- *   Participant invite if there is none.
+ * - **No `roleId`:** returns the newest usable link with its role, or a
+ *   new Participant link if there is none.
  * - **`expiresAt`** (milliseconds): the organizer's expiry, from 5 minutes
  *   to a whole registration period (Req 56). Changing only the expiry keeps
  *   the code. Without it, the current expiry stays, and a new invite gets
  *   24 hours on Blank and Party or lasts until the event starts otherwise.
  * - **`roleId` the same as the active invite's:** returns that invite, so
  *   codes already shared keep working until their 24-hour expiry.
- * - **A different `roleId`:** replaces the invite with a new code, so an old
- *   code never grants the new role.
- * - **`rotate: true`:** replaces the code and keeps the role and expiry. Use when a code
- *   may have leaked. Only the literal boolean `true` rotates, avoiding the
- *   `Boolean('false') === true` JS pitfall.
- * - Everything runs in one transaction, so simultaneous calls cannot leave two
- *   active invites. If older data holds several, the most recent wins and the
- *   rest are deleted (self-heal).
+ * - **A different `roleId`:** turns that link off and makes a new one with
+ *   the new role, so an old code never grants the new role.
+ * - **`rotate: true`:** turns that link off and makes a new one with the
+ *   same role and expiry. Use when a code may have leaked. Only the literal
+ *   boolean `true` rotates, avoiding the `Boolean('false') === true` pitfall.
+ * - Everything runs in one transaction.
  */
 export const generateInviteCode = onCall(
   {timeoutSeconds: 30},
@@ -110,33 +99,17 @@ export const generateInviteCode = onCall(
             );
           }
           const now = Date.now();
-          const active = existing.docs.filter((doc) => {
-            const expiresAt = doc.data().expiresAt;
-            const expiresMs =
-              expiresAt && typeof expiresAt.toMillis === "function" ?
-                (expiresAt.toMillis() as number) :
-                0;
-            return expiresMs > now;
-          });
+          // Single-use links are left to the apps that make them.
+          const active = existing.docs.filter(
+            (doc) =>
+              inviteState(doc.data(), now) === "active" &&
+              doc.data().singleUse !== true
+          );
           const current = active[0];
           const roleId =
             requestedRole ?? (current ? inviteRoleId(current.data()) : "participant");
 
-          if (roleId === "owner") {
-            throw new HttpsError(
-              "failed-precondition",
-              "Nobody can join as Owner. Ownership changes only through a transfer."
-            );
-          }
-          if (!PRESET_ROLES[roleId] && !roles[roleId]) {
-            throw new HttpsError("invalid-argument", "Unknown role.");
-          }
-          if (roleId !== "participant" && !mine.includes("roles.manage")) {
-            throw new HttpsError(
-              "permission-denied",
-              "Only owners and co-owners can invite someone into a role."
-            );
-          }
+          checkInviteRole(roleId, mine, roles);
 
           const currentExpiry: number | null =
             current?.data().expiresAt?.toMillis?.() ?? null;
@@ -147,16 +120,6 @@ export const generateInviteCode = onCall(
 
           // Reuse hit: same role, not rotating. A new expiry keeps the link.
           if (current && !rotate && inviteRoleId(current.data()) === roleId) {
-            // ── PHASE 2: writes ───────────────────────────────────────
-            const siblings = active.slice(1);
-            if (siblings.length > 0) {
-              logger.warn(
-                `generateInviteCode self-heal: ${siblings.length} duplicate ` +
-                  `non-expired codes for event ${eventId}; deleting siblings`,
-                {op: "generateInviteCode", uid, eventId, mode}
-              );
-              for (const sib of siblings) tx.delete(sib.ref);
-            }
             if (expiresAt !== currentExpiry) {
               tx.update(current.ref, {expiresAt: Timestamp.fromMillis(expiresAt)});
             }
@@ -172,13 +135,21 @@ export const generateInviteCode = onCall(
             return {code: current.id, roleId, expiresAt};
           }
 
-          const freshCode = await pickFreshCode(invitesRef, tx);
+          const freshCode = await pickFreshCode(tx);
 
           // ── PHASE 2: writes ─────────────────────────────────────────
-          for (const doc of existing.docs) tx.delete(doc.ref);
+          // The link this call showed is replaced, as older apps say.
+          if (current) {
+            tx.update(current.ref, {
+              turnedOffAt: Timestamp.fromMillis(now),
+              turnedOffBy: uid,
+            });
+          }
           tx.set(invitesRef.doc(freshCode), {
             eventId,
             roleId,
+            singleUse: false,
+            uses: 0,
             createdBy: uid,
             createdAt: FieldValue.serverTimestamp(),
             expiresAt: Timestamp.fromMillis(expiresAt),
@@ -198,26 +169,3 @@ export const generateInviteCode = onCall(
     );
   }
 );
-
-/**
- * Generates a fresh code, retrying up to 10 times on collisions.
- * Reads via the transaction so the uniqueness check is consistent with
- * the eventual write.
- */
-async function pickFreshCode(
-  invitesRef: FirebaseFirestore.CollectionReference,
-  tx: FirebaseFirestore.Transaction
-): Promise<string> {
-  let code = generateCode();
-  let attempts = 0;
-  while (attempts < 10) {
-    const existing = await tx.get(invitesRef.doc(code));
-    if (!existing.exists) return code;
-    code = generateCode();
-    attempts++;
-  }
-  throw new HttpsError(
-    "internal",
-    "Failed to generate unique code. Please try again."
-  );
-}

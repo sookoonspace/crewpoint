@@ -1,6 +1,7 @@
 /**
- * Req 31 (GAP-ANY-33): an event has one active invite, which carries a role
- * applied on join.
+ * Req 31 (GAP-ANY-33): an invite carries a role applied on join. The
+ * one-invite `generateInviteCode` stays for apps from before #238, whose
+ * several links are in `inviteLinks.test.ts`.
  */
 import {Timestamp} from 'firebase-admin/firestore';
 import {clearFirestoreEmulator, getAdminApp, getAdminDb} from '../setup';
@@ -21,6 +22,8 @@ const member = async (uid: string) =>
 const event = async () => (await getAdminDb().doc(`events/${E}`).get()).data()!;
 const invites = async () =>
   (await getAdminDb().collection('event_invites').where('eventId', '==', E).get()).docs;
+/** Links not turned off (#238 turns off instead of deleting). */
+const usable = async () => (await invites()).filter((d) => !d.data().turnedOffAt);
 
 async function seed() {
   await getAdminDb().doc(`events/${E}`).set({
@@ -123,7 +126,7 @@ describe('one active invite per event', () => {
     const second = await invite('owner', {roleId: 'participant'});
     expect(second.code).not.toBe(first.code);
     expect(second.roleId).toBe('participant');
-    expect((await invites()).map((d) => d.id)).toEqual([second.code]);
+    expect((await usable()).map((d) => d.id)).toEqual([second.code]);
     await expect(join('late', first.code)).rejects.toEqual(rejected('not-found'));
   });
 
@@ -133,7 +136,7 @@ describe('one active invite per event', () => {
     const rotated = await invite('owner', {rotate: true});
     expect(rotated.code).not.toBe(first.code);
     expect(rotated.roleId).toBe('scorer');
-    expect(await invites()).toHaveLength(1);
+    expect(await usable()).toHaveLength(1);
   });
 });
 

@@ -7,7 +7,7 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/add_me
 
 import '../../../harness/fake_member_calls.dart';
 
-const _codeKey = Key('dashboard.invite.code');
+const _codeKey = Key('dashboard.invite.ZUPQ8D.code');
 const _code = 'ZUPQ8D';
 
 /// Pumps the sheet under [theme] with the callable stubbed, so no Firebase
@@ -24,7 +24,7 @@ Future<void> _pumpSheet(WidgetTester tester, ThemeData theme) async {
       ),
     ),
   );
-  // initState kicks off the async generate; let it resolve and rebuild.
+  // initState lists the links and, with none, makes one; let both resolve.
   await tester.pump();
   await tester.pump();
 }
