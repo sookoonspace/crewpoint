@@ -4,6 +4,8 @@ The approved Gujarati spellings for CrewPoint (Spec #233 Req 59a). The data live
 
 **Status: draft.** Every spelling below waits for the owner's native-speaker review on the release checklist (Req 59b). Corrections from that review go into the list, so they're checked from then on.
 
+For a reviewer, [`gujarati-review.pdf`](gujarati-review.pdf) prints this list together with every translated screen string and email, with space to tick or correct each line. Rebuild it after any change with `python3 scripts/gujarati_review_pdf.py` (needs Google Chrome).
+
 ## What CI checks
 
 `test/i18n/gujarati_spelling_test.dart` fails when:
