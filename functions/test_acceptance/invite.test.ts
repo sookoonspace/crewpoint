@@ -1,5 +1,5 @@
 /* eslint-disable */
-// Acceptance tests for the invite link (#79). Test names start with the
+// Acceptance tests for invite links (#79, #238). Test names start with the
 // scenario ID. Runs on the emulators only.
 import {Timestamp} from 'firebase-admin/firestore';
 import {clearFirestoreEmulator, getAdminApp, getAdminDb} from '../test/setup';
@@ -11,6 +11,7 @@ getAdminApp();
 const {generateInviteCode} = require('../src/events/generateInviteCode');
 const {previewInvite} = require('../src/events/previewInvite');
 const {joinEvent} = require('../src/events/joinEvent');
+const {createInviteLink, updateInviteLink, listInviteLinks} = require('../src/events/inviteLinks');
 
 const E = 'derod';
 const DAY = 24 * 60 * 60 * 1000;
@@ -59,5 +60,42 @@ describe('Convention: seating 25+ attendees with one link', () => {
     const {code} = await call(generateInviteCode, 'admin', {eventId: E});
     await db().doc(`events/${E}`).update({status: 'draft'});
     expect(await call(previewInvite, 'early', {code})).toEqual(expect.objectContaining({open: false, reason: 'draft'}));
+  });
+});
+
+describe('Several member invite links (Spec #233 Req 15)', () => {
+  const roleOf = async (uid: string) =>
+    (await db().doc(`events/${E}/members/${uid}`).get()).data()?.roleIds;
+
+  test('GAP-ANY-02 team captains and sponsors get different links, so the role is set at join', async () => {
+    const captains = await call(createInviteLink, 'admin', {eventId: E, roleId: 'crewLead'});
+    const sponsors = await call(createInviteLink, 'admin', {eventId: E, roleId: 'vendor', expiresAt: Date.now() + 30 * DAY});
+    expect(captains.code).not.toBe(sponsors.code);
+    expect((await call(previewInvite, 'captain', {code: captains.code})).roleName).toBe('Crew lead');
+    await call(joinEvent, 'captain', {joinCode: captains.code});
+    await call(joinEvent, 'sponsor', {joinCode: sponsors.code});
+    expect(await roleOf('captain')).toEqual(['crewLead']);
+    expect(await roleOf('sponsor')).toEqual(['vendor']);
+    const {links} = await call(listInviteLinks, 'admin', {eventId: E});
+    expect(links).toHaveLength(2);
+  });
+
+  test('GAP-ANY-03 a single-use link shared with one guest cannot spread', async () => {
+    const {code} = await call(createInviteLink, 'admin', {eventId: E, singleUse: true});
+    await call(joinEvent, 'guest', {joinCode: code});
+    await expect(call(previewInvite, 'friend', {code})).rejects.toEqual(
+      expect.objectContaining({code: 'not-found', details: {reason: 'used'}}));
+    await expect(call(joinEvent, 'friend', {joinCode: code})).rejects.toBeTruthy();
+  });
+
+  test('GAP-ANY-03 a link that expires, or is turned off, stops working and says why', async () => {
+    const shortLived = await call(createInviteLink, 'admin', {eventId: E, expiresAt: Date.now() + 10 * 60 * 1000});
+    await db().doc(`event_invites/${shortLived.code}`).update({expiresAt: Timestamp.fromMillis(Date.now() - 1000)});
+    await expect(call(previewInvite, 'late', {code: shortLived.code})).rejects.toEqual(
+      expect.objectContaining({details: {reason: 'expired'}}));
+    const leaked = await call(createInviteLink, 'admin', {eventId: E});
+    await call(updateInviteLink, 'admin', {eventId: E, code: leaked.code, turnOff: true});
+    await expect(call(joinEvent, 'stranger', {joinCode: leaked.code})).rejects.toEqual(
+      expect.objectContaining({details: {reason: 'off'}}));
   });
 });

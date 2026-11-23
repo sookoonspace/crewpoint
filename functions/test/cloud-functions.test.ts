@@ -233,7 +233,7 @@ describe('joinEvent', () => {
     ).rejects.toMatchObject({code: 'not-found'});
   });
 
-  test('rejects expired code with not-found and deletes the code', async () => {
+  test('rejects expired code with not-found and keeps the code (#238)', async () => {
     const code = 'EXP123';
     await getAdminDb().collection('event_invites').doc(code).set({
       eventId: 'someEvent',
@@ -246,14 +246,14 @@ describe('joinEvent', () => {
         auth: {uid: 'caller'},
         data: {joinCode: code},
       })
-    ).rejects.toMatchObject({code: 'not-found'});
+    ).rejects.toMatchObject({code: 'not-found', details: {reason: 'expired'}});
 
-    // Code should be deleted as a cleanup side effect.
+    // Kept, so the organizer's list shows it as expired.
     const after = await getAdminDb()
       .collection('event_invites')
       .doc(code)
       .get();
-    expect(after.exists).toBe(false);
+    expect(after.exists).toBe(true);
   });
 
   test('rejects missing target event with not-found', async () => {
@@ -657,22 +657,22 @@ describe('generateInviteCode', () => {
 
     expect(result.code).not.toBe(expiredCode);
 
-    // Expired doc deleted; only the fresh one remains for this event.
+    // The expired one is kept as it was (#238); the fresh one is new.
     const expiredDoc = await getAdminDb()
       .collection('event_invites')
       .doc(expiredCode)
       .get();
-    expect(expiredDoc.exists).toBe(false);
+    expect(expiredDoc.exists).toBe(true);
+    expect(expiredDoc.data()!.turnedOffAt).toBeUndefined();
 
     const docs = await getAdminDb()
       .collection('event_invites')
       .where('eventId', '==', 'evtG5')
       .get();
-    expect(docs.size).toBe(1);
-    expect(docs.docs[0].id).toBe(result.code);
+    expect(docs.size).toBe(2);
   });
 
-  test('self-heal: multiple non-expired duplicates → returns most-recent + deletes siblings', async () => {
+  test('several usable links: returns the most recent and leaves the others working (#238)', async () => {
     await seedEvent({eventId: 'evtG6', creatorUid: 'creatorG6'});
 
     const future = Timestamp.fromDate(
@@ -712,20 +712,16 @@ describe('generateInviteCode', () => {
       data: {eventId: 'evtG6'},
     });
 
-    // Most recent (NEWER1) is returned; OLDER1 is deleted in the same tx.
+    // Most recent (NEWER1) is returned. An event may now hold several
+    // links, so OLDER1 is left as it is.
     expect(result.code).toBe('NEWER1');
 
     const olderDoc = await getAdminDb()
       .collection('event_invites')
       .doc('OLDER1')
       .get();
-    expect(olderDoc.exists).toBe(false);
-
-    const docs = await getAdminDb()
-      .collection('event_invites')
-      .where('eventId', '==', 'evtG6')
-      .get();
-    expect(docs.size).toBe(1);
+    expect(olderDoc.exists).toBe(true);
+    expect(olderDoc.data()!.turnedOffAt).toBeUndefined();
   });
 
   test('rotate as string "true" is treated as false (reuse, not rotate)', async () => {
@@ -746,7 +742,7 @@ describe('generateInviteCode', () => {
     expect(second.code).toBe(first.code);
   });
 
-  test('rotate: true returns a NEW code and deletes the previous one', async () => {
+  test('rotate: true returns a NEW code and turns the previous one off', async () => {
     await seedEvent({eventId: 'evtG4', creatorUid: 'creatorG4'});
 
     const wrapped = ftest.wrap(generateInviteCode);
@@ -761,19 +757,20 @@ describe('generateInviteCode', () => {
 
     expect(rotated.code).not.toBe(first.code);
 
-    // Old code is gone; new code is the only one for this event.
+    // The old code is turned off (#238), so it stays listed but no
+    // longer works; the new code is the only usable one.
     const oldDoc = await getAdminDb()
       .collection('event_invites')
       .doc(first.code)
       .get();
-    expect(oldDoc.exists).toBe(false);
+    expect(oldDoc.data()!.turnedOffAt).toBeDefined();
 
     const docs = await getAdminDb()
       .collection('event_invites')
       .where('eventId', '==', 'evtG4')
       .get();
-    expect(docs.size).toBe(1);
-    expect(docs.docs[0].id).toBe(rotated.code);
+    expect(docs.docs.filter((d) => !d.data().turnedOffAt).map((d) => d.id))
+      .toEqual([rotated.code]);
   });
 });
 

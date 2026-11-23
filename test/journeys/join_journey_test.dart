@@ -12,7 +12,8 @@ import '../robots/roles_robot.dart';
 
 /// #79 (Req 47; GAP-CON-01): an invite link or scanned QR code opens
 /// `/join/:code`, which shows the event and the role, explains a draft, an
-/// ended or full event, and joins with one tap. Joining needs a connection.
+/// ended or full event, or a used, turned-off or expired link (#238), and
+/// joins with one tap. Joining needs a connection.
 /// The server's checks are in `functions/test/events/inviteLink.test.ts`.
 void main() {
   late FakeMemberCalls calls;
@@ -136,6 +137,29 @@ void main() {
     expect(find.text('My events'), findsOneWidget);
     await robot.finish();
   });
+
+  for (final (reason, message) in [
+    ('used', 'This invite link was for one person and has already been used.'),
+    ('off', 'This invite link was turned off.'),
+    ('expired', 'This invite link has expired.'),
+  ]) {
+    testWidgets('GAP-ANY-03 a $reason link says why it cannot be used', (
+      tester,
+    ) async {
+      final robot = await open(
+        tester,
+        failFirst: FirebaseFunctionsException(
+          code: 'not-found',
+          message: 'unusable',
+          details: {'reason': reason},
+        ),
+      );
+      expect(find.byKey(const Key('join.notFound')), findsOneWidget);
+      expect(find.textContaining(message), findsOneWidget);
+      expect(find.byKey(const Key('join.submit')), findsNothing);
+      await robot.finish();
+    });
+  }
 
   testWidgets('opened offline, it says so and tries again', (tester) async {
     final robot = await open(

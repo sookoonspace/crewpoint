@@ -137,6 +137,12 @@ abstract final class CpIcons {
   static const IconData terms = LucideIcons.fileText;
   static const IconData currency = LucideIcons.dollarSign;
   static const IconData joinEvent = LucideIcons.userRoundPlus;
+
+  // Invite links (#238): show a link's QR code, turn a link off, and a
+  // single-use link that was used.
+  static const IconData inviteQr = LucideIcons.qrCode;
+  static const IconData inviteOff = LucideIcons.link2Off;
+  static const IconData inviteUsed = LucideIcons.userCheck;
   static const IconData markdown = LucideIcons.fileText;
   static const IconData description = LucideIcons.fileText;
   static const IconData image = LucideIcons.image;

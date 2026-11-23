@@ -1,5 +1,6 @@
 import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_access.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:crewpoint_app/app/features/dashboard/domain/models/invite.dart';
 
 /// What linking a signed-in account found (Req 46): events it was linked
 /// in, events where an organizer must decide, and whether the email still
@@ -10,9 +11,14 @@ typedef LinkResult = ({
   bool unverified,
 });
 
-/// The event's one active invite (Req 31, 47): its code, the role it
-/// carries, and when it expires (Req 56).
-typedef InviteCode = ({String code, String roleId, DateTime? expiresAt});
+/// Why a known invite link cannot be used (#238): `expired`, `off` or
+/// `used`, from the `not-found` error's details. Null for an unknown code.
+String? unusableInviteReason(FirebaseFunctionsException e) {
+  final details = e.details;
+  if (e.code != 'not-found' || details is! Map) return null;
+  final reason = details['reason'];
+  return reason is String ? reason : null;
+}
 
 /// What an invite link leads to, before joining (Req 47, `/join/:code`).
 typedef InvitePreview = ({
@@ -53,14 +59,30 @@ abstract interface class MemberCalls {
     required String roleId,
   });
 
-  /// The active invite. A null [roleId] keeps the active invite's role, and a
-  /// different one replaces the code. [expiresAt] sets when it expires and
-  /// keeps the code (Req 56).
-  Future<InviteCode> generateInviteCode({
+  /// The event's member invite links, newest first (#238). Needs
+  /// `members.manage`.
+  Future<List<InviteLink>> listInviteLinks(String eventId);
+
+  /// A new invite link into [roleId], expiring at [expiresAt] or the
+  /// template's default, working for one join when [singleUse] (#238).
+  Future<InviteLink> createInviteLink({
     required String eventId,
-    String? roleId,
-    bool rotate = false,
+    required String roleId,
     DateTime? expiresAt,
+    bool singleUse = false,
+  });
+
+  /// Changes when [code] expires, keeping the code (Req 56).
+  Future<InviteLink> setInviteLinkExpiry({
+    required String eventId,
+    required String code,
+    required DateTime expiresAt,
+  });
+
+  /// Turns [code] off for good (#238).
+  Future<InviteLink> turnOffInviteLink({
+    required String eventId,
+    required String code,
   });
 
   /// What [code] leads to. Throws `not-found` for an unknown or expired code.
@@ -210,28 +232,53 @@ class FirebaseMemberCalls implements MemberCalls {
   }) => _call('deleteEventRole', {'eventId': eventId, 'roleId': roleId});
 
   @override
-  Future<InviteCode> generateInviteCode({
-    required String eventId,
-    String? roleId,
-    bool rotate = false,
-    DateTime? expiresAt,
-  }) async {
-    final data = await _call('generateInviteCode', {
-      'eventId': eventId,
-      'roleId': ?roleId,
-      if (rotate) 'rotate': true,
-      if (expiresAt != null) 'expiresAt': expiresAt.millisecondsSinceEpoch,
-    });
-    final expiry = data['expiresAt'];
-    return (
-      code: data['code'] as String,
-      // Functions from before #67 return no role, and before #79 no expiry.
-      roleId: data['roleId'] as String? ?? 'participant',
-      expiresAt: expiry is num
-          ? DateTime.fromMillisecondsSinceEpoch(expiry.toInt())
-          : null,
-    );
+  Future<List<InviteLink>> listInviteLinks(String eventId) async {
+    final data = await _call('listInviteLinks', {'eventId': eventId});
+    return [
+      for (final l in (data['links'] as List?) ?? const [])
+        if (l is Map) InviteLink.fromMap(l),
+    ];
   }
+
+  @override
+  Future<InviteLink> createInviteLink({
+    required String eventId,
+    required String roleId,
+    DateTime? expiresAt,
+    bool singleUse = false,
+  }) async => InviteLink.fromMap(
+    await _call('createInviteLink', {
+      'eventId': eventId,
+      'roleId': roleId,
+      if (expiresAt != null) 'expiresAt': expiresAt.millisecondsSinceEpoch,
+      'singleUse': singleUse,
+    }),
+  );
+
+  @override
+  Future<InviteLink> setInviteLinkExpiry({
+    required String eventId,
+    required String code,
+    required DateTime expiresAt,
+  }) async => InviteLink.fromMap(
+    await _call('updateInviteLink', {
+      'eventId': eventId,
+      'code': code,
+      'expiresAt': expiresAt.millisecondsSinceEpoch,
+    }),
+  );
+
+  @override
+  Future<InviteLink> turnOffInviteLink({
+    required String eventId,
+    required String code,
+  }) async => InviteLink.fromMap(
+    await _call('updateInviteLink', {
+      'eventId': eventId,
+      'code': code,
+      'turnOff': true,
+    }),
+  );
 
   @override
   Future<InvitePreview> previewInvite(String code) async {

@@ -1,11 +1,308 @@
 {
   "@@locale": "en",
   "languageTitle": "Language",
-  "@languageTitle": {"description": "Heading of the language choice."},
+  "@languageTitle": {
+    "description": "Heading of the language choice."
+  },
   "languageHint": "Screens and emails use this language.",
-  "@languageHint": {"description": "Explains what the language choice changes."},
+  "@languageHint": {
+    "description": "Explains what the language choice changes."
+  },
   "languageEnglish": "English",
-  "@languageEnglish": {"description": "The English option, always written in English."},
+  "@languageEnglish": {
+    "description": "The English option, always written in English."
+  },
   "languageGujarati": "ગુજરાતી",
-  "@languageGujarati": {"description": "The Gujarati option, always written in Gujarati."}
+  "@languageGujarati": {
+    "description": "The Gujarati option, always written in Gujarati."
+  },
+  "inviteLoading": "Loading invite links…",
+  "@inviteLoading": {
+    "description": "Shown while the invite links load."
+  },
+  "inviteOffline": "Invites need a connection. Check it and try again.",
+  "@inviteOffline": {
+    "description": "Invite links could not load or change without a connection."
+  },
+  "invitePermissionDenied": "Only people who manage members can invite others.",
+  "@invitePermissionDenied": {
+    "description": "The person may not handle invite links."
+  },
+  "inviteEventGone": "This event no longer exists.",
+  "@inviteEventGone": {
+    "description": "The event was deleted."
+  },
+  "inviteFailed": "Couldn't load the invite links. Please try again.",
+  "@inviteFailed": {
+    "description": "Any other failure loading or changing links."
+  },
+  "inviteRetry": "Try again",
+  "@inviteRetry": {
+    "description": "Retry button."
+  },
+  "inviteShareHint": "Each link has its own role and expiry. Anyone with an active link can join until it expires or you turn it off.",
+  "@inviteShareHint": {
+    "description": "Explains the invite links at the top of the invite sheet."
+  },
+  "inviteNewLink": "New link",
+  "@inviteNewLink": {
+    "description": "Button that makes another invite link."
+  },
+  "inviteNoLinks": "No invite links yet. Make one to invite people.",
+  "@inviteNoLinks": {
+    "description": "The event has no invite links."
+  },
+  "inviteLinkLabel": "Invite link",
+  "@inviteLinkLabel": {
+    "description": "Label above a link."
+  },
+  "inviteCodeLabel": "Or enter this code in the app",
+  "@inviteCodeLabel": {
+    "description": "Label above a link's 6-character code."
+  },
+  "inviteQrLabel": "QR code for {link}",
+  "@inviteQrLabel": {
+    "description": "Screen-reader label of the QR code.",
+    "placeholders": {
+      "link": {
+        "type": "String"
+      }
+    }
+  },
+  "inviteShowQr": "QR code",
+  "@inviteShowQr": {
+    "description": "Button that shows a link's QR code."
+  },
+  "inviteExpires": "Expires {when}",
+  "@inviteExpires": {
+    "description": "When an active link expires; when is a date and time.",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "inviteExpiredOn": "Expired {when}",
+  "@inviteExpiredOn": {
+    "description": "When an expired link expired.",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "inviteNoExpiry": "Never expires",
+  "@inviteNoExpiry": {
+    "description": "A link from before expiries existed."
+  },
+  "inviteChangeExpiry": "Change expiry",
+  "@inviteChangeExpiry": {
+    "description": "Menu that changes when a link expires."
+  },
+  "inviteExpiryDay": "24 hours",
+  "@inviteExpiryDay": {
+    "description": "Expiry choice."
+  },
+  "inviteExpiryWeek": "7 days",
+  "@inviteExpiryWeek": {
+    "description": "Expiry choice."
+  },
+  "inviteExpiryMonth": "30 days",
+  "@inviteExpiryMonth": {
+    "description": "Expiry choice."
+  },
+  "inviteExpiryEventStart": "Until the event starts",
+  "@inviteExpiryEventStart": {
+    "description": "Expiry choice."
+  },
+  "inviteExpiryEventEnd": "Until the event ends",
+  "@inviteExpiryEventEnd": {
+    "description": "Expiry choice."
+  },
+  "inviteExpiryDefault": "Usual for this event",
+  "@inviteExpiryDefault": {
+    "description": "Expiry choice for a new link: 24 hours on small events, else until the event starts."
+  },
+  "invitePickDate": "Pick a date…",
+  "@invitePickDate": {
+    "description": "Expiry choice that opens a calendar."
+  },
+  "inviteCopyLink": "Copy link",
+  "@inviteCopyLink": {
+    "description": "Button."
+  },
+  "inviteCopied": "Link copied",
+  "@inviteCopied": {
+    "description": "Message after copying."
+  },
+  "inviteShare": "Share",
+  "@inviteShare": {
+    "description": "Button that opens the share sheet."
+  },
+  "inviteShareText": "Join {title} on CrewPoint: {link} (or enter code {code} in the app)",
+  "@inviteShareText": {
+    "description": "The text shared with a link; title is the event's name.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "link": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "inviteSingleUse": "Single use",
+  "@inviteSingleUse": {
+    "description": "Switch label, and a tag on such a link."
+  },
+  "inviteSingleUseHelp": "The link stops working after one person joins with it.",
+  "@inviteSingleUseHelp": {
+    "description": "Explains the single-use switch."
+  },
+  "inviteManyUse": "Anyone with it can join",
+  "@inviteManyUse": {
+    "description": "A link that is not single use."
+  },
+  "inviteUses": "{count, plural, =0{Not used yet} =1{Used once} other{Used {count} times}}",
+  "@inviteUses": {
+    "description": "How many people joined with a link.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "inviteStateActive": "Active",
+  "@inviteStateActive": {
+    "description": "A link that works."
+  },
+  "inviteStateUsed": "Used",
+  "@inviteStateUsed": {
+    "description": "A single-use link someone joined with."
+  },
+  "inviteStateExpired": "Expired",
+  "@inviteStateExpired": {
+    "description": "A link past its expiry."
+  },
+  "inviteStateOff": "Turned off",
+  "@inviteStateOff": {
+    "description": "A link the organizer turned off."
+  },
+  "inviteTurnOff": "Turn off",
+  "@inviteTurnOff": {
+    "description": "Button that turns a link off."
+  },
+  "inviteTurnOffTitle": "Turn off this link?",
+  "@inviteTurnOffTitle": {
+    "description": "Confirmation title."
+  },
+  "inviteTurnOffMessage": "Nobody can join with it any more. This can't be undone; make a new link if you need one.",
+  "@inviteTurnOffMessage": {
+    "description": "Confirmation message."
+  },
+  "inviteCancel": "Cancel",
+  "@inviteCancel": {
+    "description": "Closes the confirmation without turning the link off."
+  },
+  "inviteTurnedOff": "Link turned off",
+  "@inviteTurnedOff": {
+    "description": "Message after turning a link off."
+  },
+  "inviteNewLinkTitle": "New invite link",
+  "@inviteNewLinkTitle": {
+    "description": "Title of the new link form."
+  },
+  "inviteExpiryLabel": "Expires",
+  "@inviteExpiryLabel": {
+    "description": "Label of the expiry choice in the new link form."
+  },
+  "inviteCreate": "Create link",
+  "@inviteCreate": {
+    "description": "Button that makes the link."
+  },
+  "inviteLinkUsed": "This invite link was for one person and has already been used. Ask the organizer for a new link.",
+  "@inviteLinkUsed": {
+    "description": "Opening or entering a used single-use link."
+  },
+  "inviteLinkOff": "This invite link was turned off. Ask the organizer for a new link.",
+  "@inviteLinkOff": {
+    "description": "Opening or entering a turned-off link."
+  },
+  "inviteLinkExpired": "This invite link has expired. Ask the organizer for a new link.",
+  "@inviteLinkExpired": {
+    "description": "Opening or entering an expired link."
+  },
+  "inviteJoinTitle": "Join an event",
+  "@inviteJoinTitle": {
+    "description": "Title of /join/:code."
+  },
+  "inviteJoinNeedsConnection": "Joining needs a connection.",
+  "@inviteJoinNeedsConnection": {
+    "description": "Offline on /join/:code."
+  },
+  "inviteJoinLoading": "Checking the invite…",
+  "@inviteJoinLoading": {
+    "description": "Loading /join/:code."
+  },
+  "inviteJoinAs": "You'll join as {role}.",
+  "@inviteJoinAs": {
+    "description": "The role the link gives.",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "inviteStartsOn": "Starts {date}",
+  "@inviteStartsOn": {
+    "description": "When the event starts.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "inviteJoinButton": "Join",
+  "@inviteJoinButton": {
+    "description": "Button that joins the event."
+  },
+  "inviteJoined": "You joined the event!",
+  "@inviteJoined": {
+    "description": "Message after joining."
+  },
+  "inviteNotFound": "This invite is invalid or has expired. Ask the organizer for a new link.",
+  "@inviteNotFound": {
+    "description": "An unknown code."
+  },
+  "inviteNotOpenDraft": "This event isn't open to joining yet. The organizer still needs to publish it. Try the link again later.",
+  "@inviteNotOpenDraft": {
+    "description": "A draft event."
+  },
+  "inviteNotOpenEnded": "This event has ended, so it is closed to joining.",
+  "@inviteNotOpenEnded": {
+    "description": "An ended event."
+  },
+  "inviteFull": "This event is full. Ask the organizer about a place.",
+  "@inviteFull": {
+    "description": "A full event."
+  },
+  "inviteAlreadyMember": "You're already in this event.",
+  "@inviteAlreadyMember": {
+    "description": "Already a member."
+  },
+  "inviteOpenEvent": "Open the event",
+  "@inviteOpenEvent": {
+    "description": "Button."
+  },
+  "inviteJoinFailed": "Couldn't join. Check your connection and try again.",
+  "@inviteJoinFailed": {
+    "description": "Joining failed."
+  },
+  "inviteBackToEvents": "Go to my events",
+  "@inviteBackToEvents": {
+    "description": "Button."
+  }
 }

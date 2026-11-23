@@ -42,7 +42,9 @@ void main() {
   });
 
   test('placeholders match between the languages', () {
-    final hole = RegExp(r'\{(\w+)');
+    // A placeholder is `{name}`, or `{name, plural, …}` whose branches hold
+    // translated words, so only a name followed by `}` or `,` counts.
+    final hole = RegExp(r'\{(\w+)(?=[},])');
     for (final key in _messages(gu)) {
       Set<String> holes(Object? s) =>
           hole.allMatches('$s').map((m) => m.group(1)!).toSet();

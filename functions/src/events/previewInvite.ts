@@ -2,6 +2,8 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {Timestamp, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 import {inviteRoleId} from "./generateInviteCode";
+import {unusableInvite} from "./inviteLinks";
+import {inviteState} from "./inviteState";
 import {readEventRoles} from "./members";
 import {PRESET_ROLES} from "./permissions";
 
@@ -12,7 +14,9 @@ const db = getFirestore();
  * (Req 47, `/join/:code`): the event's title and start, the role it carries,
  * and whether the caller can join now. A draft, an ended or archived event,
  * a full one, or someone already in it is explained instead of failing at
- * the last step. Needs a signed-in caller, so codes cannot be tried
+ * the last step. A link that has expired, was turned off or, being single
+ * use, was used is `not-found` with `details.reason` (`expired`, `off`,
+ * `used`) so the page can say why (#238). Needs a signed-in caller, so codes cannot be tried
  * anonymously to read event titles.
  */
 export const previewInvite = onCall({timeoutSeconds: 30}, async (request) => {
@@ -28,10 +32,13 @@ export const previewInvite = onCall({timeoutSeconds: 30}, async (request) => {
 
   return withStructuredLogs({op: "previewInvite", uid, args: {code}}, async () => {
     const invite = await db.collection("event_invites").doc(code).get();
-    const expiresAt = (invite.data()?.expiresAt as Timestamp | undefined)?.toMillis() ?? 0;
-    if (!invite.exists || expiresAt <= Date.now()) {
+    if (!invite.exists) {
       throw new HttpsError("not-found", "This code is invalid or has expired.");
     }
+    const state = inviteState(invite.data()!, Date.now());
+    if (state !== "active") throw unusableInvite(state);
+    const expiresAt =
+      (invite.data()!.expiresAt as Timestamp | undefined)?.toMillis?.() ?? null;
     const eventId: string = invite.data()!.eventId;
     const eventRef = db.collection("events").doc(eventId);
     const eventDoc = await eventRef.get();

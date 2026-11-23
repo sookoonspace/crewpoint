@@ -1,8 +1,9 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
-import {FieldValue, getFirestore} from "firebase-admin/firestore";
+import {FieldValue, Timestamp, getFirestore} from "firebase-admin/firestore";
 import {requireString, withStructuredLogs} from "../utils/logging";
 import {assertNotArchived} from "./eventStatus";
 import {memberRef, readPermissions, readRoleIds} from "./members";
+import {inviteState} from "./inviteState";
 
 const db = getFirestore();
 
@@ -15,13 +16,13 @@ const db = getFirestore();
  * - Owner cannot be removed, and cannot leave without transferring ownership
  * - Removes target from both memberIds and adminIds, and deletes their
  *   member document, atomically
- * - When an admin removes someone, deletes the event's invite codes so the
- *   removed member cannot rejoin with one they already have. Admins get a new
- *   code automatically the next time they open the invite sheet, which also
- *   lets them re-invite the person later. Leaving voluntarily keeps the code.
+ * - When an admin removes someone, turns off the event's usable invite
+ *   links so the removed member cannot rejoin with one they already have
+ *   (#238: turned off, not deleted, so they stay listed). Admins make new
+ *   links from the invite sheet. Leaving voluntarily keeps the links.
  *
  * Idempotency: `arrayRemove` is a no-op if the uid is already gone,
- * and deleting already-deleted codes is too, so retries converge on the
+ * and a turned-off link is not turned off again, so retries converge on the
  * same end state.
  */
 export const removeEventMember = onCall(
@@ -106,8 +107,18 @@ export const removeEventMember = onCall(
             memberCount: memberIds.filter((m) => m !== targetUserId).length,
             updatedAt: FieldValue.serverTimestamp(),
           });
+          // Someone removed cannot rejoin with a link they kept: the
+          // event's usable links are turned off, and stay listed (#238).
           if (!isSelfRemoval) {
-            invites.docs.forEach((invite) => tx.delete(invite.ref));
+            const now = Date.now();
+            invites.docs
+              .filter((invite) => inviteState(invite.data(), now) === "active")
+              .forEach((invite) =>
+                tx.update(invite.ref, {
+                  turnedOffAt: Timestamp.fromMillis(now),
+                  turnedOffBy: uid,
+                })
+              );
           }
         });
 
