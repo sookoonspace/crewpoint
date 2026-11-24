@@ -30,6 +30,7 @@ import 'package:crewpoint_app/app/core/services/fcm_handler.dart';
 import 'package:crewpoint_app/app/core/services/fcm_handler_bootstrap.dart';
 import 'package:crewpoint_app/app/core/services/firebase_service.dart';
 import 'package:crewpoint_app/app/core/services/app_check.dart';
+import 'package:crewpoint_app/app/core/services/incoming_links.dart';
 import 'package:crewpoint_app/app/core/web/ssr_handoff.dart';
 import 'package:crewpoint_app/app/core/design/components/components.dart';
 import 'package:crewpoint_app/app/core/design/theme/cp_theme.dart';
@@ -189,6 +190,7 @@ class _MyAppState extends ConsumerState<MyApp> {
   final GlobalKey<ScaffoldMessengerState> _messengerKey =
       GlobalKey<ScaffoldMessengerState>();
   FcmHandlerBootstrap? _fcmBootstrap;
+  StreamSubscription<Uri>? _incomingLinks;
   String? _fcmAttachedUid;
   ProviderSubscription<UnreadBadgeCounts>? _badgeMirrorSub;
 
@@ -226,6 +228,12 @@ class _MyAppState extends ConsumerState<MyApp> {
     // Wire FCM streams once. The router is ready; the auth listener below
     // attaches the per-user token.
     _startFcmBootstrap();
+    // App Links and Universal Links, including the one the app opened with
+    // (#241). Flutter's own deep linking is off, so each arrives once.
+    _incomingLinks = followIncomingLinks(
+      ref.read(incomingLinkSourceProvider),
+      _router.go,
+    );
   }
 
   Future<void> _startFcmBootstrap() async {
@@ -417,6 +425,7 @@ class _MyAppState extends ConsumerState<MyApp> {
   @override
   void dispose() {
     unawaited(_fcmBootstrap?.dispose());
+    unawaited(_incomingLinks?.cancel());
     _badgeMirrorSub?.close();
     _router.dispose();
     _routerRefresh.dispose();

@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:developer';
 
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:crewpoint_app/app/core/services/i_auth_service.dart';
@@ -167,6 +169,119 @@ class FirebaseAuthService implements IAuthService {
     // enumeration-safe replacement. Removing the now-inert UX path is
     // tracked separately.
     return const [];
+  }
+
+  @override
+  Future<void> sendSignInLink({
+    required String email,
+    required String returnTo,
+    required String language,
+  }) async {
+    await FirebaseFunctions.instance
+        .httpsCallable(
+          'sendSignInLink',
+          options: HttpsCallableOptions(timeout: const Duration(seconds: 30)),
+        )
+        .call<Map<String, dynamic>>({
+          'email': email,
+          'returnTo': returnTo,
+          'language': language,
+        });
+  }
+
+  @override
+  bool isSignInLink(String link) => _firebaseAuth.isSignInWithEmailLink(link);
+
+  @override
+  Future<EmailLinkOutcome> completeSignInLink({
+    required String email,
+    required String link,
+  }) async {
+    try {
+      final credential = await _firebaseAuth.signInWithEmailLink(
+        email: email,
+        emailLink: link,
+      );
+      return EmailLinkSignedIn(_mapUser(credential.user!));
+    } on fb.FirebaseAuthException catch (e, st) {
+      log('Email link sign-in failed', error: e, stackTrace: st, name: 'auth');
+      return switch (e.code) {
+        // Firebase checks the address against the one the link was made for.
+        'invalid-email' => const EmailLinkWrongEmail(),
+        'invalid-action-code' ||
+        'expired-action-code' => const EmailLinkExpired(),
+        _ => EmailLinkFailed(_mapFirebaseError(e.code)),
+      };
+    }
+  }
+
+  /// Web sign-ins waiting for their code, by the ID handed back.
+  final Map<String, fb.ConfirmationResult> _webCodes = {};
+  int _webCodeCount = 0;
+
+  @override
+  Future<PhoneCodeOutcome> sendPhoneCode(String phone) async {
+    try {
+      if (kIsWeb) {
+        // An invisible reCAPTCHA is made for the page when none is given.
+        final confirmation = await _firebaseAuth.signInWithPhoneNumber(phone);
+        final id = 'web-${_webCodeCount++}';
+        _webCodes[id] = confirmation;
+        return PhoneCodeSent(id);
+      }
+      final outcome = Completer<PhoneCodeOutcome>();
+      await _firebaseAuth.verifyPhoneNumber(
+        phoneNumber: phone,
+        verificationCompleted: (credential) async {
+          if (outcome.isCompleted) return;
+          try {
+            final result = await _firebaseAuth.signInWithCredential(credential);
+            outcome.complete(PhoneSignedIn(_mapUser(result.user!)));
+          } on fb.FirebaseAuthException catch (e) {
+            outcome.complete(PhoneCodeFailed(_mapFirebaseError(e.code)));
+          }
+        },
+        verificationFailed: (e) {
+          log('Phone code failed', error: e, name: 'auth');
+          if (!outcome.isCompleted) {
+            outcome.complete(PhoneCodeFailed(_mapFirebaseError(e.code)));
+          }
+        },
+        codeSent: (verificationId, _) {
+          if (!outcome.isCompleted) {
+            outcome.complete(PhoneCodeSent(verificationId));
+          }
+        },
+        codeAutoRetrievalTimeout: (_) {},
+      );
+      return await outcome.future;
+    } on fb.FirebaseAuthException catch (e, st) {
+      log('Phone code failed', error: e, stackTrace: st, name: 'auth');
+      return PhoneCodeFailed(_mapFirebaseError(e.code));
+    }
+  }
+
+  @override
+  Future<AuthResult> confirmPhoneCode({
+    required String verificationId,
+    required String code,
+  }) async {
+    try {
+      final web = _webCodes[verificationId];
+      final result = web != null
+          ? await web.confirm(code)
+          : await _firebaseAuth.signInWithCredential(
+              fb.PhoneAuthProvider.credential(
+                verificationId: verificationId,
+                smsCode: code,
+              ),
+            );
+      _webCodes.remove(verificationId);
+      return AuthSuccess(_mapUser(result.user!));
+    } on fb.FirebaseAuthException catch (e, st) {
+      log('Phone code confirm failed', error: e, stackTrace: st, name: 'auth');
+      return AuthResultFailure(_mapFirebaseError(e.code));
+    }
   }
 
   AuthUser _mapUser(fb.User user) => AuthUser(

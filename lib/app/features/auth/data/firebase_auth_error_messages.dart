@@ -26,6 +26,8 @@ String firebaseAuthErrorMessage(String code) {
     'cancelled-popup-request' ||
     'popup-closed-by-user' => errors.popupCancelled,
     'too-many-requests' => errors.tooManyRequests,
+    'invalid-verification-code' => errors.wrongCode,
+    'invalid-phone-number' => errors.invalidPhone,
     _ => errors.genericFallback,
   };
 }

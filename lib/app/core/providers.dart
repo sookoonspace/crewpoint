@@ -59,6 +59,9 @@ import 'package:crewpoint_app/app/core/version/app_version_services.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/auth/data/auth_repository.dart';
 import 'package:crewpoint_app/app/features/auth/data/firebase_auth_service.dart';
+import 'package:crewpoint_app/app/features/auth/data/pending_sign_in_store.dart';
+import 'package:crewpoint_app/app/core/services/incoming_links.dart';
+import 'package:crewpoint_app/app/core/theme/theme_mode_provider.dart';
 import 'package:crewpoint_app/app/core/services/firebase_image_service.dart';
 import 'package:crewpoint_app/app/core/services/image_service.dart';
 import 'package:crewpoint_app/app/features/onboarding/application/onboarding_provider.dart';
@@ -96,6 +99,16 @@ final secureStorageProvider = Provider<SecureStorageService>(
 /// Auth service (Firebase).
 final authServiceProvider = Provider<IAuthService>(
   (_) => FirebaseAuthService(),
+);
+
+/// The email a sign-in link was last sent to on this device (#241).
+final pendingSignInStoreProvider = Provider<PendingSignInStore>(
+  (ref) => PendingSignInStore(ref.watch(sharedPreferencesProvider)),
+);
+
+/// Links that open the app: App Links and Universal Links (#241).
+final incomingLinkSourceProvider = Provider<IIncomingLinkSource>(
+  (_) => AppLinksIncomingLinkSource(),
 );
 
 /// Auth repository.

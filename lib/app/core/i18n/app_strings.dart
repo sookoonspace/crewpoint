@@ -43,6 +43,7 @@ abstract class AppStrings {
   InviteStrings get invites;
   RegistrationSettingsStrings get registrationSettings;
   EventPageStrings get eventPage;
+  LightSignInStrings get lightSignIn;
   MemberPickerStrings get memberPicker;
   ScheduleStrings get schedule;
   AgendaStrings get agenda;
@@ -750,6 +751,8 @@ abstract class ErrorStrings {
   String get popupBlocked;
   String get popupCancelled;
   String get tooManyRequests;
+  String get wrongCode;
+  String get invalidPhone;
   String get permissionDenied;
   String get genericFallback;
 }
@@ -799,6 +802,9 @@ class _LocalizedStrings extends _EnglishStrings {
 
   @override
   EventPageStrings get eventPage => EventPageStrings(_l);
+
+  @override
+  LightSignInStrings get lightSignIn => LightSignInStrings(_l);
 }
 
 /// The language choice (Req 56).
@@ -902,6 +908,10 @@ class _EnglishStrings extends AppStrings {
   @override
   EventPageStrings get eventPage =>
       EventPageStrings(lookupAppLocalizations(const Locale('en')));
+
+  @override
+  LightSignInStrings get lightSignIn =>
+      LightSignInStrings(lookupAppLocalizations(const Locale('en')));
 
   @override
   MemberPickerStrings get memberPicker => const _EnglishMemberPickerStrings();
@@ -2375,6 +2385,12 @@ class _EnglishErrorStrings extends ErrorStrings {
   @override
   String get tooManyRequests =>
       'Too many attempts. Please wait a minute before trying again.';
+
+  @override
+  String get wrongCode => "That code isn't right. Check it and try again.";
+
+  @override
+  String get invalidPhone => "That phone number isn't valid.";
 
   @override
   String get genericFallback =>
@@ -5610,4 +5626,45 @@ class EventPageStrings {
   String get registerSoon => _l.eventPageRegisterSoon;
   String get registerSoonHelp => _l.eventPageRegisterSoonHelp;
   String get backToEvent => _l.eventPageBackToEvent;
+}
+
+/// Light sign-in for registering and email sign-in links (#241),
+/// translated through the ARB files.
+class LightSignInStrings {
+  const LightSignInStrings(this._l);
+
+  final AppLocalizations _l;
+
+  String get title => _l.lightSignInTitle;
+  String get help => _l.lightSignInHelp;
+  String get emailLabel => _l.lightSignInEmailLabel;
+  String get emailButton => _l.lightSignInEmailButton;
+  String get emailInvalid => _l.lightSignInEmailInvalid;
+  String get sentTitle => _l.lightSignInSentTitle;
+  String sentBody(String email) => _l.lightSignInSentBody(email);
+  String get resend => _l.lightSignInResend;
+  String get differentEmail => _l.lightSignInDifferentEmail;
+  String get phoneLabel => _l.lightSignInPhoneLabel;
+  String get phoneHelp => _l.lightSignInPhoneHelp;
+  String get phoneButton => _l.lightSignInPhoneButton;
+  String get phoneInvalid => _l.lightSignInPhoneInvalid;
+  String get phoneUnsupported => _l.lightSignInPhoneUnsupported;
+  String get codeLabel => _l.lightSignInCodeLabel;
+  String codeHelp(String phone) => _l.lightSignInCodeHelp(phone);
+  String get codeButton => _l.lightSignInCodeButton;
+  String get codeMissing => _l.lightSignInCodeMissing;
+  String get changePhone => _l.lightSignInChangePhone;
+  String get or => _l.lightSignInOr;
+  String get tooMany => _l.lightSignInTooMany;
+  String get sendFailed => _l.lightSignInSendFailed;
+  String get signingIn => _l.lightSignInSigningIn;
+  String get confirmTitle => _l.lightSignInConfirmTitle;
+  String get confirmHelp => _l.lightSignInConfirmHelp;
+  String get continueLabel => _l.lightSignInContinueLabel;
+  String get wrongEmail => _l.lightSignInWrongEmail;
+  String get expiredTitle => _l.lightSignInExpiredTitle;
+  String get expiredHelp => _l.lightSignInExpiredHelp;
+  String get sendNew => _l.lightSignInSendNew;
+  String get myRegistrationSoon => _l.lightSignInMyRegistrationSoon;
+  String get myRegistrationSoonHelp => _l.lightSignInMyRegistrationSoonHelp;
 }

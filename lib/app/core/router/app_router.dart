@@ -34,6 +34,8 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/edit_event_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_settings_screen.dart';
 import 'package:crewpoint_app/app/features/registration/presentation/event_page_screen.dart';
+import 'package:crewpoint_app/app/features/registration/presentation/registration_sign_in_gate.dart';
+import 'package:crewpoint_app/app/features/auth/presentation/email_link_screen.dart';
 import 'package:crewpoint_app/app/features/registration/presentation/registration_settings_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/expense_access_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/group_entry_screen.dart';
@@ -88,6 +90,9 @@ abstract final class AppRoutes {
 
   /// A personal RSVP link, `/r/:token` (Spec #233 Req 9, 13).
   static const String rsvp = '/r';
+
+  /// Where an email sign-in link opens (Spec #233 Req 12; #241).
+  static const String emailLink = '/auth/link';
 }
 
 /// Paths that come back after onboarding and sign-in: invite links, event
@@ -98,11 +103,14 @@ const _returnable = [
   '${AppRoutes.rsvp}/',
 ];
 
-/// Event pages and personal links need no sign-in and skip onboarding, for
-/// signed-out, new and signed-in visitors alike (Spec #233 Req 9).
+/// Event pages, personal links and email sign-in links need no sign-in and
+/// skip onboarding, for signed-out, new and signed-in visitors alike (Spec
+/// #233 Req 9). Someone who signs in only to register sees onboarding the
+/// next time they open the app anywhere else.
 bool _isPublic(String location) =>
     location.startsWith('${AppRoutes.eventPage}/') ||
-    location.startsWith('${AppRoutes.rsvp}/');
+    location.startsWith('${AppRoutes.rsvp}/') ||
+    location == AppRoutes.emailLink;
 
 /// Where to go back to after onboarding and sign-in: only invite links,
 /// event pages and personal links (Req 47; Spec #233 Req 9), so `from` can
@@ -191,15 +199,38 @@ GoRouter createRouter({
             JoinScreen(code: state.pathParameters['code'] ?? ''),
       ),
       GoRoute(
+        path: AppRoutes.emailLink,
+        builder: (_, state) => EmailLinkScreen(
+          link: '${AppFlavor.current.legalBaseUrl}${state.uri}',
+          to: state.uri.queryParameters['to'],
+        ),
+      ),
+      GoRoute(
         path: '${AppRoutes.eventPage}/:eventSlug',
         builder: (_, state) =>
             EventPageScreen(slug: state.pathParameters['eventSlug'] ?? ''),
         routes: [
           GoRoute(
             path: 'register',
-            builder: (_, state) => RegisterComingScreen(
-              slug: state.pathParameters['eventSlug'] ?? '',
-            ),
+            builder: (_, state) {
+              final slug = state.pathParameters['eventSlug'] ?? '';
+              return RegistrationSignInGate(
+                slug: slug,
+                returnTo: '/e/$slug/register',
+                child: RegisterComingScreen(slug: slug),
+              );
+            },
+          ),
+          GoRoute(
+            path: 'registration',
+            builder: (_, state) {
+              final slug = state.pathParameters['eventSlug'] ?? '';
+              return RegistrationSignInGate(
+                slug: slug,
+                returnTo: '/e/$slug/registration',
+                child: MyRegistrationComingScreen(slug: slug),
+              );
+            },
           ),
         ],
       ),

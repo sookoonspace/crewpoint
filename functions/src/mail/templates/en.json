@@ -3,5 +3,10 @@
     "subject": "CrewPoint email check",
     "text": "Hello {{name}},\n\nThis is a test email from CrewPoint, sent to check that email reaches you and your {{word.group.one.lower}}. You don't need to do anything.\n\nCrewPoint",
     "push": "A test email from CrewPoint is on its way."
+  },
+  "signInLink": {
+    "subject": "Your CrewPoint sign-in link",
+    "text": "Hello,\n\nTap this link to sign in to CrewPoint and carry on where you left off:\n\n{{link}}\n\nThe link works once and expires in an hour. If you didn't ask for it, you can ignore this email; nobody can sign in without it.\n\nCrewPoint",
+    "push": "Your CrewPoint sign-in link is in your email."
   }
 }

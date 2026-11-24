@@ -160,11 +160,15 @@ void main() {
     await finish(tester);
   });
 
-  testWidgets('Register leads on to registering', (tester) async {
+  testWidgets('Register asks a signed-out visitor to sign in, and Back '
+      'returns to the event (#241)', (tester) async {
     await open(tester, page: convention);
     await tap(tester, const Key('events.page.register'));
-    expect(find.byKey(const Key('events.page.registerSoon')), findsOneWidget);
-    await tap(tester, const Key('events.page.back'));
+    expect(find.byKey(const Key('registration.gate.signIn')), findsOneWidget);
+    await tester.tap(find.byTooltip('Back'));
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
     expect(find.byKey(const Key('events.page.title')), findsOneWidget);
     await finish(tester);
   });
