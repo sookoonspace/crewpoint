@@ -23,6 +23,7 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/create_event_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/event_status_label.dart';
+import 'package:crewpoint_app/app/features/registration/domain/registration_settings.dart';
 
 /// Parses a positive whole number. Empty gives null, and anything else invalid
 /// is reported by the field's validator.
@@ -386,6 +387,23 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     }
   }
 
+  /// Who can register, read as the Registration screen reads it (#239).
+  String _registrationMode(BuildContext context) {
+    final template = ref
+        .watch(templateCatalogueProvider)
+        .value
+        ?.where((t) => t.id == widget.event.templateId)
+        .firstOrNull;
+    final settings = RegistrationSettings.fromMaps(
+      widget.event.settings['registration'],
+      template?.registration,
+    );
+    final strings = context.strings.registrationSettings;
+    return settings.mode == RegistrationMode.open
+        ? strings.modeOpen
+        : strings.modeInvited;
+  }
+
   @override
   Widget build(BuildContext context) {
     final cp = context.cp;
@@ -704,6 +722,15 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
                           subtitle: context.strings.fields.settingsEntryHelp,
                           onTap: () => context.push(
                             '/dashboard/event/${widget.event.id}/fields',
+                          ),
+                        ),
+                        link(
+                          key: 'registration',
+                          icon: CpIcons.registration,
+                          title: widget.event.words.one('registration'),
+                          subtitle: _registrationMode(context),
+                          onTap: () => context.push(
+                            '/dashboard/event/${widget.event.id}/settings/registration',
                           ),
                         ),
                         link(

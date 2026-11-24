@@ -1,6 +1,6 @@
 {
   "id": "wedding",
-  "version": 1,
+  "version": 2,
   "name": {
     "en": "Wedding"
   },
@@ -19,6 +19,10 @@
     "group": {
       "one": "Guest party",
       "other": "Guest parties"
+    },
+    "registration": {
+      "one": "RSVP",
+      "other": "RSVPs"
     }
   },
   "settings": {
@@ -38,7 +42,34 @@
         "name": "Adult",
         "minAge": 18
       }
-    ]
+    ],
+    "registration": {
+      "mode": "invited",
+      "review": false,
+      "extraGuests": 0,
+      "sections": [
+        {
+          "id": "meal",
+          "name": {
+            "en": "Meal"
+          },
+          "fieldIds": [
+            "mealChoice"
+          ]
+        }
+      ],
+      "blocks": {
+        "people": true,
+        "ageOnly": true,
+        "stay": false,
+        "sessionChoices": false,
+        "waivers": false,
+        "contact": false
+      },
+      "conditions": {},
+      "registrationRoleId": "participant",
+      "offerHours": 72
+    }
   },
   "fields": [
     {

@@ -104,6 +104,10 @@ void main() {
                 builder: (_, _) => const Text('expense access screen'),
               ),
               GoRoute(
+                path: '/dashboard/event/:eventId/settings/registration',
+                builder: (_, _) => const Text('registration settings screen'),
+              ),
+              GoRoute(
                 path: '/',
                 builder: (context, _) => Scaffold(
                   body: TextButton(
@@ -239,6 +243,38 @@ void main() {
       await tester.tap(entry);
       await tester.pumpAndSettle();
       expect(find.text('expense access screen'), findsOneWidget);
+    });
+  });
+
+  group('registration (#239)', () {
+    testWidgets('shows who can register and opens its screen', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        event: const EventModel(
+          id: 'evt',
+          title: 'Convention',
+          creatorId: 'owner',
+          adminIds: ['owner', 'admin'],
+          memberIds: ['owner', 'admin', 'member'],
+          settings: {
+            'registration': {'mode': 'open'},
+          },
+        ),
+      );
+      final entry = find.byKey(_key('registration'));
+      await tester.ensureVisible(entry);
+      expect(
+        find.descendant(
+          of: entry,
+          matching: find.text('Anyone with the link can register'),
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(entry);
+      await tester.pumpAndSettle();
+      expect(find.text('registration settings screen'), findsOneWidget);
     });
   });
 

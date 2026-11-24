@@ -1,6 +1,6 @@
 {
   "id": "convention",
-  "version": 1,
+  "version": 2,
   "name": {
     "en": "Convention"
   },
@@ -40,7 +40,56 @@
         "name": "Adult",
         "minAge": 18
       }
-    ]
+    ],
+    "registration": {
+      "mode": "open",
+      "review": false,
+      "extraGuests": 0,
+      "sections": [
+        {
+          "id": "food",
+          "name": {
+            "en": "Food"
+          },
+          "fieldIds": [
+            "diet"
+          ]
+        },
+        {
+          "id": "kids",
+          "name": {
+            "en": "Kids activities"
+          },
+          "fieldIds": [
+            "kids"
+          ]
+        },
+        {
+          "id": "shirts",
+          "name": {
+            "en": "T-shirts"
+          },
+          "fieldIds": [
+            "shirt"
+          ]
+        }
+      ],
+      "blocks": {
+        "people": true,
+        "ageOnly": false,
+        "stay": true,
+        "sessionChoices": true,
+        "waivers": true,
+        "contact": true
+      },
+      "conditions": {
+        "kids": {
+          "categoryId": "child"
+        }
+      },
+      "registrationRoleId": "participant",
+      "offerHours": 72
+    }
   },
   "fields": [
     {

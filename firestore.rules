@@ -174,6 +174,11 @@ service cloud.firestore {
         // setExpenseAccess callable changes it (Req 38).
         && request.resource.data.get('settings', {}).get('expenseAccess', null)
             == resource.data.get('settings', {}).get('expenseAccess', null)
+        // Registration settings are checked against the event's fields and
+        // roles, so only saveRegistrationSettings and claimEventSlug change
+        // them (#239).
+        && request.resource.data.get('settings', {}).get('registration', null)
+            == resource.data.get('settings', {}).get('registration', null)
         // Archived events only allow a restore, by changing status.
         && (resource.data.get('status', 'active') != 'archived'
             || request.resource.data.diff(resource.data).affectedKeys()
@@ -718,6 +723,12 @@ service cloud.firestore {
 
     // Server secrets, such as the key that scrambles match keys (Req 14a).
     match /serverSecrets/{name} {
+      allow read, write: if false;
+    }
+
+    // Event link names (#239), each mapping to its event. Only
+    // claimEventSlug writes them; the public page reads through a callable.
+    match /eventSlugs/{slug} {
       allow read, write: if false;
     }
 

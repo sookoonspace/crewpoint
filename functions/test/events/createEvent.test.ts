@@ -44,8 +44,9 @@ describe('createEvent configuration (Req 18, 18a, 21)', () => {
       attendancePolicy: 'everyone',
       expenseAccess: {mode: 'everyone'},
       categories: [],
+      registration: expect.objectContaining({mode: 'invited', registrationRoleId: 'participant'}),
     });
-    expect(saved.templateVersion).toBe(1);
+    expect(saved.templateVersion).toBe(2);
     expect(saved.capacity).toBeNull();
     expect(saved.memberLimit).toBeNull();
     expect(saved.eventType).toBeUndefined();
@@ -181,7 +182,7 @@ describe('createEvent from a template (Req 62, 63a, 38a)', () => {
     await call('me', input({templateId: 'convention'}));
     const saved = (await eventDoc()).data()!;
     expect(saved.templateId).toBe('convention');
-    expect(saved.templateVersion).toBe(1);
+    expect(saved.templateVersion).toBe(2);
     expect(saved.labels.group).toEqual({one: 'Family', other: 'Families'});
     expect(saved.settings.attendancePolicy).toBe('arrivalToDeparture');
     expect(saved.settings.expenseAccess).toEqual({mode: 'selected', roleIds: [], uids: []});
@@ -214,7 +215,7 @@ describe('createEvent from a template (Req 62, 63a, 38a)', () => {
     await call('me', input({templateId: 'party'}));
     const before = (await eventDoc()).data()!;
     // The event holds its own copy; nothing points back to the file.
-    expect(before.labels).toEqual({});
+    expect(before.labels).toEqual({registration: {one: 'RSVP', other: 'RSVPs'}});
     expect(before.settings.categories).toHaveLength(2);
     const fields = await db().collection('events/evt/fields').get();
     expect(fields.size).toBe(1);

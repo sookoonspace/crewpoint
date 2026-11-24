@@ -83,6 +83,13 @@ class RolesRobot {
 
   Future<void> startNewRole() => tap(const Key('roles.new'));
 
+  /// Types [text] into the field with [key], scrolling to it first.
+  Future<void> typeInto(Key key, String text) async {
+    await reveal(find.byKey(key));
+    await tester.enterText(find.byKey(key), text);
+    await settle();
+  }
+
   Future<void> enterRoleName(String name) async {
     await tester.enterText(find.byKey(const Key('roles.editor.name')), name);
     await settle();

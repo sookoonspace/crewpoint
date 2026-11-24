@@ -143,6 +143,12 @@ abstract final class CpIcons {
   static const IconData inviteQr = LucideIcons.qrCode;
   static const IconData inviteOff = LucideIcons.link2Off;
   static const IconData inviteUsed = LucideIcons.userCheck;
+  // Registration settings (#239): the settings entry, moving a section or
+  // question up and down, and who a question is shown to.
+  static const IconData registration = LucideIcons.clipboardList;
+  static const IconData moveUp = LucideIcons.arrowUp;
+  static const IconData moveDown = LucideIcons.arrowDown;
+  static const IconData shownTo = LucideIcons.eye;
   static const IconData markdown = LucideIcons.fileText;
   static const IconData description = LucideIcons.fileText;
   static const IconData image = LucideIcons.image;

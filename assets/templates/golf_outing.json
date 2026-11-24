@@ -1,6 +1,6 @@
 {
   "id": "golf_outing",
-  "version": 1,
+  "version": 2,
   "name": {
     "en": "Golf outing"
   },
@@ -23,6 +23,10 @@
     "session": {
       "one": "Round",
       "other": "Rounds"
+    },
+    "registration": {
+      "one": "Entry",
+      "other": "Entries"
     }
   },
   "settings": {
@@ -42,7 +46,35 @@
         "name": "Adult",
         "minAge": 18
       }
-    ]
+    ],
+    "registration": {
+      "mode": "open",
+      "review": false,
+      "extraGuests": 0,
+      "sections": [
+        {
+          "id": "round",
+          "name": {
+            "en": "Your round"
+          },
+          "fieldIds": [
+            "handicap",
+            "cart"
+          ]
+        }
+      ],
+      "blocks": {
+        "people": true,
+        "ageOnly": false,
+        "stay": false,
+        "sessionChoices": false,
+        "waivers": true,
+        "contact": true
+      },
+      "conditions": {},
+      "registrationRoleId": "player",
+      "offerHours": 72
+    }
   },
   "fields": [
     {
@@ -66,5 +98,10 @@
       "order": 1
     }
   ],
-  "roles": {}
+  "roles": {
+    "player": {
+      "name": "Golfer",
+      "base": "participant"
+    }
+  }
 }

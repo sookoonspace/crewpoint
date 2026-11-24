@@ -304,5 +304,465 @@
   "inviteBackToEvents": "Go to my events",
   "@inviteBackToEvents": {
     "description": "Button."
+  },
+  "regSettingsIntro": "Choose who can register and what the form asks. The {fields} themselves are edited on their own screen.",
+  "@regSettingsIntro": {
+    "description": "Help at the top of the registration settings; fields is the event's word for questions, lower case.",
+    "placeholders": {
+      "fields": {
+        "type": "String"
+      }
+    }
+  },
+  "regSettingsModeHeading": "Who can register",
+  "@regSettingsModeHeading": {
+    "description": "Heading over the registration mode."
+  },
+  "regSettingsModeOpen": "Anyone with the link can register",
+  "@regSettingsModeOpen": {
+    "description": "Open registration mode."
+  },
+  "regSettingsModeOpenHelp": "People open the event's link, sign in with their email or phone, and register.",
+  "@regSettingsModeOpenHelp": {
+    "description": "What open registration means."
+  },
+  "regSettingsModeInvited": "Invited groups only",
+  "@regSettingsModeInvited": {
+    "description": "Invited registration mode."
+  },
+  "regSettingsModeInvitedHelp": "Each invited {group} gets its own personal link.",
+  "@regSettingsModeInvitedHelp": {
+    "description": "What invited registration means; group is the event's word, lower case.",
+    "placeholders": {
+      "group": {
+        "type": "String"
+      }
+    }
+  },
+  "regSettingsPlacesHeading": "Places and dates",
+  "@regSettingsPlacesHeading": {
+    "description": "Heading over capacity, deadline and offers."
+  },
+  "regSettingsCapacity": "Capacity",
+  "@regSettingsCapacity": {
+    "description": "How many people can register."
+  },
+  "regSettingsCapacityHelp": "The most people who can register. Leave empty for no limit.",
+  "@regSettingsCapacityHelp": {
+    "description": "Help under capacity."
+  },
+  "regSettingsCapacityInvalid": "Enter a whole number above zero.",
+  "@regSettingsCapacityInvalid": {
+    "description": "Capacity is not a number above zero."
+  },
+  "regSettingsDeadline": "Registration closes",
+  "@regSettingsDeadline": {
+    "description": "The deadline's date."
+  },
+  "regSettingsDeadlineHelp": "In the event's time zone, {zone}.",
+  "@regSettingsDeadlineHelp": {
+    "description": "Help under the deadline; zone is a time zone name.",
+    "placeholders": {
+      "zone": {
+        "type": "String"
+      }
+    }
+  },
+  "regSettingsDeadlineTime": "Closing time",
+  "@regSettingsDeadlineTime": {
+    "description": "The deadline's time of day."
+  },
+  "regSettingsNoDeadline": "No deadline",
+  "@regSettingsNoDeadline": {
+    "description": "Shown when there is no deadline."
+  },
+  "regSettingsClear": "Clear",
+  "@regSettingsClear": {
+    "description": "Clears a date."
+  },
+  "regSettingsReview": "Review each registration",
+  "@regSettingsReview": {
+    "description": "Switch: registrations wait for approval."
+  },
+  "regSettingsReviewHelp": "Registrations wait for an organizer to approve them.",
+  "@regSettingsReviewHelp": {
+    "description": "Help under review."
+  },
+  "regSettingsExtraGuests": "Extra guests per {group}",
+  "@regSettingsExtraGuests": {
+    "description": "How many extra guests each party may bring.",
+    "placeholders": {
+      "group": {
+        "type": "String"
+      }
+    }
+  },
+  "regSettingsExtraGuestsHelp": "How many more people each can add by name. 0 means none.",
+  "@regSettingsExtraGuestsHelp": {
+    "description": "Help under extra guests."
+  },
+  "regSettingsExtraGuestsInvalid": "Use a whole number from 0 to 20.",
+  "@regSettingsExtraGuestsInvalid": {
+    "description": "Extra guests out of range."
+  },
+  "regSettingsOfferHours": "Hours to accept an offered place",
+  "@regSettingsOfferHours": {
+    "description": "The offer window."
+  },
+  "regSettingsOfferHoursHelp": "When a place frees up, the next on the waitlist has this long to take it. Usually 72.",
+  "@regSettingsOfferHoursHelp": {
+    "description": "Help under the offer window."
+  },
+  "regSettingsOfferHoursInvalid": "Use a whole number from 1 to 336.",
+  "@regSettingsOfferHoursInvalid": {
+    "description": "Offer window out of range."
+  },
+  "regSettingsLinkHeading": "Event link",
+  "@regSettingsLinkHeading": {
+    "description": "Heading over the link name."
+  },
+  "regSettingsSlug": "Link name",
+  "@regSettingsSlug": {
+    "description": "The name in the event's public link."
+  },
+  "regSettingsSlugHelp": "Letters, numbers and hyphens, such as convention-2027.",
+  "@regSettingsSlugHelp": {
+    "description": "Help under the link name."
+  },
+  "regSettingsSlugLink": "Your link: {link}",
+  "@regSettingsSlugLink": {
+    "description": "The event's public link.",
+    "placeholders": {
+      "link": {
+        "type": "String"
+      }
+    }
+  },
+  "regSettingsNoSlug": "No link name yet.",
+  "@regSettingsNoSlug": {
+    "description": "Shown before a link name is chosen."
+  },
+  "regSettingsSlugSave": "Save link name",
+  "@regSettingsSlugSave": {
+    "description": "Claims the link name."
+  },
+  "regSettingsSlugRemove": "Remove link name",
+  "@regSettingsSlugRemove": {
+    "description": "Releases the link name."
+  },
+  "regSettingsSlugSaved": "Link name saved.",
+  "@regSettingsSlugSaved": {
+    "description": "After claiming a link name."
+  },
+  "regSettingsSlugRemoved": "Link name removed.",
+  "@regSettingsSlugRemoved": {
+    "description": "After releasing a link name."
+  },
+  "regSettingsSlugTaken": "Another event already uses this link. Try another.",
+  "@regSettingsSlugTaken": {
+    "description": "The link name is taken."
+  },
+  "regSettingsSlugInvalid": "Use 3 to 40 letters, numbers and hyphens, starting and ending with a letter or number.",
+  "@regSettingsSlugInvalid": {
+    "description": "The link name has other characters."
+  },
+  "regSettingsSlugFailed": "Couldn't save the link name. Try again.",
+  "@regSettingsSlugFailed": {
+    "description": "Claiming the link name failed."
+  },
+  "regSettingsRoleHeading": "Role for people who register",
+  "@regSettingsRoleHeading": {
+    "description": "Heading over the registration role."
+  },
+  "regSettingsRoleLabel": "Role",
+  "@regSettingsRoleLabel": {
+    "description": "The registration role field."
+  },
+  "regSettingsRoleHelp": "The contact and linked adults get this role. Only roles without organizer permissions can be chosen.",
+  "@regSettingsRoleHelp": {
+    "description": "Help under the registration role."
+  },
+  "regSettingsChosen": "Chosen",
+  "@regSettingsChosen": {
+    "description": "Screen-reader label for the tick on the chosen row."
+  },
+  "regSettingsBlocksHeading": "Built-in parts of the form",
+  "@regSettingsBlocksHeading": {
+    "description": "Heading over the built-in blocks."
+  },
+  "regSettingsBlockPeople": "People",
+  "@regSettingsBlockPeople": {
+    "description": "The People block."
+  },
+  "regSettingsBlockPeopleHelp": "Each person's name and birth date.",
+  "@regSettingsBlockPeopleHelp": {
+    "description": "Help under People."
+  },
+  "regSettingsBlockAgeOnly": "Ask for age instead of birth date",
+  "@regSettingsBlockAgeOnly": {
+    "description": "Age only in the People block."
+  },
+  "regSettingsBlockAgeOnlyHelp": "The age band is still worked out for counts.",
+  "@regSettingsBlockAgeOnlyHelp": {
+    "description": "Help under age only."
+  },
+  "regSettingsBlockStay": "Stay",
+  "@regSettingsBlockStay": {
+    "description": "The Stay block."
+  },
+  "regSettingsBlockStayHelp": "Arrival and departure for each person.",
+  "@regSettingsBlockStayHelp": {
+    "description": "Help under Stay."
+  },
+  "regSettingsBlockSessions": "{sessions} to sign up for",
+  "@regSettingsBlockSessions": {
+    "description": "The session choices block; sessions is the event's word.",
+    "placeholders": {
+      "sessions": {
+        "type": "String"
+      }
+    }
+  },
+  "regSettingsBlockSessionsHelp": "{sessions} marked by sign-up become choices for each person.",
+  "@regSettingsBlockSessionsHelp": {
+    "description": "Help under session choices; sessions in lower case.",
+    "placeholders": {
+      "sessions": {
+        "type": "String"
+      }
+    }
+  },
+  "regSettingsBlockWaivers": "Waivers",
+  "@regSettingsBlockWaivers": {
+    "description": "The Waivers block."
+  },
+  "regSettingsBlockWaiversHelp": "Waivers people accept as they register.",
+  "@regSettingsBlockWaiversHelp": {
+    "description": "Help under Waivers."
+  },
+  "regSettingsBlockContact": "Contact details",
+  "@regSettingsBlockContact": {
+    "description": "The Contact block."
+  },
+  "regSettingsBlockContactHelp": "The contact's email and phone, kept private.",
+  "@regSettingsBlockContactHelp": {
+    "description": "Help under Contact."
+  },
+  "regSettingsSectionsHeading": "Sections",
+  "@regSettingsSectionsHeading": {
+    "description": "Heading over the form's sections."
+  },
+  "regSettingsSectionsHelp": "Put the {fields} into named sections, in the order the form shows them. Tap one to choose who sees it.",
+  "@regSettingsSectionsHelp": {
+    "description": "Help over sections; fields in lower case.",
+    "placeholders": {
+      "fields": {
+        "type": "String"
+      }
+    }
+  },
+  "regSettingsAddSection": "Add section",
+  "@regSettingsAddSection": {
+    "description": "Adds a section."
+  },
+  "regSettingsNewSectionName": "Section {number}",
+  "@regSettingsNewSectionName": {
+    "description": "A new section's starting name.",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "regSettingsSectionName": "Section name",
+  "@regSettingsSectionName": {
+    "description": "A section's name field."
+  },
+  "regSettingsSectionNeedsName": "Every section needs a name.",
+  "@regSettingsSectionNeedsName": {
+    "description": "A section has no name."
+  },
+  "regSettingsSectionActions": "Section actions",
+  "@regSettingsSectionActions": {
+    "description": "Tooltip on a section's menu."
+  },
+  "regSettingsQuestionActions": "Actions for {question}",
+  "@regSettingsQuestionActions": {
+    "description": "Tooltip on a question's menu.",
+    "placeholders": {
+      "question": {
+        "type": "String"
+      }
+    }
+  },
+  "regSettingsMoveUp": "Move up",
+  "@regSettingsMoveUp": {
+    "description": "Moves a section or question up."
+  },
+  "regSettingsMoveDown": "Move down",
+  "@regSettingsMoveDown": {
+    "description": "Moves a section or question down."
+  },
+  "regSettingsRemoveSection": "Remove section",
+  "@regSettingsRemoveSection": {
+    "description": "Removes a section; its questions stay."
+  },
+  "regSettingsRemoveQuestion": "Remove from section",
+  "@regSettingsRemoveQuestion": {
+    "description": "Takes a question out of a section."
+  },
+  "regSettingsSectionEmpty": "No {field} in this section yet.",
+  "@regSettingsSectionEmpty": {
+    "description": "An empty section; field in lower case.",
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "regSettingsAddQuestion": "Add a {field}",
+  "@regSettingsAddQuestion": {
+    "description": "Adds a question to a section; field in lower case.",
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "regSettingsAddQuestionTitle": "Add a {field}",
+  "@regSettingsAddQuestionTitle": {
+    "description": "Title of the sheet listing questions to add.",
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "regSettingsUnplaced": "Not in a section yet: {names}",
+  "@regSettingsUnplaced": {
+    "description": "Questions in no section.",
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "regSettingsNoFields": "This event has no {fields} yet.",
+  "@regSettingsNoFields": {
+    "description": "No questions yet; fields in lower case.",
+    "placeholders": {
+      "fields": {
+        "type": "String"
+      }
+    }
+  },
+  "regSettingsEditFields": "Edit {fields}",
+  "@regSettingsEditFields": {
+    "description": "Opens the Fields screen.",
+    "placeholders": {
+      "fields": {
+        "type": "String"
+      }
+    }
+  },
+  "regSettingsShownToEveryone": "Shown to everyone",
+  "@regSettingsShownToEveryone": {
+    "description": "A question with no condition."
+  },
+  "regSettingsOnlyCategory": "Only {category}",
+  "@regSettingsOnlyCategory": {
+    "description": "A question shown to one category.",
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "regSettingsWhenAnswer": "When {question} is {value}",
+  "@regSettingsWhenAnswer": {
+    "description": "A question shown when another answer has a value.",
+    "placeholders": {
+      "question": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "regSettingsConditionTitle": "Who sees {question}",
+  "@regSettingsConditionTitle": {
+    "description": "Title of the condition sheet.",
+    "placeholders": {
+      "question": {
+        "type": "String"
+      }
+    }
+  },
+  "regSettingsConditionFixed": "Other questions depend on this one, so it is always shown.",
+  "@regSettingsConditionFixed": {
+    "description": "A question others depend on."
+  },
+  "regSettingsYes": "Yes",
+  "@regSettingsYes": {
+    "description": "A yes/no answer."
+  },
+  "regSettingsNo": "No",
+  "@regSettingsNo": {
+    "description": "A yes/no answer."
+  },
+  "regSettingsNoteHeading": "After-registration note",
+  "@regSettingsNoteHeading": {
+    "description": "Heading over the after-registration note."
+  },
+  "regSettingsNoteHelp": "Only {groups} who have registered see it, such as a hotel booking link and code.",
+  "@regSettingsNoteHelp": {
+    "description": "Help over the note; groups in lower case.",
+    "placeholders": {
+      "groups": {
+        "type": "String"
+      }
+    }
+  },
+  "regSettingsNote": "Note",
+  "@regSettingsNote": {
+    "description": "The note's text."
+  },
+  "regSettingsLaterNoteFrom": "Replace the note from",
+  "@regSettingsLaterNoteFrom": {
+    "description": "The date the replacement note starts."
+  },
+  "regSettingsLaterNoteFromHelp": "From this date, registered {groups} see the replacement note instead.",
+  "@regSettingsLaterNoteFromHelp": {
+    "description": "Help under the replacement date.",
+    "placeholders": {
+      "groups": {
+        "type": "String"
+      }
+    }
+  },
+  "regSettingsNotReplaced": "Not replaced",
+  "@regSettingsNotReplaced": {
+    "description": "No replacement date."
+  },
+  "regSettingsLaterNote": "Replacement note",
+  "@regSettingsLaterNote": {
+    "description": "The replacement note's text."
+  },
+  "regSettingsLaterNoteNeedsDate": "Choose the date the replacement note starts.",
+  "@regSettingsLaterNoteNeedsDate": {
+    "description": "A replacement note with no date."
+  },
+  "regSettingsSave": "Save",
+  "@regSettingsSave": {
+    "description": "Saves the registration settings."
+  },
+  "regSettingsSaved": "Registration settings saved.",
+  "@regSettingsSaved": {
+    "description": "After saving."
+  },
+  "regSettingsSaveFailed": "Couldn't save the registration settings. Try again.",
+  "@regSettingsSaveFailed": {
+    "description": "Saving failed."
   }
 }

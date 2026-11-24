@@ -26,6 +26,8 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_acces
 import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/expense_access_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/fields_screen.dart';
+import 'package:crewpoint_app/app/features/registration/presentation/registration_settings_screen.dart';
+import 'package:crewpoint_app/l10n/gen/app_localizations.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/import_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/link_requests_screen.dart';
 import 'package:crewpoint_app/app/core/router/app_router.dart'
@@ -271,6 +273,13 @@ class RolesHarness {
                 ),
               ),
               GoRoute(
+                path: 'settings/registration',
+                builder: (_, _) => EventGuard(
+                  eventId: eventId,
+                  child: (event) => RegistrationSettingsScreen(event: event),
+                ),
+              ),
+              GoRoute(
                 path: 'transfer',
                 builder: (_, _) => EventGuard(
                   eventId: eventId,
@@ -345,7 +354,12 @@ class RolesHarness {
 
   /// With [themeMode], the app uses the design system's themes in that mode;
   /// without, Flutter's default theme, as older journeys expect.
-  Widget buildApp({List<Override> overrides = const [], ThemeMode? themeMode}) {
+  /// [locale] shows the app in that language, as gen-l10n would.
+  Widget buildApp({
+    List<Override> overrides = const [],
+    ThemeMode? themeMode,
+    Locale? locale,
+  }) {
     return ProviderScope(
       overrides: [
         databaseProvider.overrideWithValue(database),
@@ -383,6 +397,13 @@ class RolesHarness {
         theme: themeMode == null ? null : CpTheme.light(),
         darkTheme: themeMode == null ? null : CpTheme.dark(),
         themeMode: themeMode ?? ThemeMode.system,
+        locale: locale,
+        localizationsDelegates: locale == null
+            ? null
+            : AppLocalizations.localizationsDelegates,
+        supportedLocales: locale == null
+            ? const [Locale('en', 'US')]
+            : AppLocalizations.supportedLocales,
       ),
     );
   }

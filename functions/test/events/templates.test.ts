@@ -71,4 +71,9 @@ describe('validateTemplate', () => {
   test('refuses a category without an ID', () => {
     expect(broken((t) => t.settings.categories.push({name: 'Senior'}))).toThrow(/categor/);
   });
+  test('refuses registration settings the form could not use (#239)', () => {
+    expect(broken((t) => t.settings.registration.mode = 'public')).toThrow(/registration/);
+    expect(broken((t) => t.settings.registration.sections[0].fieldIds = ['ghost'])).toThrow(/registration/);
+    expect(broken((t) => t.settings.registration.registrationRoleId = 'admin')).toThrow(/registration/);
+  });
 });

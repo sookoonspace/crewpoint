@@ -41,6 +41,7 @@ abstract class AppStrings {
   ImportStrings get imports;
   LinkStrings get links;
   InviteStrings get invites;
+  RegistrationSettingsStrings get registrationSettings;
   MemberPickerStrings get memberPicker;
   ScheduleStrings get schedule;
   AgendaStrings get agenda;
@@ -790,6 +791,10 @@ class _LocalizedStrings extends _EnglishStrings {
 
   @override
   InviteStrings get invites => _ArbInviteStrings(_l);
+
+  @override
+  RegistrationSettingsStrings get registrationSettings =>
+      RegistrationSettingsStrings(_l);
 }
 
 /// The language choice (Req 56).
@@ -885,6 +890,10 @@ class _EnglishStrings extends AppStrings {
   @override
   InviteStrings get invites =>
       _ArbInviteStrings(lookupAppLocalizations(const Locale('en')));
+
+  @override
+  RegistrationSettingsStrings get registrationSettings =>
+      RegistrationSettingsStrings(lookupAppLocalizations(const Locale('en')));
 
   @override
   MemberPickerStrings get memberPicker => const _EnglishMemberPickerStrings();
@@ -4172,7 +4181,8 @@ class _ArbInviteStrings extends InviteStrings {
   @override
   String get share => _l.inviteShare;
   @override
-  String shareText(String title, String link, String code) => _l.inviteShareText(title, link, code);
+  String shareText(String title, String link, String code) =>
+      _l.inviteShareText(title, link, code);
   @override
   String get singleUse => _l.inviteSingleUse;
   @override
@@ -5446,4 +5456,108 @@ class _EnglishDevStrings extends DevStrings {
 
   @override
   String get galleryHelp => 'Every component in light, dark and 200% text';
+}
+
+/// Event settings → Registration (#239), translated through the ARB
+/// files.
+class RegistrationSettingsStrings {
+  const RegistrationSettingsStrings(this._l);
+
+  final AppLocalizations _l;
+
+  String intro(String fields) => _l.regSettingsIntro(fields);
+  String get modeHeading => _l.regSettingsModeHeading;
+  String get modeOpen => _l.regSettingsModeOpen;
+  String get modeOpenHelp => _l.regSettingsModeOpenHelp;
+  String get modeInvited => _l.regSettingsModeInvited;
+  String modeInvitedHelp(String group) => _l.regSettingsModeInvitedHelp(group);
+  String get placesHeading => _l.regSettingsPlacesHeading;
+  String get capacity => _l.regSettingsCapacity;
+  String get capacityHelp => _l.regSettingsCapacityHelp;
+  String get capacityInvalid => _l.regSettingsCapacityInvalid;
+  String get deadline => _l.regSettingsDeadline;
+  String deadlineHelp(String zone) => _l.regSettingsDeadlineHelp(zone);
+  String get deadlineTime => _l.regSettingsDeadlineTime;
+  String get noDeadline => _l.regSettingsNoDeadline;
+  String get clear => _l.regSettingsClear;
+  String get review => _l.regSettingsReview;
+  String get reviewHelp => _l.regSettingsReviewHelp;
+  String extraGuests(String group) => _l.regSettingsExtraGuests(group);
+  String get extraGuestsHelp => _l.regSettingsExtraGuestsHelp;
+  String get extraGuestsInvalid => _l.regSettingsExtraGuestsInvalid;
+  String get offerHours => _l.regSettingsOfferHours;
+  String get offerHoursHelp => _l.regSettingsOfferHoursHelp;
+  String get offerHoursInvalid => _l.regSettingsOfferHoursInvalid;
+  String get linkHeading => _l.regSettingsLinkHeading;
+  String get slug => _l.regSettingsSlug;
+  String get slugHelp => _l.regSettingsSlugHelp;
+  String slugLink(String link) => _l.regSettingsSlugLink(link);
+  String get noSlug => _l.regSettingsNoSlug;
+  String get slugSave => _l.regSettingsSlugSave;
+  String get slugRemove => _l.regSettingsSlugRemove;
+  String get slugSaved => _l.regSettingsSlugSaved;
+  String get slugRemoved => _l.regSettingsSlugRemoved;
+  String get slugTaken => _l.regSettingsSlugTaken;
+  String get slugInvalid => _l.regSettingsSlugInvalid;
+  String get slugFailed => _l.regSettingsSlugFailed;
+  String get roleHeading => _l.regSettingsRoleHeading;
+  String get roleLabel => _l.regSettingsRoleLabel;
+  String get roleHelp => _l.regSettingsRoleHelp;
+  String get chosen => _l.regSettingsChosen;
+  String get blocksHeading => _l.regSettingsBlocksHeading;
+  String get blockPeople => _l.regSettingsBlockPeople;
+  String get blockPeopleHelp => _l.regSettingsBlockPeopleHelp;
+  String get blockAgeOnly => _l.regSettingsBlockAgeOnly;
+  String get blockAgeOnlyHelp => _l.regSettingsBlockAgeOnlyHelp;
+  String get blockStay => _l.regSettingsBlockStay;
+  String get blockStayHelp => _l.regSettingsBlockStayHelp;
+  String blockSessions(String sessions) =>
+      _l.regSettingsBlockSessions(sessions);
+  String blockSessionsHelp(String sessions) =>
+      _l.regSettingsBlockSessionsHelp(sessions);
+  String get blockWaivers => _l.regSettingsBlockWaivers;
+  String get blockWaiversHelp => _l.regSettingsBlockWaiversHelp;
+  String get blockContact => _l.regSettingsBlockContact;
+  String get blockContactHelp => _l.regSettingsBlockContactHelp;
+  String get sectionsHeading => _l.regSettingsSectionsHeading;
+  String sectionsHelp(String fields) => _l.regSettingsSectionsHelp(fields);
+  String get addSection => _l.regSettingsAddSection;
+  String newSectionName(int number) => _l.regSettingsNewSectionName(number);
+  String get sectionName => _l.regSettingsSectionName;
+  String get sectionNeedsName => _l.regSettingsSectionNeedsName;
+  String get sectionActions => _l.regSettingsSectionActions;
+  String questionActions(String question) =>
+      _l.regSettingsQuestionActions(question);
+  String get moveUp => _l.regSettingsMoveUp;
+  String get moveDown => _l.regSettingsMoveDown;
+  String get removeSection => _l.regSettingsRemoveSection;
+  String get removeQuestion => _l.regSettingsRemoveQuestion;
+  String sectionEmpty(String field) => _l.regSettingsSectionEmpty(field);
+  String addQuestion(String field) => _l.regSettingsAddQuestion(field);
+  String addQuestionTitle(String field) =>
+      _l.regSettingsAddQuestionTitle(field);
+  String unplaced(String names) => _l.regSettingsUnplaced(names);
+  String noFields(String fields) => _l.regSettingsNoFields(fields);
+  String editFields(String fields) => _l.regSettingsEditFields(fields);
+  String get shownToEveryone => _l.regSettingsShownToEveryone;
+  String onlyCategory(String category) => _l.regSettingsOnlyCategory(category);
+  String whenAnswer(String question, String value) =>
+      _l.regSettingsWhenAnswer(question, value);
+  String conditionTitle(String question) =>
+      _l.regSettingsConditionTitle(question);
+  String get conditionFixed => _l.regSettingsConditionFixed;
+  String get yes => _l.regSettingsYes;
+  String get no => _l.regSettingsNo;
+  String get noteHeading => _l.regSettingsNoteHeading;
+  String noteHelp(String groups) => _l.regSettingsNoteHelp(groups);
+  String get note => _l.regSettingsNote;
+  String get laterNoteFrom => _l.regSettingsLaterNoteFrom;
+  String laterNoteFromHelp(String groups) =>
+      _l.regSettingsLaterNoteFromHelp(groups);
+  String get notReplaced => _l.regSettingsNotReplaced;
+  String get laterNote => _l.regSettingsLaterNote;
+  String get laterNoteNeedsDate => _l.regSettingsLaterNoteNeedsDate;
+  String get save => _l.regSettingsSave;
+  String get saved => _l.regSettingsSaved;
+  String get saveFailed => _l.regSettingsSaveFailed;
 }

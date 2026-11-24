@@ -12,6 +12,9 @@ import {readFileSync} from "fs";
 import {join} from "path";
 import labelDefaults from "../shared/label_defaults.json";
 import {PERMISSIONS, PRESET_ROLES} from "./permissions";
+import {
+  PartialRegistration, RegistrationSettingsError, parseRegistrationSettings,
+} from "../registration/settings";
 
 export interface TemplateField {
   id: string;
@@ -37,6 +40,8 @@ export interface EventTemplate {
     attendancePolicy: string;
     expenseAccess: {mode: string; roleIds?: string[]; uids?: string[]};
     categories: {id: string; name: string; minAge?: number; maxAge?: number; isChild?: boolean}[];
+    /** Registration defaults (Spec #233 Req 8, 60), with no dates or slug. */
+    registration?: PartialRegistration;
   };
   fields: TemplateField[];
   /**
@@ -100,6 +105,21 @@ export function validateTemplate(t: EventTemplate | null): EventTemplate {
       Boolean(role.base && PRESET_ROLES[role.base]);
     if (roleId === "owner" || !role.name || !known) fail(`role ${roleId}`);
   }
+  if (t.settings.registration !== undefined) {
+    const roles: Record<string, string[]> = Object.fromEntries(
+      Object.entries(PRESET_ROLES).map(([id, r]) => [id, [...r.permissions]]));
+    for (const [roleId, role] of Object.entries(t.roles ?? {})) roles[roleId] = rolePermissions(role);
+    try {
+      parseRegistrationSettings(t.settings.registration, {
+        fields: (t.fields ?? []).map((f) => ({id: f.id, type: f.type, options: f.options})),
+        categoryIds: (t.settings.categories ?? []).map((c) => c.id),
+        roles,
+      });
+    } catch (e) {
+      if (e instanceof RegistrationSettingsError) fail(`registration (${e.message})`);
+      throw e;
+    }
+  }
   return t;
 }
 
@@ -117,6 +137,18 @@ export function systemTemplate(id: string): EventTemplate | null {
     cache.set(id, t);
   }
   return t;
+}
+
+/**
+ * The registration configuration a saved template keeps (#239): everything
+ * but dates and the slug, which belong to one event.
+ */
+function savedRegistration(stored: Record<string, unknown>): PartialRegistration {
+  const kept = {...stored} as Record<string, unknown>;
+  for (const key of ["deadline", "laterNoteFrom", "slug"]) delete kept[key];
+  // A replacement note means nothing without its date.
+  delete kept.laterNote;
+  return kept as PartialRegistration;
 }
 
 /**
@@ -151,6 +183,7 @@ export function templateFromEvent({id, name, event, fields, roles}: {
         {mode: "selected", roleIds: [...(access.roleIds ?? [])], uids: []} :
         {mode: access.mode ?? "everyone"},
       categories: [...(settings.categories ?? [])],
+      ...(settings.registration ? {registration: savedRegistration(settings.registration)} : {}),
     },
     fields: fields.map((f) => ({
       id: f.id, label: f.label, type: f.type, options: f.options ?? [],

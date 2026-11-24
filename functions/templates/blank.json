@@ -1,6 +1,6 @@
 {
   "id": "blank",
-  "version": 1,
+  "version": 2,
   "name": {
     "en": "Blank"
   },
@@ -21,7 +21,24 @@
     "expenseAccess": {
       "mode": "everyone"
     },
-    "categories": []
+    "categories": [],
+    "registration": {
+      "mode": "invited",
+      "review": false,
+      "extraGuests": 0,
+      "sections": [],
+      "blocks": {
+        "people": true,
+        "ageOnly": false,
+        "stay": false,
+        "sessionChoices": false,
+        "waivers": false,
+        "contact": true
+      },
+      "conditions": {},
+      "registrationRoleId": "participant",
+      "offerHours": 72
+    }
   },
   "fields": [],
   "roles": {}
