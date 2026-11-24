@@ -4,6 +4,7 @@ import 'package:crewpoint_app/app/features/dashboard/data/member_calls.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_access.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/invite.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
+import 'package:crewpoint_app/app/features/registration/domain/registration_settings.dart';
 
 /// Stands in for the member and role callables. With a [firestore], it writes
 /// what the server would: member documents with their permissions worked out
@@ -612,4 +613,48 @@ class FakeMemberCalls implements MemberCalls {
       'createdAt': Timestamp.now(),
     });
   }
+  /// Link names other events hold, refused as the server does.
+  final Set<String> takenSlugs = {};
+
+  /// Saves as `saveRegistrationSettings` does, keeping the slug.
+  @override
+  Future<void> saveRegistrationSettings({
+    required String eventId,
+    required RegistrationSettings settings,
+    required int? capacity,
+  }) async {
+    calls.add('saveRegistrationSettings:${settings.mode.name}:$capacity');
+    _maybeFail();
+    if (firestore == null) return;
+    final event = await _event(eventId).get();
+    final slug =
+        ((event.data()?['settings'] as Map?)?['registration'] as Map?)?['slug'];
+    // The whole map is replaced, so a cleared condition goes.
+    await _event(eventId).update({
+      'settings.registration': {...settings.toCallMap(), 'slug': slug},
+      'capacity': capacity,
+    });
+  }
+
+  @override
+  Future<String?> claimEventSlug({
+    required String eventId,
+    String? slug,
+  }) async {
+    calls.add('claimEventSlug:$slug');
+    _maybeFail();
+    final kept = slug?.trim().toLowerCase();
+    if (kept != null && takenSlugs.contains(kept)) {
+      throw FirebaseFunctionsException(
+        code: 'already-exists',
+        message: 'Another event already uses this link. Try another.',
+        details: const {'reason': 'taken'},
+      );
+    }
+    await firestore?.doc('events/$eventId').update({
+      'settings.registration.slug': kept,
+    });
+    return kept;
+  }
+
 }

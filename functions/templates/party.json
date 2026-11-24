@@ -1,6 +1,6 @@
 {
   "id": "party",
-  "version": 1,
+  "version": 2,
   "name": {
     "en": "Party"
   },
@@ -15,7 +15,12 @@
     "chat": true,
     "schedule": true
   },
-  "labels": {},
+  "labels": {
+    "registration": {
+      "one": "RSVP",
+      "other": "RSVPs"
+    }
+  },
   "settings": {
     "attendancePolicy": "everyone",
     "expenseAccess": {
@@ -33,7 +38,34 @@
         "name": "Adult",
         "minAge": 18
       }
-    ]
+    ],
+    "registration": {
+      "mode": "invited",
+      "review": false,
+      "extraGuests": 0,
+      "sections": [
+        {
+          "id": "food",
+          "name": {
+            "en": "Food"
+          },
+          "fieldIds": [
+            "allergy"
+          ]
+        }
+      ],
+      "blocks": {
+        "people": true,
+        "ageOnly": true,
+        "stay": false,
+        "sessionChoices": false,
+        "waivers": false,
+        "contact": false
+      },
+      "conditions": {},
+      "registrationRoleId": "participant",
+      "offerHours": 72
+    }
   },
   "fields": [
     {

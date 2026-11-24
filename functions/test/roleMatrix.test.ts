@@ -3,7 +3,8 @@
  * table, against every restricted path in an event: tasks, expenses, chat
  * and its summary, budgets, profiles, the roster and its private details,
  * fields, settings and their log, roles, crews, members, ownership offers,
- * the schedule, counts and freezes, imports, link requests and match keys.
+ * the schedule, counts and freezes, imports, link requests and match keys,
+ * registration settings and event link names.
  *
  * Vendors and Observers do not contribute (Req 34): they see only tasks
  * assigned to them and expenses they paid or share in (Req 32), and chat
@@ -58,7 +59,10 @@ async function seed(
       adminIds: ['owner', 'coOwner', 'admin'],
       memberIds: ROLES,
       skipMemberSync: true,
-      ...(access ? {settings: {expenseAccess: access}} : {}),
+      settings: {
+        ...(access ? {expenseAccess: access} : {}),
+        registration: {mode: 'open', offerHours: 72, slug: 'fest-2027'},
+      },
     });
     for (const role of ROLES) {
       await setDoc(doc(db, `${E}/members/${role}`), {
@@ -112,6 +116,8 @@ async function seed(
     // Spec #233: the email outbox and server-only settings.
     await setDoc(doc(db, 'mailOutbox/m1'), {to: 'a@b.co', status: 'sent'});
     await setDoc(doc(db, 'serverConfig/mail'), {deliveryEnabled: true, allowedRecipients: []});
+    // #239: event link names.
+    await setDoc(doc(db, 'eventSlugs/fest-2027'), {eventId: 'matrix'});
   });
 }
 
@@ -222,6 +228,14 @@ describe.each(ROLES)('%s', (role) => {
     await assertFails(setDoc(doc(as(role), `${E}/roles/x`), {permissions: []}));
     await assertFails(setDoc(doc(as(role), `${E}/crews/x`), {name: 'X'}));
     await assertFails(updateDoc(doc(as(role), `${E}/members/${role}`), {permissions: ['event.manage']}));
+  });
+
+  test('registration settings and link names: only the server (#239)', async () => {
+    await assertFails(updateDoc(doc(as(role), E), {'settings.registration.mode': 'invited'}));
+    await assertFails(updateDoc(doc(as(role), E), {'settings.registration.slug': 'mine'}));
+    await assertFails(getDoc(doc(as(role), 'eventSlugs/fest-2027')));
+    await assertFails(setDoc(doc(as(role), 'eventSlugs/mine'), {eventId: 'matrix'}));
+    await assertFails(deleteDoc(doc(as(role), 'eventSlugs/fest-2027')));
   });
 
   test('settings log: read with event.manage, written only by the server', async () => {

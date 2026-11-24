@@ -12,6 +12,7 @@ class EventTemplateInfo {
     required this.icon,
     required this.fastPath,
     this.baseTemplateId,
+    this.registration = const {},
   });
 
   /// Reads one template file, refusing a damaged one.
@@ -35,6 +36,10 @@ class EventTemplateInfo {
       icon: json['icon'] as String? ?? id,
       fastPath: json['fastPath'] == true,
       baseTemplateId: json['baseTemplateId'] as String?,
+      registration: switch (json['settings']) {
+        {'registration': final Map<String, dynamic> r} => r,
+        _ => const {},
+      },
     );
   }
 
@@ -58,6 +63,10 @@ class EventTemplateInfo {
 
   /// In a saved template, the system template it began from.
   final String? baseTemplateId;
+
+  /// Its registration defaults (#239), which an event without its own
+  /// reads, as the server does.
+  final Map<String, dynamic> registration;
 
   String name(String language) => names[language] ?? names['en'] ?? id;
 

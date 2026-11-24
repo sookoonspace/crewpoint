@@ -5,8 +5,8 @@ import {commitInChunks, BatchOperation} from "../utils/batch";
 
 /**
  * Deletes an event completely: every subcollection, including checklists and
- * any added later, its invite codes, members' personal documents for it, and
- * its cover photo.
+ * any added later, its invite codes and link name, members' personal
+ * documents for it, and its cover photo.
  * The event goes last, so a retry after a failure can still find its members.
  */
 export async function deleteEventCompletely(
@@ -27,6 +27,9 @@ export async function deleteEventCompletely(
     .where("eventId", "==", eventRef.id)
     .get();
   invites.docs.forEach((invite) => ops.push({type: "delete", ref: invite.ref}));
+  // Its link name, so another event can take it (#239).
+  const slugs = await db.collection("eventSlugs").where("eventId", "==", eventRef.id).get();
+  slugs.docs.forEach((slug) => ops.push({type: "delete", ref: slug.ref}));
   await commitInChunks(ops);
 
   // The cover photo (Spec #186 Req 41). A failure here must not keep the

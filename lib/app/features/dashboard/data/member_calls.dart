@@ -1,6 +1,7 @@
 import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_access.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/invite.dart';
+import 'package:crewpoint_app/app/features/registration/domain/registration_settings.dart';
 
 /// What linking a signed-in account found (Req 46): events it was linked
 /// in, events where an organizer must decide, and whether the email still
@@ -183,6 +184,19 @@ abstract interface class MemberCalls {
   /// Keeps the event's configuration as the caller's own template (Req 65).
   /// Needs `event.manage`.
   Future<void> saveAsTemplate(String eventId, String name);
+
+  /// Saves how the event registers and its capacity (#239), checked on the
+  /// server against its fields and roles. Needs `event.manage`.
+  Future<void> saveRegistrationSettings({
+    required String eventId,
+    required RegistrationSettings settings,
+    required int? capacity,
+  });
+
+  /// Claims [slug] for the event's public link, or releases it with null,
+  /// returning the name as kept. A name another event holds throws
+  /// `already-exists` with `details.reason` `taken`. Needs `event.manage`.
+  Future<String?> claimEventSlug({required String eventId, String? slug});
 }
 
 class FirebaseMemberCalls implements MemberCalls {
@@ -441,4 +455,27 @@ class FirebaseMemberCalls implements MemberCalls {
   @override
   Future<void> saveAsTemplate(String eventId, String name) =>
       _call('saveAsTemplate', {'eventId': eventId, 'name': name});
+
+  @override
+  Future<void> saveRegistrationSettings({
+    required String eventId,
+    required RegistrationSettings settings,
+    required int? capacity,
+  }) => _call('saveRegistrationSettings', {
+    'eventId': eventId,
+    'registration': settings.toCallMap(),
+    'capacity': capacity,
+  });
+
+  @override
+  Future<String?> claimEventSlug({
+    required String eventId,
+    String? slug,
+  }) async {
+    final data = await _call('claimEventSlug', {
+      'eventId': eventId,
+      'slug': slug,
+    });
+    return data['slug'] as String?;
+  }
 }

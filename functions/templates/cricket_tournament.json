@@ -1,6 +1,6 @@
 {
   "id": "cricket_tournament",
-  "version": 1,
+  "version": 2,
   "name": {
     "en": "Cricket tournament"
   },
@@ -23,6 +23,10 @@
     "session": {
       "one": "Match",
       "other": "Matches"
+    },
+    "registration": {
+      "one": "Team entry",
+      "other": "Team entries"
     }
   },
   "settings": {
@@ -42,7 +46,34 @@
         "name": "Adult",
         "minAge": 18
       }
-    ]
+    ],
+    "registration": {
+      "mode": "open",
+      "review": false,
+      "extraGuests": 0,
+      "sections": [
+        {
+          "id": "team",
+          "name": {
+            "en": "Players"
+          },
+          "fieldIds": [
+            "playerRole"
+          ]
+        }
+      ],
+      "blocks": {
+        "people": true,
+        "ageOnly": false,
+        "stay": false,
+        "sessionChoices": false,
+        "waivers": true,
+        "contact": true
+      },
+      "conditions": {},
+      "registrationRoleId": "player",
+      "offerHours": 72
+    }
   },
   "fields": [
     {
@@ -64,6 +95,10 @@
     "crewLead": {
       "name": "Team captain",
       "base": "crewLead"
+    },
+    "player": {
+      "name": "Player",
+      "base": "participant"
     }
   }
 }
