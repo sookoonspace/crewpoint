@@ -11,6 +11,8 @@ import 'package:crewpoint_app/app/features/chat/presentation/event_chat_page.dar
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_dashboard_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/join_screen.dart';
+import 'package:crewpoint_app/app/features/registration/domain/public_event.dart';
+import 'package:crewpoint_app/app/features/registration/presentation/event_page_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/member_management_screen.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/event_task_detail_page.dart';
 import 'package:crewpoint_app/app/features/tasks/presentation/event_tasks_page.dart';
@@ -18,6 +20,7 @@ import 'package:crewpoint_app/app/features/tasks/presentation/event_tasks_page.d
 import '../../../app/features/auth/fake_auth_service.dart';
 import '../../../harness/event_home_overrides.dart';
 import '../../../harness/fake_member_calls.dart';
+import '../../../harness/fake_qr.dart';
 
 Widget _wrapWithProviders(GoRouter router, {List<EventModel>? eventsForRoute}) {
   final fakeAuthService = FakeAuthService();
@@ -236,7 +239,15 @@ void main() {
                 authRepository: AuthRepository(authService: FakeAuthService()),
               ),
             ),
-            memberCallsProvider.overrideWithValue(FakeMemberCalls()),
+            memberCallsProvider.overrideWithValue(
+              FakeMemberCalls()
+                ..eventPages['convention-2027'] = const PublicEvent(
+                  state: PublicEventState.open,
+                  slug: 'convention-2027',
+                  title: 'Convention 2027',
+                ),
+            ),
+            qrRendererProvider.overrideWithValue(FakeQrRenderer()),
           ],
           child: MaterialApp.router(routerConfig: router),
         ),
@@ -294,5 +305,48 @@ void main() {
       expect(at(), AppRoutes.dashboard);
       await tester.pumpWidget(const SizedBox.shrink());
     });
+
+    // Spec #233 Req 9 (#240): event pages and personal links.
+    for (final (name, isOnboarded, isAuthed) in [
+      ('signed out', true, false),
+      ('new', false, false),
+      ('signed in', true, true),
+    ]) {
+      testWidgets('a $name visitor opens /e/:eventSlug with no sign-in or '
+          'onboarding', (tester) async {
+        onboarded = isOnboarded;
+        authed = isAuthed;
+        await start(tester, '/e/convention-2027');
+        expect(at(), '/e/convention-2027');
+        expect(find.byType(EventPageScreen), findsOneWidget);
+        expect(find.text('Convention 2027'), findsOneWidget);
+        await tester.pumpWidget(const SizedBox.shrink());
+      });
+    }
+
+    for (final from in ['/e/convention-2027', '/r/abc123']) {
+      testWidgets('$from comes back after sign-in', (tester) async {
+        onboarded = true;
+        authed = true;
+        await start(tester, '/auth?from=${Uri.encodeComponent(from)}');
+        expect(at(), from);
+        await tester.pumpWidget(const SizedBox.shrink());
+      });
+    }
+
+    for (final from in [
+      '/profile',
+      '/dashboard',
+      'https://evil.example/e/x',
+      '/x/e/y',
+    ]) {
+      testWidgets('from=$from is refused', (tester) async {
+        onboarded = true;
+        authed = true;
+        await start(tester, '/auth?from=${Uri.encodeComponent(from)}');
+        expect(at(), AppRoutes.dashboard);
+        await tester.pumpWidget(const SizedBox.shrink());
+      });
+    }
   });
 }

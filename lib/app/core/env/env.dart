@@ -27,4 +27,9 @@ abstract final class Env {
 
   /// Debug builds report crashes only with `SENTRY_DEBUG=true`.
   static const sentryDebug = bool.fromEnvironment('SENTRY_DEBUG');
+
+  /// The flavor's reCAPTCHA Enterprise site key for App Check on the web
+  /// (#240). Not a secret: it is sent to every browser. Empty means App
+  /// Check is off on the web.
+  static const appCheckWebKey = String.fromEnvironment('APP_CHECK_WEB_KEY');
 }

@@ -42,6 +42,7 @@ abstract class AppStrings {
   LinkStrings get links;
   InviteStrings get invites;
   RegistrationSettingsStrings get registrationSettings;
+  EventPageStrings get eventPage;
   MemberPickerStrings get memberPicker;
   ScheduleStrings get schedule;
   AgendaStrings get agenda;
@@ -795,6 +796,9 @@ class _LocalizedStrings extends _EnglishStrings {
   @override
   RegistrationSettingsStrings get registrationSettings =>
       RegistrationSettingsStrings(_l);
+
+  @override
+  EventPageStrings get eventPage => EventPageStrings(_l);
 }
 
 /// The language choice (Req 56).
@@ -894,6 +898,10 @@ class _EnglishStrings extends AppStrings {
   @override
   RegistrationSettingsStrings get registrationSettings =>
       RegistrationSettingsStrings(lookupAppLocalizations(const Locale('en')));
+
+  @override
+  EventPageStrings get eventPage =>
+      EventPageStrings(lookupAppLocalizations(const Locale('en')));
 
   @override
   MemberPickerStrings get memberPicker => const _EnglishMemberPickerStrings();
@@ -5560,4 +5568,46 @@ class RegistrationSettingsStrings {
   String get save => _l.regSettingsSave;
   String get saved => _l.regSettingsSaved;
   String get saveFailed => _l.regSettingsSaveFailed;
+  String get included => _l.regSettingsIncluded;
+  String get includedHelp => _l.regSettingsIncludedHelp;
+}
+
+/// The public event page, `/e/:eventSlug` (#240), translated through the
+/// ARB files.
+class EventPageStrings {
+  const EventPageStrings(this._l);
+
+  final AppLocalizations _l;
+
+  String get loading => _l.eventPageLoading;
+  String get rateLimited => _l.eventPageRateLimited;
+  String get retry => _l.eventPageRetry;
+  String get notFound => _l.eventPageNotFound;
+  String get notFoundHelp => _l.eventPageNotFoundHelp;
+  String get failed => _l.eventPageFailed;
+  String get failedHelp => _l.eventPageFailedHelp;
+  String get notOpen => _l.eventPageNotOpen;
+  String get notOpenHelp => _l.eventPageNotOpenHelp;
+  String get closed => _l.eventPageClosed;
+  String get placesRemain => _l.eventPagePlacesRemain;
+  String get full => _l.eventPageFull;
+  String register(String registration) => _l.eventPageRegister(registration);
+  String invitedOnly(String group) => _l.eventPageInvitedOnly(group);
+  String closesOn(String date) => _l.eventPageClosesOn(date);
+  String closedOn(String date) => _l.eventPageClosedOn(date);
+  String timeZone(String zone) => _l.eventPageTimeZone(zone);
+  String get whereHeading => _l.eventPageWhereHeading;
+  String get addressTba => _l.eventPageAddressTba;
+  String get openMap => _l.eventPageOpenMap;
+  String get aboutHeading => _l.eventPageAboutHeading;
+  String get includedHeading => _l.eventPageIncludedHeading;
+  String get shareHeading => _l.eventPageShareHeading;
+  String qrLabel(String link) => _l.eventPageQrLabel(link);
+  String coverLabel(String title) => _l.eventPageCoverLabel(title);
+  String get copyLink => _l.eventPageCopyLink;
+  String get copied => _l.eventPageCopied;
+  String get share => _l.eventPageShare;
+  String get registerSoon => _l.eventPageRegisterSoon;
+  String get registerSoonHelp => _l.eventPageRegisterSoonHelp;
+  String get backToEvent => _l.eventPageBackToEvent;
 }

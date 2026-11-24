@@ -4,7 +4,7 @@
  * and its summary, budgets, profiles, the roster and its private details,
  * fields, settings and their log, roles, crews, members, ownership offers,
  * the schedule, counts and freezes, imports, link requests and match keys,
- * registration settings and event link names.
+ * registration settings, event link names and rate-limit counts.
  *
  * Vendors and Observers do not contribute (Req 34): they see only tasks
  * assigned to them and expenses they paid or share in (Req 32), and chat
@@ -118,6 +118,8 @@ async function seed(
     await setDoc(doc(db, 'serverConfig/mail'), {deliveryEnabled: true, allowedRecipients: []});
     // #239: event link names.
     await setDoc(doc(db, 'eventSlugs/fest-2027'), {eventId: 'matrix'});
+    // #240: rate-limit counts for public calls.
+    await setDoc(doc(db, 'rateLimits/eventPage_x_1'), {count: 1});
   });
 }
 
@@ -236,6 +238,12 @@ describe.each(ROLES)('%s', (role) => {
     await assertFails(getDoc(doc(as(role), 'eventSlugs/fest-2027')));
     await assertFails(setDoc(doc(as(role), 'eventSlugs/mine'), {eventId: 'matrix'}));
     await assertFails(deleteDoc(doc(as(role), 'eventSlugs/fest-2027')));
+  });
+
+  test('rate-limit counts: no client access (#240)', async () => {
+    await assertFails(getDoc(doc(as(role), 'rateLimits/eventPage_x_1')));
+    await assertFails(setDoc(doc(as(role), 'rateLimits/eventPage_x_1'), {count: 0}));
+    await assertFails(deleteDoc(doc(as(role), 'rateLimits/eventPage_x_1')));
   });
 
   test('settings log: read with event.manage, written only by the server', async () => {

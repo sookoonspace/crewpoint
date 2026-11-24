@@ -57,6 +57,8 @@ export interface RegistrationSettings {
   blocks: RegistrationBlocks;
   /** By question ID. */
   conditions: Record<string, FieldCondition>;
+  /** What the event includes, shown on the public event page (Req 10). */
+  included: LocalText | null;
   /** Seen only by groups with a submitted registration (Req 19). */
   afterNote: LocalText | null;
   /** Replaces [afterNote] from [laterNoteFrom]. */
@@ -79,6 +81,7 @@ export const DEFAULT_REGISTRATION: RegistrationSettings = {
     people: true, ageOnly: false, stay: false, sessionChoices: false, waivers: false, contact: true,
   },
   conditions: {},
+  included: null,
   afterNote: null,
   laterNote: null,
   laterNoteFrom: null,
@@ -252,6 +255,7 @@ export function parseRegistrationSettings(
     sections: parseSections(raw.sections, new Set(ctx.fields.map((f) => f.id))),
     blocks: parseBlocks(raw.blocks),
     conditions: parseConditions(raw.conditions, ctx),
+    included: localText(raw.included, MAX_NOTE, "what's included"),
     afterNote,
     laterNote,
     laterNoteFrom: laterNote ? laterNoteFrom : null,

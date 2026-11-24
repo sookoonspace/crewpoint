@@ -97,3 +97,47 @@ figure below assumes reads at $0.06 per 100,000.
 Chat readers and app opens make up most of the reads at every tier. Counts
 come next. Writes and function calls stay inside the free tier at all
 three tiers.
+
+## Public event page speed (Spec #233 Req 69, #240)
+
+**Not yet measured.** The page has to be deployed to the dev Hosting site
+first (functions, then Hosting, with App Check set up as in
+`docs/ops/app-check-and-public-pages.md`), which needs the owner's
+approval for that deploy.
+
+Budget: **content** (title, dates and place visible) within **4 s**, and
+**usable** (Register can be tapped, and the first form field typed in)
+within **6 s**.
+
+Conditions: Chrome DevTools "Fast 4G" with 4x CPU slowdown, a first visit
+with an empty cache, the release web build on `crewpoint-dev.web.app`, the
+median of 5 runs. Then one check on a real mid-range Android phone over
+mobile data. The server-rendered first page should meet the content budget
+on its own; "usable" waits for the Flutter app and, for the first field,
+for the registration form (#242).
+
+| Run | Content (s) | Register tappable (s) | First field typeable (s) |
+| --- | --- | --- | --- |
+| 1 | | | |
+| 2 | | | |
+| 3 | | | |
+| 4 | | | |
+| 5 | | | |
+| **Median** | | | |
+| Mid-range Android, mobile data | | | |
+
+A miss is reported to the owner, who decides the remedy; it is not
+accepted silently.
+
+Browsers to check (Req 70): iOS Safari 16+, Chrome on Android, and desktop
+Chrome, Safari, Edge and Firefox.
+
+| Browser | Page shows | Register works | QR code shows | Notes |
+| --- | --- | --- | --- | --- |
+| iOS Safari 16+ | | | | |
+| Chrome on Android | | | | |
+| Desktop Chrome | | | | |
+| Desktop Safari | | | | |
+| Desktop Edge | | | | |
+| Desktop Firefox | | | | |
+

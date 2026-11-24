@@ -124,6 +124,12 @@ describe('parseRegistrationSettings', () => {
     refuses({afterNote: {en: 'x'.repeat(5001)}}, /note/);
   });
 
+  test("keeps what's included, for the event page", () => {
+    expect(parse({included: {en: 'Lunch, dinner and the T-shirt'}}).included)
+      .toEqual({en: 'Lunch, dinner and the T-shirt'});
+    expect(parse().included).toBeNull();
+  });
+
   test('an empty note is no note', () => {
     expect(parse({afterNote: {en: '  '}}).afterNote).toBeNull();
   });

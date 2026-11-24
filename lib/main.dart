@@ -29,6 +29,8 @@ import 'package:crewpoint_app/app/core/router/current_route_provider.dart';
 import 'package:crewpoint_app/app/core/services/fcm_handler.dart';
 import 'package:crewpoint_app/app/core/services/fcm_handler_bootstrap.dart';
 import 'package:crewpoint_app/app/core/services/firebase_service.dart';
+import 'package:crewpoint_app/app/core/services/app_check.dart';
+import 'package:crewpoint_app/app/core/web/ssr_handoff.dart';
 import 'package:crewpoint_app/app/core/design/components/components.dart';
 import 'package:crewpoint_app/app/core/design/theme/cp_theme.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
@@ -134,6 +136,9 @@ Future<void> _start() async {
     reportDebugBuilds: Env.sentryDebug,
   );
   await FirebaseService.initialize(flavor: AppFlavor.current);
+  // Public calls require App Check (Spec #233 Req 13a). Only here, so tests
+  // never start it.
+  await AppCheckStarter.start();
   // Background isolate handler must be registered before the first FCM
   // event lands. Register early so a cold-start tap into a closed app
   // resolves correctly. No-op on web (the JS SDK handles background via
@@ -152,6 +157,13 @@ Future<void> _start() async {
       child: const MyApp(),
     ),
   );
+  // An event page removes the server-rendered first page once its own
+  // content shows (#240); anywhere else it goes after the first frame.
+  if (!Uri.base.path.startsWith('/e/')) {
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => removeServerRenderedPage(),
+    );
+  }
 }
 
 class MyApp extends ConsumerStatefulWidget {
