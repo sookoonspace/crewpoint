@@ -174,7 +174,7 @@ void main() {
   ) async {
     await open(
       tester,
-      page: PublicEvent(
+      page: const PublicEvent(
         state: PublicEventState.open,
         slug: slug,
         title: 'Convention 2027',
