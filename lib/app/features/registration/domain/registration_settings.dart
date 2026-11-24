@@ -160,6 +160,7 @@ class RegistrationSettings {
     this.sections = const [],
     this.blocks = defaultBlocks,
     this.conditions = const {},
+    this.included,
     this.afterNote,
     this.laterNote,
     this.laterNoteFrom,
@@ -212,6 +213,7 @@ class RegistrationSettings {
           if (e.key is String && FieldCondition.tryParse(e.value) != null)
             e.key as String: FieldCondition.tryParse(e.value)!,
       },
+      included: LocalText.tryParse(pick('included')),
       afterNote: LocalText.tryParse(pick('afterNote')),
       laterNote: LocalText.tryParse(pick('laterNote')),
       laterNoteFrom: time(pick('laterNoteFrom')),
@@ -233,6 +235,9 @@ class RegistrationSettings {
 
   /// By question ID.
   final Map<String, FieldCondition> conditions;
+
+  /// What the event includes, on its public page (Req 10).
+  final LocalText? included;
   final LocalText? afterNote;
   final LocalText? laterNote;
   final DateTime? laterNoteFrom;
@@ -271,6 +276,8 @@ class RegistrationSettings {
     List<RegistrationSection>? sections,
     Set<RegistrationBlock>? blocks,
     Map<String, FieldCondition>? conditions,
+    LocalText? included,
+    bool clearIncluded = false,
     LocalText? afterNote,
     bool clearAfterNote = false,
     LocalText? laterNote,
@@ -288,6 +295,7 @@ class RegistrationSettings {
     sections: sections ?? this.sections,
     blocks: blocks ?? this.blocks,
     conditions: conditions ?? this.conditions,
+    included: clearIncluded ? null : included ?? this.included,
     afterNote: clearAfterNote ? null : afterNote ?? this.afterNote,
     laterNote: clearLaterNote ? null : laterNote ?? this.laterNote,
     laterNoteFrom: clearLaterNoteFrom
@@ -320,6 +328,7 @@ class RegistrationSettings {
       for (final b in RegistrationBlock.values) b.name: blocks.contains(b),
     },
     'conditions': {for (final e in conditions.entries) e.key: e.value.toMap()},
+    'included': included?.toMap(),
     'afterNote': afterNote?.toMap(),
     'laterNote': laterNote?.toMap(),
     'laterNoteFrom': laterNote == null
@@ -339,6 +348,7 @@ class RegistrationSettings {
       listEquals(other.sections, sections) &&
       setEquals(other.blocks, blocks) &&
       mapEquals(other.conditions, conditions) &&
+      other.included == included &&
       other.afterNote == afterNote &&
       other.laterNote == laterNote &&
       other.laterNoteFrom == laterNoteFrom &&
@@ -355,6 +365,7 @@ class RegistrationSettings {
     Object.hashAll(sections),
     Object.hashAll(blocks.map((b) => b.index).toList()..sort()),
     Object.hashAll(conditions.keys.toList()..sort()),
+    included,
     afterNote,
     laterNote,
     laterNoteFrom,

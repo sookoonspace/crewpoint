@@ -4,6 +4,7 @@ import 'package:crewpoint_app/app/features/dashboard/data/member_calls.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_access.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/invite.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
+import 'package:crewpoint_app/app/features/registration/domain/public_event.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_settings.dart';
 
 /// Stands in for the member and role callables. With a [firestore], it writes
@@ -613,6 +614,23 @@ class FakeMemberCalls implements MemberCalls {
       'createdAt': Timestamp.now(),
     });
   }
+  /// Public event pages by slug (#240); any other slug is not found.
+  final Map<String, PublicEvent> eventPages = {};
+
+  @override
+  Future<PublicEvent> getEventPage(String slug) async {
+    calls.add('getEventPage:$slug');
+    _maybeFail();
+    final page = eventPages[slug.toLowerCase()];
+    if (page == null) {
+      throw FirebaseFunctionsException(
+        code: 'not-found',
+        message: "We couldn't find this event.",
+      );
+    }
+    return page;
+  }
+
   /// Link names other events hold, refused as the server does.
   final Set<String> takenSlugs = {};
 

@@ -1,6 +1,7 @@
 import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_access.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/invite.dart';
+import 'package:crewpoint_app/app/features/registration/domain/public_event.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_settings.dart';
 
 /// What linking a signed-in account found (Req 46): events it was linked
@@ -197,6 +198,11 @@ abstract interface class MemberCalls {
   /// returning the name as kept. A name another event holds throws
   /// `already-exists` with `details.reason` `taken`. Needs `event.manage`.
   Future<String?> claimEventSlug({required String eventId, String? slug});
+
+  /// The public event page for [slug] (#240), for anyone, signed in or
+  /// not. Throws `not-found` for an unknown name, and `resource-exhausted`
+  /// with `details.reason` `rateLimited` when one address opens too many.
+  Future<PublicEvent> getEventPage(String slug);
 }
 
 class FirebaseMemberCalls implements MemberCalls {
@@ -478,4 +484,8 @@ class FirebaseMemberCalls implements MemberCalls {
     });
     return data['slug'] as String?;
   }
+
+  @override
+  Future<PublicEvent> getEventPage(String slug) async =>
+      PublicEvent.fromMap(await _call('getEventPage', {'slug': slug}));
 }

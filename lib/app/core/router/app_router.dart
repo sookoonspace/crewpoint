@@ -33,6 +33,7 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/dashboard_scre
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/edit_event_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/event_settings_screen.dart';
+import 'package:crewpoint_app/app/features/registration/presentation/event_page_screen.dart';
 import 'package:crewpoint_app/app/features/registration/presentation/registration_settings_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/expense_access_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/group_entry_screen.dart';
@@ -81,13 +82,34 @@ abstract final class AppRoutes {
 
   /// Where an invite link lands (Req 47), outside the signed-in shell.
   static const String join = '/join';
+
+  /// An event's public page, `/e/:eventSlug` (Spec #233 Req 9; #240).
+  static const String eventPage = '/e';
+
+  /// A personal RSVP link, `/r/:token` (Spec #233 Req 9, 13).
+  static const String rsvp = '/r';
 }
 
-/// Where to go back to after onboarding and sign-in. Only invite links come
-/// back (Req 47), so `from` can never send anyone elsewhere.
+/// Paths that come back after onboarding and sign-in: invite links, event
+/// pages and personal links. Nothing else can be named in `from`.
+const _returnable = [
+  '${AppRoutes.join}/',
+  '${AppRoutes.eventPage}/',
+  '${AppRoutes.rsvp}/',
+];
+
+/// Event pages and personal links need no sign-in and skip onboarding, for
+/// signed-out, new and signed-in visitors alike (Spec #233 Req 9).
+bool _isPublic(String location) =>
+    location.startsWith('${AppRoutes.eventPage}/') ||
+    location.startsWith('${AppRoutes.rsvp}/');
+
+/// Where to go back to after onboarding and sign-in: only invite links,
+/// event pages and personal links (Req 47; Spec #233 Req 9), so `from` can
+/// never send anyone elsewhere.
 String? _returnTo(GoRouterState state) {
   final from = state.uri.queryParameters['from'];
-  return from != null && from.startsWith('${AppRoutes.join}/') ? from : null;
+  return from != null && _returnable.any(from.startsWith) ? from : null;
 }
 
 String _withReturn(String target, String? from) =>
@@ -129,6 +151,8 @@ GoRouter createRouter({
       final location = state.matchedLocation;
       onRouteChanged?.call(location);
 
+      if (_isPublic(location)) return null;
+
       final onboardingDone = isOnboardingComplete();
       final authed = isAuthenticated();
       // An invite link opened before onboarding or sign-in is kept, and
@@ -165,6 +189,19 @@ GoRouter createRouter({
         path: '${AppRoutes.join}/:code',
         builder: (_, state) =>
             JoinScreen(code: state.pathParameters['code'] ?? ''),
+      ),
+      GoRoute(
+        path: '${AppRoutes.eventPage}/:eventSlug',
+        builder: (_, state) =>
+            EventPageScreen(slug: state.pathParameters['eventSlug'] ?? ''),
+        routes: [
+          GoRoute(
+            path: 'register',
+            builder: (_, state) => RegisterComingScreen(
+              slug: state.pathParameters['eventSlug'] ?? '',
+            ),
+          ),
+        ],
       ),
       GoRoute(
         path: AppRoutes.onboarding,
@@ -748,8 +785,7 @@ class _RouterErrorScreen extends StatelessWidget {
             title: nav.pageNotFoundTitle,
             message: [
               nav.pageNotFoundBody,
-              if (attemptedLocation case final tried?)
-                nav.triedLocation(tried),
+              if (attemptedLocation case final tried?) nav.triedLocation(tried),
             ].join('\n'),
             actionLabel: nav.goHome,
             actionKey: const Key('router.error.goHome'),

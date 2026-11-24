@@ -149,6 +149,12 @@ abstract final class CpIcons {
   static const IconData moveUp = LucideIcons.arrowUp;
   static const IconData moveDown = LucideIcons.arrowDown;
   static const IconData shownTo = LucideIcons.eye;
+  // The public event page (#240): places remain, full (the waitlist), not
+  // open yet and closed.
+  static const IconData placesRemain = LucideIcons.circleCheck;
+  static const IconData placesFull = LucideIcons.hourglass;
+  static const IconData notOpenYet = LucideIcons.calendarClock;
+  static const IconData registrationClosed = LucideIcons.lock;
   static const IconData markdown = LucideIcons.fileText;
   static const IconData description = LucideIcons.fileText;
   static const IconData image = LucideIcons.image;

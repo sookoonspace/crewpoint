@@ -115,6 +115,7 @@ void main() {
     final robot = await open(tester);
     await robot.tap(const Key('$k.mode.invited'));
     await robot.typeInto(const Key('$k.capacity'), '400');
+    await robot.typeInto(const Key('$k.included'), 'Lunch and dinner');
     await robot.tap(const Key('$k.review'));
     await robot.typeInto(const Key('$k.extraGuests'), '2');
     await robot.typeInto(const Key('$k.offerHours'), '48');
@@ -155,6 +156,7 @@ void main() {
     final s = await saved();
     expect(s.mode, RegistrationMode.invited);
     expect(s.review, isTrue);
+    expect(s.included?.en, 'Lunch and dinner');
     expect(s.extraGuests, 2);
     expect(s.offerHours, 48);
     expect(s.registrationRoleId, 'player');

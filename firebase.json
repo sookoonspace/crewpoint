@@ -62,6 +62,13 @@
           "destination": "/legal/terms.html"
         },
         {
+          "source": "/e/**",
+          "function": {
+            "functionId": "eventPageHtml",
+            "region": "us-central1"
+          }
+        },
+        {
           "source": "**",
           "destination": "/index.html"
         }
@@ -112,6 +119,13 @@
           "destination": "/legal/terms.html"
         },
         {
+          "source": "/e/**",
+          "function": {
+            "functionId": "eventPageHtml",
+            "region": "us-central1"
+          }
+        },
+        {
           "source": "**",
           "destination": "/index.html"
         }
@@ -160,6 +174,13 @@
         {
           "source": "/terms",
           "destination": "/legal/terms.html"
+        },
+        {
+          "source": "/e/**",
+          "function": {
+            "functionId": "eventPageHtml",
+            "region": "us-central1"
+          }
         },
         {
           "source": "**",

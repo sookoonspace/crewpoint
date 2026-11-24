@@ -51,3 +51,4 @@ export {exportRoster, freezeCounts} from "./counts/exportAndFreeze";
 export {onChatMessageWritten} from "./chat/summary";
 export {onMailQueued} from "./mail/send";
 export {claimEventSlug, saveRegistrationSettings} from "./registration/registrationSettings";
+export {eventPageHtml, getEventPage} from "./registration/eventPage";

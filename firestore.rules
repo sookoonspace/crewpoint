@@ -726,6 +726,12 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Rate-limit counts for public calls (#240), keyed by a hash of the
+    // caller's address. Only server code writes them.
+    match /rateLimits/{key} {
+      allow read, write: if false;
+    }
+
     // Event link names (#239), each mapping to its event. Only
     // claimEventSlug writes them; the public page reads through a callable.
     match /eventSlugs/{slug} {

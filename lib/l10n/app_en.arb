@@ -764,5 +764,172 @@
   "regSettingsSaveFailed": "Couldn't save the registration settings. Try again.",
   "@regSettingsSaveFailed": {
     "description": "Saving failed."
+  },
+  "regSettingsIncluded": "What's included",
+  "@regSettingsIncluded": {
+    "description": "What the event includes, shown on its public page."
+  },
+  "regSettingsIncludedHelp": "Shown on the event page, such as meals, a T-shirt or parking.",
+  "@regSettingsIncludedHelp": {
+    "description": "Help under what's included."
+  },
+  "eventPageLoading": "Loading the event",
+  "@eventPageLoading": {
+    "description": "Screen-reader label while the event page loads."
+  },
+  "eventPageRateLimited": "Please try again in a few minutes",
+  "@eventPageRateLimited": {
+    "description": "One address opened the page too often."
+  },
+  "eventPageRetry": "Try again",
+  "@eventPageRetry": {
+    "description": "Loads the page again."
+  },
+  "eventPageNotFound": "We couldn't find this event",
+  "@eventPageNotFound": {
+    "description": "The link names no event."
+  },
+  "eventPageNotFoundHelp": "Check the link with the person who sent it.",
+  "@eventPageNotFoundHelp": {
+    "description": "Help under not found."
+  },
+  "eventPageFailed": "Couldn't load the event",
+  "@eventPageFailed": {
+    "description": "Loading failed, for example offline."
+  },
+  "eventPageFailedHelp": "Check your connection and try again.",
+  "@eventPageFailedHelp": {
+    "description": "Help under the loading error."
+  },
+  "eventPageNotOpen": "Not open yet",
+  "@eventPageNotOpen": {
+    "description": "A draft event."
+  },
+  "eventPageNotOpenHelp": "The organizer hasn't opened this event yet. Check back later.",
+  "@eventPageNotOpenHelp": {
+    "description": "Help under not open yet."
+  },
+  "eventPageClosed": "Registration is closed",
+  "@eventPageClosed": {
+    "description": "The event ended, was archived or its deadline passed."
+  },
+  "eventPagePlacesRemain": "Places remain",
+  "@eventPagePlacesRemain": {
+    "description": "Anyone registering now gets a place."
+  },
+  "eventPageFull": "Full: you'll join the waitlist",
+  "@eventPageFull": {
+    "description": "The event is full."
+  },
+  "eventPageRegister": "Register",
+  "@eventPageRegister": {
+    "description": "Starts registering; registration is the event's word for it, unused in English and Gujarati for now.",
+    "placeholders": {
+      "registration": {
+        "type": "String"
+      }
+    }
+  },
+  "eventPageInvitedOnly": "Registration is by invitation. Use the personal link your {group} was sent.",
+  "@eventPageInvitedOnly": {
+    "description": "An invited event; group in lower case.",
+    "placeholders": {
+      "group": {
+        "type": "String"
+      }
+    }
+  },
+  "eventPageClosesOn": "Registration closes {date}",
+  "@eventPageClosesOn": {
+    "description": "The deadline.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "eventPageClosedOn": "Registration closed {date}",
+  "@eventPageClosedOn": {
+    "description": "A past deadline.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "eventPageTimeZone": "Times are in {zone}",
+  "@eventPageTimeZone": {
+    "description": "The event's time zone.",
+    "placeholders": {
+      "zone": {
+        "type": "String"
+      }
+    }
+  },
+  "eventPageWhereHeading": "Where",
+  "@eventPageWhereHeading": {
+    "description": "Heading over the venues."
+  },
+  "eventPageAddressTba": "Address to be announced",
+  "@eventPageAddressTba": {
+    "description": "A venue with no address yet."
+  },
+  "eventPageOpenMap": "Open the map",
+  "@eventPageOpenMap": {
+    "description": "Screen-reader label on a venue's map link."
+  },
+  "eventPageAboutHeading": "About",
+  "@eventPageAboutHeading": {
+    "description": "Heading over the description."
+  },
+  "eventPageIncludedHeading": "What's included",
+  "@eventPageIncludedHeading": {
+    "description": "Heading over what the event includes."
+  },
+  "eventPageShareHeading": "Share this event",
+  "@eventPageShareHeading": {
+    "description": "Heading over the QR code and link."
+  },
+  "eventPageQrLabel": "QR code for {link}",
+  "@eventPageQrLabel": {
+    "description": "Screen-reader label on the QR code.",
+    "placeholders": {
+      "link": {
+        "type": "String"
+      }
+    }
+  },
+  "eventPageCoverLabel": "Cover photo for {title}",
+  "@eventPageCoverLabel": {
+    "description": "Screen-reader label on the cover photo.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "eventPageCopyLink": "Copy link",
+  "@eventPageCopyLink": {
+    "description": "Copies the event's link."
+  },
+  "eventPageCopied": "Link copied.",
+  "@eventPageCopied": {
+    "description": "After copying the link."
+  },
+  "eventPageShare": "Share",
+  "@eventPageShare": {
+    "description": "Opens the share sheet."
+  },
+  "eventPageRegisterSoon": "Registration opens here soon",
+  "@eventPageRegisterSoon": {
+    "description": "The register route before the form exists."
+  },
+  "eventPageRegisterSoonHelp": "The form isn't ready yet. Check back on the event page.",
+  "@eventPageRegisterSoonHelp": {
+    "description": "Help on the register route."
+  },
+  "eventPageBackToEvent": "Back to the event",
+  "@eventPageBackToEvent": {
+    "description": "Returns to the event page."
   }
 }
