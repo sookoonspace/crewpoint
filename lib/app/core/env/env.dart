@@ -32,4 +32,12 @@ abstract final class Env {
   /// (#240). Not a secret: it is sent to every browser. Empty means App
   /// Check is off on the web.
   static const appCheckWebKey = String.fromEnvironment('APP_CHECK_WEB_KEY');
+
+  /// A debug token registered for the flavor's Android and iOS apps in the
+  /// Firebase console, so every debug build on any phone, simulator or
+  /// emulator passes App Check. Used only in debug builds; keep it in
+  /// `.env.dev` alone. Empty means each device makes its own token.
+  static const appCheckDebugToken = String.fromEnvironment(
+    'APP_CHECK_DEBUG_TOKEN',
+  );
 }

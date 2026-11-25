@@ -27,8 +27,19 @@ Do these once per project (dev first). Until they are done, deployed
 3. **iOS (App Attest, falling back to DeviceCheck).** App Check → Apps →
    the iOS app → App Attest, and add the App Attest capability to the
    Runner target.
-4. **Debug builds** use the debug providers. Each device prints a debug
-   token on first run; add it under App Check → Apps → Manage debug tokens.
+4. **Debug builds** use the debug providers. On dev, one token covers every
+   debug build: register it for both the Android and the iOS app under
+   App Check → Apps → ⋮ → Manage debug tokens, and put it in `.env.dev`
+   only (never stg or prod):
+
+   ```
+   APP_CHECK_DEBUG_TOKEN=<token>
+   ```
+
+   A debug token lets anyone holding it pass App Check, so treat it as a
+   secret: if it leaks, delete it in the console and register a new one.
+   Release builds never use it. Without it, each device prints its own
+   token on first run, which you register the same way.
 5. **Do not turn on enforcement for other products** (Firestore, Storage)
    here. Only `getEventPage` enforces App Check, in its own options.
 
