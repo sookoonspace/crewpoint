@@ -7,12 +7,25 @@ import {enqueueEmail, normaliseEmail} from "../mail/outbox";
 
 const db = getFirestore();
 
-/** Each project's Hosting domain, where sign-in links open (Spec #233 TD 5). */
+/** Each project's Hosting domain, where sign-in links return (Spec #233 TD 5). */
 const HOSTS: Record<string, string> = {
   "crewpoint-dev": "crewpoint-dev.web.app",
   "crewpoint-stg": "crewpoint-stg.web.app",
   "crewpoint-prod": "crewpoint.sookoon.space",
 };
+
+/**
+ * The custom domain a project's sign-in links come on. Firebase refuses its
+ * default domains (web.app, firebaseapp.com) as a link domain, so a project
+ * without one gets links on `<project>.firebaseapp.com/__/auth/links`, which
+ * the dev and stg apps also open as App Links and Universal Links.
+ */
+const LINK_DOMAINS: Record<string, string> = {
+  "crewpoint-prod": "crewpoint.sookoon.space",
+};
+
+/** The project's custom link domain, or undefined for Firebase's default. */
+export const linkDomainFor = (project: string): string | undefined => LINK_DOMAINS[project];
 
 /** The app on each project, so an installed app opens the link. */
 const APP_IDS: Record<string, string> = {
@@ -73,7 +86,7 @@ export const sendSignInLink = onCall({timeoutSeconds: 30, enforceAppCheck}, asyn
     const link = await getAuth().generateSignInWithEmailLink(email, {
       url: `https://${host}/auth/link?to=${encodeURIComponent(returnTo)}`,
       handleCodeInApp: true,
-      linkDomain: host,
+      linkDomain: linkDomainFor(PROJECT()),
       iOS: {bundleId: appId()},
       android: {packageName: appId(), installApp: false},
     });

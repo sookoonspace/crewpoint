@@ -23,16 +23,21 @@ change to a real project needs the owner's approval.
 ## How the email link travels
 
 `sendSignInLink` (App Check required, about 10 links an hour per address
-and 5 per email) asks Firebase for the link with `linkDomain` set to the
-flavor's Hosting domain, since Firebase Dynamic Links no longer exist, and
-queues the `signInLink` email (`functions/src/mail/templates/`) in the
+and 5 per email) asks Firebase for the link, since Firebase Dynamic Links
+no longer exist, and queues the `signInLink` email (`functions/src/mail/templates/`) in the
 visitor's language. Firebase's own template is never used. In dev and
 staging the email goes only to `serverConfig/mail.allowedRecipients`
 (`docs/ops/email.md`).
 
-The link opens `/auth/link?to=<where they started>` on the Hosting domain.
-With the app installed, App Links (Android) and Universal Links (iOS) open
-the app there instead.
+Firebase refuses its default domains (`web.app`, `firebaseapp.com`) as a
+`linkDomain`, so only prod, with its custom domain
+`crewpoint.sookoon.space`, names one (`linkDomainFor` in
+`functions/src/account/signInLink.ts`). On dev and stg the link comes on
+`<project>.firebaseapp.com/__/auth/links`. Either way it ends at
+`/auth/link?to=<where they started>` on the flavor's Hosting domain. With
+the app installed, App Links (Android) and Universal Links (iOS) open the
+app instead. The emulators don't check the link domain, so a change here
+needs a real send on dev.
 
 ## App Links and Universal Links
 
@@ -48,9 +53,12 @@ the app there instead.
   `apple-developer-domain-association.txt`, still a placeholder (see
   `docs/web-hosting-guide.md`, Stage 7).
 - Android: an `autoVerify` intent filter on `${appLinkHost}`, set per
-  flavor, for `/join/`, `/e/`, `/r/` and `/auth/link`.
-- iOS: `applinks:$(APP_LINK_HOST)` in `Runner.entitlements`, set per
-  flavor in the xcconfigs. **The App IDs need the Associated Domains
+  flavor, for `/join/`, `/e/`, `/r/` and `/auth/link`, and a second on
+  `${appLinkAuthHost}` for `/__/auth/links` (`crewpoint-dev.firebaseapp.com`,
+  `crewpoint-stg.firebaseapp.com`, and prod's own domain).
+- iOS: `applinks:$(APP_LINK_HOST)` and `applinks:$(APP_LINK_AUTH_HOST)` in
+  `Runner.entitlements`, set per flavor in the xcconfigs. Hosting serves
+  the same `.well-known` files on `firebaseapp.com` as on `web.app`. **The App IDs need the Associated Domains
   capability** in the Apple Developer portal; with automatic signing,
   Xcode adds it when you next build with the account signed in.
 - Flutter's built-in deep linking is off on both, so each link reaches the

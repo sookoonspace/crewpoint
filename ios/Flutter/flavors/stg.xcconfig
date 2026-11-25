@@ -5,3 +5,6 @@ PRODUCT_NAME=CrewPoint Stg
 ASSET_PREFIX=stg
 // Universal Links open the app from this Hosting domain (#241).
 APP_LINK_HOST=crewpoint-stg.web.app
+// Email sign-in links come on this domain (Firebase's default unless
+// the project has a custom one; functions/src/account/signInLink.ts).
+APP_LINK_AUTH_HOST=crewpoint-stg.firebaseapp.com
