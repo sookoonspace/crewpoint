@@ -27,7 +27,8 @@ import 'package:crewpoint_app/app/features/registration/domain/registration_sett
 /// question conditions, and the after-registration note. Questions
 /// themselves stay on the Fields screen. Needs `event.manage`; everything
 /// but the link name saves through `saveRegistrationSettings`, and the link
-/// name through `claimEventSlug`, at once.
+/// name through `claimEventSlug`, either at once with its own button or
+/// with Save, so a typed link name is never dropped.
 class RegistrationSettingsScreen extends ConsumerStatefulWidget {
   const RegistrationSettingsScreen({super.key, required this.event});
 
@@ -171,10 +172,20 @@ class _RegistrationSettingsScreenState
 
   int? get _capacityValue => _number(_capacity);
 
-  bool get _dirty =>
+  bool get _settingsDirty =>
       _saved != null &&
       (_current != _saved ||
           _capacity.text.trim() != (_savedCapacity?.toString() ?? ''));
+
+  /// A link name typed but not yet claimed. An emptied field is not a
+  /// change: removing the link has its own button, since the link stops
+  /// working.
+  bool get _slugDirty {
+    final typed = _slug.text.trim().toLowerCase();
+    return typed.isNotEmpty && typed != (_slugSaved ?? '');
+  }
+
+  bool get _dirty => _settingsDirty || _slugDirty;
 
   // Problems shown beside their fields once Save was tried.
   String? _capacityProblem(RegistrationSettingsStrings s) {
@@ -203,8 +214,16 @@ class _RegistrationSettingsScreenState
         s.laterNoteNeedsDate,
       if (current.sections.any((x) => x.name.en.isEmpty)) s.sectionNeedsName,
     ].nonNulls;
+    if (_slugDirty && normaliseSlug(_slug.text.trim()) == null) {
+      setState(() => _slugError = s.slugInvalid);
+      return;
+    }
     if (problems.isNotEmpty) return;
     final messenger = ScaffoldMessenger.of(context);
+    if (!_settingsDirty) {
+      await _claimSlug(s);
+      return;
+    }
     final capacity = _capacityValue;
     setState(() {
       _busy = true;
@@ -225,7 +244,8 @@ class _RegistrationSettingsScreenState
         _savedCapacity = capacity;
         _tried = false;
       });
-      messenger.showSnackBar(SnackBar(content: Text(s.saved)));
+      final slugSaved = !_slugDirty || await _claimSlug(s, announce: false);
+      if (slugSaved) messenger.showSnackBar(SnackBar(content: Text(s.saved)));
     } catch (e, st) {
       if (!mounted) return;
       setState(
@@ -241,15 +261,18 @@ class _RegistrationSettingsScreenState
     }
   }
 
-  Future<void> _claimSlug(
+  /// Claims the typed link name, or removes it, and says whether it was
+  /// saved; a problem shows beside the field.
+  Future<bool> _claimSlug(
     RegistrationSettingsStrings s, {
     bool remove = false,
+    bool announce = true,
   }) async {
     final typed = _slug.text.trim();
     final slug = remove ? null : normaliseSlug(typed);
     if (!remove && slug == null) {
       setState(() => _slugError = s.slugInvalid);
-      return;
+      return false;
     }
     final messenger = ScaffoldMessenger.of(context);
     setState(() {
@@ -260,16 +283,19 @@ class _RegistrationSettingsScreenState
       final kept = await ref
           .read(memberCallsProvider)
           .claimEventSlug(eventId: _event.id, slug: slug);
-      if (!mounted) return;
+      if (!mounted) return true;
       setState(() {
         _slugSaved = kept;
         _slug.text = kept ?? '';
       });
-      messenger.showSnackBar(
-        SnackBar(content: Text(remove ? s.slugRemoved : s.slugSaved)),
-      );
+      if (announce) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(remove ? s.slugRemoved : s.slugSaved)),
+        );
+      }
+      return true;
     } on FirebaseFunctionsException catch (e, st) {
-      if (!mounted) return;
+      if (!mounted) return false;
       final reason = e.details is Map ? (e.details as Map)['reason'] : null;
       setState(
         () => _slugError = switch (reason) {
@@ -283,8 +309,9 @@ class _RegistrationSettingsScreenState
           ),
         },
       );
+      return false;
     } catch (e, st) {
-      if (!mounted) return;
+      if (!mounted) return false;
       setState(
         () => _slugError = userMessageFor(
           e,
@@ -293,6 +320,7 @@ class _RegistrationSettingsScreenState
           fallback: s.slugFailed,
         ),
       );
+      return false;
     } finally {
       if (mounted) setState(() => _slugBusy = false);
     }
@@ -665,8 +693,8 @@ class _RegistrationSettingsScreenState
         child: CpButton(
           key: const Key('registration.settings.save'),
           label: s.save,
-          busy: _busy,
-          onPressed: _dirty && !_busy ? () => _save(s) : null,
+          busy: _busy || _slugBusy,
+          onPressed: _dirty && !_busy && !_slugBusy ? () => _save(s) : null,
         ),
       ),
       AdminList(
