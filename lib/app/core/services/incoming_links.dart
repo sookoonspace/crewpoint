@@ -39,10 +39,26 @@ class AppLinksIncomingLinkSource implements IIncomingLinkSource {
 }
 
 /// The app route a link opens, or null when it is not one the app handles:
-/// invite links, event pages, personal links and email sign-in links. The
+/// invite links, event pages, personal links and email sign-in links
+/// (`/auth/link`, or Firebase's `/__/auth/links`). The
 /// host is not checked, since only the flavor's own domain is associated
 /// with the app.
 String? routeForLink(Uri uri) {
+  // An email sign-in link as Firebase sends it on the Hosting domain,
+  // `/__/auth/links?link=<action link>`, opening the installed app. It
+  // becomes `/auth/link`, keeping the whole link for Firebase and where to
+  // return from its `continueUrl`.
+  if (uri.path == '/__/auth/links') {
+    final link = uri.queryParameters['link'];
+    if (link == null) return null;
+    final action = Uri.tryParse(link);
+    final next = Uri.tryParse(action?.queryParameters['continueUrl'] ?? '');
+    final to = next?.queryParameters['to'];
+    return Uri(
+      path: '/auth/link',
+      queryParameters: {'to': ?to, 'link': link},
+    ).toString();
+  }
   const prefixes = ['/join/', '/e/', '/r/'];
   if (!prefixes.any(uri.path.startsWith) && uri.path != '/auth/link') {
     return null;

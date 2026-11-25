@@ -155,6 +155,26 @@ void main() {
       await h.finish(tester);
     });
 
+    testWidgets('opened in the app through /__/auth/links, it signs in and '
+        'returns to the form', (tester) async {
+      final h = SignInHarness(onboarded: false);
+      h.auth.linkEmails['ok3'] = 'asha@example.com';
+      const action =
+          'https://crewpoint-dev.web.app/__/auth/action?apiKey=k&mode=signIn'
+          '&oobCode=ok3&continueUrl=https%3A%2F%2Fcrewpoint-dev.web.app'
+          '%2Fauth%2Flink%3Fto%3D%252Fe%252Fconvention-2027%252Fregister';
+      final route = routeForLink(
+        Uri.parse(
+          'https://crewpoint-dev.web.app/__/auth/links?link='
+          '${Uri.encodeComponent(action)}',
+        ),
+      )!;
+      await h.pump(tester, route, stored: {pendingKey: 'asha@example.com'});
+      expect(h.location, register);
+      expect(h.auth.currentUser?.email, 'asha@example.com');
+      await h.finish(tester);
+    });
+
     testWidgets('on another device: "Confirm your email to finish signing '
         'in", refusing a different address', (tester) async {
       final h = SignInHarness();
@@ -235,6 +255,26 @@ void main() {
       ]);
       await sub.cancel();
       await source.close();
+    });
+
+    test("Firebase's /__/auth/links becomes /auth/link, keeping the whole "
+        'link and where to return', () {
+      const action =
+          'https://crewpoint-dev.web.app/__/auth/action?apiKey=k&mode=signIn'
+          '&oobCode=abc&continueUrl=https%3A%2F%2Fcrewpoint-dev.web.app'
+          '%2Fauth%2Flink%3Fto%3D%252Fe%252Fconvention-2027%252Fregister';
+      final route = Uri.parse(
+        routeForLink(
+          Uri.parse(
+            'https://crewpoint-dev.web.app/__/auth/links?link='
+            '${Uri.encodeComponent(action)}',
+          ),
+        )!,
+      );
+      expect(route.path, '/auth/link');
+      expect(route.queryParameters['to'], '/e/convention-2027/register');
+      expect(route.queryParameters['link'], action);
+      expect(routeForLink(Uri.parse('https://x/__/auth/links')), isNull);
     });
 
     test('routeForLink ignores paths the app does not handle', () {

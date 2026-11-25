@@ -149,9 +149,17 @@ class FakeAuthService implements IAuthService {
 
   @override
   bool isSignInLink(String link) {
-    final uri = Uri.tryParse(link);
+    final uri = _actionLink(link);
     return uri?.queryParameters['mode'] == 'signIn' &&
         (uri?.queryParameters['oobCode']?.isNotEmpty ?? false);
+  }
+
+  /// The action link itself, or the one inside a `link=` parameter, as
+  /// Firebase reads it.
+  Uri? _actionLink(String link) {
+    final uri = Uri.tryParse(link);
+    final inner = uri?.queryParameters['link'];
+    return inner == null ? uri : Uri.tryParse(inner);
   }
 
   @override
@@ -159,7 +167,7 @@ class FakeAuthService implements IAuthService {
     required String email,
     required String link,
   }) async {
-    final code = Uri.parse(link).queryParameters['oobCode'];
+    final code = _actionLink(link)?.queryParameters['oobCode'];
     final expected = linkEmails[code];
     if (expected == null) return const EmailLinkExpired();
     if (expected != email.trim().toLowerCase()) {

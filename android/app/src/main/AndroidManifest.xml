@@ -60,6 +60,8 @@
                 <data android:pathPrefix="/e/"/>
                 <data android:pathPrefix="/r/"/>
                 <data android:path="/auth/link"/>
+                <!-- Firebase's email sign-in link on the Hosting domain. -->
+                <data android:path="/__/auth/links"/>
             </intent-filter>
             <!-- Links reach the router through IIncomingLinkSource, so
                  Flutter's own deep linking is off and each arrives once. -->

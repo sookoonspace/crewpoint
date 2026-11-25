@@ -55,6 +55,18 @@ the app there instead.
   Xcode adds it when you next build with the account signed in.
 - Flutter's built-in deep linking is off on both, so each link reaches the
   router once, through `IIncomingLinkSource`.
+- Until our files are deployed, Firebase Hosting serves its own
+  `assetlinks.json` and `apple-app-site-association`, made from the apps
+  registered in the project. Its Apple file sends every path (`/*`) to the
+  app, `/privacy` and `/terms` included; ours lists only the paths the app
+  handles. Apple caches the file on its CDN
+  (`https://app-site-association.cdn-apple.com/a/v1/<domain>`) for up to a
+  day, and a phone reads it again when the app is installed.
+- On the Hosting domain the email sign-in link is Firebase's
+  `/__/auth/links?link=<action link>`, so both files and the Android intent
+  filter list `/__/auth/links`, and `routeForLink` turns it into
+  `/auth/link?to=…&link=…`. Opened in a browser instead, Firebase's handler
+  sends it to `/auth/link` on the web.
 
 ## Manual checks (Testing Strategy 7)
 
