@@ -23,16 +23,20 @@ abstract final class AppCheckStarter {
       );
       return;
     }
+    // One registered token for every debug device, when `.env.dev` has it.
+    final debugToken = Env.appCheckDebugToken.isEmpty
+        ? null
+        : Env.appCheckDebugToken;
     try {
       await FirebaseAppCheck.instance.activate(
         providerWeb: kIsWeb
             ? ReCaptchaEnterpriseProvider(Env.appCheckWebKey)
             : null,
         providerAndroid: kDebugMode
-            ? const AndroidDebugProvider()
+            ? AndroidDebugProvider(debugToken: debugToken)
             : const AndroidPlayIntegrityProvider(),
         providerApple: kDebugMode
-            ? const AppleDebugProvider()
+            ? AppleDebugProvider(debugToken: debugToken)
             : const AppleAppAttestWithDeviceCheckFallbackProvider(),
       );
     } catch (e, st) {
