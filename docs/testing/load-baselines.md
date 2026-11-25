@@ -100,10 +100,11 @@ three tiers.
 
 ## Public event page speed (Spec #233 Req 69, #240)
 
-**Not yet measured.** The page has to be deployed to the dev Hosting site
-first (functions, then Hosting, with App Check set up as in
-`docs/ops/app-check-and-public-pages.md`), which needs the owner's
-approval for that deploy.
+**Measured Nov 25, 2026** on `crewpoint-dev.web.app/e/checks-2026` (a
+published Convention event with a cover), Hosting from 56f349c, in Google
+Chrome driven by `playwright-core` with the conditions below, a fresh
+profile each run. **Content meets the budget; usable does not**, reported
+to the owner (see Findings).
 
 Budget: **content** (title, dates and place visible) within **4 s**, and
 **usable** (Register can be tapped, and the first form field typed in)
@@ -116,15 +117,44 @@ mobile data. The server-rendered first page should meet the content budget
 on its own; "usable" waits for the Flutter app and, for the first field,
 for the registration form (#242).
 
-| Run | Content (s) | Register tappable (s) | First field typeable (s) |
+Content is the server-rendered title and dates on screen (first contentful
+paint). Register on that page is a plain link, tappable at the same moment,
+but it loads the whole app; "App ready" is when the app shows the event and
+removes the first page. The first field needs the form (#242).
+
+| Run | Content (s) | Register tappable: first page / app ready (s) | First field typeable (s) |
 | --- | --- | --- | --- |
-| 1 | | | |
-| 2 | | | |
-| 3 | | | |
-| 4 | | | |
-| 5 | | | |
-| **Median** | | | |
-| Mid-range Android, mobile data | | | |
+| 1 | 0.88 | 0.88 / 20.8 | not yet (#242) |
+| 2 | 0.67 | 0.67 / 13.3 | not yet |
+| 3 | 0.66 | 0.66 / 13.3 | not yet |
+| 4 | 0.57 | 0.57 / 13.4 | not yet |
+| 5 | 0.44 | 0.44 / 13.6 | not yet |
+| **Median** | **0.63** | **0.63 / 13.4** | not yet |
+| Mid-range Android, mobile data | first page at once | **blank after the first page for over 2 minutes** | not yet |
+
+### Findings (Nov 25, 2026)
+
+- **Usable misses the 6 s budget**: the app downloads about 4.7 MB
+  compressed (`main.dart.js` 1.5 MB, CanvasKit 1.5 MB, four Inter `.ttf`
+  fonts 1.7 MB), so it is ready at about 13 s. Cheapest first remedies:
+  `.woff2` fonts subset to the characters used, then deferred loading,
+  then the WebAssembly build. Owner to decide.
+- **The first page goes blank before the app is ready**: Flutter's canvas
+  covers `#cp-ssr` as soon as the engine starts, so a slow phone sees the
+  title and Register for a few seconds, then a blank screen until the app
+  shows the event. Keeping `#cp-ssr` above the canvas until the hand-off
+  removes it would fix that.
+- **A real Android phone on mobile data stayed blank** for over 2 minutes
+  after the first page (Chrome, Nov 25). Not yet diagnosed; needs the
+  phone's console over USB.
+- **App Check can lock a visitor out**: a browser that reCAPTCHA scores
+  below dev's 0.5 gets 403, `getEventPage` refuses it (401), and the
+  Firebase library waits a full day before trying again; the app shows
+  "Couldn't load the event". Seen with automated Chrome; real visitors on
+  VPNs or privacy browsers could score low too.
+- **The cover was an 875 KB PNG** served as `cover.jpg`: a cover chosen
+  on the web was not resized and re-encoded to JPEG.
+
 
 A miss is reported to the owner, who decides the remedy; it is not
 accepted silently.
@@ -134,10 +164,10 @@ Chrome, Safari, Edge and Firefox.
 
 | Browser | Page shows | Register works | QR code shows | Notes |
 | --- | --- | --- | --- | --- |
-| iOS Safari 16+ | | | | |
-| Chrome on Android | | | | |
-| Desktop Chrome | | | | |
-| Desktop Safari | | | | |
-| Desktop Edge | | | | |
-| Desktop Firefox | | | | |
+| iOS Safari 16+ | | | | Not yet: waits on Xcode for iOS 27 |
+| Chrome on Android | ❌ | | | Nov 25: blank after the first page (see Findings) |
+| Desktop Chrome | ✅ | ✅ | ✅ | Nov 25: draft shows only "Not open yet"; signed in, Register opens the placeholder |
+| Desktop Safari | ✅ | ✅ | ✅ | Nov 25: signed out, Register shows all four sign-in ways; Gujarati switches |
+| Desktop Edge | | | | Not installed on the test Mac |
+| Desktop Firefox | | | | Not yet |
 
