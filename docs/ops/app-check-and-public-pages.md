@@ -35,12 +35,15 @@ Do these once per project (dev first). Until they are done, deployed
 ## Rate-limit counts
 
 Counts live in `rateLimits/{bucket}_{hash}_{window}` (no client access; the
-address is hashed, never stored). Each has `expiresAt`. Turn on a TTL
-policy once per project so old counts are deleted:
+address is hashed, never stored). Each has `expiresAt`, and the TTL policy
+that deletes old counts is a field override in `firestore.indexes.json`
+(`rateLimits.expiresAt`, `"ttl": true`, not indexed), so it goes live on
+each project with `firebase deploy --only firestore:indexes`. Don't set it
+with gcloud instead: an index deploy would then find a setting the file
+doesn't list. Check it with:
 
 ```
-gcloud firestore fields ttls update expiresAt \
-  --collection-group=rateLimits --enable-ttl --project=crewpoint-dev
+gcloud firestore fields ttls list --project=crewpoint-dev
 ```
 
 ## The server-rendered first page
