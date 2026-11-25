@@ -37,16 +37,22 @@ android {
             dimension = "environment"
             applicationId = "space.sookoon.crewpoint.dev"
             resValue("string", "app_name", "CrewPoint Dev")
+            // App Links open the app from this flavor's Hosting domain (#241).
+            manifestPlaceholders["appLinkHost"] = "crewpoint-dev.web.app"
         }
         create("stg") {
             dimension = "environment"
             applicationId = "space.sookoon.crewpoint.stg"
             resValue("string", "app_name", "CrewPoint Stg")
+            // App Links open the app from this flavor's Hosting domain (#241).
+            manifestPlaceholders["appLinkHost"] = "crewpoint-stg.web.app"
         }
         create("prod") {
             dimension = "environment"
             applicationId = "space.sookoon.crewpoint.app"
             resValue("string", "app_name", "CrewPoint")
+            // App Links open the app from this flavor's Hosting domain (#241).
+            manifestPlaceholders["appLinkHost"] = "crewpoint.sookoon.space"
         }
     }
 

@@ -931,5 +931,143 @@
   "eventPageBackToEvent": "Back to the event",
   "@eventPageBackToEvent": {
     "description": "Returns to the event page."
+  },
+  "lightSignInTitle": "Sign in to carry on",
+  "@lightSignInTitle": {
+    "description": "Heading of the light sign-in for registering."
+  },
+  "lightSignInHelp": "No password needed. We'll email you a link or text you a code, then bring you straight back here.",
+  "@lightSignInHelp": {
+    "description": "Help under the light sign-in heading."
+  },
+  "lightSignInEmailLabel": "Email",
+  "@lightSignInEmailLabel": {
+    "description": "The email field."
+  },
+  "lightSignInEmailButton": "Email me a link",
+  "@lightSignInEmailButton": {
+    "description": "Sends an email sign-in link."
+  },
+  "lightSignInEmailInvalid": "Enter a valid email address.",
+  "@lightSignInEmailInvalid": {
+    "description": "The email is not an address."
+  },
+  "lightSignInSentTitle": "Check your email",
+  "@lightSignInSentTitle": {
+    "description": "After the link was sent."
+  },
+  "lightSignInSentBody": "We sent a sign-in link to {email}. Open it on this device to carry on here.",
+  "@lightSignInSentBody": {
+    "description": "Where the link went.",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "lightSignInResend": "Send it again",
+  "@lightSignInResend": {
+    "description": "Sends the link again."
+  },
+  "lightSignInDifferentEmail": "Use a different email",
+  "@lightSignInDifferentEmail": {
+    "description": "Goes back to the email field."
+  },
+  "lightSignInPhoneLabel": "Phone number",
+  "@lightSignInPhoneLabel": {
+    "description": "The phone field."
+  },
+  "lightSignInPhoneHelp": "US, Canadian and UK numbers.",
+  "@lightSignInPhoneHelp": {
+    "description": "Which numbers can get a code."
+  },
+  "lightSignInPhoneButton": "Text me a code",
+  "@lightSignInPhoneButton": {
+    "description": "Sends a code by text."
+  },
+  "lightSignInPhoneInvalid": "Enter a whole phone number, with its country code if it isn't from here.",
+  "@lightSignInPhoneInvalid": {
+    "description": "The phone number is not whole."
+  },
+  "lightSignInPhoneUnsupported": "Codes can be sent only to US, Canadian and UK numbers.",
+  "@lightSignInPhoneUnsupported": {
+    "description": "A number from another country."
+  },
+  "lightSignInCodeLabel": "Code",
+  "@lightSignInCodeLabel": {
+    "description": "The texted code field."
+  },
+  "lightSignInCodeHelp": "We texted a code to {phone}.",
+  "@lightSignInCodeHelp": {
+    "description": "Where the code went.",
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "lightSignInCodeButton": "Confirm code",
+  "@lightSignInCodeButton": {
+    "description": "Signs in with the code."
+  },
+  "lightSignInCodeMissing": "Enter the code we texted you.",
+  "@lightSignInCodeMissing": {
+    "description": "No code entered."
+  },
+  "lightSignInChangePhone": "Use a different number",
+  "@lightSignInChangePhone": {
+    "description": "Goes back to the phone field."
+  },
+  "lightSignInOr": "or",
+  "@lightSignInOr": {
+    "description": "Between the sign-in choices."
+  },
+  "lightSignInTooMany": "Please try again in a few minutes",
+  "@lightSignInTooMany": {
+    "description": "Too many links asked for."
+  },
+  "lightSignInSendFailed": "Couldn't send the link. Check your connection and try again.",
+  "@lightSignInSendFailed": {
+    "description": "Sending the link failed."
+  },
+  "lightSignInSigningIn": "Signing you in",
+  "@lightSignInSigningIn": {
+    "description": "While a sign-in link is checked."
+  },
+  "lightSignInConfirmTitle": "Confirm your email to finish signing in",
+  "@lightSignInConfirmTitle": {
+    "description": "A link opened on another device."
+  },
+  "lightSignInConfirmHelp": "Enter the email address the link was sent to.",
+  "@lightSignInConfirmHelp": {
+    "description": "Help under the confirm heading."
+  },
+  "lightSignInContinueLabel": "Continue",
+  "@lightSignInContinueLabel": {
+    "description": "Finishes signing in."
+  },
+  "lightSignInWrongEmail": "This link was sent to a different email",
+  "@lightSignInWrongEmail": {
+    "description": "The address does not match the link."
+  },
+  "lightSignInExpiredTitle": "This sign-in link has expired or was already used",
+  "@lightSignInExpiredTitle": {
+    "description": "An expired or used link."
+  },
+  "lightSignInExpiredHelp": "Ask for a new one, or sign in another way.",
+  "@lightSignInExpiredHelp": {
+    "description": "Help under the expired heading."
+  },
+  "lightSignInSendNew": "Send a new link",
+  "@lightSignInSendNew": {
+    "description": "Sends a new sign-in link."
+  },
+  "lightSignInMyRegistrationSoon": "Your registration will show here",
+  "@lightSignInMyRegistrationSoon": {
+    "description": "My registration before it exists."
+  },
+  "lightSignInMyRegistrationSoonHelp": "You're signed in. Once you've registered, you'll see and change it here.",
+  "@lightSignInMyRegistrationSoonHelp": {
+    "description": "Help on my registration before it exists."
   }
 }

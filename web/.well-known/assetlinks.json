@@ -1,0 +1,38 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "space.sookoon.crewpoint.dev",
+      "sha256_cert_fingerprints": [
+        "81:80:6B:37:49:70:1A:3C:B7:F5:10:70:1A:43:86:DF:7C:3F:F2:63:C0:B3:B5:0B:53:11:36:64:D4:CF:27:B8"
+      ]
+    }
+  },
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "space.sookoon.crewpoint.stg",
+      "sha256_cert_fingerprints": [
+        "81:80:6B:37:49:70:1A:3C:B7:F5:10:70:1A:43:86:DF:7C:3F:F2:63:C0:B3:B5:0B:53:11:36:64:D4:CF:27:B8"
+      ]
+    }
+  },
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "space.sookoon.crewpoint.app",
+      "sha256_cert_fingerprints": [
+        "81:80:6B:37:49:70:1A:3C:B7:F5:10:70:1A:43:86:DF:7C:3F:F2:63:C0:B3:B5:0B:53:11:36:64:D4:CF:27:B8"
+      ]
+    }
+  }
+]

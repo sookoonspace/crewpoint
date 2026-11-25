@@ -3,3 +3,5 @@
 PRODUCT_BUNDLE_IDENTIFIER=space.sookoon.crewpoint.app
 PRODUCT_NAME=CrewPoint
 ASSET_PREFIX=prod
+// Universal Links open the app from this Hosting domain (#241).
+APP_LINK_HOST=crewpoint.sookoon.space

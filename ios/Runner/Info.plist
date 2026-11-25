@@ -45,6 +45,8 @@
 	  Source: lib/firebase_options_<flavor>.dart -> iosClientId, reversed
 	  to com.googleusercontent.apps.<base>.
 	-->
+	<key>FlutterDeepLinkingEnabled</key>
+	<false/>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

@@ -87,6 +87,8 @@ abstract final class CpIcons {
   static const IconData authEmail = LucideIcons.atSign;
   static const IconData authEmailField = LucideIcons.mail;
   static const IconData authPassword = LucideIcons.lock;
+  // A code texted to a phone (#241).
+  static const IconData authPhone = LucideIcons.smartphone;
 
   // ===== Event templates =====
   // Named by the template file's `icon`, never by the kind of event.

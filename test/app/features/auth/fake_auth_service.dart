@@ -108,6 +108,100 @@ class FakeAuthService implements IAuthService {
     return nextSignInMethods;
   }
 
+  /// Sign-in links asked for, as `email|returnTo|language` (#241).
+  final List<String> signInLinksSent = [];
+
+  /// When set, the next `sendSignInLink` throws this.
+  Object? sendSignInLinkError;
+
+  /// The address each link was made for: completing a link checks it, as
+  /// Firebase does. A link not listed here has expired or was used.
+  final Map<String, String> linkEmails = {};
+
+  /// Phone numbers a code was asked for, and the code Firebase would text.
+  final List<String> phoneCodesSent = [];
+  String phoneCode = '123456';
+
+  /// When set, the next `sendPhoneCode` returns this.
+  PhoneCodeOutcome? nextPhoneOutcome;
+
+  AuthUser _userFor({String email = '', String? phone}) => AuthUser(
+    uid: 'u-${email.isEmpty ? phone : email}',
+    email: email,
+    emailVerified: email.isNotEmpty,
+    phoneNumber: phone,
+    providerIds: [if (email.isNotEmpty) 'password' else 'phone'],
+  );
+
+  @override
+  Future<void> sendSignInLink({
+    required String email,
+    required String returnTo,
+    required String language,
+  }) async {
+    signInLinksSent.add('$email|$returnTo|$language');
+    final error = sendSignInLinkError;
+    if (error != null) {
+      sendSignInLinkError = null;
+      throw error;
+    }
+  }
+
+  @override
+  bool isSignInLink(String link) {
+    final uri = _actionLink(link);
+    return uri?.queryParameters['mode'] == 'signIn' &&
+        (uri?.queryParameters['oobCode']?.isNotEmpty ?? false);
+  }
+
+  /// The action link itself, or the one inside a `link=` parameter, as
+  /// Firebase reads it.
+  Uri? _actionLink(String link) {
+    final uri = Uri.tryParse(link);
+    final inner = uri?.queryParameters['link'];
+    return inner == null ? uri : Uri.tryParse(inner);
+  }
+
+  @override
+  Future<EmailLinkOutcome> completeSignInLink({
+    required String email,
+    required String link,
+  }) async {
+    final code = _actionLink(link)?.queryParameters['oobCode'];
+    final expected = linkEmails[code];
+    if (expected == null) return const EmailLinkExpired();
+    if (expected != email.trim().toLowerCase()) {
+      return const EmailLinkWrongEmail();
+    }
+    linkEmails.remove(code);
+    final user = _userFor(email: expected);
+    setCurrentUser(user);
+    return EmailLinkSignedIn(user);
+  }
+
+  @override
+  Future<PhoneCodeOutcome> sendPhoneCode(String phone) async {
+    phoneCodesSent.add(phone);
+    final next = nextPhoneOutcome;
+    nextPhoneOutcome = null;
+    return next ?? PhoneCodeSent('verify:$phone');
+  }
+
+  @override
+  Future<AuthResult> confirmPhoneCode({
+    required String verificationId,
+    required String code,
+  }) async {
+    if (code != phoneCode) {
+      return const AuthResultFailure(
+        "That code isn't right. Check it and try again.",
+      );
+    }
+    final user = _userFor(phone: verificationId.replaceFirst('verify:', ''));
+    setCurrentUser(user);
+    return AuthSuccess(user);
+  }
+
   /// Test setter — drives state transitions in tests where the
   /// ordinary sign-in/up paths aren't exercised. Updates [currentUser]
   /// AND broadcasts on `authStateChanges`.

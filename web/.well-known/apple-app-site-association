@@ -1,0 +1,30 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "9TF5KXSKY4.space.sookoon.crewpoint.dev",
+          "9TF5KXSKY4.space.sookoon.crewpoint.stg",
+          "9TF5KXSKY4.space.sookoon.crewpoint.app"
+        ],
+        "components": [
+          {
+            "/": "/join/*"
+          },
+          {
+            "/": "/e/*"
+          },
+          {
+            "/": "/r/*"
+          },
+          {
+            "/": "/__/auth/links"
+          },
+          {
+            "/": "/auth/link"
+          }
+        ]
+      }
+    ]
+  }
+}
