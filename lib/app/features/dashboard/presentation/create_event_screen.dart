@@ -187,6 +187,9 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                   },
                 ),
           duration: const Duration(seconds: 6),
+          // A message with an action otherwise stays until tapped, over the
+          // Setup screen's buttons. The dashboard has Publish too.
+          persist: false,
         ),
       );
     } catch (e, st) {
