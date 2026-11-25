@@ -36,11 +36,11 @@ dependencies:
 
   # Firebase
   firebase_core: ^4.15.2
-  firebase_auth: ^6.5.7
-  cloud_firestore: ^6.8.0
-  firebase_storage: ^13.4.6
-  cloud_functions: ^6.3.6
-  firebase_messaging: ^16.5.0
+  firebase_auth: ^6.7.1
+  cloud_firestore: ^6.10.2
+  firebase_storage: ^13.6.1
+  cloud_functions: ^6.5.1
+  firebase_messaging: ^16.7.1
 
   # OS launcher app-icon badge — Phase 3b.2.
   # AppBadgePlus.updateBadge(int) on iOS / Android / macOS.
@@ -142,7 +142,7 @@ dev_dependencies:
   riverpod_lint: ^3.0.0
   flutter_launcher_icons: ^0.14.3
   image: ^4.5.3
-  fake_cloud_firestore: ^4.2.0
+  fake_cloud_firestore: ^4.4.0
   firebase_auth_mocks: ^0.15.2
   # sqlite3 is a transitive dep via sqlite3_flutter_libs; declared here
   # so test/database/migration_v5_to_v6_test.dart can import it cleanly
