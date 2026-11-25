@@ -24,3 +24,7 @@ fi
 flutter build web --release \
   "--dart-define-from-file=$env_file" \
   "--dart-define=FLAVOR=$flavor"
+
+# The web engine downloads every declared font before the first frame, so
+# drop the icon weights the app never uses (tool/trim_web_fonts.dart).
+dart run tool/trim_web_fonts.dart build/web
