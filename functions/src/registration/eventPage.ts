@@ -103,7 +103,8 @@ export function formatDates(view: Extract<PublicEvent, {title: string}>): string
 /**
  * The small first page for `/e/:eventSlug` (Req 69): title, dates, place,
  * Register and link-preview tags, then the Flutter app, which takes over
- * and removes `#cp-ssr`. Anything the page may not show (a draft, an
+ * and removes `#cp-ssr`. It stays above the app's canvas until then, so a
+ * slow phone never shows a blank screen while the app loads. Anything the page may not show (a draft, an
  * unknown name, a busy address) gets the plain app shell.
  */
 export function renderEventPage({view, slug, origin}: {
@@ -128,12 +129,12 @@ export function renderEventPage({view, slug, origin}: {
   ].filter(Boolean).join("\n  ") : `<meta name="robots" content="noindex">`;
   const register = shown?.state === "open" && shown.mode === "open" ?
     `<a class="cp-btn" href="/e/${encodeURIComponent(slug)}/register">Register</a>` : "";
-  const body = shown ? `<main id="cp-ssr">
+  const body = shown ? `<main id="cp-ssr"><div class="cp-in">
     <h1>${escape(shown.title)}</h1>
     ${dates ? `<p>${escape(dates)}</p>` : ""}
     ${place ? `<p>${escape(place)}</p>` : ""}
     ${register}
-  </main>` : "";
+  </div></main>` : "";
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -147,13 +148,16 @@ export function renderEventPage({view, slug, origin}: {
   <style>
     body { margin: 0; font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
       background: #f7f7f5; color: #1d1d1b; }
-    #cp-ssr { max-width: 560px; margin: 0 auto; padding: 32px 16px; }
+    /* Above Flutter's canvas, which fills the window as soon as the engine
+       starts, until the event page removes it with the event on screen. */
+    #cp-ssr { position: fixed; inset: 0; z-index: 2147483647; overflow-y: auto; background: #f7f7f5; }
+    #cp-ssr .cp-in { max-width: 560px; margin: 0 auto; padding: 32px 16px; }
     #cp-ssr h1 { font-size: 28px; line-height: 1.2; margin: 0 0 12px; }
     #cp-ssr p { font-size: 17px; margin: 0 0 8px; color: #4a4a46; }
     .cp-btn { display: inline-block; margin-top: 16px; padding: 14px 24px; min-height: 20px;
       border-radius: 12px; background: #1f6f5c; color: #fff; text-decoration: none; font-weight: 600; }
     @media (prefers-color-scheme: dark) {
-      body { background: #151514; color: #f2f2ef; }
+      body, #cp-ssr { background: #151514; color: #f2f2ef; }
       #cp-ssr p { color: #c6c6c0; }
       .cp-btn { background: #4fb59a; color: #0b1f1a; }
     }

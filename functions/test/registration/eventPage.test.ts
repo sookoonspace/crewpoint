@@ -151,6 +151,26 @@ describe('the server-rendered first page (Req 69)', () => {
     expect((await get('/e/convention-2027/cover.jpg')).code).toBe(404);
   });
 
+  test('stays above the app until the app removes it, so a slow phone never goes blank', () => {
+    const html: string = renderEventPage({
+      view: {
+        state: 'open', slug: 's', title: 'Convention', description: '', startDate: null, endDate: null,
+        dateOnly: true, timeZone: 'UTC', venues: [], included: null, deadline: null, mode: 'open',
+        placesRemain: true, hasCover: false, labels: {},
+      },
+      slug: 's', origin: 'https://x',
+    });
+    // Flutter's canvas fills the window as soon as the engine starts, long
+    // before the app can show the event; the first page covers it, with its
+    // own background, until the event page removes #cp-ssr.
+    const rule = /#cp-ssr \{([^}]*)\}/.exec(html)?.[1] ?? '';
+    expect(rule).toContain('position: fixed');
+    expect(rule).toContain('inset: 0');
+    expect(rule).toContain('z-index: 2147483647');
+    expect(rule).toContain('overflow-y: auto');
+    expect(rule).toMatch(/background: #/);
+  });
+
   test('an invited event has no Register on its first page', () => {
     const html: string = renderEventPage({
       view: {

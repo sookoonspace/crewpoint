@@ -22,6 +22,14 @@ Do these once per project (dev first). Until they are done, deployed
 
    It is not a secret; every browser receives it. Without it the app does
    not start App Check on the web (`AppCheckStarter`).
+
+   Then set the web app's **minimum score to 0.1** (Firebase's default is
+   0.5): App Check → Apps → the web app → reCAPTCHA Enterprise → Risk
+   analysis. A refused browser can't open the event page, and the Firebase
+   library waits a full day before asking again, so only near-certain bots
+   should be refused; the per-address rate limit does the rest, and the
+   first page shows the same details without App Check. Dev is set (Nov 25,
+   2026).
 2. **Android (Play Integrity).** App Check → Apps → the Android app →
    Play Integrity, with the app's SHA-256 fingerprint.
 3. **iOS (App Attest, falling back to DeviceCheck).** App Check → Apps →
