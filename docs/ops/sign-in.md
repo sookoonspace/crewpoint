@@ -78,20 +78,27 @@ needs a real send on dev.
 
 ## Manual checks (Testing Strategy 7)
 
-Not yet done: they need the functions and Hosting on dev, and real
-devices. Record each run here.
+Run on dev on Nov 25, 2026 (functions from f446f46, Hosting from 56f349c),
+with the published test event `checks-2026`. Android "with the app" ran on
+the Pixel 7 Pro emulator with a link made by Firebase for
+derodian@gmail.com and opened as a tap would (`adb shell am start`).
 
 | Check | Result | Date | Notes |
 | --- | --- | --- | --- |
-| Email link opened on iPhone with the app installed | | | |
-| Email link opened on iPhone without the app (Safari) | | | |
-| Email link opened on Android with the app installed | | | |
-| Email link opened on Android without the app (Chrome) | | | |
-| Email link opened on a second device: asks for the email | | | |
-| Second device, a different email: refused | | | |
-| An expired or used link: "Send a new link" works | | | |
-| SMS code to a US number | | | |
-| SMS code to a Canadian number | | | |
-| SMS code to a UK number | | | |
-| A number from another country is refused by Firebase | | | |
-| Same email by link and by Google is one account | | | |
+| Email link opened on iPhone with the app installed | Not yet | | Xcode 26.3 can't install on iOS 27.2.1 |
+| Email link opened on iPhone without the app (Safari) | Not yet | | |
+| Email link opened on Android with the app installed | ✅ | Nov 25 | Emulator: both hosts `verified` (`pm get-app-links`); the link opened the app, which asked for the email (the emulator hadn't asked for it), signed in and opened registration |
+| Email link opened on Android without the app (Chrome) | ✅ | Nov 25 | Emulator: opened in Chrome (stopped at Chrome's first-run terms); the web half passed in Safari and Chrome |
+| Email link opened on a second device: asks for the email | ✅ | Nov 25 | Link asked for on iPhone Safari, opened in a Mac Safari private window |
+| Second device, a different email: refused | ✅ | Nov 25 | |
+| An expired or used link: "Send a new link" works | ✅ | Nov 25 | A private window asks for the email first, then says the link expired or was used, with all four options |
+| SMS code to a US number | ✅ | Nov 25 | |
+| SMS code to a Canadian number | Not yet | | No number to test with |
+| SMS code to a UK number | Not yet | | No number to test with |
+| A number from another country is refused by Firebase | ✅ (app) | Nov 25 | A +91 number was refused by the app before sending; Firebase's region policy itself not exercised |
+| Same email by link and by Google is one account | ✅ | Nov 25 | One account holds Google, Apple, password and email link. A phone sign-in is a separate account |
+
+Found and fixed on the way: `sendSignInLink` named the default Hosting
+domain as its `linkDomain`, which Firebase refuses (#268), and Android
+builds failed from #262 until #269. Same-device sign-in passed in desktop
+Safari: the link signed in at once and returned to registration.
