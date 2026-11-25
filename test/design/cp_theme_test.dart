@@ -119,4 +119,38 @@ void main() {
     );
     expect(tokens.colors, CpColors.light);
   });
+
+  for (final (name, theme) in [
+    ('light', CpTheme.light()),
+    ('dark', CpTheme.dark()),
+  ]) {
+    testWidgets('every message can be closed ($name)', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: theme,
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('Saved'),
+                    // An action makes a message stay until it is handled.
+                    action: SnackBarAction(label: 'Undo', onPressed: () {}),
+                  ),
+                ),
+                child: const Text('show'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('show'));
+      await tester.pumpAndSettle();
+      expect(find.text('Saved'), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pumpAndSettle();
+      expect(find.text('Saved'), findsNothing);
+    });
+  }
 }

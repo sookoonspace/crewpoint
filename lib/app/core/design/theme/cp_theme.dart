@@ -301,6 +301,10 @@ abstract final class CpTheme {
         actionTextColor: c.accentSoft,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: radii.md),
+        // A message with an action stays until handled, so every message
+        // can be closed rather than dragged away.
+        showCloseIcon: true,
+        closeIconColor: c.surface,
       ),
       tabBarTheme: TabBarThemeData(
         labelColor: c.accent,

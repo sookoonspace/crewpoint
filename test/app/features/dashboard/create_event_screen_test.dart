@@ -117,6 +117,35 @@ void main() {
   );
 
   testWidgets(
+    'the Draft created message clears itself after 6 seconds, so it never '
+    'stays over the next screen\'s buttons',
+    (tester) async {
+      useTallViewport(tester);
+      await tester.pumpWidget(
+        buildApp(
+          authFactory: () => _StubAuthNotifier(
+            const AppUser(uid: 'uid-42', email: 'a@example.com'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('host.openCreate')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('createEvent.title')),
+        'Tahoe Trip',
+      );
+      await tester.tap(find.byKey(const Key('createEvent.submit')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Draft created'), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 7));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Draft created'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'post-create SnackBar publishes the draft and opens AddMemberSheet',
     (tester) async {
       useTallViewport(tester);
