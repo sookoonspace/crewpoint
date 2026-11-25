@@ -278,6 +278,60 @@ void main() {
     await robot.finish();
   });
 
+  testWidgets('Save also saves a link name typed but not yet claimed, so '
+      'nothing typed is dropped', (tester) async {
+    final robot = await open(tester);
+    await robot.typeInto(const Key('$k.capacity'), '100');
+    await robot.typeInto(const Key('$k.slug'), 'Checks-2026');
+    await robot.tap(const Key('$k.save'));
+    await robot.finishTransition();
+
+    expect(
+      harness.calls.calls,
+      containsAllInOrder([
+        'saveRegistrationSettings:open:100',
+        'claimEventSlug:checks-2026',
+      ]),
+    );
+    expect((await saved()).slug, 'checks-2026');
+    expect(
+      find.text('Your link: ${AppFlavor.current.legalBaseUrl}/e/checks-2026'),
+      findsOneWidget,
+    );
+    expect(find.text('Registration settings saved.'), findsOneWidget);
+    // Everything is saved, so nothing is left to save.
+    final save = tester.widget<CpButton>(find.byKey(const Key('$k.save')));
+    expect(save.onPressed, isNull);
+    await robot.finish();
+  });
+
+  testWidgets('a link name typed on its own can be saved with Save, and a '
+      'taken one says so and stays to fix', (tester) async {
+    final robot = await open(tester);
+    harness.calls.takenSlugs.add('shah-wedding');
+    await robot.typeInto(const Key('$k.slug'), 'shah-wedding');
+    await robot.tap(const Key('$k.save'));
+    await robot.finishTransition();
+    expect(
+      find.text('Another event already uses this link. Try another.'),
+      findsOneWidget,
+    );
+    expect(
+      harness.calls.calls,
+      isNot(contains(startsWith('saveRegistration'))),
+    );
+    var save = tester.widget<CpButton>(find.byKey(const Key('$k.save')));
+    expect(save.onPressed, isNotNull);
+
+    await robot.typeInto(const Key('$k.slug'), 'shah-2027');
+    await robot.tap(const Key('$k.save'));
+    await robot.finishTransition();
+    expect(harness.calls.calls.last, 'claimEventSlug:shah-2027');
+    save = tester.widget<CpButton>(find.byKey(const Key('$k.save')));
+    expect(save.onPressed, isNull);
+    await robot.finish();
+  });
+
   testWidgets('needs event.manage', (tester) async {
     final robot = await open(tester, as: 'sam');
     expect(find.byKey(const Key('$k.body')), findsNothing);
