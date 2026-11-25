@@ -9,7 +9,7 @@ import {clearFirestoreEmulator, getAdminApp, getAdminDb} from '../setup';
 const firebaseFunctionsTest = require('firebase-functions-test');
 const ftest = firebaseFunctionsTest();
 getAdminApp();
-const {sendSignInLink, safeReturn, LINKS_PER_EMAIL_PER_HOUR, LINKS_PER_ADDRESS_PER_HOUR} =
+const {sendSignInLink, safeReturn, linkDomainFor, LINKS_PER_EMAIL_PER_HOUR, LINKS_PER_ADDRESS_PER_HOUR} =
   require('../../src/account/signInLink');
 /* eslint-enable @typescript-eslint/no-var-requires */
 
@@ -56,6 +56,15 @@ describe('sendSignInLink', () => {
     for (const bad of ['/profile', 'https://evil.example/e/x', '//evil.example', '/e//evil', 42]) {
       expect(safeReturn(bad)).toBe('/');
     }
+  });
+
+  test('names a link domain only for a custom domain; dev and stg use the default one', () => {
+    // Firebase refuses web.app and firebaseapp.com as a link domain, so dev
+    // and stg links come on <project>.firebaseapp.com/__/auth/links.
+    expect(linkDomainFor('crewpoint-dev')).toBeUndefined();
+    expect(linkDomainFor('crewpoint-stg')).toBeUndefined();
+    expect(linkDomainFor('demo-crewpoint')).toBeUndefined();
+    expect(linkDomainFor('crewpoint-prod')).toBe('crewpoint.sookoon.space');
   });
 
   test('about 5 links an hour to one email, whatever the address', async () => {
