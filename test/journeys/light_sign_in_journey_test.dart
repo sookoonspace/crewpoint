@@ -302,7 +302,7 @@ void main() {
         expect(h.location, '/e/$slug/registration');
         expect(
           find.byKey(
-            Key(signedIn ? 'registration.mine.soon' : 'auth.light.email'),
+            Key(signedIn ? 'registration.mine.none' : 'auth.light.email'),
           ),
           findsOneWidget,
         );

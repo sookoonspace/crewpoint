@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/services/i_auth_service.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/category.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
+import 'package:crewpoint_app/app/features/registration/domain/my_registration.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_form.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_settings.dart';
 
@@ -284,4 +285,101 @@ void main() {
       await h.finish(tester);
     });
   }
+
+  group('my registration', () {
+    MyRegistrationView view({
+      String status = 'submitted',
+      int? position,
+      LocalText? note,
+    }) => MyRegistrationView(
+      title: 'Convention 2027',
+      timeZone: 'America/Chicago',
+      registration: MyRegistration(
+        status: status,
+        waitlistPosition: position,
+        submittedAt: DateTime.utc(2026, 12, 1, 18),
+        groupName: 'Patel family',
+        people: const [
+          MyPerson(name: 'Asha Patel', categoryId: 'adult'),
+          MyPerson(name: 'Dev Patel', categoryId: 'child'),
+        ],
+      ),
+      note: note,
+    );
+
+    testWidgets('after Submit, the family sees its status, who is in it, '
+        "and the organizer's note (Req 19, B-07)", (tester) async {
+      final (h, r) = await open(tester);
+      h.calls.myRegistrations[slug] = view(
+        note: const LocalText('Book at hotel.example with code CONV27'),
+      );
+      await fillForm(r);
+      await r.submit();
+      await r.tap(const Key('$k.result.mine'));
+      expect(h.location, '/e/$slug/registration');
+      expect(
+        find.byKey(const Key('registration.mine.status.submitted')),
+        findsOneWidget,
+      );
+      expect(find.text('Submitted'), findsOneWidget);
+      expect(find.text('Sent Tue, Dec 1, 2026'), findsOneWidget);
+      expect(find.text('Patel family'), findsOneWidget);
+      expect(find.text('Dev Patel'), findsOneWidget);
+      expect(
+        find.text('Book at hotel.example with code CONV27'),
+        findsOneWidget,
+      );
+      await h.finish(tester);
+    });
+
+    testWidgets('a waitlisted family sees its number and no note', (
+      tester,
+    ) async {
+      final (h, _) = await open(tester);
+      h.calls.myRegistrations[slug] = view(status: 'waitlisted', position: 3);
+      h.router.go('/e/$slug/registration');
+      await h.settle(tester);
+      expect(find.text('Waitlisted, number 3'), findsOneWidget);
+      expect(
+        find.text("If places free up, we'll email you an offer."),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('registration.mine.note')), findsNothing);
+      await h.finish(tester);
+    });
+
+    testWidgets('with no registration yet, it offers Register', (
+      tester,
+    ) async {
+      final (h, r) = await open(tester);
+      h.router.go('/e/$slug/registration');
+      await h.settle(tester);
+      expect(find.byKey(const Key('registration.mine.none')), findsOneWidget);
+      await r.tap(const Key('registration.mine.register'));
+      expect(h.location, register);
+      await h.finish(tester);
+    });
+
+    testWidgets('Req 71: fits a 320 px phone at 200% text in dark mode, in '
+        'Gujarati', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final (h, _) = await open(
+        tester,
+        size: const Size(320, 2400),
+        dark: true,
+        locale: const Locale('gu'),
+      );
+      h.calls.myRegistrations[slug] = view(
+        status: 'waitlisted',
+        position: 12,
+        note: const LocalText('Note', gu: 'નોંધ'),
+      );
+      h.router.go('/e/$slug/registration');
+      await h.settle(tester);
+      expect(find.text('રાહ યાદીમાં, નંબર 12'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await h.finish(tester);
+    });
+  });
 }

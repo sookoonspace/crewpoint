@@ -5,6 +5,7 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_acces
 import 'package:crewpoint_app/app/features/dashboard/domain/models/invite.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
 import 'package:crewpoint_app/app/features/registration/domain/public_event.dart';
+import 'package:crewpoint_app/app/features/registration/domain/my_registration.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_form.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_settings.dart';
 
@@ -654,6 +655,23 @@ class FakeMemberCalls implements MemberCalls {
       );
     }
     return form;
+  }
+
+  /// "My registration" by slug (#242); any other slug is not found.
+  final Map<String, MyRegistrationView> myRegistrations = {};
+
+  @override
+  Future<MyRegistrationView> getMyRegistration(String slug) async {
+    calls.add('getMyRegistration:$slug');
+    _maybeFail();
+    final view = myRegistrations[slug.toLowerCase()];
+    if (view == null) {
+      throw FirebaseFunctionsException(
+        code: 'not-found',
+        message: "We couldn't find this event.",
+      );
+    }
+    return view;
   }
 
   /// Answers as `submitRegistration` does: a repeat with the same

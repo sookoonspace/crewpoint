@@ -121,30 +121,3 @@ class RegistrationSignInGate extends ConsumerWidget {
     );
   }
 }
-
-/// `/e/:eventSlug/registration` until "my registration" lands (#244).
-class MyRegistrationComingScreen extends StatelessWidget {
-  const MyRegistrationComingScreen({super.key, required this.slug});
-
-  final String slug;
-
-  @override
-  Widget build(BuildContext context) {
-    final strings = context.strings.lightSignIn;
-    final cp = context.cp;
-    return Scaffold(
-      backgroundColor: cp.colors.background,
-      body: SafeArea(
-        child: CpEmptyState(
-          key: const Key('registration.mine.soon'),
-          icon: CpIcons.notOpenYet,
-          title: strings.myRegistrationSoon,
-          message: strings.myRegistrationSoonHelp,
-          actionLabel: context.strings.eventPage.backToEvent,
-          actionKey: const Key('registration.mine.back'),
-          onAction: () => context.go('/e/$slug'),
-        ),
-      ),
-    );
-  }
-}

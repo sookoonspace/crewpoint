@@ -273,5 +273,20 @@
   "registerFormSeeMine": "મારી નોંધણી જુઓ",
   "registerFormAlreadyTitle": "તમે પહેલેથી નોંધણી કરી છે",
   "registerFormAlreadyBody": "તમે તમારી નોંધણી તેના પોતાના પેજ પર જોઈ શકો છો.",
-  "registerFormYou": "તમે"
+  "registerFormYou": "તમે",
+  "myRegistrationTitle": "મારી નોંધણી",
+  "myRegistrationSubmitted": "સબમિટ થયું",
+  "myRegistrationPending": "સમીક્ષા બાકી",
+  "myRegistrationWaitlisted": "રાહ યાદીમાં, નંબર {position}",
+  "myRegistrationDraft": "ડ્રાફ્ટ",
+  "myRegistrationCancelled": "રદ થયું",
+  "myRegistrationSentOn": "{date} એ મોકલ્યું",
+  "myRegistrationWaitlistHelp": "જગ્યા ખાલી થશે તો અમે તમને ઇમેઇલથી ઓફર મોકલીશું.",
+  "myRegistrationPendingHelp": "આયોજક તમારી જગ્યાની ખાતરી કરશે.",
+  "myRegistrationPeople": "કોની નોંધણી થઈ છે",
+  "myRegistrationNote": "આયોજક તરફથી",
+  "myRegistrationNone": "તમે હજી નોંધણી કરી નથી",
+  "myRegistrationNoneHelp": "નોંધણી કર્યા પછી તમે તેને અહીં જોશો.",
+  "myRegistrationRegister": "નોંધણી કરો",
+  "myRegistrationBackToEvent": "કાર્યક્રમ પર પાછા"
 }

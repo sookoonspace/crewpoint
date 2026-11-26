@@ -36,6 +36,7 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/event_settings
 import 'package:crewpoint_app/app/features/registration/presentation/event_page_screen.dart';
 import 'package:crewpoint_app/app/features/registration/presentation/registration_sign_in_gate.dart';
 import 'package:crewpoint_app/app/features/registration/presentation/registration_form_screen.dart';
+import 'package:crewpoint_app/app/features/registration/presentation/my_registration_screen.dart';
 import 'package:crewpoint_app/app/features/auth/presentation/email_link_screen.dart';
 import 'package:crewpoint_app/app/features/registration/presentation/registration_settings_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/expense_access_screen.dart';
@@ -229,7 +230,7 @@ GoRouter createRouter({
               return RegistrationSignInGate(
                 slug: slug,
                 returnTo: '/e/$slug/registration',
-                child: MyRegistrationComingScreen(slug: slug),
+                child: MyRegistrationScreen(slug: slug),
               );
             },
           ),

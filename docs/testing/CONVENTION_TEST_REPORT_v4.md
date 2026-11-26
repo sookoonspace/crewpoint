@@ -1,8 +1,8 @@
 # Derod Gaam Convention 2027: Test Report (v4)
 
-**Test spec:** [`CREWPOINT_CONVENTION_TEST_v4.md`](CREWPOINT_CONVENTION_TEST_v4.md) · **Run:** Nov 20, 2026, at the end of Stage 1, on `main` at `a9a5d3c` · **First run:** Nov 3, 2026
+**Test spec:** [`CREWPOINT_CONVENTION_TEST_v4.md`](CREWPOINT_CONVENTION_TEST_v4.md) · **Run:** Nov 26, 2026, at the end of Stage 1, on `main` at `12f4da1` · **First run:** Nov 3, 2026
 
-**Result: Stage 1, the platform foundation, is complete, but CrewPoint cannot run this event yet.** Registration and payments arrive in Stage 2, email and Gujarati in Stage 3, and event-day check-in in Stage 5. Of 206 scenarios, 31 pass, 13 are partial, 1 fails, 54 are not built, 103 are platform requirements for later stages, and 3 need a person or outside access. On Nov 3, 2 passed.
+**Result: Stage 1, the platform foundation, is complete, but CrewPoint cannot run this event yet.** Registration and payments arrive in Stage 2, email and Gujarati in Stage 3, and event-day check-in in Stage 5. Of 206 scenarios, 35 pass, 17 are partial, 1 fails, 54 are not built, 95 are platform requirements for later stages, and 3 need a person or outside access. On Nov 3, 2 passed.
 
 **What Stage 1 changed for this event:**
 
@@ -21,7 +21,7 @@
 
 **How far to trust this:**
 
-- 91 acceptance tests ran against the real app and backend code: 80 passed and 11 failed. A failure is a planned gap for a later stage unless the scenario is on the finished list, which CI protects.
+- 98 acceptance tests ran against the real app and backend code: 87 passed and 11 failed. A failure is a planned gap for a later stage unless the scenario is on the finished list, which CI protects.
 - The tests run on emulators with mocked push, and no message was sent. Live checks were made on dev, with throwaway data: the Stage 1 rollout, Google and Apple sign-in and linking (L-01, L-02), crash reporting on iOS, Android and web (O-02), both alert emails reaching both inboxes (O-01, O-02), and a restore (O-03).
 - Timings come from a Mac and local emulators ([load baselines](load-baselines.md)). Expect phones to be slower, and real delivery times are unmeasured.
 - NOT BUILT comes from reading and searching the code. Those scenarios are registered as skipped tests, with the reason.
@@ -52,13 +52,13 @@ PLATFORM marks what the first run expected a bought tool to do. CrewPoint now bu
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | A: Event setup | 3 | 1 | · | 2 | · | · | · | 6 |
 | L: Login | 2 | · | · | · | 5 | · | · | 7 |
-| B: Registration | 4 | · | · | · | 12 | · | · | 16 |
+| B: Registration | 6 | 4 | · | · | 6 | · | · | 16 |
 | C: Fees and payments | · | · | · | · | 20 | · | · | 20 |
 | D: Sponsorships | · | · | · | · | 16 | · | · | 16 |
 | BG: Budget and sponsorship list | · | · | · | · | 7 | · | 1 | 8 |
 | H: Committee | 5 | · | · | 2 | · | · | · | 7 |
 | V: Volunteers | · | · | · | 4 | 1 | · | · | 5 |
-| W: Waterpark day | · | · | · | 4 | 5 | · | · | 9 |
+| W: Waterpark day | 1 | · | · | 4 | 4 | · | · | 9 |
 | RF: Raffle | · | · | · | · | 12 | · | · | 12 |
 | HL: Paid helpers | · | · | · | · | 5 | · | · | 5 |
 | AL: Alcohol (21+) | · | · | · | 2 | · | · | · | 2 |
@@ -70,8 +70,8 @@ PLATFORM marks what the first run expected a bought tool to do. CrewPoint now bu
 | Z: Privacy | 2 | · | · | 3 | 2 | · | · | 7 |
 | O: Operations | 3 | · | · | 3 | · | 2 | · | 8 |
 | U: Accessibility | · | 3 | 1 | · | · | 1 | · | 5 |
-| N: Notifications | 1 | 6 | · | 9 | 16 | · | · | 32 |
-| **Total** | **31** | **13** | **1** | **54** | **103** | **3** | **1** | **206** |
+| N: Notifications | 2 | 6 | · | 9 | 15 | · | · | 32 |
+| **Total** | **35** | **17** | **1** | **54** | **95** | **3** | **1** | **206** |
 
 ### 2.1 Cost (S-08)
 
@@ -94,21 +94,21 @@ Measured on emulators rather than modelled: a count run reads about 1.3 document
 | L-05 | Family contact invites a family member; the invitee gets access to **that family only**. | PLATFORM | · | Platform requirement for Stage 2 (one-time code sign-in and RSVP links), now built into CrewPoint rather than a bought tool (L6). | Stage 2 | P0 |
 | L-06 | Same person signs in with Google, later with an email code using the same email → same… | PLATFORM | · | Platform requirement for Stage 2 (one-time code sign-in and RSVP links), now built into CrewPoint rather than a bought tool (L6). | Stage 2 | P0 |
 | L-07 | Web link registration works with no app installed; app login later shows the same family. | PLATFORM | · | Platform requirement for Stage 2 (one-time code sign-in and RSVP links), now built into CrewPoint rather than a bought tool (L6). | Stage 2 | P0 |
-| B-01 | Contact registers the whole family with every per-person field: name, date of… | PLATFORM | · | Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6). | Stage 2 | P0 |
-| B-02 | Per-person arrival/departure: F4 arrives Sat 11:00am → excluded from M1, M2, P1… | PLATFORM | · | Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6). | Stage 2 | P0 |
-| B-03 | Per-meal, per-person opt-out (Jaya M2). | PLATFORM | · | Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6). | Stage 2 | P0 |
+| B-01 | Contact registers the whole family with every per-person field: name, date of… | PASS | `B-01` tests (1 pass) | Built in #242: the registration form asks each person's name and birth date, the event's own questions (diet, relation, T-shirt), kids activities to under-18s only by a condition, arrival and departure, and by-sign-up sessions, with the waterpark or the hotel as one either/or choice; submitRegistration keeps every answer. | · | P0 |
+| B-02 | Per-person arrival/departure: F4 arrives Sat 11:00am → excluded from M1, M2, P1… | PARTIAL | `B-02` tests (1 pass) | Counts already leave people out of sessions before they arrive (#82), and submitRegistration keeps an exact arrival time. The registration form asks arrival and departure as days only, so an 11:00am arrival entered on the form counts from the start of that day. | Stage 2 | P0 |
+| B-03 | Per-meal, per-person opt-out (Jaya M2). | PARTIAL | · | A per-meal opt-out can be set on the person after registering (#82, the person screen), but the registration form does not offer opt-outs for meals everyone attends; only by-sign-up sessions are choices there. | Stage 2 | P0 |
 | B-04 | Headcount, diet, kids activities, 21+ counts and T-shirt report match §4. | PASS | `B-04` tests (4 pass) | Built in #83: counts on the server give 8 groups, 17 adults, 12 children, 29 people, 21/2/6 by diet, 8 kids activity sign-ups and a T-shirt report summing to 29 after import and cancelling F8. The 21+ count is AL-01 (Stage 5). | · | P0 |
 | B-05 | Per-meal counts match §4, by diet, including the **Saturday lunch at each location**. | PASS | `B-05` tests (1 pass) | Built in #83: per-session counts by diet, with Saturday lunch as two sessions, the park meal by waterpark sign-up and the hotel lunch for everyone else. | · | P0 |
 | B-06 | Family member (Meera) edits the registration → counts update; audit shows who changed… | PLATFORM | · | Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6). | Stage 2 | P0 |
-| B-07 | Hotel section: intent (rooms, nights), confirmation number; booking link + code shown… | PLATFORM | · | Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6). | Stage 2 | P0 |
+| B-07 | Hotel section: intent (rooms, nights), confirmation number; booking link + code shown… | PASS | `B-07` tests (1 pass) | Built in #242: "Confirmation number" is asked only when "Booked a room?" is Yes, kept in the group's private details, and the after-registration note with the booking link shows only on a submitted registration ("my registration"). | · | P0 |
 | B-08 | Directory opt-in setting per family (default **off**). | PLATFORM | · | Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6). | Stage 2 | P0 |
-| B-09 | Registration fully usable in Gujarati. | PLATFORM | · | Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6). | Stage 2 | P0 |
+| B-09 | Registration fully usable in Gujarati. | PARTIAL | `B-09` tests (1 pass) | Built in #242: the event page, sign-in, form, review, confirmation and my registration are in Gujarati. The organizer's own question labels and options are still English only; entering them in both languages comes with #254. | Stage 2 | P0 |
 | B-10 | Export for the caterer: registrations and per-meal, per-location counts by diet… | PASS | `B-10` tests (2 pass) | Built in #84: counts export to CSV per session by category and field, and the roster exports through exportRoster; private fields only when chosen. | · | P0 |
 | B-11 | Duplicate handling: F10's Ramesh & Kamla flagged against F3; committee merges into F3;… | PLATFORM | · | Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6). | Stage 2 | P0 |
 | B-12 | Capacity: admin sets a limit (400); registration past it goes to a waitlist; a… | PLATFORM | · | Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6). | Stage 2 | P0 |
 | B-13 | Registration closes on a set date; later changes need committee help. | PLATFORM | · | Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6). | Stage 2 | P0 |
 | B-14 | Caterer count freeze: admin locks meal counts on a date; later changes are listed as a… | PASS | `B-14` tests (2 pass) | Built in #84: freezeCounts keeps the numbers with the date; the counts screen lists later changes and exports them for the caterer. | · | P2 |
-| B-15 | After the Jul 3 hotel cutoff: the booking link is replaced by "call the hotel" and… | PLATFORM | · | Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6). | Stage 2 | P1 |
+| B-15 | After the Jul 3 hotel cutoff: the booking link is replaced by "call the hotel" and… | PARTIAL | `B-15` tests (1 pass) | Built in #242: from its date, the replacement note ("call the hotel") shows instead of the booking link. Hotel reminders (Stage 3) and a hotel sub-team list are not built. | Stage 3 | P1 |
 | B-16 | Cancelled F8 is excluded from every count, list, drawing and reminder. | PLATFORM | · | Counts already leave out a family cancelled on re-import (X-03). Registrations arrive in Stage 2, drawings in the raffle slice and reminders in Stage 3. | Stage 2 | P0 |
 | C-01 | $150-per-adult rule for every family matches §4 (F4 and F11 $150, F5 $450, Neel/Rohan… | PLATFORM | · | Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6). | Stage 2 | P0 |
 | C-02 | Card payment in app (sandbox) → paid + receipt. | PLATFORM | · | Platform requirement for Stage 2 (pricing, payments and refunds), now built into CrewPoint rather than a bought tool (L6). | Stage 2 | P0 |
@@ -166,7 +166,7 @@ Measured on emulators rather than modelled: a count run reads about 1.3 document
 | V-03 | Meal-line counter: tap to count plates served by diet (V/J/N) per meal **and… | NOT BUILT | · | No shifts, scanner, counter or issue reports. | Stage 5 | P2 |
 | V-04 | Report an issue (category, text, optional photo): "food running low" → food team;… | NOT BUILT | · | No shifts, scanner, counter or issue reports. | Stage 5 | P2 |
 | V-05 | Paper raffle sales log (see RF-03). | PLATFORM | · | Platform requirement for Stage 2 (raffle). | Stage 2 | P2 |
-| W-01 | Per-person sign-up (waterpark vs. hotel); totals 24 / 5. | PLATFORM | · | Platform requirement for Stage 2 (registration choices). | Stage 2 | P1 |
+| W-01 | Per-person sign-up (waterpark vs. hotel); totals 24 / 5. | PASS | `W-01` tests (1 pass) | Built in #242: the waterpark and the hotel bhajan and lunch at the same time are one either/or choice per person; both at once is refused, and Counts total each session. | · | P1 |
 | W-02 | Package cost recalculates: 24 → $9,201.25; 260 synthetic → $9,536.72; exactly 250 →… | NOT BUILT | · | No package cost model. Stage 4 (planning). | Stage 4 | P1 |
 | W-03 | Committee alerts at 225 and above 250. | NOT BUILT | · | No capacity alerts on a sign-up. Stage 4 (planning), with messages from Stage 3. | Stage 4 | P1 |
 | W-04 | Shuttle assignment: 17 riders, 15 seats per run, families together, no overbooking,… | NOT BUILT | · | No transport runs or seat assignment. Stage 4 (planning, alongside seating). | Stage 4 | P2 |
@@ -256,7 +256,7 @@ Measured on emulators rather than modelled: a count run reads about 1.3 document
 | U-04 | Colour contrast meets WCAG AA in light and dark mode. | PARTIAL | · | The current palette is checked by existing tests. New screens are not built. | · | P1 |
 | U-05 | An older non-technical user (Savita, 74) can complete web registration and find her… | NOT RUN | · | Needs a real session with an older user, once the screens exist. | · | P2 |
 | N-00 | Safety | PASS | `N-00` tests (1 pass) | Push goes only through a mocked transport on the emulator. Email has no transport at all yet. | · | P0 |
-| N-01 | Registration confirmation | PLATFORM | · | Platform requirement for Stage 3 (email), now built into CrewPoint rather than a bought tool (L6). | Stage 3 | P0 |
+| N-01 | Registration confirmation | PASS | `N-01` tests (1 pass) | Built in #242: submitting queues the confirmation (registrationConfirmation, English or Gujarati) listing who registered with a link to my registration, sent through the outbox; real delivery is a manual check. | · | P0 |
 | N-02 | Family member invite | PLATFORM | · | Platform requirement for Stage 3 (email), now built into CrewPoint rather than a bought tool (L6). | Stage 3 | P0 |
 | N-03 | Payment receipt | PLATFORM | · | Platform requirement for Stage 3 (email), now built into CrewPoint rather than a bought tool (L6). | Stage 3 | P0 |
 | N-04 | Unpaid fee reminder | PLATFORM | · | Platform requirement for Stage 3 (email), now built into CrewPoint rather than a bought tool (L6). | Stage 3 | P0 |

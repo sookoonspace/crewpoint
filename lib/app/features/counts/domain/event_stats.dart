@@ -52,6 +52,43 @@ class CountTally {
       });
 }
 
+typedef GroupsAndPeople = ({int groups, int people});
+
+/// Registrations not yet confirmed (Spec #233 Req 4a): drafts, pending
+/// review and the waitlist, each in groups and people. They are left out of
+/// every other count.
+@immutable
+class NotConfirmed {
+  const NotConfirmed({
+    this.draft = (groups: 0, people: 0),
+    this.pending = (groups: 0, people: 0),
+    this.waitlisted = (groups: 0, people: 0),
+  });
+
+  factory NotConfirmed.fromMap(Object? raw) {
+    GroupsAndPeople read(Object? v) => v is Map
+        ? (
+            groups: (v['groups'] as num?)?.toInt() ?? 0,
+            people: (v['people'] as num?)?.toInt() ?? 0,
+          )
+        : (groups: 0, people: 0);
+    if (raw is! Map) return const NotConfirmed();
+    return NotConfirmed(
+      draft: read(raw['draft']),
+      pending: read(raw['pending']),
+      waitlisted: read(raw['waitlisted']),
+    );
+  }
+
+  final GroupsAndPeople draft;
+  final GroupsAndPeople pending;
+  final GroupsAndPeople waitlisted;
+
+  int get groups => draft.groups + pending.groups + waitlisted.groups;
+  int get people => draft.people + pending.people + waitlisted.people;
+  bool get isEmpty => groups == 0 && people == 0;
+}
+
 /// `events/{id}/stats/current` (Req 52): counts for the event and each
 /// session, worked out on the server, with when they were last updated.
 @immutable
@@ -61,6 +98,7 @@ class EventStats {
     this.event = const CountTally(),
     this.groups = 0,
     this.sessions = const {},
+    this.notConfirmed = const NotConfirmed(),
   });
 
   factory EventStats.fromFirestore(Map<String, dynamic> data) {
@@ -76,6 +114,7 @@ class EventStats {
           for (final e in sessions.entries)
             if (e.key is String) e.key as String: CountTally.fromMap(e.value),
       },
+      notConfirmed: NotConfirmed.fromMap(data['notConfirmed']),
     );
   }
 
@@ -85,4 +124,7 @@ class EventStats {
   /// Groups with anyone still attending.
   final int groups;
   final Map<String, CountTally> sessions;
+
+  /// Registrations not yet confirmed, apart from every other count.
+  final NotConfirmed notConfirmed;
 }
