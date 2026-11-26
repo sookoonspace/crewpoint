@@ -144,7 +144,9 @@ export const submitRegistration = onCall({timeoutSeconds: 60}, async (request) =
         readEventRoles(tx, eventRef),
       ]);
       const previous = existing.docs[0];
-      if (previous) {
+      // A saved draft (#243) becomes the registration on the same document.
+      const draftRef = previous?.data().status === "draft" ? previous.ref : null;
+      if (previous && !draftRef) {
         const p = previous.data();
         if (p.lastSubmissionId === submissionId) {
           return {
@@ -168,7 +170,7 @@ export const submitRegistration = onCall({timeoutSeconds: 60}, async (request) =
       const waitlistPosition = decision.status === "waitlisted" ? nextWaitlist : null;
 
       const now = FieldValue.serverTimestamp();
-      const registrationRef = eventRef.collection("registrations").doc();
+      const registrationRef = draftRef ?? eventRef.collection("registrations").doc();
       const groupRef = eventRef.collection("groups").doc();
       const personRefs = form.people.map(() => eventRef.collection("participants").doc());
       const contactIndex = form.people.findIndex((p) => !p.isChild);

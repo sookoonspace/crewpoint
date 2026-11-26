@@ -275,7 +275,15 @@ void main() {
         dark: true,
         locale: locale,
       );
+      // With the save indicator showing, offline (#243).
+      h.connectivity.online = false;
       await r.addPerson();
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pump();
+      expect(
+        find.byKey(const Key('$k.saveState.offline')),
+        findsOneWidget,
+      );
       for (var step = 0; step < 6; step++) {
         expect(tester.takeException(), isNull, reason: 'step ${step + 1}');
         if (step < 5) await r.next();
@@ -379,6 +387,163 @@ void main() {
       await h.settle(tester);
       expect(find.text('રાહ યાદીમાં, નંબર 12'), findsOneWidget);
       expect(tester.takeException(), isNull);
+      await h.finish(tester);
+    });
+  });
+
+  group('#243 drafts and connection loss', () {
+    /// [form] with a server copy of the form as typed.
+    RegistrationFormSpec withServerDraft(
+      RegistrationDraft draft,
+      DateTime savedAt,
+    ) => RegistrationFormSpec(
+      slug: form.slug,
+      title: form.title,
+      timeZone: form.timeZone,
+      startDate: form.startDate,
+      endDate: form.endDate,
+      dateOnly: form.dateOnly,
+      blocks: form.blocks,
+      sections: form.sections,
+      conditions: form.conditions,
+      categories: form.categories,
+      fields: form.fields,
+      choices: form.choices,
+      labels: form.labels,
+      serverDraft: draft,
+      serverDraftSavedAt: savedAt,
+    );
+
+    Future<void> pause(WidgetTester tester) async {
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pump();
+    }
+
+    testWidgets('Req 24: the draft is saved once typing pauses, and on '
+        "moving between steps; 'Saved' shows at the top", (tester) async {
+      final (h, r) = await open(tester);
+      await r.name(0, 'Asha Patel');
+      expect(h.calls.savedDrafts, isEmpty);
+      await pause(tester);
+      expect(find.byKey(const Key('$k.saveState.saved')), findsOneWidget);
+      expect(find.text('Saved'), findsOneWidget);
+      final people = h.calls.savedDrafts[slug]!.draft['people']! as List;
+      expect((people.single as Map)['name'], 'Asha Patel');
+      // On the device at once, too (Req 23).
+      expect(
+        h.drafts.drafts.values.single['draft'],
+        isA<Map<String, Object?>>(),
+      );
+
+      await r.type(const Key('$k.person.0.name'), 'Asha P');
+      await r.next();
+      await tester.pump();
+      final saved = h.calls.savedDrafts[slug]!.draft['people']! as List;
+      expect((saved.single as Map)['name'], 'Asha P');
+      await h.finish(tester);
+    });
+
+    testWidgets('Req 24, 25: offline, the answers are kept on the device, '
+        'the form says so, and Submit explains and sends nothing', (
+      tester,
+    ) async {
+      final (h, r) = await open(tester);
+      h.connectivity.online = false;
+      await fillForm(r);
+      await pause(tester);
+      expect(find.text('Not saved yet: no connection'), findsOneWidget);
+      expect(h.calls.savedDrafts, isEmpty);
+      expect(h.drafts.drafts, isNotEmpty);
+
+      await r.submit();
+      expect(
+        find.text(
+          "You're offline. Your answers are kept; submit when you're back "
+          'online.',
+        ),
+        findsOneWidget,
+      );
+      expect(h.calls.submissions, isEmpty);
+
+      // Never queued: back online, the family submits themselves.
+      h.connectivity.online = true;
+      await r.submit();
+      expect(h.calls.submissions, hasLength(1));
+      expect(find.byKey(const Key('$k.result.submitted')), findsOneWidget);
+      // Sent, so the device copy is gone (Req 23).
+      expect(h.drafts.drafts, isEmpty);
+      await h.finish(tester);
+    });
+
+    testWidgets('a draft survives a reload, and a double submit after it is '
+        'one registration', (tester) async {
+      final (h, r) = await open(tester);
+      await fillForm(r);
+      final submissionId =
+          (h.drafts.drafts.values.single['draft']!
+              as Map<String, Object?>)['submissionId'];
+      await h.finish(tester);
+
+      // The page reloads: same device, a fresh app.
+      final drafts = h.drafts.drafts;
+      final (h2, r2) = await open(tester);
+      h2.drafts.drafts.addAll(drafts);
+      h2.router.go('/e/$slug');
+      await h2.settle(tester);
+      h2.router.go(register);
+      await h2.settle(tester);
+      // Back on step 1 with both people and the group's name.
+      expect(r2.progress, 'Step 1 of 6');
+      expect(find.text('Patel family'), findsOneWidget);
+      expect(
+        tester.widget<EditableText>(
+          find.descendant(
+            of: find.byKey(const Key('$k.person.1.name')),
+            matching: find.byType(EditableText),
+          ),
+        ).controller.text,
+        'Dev Patel',
+      );
+      for (var i = 0; i < 5; i++) {
+        await r2.next();
+      }
+      await tester.tap(find.byKey(const Key('$k.submit')));
+      await tester.tap(find.byKey(const Key('$k.submit')), warnIfMissed: false);
+      await h2.settle(tester);
+      expect(h2.calls.submissions, hasLength(1));
+      expect(h2.calls.submissions.single['submissionId'], submissionId);
+      await h2.finish(tester);
+    });
+
+    testWidgets("reopening restores the newer of the device's and the "
+        "server's drafts", (tester) async {
+      tester.view.physicalSize = const Size(400, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final h = SignInHarness(
+        signedInAs: const AuthUser(uid: 'asha', email: 'asha@example.com'),
+      );
+      await h.pump(tester, '/e/$slug');
+      const key = 'registration:$slug:asha';
+      h.drafts.drafts[key] = {
+        'draft': const RegistrationDraft(
+          submissionId: 'phone',
+          people: [PersonEntry(name: 'Typed on the phone')],
+        ).toMap(),
+        'savedAt': DateTime.utc(2026, 11, 20).millisecondsSinceEpoch,
+      };
+      h.calls.registrationForms[slug] = withServerDraft(
+        const RegistrationDraft(
+          submissionId: 'laptop',
+          people: [PersonEntry(name: 'Typed on the laptop')],
+        ),
+        DateTime.utc(2026, 11, 21),
+      );
+      h.router.go(register);
+      await h.settle(tester);
+      expect(find.text('Typed on the laptop'), findsOneWidget);
+      expect(find.byKey(const Key('$k.saveState.saved')), findsOneWidget);
       await h.finish(tester);
     });
   });

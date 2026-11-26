@@ -18,7 +18,9 @@ import 'package:crewpoint_app/l10n/gen/app_localizations.dart';
 import '../app/features/auth/fake_auth_service.dart';
 import 'package:crewpoint_app/app/features/registration/domain/my_registration.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_form.dart';
+import 'fake_connectivity.dart';
 import 'fake_member_calls.dart';
+import 'memory_draft_store.dart';
 import 'fake_qr.dart';
 
 /// The real router over fake auth, calls and device storage, for the light
@@ -30,6 +32,12 @@ class SignInHarness {
 
   final auth = FakeAuthService();
   final calls = FakeMemberCalls();
+
+  /// The connection, switched off mid-journey by tests (#243).
+  final connectivity = FakeConnectivity();
+
+  /// Drafts on the device, kept across a reload (#243).
+  final drafts = MemoryDraftStore();
   bool onboarded;
   late SharedPreferences prefs;
   late GoRouter router;
@@ -94,6 +102,8 @@ class SignInHarness {
           ),
           memberCallsProvider.overrideWithValue(calls),
           qrRendererProvider.overrideWithValue(FakeQrRenderer()),
+          connectivityProvider.overrideWithValue(connectivity),
+          draftStoreProvider.overrideWithValue(drafts),
           ...overrides,
         ],
         child: MaterialApp.router(

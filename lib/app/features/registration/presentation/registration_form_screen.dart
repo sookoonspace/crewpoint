@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:cloud_functions/cloud_functions.dart';
@@ -123,6 +124,23 @@ class _RegistrationFormState extends ConsumerState<_RegistrationForm> {
   SubmitResult? _result;
   final ScrollController _scroll = ScrollController();
 
+  /// Whether the server holds the latest draft (#243); null before the
+  /// first save is tried.
+  _SaveState? _saveState;
+  Timer? _saveTimer;
+  bool _saving = false;
+  bool _saveAgain = false;
+
+  /// How long typing must pause before the draft goes to the server.
+  static const _quiet = Duration(seconds: 3);
+
+  /// The device's copy of this form: one per event and person (Req 23).
+  String get _draftKey {
+    final auth = ref.read(authProvider);
+    final uid = auth is Authenticated ? auth.user.uid : 'anonymous';
+    return 'registration:${_spec.slug}:$uid';
+  }
+
   RegistrationFormSpec get _spec => widget.spec;
   List<FormStep> get _steps => _spec.steps;
 
@@ -136,16 +154,101 @@ class _RegistrationFormState extends ConsumerState<_RegistrationForm> {
       people: const [PersonEntry()],
       email: email,
     );
+    unawaited(_restore());
   }
 
   @override
   void dispose() {
+    _saveTimer?.cancel();
     _scroll.dispose();
     super.dispose();
   }
 
-  void _edit(RegistrationDraft Function(RegistrationDraft) change) =>
-      setState(() => _draft = change(_draft));
+  /// Reopening the form restores the newer of the device's and the
+  /// server's drafts (#243).
+  Future<void> _restore() async {
+    final device = await ref.read(draftStoreProvider).load(_draftKey);
+    if (!mounted) return;
+    final onDevice = RegistrationDraft.tryParse(device?['draft']);
+    final deviceAt = device?['savedAt'] is num
+        ? DateTime.fromMillisecondsSinceEpoch(
+            (device!['savedAt'] as num).toInt(),
+            isUtc: true,
+          )
+        : null;
+    final onServer = _spec.serverDraft;
+    final serverAt = _spec.serverDraftSavedAt;
+    final serverNewer =
+        onServer != null &&
+        (onDevice == null ||
+            deviceAt == null ||
+            (serverAt != null && serverAt.isAfter(deviceAt)));
+    final restored = serverNewer ? onServer : onDevice;
+    if (restored == null || restored.people.isEmpty) return;
+    setState(() {
+      _draft = restored;
+      _ids
+        ..clear()
+        ..addAll([for (var i = 0; i < restored.people.length; i++) _nextId++]);
+      if (serverNewer) _saveState = _SaveState.saved;
+    });
+  }
+
+  void _edit(RegistrationDraft Function(RegistrationDraft) change) {
+    setState(() => _draft = change(_draft));
+    _changed();
+  }
+
+  /// Keeps the answers on the device at once and on the server once typing
+  /// pauses (Req 23, 24).
+  void _changed() {
+    if (_result != null) return;
+    unawaited(
+      ref.read(draftStoreProvider).save(_draftKey, {
+        'draft': _draft.toMap(),
+        'savedAt': DateTime.now().toUtc().millisecondsSinceEpoch,
+      }),
+    );
+    _saveTimer?.cancel();
+    _saveTimer = Timer(_quiet, () => unawaited(_saveToServer()));
+  }
+
+  Future<void> _saveToServer() async {
+    _saveTimer?.cancel();
+    if (_result != null || _busy) return;
+    if (_saving) {
+      _saveAgain = true;
+      return;
+    }
+    _saving = true;
+    try {
+      if (!await ref.read(connectivityProvider).isOnline()) {
+        if (mounted) setState(() => _saveState = _SaveState.offline);
+        return;
+      }
+      if (!mounted) return;
+      setState(() => _saveState = _SaveState.saving);
+      await ref
+          .read(memberCallsProvider)
+          .saveRegistrationDraft(
+            slug: _spec.slug,
+            draft: _draft.toMap(),
+            savedAt: DateTime.now().toUtc(),
+          );
+      if (mounted && _result == null) {
+        setState(() => _saveState = _SaveState.saved);
+      }
+    } catch (e, st) {
+      log('saveRegistrationDraft failed', error: e, stackTrace: st, name: 'reg');
+      if (mounted) setState(() => _saveState = _SaveState.offline);
+    } finally {
+      _saving = false;
+      if (_saveAgain && mounted) {
+        _saveAgain = false;
+        unawaited(_saveToServer());
+      }
+    }
+  }
 
   void _editPerson(int i, PersonEntry Function(PersonEntry) change) => _edit(
     (d) => d.copyWith(
@@ -159,6 +262,8 @@ class _RegistrationFormState extends ConsumerState<_RegistrationForm> {
   void _go(int step) {
     setState(() => _step = step);
     if (_scroll.hasClients) _scroll.jumpTo(0);
+    // Moving between steps saves at once (Req 24).
+    if (_saveTimer?.isActive ?? false) unawaited(_saveToServer());
   }
 
   List<FormProblem> get _problems => _tried ? _spec.problems(_draft) : const [];
@@ -174,20 +279,34 @@ class _RegistrationFormState extends ConsumerState<_RegistrationForm> {
       _go(_steps.indexWhere((s) => s.id == problems.first.step));
       return;
     }
+    final s = context.strings.registerForm;
     setState(() {
       _busy = true;
       _error = null;
     });
+    // Submitting needs a connection; it is never queued (Req 25).
+    if (!await ref.read(connectivityProvider).isOnline()) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _error = s.offline;
+          _saveState = _SaveState.offline;
+        });
+      }
+      return;
+    }
+    _saveTimer?.cancel();
     try {
       final result = await ref
           .read(memberCallsProvider)
           .submitRegistration(_spec.toSubmitMap(_draft));
       if (!mounted) return;
       setState(() => _result = result);
+      await ref.read(draftStoreProvider).clear(_draftKey);
     } catch (e, st) {
       log('submitRegistration failed', error: e, stackTrace: st, name: 'reg');
       if (!mounted) return;
-      setState(() => _error = context.strings.registerForm.submitFailed);
+      setState(() => _error = s.submitFailed);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -265,6 +384,7 @@ class _RegistrationFormState extends ConsumerState<_RegistrationForm> {
                   key: const Key('$_k.progress'),
                   style: cp.type.bodySmall.copyWith(color: cp.colors.textMuted),
                 ),
+                if (_saveState case final state?) _SaveIndicator(state),
                 if (problems.isNotEmpty)
                   Row(
                     key: const Key('$_k.problems'),
@@ -337,23 +457,29 @@ class _RegistrationFormState extends ConsumerState<_RegistrationForm> {
                   ? s.ageRequired
                   : null,
               onChanged: (change) => _editPerson(i, change),
-              onRemove: () => setState(() {
-                _ids.removeAt(i);
-                _draft = _draft.copyWith(
-                  people: [..._draft.people]..removeAt(i),
-                );
-              }),
+              onRemove: () {
+                setState(() {
+                  _ids.removeAt(i);
+                  _draft = _draft.copyWith(
+                    people: [..._draft.people]..removeAt(i),
+                  );
+                });
+                _changed();
+              },
             ),
           CpButton.secondary(
             key: const Key('$_k.addPerson'),
             label: s.addPerson,
             icon: CpIcons.actionAdd,
-            onPressed: () => setState(() {
-              _ids.add(_nextId++);
-              _draft = _draft.copyWith(
-                people: [..._draft.people, const PersonEntry()],
-              );
-            }),
+            onPressed: () {
+              setState(() {
+                _ids.add(_nextId++);
+                _draft = _draft.copyWith(
+                  people: [..._draft.people, const PersonEntry()],
+                );
+              });
+              _changed();
+            },
           ),
           // A group of one sees no group words (Req 2).
           if (_draft.people.length > 1)
@@ -1087,6 +1213,43 @@ class _ResultView extends StatelessWidget {
           actionKey: const Key('$_k.result.mine'),
           onAction: () => context.go('/e/$slug/registration'),
         ),
+      ),
+    );
+  }
+}
+
+enum _SaveState { saving, saved, offline }
+
+/// "Saved", "Saving" or "Not saved yet: no connection" at the top of the
+/// form (Req 24), with an icon and colour together (Req 71).
+class _SaveIndicator extends StatelessWidget {
+  const _SaveIndicator(this.state);
+
+  final _SaveState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.strings.registerForm;
+    final cp = context.cp;
+    final (icon, color, text) = switch (state) {
+      _SaveState.saved => (CpIcons.statusDone, cp.colors.accent, s.saved),
+      _SaveState.saving => (CpIcons.statusDoing, cp.colors.textMuted, s.saving),
+      _SaveState.offline => (CpIcons.cloudOff, cp.colors.due, s.notSaved),
+    };
+    return Semantics(
+      liveRegion: true,
+      child: Row(
+        key: Key('$_k.saveState.${state.name}'),
+        spacing: cp.space.xs,
+        children: [
+          Icon(icon, size: cp.sizes.iconSm, color: color),
+          Expanded(
+            child: Text(
+              text,
+              style: cp.type.bodySmall.copyWith(color: color),
+            ),
+          ),
+        ],
       ),
     );
   }

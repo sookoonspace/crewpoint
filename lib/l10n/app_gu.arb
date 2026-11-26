@@ -288,5 +288,9 @@
   "myRegistrationNone": "તમે હજી નોંધણી કરી નથી",
   "myRegistrationNoneHelp": "નોંધણી કર્યા પછી તમે તેને અહીં જોશો.",
   "myRegistrationRegister": "નોંધણી કરો",
-  "myRegistrationBackToEvent": "કાર્યક્રમ પર પાછા"
+  "myRegistrationBackToEvent": "કાર્યક્રમ પર પાછા",
+  "registerFormSaved": "સાચવ્યું",
+  "registerFormSaving": "સાચવી રહ્યા છીએ",
+  "registerFormNotSaved": "હજી સાચવ્યું નથી: કનેક્શન નથી",
+  "registerFormOffline": "તમે ઑફલાઇન છો. તમારા જવાબો સચવાયેલા છે; ફરી ઓનલાઇન થાઓ ત્યારે સબમિટ કરો."
 }

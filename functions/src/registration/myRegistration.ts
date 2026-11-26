@@ -48,7 +48,8 @@ export const getMyRegistration = onCall({timeoutSeconds: 30}, async (request) =>
     const settings = registrationOf(event);
     if (settings.slug !== slug) throw new HttpsError("not-found", "We couldn't find this event.");
 
-    let found = asContact.docs[0];
+    // A draft (#243) is not sent yet: the form restores it.
+    let found = asContact.docs.find((d) => d.data().status !== "draft");
     const groupIds: string[] = Array.isArray(member.data()?.groupIds) ? member.data()!.groupIds.slice(0, 10) : [];
     if (!found && groupIds.length > 0) {
       const asAdult = await ref.collection("registrations").where("groupId", "in", groupIds).limit(1).get();

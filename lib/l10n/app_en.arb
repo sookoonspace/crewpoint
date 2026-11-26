@@ -1392,5 +1392,21 @@
   "myRegistrationBackToEvent": "Back to the event",
   "@myRegistrationBackToEvent": {
     "description": "Leads to the event page."
+  },
+  "registerFormSaved": "Saved",
+  "@registerFormSaved": {
+    "description": "The draft is saved on the server."
+  },
+  "registerFormSaving": "Saving",
+  "@registerFormSaving": {
+    "description": "The draft is being saved."
+  },
+  "registerFormNotSaved": "Not saved yet: no connection",
+  "@registerFormNotSaved": {
+    "description": "Offline; answers are kept on the device."
+  },
+  "registerFormOffline": "You're offline. Your answers are kept; submit when you're back online.",
+  "@registerFormOffline": {
+    "description": "Submit tried offline."
   }
 }
