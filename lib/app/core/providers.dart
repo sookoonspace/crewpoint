@@ -10,6 +10,7 @@ import 'package:crewpoint_app/app/features/participants/data/participant_reposit
 import 'package:crewpoint_app/app/features/budget/domain/models/my_balance.dart';
 import 'package:clock/clock.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -205,7 +206,9 @@ final notificationChannelsProvider = Provider<INotificationChannels>(
 /// conversion correctly. Tests inject a [LocalNameDeviceTimezone] or
 /// a recording fake.
 final deviceTimezoneProvider = Provider<IDeviceTimezone>(
-  (_) => const MethodChannelDeviceTimezone(),
+  (_) => kIsWeb
+      ? const BrowserDeviceTimezone()
+      : const MethodChannelDeviceTimezone(),
 );
 
 /// Web VAPID public key — required by `FirebaseMessaging.getToken()` on

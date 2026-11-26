@@ -61,4 +61,22 @@ void main() {
       expect(tz, 'UTC');
     });
   });
+
+  group('BrowserDeviceTimezone (web)', () {
+    test('returns the zone the browser reports', () async {
+      final zone = BrowserDeviceTimezone(read: () => 'America/Chicago');
+      expect(await zone.getLocalTimezone(), 'America/Chicago');
+    });
+
+    test('falls back to "UTC" when the browser reports none', () async {
+      expect(
+        await BrowserDeviceTimezone(read: () => null).getLocalTimezone(),
+        'UTC',
+      );
+      expect(
+        await BrowserDeviceTimezone(read: () => '  ').getLocalTimezone(),
+        'UTC',
+      );
+    });
+  });
 }

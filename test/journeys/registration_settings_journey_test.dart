@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/design/components/components.dart';
 import 'package:crewpoint_app/app/core/env/app_flavor.dart';
+import 'package:crewpoint_app/app/core/format/event_time.dart';
 import 'package:crewpoint_app/app/core/i18n/script_fonts.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_settings.dart';
 
@@ -329,6 +330,33 @@ void main() {
     expect(harness.calls.calls.last, 'claimEventSlug:shah-2027');
     save = tester.widget<CpButton>(find.byKey(const Key('$k.save')));
     expect(save.onPressed, isNull);
+    await robot.finish();
+  });
+
+  testWidgets('a deadline chosen by date closes at 11:59 PM in the event\'s '
+      'zone, not UTC', (tester) async {
+    final robot = await open(tester);
+    await robot.tap(const Key('$k.deadline'));
+    await robot.finishTransition();
+    // The picker opens on this month; choose the 28th.
+    await tester.tap(find.text('28'));
+    await tester.tap(find.text('OK'));
+    await robot.finishTransition();
+    await robot.tap(const Key('$k.save'));
+    await robot.finishTransition();
+
+    final now = DateTime.now();
+    expect(
+      (await saved()).deadline?.millisecondsSinceEpoch,
+      eventLocalToUtc(
+        now.year,
+        now.month,
+        28,
+        'America/Chicago',
+        hour: 23,
+        minute: 59,
+      ).millisecondsSinceEpoch,
+    );
     await robot.finish();
   });
 

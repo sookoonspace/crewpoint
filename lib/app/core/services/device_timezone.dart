@@ -2,6 +2,8 @@ import 'dart:developer';
 
 import 'package:flutter/services.dart';
 
+import 'package:crewpoint_app/app/core/web/browser_time_zone.dart';
+
 /// Resolves the device's IANA timezone identifier
 /// (e.g. `"America/New_York"`). Required server-side for the Phase 5
 /// quiet-hours window — the CF reads it via
@@ -49,6 +51,24 @@ class MethodChannelDeviceTimezone implements IDeviceTimezone {
       );
       return 'UTC';
     }
+  }
+}
+
+/// The web adapter: the browser knows its IANA zone
+/// (`Intl.DateTimeFormat().resolvedOptions().timeZone`), where the method
+/// channel has no native code and fell back to UTC, so events created on
+/// the web started in UTC and their times read hours off (#240 checks).
+/// [read] is the browser call, replaced in tests.
+class BrowserDeviceTimezone implements IDeviceTimezone {
+  const BrowserDeviceTimezone({String? Function() read = browserTimeZone})
+    : _read = read;
+
+  final String? Function() _read;
+
+  @override
+  Future<String> getLocalTimezone() async {
+    final raw = _read()?.trim() ?? '';
+    return raw.isEmpty ? 'UTC' : raw;
   }
 }
 
