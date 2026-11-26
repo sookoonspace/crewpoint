@@ -219,6 +219,15 @@ abstract interface class MemberCalls {
   /// "My registration" for [slug] (#242): the caller's registration, as
   /// its contact or a linked adult, or none.
   Future<MyRegistrationView> getMyRegistration(String slug);
+
+  /// Saves the server copy of a registration form as typed (#243),
+  /// [savedAt] the device's time; returns the time of the copy kept, which
+  /// is newer than [savedAt] when another device saved since.
+  Future<DateTime> saveRegistrationDraft({
+    required String slug,
+    required Map<String, Object?> draft,
+    required DateTime savedAt,
+  });
 }
 
 class FirebaseMemberCalls implements MemberCalls {
@@ -521,4 +530,20 @@ class FirebaseMemberCalls implements MemberCalls {
       MyRegistrationView.fromMap(
         await _call('getMyRegistration', {'slug': slug}),
       );
+  @override
+  Future<DateTime> saveRegistrationDraft({
+    required String slug,
+    required Map<String, Object?> draft,
+    required DateTime savedAt,
+  }) async {
+    final data = await _call('saveRegistrationDraft', {
+      'slug': slug,
+      'draft': draft,
+      'savedAt': savedAt.millisecondsSinceEpoch,
+    });
+    return DateTime.fromMillisecondsSinceEpoch(
+      (data['savedAt'] as num).toInt(),
+      isUtc: true,
+    );
+  }
 }

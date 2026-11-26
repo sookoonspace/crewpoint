@@ -163,6 +163,70 @@ class RegistrationDraft {
   final String email;
   final String phone;
 
+  /// The draft as kept on the device and on the server (#243): plain JSON,
+  /// times in milliseconds since the epoch.
+  Map<String, Object?> toMap() => {
+    'submissionId': submissionId,
+    'groupName': groupName,
+    'email': email,
+    'phone': phone,
+    'groupAnswers': groupAnswers,
+    'people': [
+      for (final p in people)
+        {
+          'name': p.name,
+          'birthDate': p.birthDate,
+          'age': p.age,
+          'answers': p.answers,
+          'arrivalAt': p.arrivalAt?.millisecondsSinceEpoch,
+          'departureAt': p.departureAt?.millisecondsSinceEpoch,
+          'signUps': p.signUps.toList()..sort(),
+        },
+    ],
+  };
+
+  /// A draft from [toMap], or null when [raw] isn't one.
+  static RegistrationDraft? tryParse(Object? raw) {
+    if (raw is! Map) return null;
+    final id = raw['submissionId'];
+    final people = raw['people'];
+    if (id is! String || id.isEmpty || people is! List) return null;
+    DateTime? time(Object? v) => v is num
+        ? DateTime.fromMillisecondsSinceEpoch(v.toInt(), isUtc: true)
+        : null;
+    String text(Object? v) => v is String ? v : '';
+    Map<String, Object?> answers(Object? v) =>
+        v is Map ? {for (final e in v.entries) '${e.key}': e.value} : {};
+    return RegistrationDraft(
+      submissionId: id,
+      groupName: text(raw['groupName']),
+      email: text(raw['email']),
+      phone: text(raw['phone']),
+      groupAnswers: answers(raw['groupAnswers']),
+      people: [
+        for (final p in people)
+          if (p is Map)
+            PersonEntry(
+              name: text(p['name']),
+              birthDate: p['birthDate'] is String
+                  ? p['birthDate'] as String
+                  : null,
+              age: (p['age'] as num?)?.toInt(),
+              answers: answers(p['answers']),
+              arrivalAt: time(p['arrivalAt']),
+              departureAt: time(p['departureAt']),
+              signUps: {
+                for (final s in (p['signUps'] as List?) ?? const [])
+                  if (s is String) s,
+              },
+            ),
+      ],
+    );
+  }
+
+  factory RegistrationDraft.fromMap(Map<String, Object?> map) =>
+      tryParse(map)!;
+
   RegistrationDraft copyWith({
     List<PersonEntry>? people,
     Map<String, Object?>? groupAnswers,
@@ -206,6 +270,8 @@ class RegistrationFormSpec {
     this.choices = const [],
     this.labels = const {},
     this.registration,
+    this.serverDraft,
+    this.serverDraftSavedAt,
   });
 
   factory RegistrationFormSpec.fromMap(Map<String, Object?> data) {
@@ -215,6 +281,7 @@ class RegistrationFormSpec {
     final blocks = data['blocks'];
     final conditions = data['conditions'];
     final existing = data['registration'];
+    final draft = data['draft'];
     return RegistrationFormSpec(
       slug: data['slug'] as String? ?? '',
       title: data['title'] as String? ?? '',
@@ -273,6 +340,8 @@ class RegistrationFormSpec {
               waitlistPosition: (existing['waitlistPosition'] as num?)?.toInt(),
             )
           : null,
+      serverDraft: draft is Map ? RegistrationDraft.tryParse(draft['data']) : null,
+      serverDraftSavedAt: draft is Map ? time(draft['savedAt']) : null,
     );
   }
 
@@ -292,6 +361,11 @@ class RegistrationFormSpec {
   final List<List<ChoiceSession>> choices;
   final Map<String, dynamic> labels;
   final ExistingRegistration? registration;
+
+  /// The server's copy of the form as typed (#243), and when the device
+  /// that typed it saved it.
+  final RegistrationDraft? serverDraft;
+  final DateTime? serverDraftSavedAt;
 
   bool has(RegistrationBlock block) => blocks.contains(block);
 

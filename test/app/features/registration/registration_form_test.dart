@@ -253,4 +253,50 @@ void main() {
       ],
     });
   });
+
+  test('#243: a draft survives a trip to storage and back, submission ID '
+      'included', () {
+    final draft = RegistrationDraft(
+      submissionId: 's1',
+      groupName: 'Patel family',
+      email: 'asha@example.com',
+      phone: '312 555 0100',
+      groupAnswers: const {'hotel': 'Hilton'},
+      people: [
+        PersonEntry(
+          name: 'Asha Patel',
+          birthDate: '1980-03-01',
+          answers: const {
+            'diet': 'Jain',
+            'kids': true,
+            'days': ['Fri', 'Sat'],
+          },
+          arrivalAt: DateTime.utc(2027, 7, 16, 5),
+          departureAt: DateTime.utc(2027, 7, 19, 4, 59),
+          signUps: const {'park'},
+        ),
+        const PersonEntry(name: 'Dev', age: 9),
+      ],
+    );
+    final back = RegistrationDraft.fromMap(draft.toMap());
+    expect(back.submissionId, 's1');
+    expect(back.groupName, 'Patel family');
+    expect(back.email, 'asha@example.com');
+    expect(back.phone, '312 555 0100');
+    expect(back.groupAnswers, {'hotel': 'Hilton'});
+    expect(back.people.first.name, 'Asha Patel');
+    expect(back.people.first.birthDate, '1980-03-01');
+    expect(back.people.first.answers, {
+      'diet': 'Jain',
+      'kids': true,
+      'days': ['Fri', 'Sat'],
+    });
+    expect(back.people.first.arrivalAt, DateTime.utc(2027, 7, 16, 5));
+    expect(back.people.first.departureAt, DateTime.utc(2027, 7, 19, 4, 59));
+    expect(back.people.first.signUps, {'park'});
+    expect(back.people.last.age, 9);
+    // Something unreadable gives nothing, rather than a broken form.
+    expect(RegistrationDraft.tryParse('nope'), isNull);
+    expect(RegistrationDraft.tryParse(const {'people': 7}), isNull);
+  });
 }

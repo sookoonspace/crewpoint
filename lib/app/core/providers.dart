@@ -2,6 +2,7 @@ import 'dart:developer' show log;
 import 'dart:typed_data';
 import 'dart:convert';
 import 'package:crewpoint_app/app/core/services/connectivity.dart';
+import 'package:crewpoint_app/app/core/services/draft_store.dart';
 import 'package:crewpoint_app/app/core/services/qr_renderer.dart';
 import 'package:crewpoint_app/app/core/services/file_picker_service.dart';
 import 'package:crewpoint_app/app/features/dashboard/data/event_cover_service.dart';
@@ -766,6 +767,12 @@ final pageReloaderProvider = Provider<IPageReloader>(
 
 /// Whether the server can be reached now, for saves that must not queue
 /// offline (Spec #186 Req 34).
+/// Answers kept on the device as they are typed (#243): SharedPreferences,
+/// which is browser storage on the web and the app's storage on phones.
+final draftStoreProvider = Provider<IDraftStore>(
+  (ref) => SharedPreferencesDraftStore(ref.watch(sharedPreferencesProvider)),
+);
+
 final connectivityProvider = Provider<IConnectivity>(
   (ref) => FirestoreConnectivity(ref.watch(firestoreProvider)),
 );

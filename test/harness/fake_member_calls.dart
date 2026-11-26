@@ -674,6 +674,25 @@ class FakeMemberCalls implements MemberCalls {
     return view;
   }
 
+  /// Server drafts by slug (#243), as `saveRegistrationDraft` keeps them:
+  /// an older copy never replaces a newer one.
+  final Map<String, ({Map<String, Object?> draft, DateTime savedAt})>
+  savedDrafts = {};
+
+  @override
+  Future<DateTime> saveRegistrationDraft({
+    required String slug,
+    required Map<String, Object?> draft,
+    required DateTime savedAt,
+  }) async {
+    calls.add('saveRegistrationDraft:$slug');
+    _maybeFail();
+    final kept = savedDrafts[slug];
+    if (kept != null && kept.savedAt.isAfter(savedAt)) return kept.savedAt;
+    savedDrafts[slug] = (draft: draft, savedAt: savedAt);
+    return savedAt;
+  }
+
   /// Answers as `submitRegistration` does: a repeat with the same
   /// `submissionId` returns the first result and adds nothing.
   @override

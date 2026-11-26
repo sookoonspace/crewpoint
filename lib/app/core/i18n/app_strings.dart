@@ -5772,6 +5772,10 @@ class RegisterFormStrings {
   String get alreadyTitle => _l.registerFormAlreadyTitle;
   String get alreadyBody => _l.registerFormAlreadyBody;
   String get you => _l.registerFormYou;
+  String get saved => _l.registerFormSaved;
+  String get saving => _l.registerFormSaving;
+  String get notSaved => _l.registerFormNotSaved;
+  String get offline => _l.registerFormOffline;
 }
 
 /// "My registration" (Spec #233 Req 9, 19, 35; #242), translated (ARB).

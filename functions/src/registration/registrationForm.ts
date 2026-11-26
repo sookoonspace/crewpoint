@@ -99,7 +99,9 @@ export const getRegistrationForm = onCall({timeoutSeconds: 30}, async (request) 
         const s = byId.get(id)!;
         return {id, title: String(s.title ?? ""), startAt: s.startAt.toMillis(), endAt: millis(s.endAt)};
       })) : [];
-    const registration = mine.docs[0]?.data();
+    const mineData = mine.docs[0]?.data();
+    const isDraft = mineData?.status === "draft";
+    const registration = isDraft ? undefined : mineData;
 
     return {
       slug,
@@ -119,6 +121,8 @@ export const getRegistrationForm = onCall({timeoutSeconds: 30}, async (request) 
       labels: event.labels ?? {},
       registration: registration ?
         {status: registration.status, waitlistPosition: registration.waitlistPosition ?? null} : null,
+      // The server copy of the form as typed (#243), to restore when newer.
+      draft: isDraft ? {data: mineData!.draft ?? {}, savedAt: mineData!.draftSavedAt ?? 0} : null,
     };
   });
 });
