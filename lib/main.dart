@@ -138,8 +138,11 @@ Future<void> _start() async {
   );
   await FirebaseService.initialize(flavor: AppFlavor.current);
   // Public calls require App Check (Spec #233 Req 13a). Only here, so tests
-  // never start it.
-  await AppCheckStarter.start();
+  // never start it. Not awaited: on the web it loads Google's reCAPTCHA
+  // script, and nothing at startup needs a token (the event page shows the
+  // first page's details), so the app doesn't wait for it (#240 speed
+  // budget). AppCheckStarter logs its own failures.
+  unawaited(AppCheckStarter.start());
   // Background isolate handler must be registered before the first FCM
   // event lands. Register early so a cold-start tap into a closed app
   // resolves correctly. No-op on web (the JS SDK handles background via
