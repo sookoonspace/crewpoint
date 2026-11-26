@@ -94,7 +94,7 @@ void main() {
       await h.type(tester, const Key('auth.light.code'), '123456');
       await h.tap(tester, const Key('auth.light.confirmCode'));
       expect(h.location, register);
-      expect(find.byKey(const Key('events.page.registerSoon')), findsOneWidget);
+      expect(find.byKey(const Key('registration.form.progress')), findsOneWidget);
       await h.finish(tester);
     });
 
@@ -121,7 +121,7 @@ void main() {
         signedInAs: const AuthUser(uid: 'asha', email: 'asha@example.com'),
       );
       await h.pump(tester, register);
-      expect(find.byKey(const Key('events.page.registerSoon')), findsOneWidget);
+      expect(find.byKey(const Key('registration.form.progress')), findsOneWidget);
       await h.finish(tester);
     });
 
@@ -151,7 +151,7 @@ void main() {
       expect(h.location, register);
       expect(h.auth.currentUser?.email, 'asha@example.com');
       expect(h.prefs.getString(pendingKey), isNull);
-      expect(find.byKey(const Key('events.page.registerSoon')), findsOneWidget);
+      expect(find.byKey(const Key('registration.form.progress')), findsOneWidget);
       await h.finish(tester);
     });
 
@@ -317,7 +317,7 @@ void main() {
         signedInAs: const AuthUser(uid: 'asha', email: 'asha@example.com'),
       );
       await h.pump(tester, register);
-      expect(find.byKey(const Key('events.page.registerSoon')), findsOneWidget);
+      expect(find.byKey(const Key('registration.form.progress')), findsOneWidget);
       h.router.go('/dashboard');
       await h.settle(tester);
       expect(h.location, startsWith('/onboarding'));

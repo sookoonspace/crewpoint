@@ -5,6 +5,7 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_acces
 import 'package:crewpoint_app/app/features/dashboard/domain/models/invite.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
 import 'package:crewpoint_app/app/features/registration/domain/public_event.dart';
+import 'package:crewpoint_app/app/features/registration/domain/registration_form.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_settings.dart';
 
 /// Stands in for the member and role callables. With a [firestore], it writes
@@ -629,6 +630,46 @@ class FakeMemberCalls implements MemberCalls {
       );
     }
     return page;
+  }
+
+  /// Registration forms by slug (#242); any other slug is not found.
+  final Map<String, RegistrationFormSpec> registrationForms = {};
+
+  /// What the next new submission decides; `submitted` unless set.
+  SubmitResult? nextSubmitResult;
+
+  /// Every new submission's payload, in order; repeats are not added.
+  final List<Map<String, Object?>> submissions = [];
+  final Map<String, SubmitResult> _submitted = {};
+
+  @override
+  Future<RegistrationFormSpec> getRegistrationForm(String slug) async {
+    calls.add('getRegistrationForm:$slug');
+    _maybeFail();
+    final form = registrationForms[slug.toLowerCase()];
+    if (form == null) {
+      throw FirebaseFunctionsException(
+        code: 'not-found',
+        message: "We couldn't find this event.",
+      );
+    }
+    return form;
+  }
+
+  /// Answers as `submitRegistration` does: a repeat with the same
+  /// `submissionId` returns the first result and adds nothing.
+  @override
+  Future<SubmitResult> submitRegistration(Map<String, Object?> payload) async {
+    final id = payload['submissionId'] as String;
+    calls.add('submitRegistration:$id');
+    _maybeFail();
+    final first = _submitted[id];
+    if (first != null) return first;
+    submissions.add(payload);
+    final result =
+        nextSubmitResult ??
+        SubmitResult(registrationId: 'reg-$id', status: 'submitted');
+    return _submitted[id] = result;
   }
 
   /// Link names other events hold, refused as the server does.

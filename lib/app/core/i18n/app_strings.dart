@@ -44,6 +44,7 @@ abstract class AppStrings {
   RegistrationSettingsStrings get registrationSettings;
   EventPageStrings get eventPage;
   LightSignInStrings get lightSignIn;
+  RegisterFormStrings get registerForm;
   MemberPickerStrings get memberPicker;
   ScheduleStrings get schedule;
   AgendaStrings get agenda;
@@ -805,6 +806,9 @@ class _LocalizedStrings extends _EnglishStrings {
 
   @override
   LightSignInStrings get lightSignIn => LightSignInStrings(_l);
+
+  @override
+  RegisterFormStrings get registerForm => RegisterFormStrings(_l);
 }
 
 /// The language choice (Req 56).
@@ -912,6 +916,10 @@ class _EnglishStrings extends AppStrings {
   @override
   LightSignInStrings get lightSignIn =>
       LightSignInStrings(lookupAppLocalizations(const Locale('en')));
+
+  @override
+  RegisterFormStrings get registerForm =>
+      RegisterFormStrings(lookupAppLocalizations(const Locale('en')));
 
   @override
   MemberPickerStrings get memberPicker => const _EnglishMemberPickerStrings();
@@ -5667,4 +5675,69 @@ class LightSignInStrings {
   String get sendNew => _l.lightSignInSendNew;
   String get myRegistrationSoon => _l.lightSignInMyRegistrationSoon;
   String get myRegistrationSoonHelp => _l.lightSignInMyRegistrationSoonHelp;
+}
+
+/// The registration form, review and result (Spec #233 Req 17-21, 25, 33;
+/// #242), translated (ARB).
+class RegisterFormStrings {
+  const RegisterFormStrings(this._l);
+
+  final AppLocalizations _l;
+
+  String stepOf(int step, int total) => _l.registerFormStepOf(step, total);
+  String get peopleTitle => _l.registerFormPeopleTitle;
+  String groupName(String group) => _l.registerFormGroupName(group);
+  String person(int number) => _l.registerFormPerson(number);
+  String get name => _l.registerFormName;
+  String get birthDate => _l.registerFormBirthDate;
+  String get birthDateHelp => _l.registerFormBirthDateHelp;
+  String get age => _l.registerFormAge;
+  String get chooseDate => _l.registerFormChooseDate;
+  String get addPerson => _l.registerFormAddPerson;
+  String get removePerson => _l.registerFormRemovePerson;
+  String get stayTitle => _l.registerFormStayTitle;
+  String get stayHelp => _l.registerFormStayHelp;
+  String get arriving => _l.registerFormArriving;
+  String get leaving => _l.registerFormLeaving;
+  String get sessionsTitle => _l.registerFormSessionsTitle;
+  String get eitherOr => _l.registerFormEitherOr;
+  String get neither => _l.registerFormNeither;
+  String get contactTitle => _l.registerFormContactTitle;
+  String get email => _l.registerFormEmail;
+  String get emailHelp => _l.registerFormEmailHelp;
+  String get phone => _l.registerFormPhone;
+  String get reviewTitle => _l.registerFormReviewTitle;
+  String get reviewHelp => _l.registerFormReviewHelp;
+  String get edit => _l.registerFormEdit;
+  String get notAnswered => _l.registerFormNotAnswered;
+  String get yes => _l.registerFormYes;
+  String get no => _l.registerFormNo;
+  String get back => _l.registerFormBack;
+  String get next => _l.registerFormNext;
+  String get submit => _l.registerFormSubmit;
+  String problems(int count) => _l.registerFormProblems(count);
+  String get nameRequired => _l.registerFormNameRequired;
+  String get birthDateRequired => _l.registerFormBirthDateRequired;
+  String get ageRequired => _l.registerFormAgeRequired;
+  String get leavingBeforeArriving => _l.registerFormLeavingBeforeArriving;
+  String get oneAtATime => _l.registerFormOneAtATime;
+  String get emailInvalid => _l.registerFormEmailInvalid;
+  String get noPeople => _l.registerFormNoPeople;
+  String get answerRequired => _l.registerFormAnswerRequired;
+  String get loading => _l.registerFormLoading;
+  String get failed => _l.registerFormFailed;
+  String get failedHelp => _l.registerFormFailedHelp;
+  String get retry => _l.registerFormRetry;
+  String get submitFailed => _l.registerFormSubmitFailed;
+  String get registeredTitle => _l.registerFormRegisteredTitle;
+  String registeredBody(String title) => _l.registerFormRegisteredBody(title);
+  String get pendingTitle => _l.registerFormPendingTitle;
+  String get pendingBody => _l.registerFormPendingBody;
+  String waitlistedTitle(int position) =>
+      _l.registerFormWaitlistedTitle(position);
+  String get waitlistedBody => _l.registerFormWaitlistedBody;
+  String get seeMine => _l.registerFormSeeMine;
+  String get alreadyTitle => _l.registerFormAlreadyTitle;
+  String get alreadyBody => _l.registerFormAlreadyBody;
+  String get you => _l.registerFormYou;
 }

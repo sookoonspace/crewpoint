@@ -53,4 +53,5 @@ export {onMailQueued} from "./mail/send";
 export {claimEventSlug, saveRegistrationSettings} from "./registration/registrationSettings";
 export {eventPageHtml, getEventPage} from "./registration/eventPage";
 export {submitRegistration} from "./registration/submitRegistration";
+export {getRegistrationForm} from "./registration/registrationForm";
 export {sendSignInLink} from "./account/signInLink";

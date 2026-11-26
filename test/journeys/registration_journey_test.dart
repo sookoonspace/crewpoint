@@ -1,0 +1,287 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:crewpoint_app/app/core/services/i_auth_service.dart';
+import 'package:crewpoint_app/app/features/participants/domain/models/category.dart';
+import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
+import 'package:crewpoint_app/app/features/registration/domain/registration_form.dart';
+import 'package:crewpoint_app/app/features/registration/domain/registration_settings.dart';
+
+import '../harness/sign_in_harness.dart';
+import '../robots/registration_robot.dart';
+
+/// #242 (Spec #233 Req 2, 16-21, 25, 33, User Story 1): a family registers
+/// on an open event from its page, signing in by email link, through the
+/// form's steps, the review and Submit, to the confirmation; and a full
+/// event puts the whole group on the waitlist. The server's side is in
+/// `functions/test/registration/submitRegistration.test.ts`.
+void main() {
+  const slug = SignInHarness.slug;
+  const k = RegistrationRobot.k;
+  const register = '/e/$slug/register';
+
+  final form = RegistrationFormSpec(
+    slug: slug,
+    title: 'Convention 2027',
+    timeZone: 'America/Chicago',
+    startDate: DateTime.utc(2027, 7, 16),
+    endDate: DateTime.utc(2027, 7, 18),
+    dateOnly: true,
+    blocks: const {
+      RegistrationBlock.people,
+      RegistrationBlock.stay,
+      RegistrationBlock.sessionChoices,
+      RegistrationBlock.contact,
+    },
+    sections: const [
+      RegistrationSection(
+        id: 'food',
+        name: LocalText('Food'),
+        fieldIds: ['diet', 'kids', 'hotel'],
+      ),
+    ],
+    conditions: const {'kids': CategoryCondition('child')},
+    categories: const [
+      EventCategory(id: 'child', name: 'Child', maxAge: 17, isChild: true),
+      EventCategory(id: 'adult', name: 'Adult', minAge: 18),
+    ],
+    fields: const [
+      CustomField(
+        id: 'diet',
+        label: 'Diet',
+        type: FieldType.singleChoice,
+        options: ['Veg', 'Jain'],
+        required: true,
+      ),
+      CustomField(
+        id: 'kids',
+        label: 'Kids activities',
+        type: FieldType.yesNo,
+        required: true,
+      ),
+      CustomField(
+        id: 'hotel',
+        label: 'Hotel',
+        type: FieldType.singleChoice,
+        options: ['Hilton', 'Marriott'],
+        scope: FieldScope.group,
+      ),
+    ],
+    choices: [
+      [
+        ChoiceSession(
+          id: 'park',
+          title: 'Park meal',
+          startAt: DateTime.utc(2027, 7, 17, 17),
+        ),
+        ChoiceSession(
+          id: 'lunch',
+          title: 'Hotel lunch',
+          startAt: DateTime.utc(2027, 7, 17, 17, 30),
+        ),
+      ],
+    ],
+    labels: const {
+      'group': {'one': 'Family', 'other': 'Families'},
+    },
+  );
+
+  Future<(SignInHarness, RegistrationRobot)> open(
+    WidgetTester tester, {
+    AuthUser? signedInAs = const AuthUser(
+      uid: 'asha',
+      email: 'asha@example.com',
+    ),
+    RegistrationFormSpec? spec,
+    Size size = const Size(400, 2400),
+    bool dark = false,
+    Locale? locale,
+  }) async {
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final h = SignInHarness(signedInAs: signedInAs);
+    // From the event page, so the form below is the one Register loads.
+    await h.pump(tester, '/e/$slug', dark: dark, locale: locale);
+    h.calls.registrationForms[slug] = spec ?? form;
+    if (signedInAs != null) {
+      h.router.go(register);
+      await h.settle(tester);
+    }
+    return (h, RegistrationRobot(tester, h));
+  }
+
+  /// Fills the whole form for Asha and her son Dev, ending on the review.
+  Future<void> fillForm(RegistrationRobot r) async {
+    expect(r.progress, 'Step 1 of 6');
+    await r.name(0, 'Asha Patel');
+    await r.birthDate(0, '03/01/1980');
+    await r.addPerson();
+    await r.name(1, 'Dev Patel');
+    await r.birthDate(1, '05/09/2016');
+    // Two people: the group gets a name, in the event's word.
+    expect(find.text('Family name'), findsOneWidget);
+    await r.type(const Key('$k.groupName'), 'Patel family');
+    await r.next();
+
+    expect(r.progress, 'Step 2 of 6');
+    await r.chooseForGroup('hotel', 'Hilton');
+    await r.choose(0, 'diet', 'Jain');
+    await r.choose(1, 'diet', 'Veg');
+    // Kids activities is asked of Dev, a child, and not of Asha (Req 18).
+    expect(find.byKey(const Key('$k.answer.0.kids')), findsNothing);
+    await r.choose(1, 'kids', 'yes');
+    await r.next();
+
+    expect(r.progress, 'Step 3 of 6');
+    await r.next();
+
+    expect(r.progress, 'Step 4 of 6');
+    // The park meal and the hotel lunch are one either/or choice (W-01).
+    expect(
+      find.text('At the same time: choose one, or neither.'),
+      findsNWidgets(2),
+    );
+    await r.session(0, 'park');
+    await r.session(1, 'lunch');
+    await r.next();
+
+    expect(r.progress, 'Step 5 of 6');
+    await r.type(const Key('$k.phone'), '312 555 0100');
+    await r.next();
+    expect(r.progress, 'Step 6 of 6');
+  }
+
+  testWidgets('User Story 1: a family registers from the event page, '
+      'signing in by email link, through review to the confirmation', (
+    tester,
+  ) async {
+    final (h, r) = await open(tester, signedInAs: null);
+    await r.tap(const Key('events.page.register'));
+    // Signed out: the light sign-in, then the email link opened here.
+    await r.type(const Key('auth.light.email'), 'asha@example.com');
+    await r.tap(const Key('auth.light.sendLink'));
+    h.auth.linkEmails['ok1'] = 'asha@example.com';
+    h.router.go(
+      '/auth/link?to=${Uri.encodeComponent(register)}&apiKey=k'
+      '&oobCode=ok1&mode=signIn&lang=en',
+    );
+    await h.settle(tester);
+    // Let the page transition back to the form finish.
+    await tester.pump(const Duration(seconds: 1));
+    expect(h.location, register);
+
+    await fillForm(r);
+    // The review lists every person and answer, with Edit per step.
+    expect(find.text('Asha Patel'), findsWidgets);
+    expect(find.text('Dev Patel: Kids activities'), findsOneWidget);
+    expect(find.text('Park meal'), findsOneWidget);
+    expect(find.text('Hotel lunch'), findsOneWidget);
+    await r.tap(const Key('$k.review.people.edit'));
+    expect(r.progress, 'Step 1 of 6');
+    for (var i = 0; i < 5; i++) {
+      await r.next();
+    }
+
+    await r.submit();
+    // A double tap is one submission (Req 25).
+    expect(h.calls.submissions, hasLength(1));
+    final sent = h.calls.submissions.single;
+    expect(sent['groupName'], 'Patel family');
+    expect(sent['groupAnswers'], {'hotel': 'Hilton'});
+    expect(sent['contact'], {
+      'email': 'asha@example.com',
+      'phone': '312 555 0100',
+    });
+    final people = (sent['people']! as List).cast<Map<String, Object?>>();
+    expect(people.first, {
+      'name': 'Asha Patel',
+      'birthDate': '1980-03-01',
+      'answers': {'diet': 'Jain'},
+      'signUps': ['park'],
+    });
+    expect(people.last['answers'], {'diet': 'Veg', 'kids': true});
+
+    expect(find.byKey(const Key('$k.result.submitted')), findsOneWidget);
+    expect(find.text("You're registered"), findsOneWidget);
+    await r.tap(const Key('$k.result.mine'));
+    expect(h.location, '/e/$slug/registration');
+    await h.finish(tester);
+  });
+
+  testWidgets('Req 21: problems are checked on Submit, beside their fields '
+      'with a count at the top, and nothing is sent', (tester) async {
+    final (h, r) = await open(tester);
+    for (var i = 0; i < 5; i++) {
+      await r.next();
+    }
+    await r.submit();
+    expect(h.calls.submissions, isEmpty);
+    // Back to the first step with a problem: People.
+    expect(r.progress, 'Step 1 of 6');
+    expect(find.text('3 things to fix'), findsOneWidget);
+    expect(find.text('Enter a name.'), findsOneWidget);
+    expect(find.text('Enter a birth date.'), findsOneWidget);
+    await h.finish(tester);
+  });
+
+  testWidgets('Req 2: someone registering alone sees no group words', (
+    tester,
+  ) async {
+    final (h, _) = await open(tester);
+    expect(find.text('Family name'), findsNothing);
+    await h.finish(tester);
+  });
+
+  testWidgets('Req 33: a full event puts the whole group on the waitlist, '
+      'with its number', (tester) async {
+    final (h, r) = await open(tester);
+    h.calls.nextSubmitResult = const SubmitResult(
+      registrationId: 'r9',
+      status: 'waitlisted',
+      waitlistPosition: 4,
+    );
+    await fillForm(r);
+    await r.submit();
+    expect(find.byKey(const Key('$k.result.waitlisted')), findsOneWidget);
+    expect(find.text("You're on the waitlist, number 4"), findsOneWidget);
+    await h.finish(tester);
+  });
+
+  testWidgets('someone who has already registered is sent to their '
+      'registration', (tester) async {
+    final (h, _) = await open(
+      tester,
+      spec: RegistrationFormSpec(
+        slug: slug,
+        title: form.title,
+        timeZone: form.timeZone,
+        registration: const ExistingRegistration(status: 'submitted'),
+      ),
+    );
+    expect(find.byKey(const Key('$k.already')), findsOneWidget);
+    await h.finish(tester);
+  });
+
+  for (final locale in [null, const Locale('gu')]) {
+    testWidgets('Req 71: every step fits a 320 px phone at 200% text in dark '
+        'mode (${locale?.languageCode ?? 'en'})', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final (h, r) = await open(
+        tester,
+        size: const Size(320, 2400),
+        dark: true,
+        locale: locale,
+      );
+      await r.addPerson();
+      for (var step = 0; step < 6; step++) {
+        expect(tester.takeException(), isNull, reason: 'step ${step + 1}');
+        if (step < 5) await r.next();
+      }
+      await r.submit();
+      expect(tester.takeException(), isNull, reason: 'problems shown');
+      await h.finish(tester);
+    });
+  }
+}

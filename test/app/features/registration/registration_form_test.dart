@@ -1,0 +1,256 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:crewpoint_app/app/features/registration/domain/registration_form.dart';
+
+/// Spec #233 Req 2, 17, 18, 20, 21 (#242): the registration form's steps
+/// and the checks made on Submit, before anything is sent. The server
+/// checks the same again (`submitRegistration`).
+void main() {
+  Map<String, Object?> formMap({
+    Map<String, Object?> blocks = const {},
+    List<Object?>? choices,
+  }) => {
+    'slug': 'convention-2027',
+    'title': 'Convention 2027',
+    'timeZone': 'America/Chicago',
+    'startDate': DateTime.utc(2027, 7, 16).millisecondsSinceEpoch,
+    'endDate': DateTime.utc(2027, 7, 18).millisecondsSinceEpoch,
+    'dateOnly': true,
+    'deadline': null,
+    'review': false,
+    'blocks': {
+      'people': true,
+      'ageOnly': false,
+      'stay': true,
+      'sessionChoices': true,
+      'waivers': false,
+      'contact': true,
+      ...blocks,
+    },
+    'sections': [
+      {
+        'id': 'food',
+        'name': {'en': 'Food'},
+        'fieldIds': ['diet', 'kids', 'hotel'],
+      },
+    ],
+    'conditions': {
+      'kids': {'categoryId': 'child'},
+    },
+    'categories': [
+      {'id': 'child', 'name': 'Child', 'maxAge': 17, 'isChild': true},
+      {'id': 'adult', 'name': 'Adult', 'minAge': 18},
+    ],
+    'fields': [
+      {
+        'id': 'diet',
+        'label': 'Diet',
+        'type': 'singleChoice',
+        'options': ['Veg', 'Jain'],
+        'required': true,
+        'scope': 'participant',
+        'visibility': 'standard',
+      },
+      {
+        'id': 'kids',
+        'label': 'Kids activities',
+        'type': 'yesNo',
+        'options': <String>[],
+        'required': true,
+        'scope': 'participant',
+        'visibility': 'standard',
+      },
+      {
+        'id': 'hotel',
+        'label': 'Hotel',
+        'type': 'text',
+        'options': <String>[],
+        'required': true,
+        'scope': 'group',
+        'visibility': 'standard',
+      },
+    ],
+    'choices':
+        choices ??
+        [
+          [
+            {
+              'id': 'park',
+              'title': 'Park meal',
+              'startAt': DateTime.utc(2027, 7, 17, 17).millisecondsSinceEpoch,
+              'endAt': null,
+            },
+            {
+              'id': 'lunch',
+              'title': 'Hotel lunch',
+              'startAt': DateTime.utc(
+                2027,
+                7,
+                17,
+                17,
+                30,
+              ).millisecondsSinceEpoch,
+              'endAt': null,
+            },
+          ],
+        ],
+    'labels': <String, Object?>{},
+    'registration': null,
+  };
+
+  final spec = RegistrationFormSpec.fromMap(formMap());
+
+  test('reads the form the server sends', () {
+    expect(spec.title, 'Convention 2027');
+    expect(spec.startDate, DateTime.utc(2027, 7, 16));
+    expect(spec.fields.map((f) => f.id), ['diet', 'kids', 'hotel']);
+    expect(spec.choices.single.map((s) => s.id), ['park', 'lunch']);
+    expect(spec.registration, isNull);
+  });
+
+  test(
+    'steps follow the switched-on blocks, sections in order, then review',
+    () {
+      expect(spec.steps.map((s) => s.id), [
+        'people',
+        'section:food',
+        'stay',
+        'sessions',
+        'contact',
+        'review',
+      ]);
+      final bare = RegistrationFormSpec.fromMap(
+        formMap(
+          blocks: {'stay': false, 'sessionChoices': false, 'contact': false},
+          choices: const [],
+        ),
+      );
+      expect(bare.steps.map((s) => s.id), ['people', 'section:food', 'review']);
+    },
+  );
+
+  test("a person's category comes from their birth date on the first day", () {
+    expect(
+      spec.categoryOf(const PersonEntry(birthDate: '2016-05-09'))?.id,
+      'child',
+    );
+    expect(
+      spec.categoryOf(const PersonEntry(birthDate: '1980-03-01'))?.id,
+      'adult',
+    );
+    expect(spec.categoryOf(const PersonEntry()), isNull);
+    final ages = RegistrationFormSpec.fromMap(
+      formMap(blocks: {'ageOnly': true}),
+    );
+    expect(ages.categoryOf(const PersonEntry(age: 9))?.id, 'child');
+  });
+
+  group('problems on Submit', () {
+    const asha = PersonEntry(
+      name: 'Asha Patel',
+      birthDate: '1980-03-01',
+      answers: {'diet': 'Jain'},
+    );
+    const dev = PersonEntry(
+      name: 'Dev Patel',
+      birthDate: '2016-05-09',
+      answers: {'diet': 'Veg', 'kids': true},
+    );
+    RegistrationDraft draft({
+      List<PersonEntry> people = const [asha, dev],
+      Map<String, Object?> groupAnswers = const {'hotel': 'Hilton'},
+      String email = 'asha@example.com',
+    }) => RegistrationDraft(
+      submissionId: 's1',
+      people: people,
+      groupAnswers: groupAnswers,
+      email: email,
+    );
+
+    test('a complete form has none', () {
+      expect(spec.problems(draft()), isEmpty);
+    });
+
+    test('names, birth dates and required questions shown to someone', () {
+      final found = spec.problems(
+        draft(
+          people: [
+            const PersonEntry(name: ' ', answers: {'diet': 'Veg'}),
+            dev.copyWith(answers: {'diet': 'Veg'}),
+          ],
+          groupAnswers: const {},
+        ),
+      );
+      expect(found, [
+        const FormProblem('people', 'name', person: 0),
+        const FormProblem('people', 'birthDate', person: 0),
+        const FormProblem('section:food', 'kids', person: 1),
+        const FormProblem('section:food', 'hotel'),
+      ]);
+    });
+
+    test('a hidden question is never required', () {
+      // Kids activities is shown to children only; Asha is an adult.
+      expect(spec.problems(draft(people: const [asha])), isEmpty);
+    });
+
+    test('at least one person, and an email for the confirmation', () {
+      expect(spec.problems(draft(people: const [])), [
+        const FormProblem('people', 'noPeople'),
+      ]);
+      expect(spec.problems(draft(email: 'nope')), [
+        const FormProblem('contact', 'email'),
+      ]);
+    });
+
+    test('one side of an either/or only, and leaving before arriving', () {
+      final found = spec.problems(
+        draft(
+          people: [
+            asha.copyWith(
+              signUps: {'park', 'lunch'},
+              arrivalAt: DateTime.utc(2027, 7, 17),
+              departureAt: DateTime.utc(2027, 7, 16),
+            ),
+          ],
+        ),
+      );
+      expect(found, [
+        const FormProblem('stay', 'departureAt', person: 0),
+        const FormProblem('sessions', 'signUps', person: 0),
+      ]);
+    });
+  });
+
+  test('what is sent drops answers a condition hides', () {
+    const asha = PersonEntry(
+      name: 'Asha Patel',
+      birthDate: '1980-03-01',
+      answers: {'diet': 'Jain', 'kids': true},
+      signUps: {'park'},
+    );
+    final sent = spec.toSubmitMap(
+      const RegistrationDraft(
+        submissionId: 's1',
+        people: [asha],
+        groupAnswers: {'hotel': 'Hilton'},
+        email: 'asha@example.com',
+        phone: '312 555 0100',
+      ),
+    );
+    expect(sent, {
+      'slug': 'convention-2027',
+      'submissionId': 's1',
+      'groupName': '',
+      'groupAnswers': {'hotel': 'Hilton'},
+      'contact': {'email': 'asha@example.com', 'phone': '312 555 0100'},
+      'people': [
+        {
+          'name': 'Asha Patel',
+          'birthDate': '1980-03-01',
+          'answers': {'diet': 'Jain'},
+          'signUps': ['park'],
+        },
+      ],
+    });
+  });
+}
