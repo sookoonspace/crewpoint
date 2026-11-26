@@ -4,8 +4,12 @@
  * 2026-11-11: totals only, read with `counts.read`). Pure: the scheduled job
  * and `recalculateCounts` load the data and call [computeStats].
  *
- * Only active people count. A session counts those [attends] says attend.
- * Unanswered fields and people with no category count under `_none`.
+ * Only confirmed people count (Spec #233 Req 4a): active, and either added
+ * by an organizer (no registration) or in a `submitted` registration. A
+ * session counts those [attends] says attend. People in draft, pending and
+ * waitlisted registrations are counted apart, in groups and people, in
+ * `notConfirmed`; cancelled ones count nowhere. Unanswered fields and
+ * people with no category count under `_none`.
  */
 import {attends, AttendancePerson, AttendanceSession} from "../schedule/attendance";
 
@@ -22,6 +26,8 @@ export interface CountPerson extends AttendancePerson {
   groupId?: string | null;
   /** Standard and private answers together, by field ID. */
   answers: Record<string, unknown>;
+  /** Their registration's status, mirrored by the server; none if added by hand. */
+  registrationStatus?: string | null;
 }
 
 export interface CountGroup {
@@ -37,9 +43,20 @@ export interface Tally {
   byField: Record<string, Record<string, number>>;
 }
 
+/** Registrations not yet confirmed (Req 4a). */
+export type NotConfirmedStatus = "draft" | "pending" | "waitlisted";
+const NOT_CONFIRMED: readonly NotConfirmedStatus[] = ["draft", "pending", "waitlisted"];
+
 export interface EventStats {
   event: Tally & {groups: number};
   sessions: Record<string, Tally>;
+  notConfirmed: Record<NotConfirmedStatus, {groups: number; people: number}>;
+}
+
+/** Whether [p] counts: active, and added by hand or submitted. */
+export function isConfirmed(p: {status?: string | null; registrationStatus?: string | null}): boolean {
+  return p.status !== "cancelled" &&
+    (p.registrationStatus === undefined || p.registrationStatus === null || p.registrationStatus === "submitted");
 }
 
 const COUNTED = new Set(["singleChoice", "multiChoice", "yesNo"]);
@@ -64,7 +81,7 @@ export function computeStats({policy, sessions, people, groups, fields}: {
 }): EventStats {
   const counted = fields.filter((f) => COUNTED.has(f.type));
   const groupById = new Map(groups.map((g) => [g.id, g]));
-  const active = people.filter((p) => p.status !== "cancelled");
+  const active = people.filter(isConfirmed);
 
   const tally = (): Tally => ({
     total: 0,
@@ -100,5 +117,11 @@ export function computeStats({policy, sessions, people, groups, fields}: {
     bySession[s.id] = t;
   }
 
-  return {event: {...event, groups: withGroups.size}, sessions: bySession};
+  const notConfirmed = Object.fromEntries(NOT_CONFIRMED.map((status) => {
+    const waiting = people.filter((p) => p.status !== "cancelled" && p.registrationStatus === status);
+    const waitingGroups = new Set(waiting.map((p) => p.groupId ?? `person:${p.id}`));
+    return [status, {groups: waitingGroups.size, people: waiting.length}];
+  })) as EventStats["notConfirmed"];
+
+  return {event: {...event, groups: withGroups.size}, sessions: bySession, notConfirmed};
 }

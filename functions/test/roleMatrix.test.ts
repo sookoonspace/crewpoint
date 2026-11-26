@@ -120,6 +120,14 @@ async function seed(
     await setDoc(doc(db, 'eventSlugs/fest-2027'), {eventId: 'matrix'});
     // #240: rate-limit counts for public calls.
     await setDoc(doc(db, 'rateLimits/eventPage_x_1'), {count: 1});
+    // #242: registrations, their change log and the tally of places.
+    await setDoc(doc(db, `${E}/registrations/r1`), {groupId: 'g1', contactUid: 'stranger', status: 'submitted'});
+    await setDoc(doc(db, `${E}/registrations/r1/changes/c1`), {by: 'stranger', action: 'submitted'});
+    await setDoc(doc(db, `${E}/registrationTally/current`), {placesUsed: 1});
+    await setDoc(doc(db, `${E}/participants/registered`), {
+      name: 'Rani', sortName: 'rani', groupId: 'g1', isChild: false, createdBy: 'owner', status: 'active',
+      registrationId: 'r1', registrationStatus: 'submitted',
+    });
   });
 }
 
@@ -287,6 +295,22 @@ describe.each(ROLES)('%s', (role) => {
       getDoc(doc(as(role), `${E}/linkRequests/stranger`)));
     await assertFails(setDoc(doc(as(role), `${E}/linkRequests/${role}`), {email: 'x@y.z', status: 'open'}));
     await assertFails(getDoc(doc(as(role), `${E}/participantKeys/kid`)));
+  });
+
+  test('registrations: read with registrations.manage, written only by the server (Spec #233 TD 1, #242)', async () => {
+    const manages = holds(role, 'registrations.manage');
+    await expectAccess(manages, getDoc(doc(as(role), `${E}/registrations/r1`)));
+    await expectAccess(manages, getDoc(doc(as(role), `${E}/registrations/r1/changes/c1`)));
+    await assertFails(setDoc(doc(as(role), `${E}/registrations/r2`), {groupId: 'g1', contactUid: role, status: 'submitted'}));
+    await assertFails(updateDoc(doc(as(role), `${E}/registrations/r1`), {status: 'cancelled'}));
+    await assertFails(setDoc(doc(as(role), `${E}/registrations/r1/changes/c2`), {by: role}));
+    await assertFails(getDoc(doc(as(role), `${E}/registrationTally/current`)));
+    await assertFails(setDoc(doc(as(role), `${E}/registrationTally/current`), {placesUsed: 0}));
+    // The mirrored status is the server's alone, and a registered person
+    // leaves only through registrations.manage.
+    await assertFails(updateDoc(doc(as(role), `${E}/participants/registered`), {registrationStatus: 'cancelled'}));
+    await expectAccess(manages && holds(role, 'participants.edit'),
+      deleteDoc(doc(as(role), `${E}/participants/registered`)));
   });
 
   test('email outbox and mail settings: no client access (Spec #233 Req 51, 51a)', async () => {

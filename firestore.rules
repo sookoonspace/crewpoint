@@ -403,6 +403,27 @@ service cloud.firestore {
       // Groups of participants (Req 40). The roster needs
       // `participants.read`, and a linked adult reads their own group. The
       // saveGroup, setGroupAdults and deleteGroup callables write them.
+      // Registrations (Spec #233 TD 1; #242): one per group, written only
+      // by the registration callables. The contact and the group's linked
+      // adults read their own; `registrations.manage` reads every one and
+      // the change log. The tally of places is server only.
+      match /registrations/{registrationId} {
+        allow read: if request.auth != null
+          && (can(eventId, 'registrations.manage')
+              || resource.data.get('contactUid', null) == request.auth.uid
+              || inMyGroup(eventId, resource.data.get('groupId', null)));
+        allow write: if false;
+
+        match /changes/{changeId} {
+          allow read: if request.auth != null && can(eventId, 'registrations.manage');
+          allow write: if false;
+        }
+      }
+
+      match /registrationTally/{docId} {
+        allow read, write: if false;
+      }
+
       match /groups/{groupId} {
         allow read: if request.auth != null
           && (can(eventId, 'participants.read') || inMyGroup(eventId, groupId));
@@ -584,7 +605,8 @@ service cloud.firestore {
           return d.keys().hasOnly(['name', 'sortName', 'groupId', 'isChild', 'status',
                                    'createdBy', 'createdAt', 'updatedAt', 'uid', 'externalId',
                                    'categoryId', 'fields', 'filterTags', 'imported', 'anonymised',
-                                   'arrivalAt', 'departureAt', 'optOuts', 'signUps', 'invitedTo'])
+                                   'arrivalAt', 'departureAt', 'optOuts', 'signUps', 'invitedTo',
+                                   'registrationId', 'registrationStatus'])
             && (d.get('categoryId', null) == null || d.categoryId is string)
             && attendanceIsValid(d)
             && answersAreValid(d)
@@ -606,7 +628,9 @@ service cloud.firestore {
           && !('uid' in request.resource.data)
           && !('externalId' in request.resource.data)
           && !('imported' in request.resource.data)
-          && !('anonymised' in request.resource.data);
+          && !('anonymised' in request.resource.data)
+          && !('registrationId' in request.resource.data)
+          && !('registrationStatus' in request.resource.data);
 
         // Both the group it was in and the one it goes to must be editable,
         // so a linked adult cannot move someone out of their group.
@@ -620,11 +644,18 @@ service cloud.firestore {
           && fieldUnchanged('uid')
           && fieldUnchanged('externalId')
           && fieldUnchanged('imported')
-          && fieldUnchanged('anonymised');
+          && fieldUnchanged('anonymised')
+          && fieldUnchanged('registrationId')
+          && fieldUnchanged('registrationStatus');
 
+        // Someone in a registration holds a place, so only
+        // `registrations.manage` removes them here (#242); families change
+        // their registration through its callables.
         allow delete: if request.auth != null
           && isNotArchived(eventId)
-          && editsParticipant(eventId, resource.data.get('groupId', null));
+          && editsParticipant(eventId, resource.data.get('groupId', null))
+          && (resource.data.get('registrationId', null) == null
+              || can(eventId, 'registrations.manage'));
 
         // Private details, such as a birth date (Z-01): read with
         // `participants.readPrivate` or by the group's linked adults, and

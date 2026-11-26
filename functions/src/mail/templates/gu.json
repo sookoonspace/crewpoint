@@ -8,5 +8,15 @@
     "subject": "તમારી CrewPoint સાઇન ઇન લિંક",
     "text": "નમસ્તે,\n\nCrewPoint માં સાઇન ઇન કરવા અને જ્યાંથી છોડ્યું હતું ત્યાંથી આગળ વધવા આ લિંક પર ટૅપ કરો:\n\n{{link}}\n\nઆ લિંક એક જ વાર ચાલે છે અને એક કલાકમાં સમાપ્ત થાય છે. જો તમે તે માંગી ન હોય, તો આ ઇમેઇલ અવગણો; તેના વિના કોઈ સાઇન ઇન કરી શકતું નથી.\n\nCrewPoint",
     "push": "તમારી CrewPoint સાઇન ઇન લિંક તમારા ઇમેઇલમાં છે."
+  },
+  "registrationConfirmation": {
+    "subject": "{{eventTitle}} માટે તમારી નોંધણી થઈ ગઈ છે",
+    "text": "નમસ્તે,\n\nઆભાર. {{eventTitle}} માટે તમારા {{word.group.one.lower}} ના આ લોકોની {{word.registration.one.lower}} મળી ગઈ છે:\n\n{{people}}\n\nનોંધણી બંધ થાય તે પહેલાં તમે તેને જોઈ કે બદલી શકો છો:\n\n{{link}}\n\nCrewPoint",
+    "push": "{{eventTitle}} માટે તમારી નોંધણી થઈ ગઈ છે."
+  },
+  "registrationWaitlisted": {
+    "subject": "{{eventTitle}} માટે તમે રાહ યાદીમાં છો",
+    "text": "નમસ્તે,\n\n{{eventTitle}} હાલમાં ભરાઈ ગયો છે, તેથી તમારા {{word.group.one.lower}} ના આ લોકો રાહ યાદીમાં નંબર {{position}} પર છે:\n\n{{people}}\n\nજગ્યા ખાલી થશે તો અમે તમને ઇમેઇલથી ઓફર મોકલીશું. તમારી {{word.registration.one.lower}} અહીં જુઓ:\n\n{{link}}\n\nCrewPoint",
+    "push": "{{eventTitle}} માટે તમે રાહ યાદીમાં નંબર {{position}} પર છો."
   }
 }

@@ -8,5 +8,15 @@
     "subject": "Your CrewPoint sign-in link",
     "text": "Hello,\n\nTap this link to sign in to CrewPoint and carry on where you left off:\n\n{{link}}\n\nThe link works once and expires in an hour. If you didn't ask for it, you can ignore this email; nobody can sign in without it.\n\nCrewPoint",
     "push": "Your CrewPoint sign-in link is in your email."
+  },
+  "registrationConfirmation": {
+    "subject": "You're registered for {{eventTitle}}",
+    "text": "Hello,\n\nThank you. Your {{word.registration.one.lower}} for {{eventTitle}} is in, for these people in your {{word.group.one.lower}}:\n\n{{people}}\n\nYou can see it or change it before registration closes:\n\n{{link}}\n\nCrewPoint",
+    "push": "You're registered for {{eventTitle}}."
+  },
+  "registrationWaitlisted": {
+    "subject": "You're on the waitlist for {{eventTitle}}",
+    "text": "Hello,\n\n{{eventTitle}} is full right now, so your {{word.group.one.lower}} is on the waitlist, number {{position}}:\n\n{{people}}\n\nIf places free up, we'll email you an offer. You can see your {{word.registration.one.lower}} here:\n\n{{link}}\n\nCrewPoint",
+    "push": "You're on the waitlist for {{eventTitle}}, number {{position}}."
   }
 }
