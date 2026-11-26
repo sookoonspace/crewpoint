@@ -63,6 +63,8 @@ export interface RegistrationSettings {
   afterNote: LocalText | null;
   /** Replaces [afterNote] from [laterNoteFrom]. */
   laterNote: LocalText | null;
+  /** How to reach the organizer, shown once registration closes (Req 35; #244). */
+  contactLine: LocalText | null;
   laterNoteFrom: number | null;
   /** The role people get when they register (Req 60). */
   registrationRoleId: string;
@@ -84,6 +86,7 @@ export const DEFAULT_REGISTRATION: RegistrationSettings = {
   included: null,
   afterNote: null,
   laterNote: null,
+  contactLine: null,
   laterNoteFrom: null,
   registrationRoleId: "participant",
   offerHours: 72,
@@ -259,6 +262,7 @@ export function parseRegistrationSettings(
     afterNote,
     laterNote,
     laterNoteFrom: laterNote ? laterNoteFrom : null,
+    contactLine: localText(raw.contactLine, MAX_NOTE, "contact line"),
     registrationRoleId: parseRole(raw.registrationRoleId, ctx),
     offerHours: wholeNumber(raw.offerHours ?? 72, 1, MAX_OFFER_HOURS, "offer window in hours"),
   };

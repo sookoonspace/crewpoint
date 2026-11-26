@@ -63,13 +63,31 @@ export const getRegistrationForm = onCall({timeoutSeconds: 30}, async (request) 
     const event = eventDoc.data()!;
     const settings = registrationOf(event);
     if (settings.slug !== slug) throw new HttpsError("not-found", "We couldn't find this event.");
-    checkOpen(event, settings);
 
-    const [fieldSnap, sessionSnap, mine] = await Promise.all([
+    const [fieldSnap, sessionSnap, mine, member] = await Promise.all([
       ref.collection("fields").get(),
       ref.collection("sessions").get(),
       ref.collection("registrations").where("contactUid", "==", uid).limit(1).get(),
+      ref.collection("members").doc(uid).get(),
     ]);
+    // Their registration, as its contact or a linked adult (#244).
+    let registered = mine.docs.find((d) => !["draft", "cancelled"].includes(d.data().status));
+    const groupIds: string[] = Array.isArray(member.data()?.groupIds) ? member.data()!.groupIds.slice(0, 10) : [];
+    if (!registered && groupIds.length > 0) {
+      const asAdult = await ref.collection("registrations").where("groupId", "in", groupIds).limit(1).get();
+      registered = asAdult.docs.find((d) => d.data().status !== "cancelled");
+    }
+    // Someone registered may still change contact details after the
+    // deadline (Req 35); everyone else needs registration open.
+    let editable: "all" | "contact" | null = null;
+    if (registered) {
+      if (["ended", "archived"].includes(event.status)) {
+        throw new HttpsError("failed-precondition", "Registration is closed.", {reason: "closed"});
+      }
+      editable = settings.deadline !== null && Date.now() > settings.deadline ? "contact" : "all";
+    } else {
+      checkOpen(event, settings);
+    }
     const asked = new Set(settings.sections.flatMap((s) => s.fieldIds));
     const fields = fieldSnap.docs
       .filter((d) => asked.has(d.id))
@@ -101,7 +119,15 @@ export const getRegistrationForm = onCall({timeoutSeconds: 30}, async (request) 
       })) : [];
     const mineData = mine.docs[0]?.data();
     const isDraft = mineData?.status === "draft";
-    const registration = isDraft ? undefined : mineData;
+    const registration = registered?.data();
+    const current = registered ? await currentRegistration(ref, registered) : null;
+    // Sessions everyone attends, which a person may opt out of (#244, B-03).
+    const policy = event.settings?.attendancePolicy;
+    const attending = settings.blocks.sessionChoices ? sessions
+      .filter((s) => s.hidden !== true && (s.attendance ?? policy) !== "bySession")
+      .sort((a, b) => a.startAt.toMillis() - b.startAt.toMillis() || a.id.localeCompare(b.id))
+      .map((s) => ({id: s.id, title: String(s.title ?? ""), startAt: s.startAt.toMillis(), endAt: millis(s.endAt)})) :
+      [];
 
     return {
       slug,
@@ -121,8 +147,62 @@ export const getRegistrationForm = onCall({timeoutSeconds: 30}, async (request) 
       labels: event.labels ?? {},
       registration: registration ?
         {status: registration.status, waitlistPosition: registration.waitlistPosition ?? null} : null,
+      attending,
+      editable,
+      current,
+      contactLine: settings.contactLine,
       // The server copy of the form as typed (#243), to restore when newer.
       draft: isDraft ? {data: mineData!.draft ?? {}, savedAt: mineData!.draftSavedAt ?? 0} : null,
     };
   });
 });
+
+/**
+ * A registration as the form edits it (#244): its people with their IDs,
+ * answers (private ones too, which the family may read), times, sign-ups
+ * and opt-outs, the group's answers and the contact details.
+ */
+async function currentRegistration(
+  eventRef: FirebaseFirestore.DocumentReference,
+  registration: FirebaseFirestore.QueryDocumentSnapshot
+) {
+  const r = registration.data();
+  const groupRef = eventRef.collection("groups").doc(String(r.groupId));
+  const [group, groupPrivate, people] = await Promise.all([
+    groupRef.get(),
+    groupRef.collection("private").doc("details").get(),
+    eventRef.collection("participants").where("registrationId", "==", registration.id).get(),
+  ]);
+  const sorted = [...people.docs].sort((a, b) =>
+    (millis(a.data().createdAt) ?? 0) - (millis(b.data().createdAt) ?? 0) || a.id.localeCompare(b.id));
+  const privates = await Promise.all(sorted.map((d) => d.ref.collection("private").doc("details").get()));
+  let email: string | null = null;
+  let phone: string | null = null;
+  const list = sorted.map((d, i) => {
+    const p = d.data();
+    const {birthDate, email: e, phone: ph, updatedAt: _u, ...privateAnswers} = privates[i].data() ?? {};
+    if (p.uid === r.contactUid) {
+      email = typeof e === "string" ? e : null;
+      phone = typeof ph === "string" ? ph : null;
+    }
+    return {
+      id: d.id,
+      name: String(p.name ?? ""),
+      birthDate: typeof birthDate === "string" ? birthDate : null,
+      age: null,
+      answers: {...(p.fields ?? {}), ...privateAnswers},
+      arrivalAt: millis(p.arrivalAt),
+      departureAt: millis(p.departureAt),
+      signUps: p.signUps ?? [],
+      optOuts: p.optOuts ?? [],
+    };
+  });
+  const {updatedAt: _g, ...groupPrivateAnswers} = groupPrivate.data() ?? {};
+  return {
+    groupName: String(group.data()?.name ?? ""),
+    email,
+    phone,
+    groupAnswers: {...(group.data()?.fields ?? {}), ...groupPrivateAnswers},
+    people: list,
+  };
+}

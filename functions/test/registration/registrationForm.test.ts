@@ -100,6 +100,41 @@ describe('getRegistrationForm', () => {
     expect((await get()).registration).toEqual({status: 'submitted', waitlistPosition: null});
   });
 
+  test('#244: someone registered gets their registration to edit, private answers included', async () => {
+    await seed();
+    await db().doc(`events/${E}/fields/allergies`).set({
+      label: 'Allergies', type: 'text', options: [], required: false, scope: 'participant',
+      visibility: 'private', order: 3,
+    });
+    await db().doc(`events/${E}`).update({
+      'settings.registration.sections': [{id: 'food', name: {en: 'Food'}, fieldIds: ['diet', 'hotel', 'allergies']}],
+      'settings.registration.conditions': {},
+    });
+    await ftest.wrap(submitRegistration)({auth: {uid: 'asha'}, data: {
+      slug: SLUG, submissionId: 's1', groupName: 'Patel family', contact: {email: 'a@b.co', phone: '312 555 0100'},
+      groupAnswers: {hotel: 'Hilton'},
+      people: [{name: 'Asha', birthDate: '1980-01-01', answers: {diet: 'Jain', allergies: 'Peanuts'},
+        arrivalAt: Date.UTC(2027, 6, 17, 16), signUps: ['park']}],
+    }});
+    const form = await get();
+    expect(form.editable).toBe('all');
+    // Opening is everyone's, so it can be opted out of; the meals are by sign-up.
+    expect(form.attending.map((x: {id: string}) => x.id)).toEqual(['opening']);
+    expect(form.current).toEqual({
+      groupName: 'Patel family', email: 'a@b.co', phone: '+13125550100',
+      groupAnswers: {hotel: 'Hilton'},
+      people: [{
+        id: expect.any(String), name: 'Asha', birthDate: '1980-01-01', age: null,
+        answers: {diet: 'Jain', allergies: 'Peanuts'}, arrivalAt: Date.UTC(2027, 6, 17, 16),
+        departureAt: null, signUps: ['park'], optOuts: [],
+      }],
+    });
+    // After the deadline, only contact details: the form still opens for them.
+    await db().doc(`events/${E}`).update({'settings.registration.deadline': Date.now() - DAY});
+    expect((await get()).editable).toBe('contact');
+    await expect(get('someone-new')).rejects.toEqual(rejected('failed-precondition', 'closed'));
+  });
+
   test('refusals match the submit', async () => {
     await seed();
     await expect(get(null)).rejects.toEqual(rejected('unauthenticated'));

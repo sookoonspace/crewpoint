@@ -30,6 +30,10 @@ interface PersonInput {
   departureAt?: unknown;
   /** Session IDs, with the Session choices block. */
   signUps?: unknown;
+  /** Sessions everyone attends that this person will miss (#244, B-03). */
+  optOuts?: unknown;
+  /** An existing participant's ID, when editing (#244). */
+  id?: unknown;
 }
 
 /** What `submitRegistration` returns, and returns again for a repeat. */
@@ -114,19 +118,7 @@ export const submitRegistration = onCall({timeoutSeconds: 60}, async (request) =
     const eventRef = db().collection("events").doc(eventId);
 
     // What the form needs to check answers; none of it changes capacity.
-    const [fieldSnap, sessionSnap] = await Promise.all([
-      eventRef.collection("fields").get(),
-      eventRef.collection("sessions").get(),
-    ]);
-    const fields: FieldDef[] = fieldSnap.docs.map((d) => ({
-      id: d.id,
-      label: String(d.data().label ?? ""),
-      type: String(d.data().type ?? "text"),
-      options: Array.isArray(d.data().options) ? d.data().options : [],
-      required: d.data().required === true,
-      scope: String(d.data().scope ?? "participant"),
-      visibility: String(d.data().visibility ?? "standard"),
-    }));
+    const {fields, sessions: sessionDocs} = await loadFormInputs(eventRef);
 
     const outcome = await db().runTransaction(async (tx) => {
       const eventDoc = await tx.get(eventRef);
@@ -157,7 +149,7 @@ export const submitRegistration = onCall({timeoutSeconds: 60}, async (request) =
         refuse("already-exists", "alreadyRegistered", "You have already registered for this event.");
       }
 
-      const form = readForm(data, {event, settings, fields, sessions: sessionSnap.docs});
+      const form = readForm(data, {event, settings, fields, sessions: sessionDocs});
       const tally = tallyDoc.data() ?? {};
       const placesUsed = typeof tally.placesUsed === "number" ? tally.placesUsed : 0;
       const nextWaitlist = typeof tally.nextWaitlist === "number" ? tally.nextWaitlist : 1;
@@ -193,6 +185,7 @@ export const submitRegistration = onCall({timeoutSeconds: 60}, async (request) =
           ...(person.arrivalAt ? {arrivalAt: person.arrivalAt} : {}),
           ...(person.departureAt ? {departureAt: person.departureAt} : {}),
           ...(person.signUps.length ? {signUps: person.signUps} : {}),
+          ...(person.optOuts.length ? {optOuts: person.optOuts} : {}),
           ...(i === contactIndex ? {uid} : {}),
           registrationId: registrationRef.id, registrationStatus: decision.status,
           createdAt: now, updatedAt: now,
@@ -272,7 +265,32 @@ export const submitRegistration = onCall({timeoutSeconds: 60}, async (request) =
   });
 });
 
-interface ReadPerson {
+/** The event's questions and sessions, which the form's checks read. */
+export async function loadFormInputs(eventRef: FirebaseFirestore.DocumentReference): Promise<{
+  fields: FieldDef[];
+  sessions: FirebaseFirestore.QueryDocumentSnapshot[];
+}> {
+  const [fieldSnap, sessionSnap] = await Promise.all([
+    eventRef.collection("fields").get(),
+    eventRef.collection("sessions").get(),
+  ]);
+  return {
+    fields: fieldSnap.docs.map((d) => ({
+      id: d.id,
+      label: String(d.data().label ?? ""),
+      type: String(d.data().type ?? "text"),
+      options: Array.isArray(d.data().options) ? d.data().options : [],
+      required: d.data().required === true,
+      scope: String(d.data().scope ?? "participant"),
+      visibility: String(d.data().visibility ?? "standard"),
+    })),
+    sessions: sessionSnap.docs,
+  };
+}
+
+export interface ReadPerson {
+  /** The existing participant, when editing; null for someone new. */
+  id: string | null;
   name: string;
   birthDate: string | null;
   isChild: boolean;
@@ -283,6 +301,7 @@ interface ReadPerson {
   arrivalAt: Timestamp | null;
   departureAt: Timestamp | null;
   signUps: string[];
+  optOuts: string[];
 }
 
 /**
@@ -291,7 +310,7 @@ interface ReadPerson {
  * dropped, stays, session choices and the contact's details. Throws
  * `invalid-argument` with the problems found.
  */
-function readForm(data: Record<string, unknown>, {event, settings, fields, sessions}: {
+export function readForm(data: Record<string, unknown>, {event, settings, fields, sessions}: {
   event: FirebaseFirestore.DocumentData;
   settings: ReturnType<typeof registrationOf>;
   fields: FieldDef[];
@@ -313,6 +332,12 @@ function readForm(data: Record<string, unknown>, {event, settings, fields, sessi
     attendance: s.data().attendance ?? null,
     hidden: s.data().hidden === true,
   })));
+  // Sessions everyone attends can be opted out of, never a by-sign-up one.
+  const policy = event.settings?.attendancePolicy;
+  const optOutable = new Set(sessions
+    .filter((s) => s.data().hidden !== true)
+    .filter((s) => (s.data().attendance ?? policy) !== "bySession")
+    .map((s) => s.id));
   const time = (v: unknown, at: string) => {
     if (v === undefined || v === null) return null;
     if (typeof v !== "number" || !Number.isFinite(v)) {
@@ -361,15 +386,19 @@ function readForm(data: Record<string, unknown>, {event, settings, fields, sessi
     const signUps = settings.blocks.sessionChoices && Array.isArray(raw.signUps) ?
       [...new Set(raw.signUps.filter((s): s is string => typeof s === "string"))] : [];
     if (!validSignUps(choices, signUps)) problems.push(`${at}.signUps`);
+    const optOuts = settings.blocks.sessionChoices && Array.isArray(raw.optOuts) ?
+      [...new Set(raw.optOuts.filter((s): s is string => typeof s === "string"))] : [];
+    if (optOuts.some((s) => !optOutable.has(s))) problems.push(`${at}.optOuts`);
+    const id = typeof raw.id === "string" && raw.id.length > 0 && raw.id.length <= 100 ? raw.id : null;
     const arrivalAt = settings.blocks.stay ? time(raw.arrivalAt, `${at}.arrivalAt`) : null;
     const departureAt = settings.blocks.stay ? time(raw.departureAt, `${at}.departureAt`) : null;
     if (arrivalAt && departureAt && departureAt.toMillis() < arrivalAt.toMillis()) {
       problems.push(`${at}.departureAt`);
     }
     return {
-      name, birthDate, isChild: category?.isChild === true, categoryId: category?.id ?? null,
+      id, name, birthDate, isChild: category?.isChild === true, categoryId: category?.id ?? null,
       standard, private: privateAnswers, filterTags: filterTagsFor(fields, standard),
-      arrivalAt, departureAt, signUps,
+      arrivalAt, departureAt, signUps, optOuts,
     };
   });
 
