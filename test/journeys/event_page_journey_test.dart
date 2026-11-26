@@ -10,6 +10,7 @@ import 'package:crewpoint_app/app/core/router/app_router.dart';
 import 'package:crewpoint_app/app/core/services/url_launcher_service.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/auth/data/auth_repository.dart';
+import 'package:crewpoint_app/app/features/registration/application/event_page_provider.dart';
 import 'package:crewpoint_app/app/features/registration/domain/public_event.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_settings.dart';
 import 'package:crewpoint_app/l10n/gen/app_localizations.dart';
@@ -71,6 +72,7 @@ void main() {
     Size size = const Size(375, 2400),
     Locale? locale,
     bool dark = false,
+    Map<String, dynamic>? embedded,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1.0;
@@ -97,6 +99,10 @@ void main() {
           memberCallsProvider.overrideWithValue(calls),
           qrRendererProvider.overrideWithValue(qr),
           urlLauncherProvider.overrideWithValue(launcher),
+          // What the server put in the first page, if anything.
+          embeddedEventSourceProvider.overrideWithValue(
+            (s) => embedded != null && embedded['slug'] == s ? embedded : null,
+          ),
         ],
         child: MaterialApp.router(
           routerConfig: router,
@@ -150,6 +156,48 @@ void main() {
     expect(find.byKey(const Key('events.page.register')), findsOneWidget);
     expect(qr.rendered.last, link);
     expect(find.text(link), findsOneWidget);
+    await finish(tester);
+  });
+
+  testWidgets('Req 69 the details the server put in the first page show at '
+      'once, with no call that waits on App Check', (tester) async {
+    await open(
+      tester,
+      embedded: {
+        'state': 'open',
+        'slug': slug,
+        'title': 'Convention 2027',
+        'description': 'Three days together in Chicago.',
+        'startDate': DateTime.utc(2027, 7, 16).millisecondsSinceEpoch,
+        'endDate': DateTime.utc(2027, 7, 18).millisecondsSinceEpoch,
+        'dateOnly': true,
+        'timeZone': 'America/Chicago',
+        'venues': <Object>[],
+        'included': null,
+        'deadline': DateTime.utc(2027, 6, 30, 4, 59).millisecondsSinceEpoch,
+        'mode': 'open',
+        'placesRemain': true,
+        'hasCover': false,
+        'labels': <String, Object>{},
+      },
+    );
+    expect(calls.calls, isEmpty);
+    expect(find.text('Convention 2027'), findsOneWidget);
+    expect(find.text('Fri, Jul 16, 2027 – Sun, Jul 18, 2027'), findsOneWidget);
+    expect(find.byKey(const Key('events.page.register')), findsOneWidget);
+    await finish(tester);
+  });
+
+  testWidgets('details for another event in the first page are ignored', (
+    tester,
+  ) async {
+    await open(
+      tester,
+      page: convention,
+      embedded: {'state': 'open', 'slug': 'other-event', 'title': 'Other'},
+    );
+    expect(calls.calls, ['getEventPage:convention-2027']);
+    expect(find.text('Other'), findsNothing);
     await finish(tester);
   });
 
