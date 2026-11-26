@@ -1069,5 +1069,258 @@
   "lightSignInMyRegistrationSoonHelp": "You're signed in. Once you've registered, you'll see and change it here.",
   "@lightSignInMyRegistrationSoonHelp": {
     "description": "Help on my registration before it exists."
+  },
+  "registerFormStepOf": "Step {step} of {total}",
+  "@registerFormStepOf": {
+    "description": "Progress through the form.",
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "registerFormPeopleTitle": "Who's coming",
+  "@registerFormPeopleTitle": {
+    "description": "People step heading."
+  },
+  "registerFormGroupName": "{group} name",
+  "@registerFormGroupName": {
+    "description": "Group name field; group is the event's word, such as Family.",
+    "placeholders": {
+      "group": {
+        "type": "String"
+      }
+    }
+  },
+  "registerFormPerson": "Person {number}",
+  "@registerFormPerson": {
+    "description": "A person card heading.",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "registerFormName": "Name",
+  "@registerFormName": {
+    "description": "Name field."
+  },
+  "registerFormBirthDate": "Birth date",
+  "@registerFormBirthDate": {
+    "description": "Birth date field."
+  },
+  "registerFormBirthDateHelp": "Kept private. Used for age groups.",
+  "@registerFormBirthDateHelp": {
+    "description": "Help under the birth date."
+  },
+  "registerFormAge": "Age",
+  "@registerFormAge": {
+    "description": "Age field, when the event asks for age only."
+  },
+  "registerFormChooseDate": "Choose a date",
+  "@registerFormChooseDate": {
+    "description": "Empty date field."
+  },
+  "registerFormAddPerson": "Add a person",
+  "@registerFormAddPerson": {
+    "description": "Adds a person card."
+  },
+  "registerFormRemovePerson": "Remove",
+  "@registerFormRemovePerson": {
+    "description": "Removes a person card."
+  },
+  "registerFormStayTitle": "Your stay",
+  "@registerFormStayTitle": {
+    "description": "Stay step heading."
+  },
+  "registerFormStayHelp": "Leave a date empty if you're there from the start or to the end.",
+  "@registerFormStayHelp": {
+    "description": "Help on the stay step."
+  },
+  "registerFormArriving": "Arriving",
+  "@registerFormArriving": {
+    "description": "Arrival date field."
+  },
+  "registerFormLeaving": "Leaving",
+  "@registerFormLeaving": {
+    "description": "Departure date field."
+  },
+  "registerFormSessionsTitle": "Choose sessions",
+  "@registerFormSessionsTitle": {
+    "description": "Session choices step heading."
+  },
+  "registerFormEitherOr": "At the same time: choose one, or neither.",
+  "@registerFormEitherOr": {
+    "description": "Help over an either/or choice."
+  },
+  "registerFormNeither": "Neither",
+  "@registerFormNeither": {
+    "description": "The 'none' option of an either/or."
+  },
+  "registerFormContactTitle": "Contact details",
+  "@registerFormContactTitle": {
+    "description": "Contact step heading."
+  },
+  "registerFormEmail": "Email",
+  "@registerFormEmail": {
+    "description": "Email field."
+  },
+  "registerFormEmailHelp": "We send your confirmation here. Kept private.",
+  "@registerFormEmailHelp": {
+    "description": "Help under the email."
+  },
+  "registerFormPhone": "Phone (optional)",
+  "@registerFormPhone": {
+    "description": "Phone field."
+  },
+  "registerFormReviewTitle": "Check and submit",
+  "@registerFormReviewTitle": {
+    "description": "Review step heading."
+  },
+  "registerFormReviewHelp": "Check everything below. You can change your answers until registration closes.",
+  "@registerFormReviewHelp": {
+    "description": "Help on the review step."
+  },
+  "registerFormEdit": "Edit",
+  "@registerFormEdit": {
+    "description": "Edit a step from the review."
+  },
+  "registerFormNotAnswered": "Not answered",
+  "@registerFormNotAnswered": {
+    "description": "An empty answer on the review."
+  },
+  "registerFormYes": "Yes",
+  "@registerFormYes": {
+    "description": "A yes answer."
+  },
+  "registerFormNo": "No",
+  "@registerFormNo": {
+    "description": "A no answer."
+  },
+  "registerFormBack": "Back",
+  "@registerFormBack": {
+    "description": "Previous step."
+  },
+  "registerFormNext": "Next",
+  "@registerFormNext": {
+    "description": "Next step."
+  },
+  "registerFormSubmit": "Submit",
+  "@registerFormSubmit": {
+    "description": "Sends the registration."
+  },
+  "registerFormProblems": "{count, plural, =1{1 thing to fix} other{{count} things to fix}}",
+  "@registerFormProblems": {
+    "description": "Count of problems at the top.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "registerFormNameRequired": "Enter a name.",
+  "@registerFormNameRequired": {
+    "description": "Missing name."
+  },
+  "registerFormBirthDateRequired": "Enter a birth date.",
+  "@registerFormBirthDateRequired": {
+    "description": "Missing birth date."
+  },
+  "registerFormAgeRequired": "Enter an age from 0 to 130.",
+  "@registerFormAgeRequired": {
+    "description": "Missing or wrong age."
+  },
+  "registerFormLeavingBeforeArriving": "Leaving can't be before arriving.",
+  "@registerFormLeavingBeforeArriving": {
+    "description": "Departure before arrival."
+  },
+  "registerFormOneAtATime": "Choose only one session at the same time.",
+  "@registerFormOneAtATime": {
+    "description": "Two sides of an either/or chosen."
+  },
+  "registerFormEmailInvalid": "Enter a valid email address.",
+  "@registerFormEmailInvalid": {
+    "description": "Bad email."
+  },
+  "registerFormNoPeople": "Add at least one person.",
+  "@registerFormNoPeople": {
+    "description": "No people."
+  },
+  "registerFormAnswerRequired": "This question needs an answer.",
+  "@registerFormAnswerRequired": {
+    "description": "A required question left empty."
+  },
+  "registerFormLoading": "Loading the form",
+  "@registerFormLoading": {
+    "description": "Screen-reader label while loading."
+  },
+  "registerFormFailed": "Couldn't load the form",
+  "@registerFormFailed": {
+    "description": "Load failure title."
+  },
+  "registerFormFailedHelp": "Check your connection and try again.",
+  "@registerFormFailedHelp": {
+    "description": "Load failure help."
+  },
+  "registerFormRetry": "Try again",
+  "@registerFormRetry": {
+    "description": "Retry."
+  },
+  "registerFormSubmitFailed": "Couldn't submit. Your answers are kept; check your connection and try again.",
+  "@registerFormSubmitFailed": {
+    "description": "Submit failure."
+  },
+  "registerFormRegisteredTitle": "You're registered",
+  "@registerFormRegisteredTitle": {
+    "description": "Confirmation title."
+  },
+  "registerFormRegisteredBody": "Your registration for {title} is in. We've emailed you a copy.",
+  "@registerFormRegisteredBody": {
+    "description": "Confirmation body.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "registerFormPendingTitle": "Sent for review",
+  "@registerFormPendingTitle": {
+    "description": "Confirmation when review is on."
+  },
+  "registerFormPendingBody": "The organizer will confirm your place. We've emailed you a copy.",
+  "@registerFormPendingBody": {
+    "description": "Pending body."
+  },
+  "registerFormWaitlistedTitle": "You're on the waitlist, number {position}",
+  "@registerFormWaitlistedTitle": {
+    "description": "Waitlist result.",
+    "placeholders": {
+      "position": {
+        "type": "int"
+      }
+    }
+  },
+  "registerFormWaitlistedBody": "The event is full right now. If places free up, we'll email you an offer.",
+  "@registerFormWaitlistedBody": {
+    "description": "Waitlist body."
+  },
+  "registerFormSeeMine": "See my registration",
+  "@registerFormSeeMine": {
+    "description": "Opens my registration."
+  },
+  "registerFormAlreadyTitle": "You've already registered",
+  "@registerFormAlreadyTitle": {
+    "description": "The caller has a registration."
+  },
+  "registerFormAlreadyBody": "You can see your registration on its own page.",
+  "@registerFormAlreadyBody": {
+    "description": "Already registered body."
+  },
+  "registerFormYou": "You",
+  "@registerFormYou": {
+    "description": "Review heading for a group of one."
   }
 }

@@ -38,9 +38,9 @@ async function seed({
       ],
       registration: {
         mode: 'open', slug: SLUG, deadline: Date.now() + 30 * DAY, review: false,
-        sections: [{id: 'food', name: {en: 'Food'}, fieldIds: ['diet', 'allergies', 'kids']}],
+        sections: [{id: 'food', name: {en: 'Food'}, fieldIds: ['diet', 'allergies', 'kids', 'hotel', 'room']}],
         blocks: {people: true, ageOnly: false, stay: true, sessionChoices: true, waivers: false, contact: true},
-        conditions: {kids: {categoryId: 'child'}},
+        conditions: {kids: {categoryId: 'child'}, room: {fieldId: 'hotel', value: 'Hilton'}},
         registrationRoleId: 'participant',
         ...registration,
       },
@@ -56,6 +56,12 @@ async function seed({
   await db().doc(`events/${E}/fields/allergies`).set(
     {...field, label: 'Allergies', type: 'text', visibility: 'private'});
   await db().doc(`events/${E}/fields/kids`).set({...field, label: 'Kids activities', type: 'yesNo'});
+  await db().doc(`events/${E}/fields/hotel`).set(
+    {...field, label: 'Hotel', type: 'singleChoice', options: ['Hilton', 'Marriott'], scope: 'group', required: true});
+  // Required, but in no section, so never asked (Req 16).
+  await db().doc(`events/${E}/fields/unasked`).set({...field, label: 'Shirt', type: 'text', required: true});
+  await db().doc(`events/${E}/fields/room`).set(
+    {...field, label: 'Confirmation number', type: 'text', scope: 'group', visibility: 'private'});
   const session = {title: 'Meal', hidden: false, attendance: 'bySession'};
   await db().doc(`events/${E}/sessions/park`).set(
     {...session, startAt: new Date(Date.UTC(2027, 6, 17, 17)), endAt: new Date(Date.UTC(2027, 6, 17, 19))});
@@ -74,6 +80,7 @@ const family = (over: object = {}) => ({
   slug: SLUG, submissionId: 'sub-1', groupName: 'Patel family',
   contact: {email: 'Asha@Example.com', phone: '(312) 555-0100'},
   people: [asha, dev],
+  groupAnswers: {hotel: 'Hilton', room: 'H-123'},
   ...over,
 });
 
@@ -100,7 +107,12 @@ describe('submitRegistration', () => {
     expect(group).toEqual(expect.objectContaining({
       id: registration.groupId, name: 'Patel family', sortName: 'patel family',
       adultUids: ['asha'], registrationId: registration.id, registrationStatus: 'submitted',
+      fields: {hotel: 'Hilton'}, filterTags: ['hotel=Hilton'],
     }));
+    // A group's private answer stays private, like a person's (Req 22).
+    expect((await db().doc(`events/${E}/groups/${group.id}/private/details`).get()).data())
+      .toEqual(expect.objectContaining({room: 'H-123'}));
+    expect(JSON.stringify(group)).not.toContain('H-123');
 
     const people = await all(`events/${E}/participants`) as any[];
     const a = people.find((p) => p.name === 'Asha Patel');
@@ -196,6 +208,9 @@ describe('submitRegistration', () => {
       .rejects.toEqual(rejected('invalid-argument', 'invalid'));
     // A required question, unanswered (Req 21).
     await expect(submit(family({people: [{...asha, answers: {}}]})))
+      .rejects.toEqual(rejected('invalid-argument', 'invalid'));
+    // A required group question, unanswered.
+    await expect(submit(family({groupAnswers: {}})))
       .rejects.toEqual(rejected('invalid-argument', 'invalid'));
     // Both sides of an either/or (W-01).
     await expect(submit(family({people: [{...asha, signUps: ['park', 'hotel']}]})))

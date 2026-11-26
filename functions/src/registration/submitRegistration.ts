@@ -13,6 +13,7 @@ import {registrationOf} from "./registrationSettings";
 import {allocate, AllocatedStatus} from "./allocate";
 import {isShown} from "./conditions";
 import {signUpChoices, validSignUps} from "./sessionChoices";
+import {checkOpen} from "./registrationForm";
 
 const db = () => getFirestore();
 
@@ -38,9 +39,9 @@ export interface SubmitResult {
   waitlistPosition: number | null;
 }
 
-type Reason = "noPeople" | "invalid" | "notOpen" | "closed" | "invitedOnly" | "alreadyRegistered";
+type Reason = "noPeople" | "invalid" | "alreadyRegistered";
 
-function refuse(code: "invalid-argument" | "failed-precondition" | "permission-denied" | "already-exists",
+function refuse(code: "invalid-argument" | "already-exists",
   reason: Reason, message: string, extra: Record<string, unknown> = {}): never {
   throw new HttpsError(code, message, {reason, ...extra});
 }
@@ -133,14 +134,7 @@ export const submitRegistration = onCall({timeoutSeconds: 60}, async (request) =
       const event = eventDoc.data()!;
       const settings = registrationOf(event);
       if (settings.slug !== slug) throw new HttpsError("not-found", "We couldn't find this event.");
-      if (event.status === "draft") refuse("failed-precondition", "notOpen", "Registration isn't open yet.");
-      if (!["published", "live"].includes(event.status) ||
-        (settings.deadline !== null && Date.now() > settings.deadline)) {
-        refuse("failed-precondition", "closed", "Registration is closed.");
-      }
-      if (settings.mode !== "open") {
-        refuse("permission-denied", "invitedOnly", "This event registers by personal link only.");
-      }
+      checkOpen(event, settings);
 
       const tallyRef = eventRef.collection("registrationTally").doc("current");
       const [existing, tallyDoc, memberSnap, roles] = await Promise.all([
@@ -182,9 +176,13 @@ export const submitRegistration = onCall({timeoutSeconds: 60}, async (request) =
 
       tx.set(groupRef, {
         name: form.groupName, sortName: form.groupName.toLowerCase(), adultUids: [uid],
-        fields: {}, registrationId: registrationRef.id, registrationStatus: decision.status,
+        fields: form.group.standard, filterTags: form.group.filterTags,
+        registrationId: registrationRef.id, registrationStatus: decision.status,
         createdAt: now, updatedAt: now,
       });
+      if (Object.keys(form.group.private).length > 0) {
+        tx.set(groupRef.collection("private").doc("details"), {...form.group.private, updatedAt: now});
+      }
       form.people.forEach((person, i) => {
         tx.set(personRefs[i], {
           name: person.name, sortName: person.name.toLowerCase(), groupId: groupRef.id,
@@ -303,7 +301,9 @@ function readForm(data: Record<string, unknown>, {event, settings, fields, sessi
   if (rawPeople.length > 50) problems.push("people");
   const categories: CategoryDef[] = Array.isArray(event.settings?.categories) ? event.settings.categories : [];
   const on = firstDay(event);
-  const participantFields = fields.filter((f) => f.scope === "participant");
+  // Only questions in a section are asked (Req 16).
+  const asked = new Set(settings.sections.flatMap((s) => s.fieldIds));
+  const participantFields = fields.filter((f) => f.scope === "participant" && asked.has(f.id));
   const choices = signUpChoices(event.settings?.attendancePolicy, sessions.map((s) => ({
     id: s.id,
     startAt: (s.data().startAt as Timestamp).toMillis(),
@@ -371,6 +371,25 @@ function readForm(data: Record<string, unknown>, {event, settings, fields, sessi
     };
   });
 
+  // The group's own questions, asked once (Req 16): conditions read the
+  // group's answers only.
+  const groupAnswers = isRecord(data.groupAnswers) ? data.groupAnswers : {};
+  const group = {standard: {} as Record<string, unknown>, private: {} as Record<string, unknown>, filterTags: [] as string[]};
+  for (const field of fields.filter((f) => f.scope === "group" && asked.has(f.id))) {
+    if (!isShown(settings.conditions[field.id], {categoryId: null, answers: groupAnswers})) continue;
+    const value = groupAnswers[field.id];
+    if (isEmpty(value)) {
+      if (field.required) problems.push(`group.${field.id}`);
+      continue;
+    }
+    if (!validAnswer(field, value)) {
+      problems.push(`group.${field.id}`);
+      continue;
+    }
+    (field.visibility === "private" ? group.private : group.standard)[field.id] = value;
+  }
+  group.filterTags = filterTagsFor(fields, group.standard, "group");
+
   const contact = isRecord(data.contact) ? data.contact : {};
   let email: string | null = null;
   let phone: string | null = null;
@@ -390,5 +409,5 @@ function readForm(data: Record<string, unknown>, {event, settings, fields, sessi
   if (problems.length > 0) {
     refuse("invalid-argument", "invalid", "Some answers need checking.", {problems});
   }
-  return {people, email, phone, groupName};
+  return {people, email, phone, groupName, group};
 }

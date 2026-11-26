@@ -396,31 +396,3 @@ class _VenueRow extends ConsumerWidget {
     );
   }
 }
-
-/// `/e/:eventSlug/register` until the registration form lands (#241,
-/// #242): says the form is on its way and leads back to the event page.
-class RegisterComingScreen extends StatelessWidget {
-  const RegisterComingScreen({super.key, required this.slug});
-
-  final String slug;
-
-  @override
-  Widget build(BuildContext context) {
-    final strings = context.strings.eventPage;
-    final cp = context.cp;
-    return Scaffold(
-      backgroundColor: cp.colors.background,
-      body: SafeArea(
-        child: CpEmptyState(
-          key: const Key('events.page.registerSoon'),
-          icon: CpIcons.notOpenYet,
-          title: strings.registerSoon,
-          message: strings.registerSoonHelp,
-          actionLabel: strings.backToEvent,
-          actionKey: const Key('events.page.back'),
-          onAction: () => context.go('/e/$slug'),
-        ),
-      ),
-    );
-  }
-}
