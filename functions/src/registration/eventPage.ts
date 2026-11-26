@@ -101,10 +101,26 @@ export function formatDates(view: Extract<PublicEvent, {title: string}>): string
 }
 
 /**
+ * [value] as JSON that is safe inside a `<script>` element: `<`, `>`, `&`
+ * and the line separators are escaped, so an organizer's text can't end
+ * the element or start markup; `JSON.parse` reads them back unchanged.
+ */
+export function jsonForScript(value: unknown): string {
+  return JSON.stringify(value)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
+
+/**
  * The small first page for `/e/:eventSlug` (Req 69): title, dates, place,
  * Register and link-preview tags, then the Flutter app, which takes over
  * and removes `#cp-ssr`. It stays above the app's canvas until then, so a
- * slow phone never shows a blank screen while the app loads. Anything the page may not show (a draft, an
+ * slow phone never shows a blank screen while the app loads. `#cp-event`
+ * carries the same public view `getEventPage` returns, so the app shows
+ * the event without waiting for App Check and a second call. Anything the page may not show (a draft, an
  * unknown name, a busy address) gets the plain app shell.
  */
 export function renderEventPage({view, slug, origin}: {
@@ -134,7 +150,8 @@ export function renderEventPage({view, slug, origin}: {
     ${dates ? `<p>${escape(dates)}</p>` : ""}
     ${place ? `<p>${escape(place)}</p>` : ""}
     ${register}
-  </div></main>` : "";
+  </div></main>
+  <script id="cp-event" type="application/json">${jsonForScript(shown)}</script>` : "";
   return `<!DOCTYPE html>
 <html lang="en">
 <head>

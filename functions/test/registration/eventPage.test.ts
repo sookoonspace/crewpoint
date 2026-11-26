@@ -136,12 +136,27 @@ describe('the server-rendered first page (Req 69)', () => {
     expect(html).not.toContain(E);
   });
 
+  test('carries the public view for the app, so it shows the event without another call', () => {
+    const view = {
+      state: 'open' as const, slug: 's', title: 'Convention </script><script>alert(1)</script>', description: 'a & b',
+      startDate: null, endDate: null, dateOnly: true, timeZone: 'America/Chicago', venues: [], included: null,
+      deadline: 1806555540000, mode: 'open' as const, placesRemain: true, hasCover: false, labels: {},
+    };
+    const html: string = renderEventPage({view, slug: 's', origin: 'https://x'});
+    const m = /<script id="cp-event" type="application\/json">([^<]*)<\/script>/.exec(html);
+    expect(m).not.toBeNull();
+    // The organizer's text can't end the script element.
+    expect(m![1]).not.toContain('</');
+    expect(JSON.parse(m![1])).toEqual(view);
+  });
+
   test('a draft, or an unknown name, gets the plain app shell and no details', async () => {
     await seed({status: 'draft'});
     for (const path of ['/e/convention-2027', '/e/nobody-here']) {
       const html: string = (await get(path)).body;
       expect(html).not.toContain('Convention 2027');
       expect(html).toContain('noindex');
+      expect(html).not.toContain('cp-event');
       expect(html).toContain('flutter_bootstrap.js');
     }
   });
