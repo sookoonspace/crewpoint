@@ -77,6 +77,7 @@ export async function recalculateEvent(db: Firestore, eventId: string, now: Date
       signUps: p.signUps ?? [],
       invitedTo: p.invitedTo ?? [],
       answers: {...(p.fields ?? {}), ...(peoplePrivate.get(d.id) ?? {})},
+      registrationStatus: p.registrationStatus ?? null,
     };
   });
   const groups: CountGroup[] = groupSnap.docs.map((d) => ({

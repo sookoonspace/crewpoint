@@ -1,0 +1,67 @@
+[
+  {
+    "name": "only by-sign-up sessions are choices, in time order",
+    "policy": "everyone",
+    "sessions": [
+      {"id": "lunch", "startAt": "2027-07-17T17:00:00Z", "endAt": "2027-07-17T18:00:00Z", "attendance": "bySession"},
+      {"id": "opening", "startAt": "2027-07-17T14:00:00Z", "endAt": "2027-07-17T15:00:00Z", "attendance": null},
+      {"id": "tour", "startAt": "2027-07-17T15:00:00Z", "endAt": "2027-07-17T16:00:00Z", "attendance": "bySession"}
+    ],
+    "choices": [["tour"], ["lunch"]]
+  },
+  {
+    "name": "two at the same time are one either/or choice (W-01)",
+    "policy": "everyone",
+    "sessions": [
+      {"id": "park-meal", "startAt": "2027-07-17T17:00:00Z", "endAt": "2027-07-17T19:00:00Z", "attendance": "bySession"},
+      {"id": "hotel-lunch", "startAt": "2027-07-17T17:30:00Z", "endAt": "2027-07-17T18:30:00Z", "attendance": "bySession"}
+    ],
+    "choices": [["park-meal", "hotel-lunch"]]
+  },
+  {
+    "name": "back to back is not at the same time",
+    "policy": "everyone",
+    "sessions": [
+      {"id": "a", "startAt": "2027-07-17T17:00:00Z", "endAt": "2027-07-17T18:00:00Z", "attendance": "bySession"},
+      {"id": "b", "startAt": "2027-07-17T18:00:00Z", "endAt": "2027-07-17T19:00:00Z", "attendance": "bySession"}
+    ],
+    "choices": [["a"], ["b"]]
+  },
+  {
+    "name": "a session with no end lasts an hour",
+    "policy": "everyone",
+    "sessions": [
+      {"id": "a", "startAt": "2027-07-17T17:00:00Z", "endAt": null, "attendance": "bySession"},
+      {"id": "b", "startAt": "2027-07-17T17:45:00Z", "endAt": null, "attendance": "bySession"}
+    ],
+    "choices": [["a", "b"]]
+  },
+  {
+    "name": "overlaps chain into one choice",
+    "policy": "everyone",
+    "sessions": [
+      {"id": "a", "startAt": "2027-07-17T10:00:00Z", "endAt": "2027-07-17T12:00:00Z", "attendance": "bySession"},
+      {"id": "b", "startAt": "2027-07-17T11:30:00Z", "endAt": "2027-07-17T13:00:00Z", "attendance": "bySession"},
+      {"id": "c", "startAt": "2027-07-17T12:30:00Z", "endAt": "2027-07-17T14:00:00Z", "attendance": "bySession"}
+    ],
+    "choices": [["a", "b", "c"]]
+  },
+  {
+    "name": "the event's by-sign-up policy makes sessions without their own setting choices",
+    "policy": "bySession",
+    "sessions": [
+      {"id": "a", "startAt": "2027-07-17T10:00:00Z", "endAt": "2027-07-17T11:00:00Z", "attendance": null},
+      {"id": "b", "startAt": "2027-07-17T12:00:00Z", "endAt": "2027-07-17T13:00:00Z", "attendance": "everyone"}
+    ],
+    "choices": [["a"]]
+  },
+  {
+    "name": "hidden drafts are not offered",
+    "policy": "everyone",
+    "sessions": [
+      {"id": "draft", "startAt": "2027-07-17T10:00:00Z", "endAt": null, "attendance": "bySession", "hidden": true},
+      {"id": "shown", "startAt": "2027-07-17T10:00:00Z", "endAt": null, "attendance": "bySession"}
+    ],
+    "choices": [["shown"]]
+  }
+]

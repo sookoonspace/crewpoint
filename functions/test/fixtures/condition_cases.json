@@ -1,0 +1,74 @@
+[
+  {
+    "name": "no condition: always shown",
+    "condition": null,
+    "person": {"categoryId": "adult", "answers": {}},
+    "shown": true
+  },
+  {
+    "name": "category condition: shown to that category",
+    "condition": {"categoryId": "child"},
+    "person": {"categoryId": "child", "answers": {}},
+    "shown": true
+  },
+  {
+    "name": "category condition: hidden from another category",
+    "condition": {"categoryId": "child"},
+    "person": {"categoryId": "adult", "answers": {}},
+    "shown": false
+  },
+  {
+    "name": "category condition: hidden while the category is unknown",
+    "condition": {"categoryId": "child"},
+    "person": {"categoryId": null, "answers": {}},
+    "shown": false
+  },
+  {
+    "name": "yes/no answer Yes shows a question that needs yes",
+    "condition": {"fieldId": "booked", "value": "yes"},
+    "person": {"categoryId": null, "answers": {"booked": true}},
+    "shown": true
+  },
+  {
+    "name": "yes/no answer No hides a question that needs yes",
+    "condition": {"fieldId": "booked", "value": "yes"},
+    "person": {"categoryId": null, "answers": {"booked": false}},
+    "shown": false
+  },
+  {
+    "name": "yes/no answer No shows a question that needs no",
+    "condition": {"fieldId": "booked", "value": "no"},
+    "person": {"categoryId": null, "answers": {"booked": false}},
+    "shown": true
+  },
+  {
+    "name": "unanswered hides a question that needs an answer",
+    "condition": {"fieldId": "booked", "value": "yes"},
+    "person": {"categoryId": null, "answers": {}},
+    "shown": false
+  },
+  {
+    "name": "single choice: the chosen option shows it",
+    "condition": {"fieldId": "diet", "value": "Jain"},
+    "person": {"categoryId": null, "answers": {"diet": "Jain"}},
+    "shown": true
+  },
+  {
+    "name": "single choice: another option hides it",
+    "condition": {"fieldId": "diet", "value": "Jain"},
+    "person": {"categoryId": null, "answers": {"diet": "Veg"}},
+    "shown": false
+  },
+  {
+    "name": "multiple choice: shown when the value is among the choices",
+    "condition": {"fieldId": "days", "value": "Sat"},
+    "person": {"categoryId": null, "answers": {"days": ["Fri", "Sat"]}},
+    "shown": true
+  },
+  {
+    "name": "multiple choice: hidden when it is not",
+    "condition": {"fieldId": "days", "value": "Sun"},
+    "person": {"categoryId": null, "answers": {"days": ["Fri", "Sat"]}},
+    "shown": false
+  }
+]

@@ -48,7 +48,7 @@ function millis(value: Instant): number | null {
   return value.toDate().getTime();
 }
 
-function policyOf(value: string | null | undefined): AttendancePolicy {
+export function policyOf(value: string | null | undefined): AttendancePolicy {
   return (ATTENDANCE_POLICIES as readonly string[]).includes(value ?? "") ?
     value as AttendancePolicy : "everyone";
 }

@@ -79,6 +79,31 @@ describe('computeStats', () => {
     expect(s.sessions.gala.total).toBe(2);
   });
 
+  test('Spec #233 Req 4a: only confirmed people count; drafts, pending and the waitlist are a line apart', () => {
+    const meal = {id: 'm1', startAt: '2027-07-17T17:00:00Z', attendance: 'everyone'};
+    const s = computeStats({
+      policy: 'everyone', sessions: [meal], fields: [diet], groups: [],
+      people: [
+        person('added', {answers: {diet: 'Veg'}}),
+        person('sub', {registrationStatus: 'submitted', groupId: 'g2', answers: {diet: 'Veg'}}),
+        person('pen1', {registrationStatus: 'pending', groupId: 'g3'}),
+        person('pen2', {registrationStatus: 'pending', groupId: 'g3'}),
+        person('wait', {registrationStatus: 'waitlisted', groupId: 'g4'}),
+        person('draft', {registrationStatus: 'draft', groupId: 'g5'}),
+        person('gone', {registrationStatus: 'cancelled', groupId: 'g6'}),
+      ],
+    });
+    expect(s.event.total).toBe(2);
+    expect(s.event.groups).toBe(2);
+    expect(s.event.byField.diet).toEqual({Veg: 2});
+    expect(s.sessions.m1.total).toBe(2);
+    expect(s.notConfirmed).toEqual({
+      draft: {groups: 1, people: 1},
+      pending: {groups: 1, people: 2},
+      waitlisted: {groups: 1, people: 1},
+    });
+  });
+
   test('an empty event counts nothing', () => {
     const s = computeStats({policy: null, sessions: [{id: 's', startAt: '2027-01-01T00:00:00Z'}], people: [], groups: [], fields: [diet]});
     expect(s.event).toEqual({total: 0, groups: 0, byCategory: {}, byField: {diet: {}}});
