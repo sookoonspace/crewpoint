@@ -126,6 +126,18 @@ class MyRegistrationScreen extends ConsumerWidget {
               ),
             ),
           ],
+          // Before the deadline everything can change; after it, the
+          // contact details only (#244, Req 35, 36).
+          if (r.status != 'cancelled')
+            CpButton(
+              key: const Key('$_k.change'),
+              label: v.deadline != null && DateTime.now().isAfter(v.deadline!)
+                  ? s.changeContact
+                  : s.change,
+              icon: CpIcons.actionEdit,
+              expand: true,
+              onPressed: () => context.go('/e/$slug/register'),
+            ),
           CpButton.secondary(
             key: const Key('$_k.back'),
             label: s.backToEvent,

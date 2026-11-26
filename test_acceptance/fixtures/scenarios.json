@@ -100,16 +100,16 @@
  {
   "id": "B-02",
   "title": "Per-person arrival/departure: F4 arrives Sat 11:00am → excluded from M1, M2, P1 automatically.",
-  "status": "PARTIAL",
-  "gap": "Counts already leave people out of sessions before they arrive (#82), and submitRegistration keeps an exact arrival time. The registration form asks arrival and departure as days only, so an 11:00am arrival entered on the form counts from the start of that day.",
+  "status": "PASS",
+  "gap": "Built in #82, #242 and #244: the registration form asks each person's arrival and departure day and time in the event's zone, and Counts leave them out of sessions before they arrive.",
   "tested": true
  },
  {
   "id": "B-03",
   "title": "Per-meal, per-person opt-out (Jaya M2).",
-  "status": "PARTIAL",
-  "gap": "A per-meal opt-out can be set on the person after registering (#82, the person screen), but the registration form does not offer opt-outs for meals everyone attends; only by-sign-up sessions are choices there.",
-  "tested": false
+  "status": "PASS",
+  "gap": "Built in #244: the form's Sessions step lists the sessions everyone attends, and switching one off keeps an opt-out the server checks (never a by-sign-up session); counts leave the person out.",
+  "tested": true
  },
  {
   "id": "B-04",
@@ -128,9 +128,9 @@
  {
   "id": "B-06",
   "title": "Family member (Meera) edits the registration → counts update; audit shows who changed what.",
-  "status": "PLATFORM",
-  "gap": "Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6).",
-  "tested": false
+  "status": "PARTIAL",
+  "gap": "Built in #244: the contact or a linked adult edits the registration, counts follow, and every change is logged with who, when and each field before and after (private values as changed only). A screen for the committee to read the log comes with #249.",
+  "tested": true
  },
  {
   "id": "B-07",
@@ -177,9 +177,9 @@
  {
   "id": "B-13",
   "title": "Registration closes on a set date; later changes need committee help.",
-  "status": "PLATFORM",
-  "gap": "Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6).",
-  "tested": false
+  "status": "PARTIAL",
+  "gap": "Built in #244: after the deadline new registrations are refused, families can still see their registration and change contact details, and the closed pages show the organizer's contact line. Committee changes after the deadline come with #249.",
+  "tested": true
  },
  {
   "id": "B-14",

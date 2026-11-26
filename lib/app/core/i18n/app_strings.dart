@@ -5625,6 +5625,8 @@ class RegistrationSettingsStrings {
   String get saved => _l.regSettingsSaved;
   String get saveFailed => _l.regSettingsSaveFailed;
   String get included => _l.regSettingsIncluded;
+  String get contactLine => _l.regSettingsContactLine;
+  String get contactLineHelp => _l.regSettingsContactLineHelp;
   String get includedHelp => _l.regSettingsIncludedHelp;
 }
 
@@ -5776,6 +5778,15 @@ class RegisterFormStrings {
   String get saving => _l.registerFormSaving;
   String get notSaved => _l.registerFormNotSaved;
   String get offline => _l.registerFormOffline;
+  String get saveChanges => _l.registerFormSaveChanges;
+  String get changesSaved => _l.registerFormChangesSaved;
+  String get changesSavedBody => _l.registerFormChangesSavedBody;
+  String get contactOnly => _l.registerFormContactOnly;
+  String get arrivalTime => _l.registerFormArrivalTime;
+  String get leavingTime => _l.registerFormLeavingTime;
+  String get attendingTitle => _l.registerFormAttendingTitle;
+  String get attendingHelp => _l.registerFormAttendingHelp;
+  String get notAttending => _l.registerFormNotAttending;
 }
 
 /// "My registration" (Spec #233 Req 9, 19, 35; #242), translated (ARB).
@@ -5799,4 +5810,6 @@ class MyRegistrationStrings {
   String get noneHelp => _l.myRegistrationNoneHelp;
   String get register => _l.myRegistrationRegister;
   String get backToEvent => _l.myRegistrationBackToEvent;
+  String get change => _l.myRegistrationChange;
+  String get changeContact => _l.myRegistrationChangeContact;
 }

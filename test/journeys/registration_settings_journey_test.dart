@@ -360,6 +360,22 @@ void main() {
     await robot.finish();
   });
 
+  testWidgets('#244: the organizer contact line families see once '
+      'registration closes', (tester) async {
+    final robot = await open(tester);
+    await robot.typeInto(
+      const Key('$k.contactLine'),
+      'Questions? Call Nilesh at 312-555-0123',
+    );
+    await robot.tap(const Key('$k.save'));
+    await robot.finishTransition();
+    expect(
+      (await saved()).contactLine?.en,
+      'Questions? Call Nilesh at 312-555-0123',
+    );
+    await robot.finish();
+  });
+
   testWidgets('needs event.manage', (tester) async {
     final robot = await open(tester, as: 'sam');
     expect(find.byKey(const Key('$k.body')), findsNothing);

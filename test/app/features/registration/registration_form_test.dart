@@ -299,4 +299,75 @@ void main() {
     expect(RegistrationDraft.tryParse('nope'), isNull);
     expect(RegistrationDraft.tryParse(const {'people': 7}), isNull);
   });
+
+  group('#244 editing', () {
+    final editing = RegistrationFormSpec.fromMap({
+      ...formMap(),
+      'editable': 'all',
+      'contactLine': const {'en': 'Call Nilesh at 312-555-0123'},
+      'attending': [
+        {
+          'id': 'M2',
+          'title': 'Breakfast',
+          'startAt': DateTime.utc(2027, 7, 17, 13).millisecondsSinceEpoch,
+          'endAt': null,
+        },
+      ],
+      'current': {
+        'groupName': 'Patel family',
+        'email': 'asha@example.com',
+        'phone': '+13125550100',
+        'groupAnswers': const {'hotel': 'Hilton'},
+        'people': [
+          {
+            'id': 'p1',
+            'name': 'Asha Patel',
+            'birthDate': '1980-03-01',
+            'age': null,
+            'answers': const {'diet': 'Jain'},
+            'arrivalAt': DateTime.utc(2027, 7, 17, 16).millisecondsSinceEpoch,
+            'departureAt': null,
+            'signUps': const ['park'],
+            'optOuts': const ['M2'],
+          },
+        ],
+      },
+    });
+
+    test('reads the registration to edit, the sessions to opt out of and '
+        'the contact line', () {
+      expect(editing.editable, FormEditable.all);
+      expect(editing.contactLine?.en, 'Call Nilesh at 312-555-0123');
+      expect(editing.attending.single.id, 'M2');
+      final current = editing.current!;
+      expect(current.groupName, 'Patel family');
+      expect(current.phone, '+13125550100');
+      final asha = current.people.single;
+      expect(asha.id, 'p1');
+      expect(asha.arrivalAt, DateTime.utc(2027, 7, 17, 16));
+      expect(asha.optOuts, {'M2'});
+    });
+
+    test('what is sent keeps each person\'s ID and opt-outs', () {
+      final sent = editing.toSubmitMap(editing.current!);
+      final person = (sent['people']! as List).single as Map<String, Object?>;
+      expect(person['id'], 'p1');
+      expect(person['optOuts'], ['M2']);
+      expect(person['arrivalAt'], DateTime.utc(2027, 7, 17, 16).millisecondsSinceEpoch);
+    });
+
+    test('after the deadline the form is the contact details only', () {
+      final closed = RegistrationFormSpec.fromMap({
+        ...formMap(),
+        'editable': 'contact',
+      });
+      expect(closed.steps.map((s) => s.id), ['contact', 'review']);
+    });
+
+    test('a draft keeps IDs and opt-outs too', () {
+      final back = RegistrationDraft.fromMap(editing.current!.toMap());
+      expect(back.people.single.id, 'p1');
+      expect(back.people.single.optOuts, {'M2'});
+    });
+  });
 }

@@ -251,6 +251,15 @@ class _EventDetails extends ConsumerWidget {
             key: const Key('events.page.deadline'),
             style: cp.type.bodyMedium.copyWith(color: cp.colors.text),
           ),
+        // After it closes: how to reach the organizer (Req 35, B-13).
+        if (closed && event.contactLine != null)
+          Text(
+            language == 'gu' && event.contactLine!.gu != null
+                ? event.contactLine!.gu!
+                : event.contactLine!.en,
+            key: const Key('events.page.contactLine'),
+            style: cp.type.bodyMedium.copyWith(color: cp.colors.text),
+          ),
         if (event.venues.isNotEmpty) ...[
           CpSectionHeader(title: strings.whereHeading),
           CpCard(

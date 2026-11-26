@@ -643,10 +643,15 @@ class FakeMemberCalls implements MemberCalls {
   final List<Map<String, Object?>> submissions = [];
   final Map<String, SubmitResult> _submitted = {};
 
+  /// Refusals for a slug's form, as the server gives them (#244).
+  final Map<String, FirebaseFunctionsException> registrationFormRefusals = {};
+
   @override
   Future<RegistrationFormSpec> getRegistrationForm(String slug) async {
     calls.add('getRegistrationForm:$slug');
     _maybeFail();
+    final refusal = registrationFormRefusals[slug.toLowerCase()];
+    if (refusal != null) throw refusal;
     final form = registrationForms[slug.toLowerCase()];
     if (form == null) {
       throw FirebaseFunctionsException(
@@ -691,6 +696,30 @@ class FakeMemberCalls implements MemberCalls {
     if (kept != null && kept.savedAt.isAfter(savedAt)) return kept.savedAt;
     savedDrafts[slug] = (draft: draft, savedAt: savedAt);
     return savedAt;
+  }
+
+  /// Every saved edit's payload, in order (#244).
+  final List<Map<String, Object?>> updates = [];
+
+  /// People a registration may grow to; more are refused as the server
+  /// does, with its message. Null for no limit.
+  int? roomFor;
+
+  @override
+  Future<int> updateRegistration(Map<String, Object?> payload) async {
+    calls.add('updateRegistration');
+    _maybeFail();
+    final people = (payload['people'] as List?)?.length ?? 0;
+    if (roomFor != null && people > roomFor!) {
+      throw FirebaseFunctionsException(
+        code: 'failed-precondition',
+        message:
+            "There's no room to add more people. Please contact the organizer.",
+        details: const {'reason': 'noRoom'},
+      );
+    }
+    updates.add(payload);
+    return 1;
   }
 
   /// Answers as `submitRegistration` does: a repeat with the same
