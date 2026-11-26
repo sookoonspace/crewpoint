@@ -246,25 +246,25 @@ The family-facing core: the form built from the event's sections and built-in bl
 - Robot harnesses in `test/harness/`, robots in `test/robots/`; bounded pumps instead of `pumpAndSettle` over mirrors.
 
 ### Acceptance criteria
-- [ ] `registrations/{registrationId}` per Technical Decision 1 (`groupId`, `contactUid`, `status`, `submittedAt`, `updatedAt`, `waitlistPosition`, `cancelReason`, `mergedInto`, `duplicateOf`, `extraGuestsAllowed`, last `submissionId`); statuses `draft`, `submitted`, `pending` (only when review is on), `waitlisted`, `cancelled` with Req 4's effects.
-- [ ] Registering owns exactly one Group; its people are written as Participants on first save; a group of one hides group words (Req 1, 2).
-- [ ] The form renders sections in order with the enabled blocks: People (name and birth date, or age only; category worked out as today), Stay, Session choices (two by-sign-up sessions at the same time shown as one either/or choice, W-01), Contact (email and E.164 phone, private).
-- [ ] Conditions (category, or one answer's value) show and hide questions; hidden questions are never required and their answers are not saved. Pure evaluator built TDD with shared fixtures (Req 18).
-- [ ] Required questions and the People block are checked on Submit, with errors beside the field and a count at the top (Req 21); private answers and birth dates follow Stage 1 rules (Req 22).
-- [ ] Review page lists every person and answer with Edit per section, then Submit; the confirmation screen follows (Req 20).
-- [ ] Submit is a callable taking a `submissionId`; a repeat with the same ID returns the first result; in one transaction it reads and updates `registrationTally/current` (no Firestore count query); two submissions for the last places get them in turn and the one that no longer fits is waitlisted (Req 25, 32a, TD 4).
-- [ ] A group that would exceed capacity is waitlisted whole and sees "You're on the waitlist, number N" (Req 33).
-- [ ] The server mirrors registration status onto the group and its people; confirmed counts (submitted plus organizer-added) drive sessions, agendas, exports and Counts; `pending` counts toward capacity only (Req 4a).
-- [ ] The confirmation email lists who and what was registered with a link back to "my registration" (N-01), through #235's outbox.
-- [ ] Only `submitted` groups see the after-registration note, replaced after its date (Req 19, B-07, B-15).
-- [ ] `/e/:eventSlug/registration` shows "my registration" to the contact. No fee is shown anywhere (Req 7).
-- [ ] TDD for the allocator (whole groups, next group that fits), condition evaluation and either/or choices; backend tests for submit success, refusals, idempotency and the two-submit race on the emulators.
-- [ ] Robot journey: a family registers on an open event: event page, email sign-in (fake), sections, stays, session choices, review, submit, confirmation, "my registration"; and a full event waitlists a group.
-- [ ] Acceptance tests named by ID for the scenarios this delivers (B-01 to B-03, B-07, B-09, B-15, W-01, N-01), `scenarios.json` updated.
-- [ ] Quality floor (Req 71): 48 px tap targets, readable at 320 px with 200% text, screen-reader labels, dark mode, status shown with icon and colour together, all text through `context.strings` (English and Gujarati ARB entries), general concepts through `event.words`; design system only (guard test passes); a `domain.feature.action` key on every new interactive widget.
-- [ ] `cd functions && npm run build` and `npm test` pass on the `demo-crewpoint` emulators; every new callable is exported from `functions/src/index.ts` (`appCallables.test.ts`) and every new restricted path joins `roleMatrix.test.ts`.
-- [ ] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass; no test initialises Firebase or touches a real project; naming guardrail passes.
-- [ ] Merges after green CI and the owner's go-ahead; reaches dev only with the owner's approval for that deploy; stg and prod are untouched. CLAUDE.md's Architecture section is updated for what landed.
+- [x] `registrations/{registrationId}` per Technical Decision 1 (`groupId`, `contactUid`, `status`, `submittedAt`, `updatedAt`, `waitlistPosition`, `cancelReason`, `mergedInto`, `duplicateOf`, `extraGuestsAllowed`, last `submissionId`); statuses `draft`, `submitted`, `pending` (only when review is on), `waitlisted`, `cancelled` with Req 4's effects.
+- [x] Registering owns exactly one Group; its people are written as Participants on first save; a group of one hides group words (Req 1, 2).
+- [x] The form renders sections in order with the enabled blocks: People (name and birth date, or age only; category worked out as today), Stay, Session choices (two by-sign-up sessions at the same time shown as one either/or choice, W-01), Contact (email and E.164 phone, private).
+- [x] Conditions (category, or one answer's value) show and hide questions; hidden questions are never required and their answers are not saved. Pure evaluator built TDD with shared fixtures (Req 18).
+- [x] Required questions and the People block are checked on Submit, with errors beside the field and a count at the top (Req 21); private answers and birth dates follow Stage 1 rules (Req 22).
+- [x] Review page lists every person and answer with Edit per section, then Submit; the confirmation screen follows (Req 20).
+- [x] Submit is a callable taking a `submissionId`; a repeat with the same ID returns the first result; in one transaction it reads and updates `registrationTally/current` (no Firestore count query); two submissions for the last places get them in turn and the one that no longer fits is waitlisted (Req 25, 32a, TD 4).
+- [x] A group that would exceed capacity is waitlisted whole and sees "You're on the waitlist, number N" (Req 33).
+- [ ] The server mirrors registration status onto the group and its people; confirmed counts (submitted plus organizer-added) drive sessions, agendas, exports and Counts; `pending` counts toward capacity only (Req 4a). *Done for the mirror, Counts and session counts (#275, #278). The roster export and agendas do not yet tell confirmed from waitlisted people: the export's status column is #249.*
+- [x] The confirmation email lists who and what was registered with a link back to "my registration" (N-01), through #235's outbox.
+- [x] Only `submitted` groups see the after-registration note, replaced after its date (Req 19, B-07, B-15).
+- [x] `/e/:eventSlug/registration` shows "my registration" to the contact. No fee is shown anywhere (Req 7).
+- [x] TDD for the allocator (whole groups, next group that fits), condition evaluation and either/or choices; backend tests for submit success, refusals, idempotency and the two-submit race on the emulators.
+- [x] Robot journey: a family registers on an open event: event page, email sign-in (fake), sections, stays, session choices, review, submit, confirmation, "my registration"; and a full event waitlists a group.
+- [x] Acceptance tests named by ID for the scenarios this delivers (B-01 to B-03, B-07, B-09, B-15, W-01, N-01), `scenarios.json` updated. *B-01, B-07, W-01 and N-01 pass; B-02, B-09 and B-15 are PARTIAL with tests; B-03 is PARTIAL. Arrival times (B-02) and meal opt-outs (B-03) moved to #244 by the owner.*
+- [x] Quality floor (Req 71): 48 px tap targets, readable at 320 px with 200% text, screen-reader labels, dark mode, status shown with icon and colour together, all text through `context.strings` (English and Gujarati ARB entries), general concepts through `event.words`; design system only (guard test passes); a `domain.feature.action` key on every new interactive widget.
+- [x] `cd functions && npm run build` and `npm test` pass on the `demo-crewpoint` emulators; every new callable is exported from `functions/src/index.ts` (`appCallables.test.ts`) and every new restricted path joins `roleMatrix.test.ts`.
+- [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass; no test initialises Firebase or touches a real project; naming guardrail passes.
+- [x] Merges after green CI and the owner's go-ahead; reaches dev only with the owner's approval for that deploy; stg and prod are untouched. CLAUDE.md's Architecture section is updated for what landed.
 
 ### Covers
 - User Stories: 1, 7, 13
@@ -323,8 +323,10 @@ Free edits before the deadline, "Registration is closed" after it with what fami
 - [ ] Before the deadline the contact edits their registration freely; every change writes `changes/{changeId}` (server only) with who, when, which field, and before and after values; `registrations.manage` reads the log (Req 36, B-06). The change-log diff is pure and built TDD.
 - [ ] After the deadline (a date and time in the event's time zone) the link shows "Registration is closed" with the organizer's contact line; new submissions are refused; families can still view their registration, accept waivers and update contact details; other changes are refused (Req 35, B-13).
 - [ ] Adding people to a submitted group with no room is refused with "There's no room to add more people. Please contact the organizer." and the group's existing places are kept (Req 32a).
+- [ ] Arrival and departure **times**, not only days, on the form's Stay step (and when editing), in the event's time zone, so someone arriving Saturday 11:00am is left out of Friday's meals and Saturday breakfast (B-02; moved from #242 by the owner, Nov 26, 2026).
+- [ ] Per-person **meal opt-outs** on the form (and when editing) for sessions everyone attends, written to Stage 1's `optOuts` and checked by the server, so Jaya opting out of M2 is not counted for it (B-03; moved from #242 by the owner, Nov 26, 2026).
 - [ ] Backend tests with an injected clock for before and after the deadline; widget test for the closed state.
-- [ ] Acceptance tests B-06 and B-13 named by ID.
+- [ ] Acceptance tests B-02, B-03, B-06 and B-13 named by ID; B-02 and B-03 move from PARTIAL to PASS in `scenarios.json`.
 - [ ] Quality floor (Req 71): 48 px tap targets, readable at 320 px with 200% text, screen-reader labels, dark mode, status shown with icon and colour together, all text through `context.strings` (English and Gujarati ARB entries), general concepts through `event.words`; design system only (guard test passes); a `domain.feature.action` key on every new interactive widget.
 - [ ] `cd functions && npm run build` and `npm test` pass on the `demo-crewpoint` emulators; every new callable is exported from `functions/src/index.ts` (`appCallables.test.ts`) and every new restricted path joins `roleMatrix.test.ts`.
 - [ ] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass; no test initialises Firebase or touches a real project; naming guardrail passes.
