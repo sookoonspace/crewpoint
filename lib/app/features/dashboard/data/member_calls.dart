@@ -2,6 +2,7 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_acces
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/invite.dart';
 import 'package:crewpoint_app/app/features/registration/domain/public_event.dart';
+import 'package:crewpoint_app/app/features/registration/domain/registration_form.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_settings.dart';
 
 /// What linking a signed-in account found (Req 46): events it was linked
@@ -203,6 +204,16 @@ abstract interface class MemberCalls {
   /// not. Throws `not-found` for an unknown name, and `resource-exhausted`
   /// with `details.reason` `rateLimited` when one address opens too many.
   Future<PublicEvent> getEventPage(String slug);
+
+  /// What the registration form for [slug] asks (#242), for a signed-in
+  /// visitor. Throws `failed-precondition` (`notOpen`, `closed`) or
+  /// `permission-denied` (`invitedOnly`) with `details.reason`.
+  Future<RegistrationFormSpec> getRegistrationForm(String slug);
+
+  /// Submits a registration (#242), [payload] as
+  /// [RegistrationFormSpec.toSubmitMap] makes it. A repeat with the same
+  /// `submissionId` returns the first result.
+  Future<SubmitResult> submitRegistration(Map<String, Object?> payload);
 }
 
 class FirebaseMemberCalls implements MemberCalls {
@@ -488,4 +499,15 @@ class FirebaseMemberCalls implements MemberCalls {
   @override
   Future<PublicEvent> getEventPage(String slug) async =>
       PublicEvent.fromMap(await _call('getEventPage', {'slug': slug}));
+
+  @override
+  Future<RegistrationFormSpec> getRegistrationForm(String slug) async =>
+      RegistrationFormSpec.fromMap(
+        await _call('getRegistrationForm', {'slug': slug}),
+      );
+
+  @override
+  Future<SubmitResult> submitRegistration(
+    Map<String, Object?> payload,
+  ) async => SubmitResult.fromMap(await _call('submitRegistration', payload));
 }
