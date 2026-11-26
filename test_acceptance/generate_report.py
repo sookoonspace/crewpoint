@@ -28,7 +28,7 @@ DOC = 'docs/testing/CREWPOINT_CONVENTION_TEST_v4.md'
 RECORD = 'test_acceptance/fixtures/scenarios.json'
 FINISHED = 'test_acceptance/finished_scenarios.json'
 OUT = 'docs/testing/CONVENTION_TEST_REPORT_v4.md'
-RUN_DATE = 'Nov 20, 2026'
+RUN_DATE = 'Nov 26, 2026'
 
 PS, PA, FA, NB, PL, NR, BL = 'PASS', 'PARTIAL', 'FAIL', 'NOT BUILT', 'PLATFORM', 'NOT RUN', 'BLOCKED'
 ST = [PS, PA, FA, NB, PL, NR, BL]

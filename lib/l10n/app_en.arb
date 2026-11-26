@@ -1322,5 +1322,75 @@
   "registerFormYou": "You",
   "@registerFormYou": {
     "description": "Review heading for a group of one."
+  },
+  "myRegistrationTitle": "My registration",
+  "@myRegistrationTitle": {
+    "description": "Screen title."
+  },
+  "myRegistrationSubmitted": "Submitted",
+  "@myRegistrationSubmitted": {
+    "description": "Status: submitted."
+  },
+  "myRegistrationPending": "Pending review",
+  "@myRegistrationPending": {
+    "description": "Status: waiting for the organizer."
+  },
+  "myRegistrationWaitlisted": "Waitlisted, number {position}",
+  "@myRegistrationWaitlisted": {
+    "description": "Status: on the waitlist.",
+    "placeholders": {
+      "position": {
+        "type": "int"
+      }
+    }
+  },
+  "myRegistrationDraft": "Draft",
+  "@myRegistrationDraft": {
+    "description": "Status: not sent yet."
+  },
+  "myRegistrationCancelled": "Cancelled",
+  "@myRegistrationCancelled": {
+    "description": "Status: cancelled."
+  },
+  "myRegistrationSentOn": "Sent {date}",
+  "@myRegistrationSentOn": {
+    "description": "When it was sent.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "myRegistrationWaitlistHelp": "If places free up, we'll email you an offer.",
+  "@myRegistrationWaitlistHelp": {
+    "description": "Help under the waitlist status."
+  },
+  "myRegistrationPendingHelp": "The organizer will confirm your place.",
+  "@myRegistrationPendingHelp": {
+    "description": "Help under the pending status."
+  },
+  "myRegistrationPeople": "Who's registered",
+  "@myRegistrationPeople": {
+    "description": "People section heading."
+  },
+  "myRegistrationNote": "From the organizer",
+  "@myRegistrationNote": {
+    "description": "After-registration note heading."
+  },
+  "myRegistrationNone": "You haven't registered yet",
+  "@myRegistrationNone": {
+    "description": "No registration yet."
+  },
+  "myRegistrationNoneHelp": "Once you register, you'll see it here.",
+  "@myRegistrationNoneHelp": {
+    "description": "Help with no registration."
+  },
+  "myRegistrationRegister": "Register",
+  "@myRegistrationRegister": {
+    "description": "Opens the form."
+  },
+  "myRegistrationBackToEvent": "Back to the event",
+  "@myRegistrationBackToEvent": {
+    "description": "Leads to the event page."
   }
 }

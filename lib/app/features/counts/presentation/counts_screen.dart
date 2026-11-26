@@ -442,6 +442,21 @@ class _CountsScreenState extends ConsumerState<CountsScreen> {
                 key: const Key('counts.event.total'),
                 style: cp.type.headlineSmall.copyWith(color: cp.colors.text),
               ),
+              if (!stats.notConfirmed.isEmpty)
+                Text(
+                  strings.notConfirmed(
+                    groups: strings.groups(
+                      stats.notConfirmed.groups,
+                      event.words.other('group'),
+                    ),
+                    people: strings.people(stats.notConfirmed.people),
+                    pending: stats.notConfirmed.pending.people,
+                    waitlisted: stats.notConfirmed.waitlisted.people,
+                    drafts: stats.notConfirmed.draft.people,
+                  ),
+                  key: const Key('counts.event.notConfirmed'),
+                  style: muted,
+                ),
               ..._breakdown(stats.event, 'event', categories, fields),
             ],
           ),

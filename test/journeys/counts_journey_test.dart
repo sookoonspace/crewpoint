@@ -142,6 +142,26 @@ void main() {
     await robot.finish();
   });
 
+  testWidgets('Spec #233 Req 4a: registrations not yet confirmed show on one '
+      'line apart, and only when there are any', (tester) async {
+    final robot = await open(tester);
+    expect(find.byKey(const Key('counts.event.notConfirmed')), findsNothing);
+    await harness.firestore.doc('$e/stats/current').update({
+      'notConfirmed': {
+        'draft': {'groups': 1, 'people': 1},
+        'pending': {'groups': 1, 'people': 2},
+        'waitlisted': {'groups': 1, 'people': 5},
+      },
+    });
+    await robot.settle();
+    expect(
+      text(tester, 'counts.event.notConfirmed'),
+      'Not yet confirmed: 3 groups, 8 people '
+      '(2 pending review, 5 waitlisted, 1 in drafts)',
+    );
+    await robot.finish();
+  });
+
   testWidgets('B-05 shows each session, by diet', (tester) async {
     final robot = await open(tester, as: 'lead');
     await robot.expectFound(const Key('counts.session.m3'));

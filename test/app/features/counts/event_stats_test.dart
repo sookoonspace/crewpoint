@@ -55,4 +55,20 @@ void main() {
       ['Jain', 'Veg', '_none'],
     );
   });
+
+  test('Spec #233 Req 4a: registrations not yet confirmed, apart', () {
+    final stats = EventStats.fromFirestore(const {
+      'event': {'total': 2},
+      'notConfirmed': {
+        'draft': {'groups': 1, 'people': 1},
+        'pending': {'groups': 1, 'people': 2},
+        'waitlisted': {'groups': 2, 'people': 5},
+      },
+    });
+    expect(stats.notConfirmed.pending, (groups: 1, people: 2));
+    expect(stats.notConfirmed.waitlisted, (groups: 2, people: 5));
+    expect(stats.notConfirmed.groups, 4);
+    expect(stats.notConfirmed.people, 8);
+    expect(EventStats.fromFirestore(const {}).notConfirmed.isEmpty, isTrue);
+  });
 }

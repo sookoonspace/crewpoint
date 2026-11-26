@@ -16,6 +16,7 @@ import 'package:crewpoint_app/app/features/registration/domain/registration_sett
 import 'package:crewpoint_app/l10n/gen/app_localizations.dart';
 
 import '../app/features/auth/fake_auth_service.dart';
+import 'package:crewpoint_app/app/features/registration/domain/my_registration.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_form.dart';
 import 'fake_member_calls.dart';
 import 'fake_qr.dart';
@@ -54,6 +55,11 @@ class SignInHarness {
       title: 'Convention 2027',
       timeZone: 'America/Chicago',
       blocks: {RegistrationBlock.people},
+    );
+    // No registration yet, so "my registration" offers Register.
+    calls.myRegistrations[slug] = const MyRegistrationView(
+      title: 'Convention 2027',
+      timeZone: 'America/Chicago',
     );
   }
 

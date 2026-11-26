@@ -45,6 +45,7 @@ abstract class AppStrings {
   EventPageStrings get eventPage;
   LightSignInStrings get lightSignIn;
   RegisterFormStrings get registerForm;
+  MyRegistrationStrings get myRegistration;
   MemberPickerStrings get memberPicker;
   ScheduleStrings get schedule;
   AgendaStrings get agenda;
@@ -809,6 +810,9 @@ class _LocalizedStrings extends _EnglishStrings {
 
   @override
   RegisterFormStrings get registerForm => RegisterFormStrings(_l);
+
+  @override
+  MyRegistrationStrings get myRegistration => MyRegistrationStrings(_l);
 }
 
 /// The language choice (Req 56).
@@ -920,6 +924,10 @@ class _EnglishStrings extends AppStrings {
   @override
   RegisterFormStrings get registerForm =>
       RegisterFormStrings(lookupAppLocalizations(const Locale('en')));
+
+  @override
+  MyRegistrationStrings get myRegistration =>
+      MyRegistrationStrings(lookupAppLocalizations(const Locale('en')));
 
   @override
   MemberPickerStrings get memberPicker => const _EnglishMemberPickerStrings();
@@ -4786,6 +4794,15 @@ abstract class CountsStrings {
   String get wholeEvent;
   String people(int n);
   String groups(int n, String groupWord);
+
+  /// Registrations not yet confirmed (Spec #233 Req 4a), apart.
+  String notConfirmed({
+    required String groups,
+    required String people,
+    required int pending,
+    required int waitlisted,
+    required int drafts,
+  });
   String get byCategory;
   String get noCategory;
   String get noAnswer;
@@ -4860,6 +4877,21 @@ class _EnglishCountsStrings extends CountsStrings {
   String people(int n) => n == 1 ? '1 person' : '$n people';
   @override
   String groups(int n, String groupWord) => '$n ${groupWord.toLowerCase()}';
+  @override
+  String notConfirmed({
+    required String groups,
+    required String people,
+    required int pending,
+    required int waitlisted,
+    required int drafts,
+  }) {
+    final parts = [
+      if (pending > 0) '$pending pending review',
+      if (waitlisted > 0) '$waitlisted waitlisted',
+      if (drafts > 0) '$drafts in drafts',
+    ];
+    return 'Not yet confirmed: $groups, $people (${parts.join(', ')})';
+  }
   @override
   String get byCategory => 'By category';
   @override
@@ -5740,4 +5772,27 @@ class RegisterFormStrings {
   String get alreadyTitle => _l.registerFormAlreadyTitle;
   String get alreadyBody => _l.registerFormAlreadyBody;
   String get you => _l.registerFormYou;
+}
+
+/// "My registration" (Spec #233 Req 9, 19, 35; #242), translated (ARB).
+class MyRegistrationStrings {
+  const MyRegistrationStrings(this._l);
+
+  final AppLocalizations _l;
+
+  String get title => _l.myRegistrationTitle;
+  String get submitted => _l.myRegistrationSubmitted;
+  String get pending => _l.myRegistrationPending;
+  String waitlisted(int position) => _l.myRegistrationWaitlisted(position);
+  String get draft => _l.myRegistrationDraft;
+  String get cancelled => _l.myRegistrationCancelled;
+  String sentOn(String date) => _l.myRegistrationSentOn(date);
+  String get waitlistHelp => _l.myRegistrationWaitlistHelp;
+  String get pendingHelp => _l.myRegistrationPendingHelp;
+  String get people => _l.myRegistrationPeople;
+  String get note => _l.myRegistrationNote;
+  String get none => _l.myRegistrationNone;
+  String get noneHelp => _l.myRegistrationNoneHelp;
+  String get register => _l.myRegistrationRegister;
+  String get backToEvent => _l.myRegistrationBackToEvent;
 }

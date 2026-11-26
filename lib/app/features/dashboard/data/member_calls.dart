@@ -2,6 +2,7 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/expense_acces
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:crewpoint_app/app/features/dashboard/domain/models/invite.dart';
 import 'package:crewpoint_app/app/features/registration/domain/public_event.dart';
+import 'package:crewpoint_app/app/features/registration/domain/my_registration.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_form.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_settings.dart';
 
@@ -214,6 +215,10 @@ abstract interface class MemberCalls {
   /// [RegistrationFormSpec.toSubmitMap] makes it. A repeat with the same
   /// `submissionId` returns the first result.
   Future<SubmitResult> submitRegistration(Map<String, Object?> payload);
+
+  /// "My registration" for [slug] (#242): the caller's registration, as
+  /// its contact or a linked adult, or none.
+  Future<MyRegistrationView> getMyRegistration(String slug);
 }
 
 class FirebaseMemberCalls implements MemberCalls {
@@ -510,4 +515,10 @@ class FirebaseMemberCalls implements MemberCalls {
   Future<SubmitResult> submitRegistration(
     Map<String, Object?> payload,
   ) async => SubmitResult.fromMap(await _call('submitRegistration', payload));
+
+  @override
+  Future<MyRegistrationView> getMyRegistration(String slug) async =>
+      MyRegistrationView.fromMap(
+        await _call('getMyRegistration', {'slug': slug}),
+      );
 }
