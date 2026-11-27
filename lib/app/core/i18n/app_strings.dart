@@ -48,6 +48,7 @@ abstract class AppStrings {
   MyRegistrationStrings get myRegistration;
   PhotoConsentStrings get photoConsent;
   WaitlistStrings get waitlist;
+  CommitteeStrings get committee;
   MemberPickerStrings get memberPicker;
   ScheduleStrings get schedule;
   AgendaStrings get agenda;
@@ -821,6 +822,9 @@ class _LocalizedStrings extends _EnglishStrings {
 
   @override
   WaitlistStrings get waitlist => WaitlistStrings(_l);
+
+  @override
+  CommitteeStrings get committee => CommitteeStrings(_l);
 }
 
 /// The language choice (Req 56).
@@ -944,6 +948,10 @@ class _EnglishStrings extends AppStrings {
   @override
   WaitlistStrings get waitlist =>
       WaitlistStrings(lookupAppLocalizations(const Locale('en')));
+
+  @override
+  CommitteeStrings get committee =>
+      CommitteeStrings(lookupAppLocalizations(const Locale('en')));
 
   @override
   MemberPickerStrings get memberPicker => const _EnglishMemberPickerStrings();
@@ -5990,4 +5998,112 @@ class WaitlistStrings {
   String get retry => _l.waitlistRetry;
   String people(int count) => _l.waitlistPeople(count);
   String hours(int count) => _l.waitlistHours(count);
+}
+
+/// The committee's Registration screens (Spec #233 Req 64-66; #249),
+/// translated (ARB).
+class CommitteeStrings {
+  const CommitteeStrings(this._l);
+
+  final AppLocalizations _l;
+
+  String get title => _l.committeeTitle;
+  String get hubSubtitle => _l.committeeHubSubtitle;
+  String get statusSubmitted => _l.committeeStatusSubmitted;
+  String get statusPending => _l.committeeStatusPending;
+  String get statusWaitlisted => _l.committeeStatusWaitlisted;
+  String get statusCancelled => _l.committeeStatusCancelled;
+  String get statusDraft => _l.committeeStatusDraft;
+  String countOf(int count, String word) => _l.committeeCountOf(count, word);
+  String get byStatusHeading => _l.committeeByStatusHeading;
+  String get notConfirmedHeading => _l.committeeNotConfirmedHeading;
+  String get placesHeading => _l.committeePlacesHeading;
+  String get deadlineHeading => _l.committeeDeadlineHeading;
+  String closes(String when) => _l.committeeCloses(when);
+  String closed(String when) => _l.committeeClosed(when);
+  String get noDeadline => _l.committeeNoDeadline;
+  String get linkHeading => _l.committeeLinkHeading;
+  String get noLink => _l.committeeNoLink;
+  String get listsHeading => _l.committeeListsHeading;
+  String get settings => _l.committeeSettings;
+  String get remindHeading => _l.committeeRemindHeading;
+  String get remindHelp => _l.committeeRemindHelp;
+  String get remind => _l.committeeRemind;
+  String get remindTitle => _l.committeeRemindTitle;
+  String get remindBody => _l.committeeRemindBody;
+  String get send => _l.committeeSend;
+  String get cancel => _l.committeeCancel;
+  String get loadFailed => _l.committeeLoadFailed;
+  String get retry => _l.committeeRetry;
+  String get failed => _l.committeeFailed;
+  String get saved => _l.committeeSaved;
+  String get resent => _l.committeeResent;
+  String get noContact => _l.committeeNoContact;
+  String sentOn(String date) => _l.committeeSentOn(date);
+  String get contactHeading => _l.committeeContactHeading;
+  String get adultsHeading => _l.committeeAdultsHeading;
+  String get peopleHeading => _l.committeePeopleHeading;
+  String get noWaivers => _l.committeeNoWaivers;
+  String waiverLine(String title, int version) => _l.committeeWaiverLine(title, version);
+  String get missingWaivers => _l.committeeMissingWaivers;
+  String get logHeading => _l.committeeLogHeading;
+  String get noChanges => _l.committeeNoChanges;
+  String byWhen(String by, String when) => _l.committeeByWhen(by, when);
+  String changedFields(String fields) => _l.committeeChangedFields(fields);
+  String get logSubmitted => _l.committeeLogSubmitted;
+  String get logCancelled => _l.committeeLogCancelled;
+  String get logApproved => _l.committeeLogApproved;
+  String get logWaitlisted => _l.committeeLogWaitlisted;
+  String get logReinstated => _l.committeeLogReinstated;
+  String get logOfferMade => _l.committeeLogOfferMade;
+  String get logOfferAccepted => _l.committeeLogOfferAccepted;
+  String get logOfferDeclined => _l.committeeLogOfferDeclined;
+  String get logOfferExpired => _l.committeeLogOfferExpired;
+  String get logOfferWithdrawn => _l.committeeLogOfferWithdrawn;
+  String get logOfferExtended => _l.committeeLogOfferExtended;
+  String get system => _l.committeeSystem;
+  String get approve => _l.committeeApprove;
+  String get waitlist => _l.committeeWaitlist;
+  String get reinstate => _l.committeeReinstate;
+  String get cancelRegistration => _l.committeeCancelRegistration;
+  String get resend => _l.committeeResend;
+  String get cancelTitle => _l.committeeCancelTitle;
+  String get cancelBody => _l.committeeCancelBody;
+  String get keep => _l.committeeKeep;
+  String get overTitle => _l.committeeOverTitle;
+  String overBody(int count) => _l.committeeOverBody(count);
+  String get goAhead => _l.committeeGoAhead;
+  String get noRegistration => _l.committeeNoRegistration;
+  String get seeRegistration => _l.committeeSeeRegistration;
+  String get statusFilter => _l.committeeStatusFilter;
+  String get clearStatusFilter => _l.committeeClearStatusFilter;
+  String get addedByOrganizer => _l.committeeAddedByOrganizer;
+  String people(int count) => _l.committeePeople(count);
+  String remindersSent(int count) => _l.committeeRemindersSent(count);
+
+  /// A registration status's name, for tags and filters.
+  String status(String status) => switch (status) {
+    'submitted' => statusSubmitted,
+    'pending' => statusPending,
+    'waitlisted' => statusWaitlisted,
+    'cancelled' => statusCancelled,
+    'draft' => statusDraft,
+    _ => status,
+  };
+
+  /// A change log entry's words (Req 66).
+  String logAction(String action) => switch (action) {
+    'submitted' => logSubmitted,
+    'cancelled' => logCancelled,
+    'approved' => logApproved,
+    'waitlisted' => logWaitlisted,
+    'reinstated' => logReinstated,
+    'offerMade' => logOfferMade,
+    'offerAccepted' => logOfferAccepted,
+    'offerDeclined' => logOfferDeclined,
+    'offerExpired' => logOfferExpired,
+    'offerWithdrawn' => logOfferWithdrawn,
+    'offerExtended' => logOfferExtended,
+    _ => action,
+  };
 }

@@ -2011,5 +2011,356 @@
   "myRegistrationHomeOffered": "A place is available",
   "@myRegistrationHomeOffered": {
     "description": "A registration with an open offer, on home."
+  },
+  "committeeTitle": "Registration",
+  "@committeeTitle": {
+    "description": "Hub entry and screen title."
+  },
+  "committeeHubSubtitle": "Who has registered, and what needs doing",
+  "@committeeHubSubtitle": {
+    "description": "Hub subtitle."
+  },
+  "committeeStatusSubmitted": "Submitted",
+  "@committeeStatusSubmitted": {
+    "description": "Status."
+  },
+  "committeeStatusPending": "Pending review",
+  "@committeeStatusPending": {
+    "description": "Status."
+  },
+  "committeeStatusWaitlisted": "Waitlisted",
+  "@committeeStatusWaitlisted": {
+    "description": "Status."
+  },
+  "committeeStatusCancelled": "Cancelled",
+  "@committeeStatusCancelled": {
+    "description": "Status."
+  },
+  "committeeStatusDraft": "Draft",
+  "@committeeStatusDraft": {
+    "description": "Status."
+  },
+  "committeeCountOf": "{count} {word}",
+  "@committeeCountOf": {
+    "description": "A number with the event's word for groups.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "word": {
+        "type": "String"
+      }
+    }
+  },
+  "committeeByStatusHeading": "By status",
+  "@committeeByStatusHeading": {
+    "description": "Section heading."
+  },
+  "committeeNotConfirmedHeading": "Not confirmed yet",
+  "@committeeNotConfirmedHeading": {
+    "description": "Section heading."
+  },
+  "committeePlacesHeading": "Places",
+  "@committeePlacesHeading": {
+    "description": "Section heading."
+  },
+  "committeeDeadlineHeading": "Deadline",
+  "@committeeDeadlineHeading": {
+    "description": "Section heading."
+  },
+  "committeeCloses": "Closes {when}",
+  "@committeeCloses": {
+    "description": "Deadline ahead.",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "committeeClosed": "Closed {when}",
+  "@committeeClosed": {
+    "description": "Deadline passed.",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "committeeNoDeadline": "No deadline is set.",
+  "@committeeNoDeadline": {
+    "description": "No deadline."
+  },
+  "committeeLinkHeading": "Public link",
+  "@committeeLinkHeading": {
+    "description": "Section heading."
+  },
+  "committeeNoLink": "Choose a link name in Registration settings to share the event page.",
+  "@committeeNoLink": {
+    "description": "No link name yet."
+  },
+  "committeeListsHeading": "Lists",
+  "@committeeListsHeading": {
+    "description": "Shortcuts heading."
+  },
+  "committeeSettings": "Registration settings",
+  "@committeeSettings": {
+    "description": "Shortcut."
+  },
+  "committeeRemindHeading": "Closing reminder",
+  "@committeeRemindHeading": {
+    "description": "Section heading."
+  },
+  "committeeRemindHelp": "Emails everyone who started registering but hasn't sent it yet.",
+  "@committeeRemindHelp": {
+    "description": "Help."
+  },
+  "committeeRemind": "Send closing reminder",
+  "@committeeRemind": {
+    "description": "Button."
+  },
+  "committeeRemindTitle": "Send the closing reminder?",
+  "@committeeRemindTitle": {
+    "description": "Confirm title."
+  },
+  "committeeRemindBody": "The contact of each unsent draft gets an email with the deadline and a link to finish.",
+  "@committeeRemindBody": {
+    "description": "Confirm text."
+  },
+  "committeeSend": "Send",
+  "@committeeSend": {
+    "description": "Confirm."
+  },
+  "committeeCancel": "Cancel",
+  "@committeeCancel": {
+    "description": "Closes a confirm."
+  },
+  "committeeLoadFailed": "We couldn't load the registrations.",
+  "@committeeLoadFailed": {
+    "description": "Loading failed."
+  },
+  "committeeRetry": "Try again",
+  "@committeeRetry": {
+    "description": "Retry."
+  },
+  "committeeFailed": "We couldn't do that. Please try again.",
+  "@committeeFailed": {
+    "description": "An action failed."
+  },
+  "committeeSaved": "Saved.",
+  "@committeeSaved": {
+    "description": "After an action."
+  },
+  "committeeResent": "Confirmation sent.",
+  "@committeeResent": {
+    "description": "After resending."
+  },
+  "committeeNoContact": "There's no email address to send to.",
+  "@committeeNoContact": {
+    "description": "No contact address."
+  },
+  "committeeSentOn": "Sent {date}",
+  "@committeeSentOn": {
+    "description": "When it was sent.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "committeeContactHeading": "Contact",
+  "@committeeContactHeading": {
+    "description": "Section heading."
+  },
+  "committeeAdultsHeading": "Linked adults",
+  "@committeeAdultsHeading": {
+    "description": "Section heading."
+  },
+  "committeePeopleHeading": "People",
+  "@committeePeopleHeading": {
+    "description": "Section heading."
+  },
+  "committeeNoWaivers": "No waivers accepted",
+  "@committeeNoWaivers": {
+    "description": "A person with no waivers."
+  },
+  "committeeWaiverLine": "{title}, version {version}",
+  "@committeeWaiverLine": {
+    "description": "An accepted waiver.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "committeeMissingWaivers": "Missing a waiver",
+  "@committeeMissingWaivers": {
+    "description": "A person missing one."
+  },
+  "committeeLogHeading": "Change log",
+  "@committeeLogHeading": {
+    "description": "Section heading."
+  },
+  "committeeNoChanges": "No changes yet.",
+  "@committeeNoChanges": {
+    "description": "Empty log."
+  },
+  "committeeByWhen": "{by} · {when}",
+  "@committeeByWhen": {
+    "description": "Who and when.",
+    "placeholders": {
+      "by": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "committeeChangedFields": "Changed {fields}",
+  "@committeeChangedFields": {
+    "description": "An edit.",
+    "placeholders": {
+      "fields": {
+        "type": "String"
+      }
+    }
+  },
+  "committeeLogSubmitted": "Registered",
+  "@committeeLogSubmitted": {
+    "description": "Log entry."
+  },
+  "committeeLogCancelled": "Cancelled",
+  "@committeeLogCancelled": {
+    "description": "Log entry."
+  },
+  "committeeLogApproved": "Approved",
+  "@committeeLogApproved": {
+    "description": "Log entry."
+  },
+  "committeeLogWaitlisted": "Moved to the waitlist",
+  "@committeeLogWaitlisted": {
+    "description": "Log entry."
+  },
+  "committeeLogReinstated": "Reinstated",
+  "@committeeLogReinstated": {
+    "description": "Log entry."
+  },
+  "committeeLogOfferMade": "Offered a place",
+  "@committeeLogOfferMade": {
+    "description": "Log entry."
+  },
+  "committeeLogOfferAccepted": "Accepted the offer",
+  "@committeeLogOfferAccepted": {
+    "description": "Log entry."
+  },
+  "committeeLogOfferDeclined": "Said no thanks",
+  "@committeeLogOfferDeclined": {
+    "description": "Log entry."
+  },
+  "committeeLogOfferExpired": "Offer expired",
+  "@committeeLogOfferExpired": {
+    "description": "Log entry."
+  },
+  "committeeLogOfferWithdrawn": "Offer withdrawn",
+  "@committeeLogOfferWithdrawn": {
+    "description": "Log entry."
+  },
+  "committeeLogOfferExtended": "Offer extended",
+  "@committeeLogOfferExtended": {
+    "description": "Log entry."
+  },
+  "committeeSystem": "CrewPoint",
+  "@committeeSystem": {
+    "description": "A change made by the system."
+  },
+  "committeeApprove": "Approve",
+  "@committeeApprove": {
+    "description": "Action."
+  },
+  "committeeWaitlist": "Move to waitlist",
+  "@committeeWaitlist": {
+    "description": "Action."
+  },
+  "committeeReinstate": "Reinstate",
+  "@committeeReinstate": {
+    "description": "Action."
+  },
+  "committeeCancelRegistration": "Cancel registration",
+  "@committeeCancelRegistration": {
+    "description": "Action."
+  },
+  "committeeResend": "Resend confirmation",
+  "@committeeResend": {
+    "description": "Action."
+  },
+  "committeeCancelTitle": "Cancel this registration?",
+  "@committeeCancelTitle": {
+    "description": "Confirm title."
+  },
+  "committeeCancelBody": "Its places are freed and offered to the waitlist. You can reinstate it later.",
+  "@committeeCancelBody": {
+    "description": "Confirm text."
+  },
+  "committeeKeep": "Keep it",
+  "@committeeKeep": {
+    "description": "Closes the confirm."
+  },
+  "committeeOverTitle": "Go over capacity?",
+  "@committeeOverTitle": {
+    "description": "Over-capacity confirm."
+  },
+  "committeeOverBody": "This takes the event {count} over capacity. Go ahead anyway?",
+  "@committeeOverBody": {
+    "description": "Over-capacity text.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "committeeGoAhead": "Go ahead",
+  "@committeeGoAhead": {
+    "description": "Confirms going over."
+  },
+  "committeeNoRegistration": "This group was added by an organizer, so it has no registration.",
+  "@committeeNoRegistration": {
+    "description": "A group without one."
+  },
+  "committeeSeeRegistration": "See registration",
+  "@committeeSeeRegistration": {
+    "description": "Group sheet button."
+  },
+  "committeeStatusFilter": "Registration",
+  "@committeeStatusFilter": {
+    "description": "People filter chip."
+  },
+  "committeeClearStatusFilter": "Clear the registration filter",
+  "@committeeClearStatusFilter": {
+    "description": "Clear tooltip."
+  },
+  "committeeAddedByOrganizer": "Added by an organizer",
+  "@committeeAddedByOrganizer": {
+    "description": "Someone with no registration."
+  },
+  "committeePeople": "{count, plural, =1{1 person} other{{count} people}}",
+  "@committeePeople": {
+    "description": "People count.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "committeeRemindersSent": "{count, plural, =0{Nobody has an unsent draft.} =1{1 reminder sent.} other{{count} reminders sent.}}",
+  "@committeeRemindersSent": {
+    "description": "After sending.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

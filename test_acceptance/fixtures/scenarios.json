@@ -199,7 +199,7 @@
   "id": "B-16",
   "title": "Cancelled F8 is excluded from every count, list, drawing and reminder.",
   "status": "PARTIAL",
-  "gap": "Server built in #242 and #249: a cancelled registration is kept with its reason and left out of Counts, sessions, the waitlist, the waiver and closing reminders and the roster export, and the Registration summary shows it as cancelled. People's status filter and tags come with #249's app part; drawings are a later stage.",
+  "gap": "Built in #242 and #249: a cancelled registration is kept with its reason and left out of Counts, sessions, the waitlist, the waiver and closing reminders and the roster export; the Registration summary shows it as cancelled, and People lists it only tagged Cancelled for the committee, with a filter for it. Drawings are a later stage.",
   "tested": true
  },
  {

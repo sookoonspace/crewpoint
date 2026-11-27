@@ -8,6 +8,7 @@ import 'package:crewpoint_app/app/features/registration/domain/public_event.dart
 import 'package:crewpoint_app/app/features/registration/domain/my_registration.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_form.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_settings.dart';
+import 'package:crewpoint_app/app/features/registration/domain/committee.dart';
 import 'package:crewpoint_app/app/features/registration/domain/waitlist.dart';
 import 'package:crewpoint_app/app/features/registration/domain/waivers.dart';
 
@@ -918,5 +919,87 @@ class FakeMemberCalls implements MemberCalls {
     calls.add('getMyWaitingRegistrations');
     _maybeFail();
     return waitingRegistrations;
+  }
+
+  /// What [getRegistrationSummary] answers, by event ID (#249).
+  final summaries = <String, RegistrationSummary>{};
+
+  @override
+  Future<RegistrationSummary> getRegistrationSummary(String eventId) async {
+    calls.add('getRegistrationSummary:$eventId');
+    _maybeFail();
+    return summaries[eventId] ?? const RegistrationSummary();
+  }
+
+  /// Committee actions, as `action:registrationId[:confirmed]`; a
+  /// registration in [overCapacityBy] is refused with `overCapacity` and
+  /// that many over unless confirmed.
+  final registrationActions = <String>[];
+  final overCapacityBy = <String, int>{};
+
+  @override
+  Future<String> manageRegistration({
+    required String eventId,
+    required String registrationId,
+    required RegistrationAction action,
+    bool confirmOverCapacity = false,
+  }) async {
+    calls.add('manageRegistration:${action.name}:$registrationId');
+    _maybeFail();
+    final over = overCapacityBy[registrationId];
+    if (over != null && !confirmOverCapacity) {
+      throw FirebaseFunctionsException(
+        code: 'failed-precondition',
+        message: 'This takes the event $over over capacity.',
+        details: {'reason': 'overCapacity', 'over': over},
+      );
+    }
+    registrationActions.add(
+      '${action.name}:$registrationId${confirmOverCapacity ? ':confirmed' : ''}',
+    );
+    return action == RegistrationAction.waitlist ? 'waitlisted' : 'submitted';
+  }
+
+  @override
+  Future<void> cancelRegistrationById({
+    required String slug,
+    required String registrationId,
+  }) async {
+    calls.add('cancelRegistration:$registrationId');
+    _maybeFail();
+    registrationActions.add('cancel:$registrationId');
+  }
+
+  @override
+  Future<void> resendConfirmation({
+    required String eventId,
+    required String registrationId,
+  }) async {
+    calls.add('resendConfirmation:$registrationId');
+    _maybeFail();
+    registrationActions.add('resend:$registrationId');
+  }
+
+  /// What [sendClosingReminder] answers.
+  int closingRemindersSent = 0;
+
+  @override
+  Future<int> sendClosingReminder(String eventId) async {
+    calls.add('sendClosingReminder:$eventId');
+    _maybeFail();
+    return closingRemindersSent;
+  }
+
+  /// What [getGroupRegistration] answers, by group ID.
+  final groupRegistrations = <String, GroupRegistration>{};
+
+  @override
+  Future<GroupRegistration?> getGroupRegistration({
+    required String eventId,
+    required String groupId,
+  }) async {
+    calls.add('getGroupRegistration:$groupId');
+    _maybeFail();
+    return groupRegistrations[groupId];
   }
 }

@@ -41,6 +41,8 @@ import 'package:crewpoint_app/app/features/auth/presentation/email_link_screen.d
 import 'package:crewpoint_app/app/features/registration/presentation/registration_settings_screen.dart';
 import 'package:crewpoint_app/app/features/registration/presentation/waiver_editor_screen.dart';
 import 'package:crewpoint_app/app/features/registration/presentation/waitlist_screen.dart';
+import 'package:crewpoint_app/app/features/registration/presentation/registration_summary_screen.dart';
+import 'package:crewpoint_app/app/features/registration/presentation/group_registration_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/expense_access_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/group_entry_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/photo_consent_screen.dart';
@@ -444,6 +446,17 @@ GoRouter createRouter({
                               ),
                             ),
                           ),
+                          // Before :participantId, which would match it.
+                          GoRoute(
+                            path: 'registration/:groupId',
+                            builder: (_, state) => EventGuard(
+                              eventId: _resolveEventId(state),
+                              child: (event) => GroupRegistrationScreen(
+                                event: event,
+                                groupId: state.pathParameters['groupId'] ?? '',
+                              ),
+                            ),
+                          ),
                           GoRoute(
                             path: 'links',
                             builder: (_, state) => EventGuard(
@@ -490,6 +503,14 @@ GoRouter createRouter({
                         builder: (_, state) => EventGuard(
                           eventId: _resolveEventId(state),
                           child: (event) => CountsScreen(event: event),
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'registration',
+                        builder: (_, state) => EventGuard(
+                          eventId: _resolveEventId(state),
+                          child: (event) =>
+                              RegistrationSummaryScreen(event: event),
                         ),
                       ),
                       GoRoute(

@@ -17,6 +17,7 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_vie
 import 'package:crewpoint_app/app/features/participants/application/roster_controller.dart';
 import 'package:crewpoint_app/app/features/participants/application/roster_filters.dart';
 import 'package:crewpoint_app/app/features/registration/application/waivers_provider.dart';
+import 'package:crewpoint_app/app/features/registration/presentation/widgets/registration_status.dart';
 import 'package:crewpoint_app/app/features/participants/data/participant_repository.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/category.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
@@ -110,7 +111,38 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
         : null,
     groupIds: ownGroups?.take(30).toList(),
     missingWaiver: ownGroups == null && f.missingWaiver,
+    registrationStatus: ownGroups == null ? f.registrationStatus : null,
   );
+
+  /// Picks a registration status to list (#249). Drafts have no people.
+  Future<void> _pickStatus() async {
+    final s = context.strings.committee;
+    final picked = await showCpSheet<String>(
+      context: context,
+      title: s.statusFilter,
+      builder: (sheet) => CpCard(
+        child: CpRowGroup(
+          children: [
+            for (final status in const [
+              'submitted',
+              'pending',
+              'waitlisted',
+              'cancelled',
+            ])
+              CpListRow(
+                key: Key('people.roster.status.$status'),
+                leading: RegistrationStatusIcon(status: status),
+                title: s.status(status),
+                onTap: () => Navigator.of(sheet).pop(status),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked != null && mounted) {
+      _filtersController.setRegistrationStatus(picked);
+    }
+  }
 
   /// Emails each registration with someone missing a waiver (#246, W-05),
   /// after a confirm.
@@ -254,6 +286,12 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     }
     if (result case GroupSheetResult(editAnswers: true, :final group?)) {
       await _openGroupEntry(group: group, editing: true);
+      return;
+    }
+    if (result case GroupSheetResult(seeRegistration: true, :final group?)) {
+      await context.push(
+        '/dashboard/event/${widget.event.id}/people/registration/${group.id}',
+      );
       return;
     }
     switch (result) {
@@ -497,7 +535,8 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
                   filters.group == null &&
                   filters.category == null &&
                   answer == null &&
-                  !filters.missingWaiver,
+                  !filters.missingWaiver &&
+                  filters.registrationStatus == null,
               onTap: _filtersController.clear,
             ),
             if (filters.group == null)
@@ -557,6 +596,27 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
                   clearTooltip: fieldStrings.filterByField(
                     words.one('customField'),
                   ),
+                ),
+            // One registration status (#249).
+            if (browses && event.can(me, 'registrations.manage'))
+              if (filters.registrationStatus == null)
+                CpFilterChip(
+                  key: const Key('people.roster.statusFilter'),
+                  label: context.strings.committee.statusFilter,
+                  menu: true,
+                  onTap: _pickStatus,
+                )
+              else
+                CpFilterChip(
+                  key: const Key('people.roster.statusChip'),
+                  label: context.strings.committee.status(
+                    filters.registrationStatus!,
+                  ),
+                  selected: true,
+                  onTap: _pickStatus,
+                  onClear: () => _filtersController.setRegistrationStatus(null),
+                  clearKey: const Key('people.roster.statusChip.clear'),
+                  clearTooltip: context.strings.committee.clearStatusFilter,
                 ),
             // People still missing a waiver (#246, W-06).
             if (hasWaivers)
@@ -661,6 +721,9 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
                       if (p.isChild) strings.child,
                       // The age band, never a birth date (Z-01).
                       if (p.categoryId != null) ?categoryNames[p.categoryId],
+                      // Their registration's status (#249, Req 65).
+                      if (p.registrationStatus case final status?)
+                        context.strings.committee.status(status),
                     ].join(' · '),
                     onTap: () => _open(p.id),
                   ),
@@ -833,6 +896,10 @@ class _PersonTile extends StatelessWidget {
         leading: CpAvatar(name: person.name),
         title: name,
         subtitle: (groupName ?? '').isEmpty ? null : groupName,
+        // The status with an icon and colour too (Req 71).
+        trailing: person.registrationStatus == null
+            ? null
+            : RegistrationStatusIcon(status: person.registrationStatus!),
         selected: selected,
         onTap: () => CpListDetail.select(row, onTap),
       ),
