@@ -48,12 +48,25 @@ export function mailSettingsOf(data: FirebaseFirestore.DocumentData | undefined)
 }
 
 /**
+ * Whether [to] is on the allowed list: the address itself, or a
+ * plus-address of one (`name+anything@domain` for `name@domain`), which
+ * reaches the same inbox, so testers can make many accounts (#291).
+ */
+export function onAllowedList(to: string, allowed: readonly string[]): boolean {
+  if (allowed.includes(to)) return true;
+  const at = to.lastIndexOf("@");
+  const plus = to.indexOf("+");
+  if (at < 0 || plus < 0 || plus > at) return false;
+  return allowed.includes(to.slice(0, plus) + to.slice(at));
+}
+
+/**
  * Why [to] must not be emailed, or null when it may be. Outside prod only
  * the allowed list is emailed (Req 51a); nothing goes until delivery is
  * turned on, which waits for the sending domain's SPF, DKIM and DMARC.
  */
 export function blockedReason(to: string, settings: MailSettings, projectId: string): string | null {
-  if (projectId !== PROD_PROJECT && !settings.allowedRecipients.includes(to)) return NOT_ON_ALLOWED_LIST;
+  if (projectId !== PROD_PROJECT && !onAllowedList(to, settings.allowedRecipients)) return NOT_ON_ALLOWED_LIST;
   if (!settings.deliveryEnabled) return DELIVERY_OFF;
   if (!settings.from) return NO_SENDER;
   return null;

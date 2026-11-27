@@ -13,7 +13,8 @@ const ftest = firebaseFunctionsTest();
 getAdminApp();
 const {submitRegistration} = require('../../src/registration/submitRegistration');
 const {cancelRegistration} = require('../../src/registration/cancelRegistration');
-const {respondToOffer, manageOffer, getWaitlist, runOfferExpiry, recountTally, offerOnwardNow} =
+const {respondToOffer, manageOffer, getWaitlist, runOfferExpiry, recountTally, offerOnwardNow,
+  onCapacityRaised, nightlyUpkeep, capacityRaised} =
   require('../../src/registration/offers');
 /* eslint-enable @typescript-eslint/no-var-requires */
 
@@ -235,5 +236,38 @@ describe('waitlist offers', () => {
     const after = await ftest.wrap(getWaitlist)({auth: {uid: 'owner'}, data: {eventId: E}});
     expect(after.waiting.find((w: {size: number}) => w.size === 1).offerExpiresAt).toEqual(expect.any(Number));
     expect(after.held).toBe(1);
+  });
+
+  test('capacityRaised: up or removed frees places; down, same or newly set does not', () => {
+    expect(capacityRaised(1, 5)).toBe(true);
+    expect(capacityRaised(5, null)).toBe(true);
+    expect(capacityRaised(5, 5)).toBe(false);
+    expect(capacityRaised(5, 3)).toBe(false);
+    expect(capacityRaised(null, 5)).toBe(false);
+  });
+
+  test('raising capacity outside Registration settings offers the places at once', async () => {
+    // As on dev: a limit of 1, a family of 2 waitlisted, then 5 set from Event settings.
+    await seed({capacity: 1});
+    await register('asha', 2);
+    expect((await reg('asha')).data().status).toBe('waitlisted');
+    const ref = db().doc(`events/${E}`);
+    const before = await ref.get();
+    await ref.update({capacity: 5});
+    const after = await ref.get();
+    await ftest.wrap(onCapacityRaised)({data: ftest.makeChange(before, after), params: {eventId: E}});
+    expect((await reg('asha')).data().offer).toEqual(expect.objectContaining({expiresAt: expect.any(Number)}));
+    expect((await tally()).offers).toHaveLength(1);
+    await expect(respond('asha', true)).resolves.toEqual({status: 'submitted'});
+    expect((await db().doc(`events/${E}/members/asha`).get()).exists).toBe(true);
+  });
+
+  test('the nightly upkeep offers places that every other path missed', async () => {
+    await seed({capacity: 1});
+    await register('asha', 2);
+    await db().doc(`events/${E}`).update({capacity: 5});
+    expect((await tally()).offers ?? []).toEqual([]);
+    await nightlyUpkeep(db(), E);
+    expect((await tally()).offers).toHaveLength(1);
   });
 });

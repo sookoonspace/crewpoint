@@ -1,5 +1,6 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {onSchedule} from "firebase-functions/v2/scheduler";
+import {onDocumentUpdated} from "firebase-functions/v2/firestore";
 import {logger} from "firebase-functions/v2";
 import {FieldValue, Firestore, getFirestore} from "firebase-admin/firestore";
 import {clock} from "../utils/clock";
@@ -394,7 +395,7 @@ export const onTallyRecountScheduled = onSchedule(
       const eventId = t.ref.parent.parent?.id;
       if (!eventId) continue;
       try {
-        if (await recountTally(firestore, eventId)) corrected++;
+        if (await nightlyUpkeep(firestore, eventId)) corrected++;
       } catch (e) {
         logger.error(`Recounting ${eventId} failed`, e);
       }
@@ -449,4 +450,33 @@ export const getWaitlist = onCall({timeoutSeconds: 60}, async (request) => {
       waiting: entries,
     };
   });
+});
+
+/**
+ * The nightly upkeep of one event (TD 11): the recount, then offering any
+ * places left free, so an opening missed by every other path is still
+ * offered. Returns whether the recount corrected anything.
+ */
+export async function nightlyUpkeep(firestore: Firestore, eventId: string, now = clock.now()): Promise<boolean> {
+  const corrected = await recountTally(firestore, eventId, now);
+  await offerOnwardNow(firestore, eventId, now);
+  return corrected;
+}
+
+/** Whether a capacity change from [before] to [after] frees places. */
+export function capacityRaised(before: unknown, after: unknown): boolean {
+  const b = typeof before === "number" ? before : null;
+  const a = typeof after === "number" ? after : null;
+  if (b === null) return false;
+  return a === null || a > b;
+}
+
+/**
+ * onCapacityRaised — an event's capacity went up or was removed, however
+ * it was changed (Event settings, Registration settings or the console),
+ * so the freed places are offered to the waitlist at once (Req 32).
+ */
+export const onCapacityRaised = onDocumentUpdated("events/{eventId}", async (event) => {
+  if (!capacityRaised(event.data?.before.data()?.capacity, event.data?.after.data()?.capacity)) return;
+  await offerOnwardNow(getFirestore(), event.params.eventId);
 });
