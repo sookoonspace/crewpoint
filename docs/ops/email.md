@@ -23,7 +23,7 @@ Set these from the console or with the Admin SDK. A missing document means nothi
 |---|---|
 | `deliveryEnabled` | `true` to send at all. Leave it `false` until the sending domain's SPF, DKIM and DMARC records are in place. |
 | `from` | The sender, for example `CrewPoint <no-reply@mail.example.org>`. It must be on the domain verified in Resend. |
-| `allowedRecipients` | The only addresses emailed in dev and staging (Req 51a). Anyone else is logged as "Not sent: not on the dev allowed list". |
+| `allowedRecipients` | The only addresses emailed in dev and staging (Req 51a). Anyone else is logged as "Not sent: not on the dev allowed list". A plus-address of a listed address (`name+family2@gmail.com` for `name@gmail.com`) counts as listed, because it reaches the same inbox, so testers can sign up as many people as they need. |
 
 Only `crewpoint-prod` emails everyone.
 

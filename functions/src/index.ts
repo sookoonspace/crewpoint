@@ -63,6 +63,6 @@ export {
   onPhotoConsentPersonWritten, onPhotoConsentAnswerWritten, onPhotoConsentGroupWritten,
 } from "./participants/photoConsent";
 export {
-  respondToOffer, manageOffer, getWaitlist, onOffersScheduled, onTallyRecountScheduled,
+  respondToOffer, manageOffer, getWaitlist, onOffersScheduled, onTallyRecountScheduled, onCapacityRaised,
 } from "./registration/offers";
 export {sendSignInLink} from "./account/signInLink";

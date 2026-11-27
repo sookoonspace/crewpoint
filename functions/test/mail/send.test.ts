@@ -175,3 +175,19 @@ describe('N-00: no real email can be sent from tests', () => {
       .rejects.toThrow('422');
   });
 });
+
+describe('onAllowedList (#291)', () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const {onAllowedList} = require('../../src/mail/send');
+  const allowed = ['derodian@gmail.com'];
+  test('the address itself, or a plus-address of it, which reaches the same inbox', () => {
+    expect(onAllowedList('derodian@gmail.com', allowed)).toBe(true);
+    expect(onAllowedList('derodian+family2@gmail.com', allowed)).toBe(true);
+  });
+  test('never another inbox', () => {
+    expect(onAllowedList('derodian2@gmail.com', allowed)).toBe(false);
+    expect(onAllowedList('someone+derodian@gmail.com', allowed)).toBe(false);
+    expect(onAllowedList('derodian+x@example.com', allowed)).toBe(false);
+    expect(onAllowedList('a+b@c@gmail.com', allowed)).toBe(false);
+  });
+});
