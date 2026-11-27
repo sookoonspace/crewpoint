@@ -182,7 +182,7 @@ describe('createEvent from a template (Req 62, 63a, 38a)', () => {
     await call('me', input({templateId: 'convention'}));
     const saved = (await eventDoc()).data()!;
     expect(saved.templateId).toBe('convention');
-    expect(saved.templateVersion).toBe(2);
+    expect(saved.templateVersion).toBe(3);
     expect(saved.labels.group).toEqual({one: 'Family', other: 'Families'});
     expect(saved.settings.attendancePolicy).toBe('arrivalToDeparture');
     expect(saved.settings.expenseAccess).toEqual({mode: 'selected', roleIds: [], uids: []});
@@ -197,6 +197,11 @@ describe('createEvent from a template (Req 62, 63a, 38a)', () => {
     expect(role.name).toBe('Committee member');
     expect(role.permissions).toContain('schedule.edit');
     expect(role.preset).toBe(true);
+    // #247: a Photographer reads only photo consent and their own group.
+    const photographer = (await db().doc('events/evt/roles/photographer').get()).data()!;
+    expect(photographer).toEqual(expect.objectContaining({
+      name: 'Photographer', permissions: ['photoConsent.read', 'group.readOwn'],
+    }));
     const owner = (await db().doc('events/evt/members/me').get()).data()!;
     expect(owner.roleIds).toEqual(['owner']);
   });

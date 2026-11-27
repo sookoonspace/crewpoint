@@ -128,8 +128,9 @@ describe('baselines at 400', () => {
   test('S-08 counting costs one read per person, group, session and field, and one write', async () => {
     const c = await count();
     log(`400 counts: ${c.ms} ms, ${c.reads} reads, ${c.writes} writes`);
-    // Event + fields + people + groups + sessions.
-    expect(c.reads).toBe(1 + 2 + 400 + 108 + 12);
+    // Event + fields + people + groups + sessions, and the photo consent
+    // list (#247), one document whatever the size.
+    expect(c.reads).toBe(1 + 2 + 400 + 108 + 12 + 1);
     expect(c.ms).toBeLessThan(2000);
   });
 });
@@ -156,7 +157,7 @@ describe('baselines at 2,000', () => {
   test('GE-09 counts finish within 2 seconds at 2,000', async () => {
     const c = await count();
     log(`2000 counts: ${c.ms} ms, ${c.reads} reads, ${c.writes} writes`);
-    expect(c.reads).toBe(1 + 2 + 2000 + 539 + 12);
+    expect(c.reads).toBe(1 + 2 + 2000 + 539 + 12 + 1);
     expect(c.ms).toBeLessThan(2000);
   });
 });

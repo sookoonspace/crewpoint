@@ -6,7 +6,7 @@ import {normaliseEmail} from "../mail/outbox";
 import {countryForTimeZone, normalisePhone} from "../participants/phone";
 import {registrationOf} from "./registrationSettings";
 import {eventBySlug} from "./registrationForm";
-import {loadFormInputs, readForm} from "./submitRegistration";
+import {loadFormInputs, privateDetails, readForm} from "./submitRegistration";
 import {acceptedAs, acceptedOf, requiredProblems, writeAcceptances} from "./waiverAcceptance";
 import {diffRegistration, FieldChange, PersonSnapshot, RegistrationSnapshot} from "./changeLog";
 
@@ -102,13 +102,14 @@ export const updateRegistration = onCall({timeoutSeconds: 60}, async (request) =
       const beforePeople: Record<string, PersonSnapshot> = {};
       peopleSnap.docs.forEach((d, i) => {
         const p = d.data();
-        const {birthDate, email: _e, phone: _p, updatedAt: _u, ...privateAnswers} = privates[i].data() ?? {};
+        const {birthDate, fields: privateAnswers, photoConsent} = privates[i].data() ?? {};
         beforePeople[d.id] = {
           name: String(p.name ?? ""),
           birthDate: hidden(birthDate),
           answers: {
             ...(p.fields ?? {}),
-            ...Object.fromEntries(Object.entries(privateAnswers).map(([k, v]) => [k, hidden(v)])),
+            ...Object.fromEntries(Object.entries(privateAnswers ?? {}).map(([k, v]) => [k, hidden(v)])),
+            ...(typeof photoConsent === "boolean" ? {photoConsent: hidden(photoConsent)} : {}),
           },
           arrivalAt: millis(p.arrivalAt),
           departureAt: millis(p.departureAt),
@@ -117,7 +118,7 @@ export const updateRegistration = onCall({timeoutSeconds: 60}, async (request) =
         };
       });
       const contactDetails = contactDoc ? privates[peopleSnap.docs.indexOf(contactDoc)].data() ?? {} : {};
-      const {updatedAt: _gu, ...groupPrivateAnswers} = groupPrivate.data() ?? {};
+      const groupPrivateAnswers: Record<string, unknown> = groupPrivate.data()?.fields ?? {};
       const before: RegistrationSnapshot = {
         groupName: String(groupDoc.data()?.name ?? ""),
         email: hidden(contactDetails.email ?? null),
@@ -225,7 +226,7 @@ export const updateRegistration = onCall({timeoutSeconds: 60}, async (request) =
           });
         }
         tx.set(ref.collection("private").doc("details"), {
-          ...person.private,
+          ...privateDetails(person),
           ...(person.birthDate ? {birthDate: person.birthDate} : {}),
           ...(isContact && email ? {email} : {}),
           ...(isContact && phone ? {phone} : {}),
@@ -236,7 +237,7 @@ export const updateRegistration = onCall({timeoutSeconds: 60}, async (request) =
         name: form.groupName, sortName: form.groupName.toLowerCase(),
         fields: form.group.standard, filterTags: form.group.filterTags, updatedAt: now,
       });
-      tx.set(groupRef.collection("private").doc("details"), {...form.group.private, updatedAt: now});
+      tx.set(groupRef.collection("private").doc("details"), {fields: form.group.private, updatedAt: now});
       tx.update(regDoc.ref, {size: form.people.length, updatedAt: now});
       tx.set(regDoc.ref.collection("changes").doc(), {at: now, by: uid, action: "edited", changes: logged(changes)});
       return {registrationId: regDoc.id, status: reg.status, changed: changes.length};
@@ -262,6 +263,7 @@ function snapshotOf(
       answers: {
         ...p.standard,
         ...Object.fromEntries(Object.entries(p.private).map(([k, v]) => [k, privateFields.has(k) ? hidden(v) : v])),
+        ...(p.photoConsent === null ? {} : {photoConsent: hidden(p.photoConsent)}),
       },
       arrivalAt: p.arrivalAt?.toMillis() ?? null,
       departureAt: p.departureAt?.toMillis() ?? null,

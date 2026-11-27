@@ -136,7 +136,7 @@ String permissionGroupOf(String permission) =>
       'money' || 'budget' || 'expenses' || 'contributions' => 'money',
       'tasks' => 'tasks',
       'chat' || 'messages' => 'chat',
-      'checkin' || 'counts' => 'checkin',
+      'checkin' || 'counts' || 'photoConsent' => 'checkin',
       'incidents' => 'safety',
       _ => 'competition',
     };

@@ -1087,9 +1087,9 @@
  {
   "id": "Z-02",
   "title": "Photo and video consent per family, including children, available to the photographer.",
-  "status": "NOT BUILT",
-  "gap": "No consent record or retention rule for event data.",
-  "tested": false
+  "status": "PARTIAL",
+  "gap": "Server built in #247: each person's photo and video consent (a guardian's for a child) is kept in private details, the server keeps the list of who said no or has not answered with only name, group and age band, and only photoConsent.read (Owner, Co-owner, Admin, and the Convention's Photographer) reads it. The form's question and the Photo consent screen come with #247's app part.",
+  "tested": true
  },
  {
   "id": "Z-03",

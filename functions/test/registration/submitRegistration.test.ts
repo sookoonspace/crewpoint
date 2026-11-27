@@ -93,6 +93,34 @@ beforeEach(() => clearFirestoreEmulator());
 afterAll(() => ftest.cleanup());
 
 describe('submitRegistration', () => {
+  test('private answers sit under fields, as the app and Counts read them; photo consent beside them', async () => {
+    await seed({registration: {
+      sections: [{id: 'food', name: {en: 'Food'}, fieldIds: ['diet', 'allergies', 'kids', 'hotel', 'room', 'access']}],
+    }});
+    await db().doc(`events/${E}/fields/access`).set({
+      label: 'Step-free access', type: 'yesNo', options: [], required: false,
+      scope: 'participant', visibility: 'private', order: 0,
+    });
+    await submit(family({people: [
+      {...asha, answers: {...asha.answers, access: true}, photoConsent: false},
+      {...dev, photoConsent: true},
+    ]}));
+    const people = await all(`events/${E}/participants`) as any[];
+    const a = people.find((p) => p.name === 'Asha Patel');
+    const d = people.find((p) => p.name === 'Dev Patel');
+    const details = async (id: string) =>
+      (await db().doc(`events/${E}/participants/${id}/private/details`).get()).data()!;
+    expect(await details(a.id)).toEqual(expect.objectContaining({
+      fields: {allergies: 'Peanuts', access: true}, photoConsent: false,
+    }));
+    expect((await details(d.id)).photoConsent).toBe(true);
+    /* eslint-disable-next-line @typescript-eslint/no-var-requires */
+    const {recalculateEvent} = require('../../src/counts/recalculate');
+    await recalculateEvent(db(), E, new Date());
+    const stats = (await db().doc(`events/${E}/stats/current`).get()).data()!;
+    expect(stats.event.byField.access).toEqual(expect.objectContaining({yes: 1}));
+  });
+
   test('a family registers: one group, its people as Participants, places taken, the contact a member', async () => {
     await seed();
     const result = await submit(family());
@@ -111,7 +139,7 @@ describe('submitRegistration', () => {
     }));
     // A group's private answer stays private, like a person's (Req 22).
     expect((await db().doc(`events/${E}/groups/${group.id}/private/details`).get()).data())
-      .toEqual(expect.objectContaining({room: 'H-123'}));
+      .toEqual(expect.objectContaining({fields: {room: 'H-123'}}));
     expect(JSON.stringify(group)).not.toContain('H-123');
 
     const people = await all(`events/${E}/participants`) as any[];
@@ -133,7 +161,7 @@ describe('submitRegistration', () => {
     // Private answers, birth dates and the contact's details stay private (Req 22).
     const aPrivate = (await db().doc(`events/${E}/participants/${a.id}/private/details`).get()).data();
     expect(aPrivate).toEqual(expect.objectContaining({
-      birthDate: '1980-03-01', allergies: 'Peanuts', email: 'asha@example.com', phone: '+13125550100',
+      birthDate: '1980-03-01', fields: {allergies: 'Peanuts'}, email: 'asha@example.com', phone: '+13125550100',
     }));
     expect(JSON.stringify(a)).not.toContain('Peanuts');
 

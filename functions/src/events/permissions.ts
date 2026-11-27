@@ -31,6 +31,7 @@ export const PERMISSIONS = [
   "checkin.scan",
   "checkin.lookup",
   "counts.read",
+  "photoConsent.read",
   "incidents.report",
   "incidents.receive",
   "reports.export",
