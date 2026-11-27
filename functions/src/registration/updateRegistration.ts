@@ -7,6 +7,7 @@ import {countryForTimeZone, normalisePhone} from "../participants/phone";
 import {registrationOf} from "./registrationSettings";
 import {eventBySlug} from "./registrationForm";
 import {loadFormInputs, readForm} from "./submitRegistration";
+import {acceptedAs, acceptedOf, requiredProblems, writeAcceptances} from "./waiverAcceptance";
 import {diffRegistration, FieldChange, PersonSnapshot, RegistrationSnapshot} from "./changeLog";
 
 const db = () => getFirestore();
@@ -60,7 +61,7 @@ export const updateRegistration = onCall({timeoutSeconds: 60}, async (request) =
 
   return withStructuredLogs({op: "updateRegistration", uid, args: {slug: data.slug}}, async () => {
     const {slug, ref: eventRef} = await eventBySlug(data.slug);
-    const {fields, sessions} = await loadFormInputs(eventRef);
+    const {fields, sessions, waivers: allWaivers} = await loadFormInputs(eventRef);
     const privateFields = new Set(fields.filter((f) => f.visibility === "private").map((f) => f.id));
 
     return db().runTransaction(async (tx) => {
@@ -161,6 +162,14 @@ export const updateRegistration = onCall({timeoutSeconds: 60}, async (request) =
         throw new HttpsError("invalid-argument", "Some answers need checking.",
           {reason: "invalid", problems: ["people.id"]});
       }
+      // Required waivers (Req 29, #246), counting what each person accepted.
+      const waivers = settings.blocks.waivers ? allWaivers : [];
+      const recordOf = (id: string | null) => peopleSnap.docs.find((d) => d.id === id)?.data();
+      const missingRequired = requiredProblems(form.people, waivers, (i) => acceptedOf(recordOf(form.people[i].id)));
+      if (missingRequired.length > 0) {
+        throw new HttpsError("invalid-argument", "Some answers need checking.",
+          {reason: "invalid", problems: missingRequired});
+      }
       // New people get their IDs now, so the log can name them.
       const ids = form.people.map((p) => p.id ?? eventRef.collection("participants").doc().id);
       const after = snapshotOf(form, before, privateFields, email, phone, ids);
@@ -185,12 +194,19 @@ export const updateRegistration = onCall({timeoutSeconds: 60}, async (request) =
       for (const d of peopleSnap.docs) {
         if (keep.has(d.id)) continue;
         tx.delete(d.ref.collection("private").doc("details"));
+        tx.delete(d.ref.collection("private").doc("waivers"));
         tx.delete(d.ref);
       }
       form.people.forEach((person, i) => {
         const ref = eventRef.collection("participants").doc(ids[i]);
         const isContact = contactDoc?.id === ids[i];
+        const record = recordOf(person.id);
+        const waiverState = writeAcceptances(tx, ref, {
+          accepting: person.acceptWaivers, accepted: acceptedOf(record), waivers, person, by: uid,
+          as: acceptedAs({isChild: person.isChild, uid: record?.uid ?? null}, uid),
+        });
         const fieldsNow = {
+          ...waiverState,
           name: person.name, sortName: person.name.toLowerCase(), isChild: person.isChild,
           categoryId: person.categoryId, fields: person.standard, filterTags: person.filterTags,
           arrivalAt: person.arrivalAt ?? FieldValue.delete(),

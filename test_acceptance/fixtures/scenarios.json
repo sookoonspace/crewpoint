@@ -625,16 +625,16 @@
  {
   "id": "W-05",
   "title": "Liability waiver: the family contact accepts for each member going (parent/guardian for minors); waiver text versioned; timestamp and signer stored.",
-  "status": "PLATFORM",
-  "gap": "Platform requirement for Stage 2 (waivers at sign-up).",
-  "tested": false
+  "status": "PARTIAL",
+  "gap": "Server built in #246: organizers write versioned waivers that apply to everyone, a category or a session's sign-ups; the contact accepts for each person going (as guardian for a child), and the server keeps version, time and signer. The form's waiver step comes with #246's app part.",
+  "tested": true
  },
  {
   "id": "W-06",
   "title": "Missing-waiver list shows F5; the boarding check at the shuttle flags F5 until signed.",
-  "status": "NOT BUILT",
-  "gap": "No waiver records or boarding check. Stage 5 (event day).",
-  "tested": false
+  "status": "PARTIAL",
+  "gap": "The missing-waiver list and its email are built in #246 (server; the People filter comes with the app part). The boarding check at the shuttle is Stage 5 (event day).",
+  "tested": true
  },
  {
   "id": "W-07",
@@ -1094,9 +1094,9 @@
  {
   "id": "Z-03",
   "title": "Liability waiver accepted at registration and recorded `[OWNER INPUT]` for the text. The waterpark waiver is W-05.",
-  "status": "PLATFORM",
-  "gap": "Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6).",
-  "tested": false
+  "status": "PARTIAL",
+  "gap": "Server built in #246 with placeholder text: a required waiver blocks Submit until accepted, and each acceptance is recorded. The waiver text is the owner's to give, and the form's waiver step comes with #246's app part.",
+  "tested": true
  },
  {
   "id": "Z-04",

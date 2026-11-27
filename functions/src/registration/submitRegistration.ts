@@ -12,6 +12,9 @@ import {isShown} from "./conditions";
 import {signUpChoices, validSignUps} from "./sessionChoices";
 import {checkOpen} from "./registrationForm";
 import {applyRegistrationMembership} from "./membership";
+import {
+  acceptedAs, loadWaivers, requiredProblems, WaiverDoc, writeAcceptances,
+} from "./waiverAcceptance";
 
 const db = () => getFirestore();
 
@@ -32,6 +35,8 @@ interface PersonInput {
   optOuts?: unknown;
   /** An existing participant's ID, when editing (#244). */
   id?: unknown;
+  /** Waivers accepted now, at their current version (#246). */
+  acceptWaivers?: unknown;
 }
 
 /** What `submitRegistration` returns, and returns again for a repeat. */
@@ -116,7 +121,7 @@ export const submitRegistration = onCall({timeoutSeconds: 60}, async (request) =
     const eventRef = db().collection("events").doc(eventId);
 
     // What the form needs to check answers; none of it changes capacity.
-    const {fields, sessions: sessionDocs} = await loadFormInputs(eventRef);
+    const {fields, sessions: sessionDocs, waivers: allWaivers} = await loadFormInputs(eventRef);
 
     const outcome = await db().runTransaction(async (tx) => {
       const eventDoc = await tx.get(eventRef);
@@ -146,6 +151,13 @@ export const submitRegistration = onCall({timeoutSeconds: 60}, async (request) =
       }
 
       const form = readForm(data, {event, settings, fields, sessions: sessionDocs});
+      // Required waivers block Submit (Req 29, #246).
+      const waivers = settings.blocks.waivers ? allWaivers : [];
+      const missingRequired = requiredProblems(form.people, waivers, () => ({}));
+      if (missingRequired.length > 0) {
+        refuse("invalid-argument", "invalid", "Some answers need checking.", {problems: missingRequired});
+      }
+      const consent = readConsent(data.consent);
       const tally = tallyDoc.data() ?? {};
       const placesUsed = typeof tally.placesUsed === "number" ? tally.placesUsed : 0;
       const nextWaitlist = typeof tally.nextWaitlist === "number" ? tally.nextWaitlist : 1;
@@ -178,7 +190,12 @@ export const submitRegistration = onCall({timeoutSeconds: 60}, async (request) =
         tx.set(groupRef.collection("private").doc("details"), {...form.group.private, updatedAt: now});
       }
       form.people.forEach((person, i) => {
+        const waiverState = writeAcceptances(tx, personRefs[i], {
+          accepting: person.acceptWaivers, accepted: {}, waivers, person, by: uid,
+          as: acceptedAs({isChild: person.isChild, uid: i === contactIndex ? uid : null}, uid),
+        });
         tx.set(personRefs[i], {
+          ...waiverState,
           name: person.name, sortName: person.name.toLowerCase(), groupId: groupRef.id,
           isChild: person.isChild, status: "active", categoryId: person.categoryId,
           fields: person.standard, filterTags: person.filterTags,
@@ -204,6 +221,7 @@ export const submitRegistration = onCall({timeoutSeconds: 60}, async (request) =
         groupId: groupRef.id, contactUid: uid, status: decision.status, size: form.people.length,
         submittedAt: now, updatedAt: now, waitlistPosition, cancelReason: null, mergedInto: null,
         duplicateOf: null, extraGuestsAllowed: settings.extraGuests, lastSubmissionId: submissionId,
+        ...(consent ? {consent: {...consent, at: now}} : {}),
       });
       tx.set(registrationRef.collection("changes").doc(), {
         at: now, by: uid, action: "submitted", status: decision.status,
@@ -249,10 +267,12 @@ export const submitRegistration = onCall({timeoutSeconds: 60}, async (request) =
 export async function loadFormInputs(eventRef: FirebaseFirestore.DocumentReference): Promise<{
   fields: FieldDef[];
   sessions: FirebaseFirestore.QueryDocumentSnapshot[];
+  waivers: WaiverDoc[];
 }> {
-  const [fieldSnap, sessionSnap] = await Promise.all([
+  const [fieldSnap, sessionSnap, waivers] = await Promise.all([
     eventRef.collection("fields").get(),
     eventRef.collection("sessions").get(),
+    loadWaivers(eventRef),
   ]);
   return {
     fields: fieldSnap.docs.map((d) => ({
@@ -265,6 +285,7 @@ export async function loadFormInputs(eventRef: FirebaseFirestore.DocumentReferen
       visibility: String(d.data().visibility ?? "standard"),
     })),
     sessions: sessionSnap.docs,
+    waivers,
   };
 }
 
@@ -282,6 +303,8 @@ export interface ReadPerson {
   departureAt: Timestamp | null;
   signUps: string[];
   optOuts: string[];
+  /** Waiver IDs accepted on this form (#246). */
+  acceptWaivers: string[];
 }
 
 /**
@@ -370,6 +393,8 @@ export function readForm(data: Record<string, unknown>, {event, settings, fields
       [...new Set(raw.optOuts.filter((s): s is string => typeof s === "string"))] : [];
     if (optOuts.some((s) => !optOutable.has(s))) problems.push(`${at}.optOuts`);
     const id = typeof raw.id === "string" && raw.id.length > 0 && raw.id.length <= 100 ? raw.id : null;
+    const acceptWaivers = Array.isArray(raw.acceptWaivers) ?
+      [...new Set(raw.acceptWaivers.filter((w): w is string => typeof w === "string"))] : [];
     const arrivalAt = settings.blocks.stay ? time(raw.arrivalAt, `${at}.arrivalAt`) : null;
     const departureAt = settings.blocks.stay ? time(raw.departureAt, `${at}.departureAt`) : null;
     if (arrivalAt && departureAt && departureAt.toMillis() < arrivalAt.toMillis()) {
@@ -378,7 +403,7 @@ export function readForm(data: Record<string, unknown>, {event, settings, fields
     return {
       id, name, birthDate, isChild: category?.isChild === true, categoryId: category?.id ?? null,
       standard, private: privateAnswers, filterTags: filterTagsFor(fields, standard),
-      arrivalAt, departureAt, signUps, optOuts,
+      arrivalAt, departureAt, signUps, optOuts, acceptWaivers,
     };
   });
 
@@ -421,4 +446,14 @@ export function readForm(data: Record<string, unknown>, {event, settings, fields
     refuse("invalid-argument", "invalid", "Some answers need checking.", {problems});
   }
   return {people, email, phone, groupName, group};
+}
+
+/**
+ * Consent to announcements by email and by SMS (Req 31, #246), asked once
+ * per registration and kept apart from essential messages, for Stage 3.
+ */
+export function readConsent(raw: unknown): {email: boolean; sms: boolean} | null {
+  if (!raw || typeof raw !== "object") return null;
+  const c = raw as Record<string, unknown>;
+  return {email: c.email === true, sms: c.sms === true};
 }

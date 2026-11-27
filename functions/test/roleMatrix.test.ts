@@ -128,6 +128,10 @@ async function seed(
       name: 'Rani', sortName: 'rani', groupId: 'g1', isChild: false, createdBy: 'owner', status: 'active',
       registrationId: 'r1', registrationStatus: 'submitted',
     });
+    // #246: waivers, their versions and a person's acceptances.
+    await setDoc(doc(db, `${E}/waivers/w1`), {title: {en: 'Waiver'}, version: 1, appliesTo: {kind: 'everyone'}});
+    await setDoc(doc(db, `${E}/waivers/w1/versions/1`), {text: {en: 'Text'}});
+    await setDoc(doc(db, `${E}/participants/registered/private/waivers`), {accepted: {w1: {version: 1, by: 'stranger'}}});
   });
 }
 
@@ -311,6 +315,18 @@ describe.each(ROLES)('%s', (role) => {
     await assertFails(updateDoc(doc(as(role), `${E}/participants/registered`), {registrationStatus: 'cancelled'}));
     await expectAccess(manages && holds(role, 'participants.edit'),
       deleteDoc(doc(as(role), `${E}/participants/registered`)));
+  });
+
+  test('waivers: read by everyone in the event, written and accepted only by the server (Spec #233 Req 26-28, #246)', async () => {
+    await assertSucceeds(getDoc(doc(as(role), `${E}/waivers/w1`)));
+    await assertSucceeds(getDoc(doc(as(role), `${E}/waivers/w1/versions/1`)));
+    await assertFails(setDoc(doc(as(role), `${E}/waivers/w2`), {title: {en: 'x'}, version: 1}));
+    await assertFails(updateDoc(doc(as(role), `${E}/waivers/w1`), {version: 2}));
+    await assertFails(setDoc(doc(as(role), `${E}/waivers/w1/versions/2`), {text: {en: 'x'}}));
+    await assertFails(setDoc(doc(as(role), `${E}/participants/registered/private/waivers`), {accepted: {}}));
+    await assertFails(deleteDoc(doc(as(role), `${E}/participants/registered/private/waivers`)));
+    await assertFails(updateDoc(doc(as(role), `${E}/participants/registered`), {waiversMissing: false}));
+    await assertFails(updateDoc(doc(as(role), `${E}/participants/registered`), {waiverVersions: {w1: 9}}));
   });
 
   test('email outbox and mail settings: no client access (Spec #233 Req 51, 51a)', async () => {

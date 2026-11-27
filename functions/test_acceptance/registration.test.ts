@@ -15,6 +15,7 @@ const {submitRegistration} = require('../src/registration/submitRegistration');
 const {getMyRegistration} = require('../src/registration/myRegistration');
 const {updateRegistration} = require('../src/registration/updateRegistration');
 const {recalculateEvent} = require('../src/counts/recalculate');
+const {saveWaiver, acceptWaivers, sendWaiverReminders} = require('../src/registration/waiverCallables');
 /* eslint-enable @typescript-eslint/no-var-requires */
 
 const E = 'derod';
@@ -253,4 +254,65 @@ test('B-13 after the deadline, registering and changes need the committee; conta
   await expect(edit('raj', {...form, contact: {email: 'raj@example.com'}, people: [{...form.people[0], answers: {diet: 'J'}}]}))
     .rejects.toEqual(expect.objectContaining({code: 'failed-precondition', details: {reason: 'closed'}}));
   expect((await edit('raj', {...form, contact: {email: 'raj.b@example.com'}})).changed).toBe(1);
+});
+
+// Waivers (#246). The convention's waiver text is the owner's to give, so
+// these use placeholder text (Z-03).
+const WAIVER_BLOCKS = {people: true, ageOnly: false, stay: true, sessionChoices: true, waivers: true, contact: true};
+const PLACEHOLDER = {en: '[PLACEHOLDER: waiver text from the committee]'};
+const saveWaiverAs = (data: object) =>
+  ftest.wrap(saveWaiver)({auth: {uid: 'owner'}, data: {eventId: E, text: PLACEHOLDER, requireLatest: true, ...data}});
+const personByName = async (name: string) =>
+  (await db().collection(`events/${E}/participants`).where('name', '==', name).get()).docs[0];
+const acceptedFor = async (name: string) =>
+  ((await (await personByName(name)).ref.collection('private').doc('waivers').get()).data() ?? {}).accepted ?? {};
+
+test('W-05 the contact accepts the waterpark waiver for each person going, as guardian for a child; version, time and signer kept', async () => {
+  await seed({blocks: WAIVER_BLOCKS});
+  const {waiverId} = await saveWaiverAs({title: {en: 'Waterpark waiver'}, appliesTo: {kind: 'session', id: 'WP'}, required: true});
+  const going = (name: string, birthDate: string, accept: boolean) => ({
+    name, birthDate, answers: {diet: 'V'}, signUps: ['WP'], ...(accept ? {acceptWaivers: [waiverId]} : {}),
+  });
+  const jaya = {name: 'Jaya Shah', birthDate: '1950-02-02', answers: {diet: 'V'}, signUps: ['HL']};
+  // Submit waits until everyone going has it accepted.
+  await expect(submit('nita', {groupName: 'Shah family', people: [going('Nita Shah', '1978-04-04', true), going('Rohan Shah', '2014-06-06', false), jaya]}))
+    .rejects.toEqual(expect.objectContaining({code: 'invalid-argument', details: expect.objectContaining({problems: ['people[1].waivers']})}));
+  await submit('nita', {groupName: 'Shah family', people: [going('Nita Shah', '1978-04-04', true), going('Rohan Shah', '2014-06-06', true), jaya]});
+  expect((await acceptedFor('Nita Shah'))[waiverId]).toEqual(expect.objectContaining({version: 1, by: 'nita', as: 'self', at: expect.anything()}));
+  expect((await acceptedFor('Rohan Shah'))[waiverId]).toEqual(expect.objectContaining({version: 1, by: 'nita', as: 'guardian'}));
+  expect(await acceptedFor('Jaya Shah')).toEqual({});
+  expect((await personByName('Jaya Shah')).data().waiversMissing).toBe(false);
+  // A new text is a new version; the earlier one is kept and shows as earlier.
+  await saveWaiverAs({waiverId, title: {en: 'Waterpark waiver'}, text: {en: '[PLACEHOLDER: version 2]'}, appliesTo: {kind: 'session', id: 'WP'}, required: true});
+  const versions = (await db().collection(`events/${E}/waivers/${waiverId}/versions`).get()).docs.map((d) => d.id).sort();
+  expect(versions).toEqual(['1', '2']);
+  expect((await personByName('Nita Shah')).data()).toEqual(expect.objectContaining({waiverVersions: {[waiverId]: 1}, waiversMissing: true}));
+});
+
+test('W-06 F5 is on the missing-waiver list, gets the email, and leaves the list once accepted after the deadline', async () => {
+  await seed({blocks: WAIVER_BLOCKS});
+  const {waiverId} = await saveWaiverAs({title: {en: 'Waterpark waiver'}, appliesTo: {kind: 'session', id: 'WP'}, required: false});
+  await submit('f5', {groupName: 'Family 5', people: [{name: 'Kiran Desai', birthDate: '1985-01-01', answers: {diet: 'J'}, signUps: ['WP']}]});
+  const missing = async () => (await db().collection(`events/${E}/participants`).where('waiversMissing', '==', true).get()).docs.map((d) => d.data().name);
+  expect(await missing()).toEqual(['Kiran Desai']);
+  expect(await ftest.wrap(sendWaiverReminders)({auth: {uid: 'owner'}, data: {eventId: E}})).toEqual({sent: 1});
+  const [mail] = (await db().collection('mailOutbox').where('template', '==', 'waiverMissing').get()).docs.map((d) => d.data());
+  expect(mail).toEqual(expect.objectContaining({to: 'f5@example.com', eventId: E}));
+  expect(mail.data.people).toContain('Kiran Desai');
+  await db().doc(`events/${E}`).update({'settings.registration.deadline': Date.now() - DAY});
+  const kiran = await personByName('Kiran Desai');
+  await ftest.wrap(acceptWaivers)({auth: {uid: 'f5'}, data: {slug: SLUG, acceptances: [{participantId: kiran.id, waiverId}]}});
+  expect(await missing()).toEqual([]);
+});
+
+test('Z-03 the liability waiver is accepted at registration and recorded (placeholder text)', async () => {
+  await seed({blocks: WAIVER_BLOCKS});
+  const {waiverId} = await saveWaiverAs({title: {en: 'Liability waiver'}, appliesTo: {kind: 'everyone'}, required: true});
+  const person = {name: 'Mira Patel', birthDate: '1990-09-09', answers: {diet: 'N'}, signUps: ['HL']};
+  await expect(submit('mira', {people: [person]})).rejects.toEqual(expect.objectContaining({code: 'invalid-argument'}));
+  await submit('mira', {people: [{...person, acceptWaivers: [waiverId]}], consent: {email: true, sms: false}});
+  expect((await acceptedFor('Mira Patel'))[waiverId]).toEqual(expect.objectContaining({version: 1, by: 'mira', as: 'self'}));
+  const [reg] = (await db().collection(`events/${E}/registrations`).get()).docs.map((d) => d.data());
+  // Req 31: consent to announcements is kept apart, for Stage 3.
+  expect(reg.consent).toEqual(expect.objectContaining({email: true, sms: false}));
 });

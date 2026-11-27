@@ -18,5 +18,10 @@
     "subject": "You're on the waitlist for {{eventTitle}}",
     "text": "Hello,\n\n{{eventTitle}} is full right now, so your {{word.group.one.lower}} is on the waitlist, number {{position}}:\n\n{{people}}\n\nIf places free up, we'll email you an offer. You can see your {{word.registration.one.lower}} here:\n\n{{link}}\n\nCrewPoint",
     "push": "You're on the waitlist for {{eventTitle}}, number {{position}}."
+  },
+  "waiverMissing": {
+    "subject": "A waiver is waiting for {{eventTitle}}",
+    "text": "Hello,\n\nSomeone in your {{word.registration.one.lower}} for {{eventTitle}} still needs to accept a waiver:\n\n{{people}}\n\nYou can read and accept it here:\n\n{{link}}\n\nCrewPoint",
+    "push": "A waiver is waiting for {{eventTitle}}."
   }
 }
