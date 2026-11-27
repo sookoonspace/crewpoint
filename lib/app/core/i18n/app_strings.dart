@@ -5925,6 +5925,10 @@ class MyRegistrationStrings {
   String get offerDeclined => _l.myRegistrationOfferDeclined;
   String get offerExpired => _l.myRegistrationOfferExpired;
   String get offerFailed => _l.myRegistrationOfferFailed;
+  String get homeHeading => _l.myRegistrationHomeHeading;
+  String homeWaitlisted(int position) => _l.myRegistrationHomeWaitlisted(position);
+  String get homePending => _l.myRegistrationHomePending;
+  String get homeOffered => _l.myRegistrationHomeOffered;
 }
 
 /// Photo consent (Spec #233 Req 30; #247), translated (ARB).

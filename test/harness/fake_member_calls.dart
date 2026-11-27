@@ -909,4 +909,14 @@ class FakeMemberCalls implements MemberCalls {
       '${action.name}:$registrationId${hours == null ? '' : ':$hours'}',
     );
   }
+
+  /// What [getMyWaitingRegistrations] answers (#292).
+  List<WaitingRegistration> waitingRegistrations = const [];
+
+  @override
+  Future<List<WaitingRegistration>> getMyWaitingRegistrations() async {
+    calls.add('getMyWaitingRegistrations');
+    _maybeFail();
+    return waitingRegistrations;
+  }
 }

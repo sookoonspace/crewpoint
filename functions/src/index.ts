@@ -54,7 +54,7 @@ export {claimEventSlug, saveRegistrationSettings} from "./registration/registrat
 export {eventPageHtml, getEventPage} from "./registration/eventPage";
 export {submitRegistration} from "./registration/submitRegistration";
 export {getRegistrationForm} from "./registration/registrationForm";
-export {getMyRegistration} from "./registration/myRegistration";
+export {getMyRegistration, getMyWaitingRegistrations} from "./registration/myRegistration";
 export {saveRegistrationDraft} from "./registration/registrationDraft";
 export {updateRegistration} from "./registration/updateRegistration";
 export {cancelRegistration} from "./registration/cancelRegistration";
