@@ -243,6 +243,7 @@ void main() {
       'groupName': '',
       'groupAnswers': {'hotel': 'Hilton'},
       'contact': {'email': 'asha@example.com', 'phone': '312 555 0100'},
+      'consent': {'email': false, 'sms': false},
       'people': [
         {
           'name': 'Asha Patel',
@@ -368,6 +369,123 @@ void main() {
       final back = RegistrationDraft.fromMap(editing.current!.toMap());
       expect(back.people.single.id, 'p1');
       expect(back.people.single.optOuts, {'M2'});
+    });
+  });
+
+  group('waivers and consent (#246)', () {
+    final waiverMaps = [
+      {
+        'id': 'park',
+        'title': {'en': 'Park waiver'},
+        'text': {'en': '[PLACEHOLDER]'},
+        'version': 2,
+        'appliesTo': {'kind': 'session', 'id': 'park'},
+        'required': true,
+        'requireLatest': true,
+      },
+      {
+        'id': 'kids',
+        'title': {'en': 'Kids club'},
+        'text': {'en': '[PLACEHOLDER]'},
+        'version': 1,
+        'appliesTo': {'kind': 'category', 'id': 'child'},
+        'required': false,
+        'requireLatest': true,
+      },
+    ];
+    RegistrationFormSpec spec() => RegistrationFormSpec.fromMap({
+      ...formMap(blocks: {'waivers': true}),
+      'waivers': waiverMaps,
+    });
+    const asha = PersonEntry(
+      name: 'Asha',
+      birthDate: '1980-03-01',
+      answers: {'diet': 'Jain'},
+      signUps: {'park'},
+    );
+    const dev = PersonEntry(
+      name: 'Dev',
+      birthDate: '2016-05-09',
+      answers: {'diet': 'Jain', 'kids': true},
+    );
+
+    test('a Waivers step comes before Contact when the block is on', () {
+      expect(
+        spec().steps.map((s) => s.id),
+        containsAllInOrder([FormStep.sessions, FormStep.waivers, FormStep.contact]),
+      );
+      final off = RegistrationFormSpec.fromMap({...formMap(), 'waivers': waiverMaps});
+      expect(off.steps.map((s) => s.id), isNot(contains(FormStep.waivers)));
+      expect(off.waiversFor(asha), isEmpty);
+    });
+
+    test('Req 26: a waiver applies by session sign-up or category', () {
+      expect(spec().waiversFor(asha).map((w) => w.id), ['park']);
+      expect(spec().waiversFor(dev).map((w) => w.id), ['kids']);
+    });
+
+    test('Req 28: an earlier version is asked again only when the latest is required', () {
+      const accepted = PersonEntry(
+        name: 'Asha',
+        birthDate: '1980-03-01',
+        signUps: {'park'},
+        waiverVersions: {'park': 1},
+      );
+      expect(spec().waiversFor(accepted).map((w) => w.id), ['park']);
+      const current = PersonEntry(
+        name: 'Asha',
+        birthDate: '1980-03-01',
+        signUps: {'park'},
+        waiverVersions: {'park': 2},
+      );
+      expect(spec().waiversFor(current), isEmpty);
+    });
+
+    test('Req 29: a required waiver is a problem until accepted; an optional one is not', () {
+      const draft = RegistrationDraft(
+        submissionId: 's1',
+        groupAnswers: {'hotel': 'Hilton'},
+        email: 'asha@example.com',
+        people: [asha, dev],
+      );
+      expect(
+        spec().problems(draft),
+        [const FormProblem(FormStep.waivers, 'park', person: 0)],
+      );
+      final accepted = draft.copyWith(
+        people: [asha.copyWith(acceptWaivers: {'park'}), dev],
+      );
+      expect(spec().problems(accepted), isEmpty);
+    });
+
+    test('what is sent carries accepted waivers that apply, and consent', () {
+      final draft = RegistrationDraft(
+        submissionId: 's1',
+        email: 'asha@example.com',
+        consentEmail: true,
+        people: [
+          // Kids club does not apply to Asha, so it is not sent.
+          asha.copyWith(acceptWaivers: {'park', 'kids'}),
+          dev.copyWith(acceptWaivers: {'kids'}),
+        ],
+      );
+      final sent = spec().toSubmitMap(draft);
+      final people = (sent['people']! as List).cast<Map<String, Object?>>();
+      expect(people[0]['acceptWaivers'], ['park']);
+      expect(people[1]['acceptWaivers'], ['kids']);
+      expect(sent['consent'], {'email': true, 'sms': false});
+    });
+
+    test('a draft keeps acceptances and consent through a reload', () {
+      final draft = RegistrationDraft(
+        submissionId: 's1',
+        consentSms: true,
+        people: [asha.copyWith(acceptWaivers: {'park'})],
+      );
+      final back = RegistrationDraft.tryParse(draft.toMap())!;
+      expect(back.consentSms, isTrue);
+      expect(back.consentEmail, isFalse);
+      expect(back.people.single.acceptWaivers, {'park'});
     });
   });
 }

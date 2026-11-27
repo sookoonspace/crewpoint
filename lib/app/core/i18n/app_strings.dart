@@ -3198,6 +3198,15 @@ abstract class PeopleStrings {
   String get groupSaved;
   String get groupDeleted;
   String get groupSaveFailed;
+
+  // Waivers (#246).
+  String get missingWaiver;
+  String get sendReminders;
+  String get remindersTitle;
+  String get remindersBody;
+  String get send;
+  String remindersSent(int count);
+  String get remindersFailed;
 }
 
 class _EnglishPeopleStrings extends PeopleStrings {
@@ -3327,6 +3336,27 @@ class _EnglishPeopleStrings extends PeopleStrings {
   String get groupDeleted => 'Deleted';
   @override
   String get groupSaveFailed => "Couldn't save. Try again.";
+
+  @override
+  String get missingWaiver => 'Missing waiver';
+  @override
+  String get sendReminders => 'Email reminders';
+  @override
+  String get remindersTitle => 'Email reminders?';
+  @override
+  String get remindersBody =>
+      'Each registration with someone missing a waiver gets an email asking them to accept it.';
+  @override
+  String get send => 'Send';
+  @override
+  String remindersSent(int count) => switch (count) {
+    0 => 'No reminders to send.',
+    1 => '1 reminder sent.',
+    _ => '$count reminders sent.',
+  };
+  @override
+  String get remindersFailed =>
+      "We couldn't send the reminders. Please try again.";
 }
 
 /// The roster import screen (Req 44, 45, 75).
@@ -5628,6 +5658,36 @@ class RegistrationSettingsStrings {
   String get contactLine => _l.regSettingsContactLine;
   String get contactLineHelp => _l.regSettingsContactLineHelp;
   String get includedHelp => _l.regSettingsIncludedHelp;
+  String get waiversHeading => _l.regSettingsWaiversHeading;
+  String get addWaiver => _l.regSettingsAddWaiver;
+  String get waiversHelp => _l.regSettingsWaiversHelp;
+  String get waiversOff => _l.regSettingsWaiversOff;
+  String get noWaivers => _l.regSettingsNoWaivers;
+  String waiverVersion(int version) => _l.regSettingsWaiverVersion(version);
+  String get waiverRequired => _l.regSettingsWaiverRequired;
+  String get waiverOptional => _l.regSettingsWaiverOptional;
+  String get appliesEveryone => _l.regSettingsAppliesEveryone;
+  String appliesOnly(String name) => _l.regSettingsAppliesOnly(name);
+  String appliesSignedUp(String title) => _l.regSettingsAppliesSignedUp(title);
+  String get newWaiver => _l.regSettingsNewWaiver;
+  String get editWaiver => _l.regSettingsEditWaiver;
+  String get waiverTitle => _l.regSettingsWaiverTitle;
+  String get waiverTitleGu => _l.regSettingsWaiverTitleGu;
+  String get waiverText => _l.regSettingsWaiverText;
+  String get waiverTextGu => _l.regSettingsWaiverTextGu;
+  String get waiverTextHelp => _l.regSettingsWaiverTextHelp;
+  String get appliesTo => _l.regSettingsAppliesTo;
+  String appliesToCategory(String category) => _l.regSettingsAppliesToCategory(category);
+  String appliesToSession(String session) => _l.regSettingsAppliesToSession(session);
+  String get choiceNeeded => _l.regSettingsChoiceNeeded;
+  String get waiverIsRequired => _l.regSettingsWaiverIsRequired;
+  String get waiverIsRequiredHelp => _l.regSettingsWaiverIsRequiredHelp;
+  String get requireLatest => _l.regSettingsRequireLatest;
+  String get requireLatestHelp => _l.regSettingsRequireLatestHelp;
+  String get titleNeeded => _l.regSettingsTitleNeeded;
+  String get textNeeded => _l.regSettingsTextNeeded;
+  String get waiverSaved => _l.regSettingsWaiverSaved;
+  String get waiverSaveFailed => _l.regSettingsWaiverSaveFailed;
 }
 
 /// The public event page, `/e/:eventSlug` (#240), translated through the
@@ -5787,6 +5847,23 @@ class RegisterFormStrings {
   String get attendingTitle => _l.registerFormAttendingTitle;
   String get attendingHelp => _l.registerFormAttendingHelp;
   String get notAttending => _l.registerFormNotAttending;
+  String get waiversTitle => _l.registerFormWaiversTitle;
+  String get waiversHelp => _l.registerFormWaiversHelp;
+  String get waiverRequired => _l.registerFormWaiverRequired;
+  String get waiverLater => _l.registerFormWaiverLater;
+  String waiverVersion(int version) => _l.registerFormWaiverVersion(version);
+  String get readWaiver => _l.registerFormReadWaiver;
+  String get hideWaiver => _l.registerFormHideWaiver;
+  String acceptFor(String name) => _l.registerFormAcceptFor(name);
+  String acceptAsGuardian(String name) => _l.registerFormAcceptAsGuardian(name);
+  String get waiverNeeded => _l.registerFormWaiverNeeded;
+  String get noWaivers => _l.registerFormNoWaivers;
+  String get waiverAccepted => _l.registerFormWaiverAccepted;
+  String get waiverNotAccepted => _l.registerFormWaiverNotAccepted;
+  String get consentTitle => _l.registerFormConsentTitle;
+  String get consentHelp => _l.registerFormConsentHelp;
+  String get consentEmail => _l.registerFormConsentEmail;
+  String get consentSms => _l.registerFormConsentSms;
 }
 
 /// "My registration" (Spec #233 Req 9, 19, 35; #242), translated (ARB).
@@ -5812,4 +5889,10 @@ class MyRegistrationStrings {
   String get backToEvent => _l.myRegistrationBackToEvent;
   String get change => _l.myRegistrationChange;
   String get changeContact => _l.myRegistrationChangeContact;
+  String get waiversTitle => _l.myRegistrationWaiversTitle;
+  String get waiversHelp => _l.myRegistrationWaiversHelp;
+  String get acceptWaivers => _l.myRegistrationAcceptWaivers;
+  String get waiversAccepted => _l.myRegistrationWaiversAccepted;
+  String get acceptFailed => _l.myRegistrationAcceptFailed;
+  String get nothingTicked => _l.myRegistrationNothingTicked;
 }

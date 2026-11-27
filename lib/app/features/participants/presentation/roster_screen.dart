@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +16,7 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_views.dart';
 import 'package:crewpoint_app/app/features/participants/application/roster_controller.dart';
 import 'package:crewpoint_app/app/features/participants/application/roster_filters.dart';
+import 'package:crewpoint_app/app/features/registration/application/waivers_provider.dart';
 import 'package:crewpoint_app/app/features/participants/data/participant_repository.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/category.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
@@ -107,7 +109,48 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
         ? filterTag(f.answer!.field.id, f.answer!.value)
         : null,
     groupIds: ownGroups?.take(30).toList(),
+    missingWaiver: ownGroups == null && f.missingWaiver,
   );
+
+  /// Emails each registration with someone missing a waiver (#246, W-05),
+  /// after a confirm.
+  Future<void> _sendReminders() async {
+    final strings = context.strings.people;
+    final messenger = ScaffoldMessenger.of(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialog) => CpDialog(
+        title: strings.remindersTitle,
+        message: strings.remindersBody,
+        actions: [
+          CpButton.text(
+            key: const Key('people.roster.reminders.cancel'),
+            label: MaterialLocalizations.of(dialog).cancelButtonLabel,
+            onPressed: () => Navigator.of(dialog).pop(false),
+          ),
+          CpButton(
+            key: const Key('people.roster.reminders.confirm'),
+            label: strings.send,
+            onPressed: () => Navigator.of(dialog).pop(true),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      final sent = await ref
+          .read(memberCallsProvider)
+          .sendWaiverReminders(widget.event.id);
+      messenger.showSnackBar(
+        SnackBar(content: Text(strings.remindersSent(sent))),
+      );
+    } on Object catch (e, st) {
+      log('sendWaiverReminders failed', error: e, stackTrace: st);
+      messenger.showSnackBar(
+        SnackBar(content: Text(strings.remindersFailed)),
+      );
+    }
+  }
 
   void _onSearch(String text) {
     _debounce?.cancel();
@@ -431,6 +474,9 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
         ? ref.watch(participantCountProvider(event.id)).value
         : null;
     final answer = filters.answer;
+    final hasWaivers =
+        browses &&
+        (ref.watch(eventWaiversProvider(event.id)).value?.isNotEmpty ?? false);
 
     final header = <Widget>[
       CpSearchField(
@@ -450,7 +496,8 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
               selected:
                   filters.group == null &&
                   filters.category == null &&
-                  answer == null,
+                  answer == null &&
+                  !filters.missingWaiver,
               onTap: _filtersController.clear,
             ),
             if (filters.group == null)
@@ -511,7 +558,29 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
                     words.one('customField'),
                   ),
                 ),
+            // People still missing a waiver (#246, W-06).
+            if (hasWaivers)
+              CpFilterChip(
+                key: const Key('people.roster.missingWaiver'),
+                label: strings.missingWaiver,
+                selected: filters.missingWaiver,
+                onTap: () => _filtersController.setMissingWaiver(
+                  !filters.missingWaiver,
+                ),
+              ),
           ],
+        ),
+      if (filters.missingWaiver &&
+          browses &&
+          event.can(me, 'registrations.manage'))
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: CpButton.text(
+            key: const Key('people.roster.sendReminders'),
+            icon: CpIcons.authEmailField,
+            label: strings.sendReminders,
+            onPressed: _sendReminders,
+          ),
         ),
       if (filters.group != null && edits)
         Align(

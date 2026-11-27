@@ -61,8 +61,8 @@ describe('getMyRegistration', () => {
         status: 'submitted', waitlistPosition: null, groupName: 'Patel family',
         submittedAt: expect.any(Number),
         people: [
-          {id: expect.any(String), name: 'Asha Patel', categoryId: 'adult', missingWaivers: []},
-          {id: expect.any(String), name: 'Dev Patel', categoryId: 'child', missingWaivers: []},
+          {id: expect.any(String), name: 'Asha Patel', categoryId: 'adult', isChild: false, missingWaivers: []},
+          {id: expect.any(String), name: 'Dev Patel', categoryId: 'child', isChild: true, missingWaivers: []},
         ],
       }),
       note: {en: 'Book at hotel.example with code CONV27', gu: 'કોડ CONV27'},

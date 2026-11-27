@@ -51,4 +51,8 @@ class RegistrationRobot {
 
   Future<void> session(int person, String sessionId) =>
       tap(Key('$k.session.$person.$sessionId'));
+
+  /// Turns on accepting [waiverId] for [person] on the waivers step (#246).
+  Future<void> acceptWaiver(String waiverId, int person) =>
+      tap(Key('$k.waiver.$waiverId.accept.$person'));
 }

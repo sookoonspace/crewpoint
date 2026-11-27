@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +12,7 @@ import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/registration/domain/my_registration.dart';
+import 'package:crewpoint_app/app/features/registration/presentation/widgets/waiver_card.dart';
 
 const _k = 'registration.mine';
 
@@ -115,6 +118,11 @@ class MyRegistrationScreen extends ConsumerWidget {
               ],
             ),
           ),
+          // Waivers still to accept, at any time (#246, W-06).
+          if (r.status != 'cancelled' &&
+              r.people.any((p) => p.missingWaivers.isNotEmpty) &&
+              v.waivers.isNotEmpty)
+            _MissingWaivers(slug: slug, view: v),
           if (note != null) ...[
             CpSectionHeader(title: s.note),
             CpCard(
@@ -214,6 +222,106 @@ class _StatusCard extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// The waivers people in the registration still need, each with a switch
+/// per person and one Accept (#246, W-06), through `acceptWaivers`.
+class _MissingWaivers extends ConsumerStatefulWidget {
+  const _MissingWaivers({required this.slug, required this.view});
+
+  final String slug;
+  final MyRegistrationView view;
+
+  @override
+  ConsumerState<_MissingWaivers> createState() => _MissingWaiversState();
+}
+
+class _MissingWaiversState extends ConsumerState<_MissingWaivers> {
+  /// Ticked acceptances, as `(person index, waiver ID)`.
+  final _ticked = <(int, String)>{};
+  bool _busy = false;
+  bool _nothingTicked = false;
+
+  Future<void> _accept() async {
+    final s = context.strings.myRegistration;
+    if (_ticked.isEmpty) {
+      setState(() => _nothingTicked = true);
+      return;
+    }
+    final people = widget.view.registration!.people;
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() {
+      _busy = true;
+      _nothingTicked = false;
+    });
+    try {
+      await ref.read(memberCallsProvider).acceptWaivers(
+        slug: widget.slug,
+        acceptances: [
+          for (final (i, waiverId) in _ticked)
+            (participantId: people[i].id, waiverId: waiverId),
+        ],
+      );
+      messenger.showSnackBar(SnackBar(content: Text(s.waiversAccepted)));
+      ref.invalidate(myRegistrationProvider(widget.slug.toLowerCase()));
+    } on Object catch (e, st) {
+      log('acceptWaivers failed', error: e, stackTrace: st);
+      messenger.showSnackBar(SnackBar(content: Text(s.acceptFailed)));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.strings.myRegistration;
+    final cp = context.cp;
+    final language = Localizations.localeOf(context).languageCode;
+    final people = widget.view.registration!.people;
+    return Column(
+      key: const Key('$_k.waivers'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: cp.space.md,
+      children: [
+        CpSectionHeader(title: s.waiversTitle),
+        Text(
+          s.waiversHelp,
+          style: cp.type.bodyMedium.copyWith(color: cp.colors.textMuted),
+        ),
+        for (final w in widget.view.waivers)
+          if (people.any((p) => p.missingWaivers.contains(w.id)))
+            WaiverCard(
+              key: Key('$_k.waiver.${w.id}'),
+              keyPrefix: '$_k.waiver.${w.id}',
+              waiver: w,
+              language: language,
+              people: [
+                for (final (i, p) in people.indexed)
+                  if (p.missingWaivers.contains(w.id))
+                    WaiverPersonRow(
+                      index: i,
+                      name: p.name,
+                      isChild: p.isChild,
+                      accepted: _ticked.contains((i, w.id)),
+                    ),
+              ],
+              onAccept: (i, on) => setState(() {
+                on ? _ticked.add((i, w.id)) : _ticked.remove((i, w.id));
+                _nothingTicked = false;
+              }),
+            ),
+        if (_nothingTicked) CpFieldError(s.nothingTicked),
+        CpButton(
+          key: const Key('$_k.acceptWaivers'),
+          label: s.acceptWaivers,
+          icon: CpIcons.statusDone,
+          busy: _busy,
+          expand: true,
+          onPressed: _busy ? null : _accept,
+        ),
+      ],
     );
   }
 }

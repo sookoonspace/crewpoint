@@ -23,6 +23,7 @@ import 'package:crewpoint_app/app/features/registration/application/event_page_p
 import 'package:crewpoint_app/app/features/registration/application/registration_form_provider.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_form.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_settings.dart';
+import 'package:crewpoint_app/app/features/registration/presentation/widgets/waiver_card.dart';
 
 const _k = 'registration.form';
 
@@ -590,6 +591,57 @@ class _RegistrationFormState extends ConsumerState<_RegistrationForm> {
                   _editPerson(i, (p) => p.copyWith(optOuts: optOuts)),
             ),
         ];
+      case FormStep.waivers:
+        final language = Localizations.localeOf(context).languageCode;
+        final applying = [
+          for (final w in _spec.waivers)
+            (
+              waiver: w,
+              people: [
+                for (var i = 0; i < _draft.people.length; i++)
+                  if (_spec
+                      .waiversFor(_draft.people[i])
+                      .any((x) => x.id == w.id))
+                    i,
+              ],
+            ),
+        ].where((a) => a.people.isNotEmpty).toList();
+        return [
+          heading(s.waiversTitle),
+          Text(
+            applying.isEmpty ? s.noWaivers : s.waiversHelp,
+            style: cp.type.bodyMedium.copyWith(color: cp.colors.textMuted),
+          ),
+          for (final a in applying)
+            WaiverCard(
+              key: Key('$_k.waiver.${a.waiver.id}'),
+              keyPrefix: '$_k.waiver.${a.waiver.id}',
+              waiver: a.waiver,
+              language: language,
+              people: [
+                for (final i in a.people)
+                  WaiverPersonRow(
+                    index: i,
+                    name: _personName(context, i),
+                    isChild: _spec.categoryOf(_draft.people[i])?.isChild ?? false,
+                    accepted: _draft.people[i].acceptWaivers.contains(
+                      a.waiver.id,
+                    ),
+                    missing:
+                        _problem(FormStep.waivers, a.waiver.id, person: i) !=
+                        null,
+                  ),
+              ],
+              onAccept: (i, on) => _editPerson(
+                i,
+                (p) => p.copyWith(
+                  acceptWaivers: on
+                      ? {...p.acceptWaivers, a.waiver.id}
+                      : ({...p.acceptWaivers}..remove(a.waiver.id)),
+                ),
+              ),
+            ),
+        ];
       case FormStep.contact:
         return [
           heading(s.contactTitle),
@@ -602,6 +654,38 @@ class _RegistrationFormState extends ConsumerState<_RegistrationForm> {
             onEmail: (v) => _edit((d) => d.copyWith(email: v)),
             onPhone: (v) => _edit((d) => d.copyWith(phone: v)),
           ),
+          // Asked once, with the registration (Req 31).
+          if (!_spec.editing) ...[
+            CpSectionHeader(title: s.consentTitle),
+            CpCard(
+              padding: EdgeInsets.all(cp.space.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: cp.space.md,
+                children: [
+                  Text(
+                    s.consentHelp,
+                    style: cp.type.bodySmall.copyWith(
+                      color: cp.colors.textMuted,
+                    ),
+                  ),
+                  CpSwitchRow(
+                    key: const Key('$_k.consent.email'),
+                    title: s.consentEmail,
+                    value: _draft.consentEmail,
+                    onChanged: (v) =>
+                        _edit((d) => d.copyWith(consentEmail: v)),
+                  ),
+                  CpSwitchRow(
+                    key: const Key('$_k.consent.sms'),
+                    title: s.consentSms,
+                    value: _draft.consentSms,
+                    onChanged: (v) => _edit((d) => d.copyWith(consentSms: v)),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ];
       case FormStep.review:
         return [
@@ -701,6 +785,7 @@ class _RegistrationFormState extends ConsumerState<_RegistrationForm> {
       FormStep.people => s.peopleTitle,
       FormStep.stay => s.stayTitle,
       FormStep.sessions => s.sessionsTitle,
+      FormStep.waivers => s.waiversTitle,
       FormStep.contact => s.contactTitle,
       _ => _localName(
         step.section!.name,
@@ -773,10 +858,26 @@ class _RegistrationFormState extends ConsumerState<_RegistrationForm> {
               ),
           ],
         ];
+      case FormStep.waivers:
+        final language = Localizations.localeOf(context).languageCode;
+        return [
+          for (var i = 0; i < people.length; i++)
+            for (final w in _spec.waiversFor(people[i]))
+              (
+                '${_personName(context, i)}: ${_localName(w.title, language)}',
+                people[i].acceptWaivers.contains(w.id)
+                    ? s.waiverAccepted
+                    : s.waiverNotAccepted,
+              ),
+        ];
       case FormStep.contact:
         return [
           (s.email, _answerText(context, _draft.email.trim())),
           if (_draft.phone.trim().isNotEmpty) (s.phone, _draft.phone.trim()),
+          if (!_spec.editing) ...[
+            (s.consentEmail, _draft.consentEmail ? s.yes : s.no),
+            (s.consentSms, _draft.consentSms ? s.yes : s.no),
+          ],
         ];
       default:
         final questions = _spec.questionsIn(step.section!);

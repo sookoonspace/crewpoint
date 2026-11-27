@@ -20,8 +20,8 @@
     "push": "{{eventTitle}} માટે તમે રાહ યાદીમાં નંબર {{position}} પર છો."
   },
   "waiverMissing": {
-    "subject": "{{eventTitle}} માટે એક માફીપત્ર બાકી છે",
-    "text": "નમસ્તે,\n\n{{eventTitle}} માટેની તમારી {{word.registration.one.lower}} માં આ લોકોએ હજી માફીપત્ર સ્વીકારવાનું બાકી છે:\n\n{{people}}\n\nતમે તેને અહીં વાંચી અને સ્વીકારી શકો છો:\n\n{{link}}\n\nCrewPoint",
-    "push": "{{eventTitle}} માટે એક માફીપત્ર બાકી છે."
+    "subject": "{{eventTitle}} માટે એક સંમતિપત્ર બાકી છે",
+    "text": "નમસ્તે,\n\n{{eventTitle}} માટેની તમારી {{word.registration.one.lower}} માં આ લોકોએ હજી સંમતિપત્ર સ્વીકારવાનું બાકી છે:\n\n{{people}}\n\nતમે તેને અહીં વાંચી અને સ્વીકારી શકો છો:\n\n{{link}}\n\nCrewPoint",
+    "push": "{{eventTitle}} માટે એક સંમતિપત્ર બાકી છે."
   }
 }

@@ -14,6 +14,7 @@ class RosterQuery {
     this.groupIds,
     this.categoryId,
     this.tag,
+    this.missingWaiver = false,
   });
 
   final String search;
@@ -29,6 +30,10 @@ class RosterQuery {
   /// Firestore takes at most 30 in one query.
   final List<String>? groupIds;
 
+  /// Only people still missing a waiver (#246). On its own, so one index
+  /// (`waiversMissing`, `sortName`) serves it.
+  final bool missingWaiver;
+
   @override
   bool operator ==(Object other) =>
       other is RosterQuery &&
@@ -36,6 +41,7 @@ class RosterQuery {
       other.groupId == groupId &&
       other.categoryId == categoryId &&
       other.tag == tag &&
+      other.missingWaiver == missingWaiver &&
       _sameList(other.groupIds, groupIds);
 
   @override
@@ -44,6 +50,7 @@ class RosterQuery {
     groupId,
     categoryId,
     tag,
+    missingWaiver,
     Object.hashAll(groupIds ?? const []),
   );
 
@@ -96,6 +103,7 @@ class ParticipantRepository {
       query = query.where('categoryId', isEqualTo: q.categoryId);
     }
     if (q.tag != null) query = query.where('filterTags', arrayContains: q.tag);
+    if (q.missingWaiver) query = query.where('waiversMissing', isEqualTo: true);
     final search = q.search.trim().toLowerCase();
     if (search.isNotEmpty) {
       query = query

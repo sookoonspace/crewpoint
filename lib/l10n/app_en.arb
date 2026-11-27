@@ -1460,5 +1460,257 @@
   "regSettingsContactLineHelp": "Shown once registration closes, such as \"Questions? Call 312-555-0123\".",
   "@regSettingsContactLineHelp": {
     "description": "Help under the contact line field."
+  },
+  "registerFormWaiversTitle": "Waivers",
+  "@registerFormWaiversTitle": {
+    "description": "The waivers step title."
+  },
+  "registerFormWaiversHelp": "Read each one, then accept it for the people it applies to.",
+  "@registerFormWaiversHelp": {
+    "description": "Help on the waivers step."
+  },
+  "registerFormWaiverRequired": "Required to register",
+  "@registerFormWaiverRequired": {
+    "description": "A required waiver tag."
+  },
+  "registerFormWaiverLater": "You can also accept this later.",
+  "@registerFormWaiverLater": {
+    "description": "Under a waiver that is not required."
+  },
+  "registerFormWaiverVersion": "Version {version}",
+  "@registerFormWaiverVersion": {
+    "description": "A waiver version.",
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "registerFormReadWaiver": "Read the waiver",
+  "@registerFormReadWaiver": {
+    "description": "Shows a waiver's text."
+  },
+  "registerFormHideWaiver": "Hide the waiver",
+  "@registerFormHideWaiver": {
+    "description": "Hides a waiver's text."
+  },
+  "registerFormAcceptFor": "I accept for {name}",
+  "@registerFormAcceptFor": {
+    "description": "Accepting a waiver for an adult.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "registerFormAcceptAsGuardian": "I accept as {name}'s parent or guardian",
+  "@registerFormAcceptAsGuardian": {
+    "description": "Accepting a waiver for a child.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "registerFormWaiverNeeded": "Please accept this to register.",
+  "@registerFormWaiverNeeded": {
+    "description": "A required waiver not accepted."
+  },
+  "registerFormNoWaivers": "None of the waivers apply to the people on this form.",
+  "@registerFormNoWaivers": {
+    "description": "No waiver applies."
+  },
+  "registerFormWaiverAccepted": "Accepted",
+  "@registerFormWaiverAccepted": {
+    "description": "A waiver accepted, on the review."
+  },
+  "registerFormWaiverNotAccepted": "Not accepted yet",
+  "@registerFormWaiverNotAccepted": {
+    "description": "A waiver not accepted, on the review."
+  },
+  "registerFormConsentTitle": "Announcements",
+  "@registerFormConsentTitle": {
+    "description": "Consent heading on the contact step."
+  },
+  "registerFormConsentHelp": "Messages about your registration always come. These are for news and reminders, and you can say no.",
+  "@registerFormConsentHelp": {
+    "description": "Consent help."
+  },
+  "registerFormConsentEmail": "Send me announcements by email",
+  "@registerFormConsentEmail": {
+    "description": "Email consent switch."
+  },
+  "registerFormConsentSms": "Send me announcements by text message",
+  "@registerFormConsentSms": {
+    "description": "SMS consent switch."
+  },
+  "myRegistrationWaiversTitle": "Waivers to accept",
+  "@myRegistrationWaiversTitle": {
+    "description": "Heading for missing waivers."
+  },
+  "myRegistrationWaiversHelp": "Someone in your registration still needs to accept these.",
+  "@myRegistrationWaiversHelp": {
+    "description": "Help for missing waivers."
+  },
+  "myRegistrationAcceptWaivers": "Accept",
+  "@myRegistrationAcceptWaivers": {
+    "description": "Accepts the ticked waivers."
+  },
+  "myRegistrationWaiversAccepted": "Thank you. The waivers are accepted.",
+  "@myRegistrationWaiversAccepted": {
+    "description": "After accepting waivers."
+  },
+  "myRegistrationAcceptFailed": "We couldn't save that. Please try again.",
+  "@myRegistrationAcceptFailed": {
+    "description": "Accepting waivers failed."
+  },
+  "myRegistrationNothingTicked": "Tick at least one to accept.",
+  "@myRegistrationNothingTicked": {
+    "description": "Accept with nothing ticked."
+  },
+  "regSettingsWaiversHeading": "Waivers",
+  "@regSettingsWaiversHeading": {
+    "description": "Waivers section heading."
+  },
+  "regSettingsAddWaiver": "Add waiver",
+  "@regSettingsAddWaiver": {
+    "description": "Adds a waiver."
+  },
+  "regSettingsWaiversHelp": "People accept these as they register, for each person they apply to.",
+  "@regSettingsWaiversHelp": {
+    "description": "Waivers section help."
+  },
+  "regSettingsWaiversOff": "Turn on Waivers above to ask for them on the form.",
+  "@regSettingsWaiversOff": {
+    "description": "When the waivers block is off."
+  },
+  "regSettingsNoWaivers": "No waivers yet.",
+  "@regSettingsNoWaivers": {
+    "description": "No waivers."
+  },
+  "regSettingsWaiverVersion": "Version {version}",
+  "@regSettingsWaiverVersion": {
+    "description": "A waiver version.",
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "regSettingsWaiverRequired": "Required",
+  "@regSettingsWaiverRequired": {
+    "description": "A required waiver."
+  },
+  "regSettingsWaiverOptional": "Optional",
+  "@regSettingsWaiverOptional": {
+    "description": "A waiver not required."
+  },
+  "regSettingsAppliesEveryone": "Everyone",
+  "@regSettingsAppliesEveryone": {
+    "description": "Applies to everyone."
+  },
+  "regSettingsAppliesOnly": "{name} only",
+  "@regSettingsAppliesOnly": {
+    "description": "Applies to one category.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "regSettingsAppliesSignedUp": "Signed up for {title}",
+  "@regSettingsAppliesSignedUp": {
+    "description": "Applies to a session's sign-ups.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "regSettingsNewWaiver": "New waiver",
+  "@regSettingsNewWaiver": {
+    "description": "New waiver page title."
+  },
+  "regSettingsEditWaiver": "Waiver",
+  "@regSettingsEditWaiver": {
+    "description": "Waiver page title."
+  },
+  "regSettingsWaiverTitle": "Title",
+  "@regSettingsWaiverTitle": {
+    "description": "Waiver title field."
+  },
+  "regSettingsWaiverTitleGu": "Title in Gujarati",
+  "@regSettingsWaiverTitleGu": {
+    "description": "Gujarati title field."
+  },
+  "regSettingsWaiverText": "Text",
+  "@regSettingsWaiverText": {
+    "description": "Waiver text field."
+  },
+  "regSettingsWaiverTextGu": "Text in Gujarati",
+  "@regSettingsWaiverTextGu": {
+    "description": "Gujarati text field."
+  },
+  "regSettingsWaiverTextHelp": "People read this before they accept. Changing the title or text makes a new version.",
+  "@regSettingsWaiverTextHelp": {
+    "description": "Help under the text."
+  },
+  "regSettingsAppliesTo": "Applies to",
+  "@regSettingsAppliesTo": {
+    "description": "Who the waiver applies to."
+  },
+  "regSettingsAppliesToCategory": "One {category}",
+  "@regSettingsAppliesToCategory": {
+    "description": "Applies to one category; the event's word.",
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "regSettingsAppliesToSession": "People signed up for a {session}",
+  "@regSettingsAppliesToSession": {
+    "description": "Applies to a session's sign-ups; the event's word.",
+    "placeholders": {
+      "session": {
+        "type": "String"
+      }
+    }
+  },
+  "regSettingsChoiceNeeded": "Choose who it applies to.",
+  "@regSettingsChoiceNeeded": {
+    "description": "No category or session chosen."
+  },
+  "regSettingsWaiverIsRequired": "Required to register",
+  "@regSettingsWaiverIsRequired": {
+    "description": "Required switch."
+  },
+  "regSettingsWaiverIsRequiredHelp": "Nobody it applies to can register until it's accepted.",
+  "@regSettingsWaiverIsRequiredHelp": {
+    "description": "Required switch help."
+  },
+  "regSettingsRequireLatest": "Ask again after a change",
+  "@regSettingsRequireLatest": {
+    "description": "Require the latest version switch."
+  },
+  "regSettingsRequireLatestHelp": "People who accepted an earlier version must accept the new one.",
+  "@regSettingsRequireLatestHelp": {
+    "description": "Require the latest help."
+  },
+  "regSettingsTitleNeeded": "Add a title.",
+  "@regSettingsTitleNeeded": {
+    "description": "No title."
+  },
+  "regSettingsTextNeeded": "Add the text.",
+  "@regSettingsTextNeeded": {
+    "description": "No text."
+  },
+  "regSettingsWaiverSaved": "Waiver saved.",
+  "@regSettingsWaiverSaved": {
+    "description": "After saving a waiver."
+  },
+  "regSettingsWaiverSaveFailed": "We couldn't save the waiver. Please try again.",
+  "@regSettingsWaiverSaveFailed": {
+    "description": "Saving a waiver failed."
   }
 }

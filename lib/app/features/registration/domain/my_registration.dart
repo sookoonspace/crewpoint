@@ -1,14 +1,25 @@
 import 'package:flutter/foundation.dart';
 import 'package:crewpoint_app/app/core/labels/label_resolver.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_settings.dart';
+import 'package:crewpoint_app/app/features/registration/domain/waivers.dart';
 
-/// One person in "my registration": their name and category only.
+/// One person in "my registration": their name and category, and the
+/// waivers they still need to accept (#246).
 @immutable
 class MyPerson {
-  const MyPerson({required this.name, this.categoryId});
+  const MyPerson({
+    required this.name,
+    this.id = '',
+    this.categoryId,
+    this.isChild = false,
+    this.missingWaivers = const [],
+  });
 
+  final String id;
   final String name;
   final String? categoryId;
+  final bool isChild;
+  final List<String> missingWaivers;
 }
 
 /// The caller's registration, from `getMyRegistration` (#242).
@@ -45,6 +56,7 @@ class MyRegistrationView {
     this.labels = const {},
     this.registration,
     this.note,
+    this.waivers = const [],
   });
 
   factory MyRegistrationView.fromMap(Map<String, Object?> data) {
@@ -72,13 +84,23 @@ class MyRegistrationView {
                 for (final p in (r['people'] as List?) ?? const [])
                   if (p is Map && p['name'] is String)
                     MyPerson(
+                      id: p['id'] as String? ?? '',
                       name: p['name'] as String,
                       categoryId: p['categoryId'] as String?,
+                      isChild: p['isChild'] == true,
+                      missingWaivers: [
+                        for (final w in (p['missingWaivers'] as List?) ?? const [])
+                          if (w is String) w,
+                      ],
                     ),
               ],
             )
           : null,
       note: LocalText.tryParse(data['note']),
+      waivers: [
+        for (final raw in (data['waivers'] as List?) ?? const [])
+          ?Waiver.tryParse(raw),
+      ],
     );
   }
 
@@ -91,6 +113,9 @@ class MyRegistrationView {
   final Map<String, dynamic> labels;
   final MyRegistration? registration;
   final LocalText? note;
+
+  /// The event's waivers (#246), to accept the missing ones here.
+  final List<Waiver> waivers;
 
   LabelResolver get words => LabelResolver(labels);
 }
