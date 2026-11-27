@@ -162,6 +162,27 @@ void main() {
     await robot.finish();
   });
 
+  testWidgets('#247: photo and video consent totals show once the server '
+      'keeps them', (tester) async {
+    final robot = await open(tester);
+    expect(find.byKey(const Key('counts.photoConsent')), findsNothing);
+    await harness.firestore.doc('$e/stats/current').update({
+      'photoConsent': {'yes': 40, 'no': 3, 'unanswered': 7},
+    });
+    await robot.settle();
+    expect(find.text('Photos and videos'), findsOneWidget);
+    for (final (key, value) in [('yes', '40'), ('no', '3'), ('unanswered', '7')]) {
+      expect(
+        find.descendant(
+          of: find.byKey(Key('counts.photoConsent.$key')),
+          matching: find.text(value),
+        ),
+        findsOneWidget,
+      );
+    }
+    await robot.finish();
+  });
+
   testWidgets('B-05 shows each session, by diet', (tester) async {
     final robot = await open(tester, as: 'lead');
     await robot.expectFound(const Key('counts.session.m3'));

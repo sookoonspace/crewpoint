@@ -825,6 +825,15 @@ class _RegistrationFormState extends ConsumerState<_RegistrationForm> {
                   ? '${s.age}: ${people[i].age ?? s.notAnswered}'
                   : '${s.birthDate}: ${people[i].birthDate ?? s.notAnswered}',
             ),
+          for (var i = 0; i < people.length; i++)
+            (
+              '${_personName(context, i)}: ${s.photoConsent}',
+              switch (people[i].photoConsent) {
+                true => s.yes,
+                false => s.no,
+                null => s.notAnswered,
+              },
+            ),
           if (people.length > 1 && _draft.groupName.trim().isNotEmpty)
             (s.groupName(_groupWord(context)), _draft.groupName.trim()),
         ];
@@ -1011,19 +1020,28 @@ class _PersonCardState extends State<_PersonCard> {
               error: widget.ageError,
               onChanged: (v) {
                 final age = int.tryParse(v);
+                // Everything else kept, the person's ID included (#244).
                 widget.onChanged(
-                  (p) => PersonEntry(
-                    name: p.name,
-                    birthDate: p.birthDate,
-                    age: age,
-                    answers: p.answers,
-                    arrivalAt: p.arrivalAt,
-                    departureAt: p.departureAt,
-                    signUps: p.signUps,
-                  ),
+                  (p) => p.copyWith(age: age, clearAge: age == null),
                 );
               },
             ),
+          // Photos and videos (Spec #233 Req 30, #247): unanswered until
+          // chosen; whoever fills the form answers for a child.
+          CpChoiceChips<bool>(
+            key: Key('$_k.person.$i.photo'),
+            label: s.photoConsent,
+            help: s.photoConsentHelp,
+            choices: [
+              CpChoice(true, s.yes, key: Key('$_k.person.$i.photo.yes')),
+              CpChoice(false, s.no, key: Key('$_k.person.$i.photo.no')),
+            ],
+            selected: {?widget.person.photoConsent},
+            onChanged: (picked) {
+              if (picked.isEmpty) return;
+              widget.onChanged((p) => p.copyWith(photoConsent: picked.first));
+            },
+          ),
         ],
       ),
     );

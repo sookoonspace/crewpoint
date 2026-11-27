@@ -206,6 +206,7 @@ class ParticipantRepository {
         'email': ?privateDetails.email,
         'phone': ?privateDetails.phone,
         'fields': privateDetails.fields,
+        'photoConsent': ?privateDetails.photoConsent,
         'updatedAt': FieldValue.serverTimestamp(),
       });
     }
@@ -264,6 +265,7 @@ class ParticipantRepository {
           'email': ?private.email,
           'phone': ?private.phone,
           'fields': private.fields,
+          'photoConsent': ?private.photoConsent,
           'updatedAt': FieldValue.serverTimestamp(),
         });
       }

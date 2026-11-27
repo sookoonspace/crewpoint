@@ -169,6 +169,7 @@ class _GroupEntryScreenState extends ConsumerState<GroupEntryScreen> {
               phone: private?.phone ?? '',
               answers: p.fields,
               privateAnswers: private?.fields ?? const {},
+              photoConsent: private?.photoConsent,
             );
           }(),
     ];

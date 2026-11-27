@@ -46,6 +46,7 @@ abstract class AppStrings {
   LightSignInStrings get lightSignIn;
   RegisterFormStrings get registerForm;
   MyRegistrationStrings get myRegistration;
+  PhotoConsentStrings get photoConsent;
   MemberPickerStrings get memberPicker;
   ScheduleStrings get schedule;
   AgendaStrings get agenda;
@@ -813,6 +814,9 @@ class _LocalizedStrings extends _EnglishStrings {
 
   @override
   MyRegistrationStrings get myRegistration => MyRegistrationStrings(_l);
+
+  @override
+  PhotoConsentStrings get photoConsent => PhotoConsentStrings(_l);
 }
 
 /// The language choice (Req 56).
@@ -928,6 +932,10 @@ class _EnglishStrings extends AppStrings {
   @override
   MyRegistrationStrings get myRegistration =>
       MyRegistrationStrings(lookupAppLocalizations(const Locale('en')));
+
+  @override
+  PhotoConsentStrings get photoConsent =>
+      PhotoConsentStrings(lookupAppLocalizations(const Locale('en')));
 
   @override
   MemberPickerStrings get memberPicker => const _EnglishMemberPickerStrings();
@@ -5865,6 +5873,8 @@ class RegisterFormStrings {
   String get consentHelp => _l.registerFormConsentHelp;
   String get consentEmail => _l.registerFormConsentEmail;
   String get consentSms => _l.registerFormConsentSms;
+  String get photoConsent => _l.registerFormPhotoConsent;
+  String get photoConsentHelp => _l.registerFormPhotoConsentHelp;
 }
 
 /// "My registration" (Spec #233 Req 9, 19, 35; #242), translated (ARB).
@@ -5896,4 +5906,30 @@ class MyRegistrationStrings {
   String get waiversAccepted => _l.myRegistrationWaiversAccepted;
   String get acceptFailed => _l.myRegistrationAcceptFailed;
   String get nothingTicked => _l.myRegistrationNothingTicked;
+}
+
+/// Photo consent (Spec #233 Req 30; #247), translated (ARB).
+class PhotoConsentStrings {
+  const PhotoConsentStrings(this._l);
+
+  final AppLocalizations _l;
+
+  String get title => _l.photoConsentTitle;
+  String get hubSubtitle => _l.photoConsentHubSubtitle;
+  String get note => _l.photoConsentNote;
+  String get saidNo => _l.photoConsentSaidNo;
+  String get notAnswered => _l.photoConsentNotAnswered;
+  String get searchHint => _l.photoConsentSearchHint;
+  String get noneSaidNo => _l.photoConsentNoneSaidNo;
+  String get noneUnanswered => _l.photoConsentNoneUnanswered;
+  String get noMatches => _l.photoConsentNoMatches;
+  String get notReady => _l.photoConsentNotReady;
+  String get failed => _l.photoConsentFailed;
+  String get retry => _l.photoConsentRetry;
+  String get loading => _l.photoConsentLoading;
+  String get unnamed => _l.photoConsentUnnamed;
+  String get countsHeading => _l.photoConsentCountsHeading;
+  String get yes => _l.photoConsentYes;
+  String get no => _l.photoConsentNo;
+  String get unanswered => _l.photoConsentUnanswered;
 }

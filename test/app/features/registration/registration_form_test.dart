@@ -488,4 +488,49 @@ void main() {
       expect(back.people.single.acceptWaivers, {'park'});
     });
   });
+
+  group('photo consent (#247)', () {
+    test('each answered person sends it; unanswered sends nothing', () {
+      final spec = RegistrationFormSpec.fromMap(formMap());
+      const draft = RegistrationDraft(
+        submissionId: 's1',
+        people: [
+          PersonEntry(name: 'Asha', birthDate: '1980-03-01', photoConsent: true),
+          PersonEntry(name: 'Dev', birthDate: '2016-05-09', photoConsent: false),
+          PersonEntry(name: 'Jaya', birthDate: '1950-02-02'),
+        ],
+      );
+      final people = (spec.toSubmitMap(draft)['people']! as List)
+          .cast<Map<String, Object?>>();
+      expect(people.map((p) => p['photoConsent']), [true, false, null]);
+      expect(people[2].containsKey('photoConsent'), isFalse);
+    });
+
+    test('a draft and a registration to edit keep it', () {
+      const draft = RegistrationDraft(
+        submissionId: 's1',
+        people: [PersonEntry(name: 'Dev', photoConsent: false)],
+      );
+      expect(
+        RegistrationDraft.tryParse(draft.toMap())!.people.single.photoConsent,
+        isFalse,
+      );
+      final spec = RegistrationFormSpec.fromMap({
+        ...formMap(),
+        'current': const {
+          'people': [
+            {'id': 'p1', 'name': 'Dev', 'photoConsent': true},
+          ],
+        },
+      });
+      expect(spec.current!.people.single.photoConsent, isTrue);
+    });
+
+    test('changing an age keeps everything else, the ID included', () {
+      const p = PersonEntry(id: 'p1', name: 'Dev', age: 9, photoConsent: true);
+      final older = p.copyWith(age: 10);
+      expect((older.id, older.age, older.photoConsent), ('p1', 10, true));
+      expect(p.copyWith(clearAge: true).age, isNull);
+    });
+  });
 }

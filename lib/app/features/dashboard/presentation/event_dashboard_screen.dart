@@ -597,6 +597,14 @@ class _ModuleHub extends ConsumerWidget {
           context.strings.counts.title,
           context.strings.counts.hubSubtitle,
         ),
+      // Photo consent needs photoConsent.read (Spec #233 Req 30, #247).
+      if (event.can(me, 'photoConsent.read'))
+        entry(
+          'photo-consent',
+          CpIcons.camera,
+          context.strings.photoConsent.title,
+          context.strings.photoConsent.hubSubtitle,
+        ),
       if (event.isModuleOn('tasks'))
         entry(
           'tasks',

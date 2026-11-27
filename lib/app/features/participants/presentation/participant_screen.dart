@@ -57,6 +57,7 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
 
   /// An imported email, kept when the private details are saved (Req 46).
   String? _privateEmail;
+  bool? _photoConsent;
 
   /// An adult's phone number as typed, saved in E.164 (Spec #233 Req 13).
   final _phone = TextEditingController();
@@ -261,6 +262,7 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
                     email: _privateEmail,
                     phone: _savedPhone,
                     fields: _privateAnswers,
+                    photoConsent: _photoConsent,
                   )
                 : null,
             definitions:
@@ -425,6 +427,7 @@ class _ParticipantScreenState extends ConsumerState<ParticipantScreen> {
         _privateLoaded = true;
         _birthDate = private.value?.birthDate;
         _privateEmail = private.value?.email;
+        _photoConsent = private.value?.photoConsent;
         _phone.text = private.value?.phone ?? '';
         _privateAnswers = {...?private.value?.fields};
       }

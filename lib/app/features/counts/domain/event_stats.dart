@@ -99,6 +99,7 @@ class EventStats {
     this.groups = 0,
     this.sessions = const {},
     this.notConfirmed = const NotConfirmed(),
+    this.photoConsent,
   });
 
   factory EventStats.fromFirestore(Map<String, dynamic> data) {
@@ -115,6 +116,14 @@ class EventStats {
             if (e.key is String) e.key as String: CountTally.fromMap(e.value),
       },
       notConfirmed: NotConfirmed.fromMap(data['notConfirmed']),
+      photoConsent: switch (data['photoConsent']) {
+        final Map<Object?, Object?> p => (
+          yes: (p['yes'] as num?)?.toInt() ?? 0,
+          no: (p['no'] as num?)?.toInt() ?? 0,
+          unanswered: (p['unanswered'] as num?)?.toInt() ?? 0,
+        ),
+        _ => null,
+      },
     );
   }
 
@@ -127,4 +136,8 @@ class EventStats {
 
   /// Registrations not yet confirmed, apart from every other count.
   final NotConfirmed notConfirmed;
+
+  /// Photo and video consent totals (#247), once the server keeps the
+  /// list; null before.
+  final ({int yes, int no, int unanswered})? photoConsent;
 }

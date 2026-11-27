@@ -202,6 +202,7 @@ class ParticipantPrivate {
     this.email,
     this.phone,
     this.fields = const {},
+    this.photoConsent,
   });
 
   factory ParticipantPrivate.fromFirestore(Map<String, dynamic> data) =>
@@ -210,6 +211,7 @@ class ParticipantPrivate {
         email: data['email'] as String?,
         phone: data['phone'] as String?,
         fields: _answers(data['fields']),
+        photoConsent: data['photoConsent'] as bool?,
       );
 
   /// A calendar date, `YYYY-MM-DD`.
@@ -226,12 +228,17 @@ class ParticipantPrivate {
   /// Private custom field answers, by field ID (Req 41).
   final Map<String, Object?> fields;
 
+  /// Photo and video consent from registering (Spec #233 Req 30, #247);
+  /// null while unanswered. Not edited here, but kept when saved.
+  final bool? photoConsent;
+
   @override
   bool operator ==(Object other) =>
       other is ParticipantPrivate &&
       other.birthDate == birthDate &&
       other.email == email &&
       other.phone == phone &&
+      other.photoConsent == photoConsent &&
       mapEquals(other.fields, fields);
 
   @override
