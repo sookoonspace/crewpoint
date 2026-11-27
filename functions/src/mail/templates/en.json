@@ -33,5 +33,10 @@
     "subject": "Your offer for {{eventTitle}} has expired",
     "text": "Hello,\n\nThe place we held for your {{word.group.one.lower}} at {{eventTitle}} wasn't accepted by {{until}}, so it has gone to the next on the waitlist. You're still on the waitlist, now at the end of the queue.\n\nSee your {{word.registration.one.lower}} here:\n\n{{link}}\n\nCrewPoint",
     "push": "Your offer for {{eventTitle}} has expired."
+  },
+  "registrationClosing": {
+    "subject": "Registration for {{eventTitle}} closes soon",
+    "text": "Hello,\n\nYou started a {{word.registration.one.lower}} for {{eventTitle}} but haven't sent it yet. Registration closes {{closes}}.\n\nFinish it here:\n\n{{link}}\n\nCrewPoint",
+    "push": "Registration for {{eventTitle}} closes {{closes}}."
   }
 }

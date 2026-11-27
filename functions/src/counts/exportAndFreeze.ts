@@ -68,7 +68,8 @@ export const exportRoster = onCall({timeoutSeconds: 120, memory: "512MiB"}, asyn
     const standard = fields.filter((f) => !f.private);
     const privates = includePrivate ? fields.filter((f) => f.private) : [];
     const groups = new Map(groupSnap.docs.map((d) => [d.id, String(d.data().name ?? "")]));
-    const people = [...peopleSnap.docs].sort((a, b) =>
+    // Cancelled registrations are on no list (Spec #233 Req 4, B-16).
+    const people = [...peopleSnap.docs].filter((d) => d.data().registrationStatus !== "cancelled").sort((a, b) =>
       String(a.data().sortName ?? "").localeCompare(String(b.data().sortName ?? "")));
 
     const details = new Map<string, FirebaseFirestore.DocumentData>();
@@ -82,8 +83,28 @@ export const exportRoster = onCall({timeoutSeconds: 120, memory: "512MiB"}, asyn
       }
     }
 
+    // Each person's registration (Spec #233 Req 68, #249): its status, the
+    // contact's name, when it was sent, and the waivers they accepted.
+    const regIds = [...new Set(people.map((p) => p.data().registrationId).filter((r): r is string => typeof r === "string"))];
+    const regs = new Map<string, FirebaseFirestore.DocumentData>();
+    for (let i = 0; i < regIds.length; i += 300) {
+      const refs = regIds.slice(i, i + 300).map((id) => eventRef.collection("registrations").doc(id));
+      for (const snap of await db.getAll(...refs)) if (snap.exists) regs.set(snap.id, snap.data()!);
+    }
+    const contactName = new Map<string, string>();
+    for (const p of people) {
+      const reg = regs.get(p.data().registrationId);
+      if (reg && p.data().uid === reg.contactUid) contactName.set(p.data().registrationId, String(p.data().name ?? ""));
+    }
+    const waiverTitles = new Map((await eventRef.collection("waivers").get()).docs
+      .map((d) => [d.id, String(d.data().title?.en ?? d.id)]));
+    const statusText: Record<string, string> = {
+      submitted: "Submitted", pending: "Pending review", waitlisted: "Waitlisted", draft: "Draft",
+    };
+
     const rows: string[][] = [[
       "Name", "Group", "Category", "Arrives", "Leaves",
+      "Registration", "Contact", "Submitted", "Waivers",
       ...standard.map((f) => f.label),
       ...(includePrivate ? ["Birth date", ...privates.map((f) => f.label)] : []),
     ]];
@@ -96,6 +117,11 @@ export const exportRoster = onCall({timeoutSeconds: 120, memory: "512MiB"}, asyn
         categories.get(p.categoryId) ?? "",
         local(p.arrivalAt, zone),
         local(p.departureAt, zone),
+        p.registrationStatus ? statusText[p.registrationStatus] ?? String(p.registrationStatus) : "Added by organizer",
+        contactName.get(p.registrationId) ?? "",
+        local(regs.get(p.registrationId)?.submittedAt ?? null, zone),
+        Object.entries((p.waiverVersions ?? {}) as Record<string, number>)
+          .map(([id, v]) => `${waiverTitles.get(id) ?? id} (version ${v})`).sort().join("; "),
         ...standard.map((f) => answerText(p.fields?.[f.id])),
         ...(includePrivate ?
           [String(priv?.birthDate ?? ""), ...privates.map((f) => answerText(priv?.fields?.[f.id]))] :
