@@ -80,6 +80,13 @@ describe('parseRegistrationSettings', () => {
     ]}, /section/);
   });
 
+  test('#244: the contact line families see once registration closes', () => {
+    expect(parse({contactLine: {en: 'Questions? Call Nilesh at 312-555-0123', gu: 'પ્રશ્નો?'}}).contactLine)
+      .toEqual({en: 'Questions? Call Nilesh at 312-555-0123', gu: 'પ્રશ્નો?'});
+    expect(parse({}).contactLine).toBeNull();
+    refuses({contactLine: {en: 'x'.repeat(5001)}}, /contact line/);
+  });
+
   test('blocks switch on and off, with age only for the People block', () => {
     const blocks = {
       people: true, ageOnly: true, stay: true, sessionChoices: true, waivers: false, contact: true,

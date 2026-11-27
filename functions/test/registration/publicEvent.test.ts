@@ -37,9 +37,15 @@ const view = (e = event(), r = registration(), used = 0): any =>
   publicEventView({event: e, registration: r, placesUsed: used, now: NOW});
 
 describe('publicEventView', () => {
+  test('#244: carries the contact line for the closed page', () => {
+    expect(view(event(), registration({contactLine: {en: 'Call Nilesh'}})).contactLine).toEqual({en: 'Call Nilesh'});
+    expect(view().contactLine).toBeNull();
+  });
+
   test('an open event shows only its public fields', () => {
     const v = view();
     expect(v).toEqual({
+      contactLine: null,
       state: 'open',
       slug: 'convention-2027',
       title: 'Convention 2027',

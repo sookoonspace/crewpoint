@@ -30,6 +30,8 @@ export type PublicEvent =
     timeZone: string;
     venues: PublicVenue[];
     included: LocalText | null;
+    /** How to reach the organizer, for the closed page (#244). */
+    contactLine: LocalText | null;
     deadline: number | null;
     mode: RegistrationMode;
     /** Whether anyone registering now gets a place, not how many. */
@@ -76,6 +78,7 @@ export function publicEventView({event, registration, placesUsed, now}: {
       directions: text(v?.directions),
     })),
     included: registration.included ?? null,
+    contactLine: registration.contactLine ?? null,
     deadline,
     mode: registration.mode,
     placesRemain: capacity === null || placesUsed < capacity,
