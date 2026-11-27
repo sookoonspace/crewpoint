@@ -23,5 +23,15 @@
     "subject": "A waiver is waiting for {{eventTitle}}",
     "text": "Hello,\n\nSomeone in your {{word.registration.one.lower}} for {{eventTitle}} still needs to accept a waiver:\n\n{{people}}\n\nYou can read and accept it here:\n\n{{link}}\n\nCrewPoint",
     "push": "A waiver is waiting for {{eventTitle}}."
+  },
+  "registrationOffer": {
+    "subject": "A place is available for {{eventTitle}}",
+    "text": "Hello,\n\nA place has opened up at {{eventTitle}} for your {{word.group.one.lower}}. It's held for you until {{until}}.\n\nAccept your place here:\n\n{{link}}\n\nIf you can't come, you can say No thanks on the same page, so the place goes to the next on the waitlist.\n\nCrewPoint",
+    "push": "A place is available for {{eventTitle}} until {{until}}."
+  },
+  "registrationOfferExpired": {
+    "subject": "Your offer for {{eventTitle}} has expired",
+    "text": "Hello,\n\nThe place we held for your {{word.group.one.lower}} at {{eventTitle}} wasn't accepted by {{until}}, so it has gone to the next on the waitlist. You're still on the waitlist, now at the end of the queue.\n\nSee your {{word.registration.one.lower}} here:\n\n{{link}}\n\nCrewPoint",
+    "push": "Your offer for {{eventTitle}} has expired."
   }
 }

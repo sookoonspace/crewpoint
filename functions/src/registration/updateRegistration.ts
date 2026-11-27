@@ -7,6 +7,7 @@ import {countryForTimeZone, normalisePhone} from "../participants/phone";
 import {registrationOf} from "./registrationSettings";
 import {eventBySlug} from "./registrationForm";
 import {loadFormInputs, privateDetails, readForm} from "./submitRegistration";
+import {offerOnwardNow} from "./offers";
 import {acceptedAs, acceptedOf, requiredProblems, writeAcceptances} from "./waiverAcceptance";
 import {diffRegistration, FieldChange, PersonSnapshot, RegistrationSnapshot} from "./changeLog";
 
@@ -64,7 +65,7 @@ export const updateRegistration = onCall({timeoutSeconds: 60}, async (request) =
     const {fields, sessions, waivers: allWaivers} = await loadFormInputs(eventRef);
     const privateFields = new Set(fields.filter((f) => f.visibility === "private").map((f) => f.id));
 
-    return db().runTransaction(async (tx) => {
+    const result = await db().runTransaction(async (tx) => {
       const eventDoc = await tx.get(eventRef);
       if (!eventDoc.exists) throw new HttpsError("not-found", "We couldn't find this event.");
       const event = eventDoc.data()!;
@@ -242,6 +243,9 @@ export const updateRegistration = onCall({timeoutSeconds: 60}, async (request) =
       tx.set(regDoc.ref.collection("changes").doc(), {at: now, by: uid, action: "edited", changes: logged(changes)});
       return {registrationId: regDoc.id, status: reg.status, changed: changes.length};
     });
+    // Fewer people free places for the waitlist (Req 32a, #248).
+    if (result.changed > 0) await offerOnwardNow(db(), eventRef.id);
+    return result;
   });
 });
 

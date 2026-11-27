@@ -1,8 +1,8 @@
 # Derod Gaam Convention 2027: Test Report (v4)
 
-**Test spec:** [`CREWPOINT_CONVENTION_TEST_v4.md`](CREWPOINT_CONVENTION_TEST_v4.md) · **Run:** Nov 27, 2026, at the end of Stage 1, on `main` at `9cb8ebf` · **First run:** Nov 3, 2026
+**Test spec:** [`CREWPOINT_CONVENTION_TEST_v4.md`](CREWPOINT_CONVENTION_TEST_v4.md) · **Run:** Nov 27, 2026, at the end of Stage 1, on `main` at `774109d` · **First run:** Nov 3, 2026
 
-**Result: Stage 1, the platform foundation, is complete, but CrewPoint cannot run this event yet.** Registration and payments arrive in Stage 2, email and Gujarati in Stage 3, and event-day check-in in Stage 5. Of 206 scenarios, 40 pass, 18 are partial, 1 fails, 52 are not built, 91 are platform requirements for later stages, and 3 need a person or outside access. On Nov 3, 2 passed.
+**Result: Stage 1, the platform foundation, is complete, but CrewPoint cannot run this event yet.** Registration and payments arrive in Stage 2, email and Gujarati in Stage 3, and event-day check-in in Stage 5. Of 206 scenarios, 40 pass, 19 are partial, 1 fails, 52 are not built, 90 are platform requirements for later stages, and 3 need a person or outside access. On Nov 3, 2 passed.
 
 **What Stage 1 changed for this event:**
 
@@ -21,7 +21,7 @@
 
 **How far to trust this:**
 
-- 105 acceptance tests ran against the real app and backend code: 94 passed and 11 failed. A failure is a planned gap for a later stage unless the scenario is on the finished list, which CI protects.
+- 106 acceptance tests ran against the real app and backend code: 95 passed and 11 failed. A failure is a planned gap for a later stage unless the scenario is on the finished list, which CI protects.
 - The tests run on emulators with mocked push, and no message was sent. Live checks were made on dev, with throwaway data: the Stage 1 rollout, Google and Apple sign-in and linking (L-01, L-02), crash reporting on iOS, Android and web (O-02), both alert emails reaching both inboxes (O-01, O-02), and a restore (O-03).
 - Timings come from a Mac and local emulators ([load baselines](load-baselines.md)). Expect phones to be slower, and real delivery times are unmeasured.
 - NOT BUILT comes from reading and searching the code. Those scenarios are registered as skipped tests, with the reason.
@@ -52,7 +52,7 @@ PLATFORM marks what the first run expected a bought tool to do. CrewPoint now bu
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | A: Event setup | 3 | 1 | · | 2 | · | · | · | 6 |
 | L: Login | 2 | · | · | · | 5 | · | · | 7 |
-| B: Registration | 8 | 4 | · | · | 4 | · | · | 16 |
+| B: Registration | 8 | 5 | · | · | 3 | · | · | 16 |
 | C: Fees and payments | · | · | · | · | 20 | · | · | 20 |
 | D: Sponsorships | · | · | · | · | 16 | · | · | 16 |
 | BG: Budget and sponsorship list | · | · | · | · | 7 | · | 1 | 8 |
@@ -71,7 +71,7 @@ PLATFORM marks what the first run expected a bought tool to do. CrewPoint now bu
 | O: Operations | 3 | · | · | 3 | · | 2 | · | 8 |
 | U: Accessibility | · | 3 | 1 | · | · | 1 | · | 5 |
 | N: Notifications | 2 | 6 | · | 9 | 15 | · | · | 32 |
-| **Total** | **40** | **18** | **1** | **52** | **91** | **3** | **1** | **206** |
+| **Total** | **40** | **19** | **1** | **52** | **90** | **3** | **1** | **206** |
 
 ### 2.1 Cost (S-08)
 
@@ -105,7 +105,7 @@ Measured on emulators rather than modelled: a count run reads about 1.3 document
 | B-09 | Registration fully usable in Gujarati. | PARTIAL | `B-09` tests (1 pass) | Built in #242: the event page, sign-in, form, review, confirmation and my registration are in Gujarati. The organizer's own question labels and options are still English only; entering them in both languages comes with #254. | Stage 2 | P0 |
 | B-10 | Export for the caterer: registrations and per-meal, per-location counts by diet… | PASS | `B-10` tests (2 pass) | Built in #84: counts export to CSV per session by category and field, and the roster exports through exportRoster; private fields only when chosen. | · | P0 |
 | B-11 | Duplicate handling: F10's Ramesh & Kamla flagged against F3; committee merges into F3;… | PLATFORM | · | Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6). | Stage 2 | P0 |
-| B-12 | Capacity: admin sets a limit (400); registration past it goes to a waitlist; a… | PLATFORM | · | Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6). | Stage 2 | P0 |
+| B-12 | Capacity: admin sets a limit (400); registration past it goes to a waitlist; a… | PARTIAL | `B-12` tests (1 pass) | Server built in #242 and #248: past capacity a family is waitlisted whole; a cancellation offers the places to the first group that fits, held for offerHours with email and push; Accept, No thanks, expiry every 15 minutes and a nightly recount. The Accept page and the organizer's waitlist come with #248's app part; walk-ins past capacity at the door are Stage 5 (check-in). | Stage 5 | P0 |
 | B-13 | Registration closes on a set date; later changes need committee help. | PARTIAL | `B-13` tests (1 pass) | Built in #244: after the deadline new registrations are refused, families can still see their registration and change contact details, and the closed pages show the organizer's contact line. Committee changes after the deadline come with #249. | Stage 2 | P0 |
 | B-14 | Caterer count freeze: admin locks meal counts on a date; later changes are listed as a… | PASS | `B-14` tests (2 pass) | Built in #84: freezeCounts keeps the numbers with the date; the counts screen lists later changes and exports them for the caterer. | · | P2 |
 | B-15 | After the Jul 3 hotel cutoff: the booking link is replaced by "call the hotel" and… | PARTIAL | `B-15` tests (1 pass) | Built in #242: from its date, the replacement note ("call the hotel") shows instead of the booking link. Hotel reminders (Stage 3) and a hotel sub-team list are not built. | Stage 3 | P1 |

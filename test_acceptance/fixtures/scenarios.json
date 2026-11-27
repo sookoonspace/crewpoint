@@ -170,9 +170,9 @@
  {
   "id": "B-12",
   "title": "Capacity: admin sets a limit (400); registration past it goes to a waitlist; a cancellation offers the place to the waitlist; walk-ins past capacity warn but can be overridden by admin `[ASSUMPTION]`.",
-  "status": "PLATFORM",
-  "gap": "Platform requirement for Stage 2 (registration forms), now built into CrewPoint rather than a bought tool (L6).",
-  "tested": false
+  "status": "PARTIAL",
+  "gap": "Server built in #242 and #248: past capacity a family is waitlisted whole; a cancellation offers the places to the first group that fits, held for offerHours with email and push; Accept, No thanks, expiry every 15 minutes and a nightly recount. The Accept page and the organizer's waitlist come with #248's app part; walk-ins past capacity at the door are Stage 5 (check-in).",
+  "tested": true
  },
  {
   "id": "B-13",

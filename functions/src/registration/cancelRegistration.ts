@@ -5,6 +5,7 @@ import {requirePermission} from "../events/members";
 import {registrationOf} from "./registrationSettings";
 import {eventBySlug} from "./registrationForm";
 import {applyRegistrationMembership} from "./membership";
+import {offerOnwardNow} from "./offers";
 
 const db = () => getFirestore();
 
@@ -29,7 +30,7 @@ export const cancelRegistration = onCall({timeoutSeconds: 60}, async (request) =
 
   return withStructuredLogs({op: "cancelRegistration", uid, args: {slug: data.slug, byCommittee}}, async () => {
     const {slug, ref: eventRef} = await eventBySlug(data.slug);
-    return db().runTransaction(async (tx) => {
+    const result = await db().runTransaction(async (tx) => {
       const eventDoc = await tx.get(eventRef);
       if (!eventDoc.exists) throw new HttpsError("not-found", "We couldn't find this event.");
       const event = eventDoc.data()!;
@@ -90,7 +91,10 @@ export const cancelRegistration = onCall({timeoutSeconds: 60}, async (request) =
         at: now, by: uid, action: "cancelled", status: "cancelled", reason, from: reg.status,
       });
       applyRegistrationMembership.write(tx, membership, "cancelled");
-      return {status: "cancelled"};
+      return {status: "cancelled" as const, freed: ["submitted", "pending"].includes(reg.status)};
     });
+    // Freed places go to the waitlist at once (Req 32, #248).
+    if (result.freed) await offerOnwardNow(db(), eventRef.id);
+    return {status: result.status};
   });
 });

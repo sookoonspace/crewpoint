@@ -347,3 +347,24 @@ test('Z-02 photo and video consent per person, children by their guardian, is ke
   await refreshPhotoConsent(db(), E, [rohan.id]);
   expect(Object.values(await list()).map((p: any) => p.name)).toEqual(['Jaya Shah']);
 });
+
+test('B-12 past capacity a family is waitlisted; a cancellation offers the place, and the family accepts', async () => {
+  /* eslint-disable @typescript-eslint/no-var-requires */
+  const {cancelRegistration} = require('../src/registration/cancelRegistration');
+  const {respondToOffer} = require('../src/registration/offers');
+  /* eslint-enable @typescript-eslint/no-var-requires */
+  await seed();
+  await db().doc(`events/${E}`).update({capacity: 3});
+  const family = (uid: string, n: number) => submit(uid, {groupName: `${uid} family`, people: Array.from({length: n}, (_, i) => ({
+    name: `${uid} ${i + 1}`, birthDate: '1980-01-01', answers: {diet: 'V'},
+  }))});
+  expect((await family('f1', 3)).status).toBe('submitted');
+  expect(await family('f5', 2)).toEqual(expect.objectContaining({status: 'waitlisted', waitlistPosition: 1}));
+  await ftest.wrap(cancelRegistration)({auth: {uid: 'f1'}, data: {slug: SLUG}});
+  const offered = (await db().collection(`events/${E}/registrations`).where('contactUid', '==', 'f5').get()).docs[0];
+  expect(offered.data().offer.expiresAt).toBeGreaterThan(Date.now());
+  const [offerMail] = (await db().collection('mailOutbox').where('template', '==', 'registrationOffer').get()).docs.map((d) => d.data());
+  expect(offerMail.to).toBe('f5@example.com');
+  expect(await ftest.wrap(respondToOffer)({auth: {uid: 'f5'}, data: {slug: SLUG, accept: true}})).toEqual({status: 'submitted'});
+  expect((await stats()).event.total).toBe(2);
+});

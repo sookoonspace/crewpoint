@@ -314,6 +314,10 @@ describe.each(ROLES)('%s', (role) => {
     await assertFails(setDoc(doc(as(role), `${E}/registrations/r1/changes/c2`), {by: role}));
     await assertFails(getDoc(doc(as(role), `${E}/registrationTally/current`)));
     await assertFails(setDoc(doc(as(role), `${E}/registrationTally/current`), {placesUsed: 0}));
+    // #248: the offer queue and the recount's corrections are the server's alone.
+    await assertFails(getDoc(doc(as(role), 'offerQueue/matrix')));
+    await assertFails(setDoc(doc(as(role), 'offerQueue/matrix'), {nextExpiry: 0}));
+    await assertFails(getDoc(doc(as(role), `${E}/registrationTally/current/corrections/c1`)));
     // The mirrored status is the server's alone, and a registered person
     // leaves only through registrations.manage.
     await assertFails(updateDoc(doc(as(role), `${E}/participants/registered`), {registrationStatus: 'cancelled'}));
