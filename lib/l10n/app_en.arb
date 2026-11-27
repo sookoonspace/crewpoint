@@ -1408,5 +1408,57 @@
   "registerFormOffline": "You're offline. Your answers are kept; submit when you're back online.",
   "@registerFormOffline": {
     "description": "Submit tried offline."
+  },
+  "registerFormSaveChanges": "Save changes",
+  "@registerFormSaveChanges": {
+    "description": "Sends the edited registration."
+  },
+  "registerFormChangesSaved": "Your changes are saved",
+  "@registerFormChangesSaved": {
+    "description": "After saving edits."
+  },
+  "registerFormChangesSavedBody": "We've kept a record of what changed.",
+  "@registerFormChangesSavedBody": {
+    "description": "Body after saving edits."
+  },
+  "registerFormContactOnly": "Registration has closed, so only your contact details can change now. For anything else, contact the organizer.",
+  "@registerFormContactOnly": {
+    "description": "Note on the contact-only form after the deadline."
+  },
+  "registerFormArrivalTime": "Arrival time",
+  "@registerFormArrivalTime": {
+    "description": "Arrival time field."
+  },
+  "registerFormLeavingTime": "Leaving time",
+  "@registerFormLeavingTime": {
+    "description": "Departure time field."
+  },
+  "registerFormAttendingTitle": "Sessions you'll attend",
+  "@registerFormAttendingTitle": {
+    "description": "Heading over sessions everyone attends."
+  },
+  "registerFormAttendingHelp": "Turn off any you'll miss, so we don't count you.",
+  "@registerFormAttendingHelp": {
+    "description": "Help over the opt-out switches."
+  },
+  "registerFormNotAttending": "Not attending",
+  "@registerFormNotAttending": {
+    "description": "A session someone opted out of, on the review."
+  },
+  "myRegistrationChange": "Change my registration",
+  "@myRegistrationChange": {
+    "description": "Opens the form to edit."
+  },
+  "myRegistrationChangeContact": "Change contact details",
+  "@myRegistrationChangeContact": {
+    "description": "After the deadline: edit contact details only."
+  },
+  "regSettingsContactLine": "Organizer contact",
+  "@regSettingsContactLine": {
+    "description": "Contact line field."
+  },
+  "regSettingsContactLineHelp": "Shown once registration closes, such as \"Questions? Call 312-555-0123\".",
+  "@regSettingsContactLineHelp": {
+    "description": "Help under the contact line field."
   }
 }

@@ -43,6 +43,7 @@ class PublicEvent {
     this.placesRemain = true,
     this.hasCover = false,
     this.labels = const {},
+    this.contactLine,
   });
 
   factory PublicEvent.fromMap(Map<String, dynamic> data) {
@@ -80,6 +81,7 @@ class PublicEvent {
           : RegistrationMode.invited,
       placesRemain: data['placesRemain'] != false,
       hasCover: data['hasCover'] == true,
+      contactLine: LocalText.tryParse(data['contactLine']),
       labels: data['labels'] is Map
           ? Map<String, dynamic>.from(data['labels'] as Map)
           : const {},
@@ -106,6 +108,9 @@ class PublicEvent {
   final bool placesRemain;
   final bool hasCover;
   final Map<String, dynamic> labels;
+
+  /// How to reach the organizer, shown once registration closes (#244).
+  final LocalText? contactLine;
 
   LabelResolver get words => LabelResolver(labels);
 

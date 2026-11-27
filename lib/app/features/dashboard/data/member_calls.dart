@@ -228,6 +228,12 @@ abstract interface class MemberCalls {
     required Map<String, Object?> draft,
     required DateTime savedAt,
   });
+
+  /// Saves changes to the caller's registration (#244), [payload] as
+  /// [RegistrationFormSpec.toSubmitMap] makes it, people with their IDs;
+  /// returns how many fields changed. Throws `failed-precondition` with
+  /// `details.reason` `noRoom` or `closed`.
+  Future<int> updateRegistration(Map<String, Object?> payload);
 }
 
 class FirebaseMemberCalls implements MemberCalls {
@@ -546,4 +552,10 @@ class FirebaseMemberCalls implements MemberCalls {
       isUtc: true,
     );
   }
+
+  @override
+  Future<int> updateRegistration(Map<String, Object?> payload) async =>
+      ((await _call('updateRegistration', payload))['changed'] as num?)
+          ?.toInt() ??
+      0;
 }

@@ -54,6 +54,7 @@ class _RegistrationSettingsScreenState
   final _extraGuests = TextEditingController();
   final _offerHours = TextEditingController();
   final _included = TextEditingController();
+  final _contactLine = TextEditingController();
   final _afterNote = TextEditingController();
   final _laterNote = TextEditingController();
   final _slug = TextEditingController();
@@ -77,6 +78,7 @@ class _RegistrationSettingsScreenState
       _extraGuests,
       _offerHours,
       _included,
+      _contactLine,
       _afterNote,
       _laterNote,
       _slug,
@@ -92,6 +94,7 @@ class _RegistrationSettingsScreenState
       _extraGuests,
       _offerHours,
       _included,
+      _contactLine,
       _afterNote,
       _laterNote,
       _slug,
@@ -119,6 +122,7 @@ class _RegistrationSettingsScreenState
     _extraGuests.text = '${settings.extraGuests}';
     _offerHours.text = '${settings.offerHours}';
     _included.text = settings.included?.en ?? '';
+    _contactLine.text = settings.contactLine?.en ?? '';
     _afterNote.text = settings.afterNote?.en ?? '';
     _laterNote.text = settings.laterNote?.en ?? '';
     _slugSaved = settings.slug;
@@ -161,6 +165,7 @@ class _RegistrationSettingsScreenState
       blocks: _draft.blocks,
       conditions: _draft.conditions,
       included: _text(_included, _draft.included),
+      contactLine: _text(_contactLine, _draft.contactLine),
       afterNote: _text(_afterNote, _draft.afterNote),
       laterNote: later,
       laterNoteFrom: later == null ? null : _draft.laterNoteFrom,
@@ -738,6 +743,15 @@ class _RegistrationSettingsScreenState
               controller: _included,
               enabled: enabled,
               maxLines: 4,
+              keyboardType: TextInputType.multiline,
+            ),
+            CpTextField(
+              fieldKey: const Key('registration.settings.contactLine'),
+              label: s.contactLine,
+              help: s.contactLineHelp,
+              controller: _contactLine,
+              enabled: enabled,
+              maxLines: 2,
               keyboardType: TextInputType.multiline,
             ),
             CpTextField(

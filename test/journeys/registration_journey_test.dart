@@ -1,3 +1,5 @@
+import 'package:crewpoint_app/app/features/registration/domain/public_event.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crewpoint_app/app/core/services/i_auth_service.dart';
@@ -544,6 +546,197 @@ void main() {
       await h.settle(tester);
       expect(find.text('Typed on the laptop'), findsOneWidget);
       expect(find.byKey(const Key('$k.saveState.saved')), findsOneWidget);
+      await h.finish(tester);
+    });
+  });
+
+  group('#244 edits, the deadline and the change log', () {
+    final sat11am = DateTime.utc(2027, 7, 17, 16);
+    RegistrationFormSpec editing({
+      FormEditable editable = FormEditable.all,
+      LocalText? contactLine,
+    }) => RegistrationFormSpec(
+      slug: form.slug,
+      title: form.title,
+      timeZone: form.timeZone,
+      startDate: form.startDate,
+      endDate: form.endDate,
+      dateOnly: form.dateOnly,
+      blocks: form.blocks,
+      sections: form.sections,
+      conditions: form.conditions,
+      categories: form.categories,
+      fields: form.fields,
+      choices: form.choices,
+      labels: form.labels,
+      registration: const ExistingRegistration(status: 'submitted'),
+      editable: editable,
+      contactLine: contactLine,
+      attending: [
+        ChoiceSession(
+          id: 'M2',
+          title: 'Breakfast',
+          startAt: DateTime.utc(2027, 7, 17, 13),
+        ),
+      ],
+      current: RegistrationDraft(
+        submissionId: 'edit',
+        groupName: 'Patel family',
+        email: 'asha@example.com',
+        groupAnswers: const {'hotel': 'Hilton'},
+        people: [
+          PersonEntry(
+            id: 'p1',
+            name: 'Asha Patel',
+            birthDate: '1980-03-01',
+            answers: const {'diet': 'Jain'},
+            arrivalAt: sat11am,
+          ),
+          const PersonEntry(
+            id: 'p2',
+            name: 'Dev Patel',
+            birthDate: '2016-05-09',
+            answers: {'diet': 'Veg', 'kids': true},
+          ),
+        ],
+      ),
+    );
+
+    testWidgets('B-06: from my registration, the family changes an answer '
+        'and saves; people keep their IDs', (tester) async {
+      final (h, r) = await open(tester, spec: editing());
+      h.calls.myRegistrations[slug] = const MyRegistrationView(
+        title: 'Convention 2027',
+        timeZone: 'America/Chicago',
+        registration: MyRegistration(
+          status: 'submitted',
+          people: [MyPerson(name: 'Asha Patel')],
+        ),
+      );
+      h.router.go('/e/$slug/registration');
+      await h.settle(tester);
+      expect(find.text('Change my registration'), findsOneWidget);
+      await r.tap(const Key('registration.mine.change'));
+      expect(h.location, register);
+      // The form opens on the registration as it stands.
+      expect(find.text('Patel family'), findsOneWidget);
+      await r.next();
+      await r.choose(0, 'diet', 'Veg');
+      for (var i = 0; i < 4; i++) {
+        await r.next();
+      }
+      expect(find.text('Save changes'), findsOneWidget);
+      await r.submit();
+      final sent = h.calls.updates.single;
+      final people = (sent['people']! as List).cast<Map<String, Object?>>();
+      expect(people.map((p) => p['id']), ['p1', 'p2']);
+      expect(people.first['answers'], {'diet': 'Veg'});
+      expect(h.calls.submissions, isEmpty);
+      expect(find.text('Your changes are saved'), findsOneWidget);
+      await h.finish(tester);
+    });
+
+    testWidgets('B-02, B-03: an arrival time is kept, and switching off '
+        'breakfast opts out of it', (tester) async {
+      final (h, r) = await open(tester, spec: editing());
+      await r.next();
+      await r.next();
+      // Stay: Saturday, 11:00 AM in Chicago.
+      expect(find.text('11:00 AM'), findsOneWidget);
+      await r.next();
+      expect(find.text("Sessions you'll attend"), findsNWidgets(2));
+      await r.tap(const Key('$k.attending.0.M2'));
+      await r.next();
+      await r.next();
+      expect(find.text('Asha Patel: Not attending'), findsOneWidget);
+      await r.submit();
+      final asha =
+          (h.calls.updates.single['people']! as List).first
+              as Map<String, Object?>;
+      expect(asha['arrivalAt'], sat11am.millisecondsSinceEpoch);
+      expect(asha['optOuts'], ['M2']);
+      await h.finish(tester);
+    });
+
+    testWidgets('Req 32a: adding someone with no room says so, and nothing '
+        'changes', (tester) async {
+      final (h, r) = await open(tester, spec: editing());
+      h.calls.roomFor = 2;
+      await r.addPerson();
+      await r.name(2, 'Meera Patel');
+      await r.birthDate(2, '06/06/1982');
+      await r.next();
+      await r.choose(2, 'diet', 'Veg');
+      for (var i = 0; i < 4; i++) {
+        await r.next();
+      }
+      await r.submit();
+      expect(
+        find.text(
+          "There's no room to add more people. Please contact the organizer.",
+        ),
+        findsOneWidget,
+      );
+      expect(h.calls.updates, isEmpty);
+      await h.finish(tester);
+    });
+
+    testWidgets('B-13: after the deadline only the contact details can '
+        'change, with how to reach the organizer', (tester) async {
+      final (h, r) = await open(
+        tester,
+        spec: editing(
+          editable: FormEditable.contact,
+          contactLine: const LocalText('Questions? Call Nilesh at 312-555-0123'),
+        ),
+      );
+      expect(r.progress, 'Step 1 of 2');
+      expect(find.byKey(const Key('$k.contactOnly')), findsOneWidget);
+      expect(
+        find.text('Questions? Call Nilesh at 312-555-0123'),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('$k.person.0.name')), findsNothing);
+      await r.type(const Key('$k.email'), 'asha.p@example.com');
+      await r.next();
+      await r.submit();
+      expect(
+        (h.calls.updates.single['contact']! as Map)['email'],
+        'asha.p@example.com',
+      );
+      await h.finish(tester);
+    });
+
+    testWidgets('B-13: closed to anyone not registered, with the contact '
+        'line', (tester) async {
+      final (h, _) = await open(tester, signedInAs: null);
+      // Leave the event page, so it reads the event again.
+      h.router.go('/e/another-event');
+      await h.settle(tester);
+      h.calls.eventPages[slug] = const PublicEvent(
+        state: PublicEventState.closed,
+        slug: slug,
+        title: 'Convention 2027',
+        timeZone: 'America/Chicago',
+        mode: RegistrationMode.open,
+        contactLine: LocalText('Questions? Call Nilesh at 312-555-0123'),
+      );
+      h.calls.registrationFormRefusals[slug] = FirebaseFunctionsException(
+        code: 'failed-precondition',
+        message: 'Registration is closed.',
+        details: const {'reason': 'closed'},
+      );
+      h.auth.setCurrentUser(
+        const AuthUser(uid: 'late', email: 'late@example.com'),
+      );
+      h.router.go(register);
+      await h.settle(tester);
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.byKey(const Key('$k.closed')), findsOneWidget);
+      expect(
+        find.text('Questions? Call Nilesh at 312-555-0123'),
+        findsOneWidget,
+      );
       await h.finish(tester);
     });
   });

@@ -292,5 +292,18 @@
   "registerFormSaved": "સાચવ્યું",
   "registerFormSaving": "સાચવી રહ્યા છીએ",
   "registerFormNotSaved": "હજી સાચવ્યું નથી: કનેક્શન નથી",
-  "registerFormOffline": "તમે ઑફલાઇન છો. તમારા જવાબો સચવાયેલા છે; ફરી ઓનલાઇન થાઓ ત્યારે સબમિટ કરો."
+  "registerFormOffline": "તમે ઑફલાઇન છો. તમારા જવાબો સચવાયેલા છે; ફરી ઓનલાઇન થાઓ ત્યારે સબમિટ કરો.",
+  "registerFormSaveChanges": "ફેરફારો સાચવો",
+  "registerFormChangesSaved": "તમારા ફેરફારો સાચવ્યા છે",
+  "registerFormChangesSavedBody": "શું બદલાયું તેની નોંધ અમે રાખી છે.",
+  "registerFormContactOnly": "નોંધણી બંધ થઈ ગઈ છે, તેથી હવે ફક્ત તમારી સંપર્ક વિગતો બદલી શકાય છે. બીજું કંઈ બદલવા માટે આયોજકનો સંપર્ક કરો.",
+  "registerFormArrivalTime": "આગમનનો સમય",
+  "registerFormLeavingTime": "પ્રસ્થાનનો સમય",
+  "registerFormAttendingTitle": "તમે હાજર રહેશો તે સત્રો",
+  "registerFormAttendingHelp": "જે ચૂકી જશો તે બંધ કરો, જેથી અમે તમારી ગણતરી ન કરીએ.",
+  "registerFormNotAttending": "હાજર નહીં",
+  "myRegistrationChange": "મારી નોંધણીમાં ફેરફાર કરો",
+  "myRegistrationChangeContact": "સંપર્ક વિગતોમાં ફેરફાર કરો",
+  "regSettingsContactLine": "આયોજકનો સંપર્ક",
+  "regSettingsContactLineHelp": "નોંધણી બંધ થાય પછી બતાવાય છે, જેમ કે \"પ્રશ્નો? 312-555-0123 પર ફોન કરો\"."
 }

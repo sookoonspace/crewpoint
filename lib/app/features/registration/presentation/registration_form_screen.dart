@@ -19,6 +19,7 @@ import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
 import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/widgets/answer_input.dart';
+import 'package:crewpoint_app/app/features/registration/application/event_page_provider.dart';
 import 'package:crewpoint_app/app/features/registration/application/registration_form_provider.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_form.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_settings.dart';
@@ -73,6 +74,16 @@ class RegistrationFormScreen extends ConsumerWidget {
             key: const Key('$_k.closed'),
             icon: CpIcons.registrationClosed,
             title: page.closed,
+            // How to reach the organizer (Req 35, B-13).
+            message: switch (ref.watch(eventPageProvider(key)).value
+                ?.contactLine) {
+              final line? =>
+                Localizations.localeOf(context).languageCode == 'gu' &&
+                        line.gu != null
+                    ? line.gu
+                    : line.en,
+              null => null,
+            },
           ),
           _ => CpErrorState(
             key: const Key('$_k.error'),
@@ -84,7 +95,7 @@ class RegistrationFormScreen extends ConsumerWidget {
           ),
         });
       },
-      data: (spec) => spec.registration != null
+      data: (spec) => spec.registration != null && !spec.editing
           ? plain(
               CpEmptyState(
                 key: const Key('$_k.already'),
@@ -124,6 +135,9 @@ class _RegistrationFormState extends ConsumerState<_RegistrationForm> {
   SubmitResult? _result;
   final ScrollController _scroll = ScrollController();
 
+  /// Edits saved (#244).
+  bool _saved = false;
+
   /// Whether the server holds the latest draft (#243); null before the
   /// first save is tried.
   _SaveState? _saveState;
@@ -149,6 +163,15 @@ class _RegistrationFormState extends ConsumerState<_RegistrationForm> {
     super.initState();
     final auth = ref.read(authProvider);
     final email = auth is Authenticated ? auth.user.email : '';
+    final current = _spec.current;
+    if (current != null) {
+      // Editing a registration (#244): no drafts, the server holds it.
+      _draft = current;
+      _ids
+        ..clear()
+        ..addAll([for (var i = 0; i < current.people.length; i++) _nextId++]);
+      return;
+    }
     _draft = RegistrationDraft(
       submissionId: const Uuid().v4(),
       people: const [PersonEntry()],
@@ -202,7 +225,7 @@ class _RegistrationFormState extends ConsumerState<_RegistrationForm> {
   /// Keeps the answers on the device at once and on the server once typing
   /// pauses (Req 23, 24).
   void _changed() {
-    if (_result != null) return;
+    if (_result != null || _saved || _spec.editing) return;
     unawaited(
       ref.read(draftStoreProvider).save(_draftKey, {
         'draft': _draft.toMap(),
@@ -297,6 +320,14 @@ class _RegistrationFormState extends ConsumerState<_RegistrationForm> {
     }
     _saveTimer?.cancel();
     try {
+      if (_spec.editing) {
+        await ref
+            .read(memberCallsProvider)
+            .updateRegistration(_spec.toSubmitMap(_draft));
+        if (!mounted) return;
+        setState(() => _saved = true);
+        return;
+      }
       final result = await ref
           .read(memberCallsProvider)
           .submitRegistration(_spec.toSubmitMap(_draft));
@@ -304,9 +335,18 @@ class _RegistrationFormState extends ConsumerState<_RegistrationForm> {
       setState(() => _result = result);
       await ref.read(draftStoreProvider).clear(_draftKey);
     } catch (e, st) {
-      log('submitRegistration failed', error: e, stackTrace: st, name: 'reg');
+      log('registration save failed', error: e, stackTrace: st, name: 'reg');
       if (!mounted) return;
-      setState(() => _error = s.submitFailed);
+      final reason = e is FirebaseFunctionsException && e.details is Map
+          ? (e.details as Map)['reason']
+          : null;
+      // No room, or closed: the server's words (Req 32a, 35).
+      setState(
+        () => _error = switch (reason) {
+          'noRoom' || 'closed' => (e as FirebaseFunctionsException).message,
+          _ => null,
+        } ?? s.submitFailed,
+      );
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -319,6 +359,22 @@ class _RegistrationFormState extends ConsumerState<_RegistrationForm> {
     final result = _result;
     if (result != null) {
       return _ResultView(result: result, spec: _spec, slug: widget.slug);
+    }
+    if (_saved) {
+      return Scaffold(
+        backgroundColor: cp.colors.background,
+        body: SafeArea(
+          child: CpEmptyState(
+            key: const Key('$_k.result.saved'),
+            icon: CpIcons.statusDone,
+            title: s.changesSaved,
+            message: s.changesSavedBody,
+            actionLabel: s.seeMine,
+            actionKey: const Key('$_k.result.mine'),
+            onAction: () => context.go('/e/${widget.slug}/registration'),
+          ),
+        ),
+      );
     }
     final step = _steps[_step];
     final last = _step == _steps.length - 1;
@@ -348,7 +404,7 @@ class _RegistrationFormState extends ConsumerState<_RegistrationForm> {
               child: last
                   ? CpButton(
                       key: const Key('$_k.submit'),
-                      label: s.submit,
+                      label: _spec.editing ? s.saveChanges : s.submit,
                       busy: _busy,
                       expand: true,
                       onPressed: _busy ? null : _submit,
@@ -406,6 +462,9 @@ class _RegistrationFormState extends ConsumerState<_RegistrationForm> {
                     ],
                   ),
                 if (_error != null) CpFieldError(_error!),
+                // After the deadline: contact details only (Req 35, B-13).
+                if (_spec.editable == FormEditable.contact)
+                  _ContactOnlyNote(contactLine: _spec.contactLine),
                 ..._stepBody(context, step),
               ],
             ),
@@ -527,6 +586,8 @@ class _RegistrationFormState extends ConsumerState<_RegistrationForm> {
                   : s.oneAtATime,
               onChanged: (signUps) =>
                   _editPerson(i, (p) => p.copyWith(signUps: signUps)),
+              onOptOuts: (optOuts) =>
+                  _editPerson(i, (p) => p.copyWith(optOuts: optOuts)),
             ),
         ];
       case FormStep.contact:
@@ -665,7 +726,9 @@ class _RegistrationFormState extends ConsumerState<_RegistrationForm> {
     final locale = Localizations.localeOf(context).toLanguageTag();
     String day(DateTime? d) => d == null
         ? s.notAnswered
-        : DateFormat.yMMMEd(locale).format(inEventZone(d, _spec.timeZone));
+        : DateFormat.yMMMEd(
+            locale,
+          ).add_jm().format(inEventZone(d, _spec.timeZone));
     final people = _draft.people;
     switch (step.id) {
       case FormStep.people:
@@ -693,15 +756,22 @@ class _RegistrationFormState extends ConsumerState<_RegistrationForm> {
         final titles = {
           for (final c in _spec.choices)
             for (final session in c) session.id: session.title,
+          for (final session in _spec.attending) session.id: session.title,
         };
         return [
-          for (var i = 0; i < people.length; i++)
+          for (var i = 0; i < people.length; i++) ...[
             (
               _personName(context, i),
               _answerText(context, [
                 for (final id in people[i].signUps) titles[id] ?? id,
               ]),
             ),
+            if (people[i].optOuts.isNotEmpty)
+              (
+                '${_personName(context, i)}: ${s.notAttending}',
+                [for (final id in people[i].optOuts) titles[id] ?? id].join(', '),
+              ),
+          ],
         ];
       case FormStep.contact:
         return [
@@ -892,8 +962,9 @@ class _GroupNameFieldState extends State<_GroupNameField> {
   );
 }
 
-/// Arrival and departure days for one person, in the event's time zone
-/// (Req 17 Stay): arriving at the start of the day, leaving at its end.
+/// Arrival and departure for one person, in the event's time zone (Req 17
+/// Stay; #244, B-02): a day, then its time. A day alone arrives at its
+/// start and leaves at its end.
 class _StayCard extends StatelessWidget {
   const _StayCard({
     super.key,
@@ -921,6 +992,65 @@ class _StayCard extends StatelessWidget {
     final start = spec.startDate ?? DateTime.now();
     final end = spec.endDate ?? start;
     DateTime? local(DateTime? d) => d == null ? null : inEventZone(d, zone);
+    DateTime at(DateTime day, TimeOfDay time) => eventLocalToUtc(
+      day.year,
+      day.month,
+      day.day,
+      zone,
+      hour: time.hour,
+      minute: time.minute,
+    );
+
+    Widget moment({
+      required String which,
+      required String dayLabel,
+      required String timeLabel,
+      required DateTime? value,
+      required TimeOfDay dayDefault,
+      required PersonEntry Function(PersonEntry, DateTime?) set,
+      String? error,
+    }) {
+      final shown = local(value);
+      final time = shown == null
+          ? dayDefault
+          : TimeOfDay(hour: shown.hour, minute: shown.minute);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: cp.space.sm,
+        children: [
+          CpDateField(
+            fieldKey: Key('$_k.stay.$index.$which'),
+            clearKey: Key('$_k.stay.$index.$which.clear'),
+            label: dayLabel,
+            placeholder: s.chooseDate,
+            clearLabel: s.removePerson,
+            value: shown,
+            error: error,
+            format: DateFormat.yMMMEd(locale).format,
+            firstDate: start.subtract(const Duration(days: 30)),
+            lastDate: end.add(const Duration(days: 30)),
+            onChanged: (day) =>
+                onChanged((p) => set(p, day == null ? null : at(day, time))),
+          ),
+          if (shown != null)
+            CpSelectField(
+              fieldKey: Key('$_k.stay.$index.$which.time'),
+              label: timeLabel,
+              value: MaterialLocalizations.of(context).formatTimeOfDay(time),
+              onTap: () async {
+                final picked = await showTimePicker(
+                  context: context,
+                  initialTime: time,
+                );
+                if (picked != null) {
+                  onChanged((p) => set(p, at(shown, picked)));
+                }
+              },
+            ),
+        ],
+      );
+    }
+
     return CpCard(
       padding: EdgeInsets.all(cp.space.lg),
       child: Column(
@@ -931,54 +1061,26 @@ class _StayCard extends StatelessWidget {
             title,
             style: cp.type.titleMedium.copyWith(color: cp.colors.text),
           ),
-          CpDateField(
-            fieldKey: Key('$_k.stay.$index.arrival'),
-            clearKey: Key('$_k.stay.$index.arrival.clear'),
-            label: s.arriving,
-            placeholder: s.chooseDate,
-            clearLabel: s.removePerson,
-            value: local(person.arrivalAt),
-            format: DateFormat.yMMMEd(locale).format,
-            firstDate: start.subtract(const Duration(days: 30)),
-            lastDate: end.add(const Duration(days: 30)),
-            onChanged: (day) => onChanged(
-              (p) => day == null
-                  ? p.copyWith(clearArrival: true)
-                  : p.copyWith(
-                      arrivalAt: eventLocalToUtc(
-                        day.year,
-                        day.month,
-                        day.day,
-                        zone,
-                      ),
-                    ),
-            ),
+          moment(
+            which: 'arrival',
+            dayLabel: s.arriving,
+            timeLabel: s.arrivalTime,
+            value: person.arrivalAt,
+            dayDefault: const TimeOfDay(hour: 0, minute: 0),
+            set: (p, v) => v == null
+                ? p.copyWith(clearArrival: true)
+                : p.copyWith(arrivalAt: v),
           ),
-          CpDateField(
-            fieldKey: Key('$_k.stay.$index.departure'),
-            clearKey: Key('$_k.stay.$index.departure.clear'),
-            label: s.leaving,
-            placeholder: s.chooseDate,
-            clearLabel: s.removePerson,
-            value: local(person.departureAt),
+          moment(
+            which: 'departure',
+            dayLabel: s.leaving,
+            timeLabel: s.leavingTime,
+            value: person.departureAt,
+            dayDefault: const TimeOfDay(hour: 23, minute: 59),
             error: error,
-            format: DateFormat.yMMMEd(locale).format,
-            firstDate: start.subtract(const Duration(days: 30)),
-            lastDate: end.add(const Duration(days: 30)),
-            onChanged: (day) => onChanged(
-              (p) => day == null
-                  ? p.copyWith(clearDeparture: true)
-                  : p.copyWith(
-                      departureAt: eventLocalToUtc(
-                        day.year,
-                        day.month,
-                        day.day,
-                        zone,
-                        hour: 23,
-                        minute: 59,
-                      ),
-                    ),
-            ),
+            set: (p, v) => v == null
+                ? p.copyWith(clearDeparture: true)
+                : p.copyWith(departureAt: v),
           ),
         ],
       ),
@@ -997,6 +1099,7 @@ class _SessionsCard extends StatelessWidget {
     required this.person,
     required this.error,
     required this.onChanged,
+    required this.onOptOuts,
   });
 
   final int index;
@@ -1005,6 +1108,7 @@ class _SessionsCard extends StatelessWidget {
   final PersonEntry person;
   final String? error;
   final ValueChanged<Set<String>> onChanged;
+  final ValueChanged<Set<String>> onOptOuts;
 
   @override
   Widget build(BuildContext context) {
@@ -1062,6 +1166,30 @@ class _SessionsCard extends StatelessWidget {
                   ...picked,
                 }),
               ),
+          // Sessions everyone attends: turned off, the person opts out
+          // and is not counted (#244, B-03).
+          if (spec.attending.isNotEmpty) ...[
+            Text(
+              s.attendingTitle,
+              style: cp.type.titleSmall.copyWith(color: cp.colors.text),
+            ),
+            Text(
+              s.attendingHelp,
+              style: cp.type.bodySmall.copyWith(color: cp.colors.textMuted),
+            ),
+            for (final session in spec.attending)
+              CpSwitchRow(
+                key: Key('$_k.attending.$index.${session.id}'),
+                title: session.title,
+                help: when(session),
+                value: !person.optOuts.contains(session.id),
+                onChanged: (on) => onOptOuts(
+                  on
+                      ? ({...person.optOuts}..remove(session.id))
+                      : {...person.optOuts, session.id},
+                ),
+              ),
+          ],
         ],
       ),
     );
@@ -1247,6 +1375,59 @@ class _SaveIndicator extends StatelessWidget {
             child: Text(
               text,
               style: cp.type.bodySmall.copyWith(color: color),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// After the deadline (Req 35, B-13): only contact details can change, and
+/// how to reach the organizer for anything else.
+class _ContactOnlyNote extends StatelessWidget {
+  const _ContactOnlyNote({required this.contactLine});
+
+  final LocalText? contactLine;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.strings.registerForm;
+    final cp = context.cp;
+    final language = Localizations.localeOf(context).languageCode;
+    final line = contactLine == null
+        ? null
+        : language == 'gu' && contactLine!.gu != null
+        ? contactLine!.gu!
+        : contactLine!.en;
+    return CpCard(
+      key: const Key('$_k.contactOnly'),
+      padding: EdgeInsets.all(cp.space.lg),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: cp.space.sm,
+        children: [
+          Icon(
+            CpIcons.registrationClosed,
+            size: cp.sizes.iconMd,
+            color: cp.colors.textMuted,
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: cp.space.xs,
+              children: [
+                Text(
+                  s.contactOnly,
+                  style: cp.type.bodyMedium.copyWith(color: cp.colors.text),
+                ),
+                if (line != null)
+                  Text(
+                    line,
+                    key: const Key('$_k.contactLine'),
+                    style: cp.type.bodyMedium.copyWith(color: cp.colors.text),
+                  ),
+              ],
             ),
           ),
         ],

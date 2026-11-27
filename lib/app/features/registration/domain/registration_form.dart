@@ -44,6 +44,10 @@ class SubmitResult {
   bool get waitlisted => status == 'waitlisted';
 }
 
+/// What someone already registered may change (#244): everything before
+/// the deadline, only contact details after it.
+enum FormEditable { all, contact }
+
 /// A registration the caller already has (Req 4).
 @immutable
 class ExistingRegistration {
@@ -101,6 +105,7 @@ class FormProblem {
 @immutable
 class PersonEntry {
   const PersonEntry({
+    this.id,
     this.name = '',
     this.birthDate,
     this.age,
@@ -108,7 +113,11 @@ class PersonEntry {
     this.arrivalAt,
     this.departureAt,
     this.signUps = const {},
+    this.optOuts = const {},
   });
+
+  /// The participant this entry edits (#244); null for someone new.
+  final String? id;
 
   final String name;
 
@@ -122,6 +131,9 @@ class PersonEntry {
   final DateTime? departureAt;
   final Set<String> signUps;
 
+  /// Sessions everyone attends that this person will miss (#244, B-03).
+  final Set<String> optOuts;
+
   PersonEntry copyWith({
     String? name,
     String? birthDate,
@@ -130,9 +142,11 @@ class PersonEntry {
     DateTime? arrivalAt,
     DateTime? departureAt,
     Set<String>? signUps,
+    Set<String>? optOuts,
     bool clearArrival = false,
     bool clearDeparture = false,
   }) => PersonEntry(
+    id: id,
     name: name ?? this.name,
     birthDate: birthDate ?? this.birthDate,
     age: age ?? this.age,
@@ -140,6 +154,7 @@ class PersonEntry {
     arrivalAt: clearArrival ? null : arrivalAt ?? this.arrivalAt,
     departureAt: clearDeparture ? null : departureAt ?? this.departureAt,
     signUps: signUps ?? this.signUps,
+    optOuts: optOuts ?? this.optOuts,
   );
 }
 
@@ -174,6 +189,7 @@ class RegistrationDraft {
     'people': [
       for (final p in people)
         {
+          'id': p.id,
           'name': p.name,
           'birthDate': p.birthDate,
           'age': p.age,
@@ -181,6 +197,7 @@ class RegistrationDraft {
           'arrivalAt': p.arrivalAt?.millisecondsSinceEpoch,
           'departureAt': p.departureAt?.millisecondsSinceEpoch,
           'signUps': p.signUps.toList()..sort(),
+          'optOuts': p.optOuts.toList()..sort(),
         },
     ],
   };
@@ -207,6 +224,7 @@ class RegistrationDraft {
         for (final p in people)
           if (p is Map)
             PersonEntry(
+              id: p['id'] is String ? p['id'] as String : null,
               name: text(p['name']),
               birthDate: p['birthDate'] is String
                   ? p['birthDate'] as String
@@ -219,13 +237,16 @@ class RegistrationDraft {
                 for (final s in (p['signUps'] as List?) ?? const [])
                   if (s is String) s,
               },
+              optOuts: {
+                for (final s in (p['optOuts'] as List?) ?? const [])
+                  if (s is String) s,
+              },
             ),
       ],
     );
   }
 
-  factory RegistrationDraft.fromMap(Map<String, Object?> map) =>
-      tryParse(map)!;
+  factory RegistrationDraft.fromMap(Map<String, Object?> map) => tryParse(map)!;
 
   RegistrationDraft copyWith({
     List<PersonEntry>? people,
@@ -272,6 +293,10 @@ class RegistrationFormSpec {
     this.registration,
     this.serverDraft,
     this.serverDraftSavedAt,
+    this.current,
+    this.editable,
+    this.attending = const [],
+    this.contactLine,
   });
 
   factory RegistrationFormSpec.fromMap(Map<String, Object?> data) {
@@ -340,8 +365,34 @@ class RegistrationFormSpec {
               waitlistPosition: (existing['waitlistPosition'] as num?)?.toInt(),
             )
           : null,
-      serverDraft: draft is Map ? RegistrationDraft.tryParse(draft['data']) : null,
+      serverDraft: draft is Map
+          ? RegistrationDraft.tryParse(draft['data'])
+          : null,
       serverDraftSavedAt: draft is Map ? time(draft['savedAt']) : null,
+      current: data['current'] is Map
+          ? RegistrationDraft.tryParse({
+              ...Map<String, Object?>.from(data['current']! as Map),
+              'submissionId': 'edit',
+              'email': (data['current']! as Map)['email'] ?? '',
+              'phone': (data['current']! as Map)['phone'] ?? '',
+            })
+          : null,
+      editable: switch (data['editable']) {
+        'all' => FormEditable.all,
+        'contact' => FormEditable.contact,
+        _ => null,
+      },
+      attending: [
+        for (final s in (data['attending'] as List?) ?? const [])
+          if (s is Map && s['id'] is String && time(s['startAt']) != null)
+            ChoiceSession(
+              id: s['id'] as String,
+              title: s['title'] as String? ?? '',
+              startAt: time(s['startAt'])!,
+              endAt: time(s['endAt']),
+            ),
+      ],
+      contactLine: LocalText.tryParse(data['contactLine']),
     );
   }
 
@@ -367,6 +418,18 @@ class RegistrationFormSpec {
   final RegistrationDraft? serverDraft;
   final DateTime? serverDraftSavedAt;
 
+  /// The caller's registration to edit (#244), people with their IDs.
+  final RegistrationDraft? current;
+  final FormEditable? editable;
+
+  /// Sessions everyone attends, which a person may opt out of (B-03).
+  final List<ChoiceSession> attending;
+
+  /// How to reach the organizer, for closed pages (Req 35).
+  final LocalText? contactLine;
+
+  bool get editing => current != null;
+
   bool has(RegistrationBlock block) => blocks.contains(block);
 
   /// The questions a section asks, in the section's order.
@@ -377,16 +440,20 @@ class RegistrationFormSpec {
 
   /// The form's steps (Req 17, 20): People, each section, Stay, Session
   /// choices and Contact when switched on, then Review.
-  List<FormStep> get steps => [
-    const FormStep(FormStep.people),
-    for (final s in sections)
-      if (questionsIn(s).isNotEmpty) FormStep('section:${s.id}', section: s),
-    if (has(RegistrationBlock.stay)) const FormStep(FormStep.stay),
-    if (has(RegistrationBlock.sessionChoices) && choices.isNotEmpty)
-      const FormStep(FormStep.sessions),
-    if (has(RegistrationBlock.contact)) const FormStep(FormStep.contact),
-    const FormStep(FormStep.review),
-  ];
+  List<FormStep> get steps => editable == FormEditable.contact
+      ? const [FormStep(FormStep.contact), FormStep(FormStep.review)]
+      : [
+          const FormStep(FormStep.people),
+          for (final s in sections)
+            if (questionsIn(s).isNotEmpty)
+              FormStep('section:${s.id}', section: s),
+          if (has(RegistrationBlock.stay)) const FormStep(FormStep.stay),
+          if (has(RegistrationBlock.sessionChoices) &&
+              (choices.isNotEmpty || attending.isNotEmpty))
+            const FormStep(FormStep.sessions),
+          if (has(RegistrationBlock.contact)) const FormStep(FormStep.contact),
+          const FormStep(FormStep.review),
+        ];
 
   /// [person]'s category on the event's first day, from their birth date,
   /// or their age when the event asks for age only; null while unknown.
@@ -502,6 +569,7 @@ class RegistrationFormSpec {
       'people': [
         for (final p in draft.people)
           {
+            'id': ?p.id,
             'name': p.name.trim(),
             if (has(RegistrationBlock.ageOnly))
               'age': ?p.age
@@ -518,6 +586,8 @@ class RegistrationFormSpec {
             },
             if (has(RegistrationBlock.sessionChoices) && p.signUps.isNotEmpty)
               'signUps': p.signUps.toList()..sort(),
+            if (has(RegistrationBlock.sessionChoices) && p.optOuts.isNotEmpty)
+              'optOuts': p.optOuts.toList()..sort(),
           },
       ],
     };
