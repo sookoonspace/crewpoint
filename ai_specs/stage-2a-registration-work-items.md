@@ -290,14 +290,14 @@ Answers kept on the device as they are typed through `IDraftStore`, server draft
 - `IConnectivity` / `FirestoreConnectivity` (`core/services/connectivity.dart`); harness seams pattern.
 
 ### Acceptance criteria
-- [ ] `IDraftStore` saves, loads and clears one draft per event and person: browser storage on web, local storage on mobile; a memory fake in tests. Cleared once submitted (Req 23).
-- [ ] When connected, the draft is saved to the server (`registrations` document with status `draft`) after a few seconds without typing and on moving between sections; "Saved" or "Not saved yet: no connection" shows at the top (Req 24).
-- [ ] Offline, Submit shows "You're offline. Your answers are kept; submit when you're back online." A submission is never queued to send later (Req 25).
-- [ ] Reopening the form restores the newest of the device and server drafts.
-- [ ] Widget tests for the saved and offline indicators; robot journey: a draft survives a reload and a lost connection, and a double submit creates one registration.
-- [ ] Quality floor (Req 71): 48 px tap targets, readable at 320 px with 200% text, screen-reader labels, dark mode, status shown with icon and colour together, all text through `context.strings` (English and Gujarati ARB entries), general concepts through `event.words`; design system only (guard test passes); a `domain.feature.action` key on every new interactive widget.
-- [ ] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass; no test initialises Firebase or touches a real project; naming guardrail passes.
-- [ ] Merges after green CI and the owner's go-ahead; reaches dev only with the owner's approval for that deploy; stg and prod are untouched. CLAUDE.md's Architecture section is updated for what landed.
+- [x] `IDraftStore` saves, loads and clears one draft per event and person: browser storage on web, local storage on mobile; a memory fake in tests. Cleared once submitted (Req 23).
+- [x] When connected, the draft is saved to the server (`registrations` document with status `draft`) after a few seconds without typing and on moving between sections; "Saved" or "Not saved yet: no connection" shows at the top (Req 24).
+- [x] Offline, Submit shows "You're offline. Your answers are kept; submit when you're back online." A submission is never queued to send later (Req 25).
+- [x] Reopening the form restores the newest of the device and server drafts.
+- [x] Widget tests for the saved and offline indicators; robot journey: a draft survives a reload and a lost connection, and a double submit creates one registration.
+- [x] Quality floor (Req 71): 48 px tap targets, readable at 320 px with 200% text, screen-reader labels, dark mode, status shown with icon and colour together, all text through `context.strings` (English and Gujarati ARB entries), general concepts through `event.words`; design system only (guard test passes); a `domain.feature.action` key on every new interactive widget.
+- [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass; no test initialises Firebase or touches a real project; naming guardrail passes.
+- [x] Merges after green CI and the owner's go-ahead; reaches dev only with the owner's approval for that deploy; stg and prod are untouched. CLAUDE.md's Architecture section is updated for what landed.
 
 ### Covers
 - User Stories: 2
@@ -320,17 +320,17 @@ Free edits before the deadline, "Registration is closed" after it with what fami
 - `clockProvider` / injected `Clock`; `event.inZone` for times.
 
 ### Acceptance criteria
-- [ ] Before the deadline the contact edits their registration freely; every change writes `changes/{changeId}` (server only) with who, when, which field, and before and after values; `registrations.manage` reads the log (Req 36, B-06). The change-log diff is pure and built TDD.
-- [ ] After the deadline (a date and time in the event's time zone) the link shows "Registration is closed" with the organizer's contact line; new submissions are refused; families can still view their registration, accept waivers and update contact details; other changes are refused (Req 35, B-13).
-- [ ] Adding people to a submitted group with no room is refused with "There's no room to add more people. Please contact the organizer." and the group's existing places are kept (Req 32a).
-- [ ] Arrival and departure **times**, not only days, on the form's Stay step (and when editing), in the event's time zone, so someone arriving Saturday 11:00am is left out of Friday's meals and Saturday breakfast (B-02; moved from #242 by the owner, Nov 26, 2026).
-- [ ] Per-person **meal opt-outs** on the form (and when editing) for sessions everyone attends, written to Stage 1's `optOuts` and checked by the server, so Jaya opting out of M2 is not counted for it (B-03; moved from #242 by the owner, Nov 26, 2026).
-- [ ] Backend tests with an injected clock for before and after the deadline; widget test for the closed state.
-- [ ] Acceptance tests B-02, B-03, B-06 and B-13 named by ID; B-02 and B-03 move from PARTIAL to PASS in `scenarios.json`.
-- [ ] Quality floor (Req 71): 48 px tap targets, readable at 320 px with 200% text, screen-reader labels, dark mode, status shown with icon and colour together, all text through `context.strings` (English and Gujarati ARB entries), general concepts through `event.words`; design system only (guard test passes); a `domain.feature.action` key on every new interactive widget.
-- [ ] `cd functions && npm run build` and `npm test` pass on the `demo-crewpoint` emulators; every new callable is exported from `functions/src/index.ts` (`appCallables.test.ts`) and every new restricted path joins `roleMatrix.test.ts`.
-- [ ] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass; no test initialises Firebase or touches a real project; naming guardrail passes.
-- [ ] Merges after green CI and the owner's go-ahead; reaches dev only with the owner's approval for that deploy; stg and prod are untouched. CLAUDE.md's Architecture section is updated for what landed.
+- [x] Before the deadline the contact edits their registration freely; every change writes `changes/{changeId}` (server only) with who, when, which field, and before and after values; `registrations.manage` reads the log (Req 36, B-06). The change-log diff is pure and built TDD.
+- [x] After the deadline (a date and time in the event's time zone) the link shows "Registration is closed" with the organizer's contact line; new submissions are refused; families can still view their registration, accept waivers and update contact details; other changes are refused (Req 35, B-13). *Accepting waivers after the deadline comes with the waivers themselves (#246). Committee changes after the deadline are #249, so B-06 and B-13 are PARTIAL until then.*
+- [x] Adding people to a submitted group with no room is refused with "There's no room to add more people. Please contact the organizer." and the group's existing places are kept (Req 32a).
+- [x] Arrival and departure **times**, not only days, on the form's Stay step (and when editing), in the event's time zone, so someone arriving Saturday 11:00am is left out of Friday's meals and Saturday breakfast (B-02; moved from #242 by the owner, Nov 26, 2026).
+- [x] Per-person **meal opt-outs** on the form (and when editing) for sessions everyone attends, written to Stage 1's `optOuts` and checked by the server, so Jaya opting out of M2 is not counted for it (B-03; moved from #242 by the owner, Nov 26, 2026).
+- [x] Backend tests with an injected clock for before and after the deadline; widget test for the closed state.
+- [x] Acceptance tests B-02, B-03, B-06 and B-13 named by ID; B-02 and B-03 move from PARTIAL to PASS in `scenarios.json`.
+- [x] Quality floor (Req 71): 48 px tap targets, readable at 320 px with 200% text, screen-reader labels, dark mode, status shown with icon and colour together, all text through `context.strings` (English and Gujarati ARB entries), general concepts through `event.words`; design system only (guard test passes); a `domain.feature.action` key on every new interactive widget.
+- [x] `cd functions && npm run build` and `npm test` pass on the `demo-crewpoint` emulators; every new callable is exported from `functions/src/index.ts` (`appCallables.test.ts`) and every new restricted path joins `roleMatrix.test.ts`.
+- [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass; no test initialises Firebase or touches a real project; naming guardrail passes.
+- [x] Merges after green CI and the owner's go-ahead; reaches dev only with the owner's approval for that deploy; stg and prod are untouched. CLAUDE.md's Architecture section is updated for what landed.
 
 ### Covers
 - User Stories: 2, 12
