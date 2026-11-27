@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -104,6 +105,9 @@ class MyRegistrationScreen extends ConsumerWidget {
         final locale = Localizations.localeOf(context).toLanguageTag();
         final note = v.note;
         return frame(v.title, [
+          // A place on offer (#248): Accept or No thanks, before the status.
+          if (r.offeredAt(DateTime.now()))
+            _OfferCard(slug: slug, view: v, locale: locale),
           _StatusCard(registration: r, view: v, locale: locale),
           CpSectionHeader(title: s.people),
           CpCard(
@@ -322,6 +326,126 @@ class _MissingWaiversState extends ConsumerState<_MissingWaivers> {
           onPressed: _busy ? null : _accept,
         ),
       ],
+    );
+  }
+}
+
+/// "A place is available for your group until …" with Accept and No
+/// thanks (Spec #233 Req 32; #248), through `respondToOffer`. No thanks
+/// asks first, because it takes the group off the waitlist for good.
+class _OfferCard extends ConsumerStatefulWidget {
+  const _OfferCard({
+    required this.slug,
+    required this.view,
+    required this.locale,
+  });
+
+  final String slug;
+  final MyRegistrationView view;
+  final String locale;
+
+  @override
+  ConsumerState<_OfferCard> createState() => _OfferCardState();
+}
+
+class _OfferCardState extends ConsumerState<_OfferCard> {
+  bool _busy = false;
+
+  Future<void> _answer(bool accept) async {
+    final s = context.strings.myRegistration;
+    if (!accept) {
+      final sure = await showDialog<bool>(
+        context: context,
+        builder: (dialog) => CpDialog(
+          title: s.declineTitle,
+          message: s.declineBody,
+          actions: [
+            CpButton.text(
+              key: const Key('$_k.offer.keep'),
+              label: s.keepPlace,
+              onPressed: () => Navigator.of(dialog).pop(false),
+            ),
+            CpButton.destructive(
+              key: const Key('$_k.offer.declineConfirm'),
+              label: s.noThanks,
+              onPressed: () => Navigator.of(dialog).pop(true),
+            ),
+          ],
+        ),
+      );
+      if (sure != true || !mounted) return;
+    }
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _busy = true);
+    try {
+      await ref
+          .read(memberCallsProvider)
+          .respondToOffer(slug: widget.slug, accept: accept);
+      messenger.showSnackBar(
+        SnackBar(content: Text(accept ? s.offerAccepted : s.offerDeclined)),
+      );
+    } on FirebaseFunctionsException catch (e, st) {
+      final reason = (e.details as Map?)?['reason'];
+      if (reason != 'expired' && reason != 'noOffer') {
+        log('respondToOffer failed', error: e, stackTrace: st);
+      }
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            reason == 'expired' || reason == 'noOffer'
+                ? s.offerExpired
+                : s.offerFailed,
+          ),
+        ),
+      );
+    } on Object catch (e, st) {
+      log('respondToOffer failed', error: e, stackTrace: st);
+      messenger.showSnackBar(SnackBar(content: Text(s.offerFailed)));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+    ref.invalidate(myRegistrationProvider(widget.slug.toLowerCase()));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.strings.myRegistration;
+    final cp = context.cp;
+    final v = widget.view;
+    final until = DateFormat.yMMMEd(widget.locale)
+        .add_jm()
+        .format(inEventZone(v.registration!.offerExpiresAt!, v.timeZone));
+    return CpCard(
+      key: const Key('$_k.offer'),
+      padding: EdgeInsets.all(cp.space.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: cp.space.md,
+        children: [
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: CpTag(label: s.offerTitle, icon: CpIcons.statusDone),
+          ),
+          Text(
+            s.offerBody(v.words.one('group').toLowerCase(), until),
+            style: cp.type.bodyLarge.copyWith(color: cp.colors.text),
+          ),
+          CpButton(
+            key: const Key('$_k.offer.accept'),
+            label: s.accept,
+            icon: CpIcons.statusDone,
+            busy: _busy,
+            expand: true,
+            onPressed: _busy ? null : () => _answer(true),
+          ),
+          CpButton.secondary(
+            key: const Key('$_k.offer.decline'),
+            label: s.noThanks,
+            expand: true,
+            onPressed: _busy ? null : () => _answer(false),
+          ),
+        ],
+      ),
     );
   }
 }

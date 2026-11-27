@@ -1792,5 +1792,203 @@
   "photoConsentUnanswered": "Not answered",
   "@photoConsentUnanswered": {
     "description": "Counts: not answered."
+  },
+  "myRegistrationOfferTitle": "A place is available",
+  "@myRegistrationOfferTitle": {
+    "description": "Offer card heading."
+  },
+  "myRegistrationOfferBody": "A place is available for your {group} until {until}.",
+  "@myRegistrationOfferBody": {
+    "description": "Offer card text; group is the event's word in lower case.",
+    "placeholders": {
+      "group": {
+        "type": "String"
+      },
+      "until": {
+        "type": "String"
+      }
+    }
+  },
+  "myRegistrationAccept": "Accept",
+  "@myRegistrationAccept": {
+    "description": "Accepts the offered place."
+  },
+  "myRegistrationNoThanks": "No thanks",
+  "@myRegistrationNoThanks": {
+    "description": "Declines the offered place."
+  },
+  "myRegistrationDeclineTitle": "Give up this place?",
+  "@myRegistrationDeclineTitle": {
+    "description": "Confirm before declining."
+  },
+  "myRegistrationDeclineBody": "You'll come off the waitlist, and the place goes to the next on it. This can't be undone.",
+  "@myRegistrationDeclineBody": {
+    "description": "Confirm text."
+  },
+  "myRegistrationKeepPlace": "Keep my place",
+  "@myRegistrationKeepPlace": {
+    "description": "Closes the confirm."
+  },
+  "myRegistrationOfferAccepted": "You're in. We've emailed your confirmation.",
+  "@myRegistrationOfferAccepted": {
+    "description": "After accepting."
+  },
+  "myRegistrationOfferDeclined": "You've come off the waitlist.",
+  "@myRegistrationOfferDeclined": {
+    "description": "After declining."
+  },
+  "myRegistrationOfferExpired": "This offer has expired. You're still on the waitlist.",
+  "@myRegistrationOfferExpired": {
+    "description": "Answering too late."
+  },
+  "myRegistrationOfferFailed": "We couldn't save that. Please try again.",
+  "@myRegistrationOfferFailed": {
+    "description": "Answering failed."
+  },
+  "waitlistTitle": "Waitlist",
+  "@waitlistTitle": {
+    "description": "Screen and hub entry."
+  },
+  "waitlistHubSubtitle": "Who is waiting for a place, and open offers",
+  "@waitlistHubSubtitle": {
+    "description": "Hub entry subtitle."
+  },
+  "waitlistPlacesUsed": "{used} of {capacity} places used",
+  "@waitlistPlacesUsed": {
+    "description": "Places summary.",
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "capacity": {
+        "type": "int"
+      }
+    }
+  },
+  "waitlistHeld": "{count} held by open offers",
+  "@waitlistHeld": {
+    "description": "Held places.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "waitlistNoCapacity": "No capacity is set, so nobody waits.",
+  "@waitlistNoCapacity": {
+    "description": "No capacity."
+  },
+  "waitlistOver": "Over capacity by {count}. Nobody is removed, and no places are offered until enough people cancel.",
+  "@waitlistOver": {
+    "description": "Over a lowered capacity.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "waitlistAfterDeadline": "Registration has closed, so places are offered only by hand.",
+  "@waitlistAfterDeadline": {
+    "description": "After the deadline."
+  },
+  "waitlistEmpty": "Nobody is waiting.",
+  "@waitlistEmpty": {
+    "description": "Empty waitlist."
+  },
+  "waitlistNumber": "Number {position}",
+  "@waitlistNumber": {
+    "description": "Queue number.",
+    "placeholders": {
+      "position": {
+        "type": "int"
+      }
+    }
+  },
+  "waitlistOfferedUntil": "Offered until {until}",
+  "@waitlistOfferedUntil": {
+    "description": "An open offer.",
+    "placeholders": {
+      "until": {
+        "type": "String"
+      }
+    }
+  },
+  "waitlistWaiting": "Waiting",
+  "@waitlistWaiting": {
+    "description": "No offer yet."
+  },
+  "waitlistOffer": "Offer a place",
+  "@waitlistOffer": {
+    "description": "Offers by hand."
+  },
+  "waitlistExtend": "Extend",
+  "@waitlistExtend": {
+    "description": "Extends an offer."
+  },
+  "waitlistWithdraw": "Withdraw",
+  "@waitlistWithdraw": {
+    "description": "Withdraws an offer."
+  },
+  "waitlistExtendTitle": "Extend the offer by",
+  "@waitlistExtendTitle": {
+    "description": "Extend sheet title."
+  },
+  "waitlistWithdrawTitle": "Withdraw this offer?",
+  "@waitlistWithdrawTitle": {
+    "description": "Withdraw confirm."
+  },
+  "waitlistWithdrawBody": "The group keeps its number on the waitlist, and the places wait for the next opening.",
+  "@waitlistWithdrawBody": {
+    "description": "Withdraw confirm text."
+  },
+  "waitlistCancel": "Cancel",
+  "@waitlistCancel": {
+    "description": "Closes a confirm."
+  },
+  "waitlistOffered": "Offer sent.",
+  "@waitlistOffered": {
+    "description": "After offering."
+  },
+  "waitlistExtended": "Offer extended.",
+  "@waitlistExtended": {
+    "description": "After extending."
+  },
+  "waitlistWithdrawn": "Offer withdrawn.",
+  "@waitlistWithdrawn": {
+    "description": "After withdrawing."
+  },
+  "waitlistNoRoom": "There's no room for this group.",
+  "@waitlistNoRoom": {
+    "description": "No room to offer."
+  },
+  "waitlistFailed": "We couldn't do that. Please try again.",
+  "@waitlistFailed": {
+    "description": "An action failed."
+  },
+  "waitlistLoadFailed": "We couldn't load the waitlist.",
+  "@waitlistLoadFailed": {
+    "description": "Loading failed."
+  },
+  "waitlistRetry": "Try again",
+  "@waitlistRetry": {
+    "description": "Retry."
+  },
+  "waitlistPeople": "{count, plural, =1{1 person} other{{count} people}}",
+  "@waitlistPeople": {
+    "description": "Group size.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "waitlistHours": "{count, plural, =1{1 hour} other{{count} hours}}",
+  "@waitlistHours": {
+    "description": "Extend choice.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

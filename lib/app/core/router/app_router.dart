@@ -40,6 +40,7 @@ import 'package:crewpoint_app/app/features/registration/presentation/my_registra
 import 'package:crewpoint_app/app/features/auth/presentation/email_link_screen.dart';
 import 'package:crewpoint_app/app/features/registration/presentation/registration_settings_screen.dart';
 import 'package:crewpoint_app/app/features/registration/presentation/waiver_editor_screen.dart';
+import 'package:crewpoint_app/app/features/registration/presentation/waitlist_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/expense_access_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/group_entry_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/photo_consent_screen.dart';
@@ -489,6 +490,13 @@ GoRouter createRouter({
                         builder: (_, state) => EventGuard(
                           eventId: _resolveEventId(state),
                           child: (event) => CountsScreen(event: event),
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'waitlist',
+                        builder: (_, state) => EventGuard(
+                          eventId: _resolveEventId(state),
+                          child: (event) => WaitlistScreen(event: event),
                         ),
                       ),
                       GoRoute(
