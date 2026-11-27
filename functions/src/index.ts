@@ -57,4 +57,5 @@ export {getRegistrationForm} from "./registration/registrationForm";
 export {getMyRegistration} from "./registration/myRegistration";
 export {saveRegistrationDraft} from "./registration/registrationDraft";
 export {updateRegistration} from "./registration/updateRegistration";
+export {cancelRegistration} from "./registration/cancelRegistration";
 export {sendSignInLink} from "./account/signInLink";

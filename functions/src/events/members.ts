@@ -30,6 +30,12 @@ export interface MemberFields {
    * access against these, and being in any grants `group.editOwn`.
    */
   groupIds?: string[];
+  /**
+   * What registering gave this person (Spec #233 Req 60-61; #245): the
+   * registration role, or null when they already held it, and the groups
+   * whose submitted registrations keep it. Cancelling takes back only this.
+   */
+  registrationGrant?: {roleId: string | null; groupIds: string[]};
 }
 
 export function memberRef(
@@ -66,6 +72,7 @@ export function memberDoc(
     doc.editsOwnGroup = fields.editsOwnGroup;
   }
   if (fields.groupIds !== undefined) doc.groupIds = fields.groupIds;
+  if (fields.registrationGrant !== undefined) doc.registrationGrant = fields.registrationGrant;
   return doc;
 }
 
@@ -133,6 +140,7 @@ export function rebuildMember(
       joinedAt: current.joinedAt,
       editsOwnGroup: current.editsOwnGroup,
       groupIds: Array.isArray(current.groupIds) ? current.groupIds : undefined,
+      registrationGrant: current.registrationGrant ?? undefined,
     },
     roles,
     access

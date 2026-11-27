@@ -4,9 +4,6 @@ import {withStructuredLogs} from "../utils/logging";
 import {enqueueEmail, normaliseEmail} from "../mail/outbox";
 import {countryForTimeZone, normalisePhone} from "../participants/phone";
 import {ageOn, CategoryDef, categoryForAge, FieldDef, filterTagsFor} from "../imports/plan";
-import {expenseAccessOf} from "../events/expenseAccess";
-import {memberDoc, memberRef, readEventRoles, rebuildMember} from "../events/members";
-import {legacyRoleIds} from "../events/permissions";
 import {hostingDomain} from "../account/signInLink";
 import {normaliseSlug} from "./settings";
 import {registrationOf} from "./registrationSettings";
@@ -14,6 +11,7 @@ import {allocate, AllocatedStatus} from "./allocate";
 import {isShown} from "./conditions";
 import {signUpChoices, validSignUps} from "./sessionChoices";
 import {checkOpen} from "./registrationForm";
+import {applyRegistrationMembership} from "./membership";
 
 const db = () => getFirestore();
 
@@ -129,11 +127,9 @@ export const submitRegistration = onCall({timeoutSeconds: 60}, async (request) =
       checkOpen(event, settings);
 
       const tallyRef = eventRef.collection("registrationTally").doc("current");
-      const [existing, tallyDoc, memberSnap, roles] = await Promise.all([
+      const [existing, tallyDoc] = await Promise.all([
         tx.get(eventRef.collection("registrations").where("contactUid", "==", uid).limit(1)),
         tx.get(tallyRef),
-        tx.get(memberRef(eventRef, uid)),
-        readEventRoles(tx, eventRef),
       ]);
       const previous = existing.docs[0];
       // A saved draft (#243) becomes the registration on the same document.
@@ -167,6 +163,10 @@ export const submitRegistration = onCall({timeoutSeconds: 60}, async (request) =
       const personRefs = form.people.map(() => eventRef.collection("participants").doc());
       const contactIndex = form.people.findIndex((p) => !p.isChild);
       const contactId = contactIndex >= 0 ? personRefs[contactIndex].id : null;
+      // Membership is read now, before any write (#245).
+      const membership = await applyRegistrationMembership.read(tx, eventRef, registrationRef, {
+        event, groupId: groupRef.id, adults: [uid], contactUid: uid, contactParticipantId: contactId,
+      });
 
       tx.set(groupRef, {
         name: form.groupName, sortName: form.groupName.toLowerCase(), adultUids: [uid],
@@ -214,29 +214,9 @@ export const submitRegistration = onCall({timeoutSeconds: 60}, async (request) =
         updatedAt: now,
       }, {merge: true});
 
-      // A submitted contact joins with the registration role (Req 60);
-      // members keep their roles and gain it.
-      if (decision.status === "submitted") {
-        const memberIds: string[] = event.memberIds ?? [];
-        const isMember = memberSnap.exists || memberIds.includes(uid);
-        const current: FirebaseFirestore.DocumentData = memberSnap.exists ?
-          memberSnap.data()! : {roleIds: isMember ? legacyRoleIds(event, uid) : []};
-        const roleIds = [...new Set([...(current.roleIds ?? []), settings.registrationRoleId])];
-        const groupIds = [...new Set([...(current.groupIds ?? []), groupRef.id])];
-        const fields = {
-          ...current, roleIds, groupIds, editsOwnGroup: true,
-          participantId: current.participantId ?? contactId,
-        };
-        const access = expenseAccessOf(event);
-        tx.set(memberRef(eventRef, uid), memberSnap.exists ?
-          rebuildMember(uid, fields, roles, access) :
-          memberDoc(uid, {roleIds, groupIds, editsOwnGroup: true, participantId: contactId}, roles, access));
-        if (!isMember) {
-          tx.update(eventRef, {
-            memberIds: FieldValue.arrayUnion(uid), memberCount: memberIds.length + 1, updatedAt: now,
-          });
-        }
-      }
+      // A submitted group's contact joins with the registration role (Req
+      // 60, #245); waiting groups are not members yet.
+      applyRegistrationMembership.write(tx, membership, decision.status);
       return {
         created: true,
         result: {registrationId: registrationRef.id, status: decision.status, waitlistPosition},
