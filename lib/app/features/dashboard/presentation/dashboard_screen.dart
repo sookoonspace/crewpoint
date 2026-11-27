@@ -41,6 +41,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return e.isPast(now);
   }
 
+  /// Pull to refresh (#292): my events stream live already, so this reads
+  /// again the registrations not confirmed yet, such as a new offer.
+  Future<void> _refresh() async {
+    ref.invalidate(myWaitingRegistrationsProvider);
+    await ref.read(myWaitingRegistrationsProvider.future);
+  }
+
   @override
   Widget build(BuildContext context) {
     final cp = context.cp;
@@ -105,14 +112,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             )
             .toList();
         if (shown.isEmpty && waiting.isEmpty) {
-          return SingleChildScrollView(
-            child: CpEmptyState(
-              icon: CpIcons.event,
-              title: s.noEventsTitle,
-              message: s.noEventsSubtitle,
-              actionLabel: s.joinWithCode,
-              actionKey: const Key('dashboard.empty.join'),
-              onAction: () => JoinEventSheet.show(context: context),
+          return RefreshIndicator(
+            onRefresh: _refresh,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: CpEmptyState(
+                icon: CpIcons.event,
+                title: s.noEventsTitle,
+                message: s.noEventsSubtitle,
+                actionLabel: s.joinWithCode,
+                actionKey: const Key('dashboard.empty.join'),
+                onAction: () => JoinEventSheet.show(context: context),
+              ),
             ),
           );
         }
@@ -145,36 +156,41 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ],
                 ),
               ];
-        return ListView(
-          key: const Key('dashboard.events.list'),
-          padding: padding.copyWith(top: cp.space.sm, bottom: cp.space.xxl),
-          children: [
-            for (final (title, list) in sections)
-              if (list.isNotEmpty)
-                Padding(
-                  padding: EdgeInsets.only(bottom: cp.space.xl),
-                  child: section(title, list),
-                ),
-            if (waiting.isNotEmpty)
-              Column(
-                key: const Key('dashboard.waiting'),
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                spacing: cp.space.sm,
-                children: [
-                  CpSectionHeader(
-                    title: context.strings.myRegistration.homeHeading,
-                    trailingText: '${waiting.length}',
+        return RefreshIndicator(
+          key: const Key('dashboard.refresh'),
+          onRefresh: _refresh,
+          child: ListView(
+            key: const Key('dashboard.events.list'),
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: padding.copyWith(top: cp.space.sm, bottom: cp.space.xxl),
+            children: [
+              for (final (title, list) in sections)
+                if (list.isNotEmpty)
+                  Padding(
+                    padding: EdgeInsets.only(bottom: cp.space.xl),
+                    child: section(title, list),
                   ),
-                  for (final w in waiting)
-                    _WaitingCard(
-                      key: Key('dashboard.waiting.${w.eventId}'),
-                      registration: w,
-                      now: now,
-                      onTap: () => context.push('/e/${w.slug}/registration'),
+              if (waiting.isNotEmpty)
+                Column(
+                  key: const Key('dashboard.waiting'),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  spacing: cp.space.sm,
+                  children: [
+                    CpSectionHeader(
+                      title: context.strings.myRegistration.homeHeading,
+                      trailingText: '${waiting.length}',
                     ),
-                ],
-              ),
-          ],
+                    for (final w in waiting)
+                      _WaitingCard(
+                        key: Key('dashboard.waiting.${w.eventId}'),
+                        registration: w,
+                        now: now,
+                        onTap: () => context.push('/e/${w.slug}/registration'),
+                      ),
+                  ],
+                ),
+            ],
+          ),
         );
       },
     );
