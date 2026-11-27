@@ -114,7 +114,7 @@ test('B-01 a contact registers the whole family with every per-person answer, st
   const group = (await db().collection(`events/${E}/groups`).get()).docs[0];
   expect(group.data().fields).toEqual({booked: true});
   expect((await group.ref.collection('private').doc('details').get()).data())
-    .toEqual(expect.objectContaining({confirmation: 'HP123456'}));
+    .toEqual(expect.objectContaining({fields: {confirmation: 'HP123456'}}));
 });
 
 test('B-02 an arrival time keeps a person out of the meals before it', async () => {
@@ -315,4 +315,35 @@ test('Z-03 the liability waiver is accepted at registration and recorded (placeh
   const [reg] = (await db().collection(`events/${E}/registrations`).get()).docs.map((d) => d.data());
   // Req 31: consent to announcements is kept apart, for Stage 3.
   expect(reg.consent).toEqual(expect.objectContaining({email: true, sms: false}));
+});
+
+test('Z-02 photo and video consent per person, children by their guardian, is kept for the photographer', async () => {
+  /* eslint-disable @typescript-eslint/no-var-requires */
+  const {rebuildPhotoConsent, refreshPhotoConsent} = require('../src/participants/photoConsent');
+  /* eslint-enable @typescript-eslint/no-var-requires */
+  await seed();
+  const person = (name: string, birthDate: string, photoConsent?: boolean) => ({
+    name, birthDate, answers: {diet: 'V'}, ...(photoConsent === undefined ? {} : {photoConsent}),
+  });
+  await submit('nita', {groupName: 'Shah family', people: [
+    person('Nita Shah', '1978-04-04', true),
+    person('Rohan Shah', '2014-06-06', false),
+    person('Jaya Shah', '1950-02-02'),
+  ]});
+  // The answer sits in private details, never on the person.
+  const rohan = (await db().collection(`events/${E}/participants`).where('name', '==', 'Rohan Shah').get()).docs[0];
+  expect(rohan.data().photoConsent).toBeUndefined();
+  expect((await rohan.ref.collection('private').doc('details').get()).data()!.photoConsent).toBe(false);
+
+  await rebuildPhotoConsent(db(), E);
+  const list = async () => (await db().doc(`events/${E}/photoConsent/current`).get()).data()!.people;
+  expect(Object.values(await list())).toEqual(expect.arrayContaining([
+    {name: 'Rohan Shah', groupName: 'Shah family', ageBand: 'Child', answer: 'no'},
+    {name: 'Jaya Shah', groupName: 'Shah family', ageBand: 'Adult', answer: 'unanswered'},
+  ]));
+  expect(Object.values(await list())).toHaveLength(2);
+  // The guardian changes Rohan's answer; the list follows.
+  await rohan.ref.collection('private').doc('details').set({photoConsent: true}, {merge: true});
+  await refreshPhotoConsent(db(), E, [rohan.id]);
+  expect(Object.values(await list()).map((p: any) => p.name)).toEqual(['Jaya Shah']);
 });

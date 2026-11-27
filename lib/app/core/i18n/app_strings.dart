@@ -2697,6 +2697,7 @@ class _EnglishRoleStrings extends RoleStrings {
     'checkin.scan' => 'Scan people in',
     'checkin.lookup' => 'Look people up at check-in',
     'counts.read' => 'See counts',
+    'photoConsent.read' => 'See photo consent',
     'incidents.report' => 'Report incidents',
     'incidents.receive' => 'Receive incident alerts',
     'reports.export' => 'Export reports',

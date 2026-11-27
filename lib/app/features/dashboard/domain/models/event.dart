@@ -513,6 +513,7 @@ const _everything = {
   'checkin.scan',
   'checkin.lookup',
   'counts.read',
+  'photoConsent.read',
   'incidents.report',
   'incidents.receive',
   'reports.export',

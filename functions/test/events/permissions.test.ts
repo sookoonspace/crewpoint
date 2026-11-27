@@ -20,7 +20,7 @@ describe('permission catalogue', () => {
       'money.refund', 'money.dueAtDoor', 'budget.read', 'budget.edit',
       'expenses.readAll', 'contributions.manage', 'tasks.manage', 'chat.send',
       'chat.urgent', 'messages.send', 'checkin.scan', 'checkin.lookup',
-      'counts.read', 'incidents.report', 'incidents.receive', 'reports.export',
+      'counts.read', 'photoConsent.read', 'incidents.report', 'incidents.receive', 'reports.export',
       'competition.manage', 'scores.enter',
     ]);
   });

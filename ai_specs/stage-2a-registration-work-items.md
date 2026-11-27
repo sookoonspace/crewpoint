@@ -381,18 +381,18 @@ Organizer-written waivers with versions and an "applies to", server-written acce
 - The convention's waiver text is an Open Question; use placeholder text.
 
 ### Acceptance criteria
-- [ ] A waiver has a title, a version, an "applies to" (everyone, a category, or people signed up for a session) and whether it is required to register; edited in Event settings → Registration (Req 26).
-- [ ] Acceptance is recorded per person, written only by the server and never edited: who accepted (contact or linked adult, as the person or as guardian for a minor), when, which version (Req 27).
-- [ ] Changing a waiver's text makes a new version; earlier acceptances show as an earlier version and the organizer chooses whether the new version must be accepted (Req 28).
-- [ ] A required waiver blocks Submit until accepted for everyone it applies to; others can be accepted later, including after the deadline (Req 29).
-- [ ] People gains the "Missing waiver" filter, and `registrations.manage` sends the waiver-missing email by hand from it (W-05, W-06).
-- [ ] Contact consent for announcements by email and by SMS is asked once per registration, separate from essential messages, and stored for Stage 3 (Req 31).
-- [ ] TDD for waiver applicability and version status; rules and role-matrix tests for waivers and acceptances.
-- [ ] Acceptance tests W-05, W-06 and Z-03 (placeholder text) named by ID.
-- [ ] Quality floor (Req 71): 48 px tap targets, readable at 320 px with 200% text, screen-reader labels, dark mode, status shown with icon and colour together, all text through `context.strings` (English and Gujarati ARB entries), general concepts through `event.words`; design system only (guard test passes); a `domain.feature.action` key on every new interactive widget.
-- [ ] `cd functions && npm run build` and `npm test` pass on the `demo-crewpoint` emulators; every new callable is exported from `functions/src/index.ts` (`appCallables.test.ts`) and every new restricted path joins `roleMatrix.test.ts`.
-- [ ] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass; no test initialises Firebase or touches a real project; naming guardrail passes.
-- [ ] Merges after green CI and the owner's go-ahead; reaches dev only with the owner's approval for that deploy; stg and prod are untouched. CLAUDE.md's Architecture section is updated for what landed.
+- [x] A waiver has a title, a version, an "applies to" (everyone, a category, or people signed up for a session) and whether it is required to register; edited in Event settings → Registration (Req 26).
+- [x] Acceptance is recorded per person, written only by the server and never edited: who accepted (contact or linked adult, as the person or as guardian for a minor), when, which version (Req 27).
+- [x] Changing a waiver's text makes a new version; earlier acceptances show as an earlier version and the organizer chooses whether the new version must be accepted (Req 28).
+- [x] A required waiver blocks Submit until accepted for everyone it applies to; others can be accepted later, including after the deadline (Req 29).
+- [x] People gains the "Missing waiver" filter, and `registrations.manage` sends the waiver-missing email by hand from it (W-05, W-06).
+- [x] Contact consent for announcements by email and by SMS is asked once per registration, separate from essential messages, and stored for Stage 3 (Req 31).
+- [x] TDD for waiver applicability and version status; rules and role-matrix tests for waivers and acceptances.
+- [x] Acceptance tests W-05, W-06 and Z-03 (placeholder text) named by ID. *W-05 and Z-03 pass and are finished; W-06 is PARTIAL until the boarding check at the shuttle (Stage 5).*
+- [x] Quality floor (Req 71): 48 px tap targets, readable at 320 px with 200% text, screen-reader labels, dark mode, status shown with icon and colour together, all text through `context.strings` (English and Gujarati ARB entries), general concepts through `event.words`; design system only (guard test passes); a `domain.feature.action` key on every new interactive widget.
+- [x] `cd functions && npm run build` and `npm test` pass on the `demo-crewpoint` emulators; every new callable is exported from `functions/src/index.ts` (`appCallables.test.ts`) and every new restricted path joins `roleMatrix.test.ts`.
+- [x] `flutter analyze` (zero issues), `dart run custom_lint` and `flutter test` pass; no test initialises Firebase or touches a real project; naming guardrail passes.
+- [x] Merges after green CI and the owner's go-ahead; reaches dev only with the owner's approval for that deploy; stg and prod are untouched. CLAUDE.md's Architecture section is updated for what landed.
 
 ### Covers
 - User Stories: 5

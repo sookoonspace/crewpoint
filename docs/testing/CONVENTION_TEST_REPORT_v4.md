@@ -1,8 +1,8 @@
 # Derod Gaam Convention 2027: Test Report (v4)
 
-**Test spec:** [`CREWPOINT_CONVENTION_TEST_v4.md`](CREWPOINT_CONVENTION_TEST_v4.md) · **Run:** Nov 27, 2026, at the end of Stage 1, on `main` at `6fb68f1` · **First run:** Nov 3, 2026
+**Test spec:** [`CREWPOINT_CONVENTION_TEST_v4.md`](CREWPOINT_CONVENTION_TEST_v4.md) · **Run:** Nov 27, 2026, at the end of Stage 1, on `main` at `cb06b91` · **First run:** Nov 3, 2026
 
-**Result: Stage 1, the platform foundation, is complete, but CrewPoint cannot run this event yet.** Registration and payments arrive in Stage 2, email and Gujarati in Stage 3, and event-day check-in in Stage 5. Of 206 scenarios, 39 pass, 18 are partial, 1 fails, 53 are not built, 91 are platform requirements for later stages, and 3 need a person or outside access. On Nov 3, 2 passed.
+**Result: Stage 1, the platform foundation, is complete, but CrewPoint cannot run this event yet.** Registration and payments arrive in Stage 2, email and Gujarati in Stage 3, and event-day check-in in Stage 5. Of 206 scenarios, 39 pass, 19 are partial, 1 fails, 52 are not built, 91 are platform requirements for later stages, and 3 need a person or outside access. On Nov 3, 2 passed.
 
 **What Stage 1 changed for this event:**
 
@@ -21,7 +21,7 @@
 
 **How far to trust this:**
 
-- 104 acceptance tests ran against the real app and backend code: 93 passed and 11 failed. A failure is a planned gap for a later stage unless the scenario is on the finished list, which CI protects.
+- 105 acceptance tests ran against the real app and backend code: 94 passed and 11 failed. A failure is a planned gap for a later stage unless the scenario is on the finished list, which CI protects.
 - The tests run on emulators with mocked push, and no message was sent. Live checks were made on dev, with throwaway data: the Stage 1 rollout, Google and Apple sign-in and linking (L-01, L-02), crash reporting on iOS, Android and web (O-02), both alert emails reaching both inboxes (O-01, O-02), and a restore (O-03).
 - Timings come from a Mac and local emulators ([load baselines](load-baselines.md)). Expect phones to be slower, and real delivery times are unmeasured.
 - NOT BUILT comes from reading and searching the code. Those scenarios are registered as skipped tests, with the reason.
@@ -67,11 +67,11 @@ PLATFORM marks what the first run expected a bought tool to do. CrewPoint now bu
 | X: Roster import | 5 | · | · | 1 | 1 | · | · | 7 |
 | S: Scale | 4 | 2 | · | 2 | · | · | · | 8 |
 | R: Safety | · | · | · | 6 | · | · | · | 6 |
-| Z: Privacy | 3 | · | · | 3 | 1 | · | · | 7 |
+| Z: Privacy | 3 | 1 | · | 2 | 1 | · | · | 7 |
 | O: Operations | 3 | · | · | 3 | · | 2 | · | 8 |
 | U: Accessibility | · | 3 | 1 | · | · | 1 | · | 5 |
 | N: Notifications | 2 | 6 | · | 9 | 15 | · | · | 32 |
-| **Total** | **39** | **18** | **1** | **53** | **91** | **3** | **1** | **206** |
+| **Total** | **39** | **19** | **1** | **52** | **91** | **3** | **1** | **206** |
 
 ### 2.1 Cost (S-08)
 
@@ -236,7 +236,7 @@ Measured on emulators rather than modelled: a count run reads about 1.3 document
 | R-05 | Kids activity sign-in and sign-out by a named guardian. | NOT BUILT | · | No safety features or fields. | Stage 5 | P2 |
 | R-06 | Lost child alerts need an acknowledgement, and go back out if nobody responds within… | NOT BUILT | · | No safety features or fields. | Stage 5 | P2 |
 | Z-01 | Children's data: only a parent enters it, birth dates are not shown to committee or… | PASS | `Z-01` tests (6 pass) | Children have no account; only a linked parent of their group, or someone with participants.edit, enters them (#75). Birth dates sit in private details that committee leads and volunteers cannot read, and counts and reports show age bands (#76, #83). The privacy policy covers children (#74). Tests: `Z-01` in test_acceptance/privacy_policy_test.dart and functions/test_acceptance/children_data.test.ts. A lawyer must still approve the policy before prod (Req 39). | · | P0 |
-| Z-02 | Photo and video consent per family, including children, available to the photographer. | NOT BUILT | · | No consent record or retention rule for event data. | · | P0 |
+| Z-02 | Photo and video consent per family, including children, available to the photographer. | PARTIAL | `Z-02` tests (1 pass) | Server built in #247: each person's photo and video consent (a guardian's for a child) is kept in private details, the server keeps the list of who said no or has not answered with only name, group and age band, and only photoConsent.read (Owner, Co-owner, Admin, and the Convention's Photographer) reads it. The form's question and the Photo consent screen come with #247's app part. | · | P0 |
 | Z-03 | Liability waiver accepted at registration and recorded `[OWNER INPUT]` for the text.… | PASS | `Z-03` tests (1 pass) | Built in #246 with placeholder text: a required waiver blocks Submit until accepted, and each acceptance is recorded. The convention's waiver text is the owner's to paste into Registration settings. | · | P0 |
 | Z-04 | UK and Canadian attendees: consent, access and deletion requests work, and the privacy… | PASS | `Z-04` tests (7 pass) | The privacy policy covers Canadian and UK rights, regulators and cross-border storage (#74). Deleting an account removes the person from shared records and personal subcollections, and turns a linked attendee record into an unnamed entry that still counts (#56, #78). Tests: `Z-04`. A lawyer must still approve the policy before prod (Req 39). | · | P0 |
 | Z-05 | Email has a working unsubscribe for non-essential messages; SMS (if used) is… | NOT BUILT | · | No email or SMS, so no unsubscribe. | Stage 3 | P0 |

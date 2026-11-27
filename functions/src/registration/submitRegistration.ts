@@ -37,6 +37,8 @@ interface PersonInput {
   id?: unknown;
   /** Waivers accepted now, at their current version (#246). */
   acceptWaivers?: unknown;
+  /** Photo and video consent: true, false, or left out unanswered (#247). */
+  photoConsent?: unknown;
 }
 
 /** What `submitRegistration` returns, and returns again for a repeat. */
@@ -187,7 +189,7 @@ export const submitRegistration = onCall({timeoutSeconds: 60}, async (request) =
         createdAt: now, updatedAt: now,
       });
       if (Object.keys(form.group.private).length > 0) {
-        tx.set(groupRef.collection("private").doc("details"), {...form.group.private, updatedAt: now});
+        tx.set(groupRef.collection("private").doc("details"), {fields: form.group.private, updatedAt: now});
       }
       form.people.forEach((person, i) => {
         const waiverState = writeAcceptances(tx, personRefs[i], {
@@ -208,7 +210,7 @@ export const submitRegistration = onCall({timeoutSeconds: 60}, async (request) =
           createdAt: now, updatedAt: now,
         });
         const details = {
-          ...person.private,
+          ...privateDetails(person),
           ...(person.birthDate ? {birthDate: person.birthDate} : {}),
           ...(i === contactIndex && form.email ? {email: form.email} : {}),
           ...(i === contactIndex && form.phone ? {phone: form.phone} : {}),
@@ -305,6 +307,8 @@ export interface ReadPerson {
   optOuts: string[];
   /** Waiver IDs accepted on this form (#246). */
   acceptWaivers: string[];
+  /** Photo and video consent, or null while unanswered (#247). */
+  photoConsent: boolean | null;
 }
 
 /**
@@ -386,6 +390,9 @@ export function readForm(data: Record<string, unknown>, {event, settings, fields
       }
       (field.visibility === "private" ? privateAnswers : standard)[field.id] = value;
     }
+    // Photo and video consent (Req 30, #247): private, unanswered unless
+    // given, and for a child given by their guardian, who fills the form.
+    const photoConsent = typeof raw.photoConsent === "boolean" ? raw.photoConsent : null;
     const signUps = settings.blocks.sessionChoices && Array.isArray(raw.signUps) ?
       [...new Set(raw.signUps.filter((s): s is string => typeof s === "string"))] : [];
     if (!validSignUps(choices, signUps)) problems.push(`${at}.signUps`);
@@ -403,7 +410,7 @@ export function readForm(data: Record<string, unknown>, {event, settings, fields
     return {
       id, name, birthDate, isChild: category?.isChild === true, categoryId: category?.id ?? null,
       standard, private: privateAnswers, filterTags: filterTagsFor(fields, standard),
-      arrivalAt, departureAt, signUps, optOuts, acceptWaivers,
+      arrivalAt, departureAt, signUps, optOuts, acceptWaivers, photoConsent,
     };
   });
 
@@ -456,4 +463,16 @@ export function readConsent(raw: unknown): {email: boolean; sms: boolean} | null
   if (!raw || typeof raw !== "object") return null;
   const c = raw as Record<string, unknown>;
   return {email: c.email === true, sms: c.sms === true};
+}
+
+/**
+ * A person's `private/details` from the form: private answers under
+ * `fields`, as the app and the rules keep them, and photo consent when
+ * answered (#247). Birth date and contact details are added by the caller.
+ */
+export function privateDetails(person: ReadPerson): Record<string, unknown> {
+  return {
+    ...(Object.keys(person.private).length > 0 ? {fields: person.private} : {}),
+    ...(person.photoConsent === null ? {} : {photoConsent: person.photoConsent}),
+  };
 }

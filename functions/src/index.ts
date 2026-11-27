@@ -59,4 +59,7 @@ export {saveRegistrationDraft} from "./registration/registrationDraft";
 export {updateRegistration} from "./registration/updateRegistration";
 export {cancelRegistration} from "./registration/cancelRegistration";
 export {saveWaiver, acceptWaivers, sendWaiverReminders} from "./registration/waiverCallables";
+export {
+  onPhotoConsentPersonWritten, onPhotoConsentAnswerWritten, onPhotoConsentGroupWritten,
+} from "./participants/photoConsent";
 export {sendSignInLink} from "./account/signInLink";

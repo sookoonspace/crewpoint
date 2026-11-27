@@ -424,6 +424,13 @@ service cloud.firestore {
         allow read, write: if false;
       }
 
+      // Who said no to photos or has not answered (Spec #233 Req 30, #247):
+      // names, group names and age bands only, kept by the server.
+      match /photoConsent/{docId} {
+        allow read: if request.auth != null && can(eventId, 'photoConsent.read');
+        allow write: if false;
+      }
+
       // Waivers (Spec #233 Req 26-28, #246): read by anyone in the event,
       // written only by `saveWaiver`, with every version kept.
       match /waivers/{waiverId} {
@@ -699,8 +706,10 @@ service cloud.firestore {
             && isNotArchived(eventId)
             && editsParticipant(eventId, personGroup())
             && (request.resource == null
-                || (request.resource.data.keys().hasOnly(['birthDate', 'email', 'phone', 'fields', 'updatedAt'])
+                || (request.resource.data.keys().hasOnly(['birthDate', 'email', 'phone', 'fields', 'photoConsent', 'updatedAt'])
                     && answersAreValid(request.resource.data)
+                    && (request.resource.data.get('photoConsent', null) == null
+                        || request.resource.data.photoConsent is bool)
                     // E.164 (Spec #233 Req 13), so linking matches it.
                     && (request.resource.data.get('phone', null) == null
                         || (request.resource.data.phone is string

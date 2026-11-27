@@ -5,8 +5,8 @@ void main() {
   final catalogue = RoleCatalogue.current;
 
   group('RoleCatalogue', () {
-    test('holds the 33 permissions and the 12 presets in order', () {
-      expect(catalogue.permissions, hasLength(33));
+    test('holds the 34 permissions and the 12 presets in order', () {
+      expect(catalogue.permissions, hasLength(34));
       expect(catalogue.presets.map((r) => r.id), [
         'owner',
         'coOwner',

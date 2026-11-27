@@ -1,6 +1,6 @@
 {
   "id": "convention",
-  "version": 2,
+  "version": 3,
   "name": {
     "en": "Convention"
   },
@@ -139,6 +139,13 @@
     "crewLead": {
       "name": "Committee member",
       "base": "crewLead"
+    },
+    "photographer": {
+      "name": "Photographer",
+      "permissions": [
+        "photoConsent.read",
+        "group.readOwn"
+      ]
     }
   }
 }

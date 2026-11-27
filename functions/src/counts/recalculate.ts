@@ -96,8 +96,18 @@ export async function recalculateEvent(db: Firestore, eventId: string, now: Date
     policy: event.data()?.settings?.attendancePolicy ?? null,
     sessions, people, groups, fields,
   });
+  // Photo consent totals (#247) from the server's list of the confirmed
+  // people who said no or have not answered: one read, and none of the
+  // private details. The people triggers build the list on their first
+  // change; until then there are no totals.
+  const list = await eventRef.collection("photoConsent").doc("current").get();
+  const listed = Object.values((list.data()?.people ?? {}) as Record<string, {answer?: string}>);
+  const no = listed.filter((p) => p.answer === "no").length;
   await eventRef.collection("stats").doc("current").set({
     ...stats,
+    ...(list.exists ? {
+      photoConsent: {yes: Math.max(0, stats.event.total - listed.length), no, unanswered: listed.length - no},
+    } : {}),
     updatedAt: Timestamp.fromDate(now),
   });
 }

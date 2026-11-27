@@ -128,6 +128,10 @@ async function seed(
       name: 'Rani', sortName: 'rani', groupId: 'g1', isChild: false, createdBy: 'owner', status: 'active',
       registrationId: 'r1', registrationStatus: 'submitted',
     });
+    // #247: who said no to photos or has not answered.
+    await setDoc(doc(db, `${E}/photoConsent/current`), {
+      people: {registered: {name: 'Rani', groupName: 'Shahs', ageBand: 'Adult', answer: 'unanswered'}},
+    });
     // #246: waivers, their versions and a person's acceptances.
     await setDoc(doc(db, `${E}/waivers/w1`), {title: {en: 'Waiver'}, version: 1, appliesTo: {kind: 'everyone'}});
     await setDoc(doc(db, `${E}/waivers/w1/versions/1`), {text: {en: 'Text'}});
@@ -317,6 +321,11 @@ describe.each(ROLES)('%s', (role) => {
       deleteDoc(doc(as(role), `${E}/participants/registered`)));
   });
 
+  test('photo consent: read only with photoConsent.read, written by nobody (Spec #233 Req 30, #247)', async () => {
+    await expectAccess(holds(role, 'photoConsent.read'), getDoc(doc(as(role), `${E}/photoConsent/current`)));
+    await assertFails(setDoc(doc(as(role), `${E}/photoConsent/current`), {people: {}}));
+  });
+
   test('waivers: read by everyone in the event, written and accepted only by the server (Spec #233 Req 26-28, #246)', async () => {
     await assertSucceeds(getDoc(doc(as(role), `${E}/waivers/w1`)));
     await assertSucceeds(getDoc(doc(as(role), `${E}/waivers/w1/versions/1`)));
@@ -391,5 +400,35 @@ describe('the Owner can widen a Vendor or Observer role', () => {
     await assertFails(setDoc(doc(as('vendor'), `${E}/tasks/new`), {
       eventId: 'matrix', title: 'New', createdBy: 'vendor', status: 'todo',
     }));
+  });
+});
+
+describe('a photographer with photoConsent.read alone (Spec #233 Req 30, #247)', () => {
+  test('reads the photo consent list, but neither the roster nor private details', async () => {
+    await seed();
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `${E}/members/photographer`), {
+        uid: 'photographer', roleIds: ['photographer'], crewIds: [],
+        permissions: ['photoConsent.read', 'group.readOwn'],
+      });
+      await setDoc(doc(ctx.firestore(), `${E}/participants/registered/private/details`), {photoConsent: false});
+    });
+    const db = as('photographer');
+    await assertSucceeds(getDoc(doc(db, `${E}/photoConsent/current`)));
+    await assertFails(getDoc(doc(db, `${E}/participants/registered`)));
+    await assertFails(getDoc(doc(db, `${E}/participants/registered/private/details`)));
+    await assertFails(getDocs(collection(db, `${E}/participants`)));
+  });
+
+  test('a photo consent answer must be yes or no', async () => {
+    await seed();
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `${E}/participants/registered/private/details`), {birthDate: '1980-01-01'});
+    });
+    const owner = as('owner');
+    await assertSucceeds(setDoc(doc(owner, `${E}/participants/registered/private/details`),
+      {birthDate: '1980-01-01', photoConsent: true}));
+    await assertFails(setDoc(doc(owner, `${E}/participants/registered/private/details`),
+      {birthDate: '1980-01-01', photoConsent: 'maybe'}));
   });
 });

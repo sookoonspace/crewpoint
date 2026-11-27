@@ -182,7 +182,7 @@ async function currentRegistration(
   let phone: string | null = null;
   const list = sorted.map((d, i) => {
     const p = d.data();
-    const {birthDate, email: e, phone: ph, updatedAt: _u, ...privateAnswers} = privates[i].data() ?? {};
+    const {birthDate, email: e, phone: ph, photoConsent, fields: privateAnswers} = privates[i].data() ?? {};
     if (p.uid === r.contactUid) {
       email = typeof e === "string" ? e : null;
       phone = typeof ph === "string" ? ph : null;
@@ -192,15 +192,16 @@ async function currentRegistration(
       name: String(p.name ?? ""),
       birthDate: typeof birthDate === "string" ? birthDate : null,
       age: null,
-      answers: {...(p.fields ?? {}), ...privateAnswers},
+      answers: {...(p.fields ?? {}), ...(privateAnswers ?? {})},
       arrivalAt: millis(p.arrivalAt),
       departureAt: millis(p.departureAt),
       signUps: p.signUps ?? [],
       optOuts: p.optOuts ?? [],
       waiverVersions: p.waiverVersions ?? {},
+      photoConsent: typeof photoConsent === "boolean" ? photoConsent : null,
     };
   });
-  const {updatedAt: _g, ...groupPrivateAnswers} = groupPrivate.data() ?? {};
+  const groupPrivateAnswers: Record<string, unknown> = groupPrivate.data()?.fields ?? {};
   return {
     groupName: String(group.data()?.name ?? ""),
     email,
