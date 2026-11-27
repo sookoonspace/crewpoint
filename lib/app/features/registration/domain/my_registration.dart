@@ -31,6 +31,7 @@ class MyRegistration {
     this.submittedAt,
     this.groupName = '',
     this.people = const [],
+    this.offerExpiresAt,
   });
 
   final String status;
@@ -38,6 +39,15 @@ class MyRegistration {
   final DateTime? submittedAt;
   final String groupName;
   final List<MyPerson> people;
+
+  /// When a waitlist offer for the group runs out (#248); null without one.
+  final DateTime? offerExpiresAt;
+
+  /// Whether a place is on offer at [now].
+  bool offeredAt(DateTime now) =>
+      status == 'waitlisted' &&
+      offerExpiresAt != null &&
+      now.isBefore(offerExpiresAt!);
 }
 
 /// "My registration" for an event (Spec #233 Req 9, 19, 35; #242): the
@@ -80,6 +90,7 @@ class MyRegistrationView {
               waitlistPosition: (r['waitlistPosition'] as num?)?.toInt(),
               submittedAt: time(r['submittedAt']),
               groupName: r['groupName'] as String? ?? '',
+              offerExpiresAt: time(r['offerExpiresAt']),
               people: [
                 for (final p in (r['people'] as List?) ?? const [])
                   if (p is Map && p['name'] is String)

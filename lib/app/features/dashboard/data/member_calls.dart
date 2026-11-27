@@ -5,6 +5,7 @@ import 'package:crewpoint_app/app/features/registration/domain/public_event.dart
 import 'package:crewpoint_app/app/features/registration/domain/my_registration.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_form.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_settings.dart';
+import 'package:crewpoint_app/app/features/registration/domain/waitlist.dart';
 import 'package:crewpoint_app/app/features/registration/domain/waivers.dart';
 
 /// What linking a signed-in account found (Req 46): events it was linked
@@ -259,6 +260,24 @@ abstract interface class MemberCalls {
   /// Emails each registration with someone missing a waiver (#246), with
   /// `registrations.manage`; returns how many were sent.
   Future<int> sendWaiverReminders(String eventId);
+
+  /// Accepts (`submitted`) or declines (`cancelled`) the caller's open
+  /// waitlist offer (#248); returns the new status. Throws
+  /// `failed-precondition` with `details.reason` `expired` or `noOffer`.
+  Future<String> respondToOffer({required String slug, required bool accept});
+
+  /// The waitlist and places, for `registrations.manage` (#248).
+  Future<WaitlistView> getWaitlist(String eventId);
+
+  /// Withdraws, extends by [hours], or makes an offer by hand (#248).
+  /// Throws `failed-precondition` with `details.reason` `noRoom` when the
+  /// group does not fit.
+  Future<void> manageOffer({
+    required String eventId,
+    required String registrationId,
+    required OfferAction action,
+    int? hours,
+  });
 }
 
 class FirebaseMemberCalls implements MemberCalls {
@@ -628,4 +647,33 @@ class FirebaseMemberCalls implements MemberCalls {
               as num?)
           ?.toInt() ??
       0;
+
+  @override
+  Future<String> respondToOffer({
+    required String slug,
+    required bool accept,
+  }) async =>
+      (await _call('respondToOffer', {
+            'slug': slug,
+            'accept': accept,
+          }))['status']
+          as String? ??
+      '';
+
+  @override
+  Future<WaitlistView> getWaitlist(String eventId) async =>
+      WaitlistView.fromMap(await _call('getWaitlist', {'eventId': eventId}));
+
+  @override
+  Future<void> manageOffer({
+    required String eventId,
+    required String registrationId,
+    required OfferAction action,
+    int? hours,
+  }) => _call('manageOffer', {
+    'eventId': eventId,
+    'registrationId': registrationId,
+    'action': action.name,
+    'hours': ?hours,
+  });
 }

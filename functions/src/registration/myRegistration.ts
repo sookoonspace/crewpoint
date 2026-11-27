@@ -80,6 +80,9 @@ export const getMyRegistration = onCall({timeoutSeconds: 30}, async (request) =>
         status: r.status,
         waitlistPosition: r.waitlistPosition ?? null,
         submittedAt: millis(r.submittedAt),
+        // An open waitlist offer (#248): until when the places are held.
+        offerExpiresAt: r.status === "waitlisted" && typeof r.offer?.expiresAt === "number" ?
+          r.offer.expiresAt : null,
         groupName: String(group.data()?.name ?? ""),
         // Each person's missing waivers (#246, W-06), to accept here.
         people: sorted.map((p) => ({

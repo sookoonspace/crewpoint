@@ -597,6 +597,14 @@ class _ModuleHub extends ConsumerWidget {
           context.strings.counts.title,
           context.strings.counts.hubSubtitle,
         ),
+      // The waitlist needs registrations.manage (Spec #233 Req 32, #248).
+      if (event.can(me, 'registrations.manage'))
+        entry(
+          'waitlist',
+          CpIcons.placesFull,
+          context.strings.waitlist.title,
+          context.strings.waitlist.hubSubtitle,
+        ),
       // Photo consent needs photoConsent.read (Spec #233 Req 30, #247).
       if (event.can(me, 'photoConsent.read'))
         entry(

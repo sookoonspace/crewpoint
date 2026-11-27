@@ -951,4 +951,106 @@ void main() {
       await h.finish(tester);
     });
   });
+
+  group('#248 waitlist offers', () {
+    MyRegistrationView waitlisted({DateTime? offerUntil}) => MyRegistrationView(
+      title: 'Convention 2027',
+      timeZone: 'America/Chicago',
+      labels: const {
+        'group': {'one': 'Family', 'other': 'Families'},
+      },
+      registration: MyRegistration(
+        status: 'waitlisted',
+        waitlistPosition: 1,
+        submittedAt: DateTime.utc(2026, 12, 1, 18),
+        groupName: 'Patel family',
+        offerExpiresAt: offerUntil,
+        people: const [
+          MyPerson(name: 'Asha Patel', categoryId: 'adult'),
+          MyPerson(name: 'Dev Patel', categoryId: 'child'),
+        ],
+      ),
+    );
+    final until = DateTime.now().add(const Duration(days: 2));
+
+    testWidgets('User Story 10: a full event waitlists the family, a '
+        'cancellation offers the place, and the family accepts', (
+      tester,
+    ) async {
+      final (h, r) = await open(tester);
+      h.calls.nextSubmitResult = const SubmitResult(
+        registrationId: 'r9',
+        status: 'waitlisted',
+        waitlistPosition: 1,
+      );
+      await fillForm(r);
+      await r.submit();
+      expect(find.text("You're on the waitlist, number 1"), findsOneWidget);
+      // Someone cancels: the server offers the family the place.
+      h.calls.myRegistrations[slug] = waitlisted(offerUntil: until);
+      await r.tap(const Key('$k.result.mine'));
+      expect(find.byKey(const Key('registration.mine.offer')), findsOneWidget);
+      expect(
+        find.textContaining('A place is available for your family until '),
+        findsOneWidget,
+      );
+      await r.tap(const Key('registration.mine.offer.accept'));
+      expect(h.calls.offerAnswers, [true]);
+      expect(
+        find.text("You're in. We've emailed your confirmation."),
+        findsOneWidget,
+      );
+      await h.finish(tester);
+    });
+
+    testWidgets('No thanks asks first, then gives the place up', (
+      tester,
+    ) async {
+      final (h, r) = await open(tester);
+      h.calls.myRegistrations[slug] = waitlisted(offerUntil: until);
+      h.router.go('/e/$slug/registration');
+      await h.settle(tester);
+      await r.tap(const Key('registration.mine.offer.decline'));
+      expect(find.text('Give up this place?'), findsOneWidget);
+      await r.tap(const Key('registration.mine.offer.keep'));
+      expect(h.calls.offerAnswers, isEmpty);
+      await r.tap(const Key('registration.mine.offer.decline'));
+      await r.tap(const Key('registration.mine.offer.declineConfirm'));
+      expect(h.calls.offerAnswers, [false]);
+      expect(find.text("You've come off the waitlist."), findsOneWidget);
+      await h.finish(tester);
+    });
+
+    testWidgets('an offer that ran out says so; without one there is no card', (
+      tester,
+    ) async {
+      final (h, r) = await open(tester);
+      h.calls.myRegistrations[slug] = waitlisted(offerUntil: until);
+      h.calls.offerRefusal = 'expired';
+      h.router.go('/e/$slug/registration');
+      await h.settle(tester);
+      // Meanwhile the server expired it; the refresh drops the card.
+      h.calls.myRegistrations[slug] = waitlisted();
+      await r.tap(const Key('registration.mine.offer.accept'));
+      expect(
+        find.text("This offer has expired. You're still on the waitlist."),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('registration.mine.offer')), findsNothing);
+      await h.finish(tester);
+    });
+
+    testWidgets('Req 71: the offer fits a 320 px phone at 200% text in dark '
+        'mode', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final (h, _) = await open(tester, size: const Size(320, 2400), dark: true);
+      h.calls.myRegistrations[slug] = waitlisted(offerUntil: until);
+      h.router.go('/e/$slug/registration');
+      await h.settle(tester);
+      expect(find.byKey(const Key('registration.mine.offer')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await h.finish(tester);
+    });
+  });
 }

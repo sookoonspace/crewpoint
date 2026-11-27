@@ -13,7 +13,7 @@ const ftest = firebaseFunctionsTest();
 getAdminApp();
 const {submitRegistration} = require('../../src/registration/submitRegistration');
 const {cancelRegistration} = require('../../src/registration/cancelRegistration');
-const {respondToOffer, manageOffer, runOfferExpiry, recountTally, offerOnwardNow} =
+const {respondToOffer, manageOffer, getWaitlist, runOfferExpiry, recountTally, offerOnwardNow} =
   require('../../src/registration/offers');
 /* eslint-enable @typescript-eslint/no-var-requires */
 
@@ -214,5 +214,26 @@ describe('waitlist offers', () => {
     const [fix] = (await db().collection(`events/${E}/registrationTally/current/corrections`).get()).docs.map((d) => d.data());
     expect(fix).toEqual(expect.objectContaining({placesUsed: {from: 9, to: 2}, offersDropped: ['gone']}));
     expect(await recountTally(db(), E)).toBe(false);
+  });
+
+  test('getWaitlist lists the queue with open offers and the places, for registrations.manage', async () => {
+    await fullEvent();
+    await db().doc(`events/${E}`).update({capacity: 1});
+    const view = await ftest.wrap(getWaitlist)({auth: {uid: 'owner'}, data: {eventId: E}});
+    expect(view).toEqual(expect.objectContaining({capacity: 1, placesUsed: 2, held: 0, timeZone: 'America/Chicago'}));
+    expect(view.waiting.map((w: {groupName: string; size: number; position: number}) => [w.size, w.position]))
+      .toEqual([[3, 1], [1, 2]]);
+    await expect(ftest.wrap(getWaitlist)({auth: {uid: 'pia'}, data: {eventId: E}}))
+      .rejects.toEqual(rejected('permission-denied'));
+    // my registration shows an open offer's expiry.
+    await db().doc(`events/${E}`).update({capacity: 2});
+    await ftest.wrap(cancelRegistration)({auth: {uid: 'asha'}, data: {slug: SLUG}});
+    /* eslint-disable-next-line @typescript-eslint/no-var-requires */
+    const {getMyRegistration} = require('../../src/registration/myRegistration');
+    const mine = await ftest.wrap(getMyRegistration)({auth: {uid: 'ravi'}, data: {slug: SLUG}});
+    expect(mine.registration.offerExpiresAt).toBe((await reg('ravi')).data().offer.expiresAt);
+    const after = await ftest.wrap(getWaitlist)({auth: {uid: 'owner'}, data: {eventId: E}});
+    expect(after.waiting.find((w: {size: number}) => w.size === 1).offerExpiresAt).toEqual(expect.any(Number));
+    expect(after.held).toBe(1);
   });
 });

@@ -8,6 +8,7 @@ import 'package:crewpoint_app/app/features/registration/domain/public_event.dart
 import 'package:crewpoint_app/app/features/registration/domain/my_registration.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_form.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_settings.dart';
+import 'package:crewpoint_app/app/features/registration/domain/waitlist.dart';
 import 'package:crewpoint_app/app/features/registration/domain/waivers.dart';
 
 /// Stands in for the member and role callables. With a [firestore], it writes
@@ -848,5 +849,64 @@ class FakeMemberCalls implements MemberCalls {
     calls.add('sendWaiverReminders:$eventId');
     _maybeFail();
     return remindersSent;
+  }
+
+  /// What [respondToOffer] answers: the reason it refuses with, or null to
+  /// accept or decline as asked. Each answer is recorded in [offerAnswers].
+  String? offerRefusal;
+  final offerAnswers = <bool>[];
+
+  @override
+  Future<String> respondToOffer({
+    required String slug,
+    required bool accept,
+  }) async {
+    calls.add('respondToOffer:$slug:$accept');
+    _maybeFail();
+    if (offerRefusal case final reason?) {
+      throw FirebaseFunctionsException(
+        code: 'failed-precondition',
+        message: 'This offer has expired.',
+        details: {'reason': reason},
+      );
+    }
+    offerAnswers.add(accept);
+    return accept ? 'submitted' : 'cancelled';
+  }
+
+  /// What [getWaitlist] answers, by event ID.
+  final waitlists = <String, WaitlistView>{};
+
+  @override
+  Future<WaitlistView> getWaitlist(String eventId) async {
+    calls.add('getWaitlist:$eventId');
+    _maybeFail();
+    return waitlists[eventId] ?? const WaitlistView();
+  }
+
+  /// What [manageOffer] was asked, as `action:registrationId[:hours]`; a
+  /// registration in [noRoomFor] is refused with `noRoom`.
+  final offerActions = <String>[];
+  final noRoomFor = <String>{};
+
+  @override
+  Future<void> manageOffer({
+    required String eventId,
+    required String registrationId,
+    required OfferAction action,
+    int? hours,
+  }) async {
+    calls.add('manageOffer:${action.name}:$registrationId');
+    _maybeFail();
+    if (action == OfferAction.offer && noRoomFor.contains(registrationId)) {
+      throw FirebaseFunctionsException(
+        code: 'failed-precondition',
+        message: "There's no room for this group.",
+        details: const {'reason': 'noRoom'},
+      );
+    }
+    offerActions.add(
+      '${action.name}:$registrationId${hours == null ? '' : ':$hours'}',
+    );
   }
 }

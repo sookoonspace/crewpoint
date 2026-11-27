@@ -47,6 +47,7 @@ abstract class AppStrings {
   RegisterFormStrings get registerForm;
   MyRegistrationStrings get myRegistration;
   PhotoConsentStrings get photoConsent;
+  WaitlistStrings get waitlist;
   MemberPickerStrings get memberPicker;
   ScheduleStrings get schedule;
   AgendaStrings get agenda;
@@ -817,6 +818,9 @@ class _LocalizedStrings extends _EnglishStrings {
 
   @override
   PhotoConsentStrings get photoConsent => PhotoConsentStrings(_l);
+
+  @override
+  WaitlistStrings get waitlist => WaitlistStrings(_l);
 }
 
 /// The language choice (Req 56).
@@ -936,6 +940,10 @@ class _EnglishStrings extends AppStrings {
   @override
   PhotoConsentStrings get photoConsent =>
       PhotoConsentStrings(lookupAppLocalizations(const Locale('en')));
+
+  @override
+  WaitlistStrings get waitlist =>
+      WaitlistStrings(lookupAppLocalizations(const Locale('en')));
 
   @override
   MemberPickerStrings get memberPicker => const _EnglishMemberPickerStrings();
@@ -5906,6 +5914,17 @@ class MyRegistrationStrings {
   String get waiversAccepted => _l.myRegistrationWaiversAccepted;
   String get acceptFailed => _l.myRegistrationAcceptFailed;
   String get nothingTicked => _l.myRegistrationNothingTicked;
+  String get offerTitle => _l.myRegistrationOfferTitle;
+  String offerBody(String group, String until) => _l.myRegistrationOfferBody(group, until);
+  String get accept => _l.myRegistrationAccept;
+  String get noThanks => _l.myRegistrationNoThanks;
+  String get declineTitle => _l.myRegistrationDeclineTitle;
+  String get declineBody => _l.myRegistrationDeclineBody;
+  String get keepPlace => _l.myRegistrationKeepPlace;
+  String get offerAccepted => _l.myRegistrationOfferAccepted;
+  String get offerDeclined => _l.myRegistrationOfferDeclined;
+  String get offerExpired => _l.myRegistrationOfferExpired;
+  String get offerFailed => _l.myRegistrationOfferFailed;
 }
 
 /// Photo consent (Spec #233 Req 30; #247), translated (ARB).
@@ -5932,4 +5951,39 @@ class PhotoConsentStrings {
   String get yes => _l.photoConsentYes;
   String get no => _l.photoConsentNo;
   String get unanswered => _l.photoConsentUnanswered;
+}
+
+/// The organizer's waitlist (Spec #233 Req 32, 34; #248), translated (ARB).
+class WaitlistStrings {
+  const WaitlistStrings(this._l);
+
+  final AppLocalizations _l;
+
+  String get title => _l.waitlistTitle;
+  String get hubSubtitle => _l.waitlistHubSubtitle;
+  String placesUsed(int used, int capacity) => _l.waitlistPlacesUsed(used, capacity);
+  String held(int count) => _l.waitlistHeld(count);
+  String get noCapacity => _l.waitlistNoCapacity;
+  String over(int count) => _l.waitlistOver(count);
+  String get afterDeadline => _l.waitlistAfterDeadline;
+  String get empty => _l.waitlistEmpty;
+  String number(int position) => _l.waitlistNumber(position);
+  String offeredUntil(String until) => _l.waitlistOfferedUntil(until);
+  String get waiting => _l.waitlistWaiting;
+  String get offer => _l.waitlistOffer;
+  String get extend => _l.waitlistExtend;
+  String get withdraw => _l.waitlistWithdraw;
+  String get extendTitle => _l.waitlistExtendTitle;
+  String get withdrawTitle => _l.waitlistWithdrawTitle;
+  String get withdrawBody => _l.waitlistWithdrawBody;
+  String get cancel => _l.waitlistCancel;
+  String get offered => _l.waitlistOffered;
+  String get extended => _l.waitlistExtended;
+  String get withdrawn => _l.waitlistWithdrawn;
+  String get noRoom => _l.waitlistNoRoom;
+  String get failed => _l.waitlistFailed;
+  String get loadFailed => _l.waitlistLoadFailed;
+  String get retry => _l.waitlistRetry;
+  String people(int count) => _l.waitlistPeople(count);
+  String hours(int count) => _l.waitlistHours(count);
 }

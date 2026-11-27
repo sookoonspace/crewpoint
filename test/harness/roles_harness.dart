@@ -29,6 +29,7 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/expense_access
 import 'package:crewpoint_app/app/features/participants/presentation/fields_screen.dart';
 import 'package:crewpoint_app/app/features/registration/presentation/registration_settings_screen.dart';
 import 'package:crewpoint_app/app/features/registration/presentation/waiver_editor_screen.dart';
+import 'package:crewpoint_app/app/features/registration/presentation/waitlist_screen.dart';
 import 'package:crewpoint_app/l10n/gen/app_localizations.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/import_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/link_requests_screen.dart';
@@ -312,6 +313,13 @@ class RolesHarness {
                 builder: (_, _) => EventGuard(
                   eventId: eventId,
                   child: (event) => CountsScreen(event: event),
+                ),
+              ),
+              GoRoute(
+                path: 'waitlist',
+                builder: (_, _) => EventGuard(
+                  eventId: eventId,
+                  child: (event) => WaitlistScreen(event: event),
                 ),
               ),
               GoRoute(

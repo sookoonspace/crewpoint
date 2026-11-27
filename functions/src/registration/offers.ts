@@ -402,3 +402,51 @@ export const onTallyRecountScheduled = onSchedule(
     logger.info(`Tallies recounted: ${tallies.size}, corrected: ${corrected}`);
   }
 );
+
+/**
+ * getWaitlist — the waitlist for `registrations.manage` (#248): waiting
+ * groups in queue order with their name, size, number and any open offer,
+ * plus the event's capacity, places used and held, so the screen can say
+ * how far over a lowered capacity the event is. Never names people.
+ */
+export const getWaitlist = onCall({timeoutSeconds: 60}, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "Must be signed in.");
+  const eventId = typeof request.data?.eventId === "string" ? request.data.eventId : "";
+  if (!eventId) throw new HttpsError("invalid-argument", "eventId is required.");
+  return withStructuredLogs({op: "getWaitlist", uid, args: {eventId}}, async () => {
+    const eventRef = db().collection("events").doc(eventId);
+    const eventDoc = await eventRef.get();
+    if (!eventDoc.exists) throw new HttpsError("not-found", "We couldn't find this event.");
+    const event = eventDoc.data()!;
+    await requirePermission(null, eventRef, event, uid, "registrations.manage",
+      "You don't have permission to manage registrations.");
+    const [tally, waiting] = await Promise.all([
+      tallyRef(eventRef).get(),
+      eventRef.collection("registrations").where("status", "==", "waitlisted").get(),
+    ]);
+    const offers = offersOf(tally.data());
+    const groups = waiting.empty ? [] :
+      await db().getAll(...waiting.docs.map((d) => eventRef.collection("groups").doc(String(d.data().groupId))));
+    const names = new Map(groups.map((g) => [g.id, String(g.data()?.name ?? "")]));
+    const entries = waiting.docs.map((d) => {
+      const r = d.data();
+      const offer = offers.find((o) => o.registrationId === d.id);
+      return {
+        registrationId: d.id,
+        groupName: names.get(String(r.groupId)) ?? "",
+        size: typeof r.size === "number" ? r.size : 1,
+        position: typeof r.waitlistPosition === "number" ? r.waitlistPosition : null,
+        offerExpiresAt: offer?.expiresAt ?? null,
+      };
+    }).sort((a, b) => (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER));
+    return {
+      capacity: typeof event.capacity === "number" ? event.capacity : null,
+      placesUsed: typeof tally.data()?.placesUsed === "number" ? tally.data()!.placesUsed : 0,
+      held: offers.reduce((n, o) => n + o.size, 0),
+      deadline: registrationOf(event).deadline,
+      timeZone: typeof event.timeZone === "string" ? event.timeZone : "UTC",
+      waiting: entries,
+    };
+  });
+});
