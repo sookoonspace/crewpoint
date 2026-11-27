@@ -1712,5 +1712,85 @@
   "regSettingsWaiverSaveFailed": "We couldn't save the waiver. Please try again.",
   "@regSettingsWaiverSaveFailed": {
     "description": "Saving a waiver failed."
+  },
+  "registerFormPhotoConsent": "Photos and videos",
+  "@registerFormPhotoConsent": {
+    "description": "The photo consent question."
+  },
+  "registerFormPhotoConsentHelp": "May we include them in event photos and videos? For a child, a parent or guardian answers.",
+  "@registerFormPhotoConsentHelp": {
+    "description": "Help under the photo consent question."
+  },
+  "photoConsentTitle": "Photo consent",
+  "@photoConsentTitle": {
+    "description": "The Photo consent screen and hub entry."
+  },
+  "photoConsentHubSubtitle": "Who said no to photos, or hasn't answered",
+  "@photoConsentHubSubtitle": {
+    "description": "Hub entry subtitle."
+  },
+  "photoConsentNote": "Treat anyone who hasn't answered yet as a no.",
+  "@photoConsentNote": {
+    "description": "The note at the top of the list."
+  },
+  "photoConsentSaidNo": "Said no",
+  "@photoConsentSaidNo": {
+    "description": "Heading and tag."
+  },
+  "photoConsentNotAnswered": "Not answered yet",
+  "@photoConsentNotAnswered": {
+    "description": "Heading and tag."
+  },
+  "photoConsentSearchHint": "Search by name",
+  "@photoConsentSearchHint": {
+    "description": "Search field hint."
+  },
+  "photoConsentNoneSaidNo": "Nobody has said no.",
+  "@photoConsentNoneSaidNo": {
+    "description": "Empty \"said no\" list."
+  },
+  "photoConsentNoneUnanswered": "Everyone has answered.",
+  "@photoConsentNoneUnanswered": {
+    "description": "Empty \"not answered\" list."
+  },
+  "photoConsentNoMatches": "No one by that name.",
+  "@photoConsentNoMatches": {
+    "description": "No search matches."
+  },
+  "photoConsentNotReady": "The list appears once people are added or start registering.",
+  "@photoConsentNotReady": {
+    "description": "Before the server has built the list."
+  },
+  "photoConsentFailed": "We couldn't load the list.",
+  "@photoConsentFailed": {
+    "description": "Loading failed."
+  },
+  "photoConsentRetry": "Try again",
+  "@photoConsentRetry": {
+    "description": "Retry."
+  },
+  "photoConsentLoading": "Loading the list",
+  "@photoConsentLoading": {
+    "description": "Loading label."
+  },
+  "photoConsentUnnamed": "Unnamed person",
+  "@photoConsentUnnamed": {
+    "description": "A person with no name."
+  },
+  "photoConsentCountsHeading": "Photos and videos",
+  "@photoConsentCountsHeading": {
+    "description": "Counts section heading."
+  },
+  "photoConsentYes": "Yes",
+  "@photoConsentYes": {
+    "description": "Counts: said yes."
+  },
+  "photoConsentNo": "No",
+  "@photoConsentNo": {
+    "description": "Counts: said no."
+  },
+  "photoConsentUnanswered": "Not answered",
+  "@photoConsentUnanswered": {
+    "description": "Counts: not answered."
   }
 }

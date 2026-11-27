@@ -863,6 +863,34 @@ void main() {
       });
     }
 
+    testWidgets('Z-02 (#247): photos and videos are asked per person, a '
+        'guardian answering for a child, and left unanswered until chosen', (
+      tester,
+    ) async {
+      final (h, r) = await open(tester, spec: waiverForm);
+      await r.name(0, 'Asha Patel');
+      await r.birthDate(0, '03/01/1980');
+      await r.addPerson();
+      await r.name(1, 'Dev Patel');
+      await r.birthDate(1, '05/09/2016');
+      await r.addPerson();
+      await r.name(2, 'Jaya Patel');
+      await r.birthDate(2, '02/02/1950');
+      expect(find.text('Photos and videos'), findsNWidgets(3));
+      await r.tap(const Key('$k.person.0.photo.yes'));
+      await r.tap(const Key('$k.person.1.photo.no'));
+      for (var i = 0; i < 4; i++) {
+        await r.next();
+      }
+      expect(r.progress, 'Step 5 of 5');
+      expect(find.text('Dev Patel: Photos and videos'), findsOneWidget);
+      await r.submit();
+      final people = (h.calls.submissions.single['people']! as List)
+          .cast<Map<String, Object?>>();
+      expect(people.map((p) => p['photoConsent']), [true, false, null]);
+      await h.finish(tester);
+    });
+
     testWidgets('someone not signed up for the session is asked nothing', (
       tester,
     ) async {

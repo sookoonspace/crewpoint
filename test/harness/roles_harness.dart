@@ -2,6 +2,7 @@ import 'package:drift/native.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:crewpoint_app/app/core/design/theme/cp_theme.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/group_entry_screen.dart';
+import 'package:crewpoint_app/app/features/participants/presentation/photo_consent_screen.dart';
 import 'package:crewpoint_app/app/features/counts/presentation/counts_screen.dart';
 import 'package:crewpoint_app/app/features/schedule/presentation/agenda_screen.dart';
 import 'package:crewpoint_app/app/features/schedule/presentation/schedule_screen.dart';
@@ -311,6 +312,13 @@ class RolesHarness {
                 builder: (_, _) => EventGuard(
                   eventId: eventId,
                   child: (event) => CountsScreen(event: event),
+                ),
+              ),
+              GoRoute(
+                path: 'photo-consent',
+                builder: (_, _) => EventGuard(
+                  eventId: eventId,
+                  child: (event) => PhotoConsentScreen(event: event),
                 ),
               ),
               GoRoute(

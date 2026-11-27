@@ -461,6 +461,32 @@ class _CountsScreenState extends ConsumerState<CountsScreen> {
             ],
           ),
         ),
+        if (stats.photoConsent case final photo?) ...[
+          CpSectionHeader(title: context.strings.photoConsent.countsHeading),
+          CpStatGrid(
+            key: const Key('counts.photoConsent'),
+            children: [
+              CpStatCard(
+                key: const Key('counts.photoConsent.yes'),
+                icon: CpIcons.statusDone,
+                label: context.strings.photoConsent.yes,
+                value: '${photo.yes}',
+              ),
+              CpStatCard(
+                key: const Key('counts.photoConsent.no'),
+                icon: CpIcons.blocked,
+                label: context.strings.photoConsent.no,
+                value: '${photo.no}',
+              ),
+              CpStatCard(
+                key: const Key('counts.photoConsent.unanswered'),
+                icon: CpIcons.statusInfo,
+                label: context.strings.photoConsent.unanswered,
+                value: '${photo.unanswered}',
+              ),
+            ],
+          ),
+        ],
         CpSectionHeader(title: strings.sessionsHeading),
         if (stats.sessions.isEmpty)
           Text(

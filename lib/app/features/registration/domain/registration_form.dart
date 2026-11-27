@@ -118,6 +118,7 @@ class PersonEntry {
     this.optOuts = const {},
     this.acceptWaivers = const {},
     this.waiverVersions = const {},
+    this.photoConsent,
   });
 
   /// The participant this entry edits (#244); null for someone new.
@@ -144,6 +145,10 @@ class PersonEntry {
   /// The versions this person accepted before, from the server (#246).
   final Map<String, int> waiverVersions;
 
+  /// Photos and videos of this person, yes or no; null while unanswered
+  /// (Spec #233 Req 30, #247). A guardian answers for a child.
+  final bool? photoConsent;
+
   PersonEntry copyWith({
     String? name,
     String? birthDate,
@@ -154,13 +159,15 @@ class PersonEntry {
     Set<String>? signUps,
     Set<String>? optOuts,
     Set<String>? acceptWaivers,
+    bool? photoConsent,
+    bool clearAge = false,
     bool clearArrival = false,
     bool clearDeparture = false,
   }) => PersonEntry(
     id: id,
     name: name ?? this.name,
     birthDate: birthDate ?? this.birthDate,
-    age: age ?? this.age,
+    age: clearAge ? null : age ?? this.age,
     answers: answers ?? this.answers,
     arrivalAt: clearArrival ? null : arrivalAt ?? this.arrivalAt,
     departureAt: clearDeparture ? null : departureAt ?? this.departureAt,
@@ -168,6 +175,7 @@ class PersonEntry {
     optOuts: optOuts ?? this.optOuts,
     acceptWaivers: acceptWaivers ?? this.acceptWaivers,
     waiverVersions: waiverVersions,
+    photoConsent: photoConsent ?? this.photoConsent,
   );
 }
 
@@ -222,6 +230,7 @@ class RegistrationDraft {
           'optOuts': p.optOuts.toList()..sort(),
           'acceptWaivers': p.acceptWaivers.toList()..sort(),
           'waiverVersions': p.waiverVersions,
+          'photoConsent': p.photoConsent,
         },
     ],
   };
@@ -276,6 +285,9 @@ class RegistrationDraft {
                   for (final e in (p['waiverVersions'] as Map).entries)
                     if (e.value is num) '${e.key}': (e.value as num).toInt(),
               },
+              photoConsent: p['photoConsent'] is bool
+                  ? p['photoConsent'] as bool
+                  : null,
             ),
       ],
     );
@@ -667,6 +679,7 @@ class RegistrationFormSpec {
               'optOuts': p.optOuts.toList()..sort(),
             if (_accepting(p) case final ids when ids.isNotEmpty)
               'acceptWaivers': ids,
+            'photoConsent': ?p.photoConsent,
           },
       ],
     };

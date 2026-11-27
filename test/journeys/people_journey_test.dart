@@ -231,6 +231,25 @@ void main() {
     await robot.finish();
   });
 
+  testWidgets('#247 an organizer editing someone keeps their photo consent '
+      'answer', (tester) async {
+    final robot = await open(tester);
+    await harness.firestore.doc('$e/participants/ana/private/details').set({
+      'birthDate': '2020-05-01',
+      'photoConsent': false,
+    });
+    harness.router.go('$people/ana');
+    await robot.settle();
+    await tester.enterText(find.byKey(const Key('people.edit.name')), 'Ana S.');
+    await robot.tap(const Key('people.edit.save'));
+    final private = await harness.firestore
+        .doc('$e/participants/ana/private/details')
+        .get();
+    expect(private.data()?['photoConsent'], isFalse);
+    expect(private.data()?['birthDate'], '2020-05-01');
+    await robot.finish();
+  });
+
   testWidgets('Spec #233 Req 13 an adult\'s phone is checked, then saved in '
       'E.164', (tester) async {
     final robot = await open(tester, location: '$people/raj');

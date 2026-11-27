@@ -29,6 +29,7 @@ class PersonDraft {
     this.phone = '',
     this.answers = const {},
     this.privateAnswers = const {},
+    this.photoConsent,
     this.original,
   });
 
@@ -42,6 +43,7 @@ class PersonDraft {
     phone: loaded.phone,
     answers: loaded.answers,
     privateAnswers: loaded.privateAnswers,
+    photoConsent: loaded.photoConsent,
     original: loaded,
   );
 
@@ -55,6 +57,9 @@ class PersonDraft {
 
   /// An adult's email, kept in private details for account linking.
   final String email;
+
+  /// Photo consent from registering (#247), kept as loaded when saved.
+  final bool? photoConsent;
 
   /// An adult's phone number as typed; saved in E.164 for account linking
   /// (Spec #233 Req 13).
@@ -102,6 +107,7 @@ class PersonDraft {
     phone: phone ?? this.phone,
     answers: answers ?? this.answers,
     privateAnswers: privateAnswers ?? this.privateAnswers,
+    photoConsent: photoConsent,
     original: original,
   );
 
@@ -270,6 +276,7 @@ class GroupDraft {
         birthDate != null ||
         email != null ||
         phone != null ||
+        p.photoConsent != null ||
         privateFields.isNotEmpty;
     return PersonRecord(
       existing: p.isExisting,
@@ -280,6 +287,7 @@ class GroupDraft {
               email: email,
               phone: phone,
               fields: privateFields,
+              photoConsent: p.photoConsent,
             )
           : null,
     );

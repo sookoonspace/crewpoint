@@ -42,6 +42,7 @@ import 'package:crewpoint_app/app/features/registration/presentation/registratio
 import 'package:crewpoint_app/app/features/registration/presentation/waiver_editor_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/expense_access_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/group_entry_screen.dart';
+import 'package:crewpoint_app/app/features/participants/presentation/photo_consent_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/fields_screen.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/join_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/account_link_listener.dart';
@@ -488,6 +489,13 @@ GoRouter createRouter({
                         builder: (_, state) => EventGuard(
                           eventId: _resolveEventId(state),
                           child: (event) => CountsScreen(event: event),
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'photo-consent',
+                        builder: (_, state) => EventGuard(
+                          eventId: _resolveEventId(state),
+                          child: (event) => PhotoConsentScreen(event: event),
                         ),
                       ),
                       GoRoute(
