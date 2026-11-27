@@ -368,3 +368,62 @@ test('B-12 past capacity a family is waitlisted; a cancellation offers the place
   expect(await ftest.wrap(respondToOffer)({auth: {uid: 'f5'}, data: {slug: SLUG, accept: true}})).toEqual({status: 'submitted'});
   expect((await stats()).event.total).toBe(2);
 });
+
+test('B-12 an admin reinstating a family past capacity is warned, and can confirm', async () => {
+  /* eslint-disable @typescript-eslint/no-var-requires */
+  const {manageRegistration} = require('../src/registration/committee');
+  /* eslint-enable @typescript-eslint/no-var-requires */
+  await seed();
+  await db().doc(`events/${E}`).update({capacity: 2});
+  const family = (uid: string) => submit(uid, {groupName: `${uid} family`, people: [1, 2].map((i) => ({
+    name: `${uid} ${i}`, birthDate: '1980-01-01', answers: {diet: 'V'},
+  }))});
+  await family('f1');
+  const waiting = await family('f2');
+  expect(waiting.status).toBe('waitlisted');
+  const reinstate = (confirmOverCapacity: boolean) => ftest.wrap(manageRegistration)({auth: {uid: 'owner'}, data: {
+    eventId: E, registrationId: waiting.registrationId, action: 'reinstate', confirmOverCapacity,
+  }});
+  await expect(reinstate(false)).rejects.toEqual(expect.objectContaining({
+    code: 'failed-precondition', details: expect.objectContaining({reason: 'overCapacity', over: 2}),
+  }));
+  expect(await reinstate(true)).toEqual({status: 'submitted'});
+  expect((await stats()).event.total).toBe(4);
+});
+
+test('B-16 cancelled F8 is left out of every count, list and reminder', async () => {
+  /* eslint-disable @typescript-eslint/no-var-requires */
+  const {cancelRegistration} = require('../src/registration/cancelRegistration');
+  const {sendClosingReminder, getRegistrationSummary} = require('../src/registration/committee');
+  const {exportRoster} = require('../src/counts/exportAndFreeze');
+  /* eslint-enable @typescript-eslint/no-var-requires */
+  await seed({blocks: WAIVER_BLOCKS});
+  const {waiverId} = await saveWaiverAs({title: {en: 'Liability waiver'}, appliesTo: {kind: 'everyone'}, required: false});
+  const f8 = await submit('f8', {groupName: 'F8 family', people: [
+    {name: 'Farah Khan', birthDate: '1982-02-02', answers: {diet: 'V'}, signUps: ['WP']},
+  ]});
+  await submit('f9', {groupName: 'F9 family', people: [
+    {name: 'Gita Rao', birthDate: '1984-04-04', answers: {diet: 'J'}, signUps: ['WP']},
+  ]});
+  await ftest.wrap(cancelRegistration)({auth: {uid: 'owner'}, data: {slug: SLUG, registrationId: f8.registrationId}});
+  // Counts: only F9, in the event and the waterpark.
+  const s = await stats();
+  expect(s.event.total).toBe(1);
+  expect(s.sessions.WP.total).toBe(1);
+  // The summary shows F8 as cancelled, not registered.
+  const summary = await ftest.wrap(getRegistrationSummary)({auth: {uid: 'owner'}, data: {eventId: E}});
+  expect(summary.byStatus.cancelled).toEqual({groups: 1, people: 1});
+  expect(summary.byStatus.submitted).toEqual({groups: 1, people: 1});
+  // Reminders: neither the waiver email nor the closing reminder goes to F8.
+  expect(waiverId).toBeTruthy();
+  await ftest.wrap(sendWaiverReminders)({auth: {uid: 'owner'}, data: {eventId: E}});
+  await ftest.wrap(sendClosingReminder)({auth: {uid: 'owner'}, data: {eventId: E}});
+  const sentTo = (await db().collection('mailOutbox').get()).docs
+    .filter((d) => ['waiverMissing', 'registrationClosing'].includes(d.data().template)).map((d) => d.data().to);
+  expect(sentTo).not.toContain('f8@example.com');
+  expect(sentTo).toContain('f9@example.com');
+  // Lists: the roster export leaves F8 out.
+  const {csv} = await ftest.wrap(exportRoster)({auth: {uid: 'owner'}, data: {eventId: E}});
+  expect(csv).not.toContain('Farah Khan');
+  expect(csv).toContain('Gita Rao');
+});

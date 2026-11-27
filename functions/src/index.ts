@@ -65,4 +65,7 @@ export {
 export {
   respondToOffer, manageOffer, getWaitlist, onOffersScheduled, onTallyRecountScheduled, onCapacityRaised,
 } from "./registration/offers";
+export {
+  getRegistrationSummary, manageRegistration, resendConfirmation, sendClosingReminder, getGroupRegistration,
+} from "./registration/committee";
 export {sendSignInLink} from "./account/signInLink";

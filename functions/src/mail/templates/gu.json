@@ -33,5 +33,10 @@
     "subject": "{{eventTitle}} માટેની તમારી ઓફર પૂરી થઈ ગઈ છે",
     "text": "નમસ્તે,\n\n{{eventTitle}} માં તમારા {{word.group.one.lower}} માટે રાખેલી જગ્યા {{until}} સુધીમાં સ્વીકારાઈ નહીં, તેથી તે રાહ યાદીમાં આગળના લોકોને આપવામાં આવી છે. તમે હજી રાહ યાદીમાં છો, હવે કતારના અંતે.\n\nતમારી {{word.registration.one.lower}} અહીં જુઓ:\n\n{{link}}\n\nCrewPoint",
     "push": "{{eventTitle}} માટેની તમારી ઓફર પૂરી થઈ ગઈ છે."
+  },
+  "registrationClosing": {
+    "subject": "{{eventTitle}} માટેની નોંધણી જલ્દી બંધ થશે",
+    "text": "નમસ્તે,\n\nતમે {{eventTitle}} માટે {{word.registration.one.lower}} શરૂ કરી છે પણ હજી મોકલી નથી. નોંધણી {{closes}} એ બંધ થશે.\n\nતેને અહીં પૂરી કરો:\n\n{{link}}\n\nCrewPoint",
+    "push": "{{eventTitle}} માટેની નોંધણી {{closes}} એ બંધ થશે."
   }
 }

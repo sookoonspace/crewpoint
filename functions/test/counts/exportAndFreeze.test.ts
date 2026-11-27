@@ -54,9 +54,9 @@ describe('exportRoster', () => {
     const {csv, rows} = await call(exportRoster, 'finance', {});
     expect(rows).toBe(2);
     const table = parseCsv(csv);
-    expect(table[0]).toEqual(['Name', 'Group', 'Category', 'Arrives', 'Leaves', 'Diet']);
+    expect(table[0]).toEqual(['Name', 'Group', 'Category', 'Arrives', 'Leaves', 'Registration', 'Contact', 'Submitted', 'Waivers', 'Diet']);
     expect(table.slice(1).map((r) => r[0])).toEqual(["'=HYPERLINK(\"x\")", 'Kunal']);
-    expect(table[2]).toEqual(['Kunal', 'Desai', 'Adult', '2027-07-17 11:00', '', 'Veg']);
+    expect(table[2]).toEqual(['Kunal', 'Desai', 'Adult', '2027-07-17 11:00', '', 'Added by organizer', '', '', '', 'Veg']);
     expect(csv).not.toContain('Peanuts');
     expect(csv).not.toContain('1983');
   });
@@ -64,9 +64,28 @@ describe('exportRoster', () => {
   test('includes private fields and birth dates only when asked, with readPrivate', async () => {
     const {csv} = await call(exportRoster, 'owner', {includePrivate: true});
     const table = parseCsv(csv);
-    expect(table[0]).toEqual(['Name', 'Group', 'Category', 'Arrives', 'Leaves', 'Diet', 'Birth date', 'Allergy']);
-    expect(table[2].slice(6)).toEqual(['1983-01-02', 'Peanuts']);
+    expect(table[0]).toEqual(['Name', 'Group', 'Category', 'Arrives', 'Leaves', 'Registration', 'Contact', 'Submitted', 'Waivers', 'Diet', 'Birth date', 'Allergy']);
+    expect(table[2].slice(10)).toEqual(['1983-01-02', 'Peanuts']);
     await expect(call(exportRoster, 'finance', {includePrivate: true})).rejects.toEqual(refused);
+  });
+
+  test('Spec #233 Req 68: each person\'s registration, contact, submitted date and waivers; cancelled left out (B-16)', async () => {
+    await db().doc(`events/${E}/registrations/r1`).set({
+      status: 'submitted', contactUid: 'u-meera', submittedAt: Timestamp.fromDate(new Date('2027-02-01T18:30:00Z')),
+    });
+    await db().doc(`events/${E}/waivers/park`).set({title: {en: 'Park waiver'}, version: 2});
+    await db().doc(`events/${E}/participants/Meera`).set({
+      name: 'Meera', sortName: 'meera', status: 'active', groupId: 'g1', categoryId: 'adult', fields: {},
+      registrationId: 'r1', registrationStatus: 'submitted', uid: 'u-meera', waiverVersions: {park: 2},
+    });
+    await db().doc(`events/${E}/participants/Dropped`).set({
+      name: 'Dropped', sortName: 'dropped', status: 'active', groupId: 'g1', fields: {},
+      registrationId: 'r2', registrationStatus: 'cancelled',
+    });
+    const table = parseCsv((await call(exportRoster, 'finance', {})).csv);
+    const meera = table.find((r) => r[0] === 'Meera')!;
+    expect(meera.slice(5, 9)).toEqual(['Submitted', 'Meera', '2027-02-01 12:30', 'Park waiver (version 2)']);
+    expect(table.map((r) => r[0])).not.toContain('Dropped');
   });
 
   test('needs reports.export', async () => {
