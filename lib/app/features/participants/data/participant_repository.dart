@@ -15,6 +15,7 @@ class RosterQuery {
     this.categoryId,
     this.tag,
     this.missingWaiver = false,
+    this.registrationStatus,
   });
 
   final String search;
@@ -34,6 +35,10 @@ class RosterQuery {
   /// (`waiversMissing`, `sortName`) serves it.
   final bool missingWaiver;
 
+  /// Only people whose registration has this status (#249). On its own,
+  /// with one index (`registrationStatus`, `sortName`).
+  final String? registrationStatus;
+
   @override
   bool operator ==(Object other) =>
       other is RosterQuery &&
@@ -42,6 +47,7 @@ class RosterQuery {
       other.categoryId == categoryId &&
       other.tag == tag &&
       other.missingWaiver == missingWaiver &&
+      other.registrationStatus == registrationStatus &&
       _sameList(other.groupIds, groupIds);
 
   @override
@@ -51,6 +57,7 @@ class RosterQuery {
     categoryId,
     tag,
     missingWaiver,
+    registrationStatus,
     Object.hashAll(groupIds ?? const []),
   );
 
@@ -104,6 +111,9 @@ class ParticipantRepository {
     }
     if (q.tag != null) query = query.where('filterTags', arrayContains: q.tag);
     if (q.missingWaiver) query = query.where('waiversMissing', isEqualTo: true);
+    if (q.registrationStatus case final status?) {
+      query = query.where('registrationStatus', isEqualTo: status);
+    }
     final search = q.search.trim().toLowerCase();
     if (search.isNotEmpty) {
       query = query

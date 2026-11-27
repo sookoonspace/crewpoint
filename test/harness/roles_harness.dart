@@ -30,6 +30,8 @@ import 'package:crewpoint_app/app/features/participants/presentation/fields_scre
 import 'package:crewpoint_app/app/features/registration/presentation/registration_settings_screen.dart';
 import 'package:crewpoint_app/app/features/registration/presentation/waiver_editor_screen.dart';
 import 'package:crewpoint_app/app/features/registration/presentation/waitlist_screen.dart';
+import 'package:crewpoint_app/app/features/registration/presentation/registration_summary_screen.dart';
+import 'package:crewpoint_app/app/features/registration/presentation/group_registration_screen.dart';
 import 'package:crewpoint_app/l10n/gen/app_localizations.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/import_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/link_requests_screen.dart';
@@ -244,6 +246,16 @@ class RolesHarness {
                     ),
                   ),
                   GoRoute(
+                    path: 'registration/:groupId',
+                    builder: (_, state) => EventGuard(
+                      eventId: eventId,
+                      child: (event) => GroupRegistrationScreen(
+                        event: event,
+                        groupId: state.pathParameters['groupId'] ?? '',
+                      ),
+                    ),
+                  ),
+                  GoRoute(
                     path: 'links',
                     builder: (_, _) => EventGuard(
                       eventId: eventId,
@@ -313,6 +325,13 @@ class RolesHarness {
                 builder: (_, _) => EventGuard(
                   eventId: eventId,
                   child: (event) => CountsScreen(event: event),
+                ),
+              ),
+              GoRoute(
+                path: 'registration',
+                builder: (_, _) => EventGuard(
+                  eventId: eventId,
+                  child: (event) => RegistrationSummaryScreen(event: event),
                 ),
               ),
               GoRoute(

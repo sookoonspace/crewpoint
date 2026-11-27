@@ -14,6 +14,7 @@ class RosterFilters {
     this.category,
     this.answer,
     this.missingWaiver = false,
+    this.registrationStatus,
   });
 
   final String search;
@@ -26,12 +27,16 @@ class RosterFilters {
   /// Only people missing a waiver (#246); it replaces the other filters.
   final bool missingWaiver;
 
+  /// Only one registration status (#249); it replaces the other filters.
+  final String? registrationStatus;
+
   bool get any =>
       search.isNotEmpty ||
       group != null ||
       category != null ||
       answer != null ||
-      missingWaiver;
+      missingWaiver ||
+      registrationStatus != null;
 }
 
 class RosterFiltersController extends Notifier<RosterFilters> {
@@ -78,6 +83,10 @@ class RosterFiltersController extends Notifier<RosterFilters> {
   /// Only people missing a waiver, or back to everyone (#246).
   void setMissingWaiver(bool on) =>
       state = RosterFilters(search: state.search, missingWaiver: on);
+
+  /// Only one registration status, or none (#249).
+  void setRegistrationStatus(String? status) =>
+      state = RosterFilters(search: state.search, registrationStatus: status);
 
   /// Back to everyone.
   void clear() => state = RosterFilters(search: state.search);

@@ -255,9 +255,13 @@ class GroupSheetResult {
     this.deleted = false,
     this.addPeople = false,
     this.editAnswers = false,
+    this.seeRegistration = false,
   });
 
   final GroupModel? group;
+
+  /// "See registration" was chosen: open [group]'s registration (#249).
+  final bool seeRegistration;
   final bool deleted;
 
   /// "Edit answers" was chosen: open the group screen editing [group].
@@ -515,6 +519,24 @@ class _GroupSheetState extends ConsumerState<GroupSheet> {
                           context,
                         ).pop(GroupSheetResult(group: _group, addPeople: true)),
                 ),
+                if (_group.registrationStatus != null &&
+                    widget.event.can(
+                      ref.watch(currentUserIdProvider) ?? '',
+                      'registrations.manage',
+                    ))
+                  CpButton.secondary(
+                    key: const Key('people.group.registration'),
+                    icon: CpIcons.registration,
+                    label: context.strings.committee.seeRegistration,
+                    onPressed: _busy
+                        ? null
+                        : () => Navigator.of(context).pop(
+                            GroupSheetResult(
+                              group: _group,
+                              seeRegistration: true,
+                            ),
+                          ),
+                  ),
                 CpButton.secondary(
                   key: const Key('people.group.editAnswers'),
                   icon: CpIcons.actionEdit,

@@ -5,6 +5,7 @@ import 'package:crewpoint_app/app/features/registration/domain/public_event.dart
 import 'package:crewpoint_app/app/features/registration/domain/my_registration.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_form.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_settings.dart';
+import 'package:crewpoint_app/app/features/registration/domain/committee.dart';
 import 'package:crewpoint_app/app/features/registration/domain/waitlist.dart';
 import 'package:crewpoint_app/app/features/registration/domain/waivers.dart';
 
@@ -272,6 +273,42 @@ abstract interface class MemberCalls {
   /// My registrations not confirmed yet, waitlisted or pending, for home
   /// (#292), events soonest first.
   Future<List<WaitingRegistration>> getMyWaitingRegistrations();
+
+  /// The Registration summary, for `registrations.manage` (#249).
+  Future<RegistrationSummary> getRegistrationSummary(String eventId);
+
+  /// Approves, waitlists or reinstates a registration (#249); returns the
+  /// new status. Past capacity it throws `failed-precondition` with
+  /// `details.reason` `overCapacity` and `over`, unless
+  /// [confirmOverCapacity].
+  Future<String> manageRegistration({
+    required String eventId,
+    required String registrationId,
+    required RegistrationAction action,
+    bool confirmOverCapacity = false,
+  });
+
+  /// Cancels a registration as the committee (`cancelRegistration` by ID).
+  Future<void> cancelRegistrationById({
+    required String slug,
+    required String registrationId,
+  });
+
+  /// Sends a registration's confirmation again (#249).
+  Future<void> resendConfirmation({
+    required String eventId,
+    required String registrationId,
+  });
+
+  /// Emails each unsent draft's contact before the deadline (#249);
+  /// returns how many were sent.
+  Future<int> sendClosingReminder(String eventId);
+
+  /// A group's registration, or null for one added by hand (#249).
+  Future<GroupRegistration?> getGroupRegistration({
+    required String eventId,
+    required String groupId,
+  });
 
   /// Withdraws, extends by [hours], or makes an offer by hand (#248).
   /// Throws `failed-precondition` with `details.reason` `noRoom` when the
@@ -667,6 +704,64 @@ class FirebaseMemberCalls implements MemberCalls {
   @override
   Future<WaitlistView> getWaitlist(String eventId) async =>
       WaitlistView.fromMap(await _call('getWaitlist', {'eventId': eventId}));
+
+  @override
+  Future<RegistrationSummary> getRegistrationSummary(String eventId) async =>
+      RegistrationSummary.fromMap(
+        await _call('getRegistrationSummary', {'eventId': eventId}),
+      );
+
+  @override
+  Future<String> manageRegistration({
+    required String eventId,
+    required String registrationId,
+    required RegistrationAction action,
+    bool confirmOverCapacity = false,
+  }) async =>
+      (await _call('manageRegistration', {
+            'eventId': eventId,
+            'registrationId': registrationId,
+            'action': action.name,
+            'confirmOverCapacity': confirmOverCapacity,
+          }))['status']
+          as String? ??
+      '';
+
+  @override
+  Future<void> cancelRegistrationById({
+    required String slug,
+    required String registrationId,
+  }) => _call('cancelRegistration', {
+    'slug': slug,
+    'registrationId': registrationId,
+  });
+
+  @override
+  Future<void> resendConfirmation({
+    required String eventId,
+    required String registrationId,
+  }) => _call('resendConfirmation', {
+    'eventId': eventId,
+    'registrationId': registrationId,
+  });
+
+  @override
+  Future<int> sendClosingReminder(String eventId) async =>
+      ((await _call('sendClosingReminder', {'eventId': eventId}))['sent']
+              as num?)
+          ?.toInt() ??
+      0;
+
+  @override
+  Future<GroupRegistration?> getGroupRegistration({
+    required String eventId,
+    required String groupId,
+  }) async => GroupRegistration.tryParse(
+    (await _call('getGroupRegistration', {
+      'eventId': eventId,
+      'groupId': groupId,
+    }))['registration'],
+  );
 
   @override
   Future<List<WaitingRegistration>> getMyWaitingRegistrations() async => [

@@ -24,6 +24,7 @@ class ParticipantModel {
     this.optOuts = const [],
     this.signUps = const [],
     this.invitedTo = const [],
+    this.registrationStatus,
   });
 
   factory ParticipantModel.fromFirestore(
@@ -48,6 +49,7 @@ class ParticipantModel {
     optOuts: _ids(data['optOuts']),
     signUps: _ids(data['signUps']),
     invitedTo: _ids(data['invitedTo']),
+    registrationStatus: data['registrationStatus'] as String?,
   );
 
   final String id;
@@ -88,6 +90,10 @@ class ParticipantModel {
   final List<String> optOuts;
   final List<String> signUps;
   final List<String> invitedTo;
+
+  /// Their registration's status, mirrored by the server (Spec #233 Req
+  /// 4a); null for someone added by hand or by import. Never written here.
+  final String? registrationStatus;
 
   /// This person for working out attendance, with their group's invitations.
   Attendee attendee([List<String> groupInvitedTo = const []]) => Attendee(
@@ -138,6 +144,7 @@ class ParticipantModel {
     optOuts: optOuts ?? this.optOuts,
     signUps: signUps ?? this.signUps,
     invitedTo: invitedTo ?? this.invitedTo,
+    registrationStatus: registrationStatus,
   );
 
   @override
@@ -255,6 +262,7 @@ class GroupModel {
     this.adultUids = const [],
     this.fields = const {},
     this.invitedTo = const [],
+    this.registrationStatus,
   });
 
   factory GroupModel.fromFirestore(String id, Map<String, dynamic> data) =>
@@ -267,10 +275,15 @@ class GroupModel {
         ],
         fields: _answers(data['fields']),
         invitedTo: _ids(data['invitedTo']),
+        registrationStatus: data['registrationStatus'] as String?,
       );
 
   final String id;
   final String name;
+
+  /// Its registration's status, mirrored by the server (#249); null for a
+  /// group added by hand or by import.
+  final String? registrationStatus;
 
   /// Members with accounts who look after this group (Req 26b).
   final List<String> adultUids;
