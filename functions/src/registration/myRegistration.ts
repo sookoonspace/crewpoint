@@ -2,7 +2,7 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {Timestamp} from "firebase-admin/firestore";
 import {withStructuredLogs} from "../utils/logging";
 import {registrationOf} from "./registrationSettings";
-import {eventBySlug} from "./registrationForm";
+import {eventBySlug, waiverList} from "./registrationForm";
 import {LocalText} from "./settings";
 
 const millis = (v: unknown): number | null => (v instanceof Timestamp ? v.toMillis() : null);
@@ -72,7 +72,7 @@ export const getMyRegistration = onCall({timeoutSeconds: 30}, async (request) =>
       ref.collection("participants").where("registrationId", "==", found.id).get(),
     ]);
     const sorted = people.docs
-      .map((d) => d.data())
+      .map((d) => ({id: d.id, ...d.data()}) as FirebaseFirestore.DocumentData)
       .sort((a, b) => millis(a.createdAt)! - millis(b.createdAt)! || String(a.name).localeCompare(String(b.name)));
     return {
       ...base,
@@ -81,8 +81,13 @@ export const getMyRegistration = onCall({timeoutSeconds: 30}, async (request) =>
         waitlistPosition: r.waitlistPosition ?? null,
         submittedAt: millis(r.submittedAt),
         groupName: String(group.data()?.name ?? ""),
-        people: sorted.map((p) => ({name: String(p.name ?? ""), categoryId: p.categoryId ?? null})),
+        // Each person's missing waivers (#246, W-06), to accept here.
+        people: sorted.map((p) => ({
+          id: p.id, name: String(p.name ?? ""), categoryId: p.categoryId ?? null,
+          missingWaivers: p.registrationStatus === "cancelled" ? [] : p.missingWaivers ?? [],
+        })),
       },
+      waivers: settings.blocks.waivers ? await waiverList(ref) : [],
       note: noteFor(r.status, settings),
     };
   });

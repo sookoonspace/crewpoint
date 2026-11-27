@@ -126,7 +126,7 @@ describe('getRegistrationForm', () => {
       people: [{
         id: expect.any(String), name: 'Asha', birthDate: '1980-01-01', age: null,
         answers: {diet: 'Jain', allergies: 'Peanuts'}, arrivalAt: Date.UTC(2027, 6, 17, 16),
-        departureAt: null, signUps: ['park'], optOuts: [],
+        departureAt: null, signUps: ['park'], optOuts: [], waiverVersions: {},
       }],
     });
     // After the deadline, only contact details: the form still opens for them.

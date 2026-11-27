@@ -18,5 +18,10 @@
     "subject": "{{eventTitle}} માટે તમે રાહ યાદીમાં છો",
     "text": "નમસ્તે,\n\n{{eventTitle}} હાલમાં ભરાઈ ગયો છે, તેથી તમારા {{word.group.one.lower}} ના આ લોકો રાહ યાદીમાં નંબર {{position}} પર છે:\n\n{{people}}\n\nજગ્યા ખાલી થશે તો અમે તમને ઇમેઇલથી ઓફર મોકલીશું. તમારી {{word.registration.one.lower}} અહીં જુઓ:\n\n{{link}}\n\nCrewPoint",
     "push": "{{eventTitle}} માટે તમે રાહ યાદીમાં નંબર {{position}} પર છો."
+  },
+  "waiverMissing": {
+    "subject": "{{eventTitle}} માટે એક માફીપત્ર બાકી છે",
+    "text": "નમસ્તે,\n\n{{eventTitle}} માટેની તમારી {{word.registration.one.lower}} માં આ લોકોએ હજી માફીપત્ર સ્વીકારવાનું બાકી છે:\n\n{{people}}\n\nતમે તેને અહીં વાંચી અને સ્વીકારી શકો છો:\n\n{{link}}\n\nCrewPoint",
+    "push": "{{eventTitle}} માટે એક માફીપત્ર બાકી છે."
   }
 }

@@ -151,6 +151,8 @@ export const getRegistrationForm = onCall({timeoutSeconds: 30}, async (request) 
       editable,
       current,
       contactLine: settings.contactLine,
+      // Waivers to read and accept (#246), with each one's current version.
+      waivers: settings.blocks.waivers ? await waiverList(ref) : [],
       // The server copy of the form as typed (#243), to restore when newer.
       draft: isDraft ? {data: mineData!.draft ?? {}, savedAt: mineData!.draftSavedAt ?? 0} : null,
     };
@@ -195,6 +197,7 @@ async function currentRegistration(
       departureAt: millis(p.departureAt),
       signUps: p.signUps ?? [],
       optOuts: p.optOuts ?? [],
+      waiverVersions: p.waiverVersions ?? {},
     };
   });
   const {updatedAt: _g, ...groupPrivateAnswers} = groupPrivate.data() ?? {};
@@ -205,4 +208,19 @@ async function currentRegistration(
     groupAnswers: {...(group.data()?.fields ?? {}), ...groupPrivateAnswers},
     people: list,
   };
+}
+
+/** The event's waivers as the app shows them (#246), oldest first. */
+export async function waiverList(eventRef: FirebaseFirestore.DocumentReference) {
+  const snap = await eventRef.collection("waivers").get();
+  return snap.docs
+    .sort((a, b) => (millis(a.data().createdAt) ?? 0) - (millis(b.data().createdAt) ?? 0) || a.id.localeCompare(b.id))
+    .map((d) => {
+      const w = d.data();
+      return {
+        id: d.id, title: w.title ?? {en: ""}, text: w.text ?? {en: ""}, version: w.version ?? 1,
+        appliesTo: w.appliesTo ?? {kind: "everyone"}, required: w.required === true,
+        requireLatest: w.requireLatest !== false,
+      };
+    });
 }

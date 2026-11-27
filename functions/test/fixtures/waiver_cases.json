@@ -1,0 +1,16 @@
+{
+  "applies": [
+    {"name": "everyone", "appliesTo": {"kind": "everyone"}, "person": {"categoryId": "adult", "signUps": []}, "applies": true},
+    {"name": "a category: the person in it", "appliesTo": {"kind": "category", "id": "child"}, "person": {"categoryId": "child", "signUps": []}, "applies": true},
+    {"name": "a category: someone else", "appliesTo": {"kind": "category", "id": "child"}, "person": {"categoryId": "adult", "signUps": []}, "applies": false},
+    {"name": "a category: unknown yet", "appliesTo": {"kind": "category", "id": "child"}, "person": {"categoryId": null, "signUps": []}, "applies": false},
+    {"name": "a session: signed up for it", "appliesTo": {"kind": "session", "id": "WP"}, "person": {"categoryId": "adult", "signUps": ["WP"]}, "applies": true},
+    {"name": "a session: not signed up", "appliesTo": {"kind": "session", "id": "WP"}, "person": {"categoryId": "adult", "signUps": ["HL"]}, "applies": false}
+  ],
+  "status": [
+    {"name": "never accepted", "version": 2, "requireLatest": true, "accepted": null, "status": "missing", "counts": false},
+    {"name": "the current version", "version": 2, "requireLatest": true, "accepted": 2, "status": "current", "counts": true},
+    {"name": "an earlier version that must be accepted again", "version": 2, "requireLatest": true, "accepted": 1, "status": "earlier", "counts": false},
+    {"name": "an earlier version still accepted", "version": 2, "requireLatest": false, "accepted": 1, "status": "earlier", "counts": true}
+  ]
+}

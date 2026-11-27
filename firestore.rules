@@ -424,6 +424,18 @@ service cloud.firestore {
         allow read, write: if false;
       }
 
+      // Waivers (Spec #233 Req 26-28, #246): read by anyone in the event,
+      // written only by `saveWaiver`, with every version kept.
+      match /waivers/{waiverId} {
+        allow read: if request.auth != null && isEventMember(eventId);
+        allow write: if false;
+
+        match /versions/{version} {
+          allow read: if request.auth != null && isEventMember(eventId);
+          allow write: if false;
+        }
+      }
+
       match /groups/{groupId} {
         allow read: if request.auth != null
           && (can(eventId, 'participants.read') || inMyGroup(eventId, groupId));
@@ -606,7 +618,8 @@ service cloud.firestore {
                                    'createdBy', 'createdAt', 'updatedAt', 'uid', 'externalId',
                                    'categoryId', 'fields', 'filterTags', 'imported', 'anonymised',
                                    'arrivalAt', 'departureAt', 'optOuts', 'signUps', 'invitedTo',
-                                   'registrationId', 'registrationStatus'])
+                                   'registrationId', 'registrationStatus',
+                                   'waiverVersions', 'missingWaivers', 'waiversMissing'])
             && (d.get('categoryId', null) == null || d.categoryId is string)
             && attendanceIsValid(d)
             && answersAreValid(d)
@@ -630,7 +643,10 @@ service cloud.firestore {
           && !('imported' in request.resource.data)
           && !('anonymised' in request.resource.data)
           && !('registrationId' in request.resource.data)
-          && !('registrationStatus' in request.resource.data);
+          && !('registrationStatus' in request.resource.data)
+          && !('waiverVersions' in request.resource.data)
+          && !('missingWaivers' in request.resource.data)
+          && !('waiversMissing' in request.resource.data);
 
         // Both the group it was in and the one it goes to must be editable,
         // so a linked adult cannot move someone out of their group.
@@ -646,7 +662,10 @@ service cloud.firestore {
           && fieldUnchanged('imported')
           && fieldUnchanged('anonymised')
           && fieldUnchanged('registrationId')
-          && fieldUnchanged('registrationStatus');
+          && fieldUnchanged('registrationStatus')
+          && fieldUnchanged('waiverVersions')
+          && fieldUnchanged('missingWaivers')
+          && fieldUnchanged('waiversMissing');
 
         // Someone in a registration holds a place, so only
         // `registrations.manage` removes them here (#242); families change
@@ -673,7 +692,10 @@ service cloud.firestore {
                 || inMyGroup(eventId, personGroup())
                 || person().get('uid', null) == request.auth.uid);
 
+          // Waiver acceptances (`waivers`, #246) are written only by the
+          // server and never edited or removed by a client.
           allow write: if request.auth != null
+            && docId != 'waivers'
             && isNotArchived(eventId)
             && editsParticipant(eventId, personGroup())
             && (request.resource == null
