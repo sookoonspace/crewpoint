@@ -12,6 +12,7 @@ import 'package:crewpoint_app/app/core/format/event_time.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
+import 'package:crewpoint_app/app/features/registration/application/my_waiting_provider.dart';
 import 'package:crewpoint_app/app/features/registration/domain/my_registration.dart';
 import 'package:crewpoint_app/app/features/registration/presentation/widgets/waiver_card.dart';
 
@@ -404,7 +405,11 @@ class _OfferCardState extends ConsumerState<_OfferCard> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
-    ref.invalidate(myRegistrationProvider(widget.slug.toLowerCase()));
+    ref
+      ..invalidate(myRegistrationProvider(widget.slug.toLowerCase()))
+      // Accepted, it becomes one of my events; either way it leaves the
+      // home section of registrations not confirmed yet (#292).
+      ..invalidate(myWaitingRegistrationsProvider);
   }
 
   @override

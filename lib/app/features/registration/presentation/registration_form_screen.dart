@@ -20,6 +20,7 @@ import 'package:crewpoint_app/app/features/auth/application/auth_provider.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/widgets/answer_input.dart';
 import 'package:crewpoint_app/app/features/registration/application/event_page_provider.dart';
+import 'package:crewpoint_app/app/features/registration/application/my_waiting_provider.dart';
 import 'package:crewpoint_app/app/features/registration/application/registration_form_provider.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_form.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_settings.dart';
@@ -334,6 +335,8 @@ class _RegistrationFormState extends ConsumerState<_RegistrationForm> {
           .submitRegistration(_spec.toSubmitMap(_draft));
       if (!mounted) return;
       setState(() => _result = result);
+      // Home lists a group waiting for a place (#292).
+      ref.invalidate(myWaitingRegistrationsProvider);
       await ref.read(draftStoreProvider).clear(_draftKey);
     } catch (e, st) {
       log('registration save failed', error: e, stackTrace: st, name: 'reg');

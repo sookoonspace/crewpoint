@@ -1,5 +1,5 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
-import {Timestamp} from "firebase-admin/firestore";
+import {Timestamp, getFirestore} from "firebase-admin/firestore";
 import {withStructuredLogs} from "../utils/logging";
 import {registrationOf} from "./registrationSettings";
 import {eventBySlug, waiverList} from "./registrationForm";
@@ -93,5 +93,46 @@ export const getMyRegistration = onCall({timeoutSeconds: 30}, async (request) =>
       waivers: settings.blocks.waivers ? await waiverList(ref) : [],
       note: noteFor(r.status, settings),
     };
+  });
+});
+
+/**
+ * getMyWaitingRegistrations — the caller's registrations that are not
+ * confirmed yet (#292): `waitlisted` (with the number and any open
+ * offer's expiry) or `pending`, as their contact, for home, since they are
+ * not members of those events yet and "My events" lists only those. Each
+ * gives the event's ID (to leave out events home already lists), link
+ * name, title and dates; ended and archived events are left out.
+ */
+export const getMyWaitingRegistrations = onCall({timeoutSeconds: 30}, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "Must be signed in.");
+  return withStructuredLogs({op: "getMyWaitingRegistrations", uid, args: {}}, async () => {
+    const mine = await getFirestore().collectionGroup("registrations").where("contactUid", "==", uid).get();
+    const waiting = mine.docs.filter((d) => ["waitlisted", "pending"].includes(d.data().status));
+    const events = waiting.length === 0 ? [] :
+      await getFirestore().getAll(...waiting.map((d) => d.ref.parent.parent!));
+    const out = [];
+    for (const [i, d] of waiting.entries()) {
+      const event = events[i].data();
+      if (!event || ["ended", "archived"].includes(String(event.status))) continue;
+      const slug = registrationOf(event).slug;
+      if (!slug) continue;
+      const r = d.data();
+      out.push({
+        eventId: events[i].id,
+        slug,
+        title: String(event.title ?? ""),
+        startDate: millis(event.startDate),
+        endDate: millis(event.endDate),
+        dateOnly: event.dateOnly === true,
+        timeZone: typeof event.timeZone === "string" ? event.timeZone : "UTC",
+        status: r.status,
+        waitlistPosition: r.waitlistPosition ?? null,
+        offerExpiresAt: r.status === "waitlisted" && typeof r.offer?.expiresAt === "number" ? r.offer.expiresAt : null,
+      });
+    }
+    out.sort((a, b) => (a.startDate ?? Number.MAX_SAFE_INTEGER) - (b.startDate ?? Number.MAX_SAFE_INTEGER));
+    return {registrations: out};
   });
 });

@@ -270,4 +270,23 @@ describe('waitlist offers', () => {
     await nightlyUpkeep(db(), E);
     expect((await tally()).offers).toHaveLength(1);
   });
+
+  test('#292 getMyWaitingRegistrations lists my waitlisted and pending registrations for home', async () => {
+    /* eslint-disable-next-line @typescript-eslint/no-var-requires */
+    const {getMyWaitingRegistrations} = require('../../src/registration/myRegistration');
+    const mine = (uid: string) => ftest.wrap(getMyWaitingRegistrations)({auth: {uid}, data: {}});
+    await fullEvent();
+    expect((await mine('asha')).registrations).toEqual([]);
+    const [ravi] = (await mine('ravi')).registrations;
+    expect(ravi).toEqual(expect.objectContaining({
+      eventId: E, slug: SLUG, title: 'Convention 2027', status: 'waitlisted', waitlistPosition: 2,
+      offerExpiresAt: null, timeZone: 'America/Chicago', dateOnly: true,
+    }));
+    await ftest.wrap(cancelRegistration)({auth: {uid: 'asha'}, data: {slug: SLUG}});
+    expect((await mine('ravi')).registrations[0].offerExpiresAt).toEqual(expect.any(Number));
+    await respond('ravi', true);
+    expect((await mine('ravi')).registrations).toEqual([]);
+    await db().doc(`events/${E}`).update({status: 'ended'});
+    expect((await mine('big')).registrations).toEqual([]);
+  });
 });

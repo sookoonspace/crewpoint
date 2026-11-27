@@ -130,3 +130,66 @@ class MyRegistrationView {
 
   LabelResolver get words => LabelResolver(labels);
 }
+
+/// A registration of mine that is not confirmed yet, for home (#292):
+/// waitlisted or pending, so I am not a member of its event yet.
+@immutable
+class WaitingRegistration {
+  const WaitingRegistration({
+    required this.eventId,
+    required this.slug,
+    required this.title,
+    required this.status,
+    this.startDate,
+    this.endDate,
+    this.dateOnly = false,
+    this.timeZone = 'UTC',
+    this.waitlistPosition,
+    this.offerExpiresAt,
+  });
+
+  static WaitingRegistration? tryParse(Object? raw) {
+    if (raw is! Map || raw['eventId'] is! String || raw['slug'] is! String) {
+      return null;
+    }
+    DateTime? time(Object? v) => v is num
+        ? DateTime.fromMillisecondsSinceEpoch(v.toInt(), isUtc: true)
+        : null;
+    return WaitingRegistration(
+      eventId: raw['eventId'] as String,
+      slug: raw['slug'] as String,
+      title: raw['title'] as String? ?? '',
+      status: raw['status'] as String? ?? 'waitlisted',
+      startDate: time(raw['startDate']),
+      endDate: time(raw['endDate']),
+      dateOnly: raw['dateOnly'] == true,
+      timeZone: raw['timeZone'] as String? ?? 'UTC',
+      waitlistPosition: (raw['waitlistPosition'] as num?)?.toInt(),
+      offerExpiresAt: time(raw['offerExpiresAt']),
+    );
+  }
+
+  final String eventId;
+  final String slug;
+  final String title;
+
+  /// `waitlisted` or `pending`.
+  final String status;
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final bool dateOnly;
+  final String timeZone;
+  final int? waitlistPosition;
+  final DateTime? offerExpiresAt;
+
+  bool offeredAt(DateTime now) =>
+      status == 'waitlisted' &&
+      offerExpiresAt != null &&
+      now.isBefore(offerExpiresAt!);
+
+  /// Whether the event is over at [now], so home leaves it out.
+  bool isPastAt(DateTime now) {
+    final end = endDate ?? startDate;
+    return end != null && end.add(const Duration(days: 1)).isBefore(now);
+  }
+}

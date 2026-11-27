@@ -10,6 +10,8 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/dashboard_scre
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/event_card.dart';
 import 'package:crewpoint_app/app/features/tasks/application/event_task_counts_provider.dart';
 import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
+import 'package:crewpoint_app/app/features/registration/application/my_waiting_provider.dart';
+import 'package:crewpoint_app/app/features/registration/domain/my_registration.dart';
 
 void main() {
   // Empty-state branch renders an `EmptyStatePlaceholder` whose lottie
@@ -119,5 +121,85 @@ void main() {
     // with looping lottie, so use bounded pumps instead of pumpAndSettle.
     controller.add(const []);
     await pumpFrames(tester);
+  });
+
+  group('#292 registrations not confirmed yet', () {
+    final soon = DateTime.utc(DateTime.now().year + 1, 7, 16);
+    WaitingRegistration waiting(
+      String eventId, {
+      String status = 'waitlisted',
+      DateTime? offer,
+    }) => WaitingRegistration(
+      eventId: eventId,
+      slug: 'conv-$eventId',
+      title: 'Convention $eventId',
+      status: status,
+      startDate: soon,
+      dateOnly: true,
+      waitlistPosition: 1,
+      offerExpiresAt: offer,
+    );
+
+    Future<void> pump(
+      WidgetTester tester, {
+      List<EventModel> events = const [],
+      required List<WaitingRegistration> waiting,
+    }) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            dashboardEventsProvider.overrideWith((ref) => Stream.value(events)),
+            myWaitingRegistrationsProvider.overrideWith((ref) async => waiting),
+          ],
+          child: const MaterialApp(home: DashboardScreen()),
+        ),
+      );
+      await pumpFrames(tester);
+    }
+
+    testWidgets('a waitlisted or pending registration shows on home, with '
+        'where it stands, instead of the empty state', (tester) async {
+      await pump(
+        tester,
+        waiting: [
+          waiting('a'),
+          waiting('b', status: 'pending'),
+          waiting('c', offer: DateTime.now().add(const Duration(days: 2))),
+        ],
+      );
+      expect(find.text('No events yet'), findsNothing);
+      expect(find.text('Not confirmed yet'), findsOneWidget);
+      expect(find.text('Convention a'), findsOneWidget);
+      expect(find.text('On the waitlist, number 1'), findsOneWidget);
+      expect(find.text('Pending review'), findsOneWidget);
+      expect(find.text('A place is available'), findsOneWidget);
+    });
+
+    testWidgets('an event I am already in, and the Past filter, leave it out', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        events: const [
+          EventModel(id: 'a', title: 'Mine', creatorId: 'u', memberIds: ['u']),
+        ],
+        waiting: [waiting('a')],
+      );
+      expect(find.byKey(const Key('dashboard.waiting')), findsNothing);
+      await tester.tap(find.byKey(const Key('dashboard.filter.past')));
+      await pumpFrames(tester);
+      expect(find.text('Convention a'), findsNothing);
+    });
+
+    testWidgets('Req 71: fits a 320 px phone at 200% text', (tester) async {
+      tester.view.physicalSize = const Size(320, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await pump(tester, waiting: [waiting('a'), waiting('b', status: 'pending')]);
+      expect(tester.takeException(), isNull);
+    });
   });
 }

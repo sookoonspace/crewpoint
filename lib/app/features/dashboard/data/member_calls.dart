@@ -269,6 +269,10 @@ abstract interface class MemberCalls {
   /// The waitlist and places, for `registrations.manage` (#248).
   Future<WaitlistView> getWaitlist(String eventId);
 
+  /// My registrations not confirmed yet, waitlisted or pending, for home
+  /// (#292), events soonest first.
+  Future<List<WaitingRegistration>> getMyWaitingRegistrations();
+
   /// Withdraws, extends by [hours], or makes an offer by hand (#248).
   /// Throws `failed-precondition` with `details.reason` `noRoom` when the
   /// group does not fit.
@@ -663,6 +667,15 @@ class FirebaseMemberCalls implements MemberCalls {
   @override
   Future<WaitlistView> getWaitlist(String eventId) async =>
       WaitlistView.fromMap(await _call('getWaitlist', {'eventId': eventId}));
+
+  @override
+  Future<List<WaitingRegistration>> getMyWaitingRegistrations() async => [
+    for (final raw
+        in ((await _call('getMyWaitingRegistrations', {}))['registrations']
+                as List?) ??
+            const [])
+      ?WaitingRegistration.tryParse(raw),
+  ];
 
   @override
   Future<void> manageOffer({

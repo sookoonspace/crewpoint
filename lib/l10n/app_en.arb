@@ -1990,5 +1990,26 @@
         "type": "int"
       }
     }
+  },
+  "myRegistrationHomeHeading": "Not confirmed yet",
+  "@myRegistrationHomeHeading": {
+    "description": "Home section for registrations not confirmed yet."
+  },
+  "myRegistrationHomeWaitlisted": "On the waitlist, number {position}",
+  "@myRegistrationHomeWaitlisted": {
+    "description": "A waitlisted registration on home.",
+    "placeholders": {
+      "position": {
+        "type": "int"
+      }
+    }
+  },
+  "myRegistrationHomePending": "Pending review",
+  "@myRegistrationHomePending": {
+    "description": "A registration waiting for review, on home."
+  },
+  "myRegistrationHomeOffered": "A place is available",
+  "@myRegistrationHomeOffered": {
+    "description": "A registration with an open offer, on home."
   }
 }

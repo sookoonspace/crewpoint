@@ -416,5 +416,9 @@
   "waitlistLoadFailed": "અમે રાહ યાદી લોડ કરી શક્યા નહીં.",
   "waitlistRetry": "ફરી પ્રયાસ કરો",
   "waitlistPeople": "{count, plural, =1{1 વ્યક્તિ} other{{count} લોકો}}",
-  "waitlistHours": "{count, plural, =1{1 કલાક} other{{count} કલાક}}"
+  "waitlistHours": "{count, plural, =1{1 કલાક} other{{count} કલાક}}",
+  "myRegistrationHomeHeading": "હજી પુષ્ટિ થઈ નથી",
+  "myRegistrationHomeWaitlisted": "રાહ યાદીમાં, નંબર {position}",
+  "myRegistrationHomePending": "સમીક્ષા બાકી",
+  "myRegistrationHomeOffered": "જગ્યા ઉપલબ્ધ છે"
 }

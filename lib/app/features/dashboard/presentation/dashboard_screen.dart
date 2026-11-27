@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:crewpoint_app/app/core/design/components/components.dart';
 import 'package:crewpoint_app/app/core/design/tokens/cp_icons.dart';
 import 'package:crewpoint_app/app/core/design/tokens/tokens.dart';
+import 'package:crewpoint_app/app/core/format/event_time.dart';
 import 'package:crewpoint_app/app/core/i18n/app_strings.dart';
 import 'package:crewpoint_app/app/core/providers.dart';
 import 'package:crewpoint_app/app/core/widgets/content_max_width.dart';
@@ -14,6 +15,8 @@ import 'package:crewpoint_app/app/features/profile/application/current_user_doc_
 import 'package:crewpoint_app/app/features/dashboard/domain/models/event.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/event_card.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/widgets/join_event_sheet.dart';
+import 'package:crewpoint_app/app/features/registration/application/my_waiting_provider.dart';
+import 'package:crewpoint_app/app/features/registration/domain/my_registration.dart';
 
 enum DashboardFilter { upcoming, past }
 
@@ -42,6 +45,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget build(BuildContext context) {
     final cp = context.cp;
     final eventsAsync = ref.watch(dashboardEventsProvider);
+    // Registrations not confirmed yet (#292), shown with Upcoming.
+    final waitingAll =
+        ref.watch(myWaitingRegistrationsProvider).value ??
+        const <WaitingRegistration>[];
     // Read the merged user doc; falls back to null on loading/error so the
     // greeting stays grammatical even when auth/Firestore aren't ready.
     final userAsync = ref.watch(currentUserDocProvider);
@@ -83,6 +90,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         onRetry: () => ref.invalidate(dashboardEventsProvider),
       ),
       data: (events) {
+        final memberOf = {for (final e in events) e.id};
+        final waiting = _filter == DashboardFilter.past
+            ? const <WaitingRegistration>[]
+            : [
+                for (final w in waitingAll)
+                  if (!memberOf.contains(w.eventId) && !w.isPastAt(now)) w,
+              ];
         final shown = events
             .where(
               (e) => _filter == DashboardFilter.past
@@ -90,7 +104,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   : !_isPast(e, now),
             )
             .toList();
-        if (shown.isEmpty) {
+        if (shown.isEmpty && waiting.isEmpty) {
           return SingleChildScrollView(
             child: CpEmptyState(
               icon: CpIcons.event,
@@ -141,6 +155,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   padding: EdgeInsets.only(bottom: cp.space.xl),
                   child: section(title, list),
                 ),
+            if (waiting.isNotEmpty)
+              Column(
+                key: const Key('dashboard.waiting'),
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: cp.space.sm,
+                children: [
+                  CpSectionHeader(
+                    title: context.strings.myRegistration.homeHeading,
+                    trailingText: '${waiting.length}',
+                  ),
+                  for (final w in waiting)
+                    _WaitingCard(
+                      key: Key('dashboard.waiting.${w.eventId}'),
+                      registration: w,
+                      now: now,
+                      onTap: () => context.push('/e/${w.slug}/registration'),
+                    ),
+                ],
+              ),
           ],
         );
       },
@@ -219,6 +252,66 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             Expanded(child: body),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// One registration not confirmed yet (#292): the event, its date, and
+/// where the group stands, with an icon and colour; it opens my
+/// registration, where an offer is accepted.
+class _WaitingCard extends StatelessWidget {
+  const _WaitingCard({
+    super.key,
+    required this.registration,
+    required this.now,
+    required this.onTap,
+  });
+
+  final WaitingRegistration registration;
+  final DateTime now;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.strings.myRegistration;
+    final cp = context.cp;
+    final r = registration;
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final start = r.startDate;
+    final date = start == null
+        ? null
+        : DateFormat.yMMMEd(
+            locale,
+          ).format(r.dateOnly ? start : inEventZone(start, r.timeZone));
+    final (label, icon, tone) = r.offeredAt(now)
+        ? (s.homeOffered, CpIcons.statusDone, CpTagTone.accent)
+        : r.status == 'pending'
+        ? (s.homePending, CpIcons.statusDoing, CpTagTone.quiet)
+        : (
+            s.homeWaitlisted(r.waitlistPosition ?? 0),
+            CpIcons.placesFull,
+            CpTagTone.quiet,
+          );
+    return CpCard(
+      onTap: onTap,
+      semanticLabel: [r.title, ?date, label].join(', '),
+      padding: EdgeInsets.all(cp.space.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: cp.space.xs,
+        children: [
+          Text(
+            r.title,
+            style: cp.type.titleMedium.copyWith(color: cp.colors.text),
+          ),
+          if (date != null)
+            Text(
+              date,
+              style: cp.type.bodyMedium.copyWith(color: cp.colors.textMuted),
+            ),
+          CpTag(label: label, icon: icon, tone: tone),
+        ],
       ),
     );
   }
