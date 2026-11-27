@@ -8,6 +8,7 @@ import 'package:crewpoint_app/app/features/registration/domain/public_event.dart
 import 'package:crewpoint_app/app/features/registration/domain/my_registration.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_form.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_settings.dart';
+import 'package:crewpoint_app/app/features/registration/domain/waivers.dart';
 
 /// Stands in for the member and role callables. With a [firestore], it writes
 /// what the server would: member documents with their permissions worked out
@@ -782,4 +783,70 @@ class FakeMemberCalls implements MemberCalls {
     return kept;
   }
 
+  /// Waivers [saveWaiver] was sent, as the server keeps them: a changed
+  /// title or text is a new version (#246).
+  final savedWaivers = <Map<String, Object?>>[];
+
+  @override
+  Future<String> saveWaiver({
+    required String eventId,
+    String? waiverId,
+    required LocalText title,
+    required LocalText text,
+    required WaiverAppliesTo appliesTo,
+    required bool required,
+    required bool requireLatest,
+  }) async {
+    calls.add('saveWaiver:${waiverId ?? 'new'}');
+    _maybeFail();
+    final ref = waiverId == null
+        ? firestore?.collection('events/$eventId/waivers').doc()
+        : firestore?.doc('events/$eventId/waivers/$waiverId');
+    final before = (await ref?.get())?.data();
+    final changed =
+        before == null ||
+        '${before['title']}' != '${title.toMap()}' ||
+        '${before['text']}' != '${text.toMap()}';
+    final version = before == null
+        ? 1
+        : ((before['version'] as num?)?.toInt() ?? 1) + (changed ? 1 : 0);
+    final data = <String, Object?>{
+      'title': title.toMap(),
+      'text': text.toMap(),
+      'version': version,
+      'appliesTo': appliesTo.toMap(),
+      'required': required,
+      'requireLatest': requireLatest,
+      if (before == null) 'createdAt': DateTime.now(),
+    };
+    savedWaivers.add({'id': ref?.id ?? waiverId ?? 'w', ...data});
+    await ref?.set(data, SetOptions(merge: true));
+    return ref?.id ?? waiverId ?? 'w';
+  }
+
+  /// What [acceptWaivers] was sent, as `participantId/waiverId`.
+  final acceptedWaivers = <String>[];
+
+  @override
+  Future<int> acceptWaivers({
+    required String slug,
+    required List<({String participantId, String waiverId})> acceptances,
+  }) async {
+    calls.add('acceptWaivers:$slug');
+    _maybeFail();
+    acceptedWaivers.addAll([
+      for (final a in acceptances) '${a.participantId}/${a.waiverId}',
+    ]);
+    return acceptances.length;
+  }
+
+  /// What [sendWaiverReminders] answers.
+  int remindersSent = 0;
+
+  @override
+  Future<int> sendWaiverReminders(String eventId) async {
+    calls.add('sendWaiverReminders:$eventId');
+    _maybeFail();
+    return remindersSent;
+  }
 }

@@ -18,7 +18,9 @@ import 'package:crewpoint_app/app/features/dashboard/presentation/roles/role_vie
 import 'package:crewpoint_app/app/features/participants/application/roster_controller.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/category.dart';
 import 'package:crewpoint_app/app/features/participants/domain/models/custom_field.dart';
+import 'package:crewpoint_app/app/features/registration/application/waivers_provider.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_settings.dart';
+import 'package:crewpoint_app/app/features/registration/presentation/waiver_editor_screen.dart';
 
 /// Event settings → Registration (Spec #233 Req 67; #239, route
 /// `settings/registration`): who can register, capacity, the deadline,
@@ -923,6 +925,21 @@ class _RegistrationSettingsScreenState
               s.blockContactHelp,
             ),
           ]),
+          // Waivers (#246): saved one at a time on their own page.
+          CpSectionHeader(
+            title: s.waiversHeading,
+            actionLabel: s.addWaiver,
+            actionKey: const Key('registration.settings.addWaiver'),
+            onAction: enabled
+                ? () => context.push(
+                    '/dashboard/event/${_event.id}/settings/registration/waivers/new',
+                  )
+                : null,
+          ),
+          AdminNote(
+            _draft.has(RegistrationBlock.waivers) ? s.waiversHelp : s.waiversOff,
+          ),
+          _WaiverList(event: _event, enabled: enabled),
           CpSectionHeader(
             title: s.sectionsHeading,
             actionLabel: s.addSection,
@@ -1295,6 +1312,66 @@ class _SectionCard extends StatelessWidget {
                 icon: CpIcons.actionAdd,
                 onPressed: enabled ? onAdd : null,
               ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The event's waivers, each opening its page (#246).
+class _WaiverList extends ConsumerWidget {
+  const _WaiverList({required this.event, required this.enabled});
+
+  final EventModel event;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = context.strings.registrationSettings;
+    final cp = context.cp;
+    final waivers = ref.watch(eventWaiversProvider(event.id)).value ?? const [];
+    if (waivers.isEmpty) {
+      return KeyedSubtree(
+        key: const Key('registration.settings.noWaivers'),
+        child: AdminNote(s.noWaivers, icon: CpIcons.statusInfo),
+      );
+    }
+    final sessionList = ref.watch(sessionListProvider(event.id)).value;
+    final sessions = <String, String>{
+      if (sessionList != null)
+        for (final x in sessionList) x.id: x.title,
+    };
+    final categories = categoriesOf(event.settings);
+    final gu = Localizations.localeOf(context).languageCode == 'gu';
+    return CpCard(
+      key: const Key('registration.settings.waivers'),
+      child: CpRowGroup(
+        children: [
+          for (final w in waivers)
+            CpListRow(
+              key: Key('registration.settings.waiver.${w.id}'),
+              title: gu && w.title.gu != null ? w.title.gu! : w.title.en,
+              subtitle: [
+                s.waiverVersion(w.version),
+                waiverAppliesText(
+                  w.appliesTo,
+                  categories: categories,
+                  sessionTitles: sessions,
+                  strings: s,
+                ),
+                if (w.required) s.waiverRequired else s.waiverOptional,
+              ].join(' · '),
+              trailing: Icon(
+                CpIcons.chevronRight,
+                size: cp.sizes.iconMd,
+                color: cp.colors.textMuted,
+              ),
+              onTap: enabled
+                  ? () => context.push(
+                      '/dashboard/event/${event.id}/settings/registration/waivers/${w.id}',
+                    )
+                  : null,
             ),
         ],
       ),

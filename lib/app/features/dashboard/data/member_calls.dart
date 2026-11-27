@@ -5,6 +5,7 @@ import 'package:crewpoint_app/app/features/registration/domain/public_event.dart
 import 'package:crewpoint_app/app/features/registration/domain/my_registration.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_form.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_settings.dart';
+import 'package:crewpoint_app/app/features/registration/domain/waivers.dart';
 
 /// What linking a signed-in account found (Req 46): events it was linked
 /// in, events where an organizer must decide, and whether the email still
@@ -234,6 +235,30 @@ abstract interface class MemberCalls {
   /// returns how many fields changed. Throws `failed-precondition` with
   /// `details.reason` `noRoom` or `closed`.
   Future<int> updateRegistration(Map<String, Object?> payload);
+
+  /// Adds or changes a waiver (#246), with `event.manage`; returns its ID.
+  /// A changed title or text makes a new version.
+  Future<String> saveWaiver({
+    required String eventId,
+    String? waiverId,
+    required LocalText title,
+    required LocalText text,
+    required WaiverAppliesTo appliesTo,
+    required bool required,
+    required bool requireLatest,
+  });
+
+  /// Accepts waivers for people in the caller's registration (#246), as
+  /// `(participantId, waiverId)` pairs, at any time; returns how many were
+  /// new.
+  Future<int> acceptWaivers({
+    required String slug,
+    required List<({String participantId, String waiverId})> acceptances,
+  });
+
+  /// Emails each registration with someone missing a waiver (#246), with
+  /// `registrations.manage`; returns how many were sent.
+  Future<int> sendWaiverReminders(String eventId);
 }
 
 class FirebaseMemberCalls implements MemberCalls {
@@ -556,6 +581,51 @@ class FirebaseMemberCalls implements MemberCalls {
   @override
   Future<int> updateRegistration(Map<String, Object?> payload) async =>
       ((await _call('updateRegistration', payload))['changed'] as num?)
+          ?.toInt() ??
+      0;
+
+  @override
+  Future<String> saveWaiver({
+    required String eventId,
+    String? waiverId,
+    required LocalText title,
+    required LocalText text,
+    required WaiverAppliesTo appliesTo,
+    required bool required,
+    required bool requireLatest,
+  }) async =>
+      (await _call('saveWaiver', {
+            'eventId': eventId,
+            'waiverId': ?waiverId,
+            'title': title.toMap(),
+            'text': text.toMap(),
+            'appliesTo': appliesTo.toMap(),
+            'required': required,
+            'requireLatest': requireLatest,
+          }))['waiverId']
+          as String? ??
+      '';
+
+  @override
+  Future<int> acceptWaivers({
+    required String slug,
+    required List<({String participantId, String waiverId})> acceptances,
+  }) async =>
+      ((await _call('acceptWaivers', {
+                'slug': slug,
+                'acceptances': [
+                  for (final a in acceptances)
+                    {'participantId': a.participantId, 'waiverId': a.waiverId},
+                ],
+              }))['accepted']
+              as num?)
+          ?.toInt() ??
+      0;
+
+  @override
+  Future<int> sendWaiverReminders(String eventId) async =>
+      ((await _call('sendWaiverReminders', {'eventId': eventId}))['sent']
+              as num?)
           ?.toInt() ??
       0;
 }

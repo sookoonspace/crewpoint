@@ -27,6 +27,7 @@ import 'package:crewpoint_app/app/features/dashboard/domain/models/role.dart';
 import 'package:crewpoint_app/app/features/dashboard/presentation/expense_access_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/fields_screen.dart';
 import 'package:crewpoint_app/app/features/registration/presentation/registration_settings_screen.dart';
+import 'package:crewpoint_app/app/features/registration/presentation/waiver_editor_screen.dart';
 import 'package:crewpoint_app/l10n/gen/app_localizations.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/import_screen.dart';
 import 'package:crewpoint_app/app/features/participants/presentation/link_requests_screen.dart';
@@ -278,6 +279,18 @@ class RolesHarness {
                   eventId: eventId,
                   child: (event) => RegistrationSettingsScreen(event: event),
                 ),
+                routes: [
+                  GoRoute(
+                    path: 'waivers/:waiverId',
+                    builder: (_, state) => EventGuard(
+                      eventId: eventId,
+                      child: (event) => WaiverEditorScreen(
+                        event: event,
+                        waiverId: state.pathParameters['waiverId'] ?? 'new',
+                      ),
+                    ),
+                  ),
+                ],
               ),
               GoRoute(
                 path: 'transfer',

@@ -1,8 +1,8 @@
 # Derod Gaam Convention 2027: Test Report (v4)
 
-**Test spec:** [`CREWPOINT_CONVENTION_TEST_v4.md`](CREWPOINT_CONVENTION_TEST_v4.md) · **Run:** Nov 27, 2026, at the end of Stage 1, on `main` at `9e71546` · **First run:** Nov 3, 2026
+**Test spec:** [`CREWPOINT_CONVENTION_TEST_v4.md`](CREWPOINT_CONVENTION_TEST_v4.md) · **Run:** Nov 27, 2026, at the end of Stage 1, on `main` at `6fb68f1` · **First run:** Nov 3, 2026
 
-**Result: Stage 1, the platform foundation, is complete, but CrewPoint cannot run this event yet.** Registration and payments arrive in Stage 2, email and Gujarati in Stage 3, and event-day check-in in Stage 5. Of 206 scenarios, 37 pass, 20 are partial, 1 fails, 53 are not built, 91 are platform requirements for later stages, and 3 need a person or outside access. On Nov 3, 2 passed.
+**Result: Stage 1, the platform foundation, is complete, but CrewPoint cannot run this event yet.** Registration and payments arrive in Stage 2, email and Gujarati in Stage 3, and event-day check-in in Stage 5. Of 206 scenarios, 39 pass, 18 are partial, 1 fails, 53 are not built, 91 are platform requirements for later stages, and 3 need a person or outside access. On Nov 3, 2 passed.
 
 **What Stage 1 changed for this event:**
 
@@ -58,7 +58,7 @@ PLATFORM marks what the first run expected a bought tool to do. CrewPoint now bu
 | BG: Budget and sponsorship list | · | · | · | · | 7 | · | 1 | 8 |
 | H: Committee | 5 | · | · | 2 | · | · | · | 7 |
 | V: Volunteers | · | · | · | 4 | 1 | · | · | 5 |
-| W: Waterpark day | 1 | 2 | · | 3 | 3 | · | · | 9 |
+| W: Waterpark day | 2 | 1 | · | 3 | 3 | · | · | 9 |
 | RF: Raffle | · | · | · | · | 12 | · | · | 12 |
 | HL: Paid helpers | · | · | · | · | 5 | · | · | 5 |
 | AL: Alcohol (21+) | · | · | · | 2 | · | · | · | 2 |
@@ -67,11 +67,11 @@ PLATFORM marks what the first run expected a bought tool to do. CrewPoint now bu
 | X: Roster import | 5 | · | · | 1 | 1 | · | · | 7 |
 | S: Scale | 4 | 2 | · | 2 | · | · | · | 8 |
 | R: Safety | · | · | · | 6 | · | · | · | 6 |
-| Z: Privacy | 2 | 1 | · | 3 | 1 | · | · | 7 |
+| Z: Privacy | 3 | · | · | 3 | 1 | · | · | 7 |
 | O: Operations | 3 | · | · | 3 | · | 2 | · | 8 |
 | U: Accessibility | · | 3 | 1 | · | · | 1 | · | 5 |
 | N: Notifications | 2 | 6 | · | 9 | 15 | · | · | 32 |
-| **Total** | **37** | **20** | **1** | **53** | **91** | **3** | **1** | **206** |
+| **Total** | **39** | **18** | **1** | **53** | **91** | **3** | **1** | **206** |
 
 ### 2.1 Cost (S-08)
 
@@ -170,8 +170,8 @@ Measured on emulators rather than modelled: a count run reads about 1.3 document
 | W-02 | Package cost recalculates: 24 → $9,201.25; 260 synthetic → $9,536.72; exactly 250 →… | NOT BUILT | · | No package cost model. Stage 4 (planning). | Stage 4 | P1 |
 | W-03 | Committee alerts at 225 and above 250. | NOT BUILT | · | No capacity alerts on a sign-up. Stage 4 (planning), with messages from Stage 3. | Stage 4 | P1 |
 | W-04 | Shuttle assignment: 17 riders, 15 seats per run, families together, no overbooking,… | NOT BUILT | · | No transport runs or seat assignment. Stage 4 (planning, alongside seating). | Stage 4 | P2 |
-| W-05 | Liability waiver: the family contact accepts for each member going (parent/guardian… | PARTIAL | `W-05` tests (1 pass) | Server built in #246: organizers write versioned waivers that apply to everyone, a category or a session's sign-ups; the contact accepts for each person going (as guardian for a child), and the server keeps version, time and signer. The form's waiver step comes with #246's app part. | Stage 4 | P1 |
-| W-06 | Missing-waiver list shows F5; the boarding check at the shuttle flags F5 until signed. | PARTIAL | `W-06` tests (1 pass) | The missing-waiver list and its email are built in #246 (server; the People filter comes with the app part). The boarding check at the shuttle is Stage 5 (event day). | Stage 5 | P2 |
+| W-05 | Liability waiver: the family contact accepts for each member going (parent/guardian… | PASS | `W-05` tests (1 pass) | Built in #246: organizers write versioned waivers in Registration settings that apply to everyone, a category or a session's sign-ups; the form's Waivers step asks the contact to accept for each person going (as parent or guardian for a child), Submit waits for required ones, and the server keeps version, time and signer. | · | P1 |
+| W-06 | Missing-waiver list shows F5; the boarding check at the shuttle flags F5 until signed. | PARTIAL | `W-06` tests (1 pass) | Built in #246: People's Missing waiver filter lists who still needs one, registrations.manage emails reminders from it, and families accept from my registration, even after the deadline. The boarding check at the shuttle is Stage 5 (event day). | Stage 5 | P2 |
 | W-07 | Park meal count goes to Hawaiian Waters; hotel lunch count goes to the caterer; each… | PLATFORM | · | Counts per session already split the lunch by location (B-05). Sending each count to its supplier is Stage 4. | Stage 4 | P2 |
 | W-08 | Personal agenda: waterpark people see S1/S2, W1, R1/R2 and the park meal; hotel people… | PLATFORM | · | Personal agendas already follow sign-ups (J-06). The shuttle runs on them arrive with Stage 4. | Stage 4 | P2 |
 | W-09 | Bhajan day program visible to all; it isn't a sign-up (no headcount needed). | PLATFORM | · | Sessions for everyone already exist (#81). Checked with the waterpark build in Stage 4. | Stage 4 | P2 |
@@ -237,7 +237,7 @@ Measured on emulators rather than modelled: a count run reads about 1.3 document
 | R-06 | Lost child alerts need an acknowledgement, and go back out if nobody responds within… | NOT BUILT | · | No safety features or fields. | Stage 5 | P2 |
 | Z-01 | Children's data: only a parent enters it, birth dates are not shown to committee or… | PASS | `Z-01` tests (6 pass) | Children have no account; only a linked parent of their group, or someone with participants.edit, enters them (#75). Birth dates sit in private details that committee leads and volunteers cannot read, and counts and reports show age bands (#76, #83). The privacy policy covers children (#74). Tests: `Z-01` in test_acceptance/privacy_policy_test.dart and functions/test_acceptance/children_data.test.ts. A lawyer must still approve the policy before prod (Req 39). | · | P0 |
 | Z-02 | Photo and video consent per family, including children, available to the photographer. | NOT BUILT | · | No consent record or retention rule for event data. | · | P0 |
-| Z-03 | Liability waiver accepted at registration and recorded `[OWNER INPUT]` for the text.… | PARTIAL | `Z-03` tests (1 pass) | Server built in #246 with placeholder text: a required waiver blocks Submit until accepted, and each acceptance is recorded. The waiver text is the owner's to give, and the form's waiver step comes with #246's app part. | Stage 2 | P0 |
+| Z-03 | Liability waiver accepted at registration and recorded `[OWNER INPUT]` for the text.… | PASS | `Z-03` tests (1 pass) | Built in #246 with placeholder text: a required waiver blocks Submit until accepted, and each acceptance is recorded. The convention's waiver text is the owner's to paste into Registration settings. | · | P0 |
 | Z-04 | UK and Canadian attendees: consent, access and deletion requests work, and the privacy… | PASS | `Z-04` tests (7 pass) | The privacy policy covers Canadian and UK rights, regulators and cross-border storage (#74). Deleting an account removes the person from shared records and personal subcollections, and turns a linked attendee record into an unnamed entry that still counts (#56, #78). Tests: `Z-04`. A lawyer must still approve the policy before prod (Req 39). | · | P0 |
 | Z-05 | Email has a working unsubscribe for non-essential messages; SMS (if used) is… | NOT BUILT | · | No email or SMS, so no unsubscribe. | Stage 3 | P0 |
 | Z-06 | Tax and legal wording on receipts is approved, and records are kept for the required… | PLATFORM | · | Platform requirement for Stage 2 (receipts), now built into CrewPoint rather than a bought tool (L6). | Stage 2 | P0 |

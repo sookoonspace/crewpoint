@@ -169,6 +169,40 @@ void main() {
     await robot.finish();
   });
 
+  testWidgets('W-06 the Missing waiver filter lists who still needs one, and '
+      'registrations.manage emails reminders from it', (tester) async {
+    final robot = await open(tester);
+    // No waivers yet: no filter.
+    expect(find.byKey(const Key('people.roster.missingWaiver')), findsNothing);
+    await harness.firestore.doc('$e/waivers/park').set({
+      'title': {'en': 'Park waiver'},
+      'text': {'en': '[PLACEHOLDER]'},
+      'version': 1,
+      'appliesTo': {'kind': 'everyone'},
+    });
+    await harness.firestore.doc('$e/participants/raj').update({
+      'waiversMissing': true,
+      'missingWaivers': ['park'],
+    });
+    await robot.settle();
+    await robot.tap(const Key('people.roster.missingWaiver'));
+    expect(find.byKey(const Key('people.tile.raj')), findsOneWidget);
+    expect(find.byKey(const Key('people.tile.ana')), findsNothing);
+    harness.calls.remindersSent = 1;
+    await robot.tap(const Key('people.roster.sendReminders'));
+    expect(find.text('Email reminders?'), findsOneWidget);
+    await robot.tap(const Key('people.roster.reminders.confirm'));
+    expect(
+      harness.calls.calls,
+      contains('sendWaiverReminders:${RolesHarness.eventId}'),
+    );
+    expect(find.text('1 reminder sent.'), findsOneWidget);
+    // All again: everyone is back.
+    await robot.tap(const Key('people.roster.all'));
+    expect(find.byKey(const Key('people.tile.ana')), findsOneWidget);
+    await robot.finish();
+  });
+
   testWidgets('Z-01 an organizer adds a child to a group, with a private birth '
       'date', (tester) async {
     final robot = await open(tester, location: '$people/new?group=f2');

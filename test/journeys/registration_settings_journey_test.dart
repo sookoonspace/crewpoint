@@ -430,4 +430,58 @@ void main() {
     expect(find.text('લિંક ધરાવનાર કોઈપણ નોંધણી કરી શકે'), findsOneWidget);
     await robot.finish();
   });
+
+  testWidgets('#246, Req 26, 28: the organizer adds a waiver for a session, '
+      'and a changed text is a new version', (tester) async {
+    final robot = await open(tester);
+    await harness.firestore
+        .doc('events/${RolesHarness.eventId}/sessions/park')
+        .set({
+          'title': 'Water park',
+          'startAt': DateTime.utc(2027, 7, 17, 15),
+          'hidden': false,
+        });
+    await robot.settle();
+    await robot.reveal(find.byKey(const Key('$k.noWaivers')));
+    expect(find.text('No waivers yet.'), findsOneWidget);
+    await robot.tap(const Key('$k.addWaiver'));
+    expect(find.text('New waiver'), findsOneWidget);
+    // Nothing typed: Save says what is missing and sends nothing.
+    await robot.tap(const Key('registration.waiver.save'));
+    expect(find.text('Add a title.'), findsOneWidget);
+    expect(harness.calls.savedWaivers, isEmpty);
+    await robot.typeInto(const Key('registration.waiver.title'), 'Park waiver');
+    await robot.typeInto(
+      const Key('registration.waiver.text'),
+      '[PLACEHOLDER: the park waiver text]',
+    );
+    await robot.tap(const Key('registration.waiver.appliesTo'));
+    await robot.tap(const Key('registration.waiver.option.session'));
+    await robot.tap(const Key('registration.waiver.save'));
+    expect(find.text('Choose who it applies to.'), findsOneWidget);
+    await robot.tap(const Key('registration.waiver.target'));
+    await robot.tap(const Key('registration.waiver.option.park'));
+    await robot.tap(const Key('registration.waiver.required'));
+    await robot.tap(const Key('registration.waiver.save'));
+    await robot.settle();
+
+    final saved = harness.calls.savedWaivers.single;
+    expect(saved['appliesTo'], {'kind': 'session', 'id': 'park'});
+    expect(saved['required'], isTrue);
+    expect(saved['version'], 1);
+    // Back on settings, the waiver is listed.
+    await robot.reveal(find.text('Park waiver'));
+    expect(
+      find.text('Version 1 · Signed up for Water park · Required'),
+      findsOneWidget,
+    );
+
+    await robot.tap(Key('$k.waiver.${saved['id']}'));
+    expect(find.text('Version 1'), findsOneWidget);
+    await robot.typeInto(const Key('registration.waiver.text'), 'New words');
+    await robot.tap(const Key('registration.waiver.save'));
+    await robot.settle();
+    expect(harness.calls.savedWaivers.last['version'], 2);
+    await robot.finish();
+  });
 }

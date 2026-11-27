@@ -8,6 +8,7 @@ import 'package:crewpoint_app/app/features/participants/domain/models/custom_fie
 import 'package:crewpoint_app/app/features/registration/domain/my_registration.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_form.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_settings.dart';
+import 'package:crewpoint_app/app/features/registration/domain/waivers.dart';
 
 import '../harness/sign_in_harness.dart';
 import '../robots/registration_robot.dart';
@@ -737,6 +738,188 @@ void main() {
         find.text('Questions? Call Nilesh at 312-555-0123'),
         findsOneWidget,
       );
+      await h.finish(tester);
+    });
+  });
+
+  group('#246 waivers and consent', () {
+    const parkWaiver = Waiver(
+      id: 'park',
+      title: LocalText('Park waiver'),
+      text: LocalText('[PLACEHOLDER: the park waiver text]'),
+      appliesTo: WaiverAppliesTo.session('park'),
+      required: true,
+    );
+    final waiverForm = RegistrationFormSpec(
+      slug: slug,
+      title: 'Convention 2027',
+      timeZone: 'America/Chicago',
+      startDate: DateTime.utc(2027, 7, 16),
+      endDate: DateTime.utc(2027, 7, 18),
+      dateOnly: true,
+      blocks: const {
+        RegistrationBlock.people,
+        RegistrationBlock.sessionChoices,
+        RegistrationBlock.waivers,
+        RegistrationBlock.contact,
+      },
+      categories: const [
+        EventCategory(id: 'child', name: 'Child', maxAge: 17, isChild: true),
+        EventCategory(id: 'adult', name: 'Adult', minAge: 18),
+      ],
+      choices: [
+        [
+          ChoiceSession(
+            id: 'park',
+            title: 'Water park',
+            startAt: DateTime.utc(2027, 7, 17, 15),
+          ),
+        ],
+      ],
+      waivers: const [parkWaiver],
+    );
+
+    testWidgets('W-05, Z-03: the contact accepts the park waiver for each '
+        'person going, as guardian for a child; Submit waits for it; consent '
+        'is asked once', (tester) async {
+      final (h, r) = await open(tester, spec: waiverForm);
+      expect(r.progress, 'Step 1 of 5');
+      await r.name(0, 'Asha Patel');
+      await r.birthDate(0, '03/01/1980');
+      await r.addPerson();
+      await r.name(1, 'Dev Patel');
+      await r.birthDate(1, '05/09/2016');
+      await r.next();
+      await r.session(0, 'park');
+      await r.session(1, 'park');
+      await r.next();
+
+      expect(r.progress, 'Step 3 of 5');
+      expect(find.text('Park waiver'), findsOneWidget);
+      expect(find.text('Required to register'), findsOneWidget);
+      expect(find.text('I accept for Asha Patel'), findsOneWidget);
+      expect(
+        find.text("I accept as Dev Patel's parent or guardian"),
+        findsOneWidget,
+      );
+      // The text is behind "Read the waiver".
+      expect(find.text('[PLACEHOLDER: the park waiver text]'), findsNothing);
+      await r.tap(const Key('$k.waiver.park.read'));
+      expect(find.text('[PLACEHOLDER: the park waiver text]'), findsOneWidget);
+      await r.acceptWaiver('park', 0);
+      await r.next();
+
+      expect(r.progress, 'Step 4 of 5');
+      expect(find.text('Announcements'), findsOneWidget);
+      await r.tap(const Key('$k.consent.email'));
+      await r.next();
+      await r.submit();
+      // Dev has not accepted: back to the waivers step, nothing sent.
+      expect(h.calls.submissions, isEmpty);
+      expect(r.progress, 'Step 3 of 5');
+      expect(find.text('Please accept this to register.'), findsOneWidget);
+      await r.acceptWaiver('park', 1);
+      await r.next();
+      await r.next();
+      expect(find.text('Asha Patel: Park waiver'), findsOneWidget);
+      expect(find.text('Accepted'), findsNWidgets(2));
+      await r.submit();
+
+      final sent = h.calls.submissions.single;
+      final people = (sent['people']! as List).cast<Map<String, Object?>>();
+      expect(people.map((p) => p['acceptWaivers']), [
+        ['park'],
+        ['park'],
+      ]);
+      expect(sent['consent'], {'email': true, 'sms': false});
+      await h.finish(tester);
+    });
+
+    for (final locale in [null, const Locale('gu')]) {
+      testWidgets('Req 71: the waivers step fits a 320 px phone at 200% text '
+          'in dark mode (${locale?.languageCode ?? 'en'})', (tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = 2;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final (h, r) = await open(
+          tester,
+          spec: waiverForm,
+          size: const Size(320, 3200),
+          dark: true,
+          locale: locale,
+        );
+        await r.addPerson();
+        await r.next();
+        await r.session(0, 'park');
+        await r.session(1, 'park');
+        await r.next();
+        await r.tap(const Key('$k.waiver.park.read'));
+        expect(tester.takeException(), isNull, reason: 'waivers');
+        await r.next();
+        expect(tester.takeException(), isNull, reason: 'contact and consent');
+        await r.next();
+        await r.submit();
+        expect(tester.takeException(), isNull, reason: 'problems shown');
+        await h.finish(tester);
+      });
+    }
+
+    testWidgets('someone not signed up for the session is asked nothing', (
+      tester,
+    ) async {
+      final (h, r) = await open(tester, spec: waiverForm);
+      await r.name(0, 'Jaya Shah');
+      await r.birthDate(0, '02/02/1950');
+      await r.next();
+      await r.next();
+      expect(r.progress, 'Step 3 of 5');
+      expect(
+        find.text('None of the waivers apply to the people on this form.'),
+        findsOneWidget,
+      );
+      await h.finish(tester);
+    });
+
+    testWidgets('W-06: from my registration, the family accepts a waiver '
+        'they skipped, even after the deadline', (tester) async {
+      final (h, r) = await open(tester);
+      h.calls.myRegistrations[slug] = MyRegistrationView(
+        title: 'Convention 2027',
+        timeZone: 'America/Chicago',
+        deadline: DateTime.utc(2026, 1, 1),
+        registration: MyRegistration(
+          status: 'submitted',
+          submittedAt: DateTime.utc(2026, 12, 1, 18),
+          people: const [
+            MyPerson(id: 'p1', name: 'Asha Patel', categoryId: 'adult'),
+            MyPerson(
+              id: 'p2',
+              name: 'Dev Patel',
+              categoryId: 'child',
+              isChild: true,
+              missingWaivers: ['park'],
+            ),
+          ],
+        ),
+        waivers: const [
+          Waiver(
+            id: 'park',
+            title: LocalText('Park waiver'),
+            text: LocalText('[PLACEHOLDER]'),
+            appliesTo: WaiverAppliesTo.session('park'),
+          ),
+        ],
+      );
+      h.router.go('/e/$slug/registration');
+      await h.settle(tester);
+      expect(find.text('Waivers to accept'), findsOneWidget);
+      expect(find.text('I accept for Asha Patel'), findsNothing);
+      await r.tap(const Key('registration.mine.acceptWaivers'));
+      expect(find.text('Tick at least one to accept.'), findsOneWidget);
+      expect(h.calls.acceptedWaivers, isEmpty);
+      await r.tap(const Key('registration.mine.waiver.park.accept.1'));
+      await r.tap(const Key('registration.mine.acceptWaivers'));
+      expect(h.calls.acceptedWaivers, ['p2/park']);
+      expect(find.text('Thank you. The waivers are accepted.'), findsOneWidget);
       await h.finish(tester);
     });
   });

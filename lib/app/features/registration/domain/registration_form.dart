@@ -4,6 +4,7 @@ import 'package:crewpoint_app/app/features/participants/domain/models/custom_fie
 import 'package:crewpoint_app/app/features/registration/domain/form_conditions.dart';
 import 'package:crewpoint_app/app/features/registration/domain/registration_settings.dart';
 import 'package:crewpoint_app/app/features/registration/domain/session_choices.dart';
+import 'package:crewpoint_app/app/features/registration/domain/waivers.dart';
 
 /// One by-sign-up session offered on the form (Spec #233 Req 17).
 @immutable
@@ -71,6 +72,7 @@ class FormStep {
   static const people = 'people';
   static const stay = 'stay';
   static const sessions = 'sessions';
+  static const waivers = 'waivers';
   static const contact = 'contact';
   static const review = 'review';
 }
@@ -78,7 +80,7 @@ class FormStep {
 /// Something to fix before Submit (Req 21): on which step, for which
 /// person (none for the group or the contact), and what: a question ID or
 /// `name`, `birthDate`, `age`, `departureAt`, `signUps`, `email`, `phone`,
-/// `noPeople`.
+/// `noPeople`, or a required waiver's ID on the waivers step.
 @immutable
 class FormProblem {
   const FormProblem(this.step, this.key, {this.person});
@@ -114,6 +116,8 @@ class PersonEntry {
     this.departureAt,
     this.signUps = const {},
     this.optOuts = const {},
+    this.acceptWaivers = const {},
+    this.waiverVersions = const {},
   });
 
   /// The participant this entry edits (#244); null for someone new.
@@ -134,6 +138,12 @@ class PersonEntry {
   /// Sessions everyone attends that this person will miss (#244, B-03).
   final Set<String> optOuts;
 
+  /// Waivers accepted for this person on this form (#246).
+  final Set<String> acceptWaivers;
+
+  /// The versions this person accepted before, from the server (#246).
+  final Map<String, int> waiverVersions;
+
   PersonEntry copyWith({
     String? name,
     String? birthDate,
@@ -143,6 +153,7 @@ class PersonEntry {
     DateTime? departureAt,
     Set<String>? signUps,
     Set<String>? optOuts,
+    Set<String>? acceptWaivers,
     bool clearArrival = false,
     bool clearDeparture = false,
   }) => PersonEntry(
@@ -155,6 +166,8 @@ class PersonEntry {
     departureAt: clearDeparture ? null : departureAt ?? this.departureAt,
     signUps: signUps ?? this.signUps,
     optOuts: optOuts ?? this.optOuts,
+    acceptWaivers: acceptWaivers ?? this.acceptWaivers,
+    waiverVersions: waiverVersions,
   );
 }
 
@@ -169,6 +182,8 @@ class RegistrationDraft {
     this.groupName = '',
     this.email = '',
     this.phone = '',
+    this.consentEmail = false,
+    this.consentSms = false,
   });
 
   final String submissionId;
@@ -178,6 +193,11 @@ class RegistrationDraft {
   final String email;
   final String phone;
 
+  /// Consent to announcements by email and by SMS (Req 31, #246), apart
+  /// from essential messages.
+  final bool consentEmail;
+  final bool consentSms;
+
   /// The draft as kept on the device and on the server (#243): plain JSON,
   /// times in milliseconds since the epoch.
   Map<String, Object?> toMap() => {
@@ -185,6 +205,8 @@ class RegistrationDraft {
     'groupName': groupName,
     'email': email,
     'phone': phone,
+    'consentEmail': consentEmail,
+    'consentSms': consentSms,
     'groupAnswers': groupAnswers,
     'people': [
       for (final p in people)
@@ -198,6 +220,8 @@ class RegistrationDraft {
           'departureAt': p.departureAt?.millisecondsSinceEpoch,
           'signUps': p.signUps.toList()..sort(),
           'optOuts': p.optOuts.toList()..sort(),
+          'acceptWaivers': p.acceptWaivers.toList()..sort(),
+          'waiverVersions': p.waiverVersions,
         },
     ],
   };
@@ -219,6 +243,8 @@ class RegistrationDraft {
       groupName: text(raw['groupName']),
       email: text(raw['email']),
       phone: text(raw['phone']),
+      consentEmail: raw['consentEmail'] == true,
+      consentSms: raw['consentSms'] == true,
       groupAnswers: answers(raw['groupAnswers']),
       people: [
         for (final p in people)
@@ -241,6 +267,15 @@ class RegistrationDraft {
                 for (final s in (p['optOuts'] as List?) ?? const [])
                   if (s is String) s,
               },
+              acceptWaivers: {
+                for (final s in (p['acceptWaivers'] as List?) ?? const [])
+                  if (s is String) s,
+              },
+              waiverVersions: {
+                if (p['waiverVersions'] is Map)
+                  for (final e in (p['waiverVersions'] as Map).entries)
+                    if (e.value is num) '${e.key}': (e.value as num).toInt(),
+              },
             ),
       ],
     );
@@ -254,6 +289,8 @@ class RegistrationDraft {
     String? groupName,
     String? email,
     String? phone,
+    bool? consentEmail,
+    bool? consentSms,
   }) => RegistrationDraft(
     submissionId: submissionId,
     people: people ?? this.people,
@@ -261,6 +298,8 @@ class RegistrationDraft {
     groupName: groupName ?? this.groupName,
     email: email ?? this.email,
     phone: phone ?? this.phone,
+    consentEmail: consentEmail ?? this.consentEmail,
+    consentSms: consentSms ?? this.consentSms,
   );
 }
 
@@ -297,6 +336,7 @@ class RegistrationFormSpec {
     this.editable,
     this.attending = const [],
     this.contactLine,
+    this.waivers = const [],
   });
 
   factory RegistrationFormSpec.fromMap(Map<String, Object?> data) {
@@ -393,6 +433,10 @@ class RegistrationFormSpec {
             ),
       ],
       contactLine: LocalText.tryParse(data['contactLine']),
+      waivers: [
+        for (final raw in (data['waivers'] as List?) ?? const [])
+          ?Waiver.tryParse(raw),
+      ],
     );
   }
 
@@ -428,6 +472,9 @@ class RegistrationFormSpec {
   /// How to reach the organizer, for closed pages (Req 35).
   final LocalText? contactLine;
 
+  /// The event's waivers (#246), with the waivers block on.
+  final List<Waiver> waivers;
+
   bool get editing => current != null;
 
   bool has(RegistrationBlock block) => blocks.contains(block);
@@ -451,6 +498,8 @@ class RegistrationFormSpec {
           if (has(RegistrationBlock.sessionChoices) &&
               (choices.isNotEmpty || attending.isNotEmpty))
             const FormStep(FormStep.sessions),
+          if (has(RegistrationBlock.waivers) && waivers.isNotEmpty)
+            const FormStep(FormStep.waivers),
           if (has(RegistrationBlock.contact)) const FormStep(FormStep.contact),
           const FormStep(FormStep.review),
         ];
@@ -480,6 +529,24 @@ class RegistrationFormSpec {
     categoryId: person == null ? null : categoryOf(person)?.id,
     answers: {...draft.groupAnswers, ...?person?.answers},
   );
+
+  /// The waivers that apply to [person] and that their earlier acceptance
+  /// does not cover (Req 26, 28): what the waivers step asks of them.
+  List<Waiver> waiversFor(PersonEntry person) => [
+    if (has(RegistrationBlock.waivers))
+      for (final w in waivers)
+        if (waiverApplies(
+              w.appliesTo,
+              categoryId: categoryOf(person)?.id,
+              signUps: person.signUps,
+            ) &&
+            !acceptanceStatus(
+              version: w.version,
+              requireLatest: w.requireLatest,
+              accepted: person.waiverVersions[w.id],
+            ).counts)
+          w,
+  ];
 
   /// Everything to fix before Submit, in step order (Req 21).
   List<FormProblem> problems(RegistrationDraft draft) {
@@ -538,6 +605,14 @@ class RegistrationFormSpec {
         }
       }
     }
+    // A required waiver blocks Submit until accepted (Req 29).
+    for (var i = 0; i < people.length; i++) {
+      for (final w in waiversFor(people[i])) {
+        if (w.required && !people[i].acceptWaivers.contains(w.id)) {
+          found.add(FormProblem(FormStep.waivers, w.id, person: i));
+        }
+      }
+    }
     if (has(RegistrationBlock.contact) &&
         !_email.hasMatch(draft.email.trim())) {
       found.add(const FormProblem(FormStep.contact, 'email'));
@@ -566,6 +641,8 @@ class RegistrationFormSpec {
           if (draft.email.trim().isNotEmpty) 'email': draft.email.trim(),
           if (draft.phone.trim().isNotEmpty) 'phone': draft.phone.trim(),
         },
+      if (has(RegistrationBlock.contact) && !editing)
+        'consent': {'email': draft.consentEmail, 'sms': draft.consentSms},
       'people': [
         for (final p in draft.people)
           {
@@ -588,8 +665,16 @@ class RegistrationFormSpec {
               'signUps': p.signUps.toList()..sort(),
             if (has(RegistrationBlock.sessionChoices) && p.optOuts.isNotEmpty)
               'optOuts': p.optOuts.toList()..sort(),
+            if (_accepting(p) case final ids when ids.isNotEmpty)
+              'acceptWaivers': ids,
           },
       ],
     };
+  }
+
+  /// [person]'s accepted waivers that still apply, sorted.
+  List<String> _accepting(PersonEntry person) {
+    final applies = {for (final w in waiversFor(person)) w.id};
+    return person.acceptWaivers.where(applies.contains).toList()..sort();
   }
 }

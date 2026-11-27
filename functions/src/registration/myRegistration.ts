@@ -83,7 +83,7 @@ export const getMyRegistration = onCall({timeoutSeconds: 30}, async (request) =>
         groupName: String(group.data()?.name ?? ""),
         // Each person's missing waivers (#246, W-06), to accept here.
         people: sorted.map((p) => ({
-          id: p.id, name: String(p.name ?? ""), categoryId: p.categoryId ?? null,
+          id: p.id, name: String(p.name ?? ""), categoryId: p.categoryId ?? null, isChild: p.isChild === true,
           missingWaivers: p.registrationStatus === "cancelled" ? [] : p.missingWaivers ?? [],
         })),
       },

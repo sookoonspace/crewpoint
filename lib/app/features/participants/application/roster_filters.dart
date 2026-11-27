@@ -13,6 +13,7 @@ class RosterFilters {
     this.group,
     this.category,
     this.answer,
+    this.missingWaiver = false,
   });
 
   final String search;
@@ -22,8 +23,15 @@ class RosterFilters {
   /// A field answer to filter by, such as Diet is Jain.
   final ({CustomField field, Object value})? answer;
 
+  /// Only people missing a waiver (#246); it replaces the other filters.
+  final bool missingWaiver;
+
   bool get any =>
-      search.isNotEmpty || group != null || category != null || answer != null;
+      search.isNotEmpty ||
+      group != null ||
+      category != null ||
+      answer != null ||
+      missingWaiver;
 }
 
 class RosterFiltersController extends Notifier<RosterFilters> {
@@ -66,6 +74,10 @@ class RosterFiltersController extends Notifier<RosterFilters> {
         category: state.category,
         answer: answer,
       );
+
+  /// Only people missing a waiver, or back to everyone (#246).
+  void setMissingWaiver(bool on) =>
+      state = RosterFilters(search: state.search, missingWaiver: on);
 
   /// Back to everyone.
   void clear() => state = RosterFilters(search: state.search);
