@@ -3,7 +3,7 @@
  * takes places whole or waits whole; freed places go to the first waiting
  * group that fits.
  */
-import {allocate, nextGroupThatFits} from '../../src/registration/allocate';
+import {allocate, expireOffers, nextGroupThatFits, planOffers} from '../../src/registration/allocate';
 
 describe('allocate', () => {
   test('a group that fits is submitted and takes its places', () => {
@@ -51,5 +51,54 @@ describe('nextGroupThatFits', () => {
   test('none when nothing fits', () => {
     expect(nextGroupThatFits(queue, 0)).toBeNull();
     expect(nextGroupThatFits([], 9)).toBeNull();
+  });
+});
+
+describe('planOffers (Req 32, 34, #248)', () => {
+  const HOUR = 60 * 60 * 1000;
+  const now = Date.UTC(2027, 1, 1, 12);
+  const queue = [
+    {registrationId: 'big', size: 5, position: 1},
+    {registrationId: 'two', size: 2, position: 2},
+    {registrationId: 'one', size: 1, position: 3},
+  ];
+  const base = {capacity: 10, placesUsed: 7, offers: [], queue, now, offerHours: 72, deadline: null};
+
+  test('offers the first group that fits, holding its places, for offerHours', () => {
+    expect(planOffers(base)).toEqual([
+      {registrationId: 'two', size: 2, offeredAt: now, expiresAt: now + 72 * HOUR},
+      {registrationId: 'one', size: 1, offeredAt: now, expiresAt: now + 72 * HOUR},
+    ]);
+  });
+
+  test('a larger group skipped keeps its place and is offered when enough frees up', () => {
+    expect(planOffers({...base, placesUsed: 5}).map((o) => o.registrationId)).toEqual(['big']);
+  });
+
+  test('open offers hold their places, and a group already offered is not offered again', () => {
+    const open = [{registrationId: 'two', size: 2, offeredAt: now - HOUR, expiresAt: now + HOUR}];
+    expect(planOffers({...base, offers: open}).map((o) => o.registrationId)).toEqual(['one']);
+    expect(planOffers({...base, placesUsed: 8, offers: open})).toEqual([]);
+  });
+
+  test('no automatic offers after the deadline, and none when full', () => {
+    expect(planOffers({...base, deadline: now - 1})).toEqual([]);
+    expect(planOffers({...base, placesUsed: 10})).toEqual([]);
+    expect(planOffers({...base, placesUsed: 12})).toEqual([]);
+  });
+
+  test('with no capacity every waiting group is offered', () => {
+    expect(planOffers({...base, capacity: null})).toHaveLength(3);
+  });
+});
+
+describe('expireOffers', () => {
+  test('splits open offers from late ones, with an injected time', () => {
+    const offers = [
+      {registrationId: 'a', size: 1, offeredAt: 0, expiresAt: 100},
+      {registrationId: 'b', size: 1, offeredAt: 0, expiresAt: 200},
+    ];
+    expect(expireOffers(offers, 150)).toEqual({open: [offers[1]], expired: [offers[0]]});
+    expect(expireOffers(offers, 100).expired).toEqual([offers[0]]);
   });
 });

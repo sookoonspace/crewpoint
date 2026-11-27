@@ -12,6 +12,7 @@ import {
   parseRegistrationSettings,
   withRegistrationDefaults,
 } from "./settings";
+import {offerOnwardNow} from "./offers";
 
 const db = getFirestore();
 
@@ -125,6 +126,8 @@ export const saveRegistrationSettings = onCall({timeoutSeconds: 30}, async (requ
           changedAt: FieldValue.serverTimestamp(),
         });
       });
+      // A higher capacity, or offers turned back on, offers places now (#248).
+      await offerOnwardNow(db, eventId);
       return {success: true};
     }
   );

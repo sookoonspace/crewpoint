@@ -62,4 +62,7 @@ export {saveWaiver, acceptWaivers, sendWaiverReminders} from "./registration/wai
 export {
   onPhotoConsentPersonWritten, onPhotoConsentAnswerWritten, onPhotoConsentGroupWritten,
 } from "./participants/photoConsent";
+export {
+  respondToOffer, manageOffer, onOffersScheduled, onTallyRecountScheduled,
+} from "./registration/offers";
 export {sendSignInLink} from "./account/signInLink";

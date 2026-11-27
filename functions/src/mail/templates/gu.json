@@ -23,5 +23,15 @@
     "subject": "{{eventTitle}} માટે એક સંમતિપત્ર બાકી છે",
     "text": "નમસ્તે,\n\n{{eventTitle}} માટેની તમારી {{word.registration.one.lower}} માં આ લોકોએ હજી સંમતિપત્ર સ્વીકારવાનું બાકી છે:\n\n{{people}}\n\nતમે તેને અહીં વાંચી અને સ્વીકારી શકો છો:\n\n{{link}}\n\nCrewPoint",
     "push": "{{eventTitle}} માટે એક સંમતિપત્ર બાકી છે."
+  },
+  "registrationOffer": {
+    "subject": "{{eventTitle}} માટે જગ્યા ઉપલબ્ધ છે",
+    "text": "નમસ્તે,\n\n{{eventTitle}} માં તમારા {{word.group.one.lower}} માટે જગ્યા ખાલી થઈ છે. તે {{until}} સુધી તમારા માટે રાખવામાં આવી છે.\n\nતમારી જગ્યા અહીં સ્વીકારો:\n\n{{link}}\n\nજો તમે આવી ન શકો, તો એ જ પાનાં પર ના, આભાર કહો, જેથી જગ્યા રાહ યાદીમાં આગળના લોકોને મળે.\n\nCrewPoint",
+    "push": "{{eventTitle}} માટે {{until}} સુધી જગ્યા ઉપલબ્ધ છે."
+  },
+  "registrationOfferExpired": {
+    "subject": "{{eventTitle}} માટેની તમારી ઓફર પૂરી થઈ ગઈ છે",
+    "text": "નમસ્તે,\n\n{{eventTitle}} માં તમારા {{word.group.one.lower}} માટે રાખેલી જગ્યા {{until}} સુધીમાં સ્વીકારાઈ નહીં, તેથી તે રાહ યાદીમાં આગળના લોકોને આપવામાં આવી છે. તમે હજી રાહ યાદીમાં છો, હવે કતારના અંતે.\n\nતમારી {{word.registration.one.lower}} અહીં જુઓ:\n\n{{link}}\n\nCrewPoint",
+    "push": "{{eventTitle}} માટેની તમારી ઓફર પૂરી થઈ ગઈ છે."
   }
 }
