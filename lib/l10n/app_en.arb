@@ -2362,5 +2362,57 @@
         "type": "int"
       }
     }
+  },
+  "registerFormCompletionEmailTitle": "Sign in with the email this link was sent to",
+  "@registerFormCompletionEmailTitle": {
+    "description": "A completion link opened with another email."
+  },
+  "registerFormCompletionEmailBody": "This link is for another email address. Sign out, then sign in with that address.",
+  "@registerFormCompletionEmailBody": {
+    "description": "Help."
+  },
+  "registerFormCompletionUsedTitle": "Already registered",
+  "@registerFormCompletionUsedTitle": {
+    "description": "A completion link already used."
+  },
+  "registerFormCompletionUsedBody": "This group has already registered. Its contact can see it in my registration.",
+  "@registerFormCompletionUsedBody": {
+    "description": "Help."
+  },
+  "registerFormCompletionGoneTitle": "This link no longer works",
+  "@registerFormCompletionGoneTitle": {
+    "description": "A completion link not found."
+  },
+  "registerFormCompletionGoneBody": "Ask the organizer to send a new one.",
+  "@registerFormCompletionGoneBody": {
+    "description": "Help."
+  },
+  "committeeSendLinkHeading": "Complete registration link",
+  "@committeeSendLinkHeading": {
+    "description": "Send-link section heading."
+  },
+  "committeeSendLinkHelp": "Email a link so this group can check its details and complete its registration. Whoever signs in with that address becomes its contact.",
+  "@committeeSendLinkHelp": {
+    "description": "Help."
+  },
+  "committeeLinkEmail": "Email address",
+  "@committeeLinkEmail": {
+    "description": "Field label."
+  },
+  "committeeSendLink": "Send link",
+  "@committeeSendLink": {
+    "description": "Button."
+  },
+  "committeeLinkSent": "Link sent.",
+  "@committeeLinkSent": {
+    "description": "After sending."
+  },
+  "committeeInvalidEmail": "Enter a valid email address.",
+  "@committeeInvalidEmail": {
+    "description": "Bad email."
+  },
+  "committeeLogCompletionSent": "Sent a registration link",
+  "@committeeLogCompletionSent": {
+    "description": "Log entry."
   }
 }

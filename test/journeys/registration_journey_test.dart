@@ -283,10 +283,7 @@ void main() {
       await r.addPerson();
       await tester.pump(const Duration(seconds: 4));
       await tester.pump();
-      expect(
-        find.byKey(const Key('$k.saveState.offline')),
-        findsOneWidget,
-      );
+      expect(find.byKey(const Key('$k.saveState.offline')), findsOneWidget);
       for (var step = 0; step < 6; step++) {
         expect(tester.takeException(), isNull, reason: 'step ${step + 1}');
         if (step < 5) await r.next();
@@ -359,9 +356,7 @@ void main() {
       await h.finish(tester);
     });
 
-    testWidgets('with no registration yet, it offers Register', (
-      tester,
-    ) async {
+    testWidgets('with no registration yet, it offers Register', (tester) async {
       final (h, r) = await open(tester);
       h.router.go('/e/$slug/registration');
       await h.settle(tester);
@@ -499,12 +494,15 @@ void main() {
       expect(r2.progress, 'Step 1 of 6');
       expect(find.text('Patel family'), findsOneWidget);
       expect(
-        tester.widget<EditableText>(
-          find.descendant(
-            of: find.byKey(const Key('$k.person.1.name')),
-            matching: find.byType(EditableText),
-          ),
-        ).controller.text,
+        tester
+            .widget<EditableText>(
+              find.descendant(
+                of: find.byKey(const Key('$k.person.1.name')),
+                matching: find.byType(EditableText),
+              ),
+            )
+            .controller
+            .text,
         'Dev Patel',
       );
       for (var i = 0; i < 5; i++) {
@@ -688,7 +686,9 @@ void main() {
         tester,
         spec: editing(
           editable: FormEditable.contact,
-          contactLine: const LocalText('Questions? Call Nilesh at 312-555-0123'),
+          contactLine: const LocalText(
+            'Questions? Call Nilesh at 312-555-0123',
+          ),
         ),
       );
       expect(r.progress, 'Step 1 of 2');
@@ -1044,12 +1044,73 @@ void main() {
         'mode', (tester) async {
       tester.platformDispatcher.textScaleFactorTestValue = 2;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-      final (h, _) = await open(tester, size: const Size(320, 2400), dark: true);
+      final (h, _) = await open(
+        tester,
+        size: const Size(320, 2400),
+        dark: true,
+      );
       h.calls.myRegistrations[slug] = waitlisted(offerUntil: until);
       h.router.go('/e/$slug/registration');
       await h.settle(tester);
       expect(find.byKey(const Key('registration.mine.offer')), findsOneWidget);
       expect(tester.takeException(), isNull);
+      await h.finish(tester);
+    });
+  });
+
+  group('#249 complete your registration', () {
+    testWidgets('Req 5: the link opens the group the organizer added, to '
+        'check and send as a new registration', (tester) async {
+      final (h, r) = await open(tester);
+      h.calls.completionForms['r9'] = RegistrationFormSpec(
+        slug: slug,
+        title: 'Convention 2027',
+        timeZone: 'America/Chicago',
+        startDate: DateTime.utc(2027, 7, 16),
+        blocks: const {RegistrationBlock.people, RegistrationBlock.contact},
+        categories: const [
+          EventCategory(id: 'child', name: 'Child', maxAge: 17, isChild: true),
+          EventCategory(id: 'adult', name: 'Adult', minAge: 18),
+        ],
+        completing: true,
+        current: const RegistrationDraft(
+          submissionId: 'edit',
+          people: [
+            PersonEntry(id: 'nita', name: 'Nita Shah', birthDate: '1978-04-04'),
+            PersonEntry(
+              id: 'rohan',
+              name: 'Rohan Shah',
+              birthDate: '2014-06-06',
+            ),
+          ],
+        ),
+      );
+      h.router.go('$register?complete=r9');
+      await h.settle(tester);
+      // The organizer's people are there to check, as a new registration.
+      expect(find.text('Nita Shah'), findsWidgets);
+      expect(find.text('Rohan Shah'), findsWidgets);
+      expect(find.byKey(const Key('$k.saveState.saved')), findsNothing);
+      await r.next();
+      await r.next();
+      await r.submit();
+      final sent = h.calls.submissions.single;
+      expect(sent['completeRegistrationId'], 'r9');
+      final people = (sent['people']! as List).cast<Map<String, Object?>>();
+      expect(people.map((p) => p['id']), ['nita', 'rohan']);
+      expect(sent['submissionId'], isNot('edit'));
+      await h.finish(tester);
+    });
+
+    testWidgets('a link opened with another email says so', (tester) async {
+      final (h, _) = await open(tester);
+      h.router.go('$register?complete=someone-elses');
+      await h.settle(tester);
+      expect(find.byKey(const Key('$k.completionEmail')), findsOneWidget);
+      expect(
+        find.text('Sign in with the email this link was sent to'),
+        findsOneWidget,
+      );
       await h.finish(tester);
     });
   });

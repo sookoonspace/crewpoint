@@ -324,6 +324,15 @@ void main() {
         handAdded: true,
       );
       expect(find.byKey(const Key('$g.none')), findsOneWidget);
+      // Req 5: a "complete your registration" link, to a checked address.
+      await robot.typeInto(const Key('$g.linkEmail'), 'not an email');
+      await robot.tap(const Key('$g.sendLink'));
+      expect(find.text('Enter a valid email address.'), findsOneWidget);
+      expect(harness.calls.completionLinks, isEmpty);
+      await robot.typeInto(const Key('$g.linkEmail'), 'nita@example.com');
+      await robot.tap(const Key('$g.sendLink'));
+      expect(harness.calls.completionLinks, ['g1:nita@example.com']);
+      expect(find.text('Link sent.'), findsOneWidget);
       await robot.finish();
     });
 

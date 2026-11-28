@@ -183,13 +183,7 @@ class _GroupRegistrationScreenState
     final Widget body = switch (view) {
       AsyncValue(hasValue: true, :final value) =>
         value == null
-            ? Padding(
-                padding: EdgeInsets.all(context.cp.space.lg),
-                child: KeyedSubtree(
-                  key: const Key('$_k.none'),
-                  child: AdminNote(s.noRegistration, icon: CpIcons.statusInfo),
-                ),
-              )
+            ? _SendLink(event: event, groupId: widget.groupId)
             : _page(value),
       AsyncValue(error: _?) => CpErrorState(
         key: const Key('$_k.error'),
@@ -377,6 +371,103 @@ class _GroupRegistrationScreenState
                     ],
                   ),
                 ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// A group added by hand (#249, Req 5): it has no registration, and
+/// `registrations.manage` can email a "complete your registration" link.
+class _SendLink extends ConsumerStatefulWidget {
+  const _SendLink({required this.event, required this.groupId});
+
+  final EventModel event;
+  final String groupId;
+
+  @override
+  ConsumerState<_SendLink> createState() => _SendLinkState();
+}
+
+class _SendLinkState extends ConsumerState<_SendLink> {
+  final _email = TextEditingController();
+  bool _busy = false;
+  bool _tried = false;
+
+  static final _valid = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+
+  @override
+  void dispose() {
+    _email.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    final s = context.strings.committee;
+    setState(() => _tried = true);
+    if (!_valid.hasMatch(_email.text.trim())) return;
+    final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
+    setState(() => _busy = true);
+    try {
+      await ref
+          .read(memberCallsProvider)
+          .sendCompletionLink(
+            eventId: widget.event.id,
+            groupId: widget.groupId,
+            email: _email.text.trim(),
+          );
+      messenger.showSnackBar(SnackBar(content: Text(s.linkSent)));
+    } on Object catch (e, st) {
+      log('sendCompletionLink failed', error: e, stackTrace: st);
+      messenger.showSnackBar(SnackBar(content: Text(s.failed)));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.strings.committee;
+    final cp = context.cp;
+    return ListView(
+      key: const Key('$_k.none'),
+      padding: EdgeInsets.all(cp.space.lg),
+      children: [
+        ContentMaxWidth(
+          maxWidth: cp.sizes.phoneColumn,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: cp.space.lg,
+            children: [
+              AdminNote(s.noRegistration, icon: CpIcons.statusInfo),
+              CpSectionHeader(title: s.sendLinkHeading),
+              Text(
+                s.sendLinkHelp,
+                style: cp.type.bodyMedium.copyWith(color: cp.colors.textMuted),
+              ),
+              CpCard(
+                padding: EdgeInsets.all(cp.space.lg),
+                child: CpTextField(
+                  fieldKey: const Key('$_k.linkEmail'),
+                  label: s.linkEmail,
+                  controller: _email,
+                  keyboardType: TextInputType.emailAddress,
+                  error: _tried && !_valid.hasMatch(_email.text.trim())
+                      ? s.invalidEmail
+                      : null,
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+              CpButton(
+                key: const Key('$_k.sendLink'),
+                label: s.sendLink,
+                icon: CpIcons.authEmailField,
+                busy: _busy,
+                expand: true,
+                onPressed: _busy ? null : _send,
+              ),
             ],
           ),
         ),

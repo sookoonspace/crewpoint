@@ -493,5 +493,18 @@
   "committeeClearStatusFilter": "નોંધણી ફિલ્ટર દૂર કરો",
   "committeeAddedByOrganizer": "આયોજકે ઉમેર્યું",
   "committeePeople": "{count, plural, =1{1 વ્યક્તિ} other{{count} લોકો}}",
-  "committeeRemindersSent": "{count, plural, =0{કોઈનો ડ્રાફ્ટ મોકલવાનો બાકી નથી.} =1{1 યાદ મોકલી.} other{{count} યાદ મોકલી.}}"
+  "committeeRemindersSent": "{count, plural, =0{કોઈનો ડ્રાફ્ટ મોકલવાનો બાકી નથી.} =1{1 યાદ મોકલી.} other{{count} યાદ મોકલી.}}",
+  "registerFormCompletionEmailTitle": "આ લિંક જે ઇમેઇલ પર મોકલી હતી તેનાથી સાઇન ઇન કરો",
+  "registerFormCompletionEmailBody": "આ લિંક બીજા ઇમેઇલ સરનામા માટે છે. સાઇન આઉટ કરો, પછી તે સરનામાથી સાઇન ઇન કરો.",
+  "registerFormCompletionUsedTitle": "નોંધણી થઈ ગઈ છે",
+  "registerFormCompletionUsedBody": "આ જૂથની નોંધણી થઈ ગઈ છે. તેનો સંપર્ક તેને મારી નોંધણીમાં જોઈ શકે છે.",
+  "registerFormCompletionGoneTitle": "આ લિંક હવે કામ કરતી નથી",
+  "registerFormCompletionGoneBody": "આયોજકને નવી મોકલવા કહો.",
+  "committeeSendLinkHeading": "નોંધણી પૂરી કરવાની લિંક",
+  "committeeSendLinkHelp": "ઇમેઇલથી લિંક મોકલો જેથી આ જૂથ તેની વિગતો તપાસીને નોંધણી પૂરી કરી શકે. જે તે સરનામાથી સાઇન ઇન કરે તે તેનો સંપર્ક બને છે.",
+  "committeeLinkEmail": "ઇમેઇલ સરનામું",
+  "committeeSendLink": "લિંક મોકલો",
+  "committeeLinkSent": "લિંક મોકલી.",
+  "committeeInvalidEmail": "માન્ય ઇમેઇલ સરનામું દાખલ કરો.",
+  "committeeLogCompletionSent": "નોંધણીની લિંક મોકલી"
 }

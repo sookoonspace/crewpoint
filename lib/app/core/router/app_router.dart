@@ -221,10 +221,14 @@ GoRouter createRouter({
             path: 'register',
             builder: (_, state) {
               final slug = state.pathParameters['eventSlug'] ?? '';
+              // A "complete your registration" link (#249).
+              final complete = state.uri.queryParameters['complete'];
               return RegistrationSignInGate(
                 slug: slug,
-                returnTo: '/e/$slug/register',
-                child: RegistrationFormScreen(slug: slug),
+                returnTo: complete == null
+                    ? '/e/$slug/register'
+                    : '/e/$slug/register?complete=$complete',
+                child: RegistrationFormScreen(slug: slug, complete: complete),
               );
             },
           ),

@@ -4,6 +4,7 @@ import {withStructuredLogs} from "../utils/logging";
 import {normaliseSlug} from "./settings";
 import {registrationOf} from "./registrationSettings";
 import {signUpChoices} from "./sessionChoices";
+import {readCompletion} from "./completion";
 
 const db = () => getFirestore();
 
@@ -55,7 +56,7 @@ const millis = (v: unknown): number | null => (v instanceof Timestamp ? v.toMill
 export const getRegistrationForm = onCall({timeoutSeconds: 30}, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) throw new HttpsError("unauthenticated", "Must be signed in.");
-  const data = (request.data ?? {}) as {slug?: unknown};
+  const data = (request.data ?? {}) as {slug?: unknown; complete?: unknown};
   return withStructuredLogs({op: "getRegistrationForm", uid, args: {slug: data.slug}}, async () => {
     const {slug, ref} = await eventBySlug(data.slug);
     const eventDoc = await ref.get();
@@ -80,6 +81,10 @@ export const getRegistrationForm = onCall({timeoutSeconds: 30}, async (request) 
     // Someone registered may still change contact details after the
     // deadline (Req 35); everyone else needs registration open.
     let editable: "all" | "contact" | null = null;
+    // A group added by hand, completed through its link (#249).
+    const completeId = typeof data.complete === "string" && data.complete ? data.complete : null;
+    const completing = !registered && completeId ?
+      (await readCompletion(null, ref, completeId, request.auth)).ref : null;
     if (registered) {
       if (["ended", "archived"].includes(event.status)) {
         throw new HttpsError("failed-precondition", "Registration is closed.", {reason: "closed"});
@@ -120,7 +125,8 @@ export const getRegistrationForm = onCall({timeoutSeconds: 30}, async (request) 
     const mineData = mine.docs[0]?.data();
     const isDraft = mineData?.status === "draft";
     const registration = registered?.data();
-    const current = registered ? await currentRegistration(ref, registered) : null;
+    const current = registered ? await currentRegistration(ref, registered) :
+      completing ? await currentRegistration(ref, await completing.get(), true) : null;
     // Sessions everyone attends, which a person may opt out of (#244, B-03).
     const policy = event.settings?.attendancePolicy;
     const attending = settings.blocks.sessionChoices ? sessions
@@ -151,6 +157,7 @@ export const getRegistrationForm = onCall({timeoutSeconds: 30}, async (request) 
       editable,
       current,
       contactLine: settings.contactLine,
+      completing: completing !== null,
       // Waivers to read and accept (#246), with each one's current version.
       waivers: settings.blocks.waivers ? await waiverList(ref) : [],
       // The server copy of the form as typed (#243), to restore when newer.
@@ -166,14 +173,18 @@ export const getRegistrationForm = onCall({timeoutSeconds: 30}, async (request) 
  */
 async function currentRegistration(
   eventRef: FirebaseFirestore.DocumentReference,
-  registration: FirebaseFirestore.QueryDocumentSnapshot
+  registration: FirebaseFirestore.DocumentSnapshot,
+  /** A group added by hand being completed (#249): its people by group. */
+  byGroup = false
 ) {
-  const r = registration.data();
+  const r = registration.data() ?? {};
   const groupRef = eventRef.collection("groups").doc(String(r.groupId));
   const [group, groupPrivate, people] = await Promise.all([
     groupRef.get(),
     groupRef.collection("private").doc("details").get(),
-    eventRef.collection("participants").where("registrationId", "==", registration.id).get(),
+    byGroup ?
+      eventRef.collection("participants").where("groupId", "==", groupRef.id).get() :
+      eventRef.collection("participants").where("registrationId", "==", registration.id).get(),
   ]);
   const sorted = [...people.docs].sort((a, b) =>
     (millis(a.data().createdAt) ?? 0) - (millis(b.data().createdAt) ?? 0) || a.id.localeCompare(b.id));
