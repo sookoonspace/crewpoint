@@ -38,5 +38,10 @@
     "subject": "{{eventTitle}} માટેની નોંધણી જલ્દી બંધ થશે",
     "text": "નમસ્તે,\n\nતમે {{eventTitle}} માટે {{word.registration.one.lower}} શરૂ કરી છે પણ હજી મોકલી નથી. નોંધણી {{closes}} એ બંધ થશે.\n\nતેને અહીં પૂરી કરો:\n\n{{link}}\n\nCrewPoint",
     "push": "{{eventTitle}} માટેની નોંધણી {{closes}} એ બંધ થશે."
+  },
+  "registrationComplete": {
+    "subject": "{{eventTitle}} માટે તમારી નોંધણી પૂરી કરો",
+    "text": "નમસ્તે,\n\n{{eventTitle}} ના આયોજકોએ {{groupName}} ઉમેર્યું છે. કૃપા કરીને તમારી વિગતો તપાસો અને તમારી {{word.registration.one.lower}} અહીં પૂરી કરો:\n\n{{link}}\n\nતેને ખોલવા માટે આ ઇમેઇલ સરનામાથી સાઇન ઇન કરો.\n\nCrewPoint",
+    "push": "{{eventTitle}} માટે તમારી નોંધણી પૂરી કરો."
   }
 }

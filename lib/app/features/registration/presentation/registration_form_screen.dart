@@ -35,16 +35,19 @@ const _k = 'registration.form';
 /// checked on Submit, shown beside their fields with a count at the top.
 /// A group of one sees no group words. No fee is shown (Req 7).
 class RegistrationFormScreen extends ConsumerWidget {
-  const RegistrationFormScreen({super.key, required this.slug});
+  const RegistrationFormScreen({super.key, required this.slug, this.complete});
 
   final String slug;
+
+  /// A "complete your registration" link's registration ID (#249).
+  final String? complete;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = context.strings.registerForm;
     final page = context.strings.eventPage;
     final cp = context.cp;
-    final key = slug.toLowerCase();
+    final key = (slug: slug.toLowerCase(), complete: complete);
     final form = ref.watch(registrationFormProvider(key));
     Widget plain(Widget child) => Scaffold(
       backgroundColor: cp.colors.background,
@@ -77,7 +80,7 @@ class RegistrationFormScreen extends ConsumerWidget {
             icon: CpIcons.registrationClosed,
             title: page.closed,
             // How to reach the organizer (Req 35, B-13).
-            message: switch (ref.watch(eventPageProvider(key)).value
+            message: switch (ref.watch(eventPageProvider(key.slug)).value
                 ?.contactLine) {
               final line? =>
                 Localizations.localeOf(context).languageCode == 'gu' &&
@@ -86,6 +89,25 @@ class RegistrationFormScreen extends ConsumerWidget {
                     : line.en,
               null => null,
             },
+          ),
+          // A "complete your registration" link (#249) refused.
+          'completionEmail' => CpEmptyState(
+            key: const Key('$_k.completionEmail'),
+            icon: CpIcons.authEmailField,
+            title: s.completionEmailTitle,
+            message: s.completionEmailBody,
+          ),
+          'completionUsed' => CpEmptyState(
+            key: const Key('$_k.completionUsed'),
+            icon: CpIcons.registration,
+            title: s.completionUsedTitle,
+            message: s.completionUsedBody,
+          ),
+          'completionNotFound' => CpEmptyState(
+            key: const Key('$_k.completionGone'),
+            icon: CpIcons.registrationClosed,
+            title: s.completionGoneTitle,
+            message: s.completionGoneBody,
           ),
           _ => CpErrorState(
             key: const Key('$_k.error'),
@@ -109,13 +131,19 @@ class RegistrationFormScreen extends ConsumerWidget {
                 onAction: () => context.go('/e/$slug/registration'),
               ),
             )
-          : _RegistrationForm(spec: spec, slug: slug),
+          : _RegistrationForm(spec: spec, slug: slug, complete: complete),
     );
   }
 }
 
 class _RegistrationForm extends ConsumerStatefulWidget {
-  const _RegistrationForm({required this.spec, required this.slug});
+  const _RegistrationForm({
+    required this.spec,
+    required this.slug,
+    this.complete,
+  });
+
+  final String? complete;
 
   final RegistrationFormSpec spec;
   final String slug;
@@ -166,6 +194,22 @@ class _RegistrationFormState extends ConsumerState<_RegistrationForm> {
     final auth = ref.read(authProvider);
     final email = auth is Authenticated ? auth.user.email : '';
     final current = _spec.current;
+    if (current != null && _spec.completing) {
+      // Completing a group the organizer added (#249): its people to
+      // check, sent as a new registration, so no drafts.
+      _draft = RegistrationDraft(
+        submissionId: const Uuid().v4(),
+        people: current.people,
+        groupAnswers: current.groupAnswers,
+        groupName: current.groupName,
+        email: current.email.isEmpty ? email : current.email,
+        phone: current.phone,
+      );
+      _ids
+        ..clear()
+        ..addAll([for (var i = 0; i < current.people.length; i++) _nextId++]);
+      return;
+    }
     if (current != null) {
       // Editing a registration (#244): no drafts, the server holds it.
       _draft = current;
@@ -227,7 +271,9 @@ class _RegistrationFormState extends ConsumerState<_RegistrationForm> {
   /// Keeps the answers on the device at once and on the server once typing
   /// pauses (Req 23, 24).
   void _changed() {
-    if (_result != null || _saved || _spec.editing) return;
+    if (_result != null || _saved || _spec.editing || _spec.completing) {
+      return;
+    }
     unawaited(
       ref.read(draftStoreProvider).save(_draftKey, {
         'draft': _draft.toMap(),
@@ -332,7 +378,10 @@ class _RegistrationFormState extends ConsumerState<_RegistrationForm> {
       }
       final result = await ref
           .read(memberCallsProvider)
-          .submitRegistration(_spec.toSubmitMap(_draft));
+          .submitRegistration({
+            ..._spec.toSubmitMap(_draft),
+            'completeRegistrationId': ?widget.complete,
+          });
       if (!mounted) return;
       setState(() => _result = result);
       // Home lists a group waiting for a place (#292).

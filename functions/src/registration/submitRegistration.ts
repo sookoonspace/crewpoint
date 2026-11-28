@@ -15,6 +15,7 @@ import {applyRegistrationMembership} from "./membership";
 import {
   acceptedAs, loadWaivers, requiredProblems, WaiverDoc, writeAcceptances,
 } from "./waiverAcceptance";
+import {submitCompletion} from "./completion";
 
 const db = () => getFirestore();
 
@@ -121,6 +122,10 @@ export const submitRegistration = onCall({timeoutSeconds: 60}, async (request) =
     const eventId = mapping.data()?.eventId;
     if (typeof eventId !== "string") throw new HttpsError("not-found", "We couldn't find this event.");
     const eventRef = db().collection("events").doc(eventId);
+    // Completing a group the organizer added (#249).
+    if (typeof data.completeRegistrationId === "string" && data.completeRegistrationId) {
+      return submitCompletion(request, eventRef, data.completeRegistrationId) as Promise<SubmitResult>;
+    }
 
     // What the form needs to check answers; none of it changes capacity.
     const {fields, sessions: sessionDocs, waivers: allWaivers} = await loadFormInputs(eventRef);

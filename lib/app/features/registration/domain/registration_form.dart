@@ -349,6 +349,7 @@ class RegistrationFormSpec {
     this.attending = const [],
     this.contactLine,
     this.waivers = const [],
+    this.completing = false,
   });
 
   factory RegistrationFormSpec.fromMap(Map<String, Object?> data) {
@@ -449,6 +450,7 @@ class RegistrationFormSpec {
         for (final raw in (data['waivers'] as List?) ?? const [])
           ?Waiver.tryParse(raw),
       ],
+      completing: data['completing'] == true,
     );
   }
 
@@ -487,7 +489,11 @@ class RegistrationFormSpec {
   /// The event's waivers (#246), with the waivers block on.
   final List<Waiver> waivers;
 
-  bool get editing => current != null;
+  /// Completing a group the organizer added (#249): [current] holds its
+  /// people, sent as a new registration with `completeRegistrationId`.
+  final bool completing;
+
+  bool get editing => current != null && !completing;
 
   bool has(RegistrationBlock block) => blocks.contains(block);
 

@@ -212,7 +212,22 @@ abstract interface class MemberCalls {
   /// What the registration form for [slug] asks (#242), for a signed-in
   /// visitor. Throws `failed-precondition` (`notOpen`, `closed`) or
   /// `permission-denied` (`invitedOnly`) with `details.reason`.
-  Future<RegistrationFormSpec> getRegistrationForm(String slug);
+  ///
+  /// [complete] opens a "complete your registration" link (#249) for a
+  /// group the organizer added; it throws with `details.reason`
+  /// `completionEmail`, `completionUsed` or `completionNotFound`.
+  Future<RegistrationFormSpec> getRegistrationForm(
+    String slug, {
+    String? complete,
+  });
+
+  /// Sends a group added by hand a link to complete its registration, to
+  /// [email] (#249). Needs `registrations.manage`.
+  Future<void> sendCompletionLink({
+    required String eventId,
+    required String groupId,
+    required String email,
+  });
 
   /// Submits a registration (#242), [payload] as
   /// [RegistrationFormSpec.toSubmitMap] makes it. A repeat with the same
@@ -606,10 +621,23 @@ class FirebaseMemberCalls implements MemberCalls {
       PublicEvent.fromMap(await _call('getEventPage', {'slug': slug}));
 
   @override
-  Future<RegistrationFormSpec> getRegistrationForm(String slug) async =>
-      RegistrationFormSpec.fromMap(
-        await _call('getRegistrationForm', {'slug': slug}),
-      );
+  Future<RegistrationFormSpec> getRegistrationForm(
+    String slug, {
+    String? complete,
+  }) async => RegistrationFormSpec.fromMap(
+    await _call('getRegistrationForm', {'slug': slug, 'complete': ?complete}),
+  );
+
+  @override
+  Future<void> sendCompletionLink({
+    required String eventId,
+    required String groupId,
+    required String email,
+  }) => _call('sendCompletionLink', {
+    'eventId': eventId,
+    'groupId': groupId,
+    'email': email,
+  });
 
   @override
   Future<SubmitResult> submitRegistration(

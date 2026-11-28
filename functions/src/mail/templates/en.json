@@ -38,5 +38,10 @@
     "subject": "Registration for {{eventTitle}} closes soon",
     "text": "Hello,\n\nYou started a {{word.registration.one.lower}} for {{eventTitle}} but haven't sent it yet. Registration closes {{closes}}.\n\nFinish it here:\n\n{{link}}\n\nCrewPoint",
     "push": "Registration for {{eventTitle}} closes {{closes}}."
+  },
+  "registrationComplete": {
+    "subject": "Complete your registration for {{eventTitle}}",
+    "text": "Hello,\n\nThe organizers of {{eventTitle}} have added {{groupName}}. Please check your details and complete your {{word.registration.one.lower}} here:\n\n{{link}}\n\nSign in with this email address to open it.\n\nCrewPoint",
+    "push": "Complete your registration for {{eventTitle}}."
   }
 }

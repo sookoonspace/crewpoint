@@ -649,10 +649,40 @@ class FakeMemberCalls implements MemberCalls {
   /// Refusals for a slug's form, as the server gives them (#244).
   final Map<String, FirebaseFunctionsException> registrationFormRefusals = {};
 
+  /// Forms for "complete your registration" links, by registration ID
+  /// (#249), and the links sent, as `groupId:email`.
+  final completionForms = <String, RegistrationFormSpec>{};
+  final completionLinks = <String>[];
+
   @override
-  Future<RegistrationFormSpec> getRegistrationForm(String slug) async {
+  Future<void> sendCompletionLink({
+    required String eventId,
+    required String groupId,
+    required String email,
+  }) async {
+    calls.add('sendCompletionLink:$groupId');
+    _maybeFail();
+    completionLinks.add('$groupId:$email');
+  }
+
+  @override
+  Future<RegistrationFormSpec> getRegistrationForm(
+    String slug, {
+    String? complete,
+  }) async {
     calls.add('getRegistrationForm:$slug');
     _maybeFail();
+    if (complete != null) {
+      final completing = completionForms[complete];
+      if (completing == null) {
+        throw FirebaseFunctionsException(
+          code: 'permission-denied',
+          message: 'Please sign in with the email address this link was sent to.',
+          details: const {'reason': 'completionEmail'},
+        );
+      }
+      return completing;
+    }
     final refusal = registrationFormRefusals[slug.toLowerCase()];
     if (refusal != null) throw refusal;
     final form = registrationForms[slug.toLowerCase()];

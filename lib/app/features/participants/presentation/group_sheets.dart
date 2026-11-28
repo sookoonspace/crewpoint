@@ -519,11 +519,12 @@ class _GroupSheetState extends ConsumerState<GroupSheet> {
                           context,
                         ).pop(GroupSheetResult(group: _group, addPeople: true)),
                 ),
-                if (_group.registrationStatus != null &&
-                    widget.event.can(
-                      ref.watch(currentUserIdProvider) ?? '',
-                      'registrations.manage',
-                    ))
+                // A group added by hand opens it to send a "complete your
+                // registration" link (#249).
+                if (widget.event.can(
+                  ref.watch(currentUserIdProvider) ?? '',
+                  'registrations.manage',
+                ))
                   CpButton.secondary(
                     key: const Key('people.group.registration'),
                     icon: CpIcons.registration,

@@ -5891,6 +5891,12 @@ class RegisterFormStrings {
   String get consentSms => _l.registerFormConsentSms;
   String get photoConsent => _l.registerFormPhotoConsent;
   String get photoConsentHelp => _l.registerFormPhotoConsentHelp;
+  String get completionEmailTitle => _l.registerFormCompletionEmailTitle;
+  String get completionEmailBody => _l.registerFormCompletionEmailBody;
+  String get completionUsedTitle => _l.registerFormCompletionUsedTitle;
+  String get completionUsedBody => _l.registerFormCompletionUsedBody;
+  String get completionGoneTitle => _l.registerFormCompletionGoneTitle;
+  String get completionGoneBody => _l.registerFormCompletionGoneBody;
 }
 
 /// "My registration" (Spec #233 Req 9, 19, 35; #242), translated (ARB).
@@ -6080,6 +6086,13 @@ class CommitteeStrings {
   String get addedByOrganizer => _l.committeeAddedByOrganizer;
   String people(int count) => _l.committeePeople(count);
   String remindersSent(int count) => _l.committeeRemindersSent(count);
+  String get sendLinkHeading => _l.committeeSendLinkHeading;
+  String get sendLinkHelp => _l.committeeSendLinkHelp;
+  String get linkEmail => _l.committeeLinkEmail;
+  String get sendLink => _l.committeeSendLink;
+  String get linkSent => _l.committeeLinkSent;
+  String get invalidEmail => _l.committeeInvalidEmail;
+  String get logCompletionSent => _l.committeeLogCompletionSent;
 
   /// A registration status's name, for tags and filters.
   String status(String status) => switch (status) {
@@ -6104,6 +6117,7 @@ class CommitteeStrings {
     'offerExpired' => logOfferExpired,
     'offerWithdrawn' => logOfferWithdrawn,
     'offerExtended' => logOfferExtended,
+    'completionSent' => logCompletionSent,
     _ => action,
   };
 }

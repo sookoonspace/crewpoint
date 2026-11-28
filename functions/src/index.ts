@@ -68,4 +68,5 @@ export {
 export {
   getRegistrationSummary, manageRegistration, resendConfirmation, sendClosingReminder, getGroupRegistration,
 } from "./registration/committee";
+export {sendCompletionLink} from "./registration/completion";
 export {sendSignInLink} from "./account/signInLink";

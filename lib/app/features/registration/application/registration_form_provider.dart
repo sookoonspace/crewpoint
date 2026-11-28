@@ -5,7 +5,9 @@ import 'package:crewpoint_app/app/features/registration/domain/registration_form
 /// What the registration form for a slug asks (#242), read once through
 /// `getRegistrationForm`; Retry invalidates it.
 final registrationFormProvider = FutureProvider.autoDispose
-    .family<RegistrationFormSpec, String>(
-      (ref, slug) => ref.watch(memberCallsProvider).getRegistrationForm(slug),
+    .family<RegistrationFormSpec, ({String slug, String? complete})>(
+      (ref, key) => ref
+          .watch(memberCallsProvider)
+          .getRegistrationForm(key.slug, complete: key.complete),
       retry: (_, _) => null,
     );
